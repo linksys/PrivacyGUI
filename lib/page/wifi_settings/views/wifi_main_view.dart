@@ -4,11 +4,11 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_view_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/views/wifi_list_view.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
 
 enum _WiFiSubMenus {
   wifi,
@@ -18,8 +18,8 @@ enum _WiFiSubMenus {
   ;
 }
 
-class WiFiMainView extends ConsumerStatefulWidget {
-  const WiFiMainView({Key? key}) : super(key: key);
+class WiFiMainView extends ArgumentsConsumerStatefulView {
+  const WiFiMainView({Key? key, super.args}) : super(key: key);
 
   @override
   ConsumerState<WiFiMainView> createState() => _WiFiMainViewState();
@@ -27,6 +27,15 @@ class WiFiMainView extends ConsumerStatefulWidget {
 
 class _WiFiMainViewState extends ConsumerState<WiFiMainView> {
   int _selectMenuIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    final goToGuest = widget.args['guest'] as bool? ?? false;
+    if (goToGuest) {
+      _selectMenuIndex = 1;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

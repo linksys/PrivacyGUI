@@ -6,8 +6,11 @@ import 'package:shimmer/shimmer.dart';
 class ShimmerContainer extends ConsumerWidget {
   final Widget child;
   final bool isLoading;
-  const ShimmerContainer(
-      {super.key, required this.child, this.isLoading = false});
+  const ShimmerContainer({
+    super.key,
+    required this.child,
+    this.isLoading = false,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

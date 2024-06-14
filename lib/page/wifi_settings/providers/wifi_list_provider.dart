@@ -142,7 +142,7 @@ class WifiListNotifier extends Notifier<WiFiState> {
   bool isAllBandsConsistent() {
     return !state.mainWiFi.any((element) =>
         element.ssid != state.simpleWiFi.ssid ||
-        element.password != state.simpleWiFi.ssid);
+        element.password != state.simpleWiFi.password);
   }
 
   int? checkIfChannelLegalWithWidth(

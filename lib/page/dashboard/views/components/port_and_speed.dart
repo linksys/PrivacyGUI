@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
@@ -14,6 +15,7 @@ import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/theme/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:privacygui_widgets/widgets/card/list_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 
 class DashboardHomePortAndSpeed extends ConsumerWidget {
@@ -26,16 +28,17 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
         .watch(deviceManagerProvider.select((value) => value.deviceList))
         .isEmpty;
     final horizontalLayout = state.isHorizontalLayout;
-    final isSpeedCheckSupported = state.isHealthCheckSupported;
+    final wanStatus = ref.watch(nodeWanStatusProvider);
+    final isOnline = wanStatus == NodeWANStatus.online;
     return ResponsiveLayout(
         desktop: horizontalLayout
-            ? _desktopHorizontal(context, ref, state, isLoading)
-            : _desktopVertical(context, ref, state, isLoading),
-        mobile: _mobile(context, ref, state, isLoading));
+            ? _desktopHorizontal(context, ref, state, isOnline, isLoading)
+            : _desktopVertical(context, ref, state, isOnline, isLoading),
+        mobile: _mobile(context, ref, state, isOnline, isLoading));
   }
 
   Widget _mobile(BuildContext context, WidgetRef ref, DashboardHomeState state,
-      bool isLoading) {
+      bool isOnline, bool isLoading) {
     return Container(
       width: double.infinity,
       constraints: const BoxConstraints(minHeight: 150),
@@ -62,13 +65,19 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                               ))
                           .toList(),
                       Expanded(
-                        child: _portWidget(context, state.wanPortConnection,
-                            loc(context).wan, true),
+                        child: _portWidget(
+                            context,
+                            state.wanPortConnection == 'None'
+                                ? null
+                                : state.wanPortConnection,
+                            loc(context).wan,
+                            true),
                       )
                     ],
                   ),
                 ),
                 const AppGap.semiBig(),
+                if (!isLoading && !isOnline) _troubleshooting(context),
                 _speedCheckWidget(context, ref, state),
               ],
             )),
@@ -77,9 +86,9 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
   }
 
   Widget _desktopVertical(BuildContext context, WidgetRef ref,
-      DashboardHomeState state, bool isLoading) {
+      DashboardHomeState state, bool isOnline, bool isLoading) {
     return Container(
-      constraints: const BoxConstraints(minWidth: 150),
+      constraints: const BoxConstraints(minWidth: 150, minHeight: 250),
       child: ShimmerContainer(
         isLoading: isLoading,
         child: AppCard(
@@ -107,6 +116,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                     ],
                   ),
                 ),
+                if (!isLoading && !isOnline) _troubleshooting(context),
                 _speedCheckWidget(context, ref, state),
               ],
             )),
@@ -115,7 +125,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
   }
 
   Widget _desktopHorizontal(BuildContext context, WidgetRef ref,
-      DashboardHomeState state, bool isLoading) {
+      DashboardHomeState state, bool isOnline, bool isLoading) {
     return Container(
       width: double.infinity,
       constraints: const BoxConstraints(minHeight: 110),
@@ -149,9 +159,25 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                     ],
                   ),
                 ),
+                if (!isLoading && !isOnline) _troubleshooting(context),
                 _speedCheckWidget(context, ref, state),
               ],
             )),
+      ),
+    );
+  }
+
+  Widget _troubleshooting(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(
+        left: 16.0,
+        right: 16.0,
+        bottom: 16.0,
+      ),
+      child: AppListCard(
+        title: AppText.labelLarge(loc(context).troubleshoot),
+        trailing: const Icon(LinksysIcons.chevronRight),
+        onTap: () {},
       ),
     );
   }

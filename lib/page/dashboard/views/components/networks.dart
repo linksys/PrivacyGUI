@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -11,6 +12,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
 import 'package:privacy_gui/page/dashboard/views/components/shimmer.dart';
+import 'package:privacy_gui/page/nodes/providers/node_detail_id_provider.dart';
 import 'package:privacy_gui/page/topology/providers/_providers.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/hook/icon_hooks.dart';
@@ -29,21 +31,35 @@ class DashboardNetworks extends ConsumerWidget {
     final state = ref.watch(dashboardHomeProvider);
     final isLoading = ref.watch(deviceManagerProvider).deviceList.isEmpty;
 
-    return ShimmerContainer(
-      isLoading: isLoading,
-      child: AppCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ResponsiveLayout(
-              desktop: state.isHorizontalLayout
-                  ? _desktopHorizontal(context, ref)
-                  : _desktopVertical(context, ref),
-              mobile: _mobile(context, ref),
-            ),
-            const AppGap.semiBig(),
-            ...state.nodes.map((e) => _nodeCard(context, e)),
-          ],
+    return Container(
+      constraints: const BoxConstraints(minHeight: 200),
+      child: ShimmerContainer(
+        isLoading: isLoading,
+        child: AppCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ResponsiveLayout(
+                desktop: state.isHorizontalLayout
+                    ? _desktopHorizontal(context, ref)
+                    : _desktopVertical(context, ref),
+                mobile: _mobile(context, ref),
+              ),
+              const AppGap.semiBig(),
+              // ...state.nodes.mapIndexed((index, e) => _nodeCard(context, ref, e)),
+              SizedBox(
+                height: state.nodes.length * 86,
+                child: ListView.separated(
+                    physics: const NeverScrollableScrollPhysics(),
+                    shrinkWrap: true,
+                    itemBuilder: (context, index) {
+                      return _nodeCard(context, ref, state.nodes[index]);
+                    },
+                    separatorBuilder: (context, index) => const Divider(),
+                    itemCount: state.nodes.length),
+              )
+            ],
+          ),
         ),
       ),
     );
@@ -215,7 +231,7 @@ class DashboardNetworks extends ConsumerWidget {
         false;
   }
 
-  Widget _nodeCard(BuildContext context, LinksysDevice node) {
+  Widget _nodeCard(BuildContext context, WidgetRef ref, LinksysDevice node) {
     return AppListCard(
       padding: EdgeInsets.zero,
       title: AppText.titleMedium(node.getDeviceLocation()),
@@ -232,11 +248,36 @@ class DashboardNetworks extends ConsumerWidget {
                   ? LinksysIcons.ethernet
                   : getWifiSignalIconData(context, node.signalDecibels)
               : LinksysIcons.signalWifiNone),
-          if (!node.isWiredConnection() && node.isOnline())
+          if (!node.isAuthority && !node.isWiredConnection() && node.isOnline())
             AppText.bodySmall('${node.signalDecibels} dBM')
         ],
       ),
       showBorder: false,
+      onTap: () {
+        ref.read(nodeDetailIdProvider.notifier).state = node.deviceID;
+        if (node.isOnline()) {
+          // Update the current target Id for node state
+          context.pushNamed(RouteNamed.nodeDetails);
+        }
+        //  else {
+        //   // context.pushNamed(RouteNamed.nodeOffline);
+        //   _showOfflineNodeModal(node).then((value) {
+        //     if (value == 'nightMode') {
+        //     } else if (value == 'remove') {
+        //       _showRemoveNodeModal(node).then((value) {
+        //         if ((value ?? false)) {
+        //           // Do remove
+        //           _doRemoveNode(node).then((result) {
+        //             showSimpleSnackBar(context, loc(context).nodeRemoved);
+        //           }).onError((error, stackTrace) {
+        //             showSimpleSnackBar(context, loc(context).unknownError);
+        //           });
+        //         }
+        //       });
+        //     }
+        //   });
+        // }
+      },
     );
   }
 
@@ -245,7 +286,7 @@ class DashboardNetworks extends ConsumerWidget {
     return _infoTile(
       isHorizontal: state.isHorizontalLayout,
       iconData: LinksysIcons.networkNode,
-      text: loc(context).nodes,
+      text: state.nodes.length == 1 ? loc(context).node : loc(context).nodes,
       count: state.nodes.length,
       sub: state.isAnyNodesOffline
           ? Icon(
@@ -263,13 +304,14 @@ class DashboardNetworks extends ConsumerWidget {
 
   Widget _devicesInfoTile(
       BuildContext context, WidgetRef ref, DashboardHomeState state) {
+    final count = state.wifis.fold(
+        0,
+        (previousValue, element) =>
+            previousValue += element.numOfConnectedDevices);
     return _infoTile(
       isHorizontal: state.isHorizontalLayout,
-      text: loc(context).devices,
-      count: state.wifis.fold(
-          0,
-          (previousValue, element) =>
-              previousValue += element.numOfConnectedDevices),
+      text: count == 1 ? loc(context).device : loc(context).devices,
+      count: count,
       iconData: LinksysIcons.devices,
       onTap: () {
         context.goNamed(RouteNamed.dashboardDevices);

@@ -10,7 +10,9 @@ final settings = [
       name: RouteNamed.settingsWifi,
       path: RoutePath.settingsWifi,
       config: const LinksysRouteConfig(noNaviRail: true),
-      builder: (context, state) => WiFiMainView(),
+      builder: (context, state) => WiFiMainView(
+            args: state.extra as Map<String, dynamic>? ?? const {},
+          ),
       routes: [
         LinksysRoute(
           name: RouteNamed.macFilteringInput,
