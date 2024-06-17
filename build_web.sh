@@ -3,7 +3,7 @@ function buildWebApp() {
   echo "base href is ${href}"
 
   if [ "$cloud" == "qa" ]; then
-    flutter build web --target=lib/main.dart --base-href="/${href}" --build-number="${buildNumber}" --dart-define=force="${force}" --dart-define=cloud_env="${cloud}" --dart-define=enable_env_picker="${picker}" --web-renderer html --no-tree-shake-icons --source-maps
+    flutter build web --target=lib/main.dart --base-href="/${href}" --build-number="${buildNumber}" --dart-define=force="${force}" --dart-define=cloud_env="${cloud}" --dart-define=enable_env_picker="${picker}" --web-renderer html --no-tree-shake-icons
   else
     flutter build web --target=lib/main.dart --base-href="/${href}" --build-number="${buildNumber}" --dart-define=force="${force}" --dart-define=cloud_env="${cloud}" --dart-define=enable_env_picker="${picker}" --web-renderer html --no-tree-shake-icons
   fi

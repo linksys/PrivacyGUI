@@ -469,6 +469,9 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
             test: (error) =>
                 error is ClientException || error is JNAPSideEffectError)
         .onError((error, stackTrace) {
+          if (error is ExceptionNeedToReconnect) {
+            throw error;
+          }
           // Saving error
           throw ExceptionSavingChanges(error);
         })
