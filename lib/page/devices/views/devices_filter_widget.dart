@@ -7,7 +7,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/devices/_devices.dart';
 import 'package:privacy_gui/util/extensions.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/theme/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacygui_widgets/widgets/panel/general_section.dart';
@@ -52,13 +52,13 @@ class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
         //   ),
         // ),
         child: Padding(
-          padding: const EdgeInsets.all(Spacing.regular),
+          padding: const EdgeInsets.all(Spacing.medium),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const AppGap.semiSmall(),
+              const AppGap.small2(),
               AppText.titleSmall(loc(context).filters),
-              const AppGap.regular(),
+              const AppGap.medium(),
               FilteredChipsWidget<(String, bool)>(
                   title: loc(context).byConnection,
                   dataList: [
@@ -135,7 +135,7 @@ class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
                           }
                         }
                       : null),
-              const AppGap.regular(),
+              const AppGap.medium(),
               AppTextButton.noPadding(
                 loc(context).resetFilters,
                 icon: LinksysIcons.restartAlt,

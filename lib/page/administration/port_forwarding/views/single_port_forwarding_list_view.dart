@@ -58,10 +58,10 @@ class _SinglePortForwardingContentViewState
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const AppGap.semiBig(),
+            const AppGap.large1(),
             AppText.bodyLarge(loc(context).singlePortForwardingDescription),
             if (!_notifier.isExceedMax()) ...[
-              const AppGap.semiBig(),
+              const AppGap.large1(),
               AddRuleCard(
                 onTap: () {
                   context.pushNamed<bool?>(RouteNamed.singlePortForwardingRule,
@@ -73,12 +73,12 @@ class _SinglePortForwardingContentViewState
                 },
               ),
             ],
-            const AppGap.semiBig(),
+            const AppGap.large1(),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 AppText.labelLarge(loc(context).rules),
-                const AppGap.regular(),
+                const AppGap.medium(),
                 if (state.rules.isNotEmpty)
                   ...state.rules.map(
                     (e) => RuleItemCard(

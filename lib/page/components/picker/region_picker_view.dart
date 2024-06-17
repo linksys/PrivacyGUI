@@ -7,7 +7,7 @@ import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/core/cloud/model/region_code.dart';
 import 'package:privacy_gui/page/components/layouts/basic_header.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
-import 'package:privacygui_widgets/theme/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
@@ -44,13 +44,13 @@ class _RegionPickerViewState extends ConsumerState<RegionPickerView> {
                       itemBuilder: (context, index) => InkWell(
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
-                                  vertical: Spacing.regular),
+                                  vertical: Spacing.medium),
                               child: Row(
                                 children: [
                                   AppText.bodyLarge(
                                     '${snapshot.data?[index].flagCode}',
                                   ),
-                                  const AppGap.semiSmall(),
+                                  const AppGap.small2(),
                                   AppText.bodyMedium(
                                     '${snapshot.data?[index].countryName} +${snapshot.data?[index].countryCallingCode}',
                                   ),

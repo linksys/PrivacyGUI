@@ -126,14 +126,14 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
                   []
             ],
           ),
-          const AppGap.regular(),
+          const AppGap.medium(),
           AppTextButton.noPadding(
             loc(context).tryAgain,
             onTap: () {
               ref.read(addNodesProvider.notifier).startAutoOnboarding();
             },
           ),
-          const AppGap.big(),
+          const AppGap.large2(),
           AppFilledButton(
             loc(context).next,
             onTap: () {
@@ -162,21 +162,21 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
           AppStyledText.bold(loc(context).addNodesDesc,
               defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
               tags: const ['b']),
-          const AppGap.semiBig(),
+          const AppGap.large1(),
           SvgPicture(CustomTheme.of(context).images.imgAddNodes),
           LightInfoTile(
               color: ledBlue,
               content: AppStyledText.bold(loc(context).addNodesSolidBlueDesc,
                   defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
                   tags: const ['b'])),
-          const AppGap.regular(),
+          const AppGap.medium(),
           AppTextButton.noPadding(
             loc(context).addNodesLightDifferentColor,
             onTap: () {
               _showLightDifferentColorModal();
             },
           ),
-          const AppGap.big(),
+          const AppGap.large2(),
           AppFilledButton(
             loc(context).next,
             onTap: () {
@@ -213,7 +213,7 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
                               children: [
                                 AppText.bodyMedium(loc(context)
                                     .modalTroubleshootNoNodesFoundDesc1),
-                                const AppGap.regular(),
+                                const AppGap.medium(),
                                 AppTextButton.noPadding(
                                   loc(context).addNodesLightDifferentColor,
                                   onTap: () {

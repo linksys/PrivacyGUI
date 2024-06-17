@@ -12,7 +12,7 @@ import 'package:privacy_gui/page/dashboard/views/components/shimmer.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/theme/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
@@ -49,7 +49,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
             child: Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: Spacing.big),
+                  padding: const EdgeInsets.symmetric(vertical: Spacing.large2),
                   child: Row(
                     // mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -76,7 +76,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                     ],
                   ),
                 ),
-                const AppGap.semiBig(),
+                const AppGap.large1(),
                 if (!isLoading && !isOnline) _troubleshooting(context),
                 _speedCheckWidget(context, ref, state),
               ],
@@ -96,7 +96,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
             child: Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: Spacing.big),
+                  padding: const EdgeInsets.symmetric(vertical: Spacing.large2),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.center,
@@ -137,7 +137,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: Spacing.big),
+                  padding: const EdgeInsets.symmetric(vertical: Spacing.large2),
                   child: Row(
                     // mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -197,7 +197,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
             child: Column(
               children: [
                 AppText.bodySmall(dateTimeStr),
-                const AppGap.semiBig(),
+                const AppGap.large1(),
                 ResponsiveLayout(
                     desktop: horizontalLayout
                         ? Row(
@@ -227,12 +227,12 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                                     context,
                                     state.downloadResult?.value ?? '--',
                                     state.downloadResult?.unit),
-                                const AppGap.semiBig(),
+                                const AppGap.large1(),
                                 _uploadSpeedResult(
                                     context,
                                     state.uploadResult?.value ?? '--',
                                     state.uploadResult?.unit),
-                                const AppGap.semiBig(),
+                                const AppGap.large1(),
                                 _speedTestButton(context),
                               ]),
                     mobile: Column(
@@ -248,7 +248,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                                     state.downloadResult?.unit,
                                     MainAxisAlignment.center),
                               ),
-                              const AppGap.semiBig(),
+                              const AppGap.large1(),
                               Expanded(
                                 child: _uploadSpeedResult(
                                     context,
@@ -258,7 +258,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                               ),
                             ],
                           ),
-                          const AppGap.semiBig(),
+                          const AppGap.large1(),
                           _speedTestButton(context),
                         ]))
               ],
@@ -327,7 +327,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                   ? Theme.of(context).colorScheme.surfaceVariant
                   : Theme.of(context).colorSchemeExt.green,
             ),
-            const AppGap.semiSmall(),
+            const AppGap.small2(),
             AppText.labelMedium(label),
           ],
         ),

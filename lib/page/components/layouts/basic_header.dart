@@ -27,7 +27,7 @@ class BasicHeader extends ConsumerWidget {
         AppText.titleLarge(
           title ?? '',
         ),
-        const AppGap.regular(),
+        const AppGap.medium(),
         AppText.bodyMedium(description ?? ''),
       ],
     );

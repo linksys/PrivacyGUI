@@ -29,7 +29,7 @@ class _ThemeTileState extends ConsumerState<ThemeTile> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(icon),
-        const AppGap.regular(),
+        const AppGap.medium(),
         AppText.labelMedium(themeText),
       ],
     );

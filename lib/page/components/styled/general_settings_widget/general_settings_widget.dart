@@ -63,12 +63,12 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
                   },
                 ),
               ),
-              const AppGap.regular(),
+              const AppGap.medium(),
               const Padding(
                 padding: EdgeInsets.all(8.0),
                 child: ThemeTile(),
               ),
-              const AppGap.regular(),
+              const AppGap.medium(),
               ..._displayAdditional(loginType),
               FutureBuilder(
                   future: getVersion(full: true),
@@ -138,7 +138,7 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
             },
           ),
         ),
-        const AppGap.regular(),
+        const AppGap.medium(),
       ];
     } else {
       return [];

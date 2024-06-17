@@ -45,7 +45,7 @@ class DashboardNetworks extends ConsumerWidget {
                     : _desktopVertical(context, ref),
                 mobile: _mobile(context, ref),
               ),
-              const AppGap.semiBig(),
+              const AppGap.large1(),
               // ...state.nodes.mapIndexed((index, e) => _nodeCard(context, ref, e)),
               SizedBox(
                 height: state.nodes.length * 86,
@@ -72,27 +72,9 @@ class DashboardNetworks extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppText.titleSmall(loc(context).myNetwork),
-        const AppGap.regular(),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            AppText.bodySmall(
-              newFirmware
-                  ? loc(context).newFirmwareAvailable
-                  : loc(context).upToDate,
-            ),
-            newFirmware
-                ? Icon(
-                    LinksysIcons.error,
-                    color: Theme.of(context).colorScheme.error,
-                  )
-                : Icon(
-                    LinksysIcons.check,
-                    color: Theme.of(context).colorSchemeExt.green,
-                  )
-          ],
-        ),
-        const AppGap.semiBig(),
+        const AppGap.medium(),
+        _firmwareStatusWidget(context, newFirmware),
+        const AppGap.large1(),
         Row(
           children: [
             Expanded(
@@ -124,30 +106,11 @@ class DashboardNetworks extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               AppText.titleSmall(loc(context).myNetwork),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  AppText.bodySmall(
-                    newFirmware
-                        ? loc(context).newFirmwareAvailable
-                        : loc(context).upToDate,
-                  ),
-                  newFirmware
-                      ? Icon(
-                          LinksysIcons.error,
-                          color: Theme.of(context).colorScheme.error,
-                        )
-                      : Icon(
-                          LinksysIcons.check,
-                          color: Theme.of(context).colorSchemeExt.green,
-                        )
-                ],
-              ),
+              _firmwareStatusWidget(context, newFirmware),
             ],
           ),
         ),
-        const AppGap.regular(),
+        const AppGap.medium(),
         Expanded(
           child: Row(
             children: [
@@ -181,28 +144,10 @@ class DashboardNetworks extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             AppText.titleSmall(loc(context).myNetwork),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                AppText.bodySmall(
-                  newFirmware
-                      ? loc(context).newFirmwareAvailable
-                      : loc(context).upToDate,
-                ),
-                newFirmware
-                    ? Icon(
-                        LinksysIcons.error,
-                        color: Theme.of(context).colorScheme.error,
-                      )
-                    : Icon(
-                        LinksysIcons.check,
-                        color: Theme.of(context).colorSchemeExt.green,
-                      )
-              ],
-            ),
+            _firmwareStatusWidget(context, newFirmware),
           ],
         ),
-        const AppGap.regular(),
+        const AppGap.medium(),
         Row(
           children: [
             Expanded(
@@ -229,6 +174,40 @@ class DashboardNetworks extends ConsumerWidget {
         ref.watch(firmwareUpdateProvider.select((value) => value.nodesStatus));
     return nodesStatus?.any((element) => element.availableUpdate != null) ??
         false;
+  }
+
+  Widget _firmwareStatusWidget(BuildContext context, bool newFirmware) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        newFirmware
+            ? AppText.bodySmall(
+                loc(context).newFirmwareAvailable,
+              )
+            : _firmwareUpdateToDateWidget(context),
+        newFirmware
+            ? Icon(
+                LinksysIcons.error,
+                color: Theme.of(context).colorScheme.error,
+              )
+            : Icon(
+                LinksysIcons.check,
+                color: Theme.of(context).colorSchemeExt.green,
+              )
+      ],
+    );
+  }
+
+  Widget _firmwareUpdateToDateWidget(BuildContext context) {
+    return AppStyledText(loc(context).dashboardFirmwareUpdateToDate,
+        styleTags: {
+          'span': Theme.of(context)
+              .textTheme
+              .bodySmall!
+              .copyWith(color: Theme.of(context).colorSchemeExt.green)
+        },
+        defaultTextStyle: Theme.of(context).textTheme.bodySmall,
+        callbackTags: const {});
   }
 
   Widget _nodeCard(BuildContext context, WidgetRef ref, LinksysDevice node) {
@@ -284,7 +263,6 @@ class DashboardNetworks extends ConsumerWidget {
   Widget _nodesInfoTile(
       BuildContext context, WidgetRef ref, DashboardHomeState state) {
     return _infoTile(
-      isHorizontal: state.isHorizontalLayout,
       iconData: LinksysIcons.networkNode,
       text: state.nodes.length == 1 ? loc(context).node : loc(context).nodes,
       count: state.nodes.length,
@@ -309,7 +287,6 @@ class DashboardNetworks extends ConsumerWidget {
         (previousValue, element) =>
             previousValue += element.numOfConnectedDevices);
     return _infoTile(
-      isHorizontal: state.isHorizontalLayout,
       text: count == 1 ? loc(context).device : loc(context).devices,
       count: count,
       iconData: LinksysIcons.devices,
@@ -323,45 +300,31 @@ class DashboardNetworks extends ConsumerWidget {
     required String text,
     required int count,
     required IconData iconData,
-    bool isHorizontal = false,
     Widget? sub,
     VoidCallback? onTap,
   }) {
     return AppCard(
       onTap: onTap,
-      child: isHorizontal
-          ? Column(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    AppText.titleSmall('$count'),
-                    Icon(
-                      iconData,
-                      size: 20,
-                    ),
-                    if (sub != null) sub,
-                  ],
-                ),
-                AppText.titleSmall(text),
-              ],
-            )
-          : Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  iconData,
-                  size: 20,
-                ),
-                const AppGap.regular(),
-                AppText.titleSmall('$count'),
-                const AppGap.regular(),
-                AppText.titleSmall(text),
-              ],
-            ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              AppText.titleSmall('$count'),
+              Icon(
+                iconData,
+                size: 20,
+              ),
+              if (sub != null) sub,
+            ],
+          ),
+          const AppGap.medium(),
+          AppText.titleSmall(text),
+        ],
+      ),
     );
   }
 }

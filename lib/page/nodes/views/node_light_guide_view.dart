@@ -7,7 +7,7 @@ import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/page/nodes/_nodes.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/theme/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 class NodeLightGuideView extends ConsumerWidget {
@@ -77,14 +77,14 @@ class NodeLightGuideView extends ConsumerWidget {
             ],
           ),
         ),
-        const AppGap.regular(),
+        const AppGap.medium(),
         _buildInfoCard(
           context,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Padding(
-                padding: EdgeInsets.symmetric(horizontal: Spacing.regular),
+                padding: EdgeInsets.symmetric(horizontal: Spacing.medium),
                 child: AppText.bodyLarge('During setup'),
               ),
               _buildLightInfo(
@@ -140,14 +140,14 @@ class NodeLightGuideView extends ConsumerWidget {
             ],
           ),
         ),
-        const AppGap.regular(),
+        const AppGap.medium(),
         _buildInfoCard(
           context,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Padding(
-                padding: EdgeInsets.symmetric(horizontal: Spacing.regular),
+                padding: EdgeInsets.symmetric(horizontal: Spacing.medium),
                 child: AppText.bodyLarge('During setup'),
               ),
               _buildLightInfo(
@@ -178,7 +178,7 @@ class NodeLightGuideView extends ConsumerWidget {
   }) {
     return Card(
       child:
-          Padding(padding: const EdgeInsets.all(Spacing.regular), child: child),
+          Padding(padding: const EdgeInsets.all(Spacing.medium), child: child),
     );
   }
 
@@ -188,20 +188,20 @@ class NodeLightGuideView extends ConsumerWidget {
     required String desc,
   }) {
     return Padding(
-      padding: const EdgeInsets.all(Spacing.regular),
+      padding: const EdgeInsets.all(Spacing.medium),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SvgPicture(led),
-          const AppGap.semiSmall(),
+          const AppGap.small2(),
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 AppText.bodyLarge(title),
-                const AppGap.small(),
+                const AppGap.small3(),
                 AppText.bodyMedium(
                   desc,
                   maxLines: 5,

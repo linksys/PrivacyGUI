@@ -112,7 +112,7 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                       ? Column(
                           children: [
                             _sourceIPWidget(state),
-                            const AppGap.big(),
+                            const AppGap.large2(),
                             _destinationIPWidget(state)
                           ],
                         )
@@ -120,7 +120,7 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Expanded(child: _sourceIPWidget(state)),
-                            const AppGap.big(),
+                            const AppGap.large2(),
                             Expanded(child: _destinationIPWidget(state))
                           ],
                         )),
@@ -312,7 +312,7 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
               }
             },
           ),
-          const AppGap.regular(),
+          const AppGap.medium(),
           AppTextButton(
             loc(context).dmzViewDHCP,
             onTap: () async {

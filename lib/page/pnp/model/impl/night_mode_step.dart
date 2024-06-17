@@ -74,9 +74,9 @@ class NightModeStep extends PnpStep {
                 });
               },
             ),
-            const AppGap.big(),
+            const AppGap.large2(),
             AppText.bodyLarge(desc),
-            const AppGap.regular(),
+            const AppGap.medium(),
           ],
         ),
       );

@@ -20,7 +20,28 @@ void main() {
     mockAuthNotifier = MockAuthNotifier();
   });
 
-  testWidgets('Test Dashboard Menu', (tester) async {
+  testResponsiveWidgets('Test Dashboard Menu item count on one column',
+      variants: ValueVariant({device480w}), (tester) async {
+    final provider = ProviderContainer();
+    await tester.pumpWidget(
+      testableWidget(
+        overrides: [authProvider.overrideWith(() => mockAuthNotifier)],
+        parent: provider,
+        child: const DashboardMenuView(),
+      ),
+    );
+    mockAuthNotifier.state =
+        const AsyncData(AuthState(loginType: LoginType.remote));
+
+    await tester.pumpAndSettle();
+
+    final titleFinder = find.text('Menu');
+    expect(titleFinder, findsOneWidget);
+    final menuCardFinder = find.byType(AppMenuCard);
+    expect(menuCardFinder, findsNWidgets(4));
+  });
+  testResponsiveWidgets('Test Dashboard Menu item count on multi column',
+      variants: ValueVariant({device1440w}), (tester) async {
     final provider = ProviderContainer();
     await tester.pumpWidget(
       testableWidget(
@@ -39,7 +60,6 @@ void main() {
     final menuCardFinder = find.byType(AppMenuCard);
     expect(menuCardFinder, findsNWidgets(8));
   });
-
   testResponsiveWidgets(
     'Test menu responsive layout with mobile size variants',
     variants: responsiveMobileVariants,
@@ -96,7 +116,7 @@ void main() {
   // );
 
   testResponsiveWidgets(
-    'Test menu responsive layout with mobile size variants has two column',
+    'Test menu responsive layout with mobile size variants has one column',
     variants: ValueVariant({device480w}),
     (tester) async {
       await tester.pumpWidget(
@@ -109,7 +129,7 @@ void main() {
       final gridView = tester.widget<GridView>(gridViewFinder);
       final gridDelegte =
           gridView.gridDelegate as SliverGridDelegateWithFixedCrossAxisCount;
-      expect(gridDelegte.crossAxisCount, 2);
+      expect(gridDelegte.crossAxisCount, 1);
     },
   );
 

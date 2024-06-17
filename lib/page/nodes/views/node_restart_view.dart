@@ -34,22 +34,22 @@ class _NodeRestartViewState extends ConsumerState<NodeRestartView> {
         Image.asset(
           'assets/images/image_restart_disconnect.png',
         ),
-        const AppGap.big(),
+        const AppGap.large2(),
         const AppText.bodyLarge(
           'Restarting will temporarily disconnect devices',
         ),
-        const AppGap.regular(),
+        const AppGap.medium(),
         const AppText.bodyLarge(
           'They will reconnect when your network is ready.',
         ),
-        const AppGap.big(),
+        const AppGap.large2(),
         AppFilledButton(
           'Restart',
           onTap: () {
             //TODO: Reboot request
           },
         ),
-        const AppGap.regular(),
+        const AppGap.medium(),
         AppTextButton(
           getAppLocalizations(context).cancel,
           onTap: () => context.pop(),
@@ -62,11 +62,11 @@ class _NodeRestartViewState extends ConsumerState<NodeRestartView> {
     return const Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppGap.extraBig(),
+        AppGap.large3(),
         AppText.displayLarge(
           'Restarting your network...',
         ),
-        AppGap.extraBig(),
+        AppGap.large3(),
         IndeterminateProgressBar(),
       ],
     );

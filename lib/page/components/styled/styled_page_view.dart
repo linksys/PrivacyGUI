@@ -158,10 +158,9 @@ class StyledAppPageView extends ConsumerWidget {
                   AppCard(
                     child: _createMenuWidget(context, 200),
                   ),
-                  const AppGap.regular(),
+                  const AppGap.medium(),
                 ],
-                Expanded(
-                    child: child),
+                Expanded(child: child),
               ],
             ),
           ),
@@ -252,7 +251,7 @@ class StyledAppPageView extends ConsumerWidget {
                                     : null,
                               ),
                             ),
-                            const AppGap.regular(),
+                            const AppGap.medium(),
                           ],
                           Expanded(
                             child: AppFilledButton.fillWidth(
@@ -276,7 +275,7 @@ class StyledAppPageView extends ConsumerWidget {
                                     }
                                   : null,
                             ),
-                            const AppGap.regular(),
+                            const AppGap.medium(),
                           ],
                           AppFilledButton(
                             bottomBar?.positiveLabel ?? loc(context).save,
@@ -325,7 +324,7 @@ class StyledAppPageView extends ConsumerWidget {
                     left: 24.0, right: 24.0, top: 24.0, bottom: 0.0),
                 child: AppText.titleSmall(menu?.title ?? ''),
               ),
-              const AppGap.regular(),
+              const AppGap.medium(),
               ...(menu?.items ?? []).map((e) => ListTile(
                     shape: const RoundedRectangleBorder(
                         borderRadius: BorderRadius.all(Radius.circular(100))),

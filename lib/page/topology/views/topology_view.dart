@@ -235,7 +235,7 @@ class _TopologyViewState extends ConsumerState<TopologyView> {
                             loc(context).modalOfflineNodeCheckTitle1),
                         AppText.bodyMedium(
                             loc(context).modalOfflineNodeCheckDesc1),
-                        const AppGap.regular(),
+                        const AppGap.medium(),
                         AppTextButton.noPadding(
                           loc(context).modalOfflineNodeGoToNightMode,
                           onTap: () {
@@ -274,7 +274,7 @@ class _TopologyViewState extends ConsumerState<TopologyView> {
                     },
                   ),
                 ),
-                const AppGap.regular(),
+                const AppGap.medium(),
                 Align(
                   alignment: Alignment.centerRight,
                   child: AppTextButton(
@@ -360,7 +360,7 @@ class _TopologyViewState extends ConsumerState<TopologyView> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 AppText.bodyMedium(loc(context).modalMoveChildNodesDesc),
-                const AppGap.semiBig(),
+                const AppGap.large1(),
                 SvgPicture(CustomTheme.of(context).images.imgMoveNodes),
               ],
             ),

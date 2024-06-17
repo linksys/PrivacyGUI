@@ -75,7 +75,7 @@ class PersonalWiFiStep extends PnpStep {
               _check(ref);
             },
           ),
-          const AppGap.regular(),
+          const AppGap.medium(),
           WiFiPasswordField(
             controller: _passwordEditController,
             label: loc(context).wifiPassword,
@@ -93,7 +93,7 @@ class PersonalWiFiStep extends PnpStep {
               _check(ref);
             },
           ),
-          const AppGap.extraBig(),
+          const AppGap.large3(),
           Row(
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -113,7 +113,7 @@ class PersonalWiFiStep extends PnpStep {
               )
             ],
           ),
-          const AppGap.extraBig(),
+          const AppGap.large3(),
         ],
       );
 
@@ -159,13 +159,13 @@ class PersonalWiFiStep extends PnpStep {
                 children: [
                   AppText.bodyMedium(
                       loc(context).modalPnpWiFiDefaultsInfoDesc1),
-                  const AppGap.regular(),
+                  const AppGap.medium(),
                   AppText.bodyMedium(
                       loc(context).modalPnpWiFiDefaultsInfoDesc2),
-                  const AppGap.regular(),
+                  const AppGap.medium(),
                   AppText.bodyMedium(
                       loc(context).modalPnpWiFiDefaultsInfoDesc3),
-                  const AppGap.regular(),
+                  const AppGap.medium(),
                   AppText.bodyMedium(
                       loc(context).modalPnpWiFiDefaultsInfoDesc4),
                 ],

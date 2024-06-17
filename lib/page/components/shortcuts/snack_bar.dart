@@ -32,7 +32,7 @@ showSimpleSnackBar(
       children: [
         if (icon != null) ...[
           icon,
-          const AppGap.regular(),
+          const AppGap.medium(),
         ],
         AppText.labelMedium(
           message,

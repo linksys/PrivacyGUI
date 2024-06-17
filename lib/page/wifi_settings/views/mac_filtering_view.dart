@@ -113,7 +113,7 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView> {
                       },
                     ),
                   ),
-                  const AppGap.semiBig(),
+                  const AppGap.large1(),
                   ..._buildEnabledContent(state)
                 ],
               ),
@@ -133,7 +133,7 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView> {
                     AppText.labelLarge(state.mode == MacFilterMode.allow
                         ? loc(context).allow
                         : loc(context).deny),
-                    const AppGap.regular(),
+                    const AppGap.medium(),
                     const Icon(LinksysIcons.chevronRight)
                   ],
                 ),
@@ -147,7 +147,7 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   AppText.labelLarge('${state.macAddresses.length}'),
-                  const AppGap.regular(),
+                  const AppGap.medium(),
                   const Icon(LinksysIcons.chevronRight)
                 ],
               ),

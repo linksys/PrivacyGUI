@@ -123,7 +123,7 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
   Widget _ddnsProvideSelector(DDNSState state) => Row(
         children: [
           const AppText.headlineSmall('Select a provider:'),
-          const AppGap.regular(),
+          const AppGap.medium(),
           AppDropdownMenu<String>(
             initial: _selected,
             items: state.supportedProvider,
@@ -207,9 +207,9 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               AppText.labelMedium('Internet IP address: ${state.ipAddress}'),
-              const AppGap.regular(),
+              const AppGap.medium(),
               AppText.labelMedium('Status: ${state.status}'),
-              const AppGap.big(),
+              const AppGap.large2(),
               AppFilledButton(
                 'Update',
                 onTap: () {

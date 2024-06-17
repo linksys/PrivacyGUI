@@ -7,7 +7,7 @@ import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/otp_flow/providers/_providers.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacygui_widgets/theme/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
@@ -54,8 +54,8 @@ class _OTPMethodSelectorViewState extends ConsumerState<OTPMethodSelectorView> {
                           ? 'otp_method_selector_view_button_email'
                           : 'otp_method_selector_view_button_sms'),
                       child: Padding(
-                        padding:
-                            const EdgeInsets.symmetric(vertical: Spacing.small),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: Spacing.small1),
                         child: AppPanelWithValueCheck(
                           title: state.methods[index].method ==
                                   CommunicationMethodType.email.name
@@ -73,7 +73,7 @@ class _OTPMethodSelectorViewState extends ConsumerState<OTPMethodSelectorView> {
                             .selectOtpMethod(state.methods[index]);
                       },
                     )),
-            const AppGap.extraBig(),
+            const AppGap.large3(),
             AppFilledButton.fillWidth(
               key: const Key('otp_method_selector_view_button_continue'),
               loc(context).textContinue,

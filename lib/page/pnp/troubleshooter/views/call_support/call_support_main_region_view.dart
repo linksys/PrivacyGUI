@@ -7,7 +7,7 @@ import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/theme/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
@@ -160,8 +160,8 @@ class CallSupportMainRegionView extends ArgumentsConsumerStatelessView {
     return GridView.builder(
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        mainAxisSpacing: Spacing.semiSmall,
-        crossAxisSpacing: Spacing.semiBig,
+        mainAxisSpacing: Spacing.small2,
+        crossAxisSpacing: Spacing.large1,
         childAspectRatio: 5.8,
       ),
       itemCount: getMainRegions().length,
@@ -237,7 +237,7 @@ class CallSupportMainRegionView extends ArgumentsConsumerStatelessView {
                     size: 24,
                     color: Theme.of(context).colorScheme.primary,
                   ),
-                  const AppGap.regular(),
+                  const AppGap.medium(),
                   Flexible(
                     child: AppText.titleLarge(
                       number,
@@ -250,14 +250,14 @@ class CallSupportMainRegionView extends ArgumentsConsumerStatelessView {
               Padding(
                 padding: const EdgeInsets.only(
                   left: 40,
-                  top: Spacing.semiSmall,
+                  top: Spacing.small2,
                 ),
                 child: AppText.bodyMedium(
                     loc(context).callSupportDetailTwentyFourSeven),
               ),
             ],
           ),
-          const AppGap.extraBig(),
+          const AppGap.large3(),
           AppText.bodyLarge(loc(context).callSupportDetailDesc),
           AppText.bodyLarge(loc(context).callSupportDetailDesc2),
         ],

@@ -7,7 +7,6 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/page/account/_account.dart';
 import 'package:privacy_gui/page/administration/dmz/views/dmz_settings_view.dart';
 import 'package:privacy_gui/page/administration/firewall/_firewall.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/_internet_settings.dart';

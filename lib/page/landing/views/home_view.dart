@@ -10,7 +10,7 @@ import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/theme/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
@@ -77,7 +77,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
           }
         },
       ),
-      const AppGap.small(),
+      const AppGap.small3(),
       if (!kIsWeb)
         AppFilledButton.fillWidth(
           'Local Log in',
@@ -126,7 +126,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
   List<Widget> showDebugButton() {
     if (_isOpenDebug) {
       return [
-        const AppGap.semiBig(),
+        const AppGap.large1(),
         AppTextButton(
           'Debug Tools',
           onTap: () {
@@ -147,7 +147,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
       return isLoading
           ? AppFullScreenSpinner(text: getAppLocalizations(context).processing)
           : Padding(
-              padding: const EdgeInsets.all(Spacing.regular),
+              padding: const EdgeInsets.all(Spacing.medium),
               child: Column(
                 children: [
                   ListView.builder(
@@ -157,7 +157,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
                       itemBuilder: (context, index) => InkWell(
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: Spacing.regular),
+                                  horizontal: Spacing.medium),
                               child: AppPanelWithValueCheck(
                                 title: CloudEnvironment.values[index].name,
                                 valueText: '',
@@ -188,7 +188,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
                       Navigator.pop(context, cloudEnvTarget);
                     },
                   ),
-                  const AppGap.regular(),
+                  const AppGap.medium(),
                 ],
               ),
             );

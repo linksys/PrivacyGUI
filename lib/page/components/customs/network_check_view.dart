@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_provider.dart';
 import 'package:privacy_gui/util/permission.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/base/gap.dart';
+import 'package:privacygui_widgets/widgets/gap/gap.dart';
 import 'package:privacygui_widgets/widgets/text/app_text.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -54,9 +54,9 @@ class _NetworkCheckViewState extends ConsumerState<NetworkCheckView>
         AppText.titleLarge(
           widget.description,
         ),
-        const AppGap.regular(),
+        const AppGap.medium(),
         const Icon(LinksysIcons.wifi),
-        const AppGap.semiSmall(),
+        const AppGap.small2(),
         AppText.bodyLarge(
           state.connectivityInfo.ssid ?? '',
         ),

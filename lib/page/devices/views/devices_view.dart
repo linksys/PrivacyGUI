@@ -13,7 +13,7 @@ import 'package:privacy_gui/page/devices/views/device_list_widget.dart';
 import 'package:privacy_gui/page/devices/views/devices_filter_widget.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/theme/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/device_list_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
@@ -68,7 +68,7 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
             child: AppBasicLayout(
               header: Padding(
                   padding: const EdgeInsets.only(
-                      left: Spacing.semiSmall, bottom: Spacing.regular),
+                      left: Spacing.small2, bottom: Spacing.medium),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.start,
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -81,7 +81,7 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
                             _buildEditWidget(filteredDeviceList),
                         ],
                       ),
-                      // const AppGap.regular(),
+                      // const AppGap.medium(),
                       // Wrap(
                       //   spacing: 16,
                       //   children: filteredChips
