@@ -130,7 +130,9 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    AppText.labelLarge(state.mode.name),
+                    AppText.labelLarge(state.mode == MacFilterMode.allow
+                        ? loc(context).allow
+                        : loc(context).deny),
                     const AppGap.regular(),
                     const Icon(LinksysIcons.chevronRight)
                   ],

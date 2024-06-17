@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -67,8 +68,10 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
 
     return MaterialApp.router(
       onGenerateTitle: (context) => loc(context).appTitle,
-      theme: linksysLightThemeData,
-      darkTheme: linksysDarkThemeData,
+      theme: linksysLightThemeData.copyWith(
+          pageTransitionsTheme: pageTransitionsTheme),
+      darkTheme: linksysDarkThemeData.copyWith(
+          pageTransitionsTheme: pageTransitionsTheme),
       themeMode: appSettings.themeMode,
       locale: appSettings.locale ?? systemLocale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -136,5 +139,31 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
         _currentRoute = null;
       }
     });
+  }
+
+  PageTransitionsTheme? get pageTransitionsTheme => kIsWeb
+      ? PageTransitionsTheme(
+          builders: {
+            // No animations for every OS if the app running on the web
+            for (final platform in TargetPlatform.values)
+              platform: const NoTransitionsBuilder(),
+          },
+        )
+      : null;
+}
+
+class NoTransitionsBuilder extends PageTransitionsBuilder {
+  const NoTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T>? route,
+    BuildContext? context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget? child,
+  ) {
+    // only return the child without warping it with animations
+    return child!;
   }
 }

@@ -118,9 +118,8 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
       );
       nodeDeviceInfo = NodeDeviceInfo.fromJson(result.output);
     }
-    // Build/Update better actions
-    buildBetterActions(nodeDeviceInfo.services);
     benchMark.end();
+    state = state.copyWith(deviceInfo: nodeDeviceInfo);
     return nodeDeviceInfo;
   }
 

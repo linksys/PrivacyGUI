@@ -667,8 +667,10 @@ String _iconMapping(String iconClass, {String? fallback}) {
       return 'routerWhw01b';
     //
     case 'routerLn11':
+    case 'routerLn15':
       return 'routerLn11';
     case 'routerLn12':
+    case 'routerLn16':
       return 'routerLn12';
     default:
       // do router check

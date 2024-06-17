@@ -35,6 +35,7 @@ class DashboardSupportView extends ArgumentsConsumerStatelessView {
                 context.pushNamed(RouteNamed.faqList);
               },
             ),
+            const AppGap.small(),
             SupportOptionCard(
               icon: const Icon(LinksysIcons.supportAgent),
               title: loc(context).dashboardSupportCallbackTitle,
@@ -43,6 +44,7 @@ class DashboardSupportView extends ArgumentsConsumerStatelessView {
                 context.pushNamed(RouteNamed.callbackDescription);
               },
             ),
+            const AppGap.small(),
             SupportOptionCard(
               icon: const Icon(LinksysIcons.call),
               title: loc(context).dashboardSupportCallSupportTitle,
@@ -77,7 +79,7 @@ class SupportOptionCard extends StatelessWidget {
     return AppCard(
       onTap: tapAction,
       child: SizedBox(
-        height: 130,
+        width: 430,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,

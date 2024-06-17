@@ -150,37 +150,51 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
             ],
           ),
           const AppGap.regular(),
-          AppSettingCard(
-            title: loc(context).wifiName,
-            description: mainRadio.ssid,
-            trailing: const Icon(LinksysIcons.edit),
-            onTap: () {
-              _showWiFiNameModal(mainRadio.ssid, (value) {
-                ref.read(wifiListProvider.notifier).setWiFiSSID(value, null);
-              });
-            },
-          ),
-          AppListCard(
-            title: AppText.bodyLarge(loc(context).wifiPassword),
-            description: IntrinsicWidth(
-                child: Theme(
-                    data: Theme.of(context).copyWith(
-                        inputDecorationTheme: const InputDecorationTheme(
-                            isDense: true, contentPadding: EdgeInsets.zero)),
-                    child: AppPasswordField(
-                      readOnly: true,
-                      border: InputBorder.none,
-                      controller: _simplePasswordController,
-                      suffixIconConstraints: const BoxConstraints(),
-                    ))),
-            trailing: const Icon(LinksysIcons.edit),
-            onTap: () {
-              _showWifiPasswordModal(mainRadio.password, (value) {
-                ref
-                    .read(wifiListProvider.notifier)
-                    .setWiFiPassword(value, null);
-              });
-            },
+          AppCard(
+            child: Column(
+              children: [
+                AppSettingCard(
+                  showBorder: false,
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  title: loc(context).wifiName,
+                  description: mainRadio.ssid,
+                  trailing: const Icon(LinksysIcons.edit),
+                  onTap: () {
+                    _showWiFiNameModal(mainRadio.ssid, (value) {
+                      ref
+                          .read(wifiListProvider.notifier)
+                          .setWiFiSSID(value, null);
+                    });
+                  },
+                ),
+                const Divider(),
+                AppListCard(
+                  showBorder: false,
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  title: AppText.bodyMedium(loc(context).wifiPassword),
+                  description: IntrinsicWidth(
+                      child: Theme(
+                          data: Theme.of(context).copyWith(
+                              inputDecorationTheme: const InputDecorationTheme(
+                                  isDense: true,
+                                  contentPadding: EdgeInsets.zero)),
+                          child: AppPasswordField(
+                            readOnly: true,
+                            border: InputBorder.none,
+                            controller: _simplePasswordController,
+                            suffixIconConstraints: const BoxConstraints(),
+                          ))),
+                  trailing: const Icon(LinksysIcons.edit),
+                  onTap: () {
+                    _showWifiPasswordModal(mainRadio.password, (value) {
+                      ref
+                          .read(wifiListProvider.notifier)
+                          .setWiFiPassword(value, null);
+                    });
+                  },
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -223,26 +237,27 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppCard(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 24),
             child: Column(
-          children: [
-            _advancedWiFiBandCard(radio),
-            const Divider(),
-            _advancedWiFiNameCard(radio),
-            const Divider(),
-            _advancedWiFiPasswordCard(radio),
-            const Divider(),
-            _advancedWiFiSecurityTypeCard(radio),
-            const Divider(),
-            _advanvedWiFiWirelessModeCard(radio),
-            const Divider(),
-            _advancedWiFiBoradcastCard(radio),
-            const Divider(),
-            _advancedWiFiChannelWidthCard(radio),
-            const Divider(),
-            _advancedWiFiChannelCard(radio),
-          ],
-        )),
-        const AppGap.big(),
+              children: [
+                _advancedWiFiBandCard(radio),
+                const Divider(),
+                _advancedWiFiNameCard(radio),
+                const Divider(),
+                _advancedWiFiPasswordCard(radio),
+                const Divider(),
+                _advancedWiFiSecurityTypeCard(radio),
+                const Divider(),
+                _advanvedWiFiWirelessModeCard(radio),
+                const Divider(),
+                _advancedWiFiBoradcastCard(radio),
+                const Divider(),
+                _advancedWiFiChannelWidthCard(radio),
+                const Divider(),
+                _advancedWiFiChannelCard(radio),
+              ],
+            )),
+        const AppGap.regular(),
       ],
     );
   }
@@ -252,7 +267,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
   ///
   Widget _advancedWiFiBandCard(WiFiItem radio) => AppListCard(
         showBorder: false,
-        padding: EdgeInsets.zero,
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
         title:
             AppText.labelLarge(getWifiRadioBandTitle(context, radio.radioID)),
         trailing: AppSwitch(
@@ -267,7 +282,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
   Widget _advancedWiFiNameCard(WiFiItem radio) => AppSettingCard.noBorder(
         title: loc(context).wifiName,
         description: radio.ssid,
-        padding: EdgeInsets.zero,
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
         trailing: const Icon(LinksysIcons.edit),
         onTap: () {
           _showWiFiNameModal(radio.ssid, (value) {
@@ -280,8 +295,8 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
 
   Widget _advancedWiFiPasswordCard(WiFiItem radio) => AppListCard(
         showBorder: false,
-        padding: EdgeInsets.zero,
-        title: AppText.bodyLarge(loc(context).wifiPassword),
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        title: AppText.bodyMedium(loc(context).wifiPassword),
         description: IntrinsicWidth(
             child: Theme(
                 data: Theme.of(context).copyWith(
@@ -308,7 +323,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
       AppSettingCard.noBorder(
         title: loc(context).securityMode,
         description: getWifiSecurityTypeTitle(context, radio.securityType),
-        padding: EdgeInsets.zero,
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
         trailing: const Icon(LinksysIcons.edit),
         onTap: () {
           _showSecurityModeModal(
@@ -328,7 +343,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
           radio.wirelessMode,
           radio.defaultMixedMode,
         ),
-        padding: EdgeInsets.zero,
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
         trailing: const Icon(LinksysIcons.edit),
         onTap: () {
           _showWirelessWiFiModeModal(radio.wirelessMode, radio.defaultMixedMode,
@@ -339,7 +354,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
   Widget _advancedWiFiBoradcastCard(WiFiItem radio) => AppListCard(
         showBorder: false,
         title: AppText.labelLarge(loc(context).broadcastSSID),
-        padding: EdgeInsets.zero,
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
         trailing: AppSwitch(
           value: radio.isBroadcast,
           onChanged: (value) {
@@ -356,7 +371,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
           context,
           radio.channelWidth,
         ),
-        padding: EdgeInsets.zero,
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
         trailing: const Icon(LinksysIcons.edit),
         onTap: () {
           _showChannelWidthModal(
@@ -377,7 +392,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
           radio.channel,
           radio.radioID,
         ),
-        padding: EdgeInsets.zero,
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
         trailing: const Icon(LinksysIcons.edit),
         onTap: () {
           _showChannelModal(

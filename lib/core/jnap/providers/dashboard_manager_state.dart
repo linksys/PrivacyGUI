@@ -2,12 +2,14 @@
 import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/core/jnap/models/device_info.dart';
 
 import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
 import 'package:privacy_gui/core/jnap/models/health_check_result.dart';
 import 'package:privacy_gui/core/jnap/models/radio_info.dart';
 
 class DashboardManagerState extends Equatable {
+  final NodeDeviceInfo? deviceInfo;
   final List<RouterRadio> mainRadios;
   final List<GuestRadioInfo> guestRadios;
   final bool isGuestNetworkEnabled;
@@ -18,6 +20,7 @@ class DashboardManagerState extends Equatable {
   final List<String> lanConnections;
 
   const DashboardManagerState({
+    this.deviceInfo,
     this.mainRadios = const [],
     this.guestRadios = const [],
     this.isGuestNetworkEnabled = false,
@@ -31,6 +34,7 @@ class DashboardManagerState extends Equatable {
   @override
   List<Object?> get props {
     return [
+      deviceInfo,
       mainRadios,
       guestRadios,
       isGuestNetworkEnabled,
@@ -43,6 +47,7 @@ class DashboardManagerState extends Equatable {
   }
 
   DashboardManagerState copyWith({
+    NodeDeviceInfo? deviceInfo,
     List<RouterRadio>? mainRadios,
     List<GuestRadioInfo>? guestRadios,
     bool? isGuestNetworkEnabled,
@@ -53,6 +58,7 @@ class DashboardManagerState extends Equatable {
     List<String>? lanConnections,
   }) {
     return DashboardManagerState(
+      deviceInfo: deviceInfo ?? this.deviceInfo,
       mainRadios: mainRadios ?? this.mainRadios,
       guestRadios: guestRadios ?? this.guestRadios,
       isGuestNetworkEnabled:
@@ -67,6 +73,7 @@ class DashboardManagerState extends Equatable {
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
+      'deviceInfo': deviceInfo?.toJson(),
       'mainRadios': mainRadios.map((x) => x.toMap()).toList(),
       'guestRadios': guestRadios.map((x) => x.toMap()).toList(),
       'isGuestNetworkEnabled': isGuestNetworkEnabled,
@@ -75,18 +82,21 @@ class DashboardManagerState extends Equatable {
       'uptimes': uptimes,
       'wanConnection': wanConnection,
       'lanConnections': lanConnections,
-    };
+    }..removeWhere((key, value) => value == null);
   }
 
   factory DashboardManagerState.fromMap(Map<String, dynamic> map) {
     return DashboardManagerState(
+        deviceInfo: map['deviceInfo'] != null
+            ? NodeDeviceInfo.fromJson(map['deviceInfo'])
+            : null,
         mainRadios: List<RouterRadio>.from(
-          (map['mainRadios'] as List<int>).map<RouterRadio>(
+          map['mainRadios'].map<RouterRadio>(
             (x) => RouterRadio.fromMap(x as Map<String, dynamic>),
           ),
         ),
         guestRadios: List<GuestRadioInfo>.from(
-          (map['guestRadios'] as List<int>).map<GuestRadioInfo>(
+          map['guestRadios'].map<GuestRadioInfo>(
             (x) => GuestRadioInfo.fromMap(x as Map<String, dynamic>),
           ),
         ),
