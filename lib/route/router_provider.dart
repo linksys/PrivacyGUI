@@ -52,6 +52,7 @@ import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_logger.dart';
+import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import '../page/advanced_settings/local_network_settings/_local_network_settings.dart';
 import 'constants.dart';
 
