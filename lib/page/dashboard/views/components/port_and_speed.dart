@@ -77,7 +77,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                   ),
                 ),
                 const AppGap.large1(),
-                if (!isLoading && !isOnline) _troubleshooting(context),
+                // if (!isLoading && !isOnline) _troubleshooting(context),
                 _speedCheckWidget(context, ref, state),
               ],
             )),
@@ -116,7 +116,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                     ],
                   ),
                 ),
-                if (!isLoading && !isOnline) _troubleshooting(context),
+                // if (!isLoading && !isOnline) _troubleshooting(context),
                 _speedCheckWidget(context, ref, state),
               ],
             )),
@@ -159,7 +159,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                     ],
                   ),
                 ),
-                if (!isLoading && !isOnline) _troubleshooting(context),
+                // if (!isLoading && !isOnline) _troubleshooting(context),
                 _speedCheckWidget(context, ref, state),
               ],
             )),
@@ -246,7 +246,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                                     context,
                                     state.downloadResult?.value ?? '--',
                                     state.downloadResult?.unit,
-                                    MainAxisAlignment.center),
+                                    WrapAlignment.center),
                               ),
                               const AppGap.large1(),
                               Expanded(
@@ -254,7 +254,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                                     context,
                                     state.uploadResult?.value ?? '--',
                                     state.uploadResult?.unit,
-                                    MainAxisAlignment.center),
+                                    WrapAlignment.center),
                               ),
                             ],
                           ),
@@ -278,10 +278,10 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
   }
 
   Widget _downloadSpeedResult(BuildContext context, String value, String? unit,
-      [MainAxisAlignment alignment = MainAxisAlignment.start]) {
-    return Row(
-      mainAxisAlignment: alignment,
-      crossAxisAlignment: CrossAxisAlignment.end,
+      [WrapAlignment alignment = WrapAlignment.start]) {
+    return Wrap(
+      alignment: alignment,
+      crossAxisAlignment: WrapCrossAlignment.end,
       children: [
         Icon(
           LinksysIcons.arrowDownward,
@@ -294,10 +294,10 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
   }
 
   Widget _uploadSpeedResult(BuildContext context, String value, String? unit,
-      [MainAxisAlignment alignment = MainAxisAlignment.start]) {
-    return Row(
-      mainAxisAlignment: alignment,
-      crossAxisAlignment: CrossAxisAlignment.end,
+      [WrapAlignment alignment = WrapAlignment.start]) {
+    return Wrap(
+      alignment: alignment,
+      crossAxisAlignment: WrapCrossAlignment.end,
       children: [
         Icon(
           LinksysIcons.arrowUpward,

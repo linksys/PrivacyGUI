@@ -64,6 +64,17 @@ class PageBottomBar extends Equatable {
   }
 }
 
+class InversePageBottomBar extends PageBottomBar {
+  const InversePageBottomBar({
+    required super.isPositiveEnabled,
+    super.isNegitiveEnabled,
+    super.positiveLabel,
+    super.negitiveLable,
+    required super.onPositiveTap,
+    super.onNegitiveTap,
+  });
+}
+
 class PageMenu {
   final String? title;
   List<PageMenuItem> items;
@@ -141,6 +152,7 @@ class StyledAppPageView extends ConsumerWidget {
             appBar: _buildAppBar(context, ref),
             padding: padding,
             scrollable: scrollable,
+            scrollController: controller,
             bottomSheet: bottomSheet,
             bottomNavigationBar: bottomNavigationBar,
             background: Theme.of(context).colorScheme.background,
@@ -156,9 +168,9 @@ class StyledAppPageView extends ConsumerWidget {
               children: [
                 if (!ResponsiveLayout.isMobileLayout(context) && hasMenu()) ...[
                   AppCard(
-                    child: _createMenuWidget(context, 200),
+                    child: _createMenuWidget(context, 205),
                   ),
-                  const AppGap.medium(),
+                  const AppGap.small3(),
                 ],
                 Expanded(child: child),
               ],
@@ -249,6 +261,7 @@ class StyledAppPageView extends ConsumerWidget {
                                         bottomBar?.onNegitiveTap?.call();
                                       }
                                     : null,
+                                color: Theme.of(context).colorScheme.outline,
                               ),
                             ),
                             const AppGap.medium(),
@@ -261,6 +274,9 @@ class StyledAppPageView extends ConsumerWidget {
                                       bottomBar?.onPositiveTap.call();
                                     }
                                   : null,
+                              color: bottomBar is InversePageBottomBar
+                                  ? Theme.of(context).colorScheme.error
+                                  : null,
                             ),
                           ),
                         ],
@@ -268,7 +284,7 @@ class StyledAppPageView extends ConsumerWidget {
                           if (bottomBar?.isNegitiveEnabled != null) ...[
                             AppOutlinedButton(
                               bottomBar?.negitiveLable ?? loc(context).cancel,
-                              color: Theme.of(context).colorScheme.error,
+                              color: Theme.of(context).colorScheme.outline,
                               onTap: bottomBar?.isNegitiveEnabled == true
                                   ? () {
                                       bottomBar?.onNegitiveTap?.call();
@@ -283,6 +299,9 @@ class StyledAppPageView extends ConsumerWidget {
                                 ? () {
                                     bottomBar?.onPositiveTap.call();
                                   }
+                                : null,
+                            color: bottomBar is InversePageBottomBar
+                                ? Theme.of(context).colorScheme.error
                                 : null,
                           ),
                         ],

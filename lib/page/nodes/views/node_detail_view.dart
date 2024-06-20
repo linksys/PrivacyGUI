@@ -22,7 +22,6 @@ import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/card/info_card.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
@@ -122,9 +121,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
       children: [
         const AppGap.small2(),
         _avatarCard(state),
-        const AppGap.medium(),
         _detailSection(state),
-        const AppGap.medium(),
         _lightCard(state),
         const Spacer(),
       ],

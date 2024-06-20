@@ -49,10 +49,11 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
         .toList();
     if (dashboardManagerState.guestRadios.isNotEmpty) {
       wifiList.add(DashboardWiFiItem.fromGuestRadios(
-          dashboardManagerState.guestRadios,
-          deviceManagerState.guestWifiDevices
-              .where((device) => device.connections.isNotEmpty)
-              .length));
+              dashboardManagerState.guestRadios,
+              deviceManagerState.guestWifiDevices
+                  .where((device) => device.connections.isNotEmpty)
+                  .length)
+          .copyWith(isEnabled: dashboardManagerState.isGuestNetworkEnabled));
     }
     // Guest WiFi
 

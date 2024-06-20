@@ -8,6 +8,7 @@ import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
 import 'package:privacy_gui/page/dashboard/views/components/shimmer.dart';
+import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/guest_wif_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/views/wifi_share_detail_view.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -56,14 +57,14 @@ class DashboardWiFiGrid extends ConsumerWidget {
                   height: itemHeight,
                   child: item == null
                       ? Container()
-                      : _wifiCard(context, ref, item)));
+                      : _wifiCard(context, ref, item, index)));
         },
       ),
     );
   }
 
   Widget _wifiCard(
-      BuildContext context, WidgetRef ref, DashboardWiFiItem item) {
+      BuildContext context, WidgetRef ref, DashboardWiFiItem item, int index) {
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -81,25 +82,36 @@ class DashboardWiFiGrid extends ConsumerWidget {
                               .map((e) => e.replaceAll('RADIO_', ''))
                               .join('/'),
                     ),
-                    if (item.isGuest)
-                      AppSwitch(
-                        value: item.isEnabled,
-                        onChanged: (value) async {
-                          if (item.isGuest) {
-                            showSpinnerDialog(context);
-                            final guestWiFiProvider =
-                                ref.read(guestWifiProvider.notifier);
-                            await guestWiFiProvider.fetch();
-                            guestWiFiProvider.setEnable(value);
-                            await guestWiFiProvider
-                                .save()
-                                .then((value) => ref
-                                    .read(pollingProvider.notifier)
-                                    .forcePolling())
-                                .then((value) => context.pop());
-                          }
-                        },
-                      ),
+                    AppSwitch(
+                      value: item.isEnabled,
+                      onChanged: (value) async {
+                        if (item.isGuest) {
+                          showSpinnerDialog(context);
+                          final guestWiFiProvider =
+                              ref.read(guestWifiProvider.notifier);
+                          await guestWiFiProvider.fetch();
+                          guestWiFiProvider.setEnable(value);
+                          await guestWiFiProvider
+                              .save()
+                              .then((value) => ref
+                                  .read(pollingProvider.notifier)
+                                  .forcePolling())
+                              .then((value) => context.pop());
+                        } else {
+                          showSpinnerDialog(context);
+                          final wifiProvider =
+                              ref.read(wifiListProvider.notifier);
+                          await wifiProvider.fetch();
+                          await wifiProvider
+                              .saveToggleEnabled(
+                                  radios: item.radios, enabled: value)
+                              .then((value) => ref
+                                  .read(pollingProvider.notifier)
+                                  .forcePolling())
+                              .then((value) => context.pop());
+                        }
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -130,8 +142,8 @@ class DashboardWiFiGrid extends ConsumerWidget {
         ],
       ),
       onTap: () {
-        context
-            .pushNamed(RouteNamed.settingsWifi, extra: {'guest': item.isGuest});
+        context.pushNamed(RouteNamed.settingsWifi,
+            extra: {'wifiIndex': index, 'guest': item.isGuest});
       },
     );
   }

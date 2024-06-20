@@ -9,6 +9,7 @@ class InternetSettingCard extends StatelessWidget {
   final bool showBorder;
   final EdgeInsets? padding;
   final VoidCallback? onTap;
+  final EdgeInsets? margin;
 
   const InternetSettingCard({
     Key? key,
@@ -18,6 +19,7 @@ class InternetSettingCard extends StatelessWidget {
     this.showBorder = true,
     this.padding,
     this.onTap,
+    this.margin,
   }) : super(key: key);
 
   @override
@@ -29,6 +31,7 @@ class InternetSettingCard extends StatelessWidget {
       padding: padding,
       trailing: trailing ?? const Icon(LinksysIcons.chevronRight),
       onTap: onTap,
+      margin: margin,
     );
   }
 }

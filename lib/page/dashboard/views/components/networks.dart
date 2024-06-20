@@ -220,7 +220,7 @@ class DashboardNetworks extends ConsumerWidget {
           image: CustomTheme.of(context).images.devices.getByName(
               routerIconTestByModel(modelNumber: node.modelNumber ?? ''))),
       trailing: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Icon(node.isOnline()
               ? node.isAuthority
