@@ -99,12 +99,13 @@ class _SelectDeviceViewState extends ConsumerState<SelectDeviceView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         content: GroupList<DeviceListItem>(
             groups: [
-              GroupItem(
-                key: const ObjectKey('online'),
-                label: loc(context).onlineDevices,
-                items: onlineDevices,
-              ),
-              if (!_onlineOnly)
+              if (onlineDevices.isNotEmpty)
+                GroupItem(
+                  key: const ObjectKey('online'),
+                  label: loc(context).onlineDevices,
+                  items: onlineDevices,
+                ),
+              if (!_onlineOnly && offlineDevices.isNotEmpty)
                 GroupItem(
                   key: const ObjectKey('offline'),
                   label: loc(context).offlineDevices,

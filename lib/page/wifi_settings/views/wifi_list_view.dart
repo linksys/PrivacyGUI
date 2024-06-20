@@ -2,11 +2,13 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_state.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_view_provider.dart';
@@ -27,8 +29,8 @@ enum WiFiListViewMode {
   ;
 }
 
-class WiFiListView extends ConsumerStatefulWidget {
-  const WiFiListView({Key? key}) : super(key: key);
+class WiFiListView extends ArgumentsConsumerStatefulView {
+  const WiFiListView({Key? key, super.args}) : super(key: key);
 
   @override
   ConsumerState<WiFiListView> createState() => _WiFiListViewState();
@@ -45,9 +47,14 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
   final Map<WifiRadioBand, TextEditingController> _advancedPasswordController =
       {};
 
+  late final ScrollController _scrollController;
+
   @override
   void initState() {
     super.initState();
+    final index = widget.args['wifiIndex'] as int? ?? 0;
+    _scrollController = ScrollController(initialScrollOffset: 760.0 * index);
+
     setState(() {
       _isLoading = true;
     });
@@ -86,6 +93,16 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
     ref.listen(wifiListProvider, (previous, next) {
       ref.read(wifiViewProvider.notifier).setChanged(next != _preservedState);
     });
+    // logger.d(
+    //     'XXXXX: $_isLoading, $_hasInitScrolled, ${_scrollController.hasClients}!!!');
+    // if (!_isLoading && !_hasInitScrolled && _scrollController.hasClients) {
+    //   // final offset = widget.args['wifiOffset'] as int? ?? 0;
+    //   logger.d('XXXXX: SCROLL!!!');
+    //   _hasInitScrolled = true;
+    //   final offset = 200.0;
+    //   _scrollController.jumpTo(offset);
+    // }
+
     return _isLoading
         ? AppFullScreenSpinner(
             text: loc(context).processing,
@@ -93,6 +110,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
         : StyledAppPageView(
             appBarStyle: AppBarStyle.none,
             scrollable: true,
+            controller: _scrollController,
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
             bottomBar: PageBottomBar(
                 isPositiveEnabled: _mode == WiFiListViewMode.simple
@@ -225,7 +243,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
               )
             ],
           ),
-          const AppGap.medium(),
+          const AppGap.small3(),
           ...state.mainWiFi.map((radio) => _advancedWiFiCard(radio)),
         ],
       ),
@@ -257,7 +275,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
                 _advancedWiFiChannelCard(radio),
               ],
             )),
-        const AppGap.medium(),
+        const AppGap.small3(),
       ],
     );
   }

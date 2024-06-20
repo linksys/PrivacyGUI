@@ -18,7 +18,6 @@ import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/card/info_card.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/loadable_widget/loadable_widget.dart';
@@ -81,7 +80,6 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
             mainAxisSize: MainAxisSize.min,
             children: [
               _avatarCard(state),
-              const AppGap.small3(),
               _extraInfoSection(state),
             ],
           ),

@@ -639,6 +639,10 @@ String _iconMapping(String iconClass, {String? fallback}) {
     //
     case 'routerMx6200':
     case 'routerMbe7000':
+    case 'routerMbe7100':
+    case 'routerLN6001':
+    case 'routerLN6002':
+    case 'routerLn14':
       return 'routerMx6200';
     //
 

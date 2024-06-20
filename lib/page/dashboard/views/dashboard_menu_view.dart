@@ -18,6 +18,7 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:privacygui_widgets/widgets/card/menu_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 
 import 'package:privacygui_widgets/widgets/panel/custom_animated_box.dart';
 import 'package:privacygui_widgets/widgets/panel/general_section.dart';
@@ -71,8 +72,8 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
             : ResponsiveLayout.isOverBreakpoint2(context)
                 ? 2
                 : 1,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 16,
+        mainAxisSpacing: Spacing.small2,
+        crossAxisSpacing: Spacing.small3,
         childAspectRatio: (4 / 3),
         mainAxisExtent: 205,
       ),

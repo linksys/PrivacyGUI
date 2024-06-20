@@ -72,6 +72,7 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
               .map((e) => Layer2Connection.fromMap(e))
               .toList();
     }
+
     // Radio settings
     final radioList = List.from(getRadioInfo?['radios'] ?? [])
         .map((e) => RouterRadio.fromMap(e))
@@ -123,7 +124,7 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
         data['devices'],
       )
           .map((e) => LinksysDevice.fromMap(e))
-          .map((e) => e.copyWith(signalDecibels: getWirelessSignalOf(e, state)))
+          // .map((e) => e.copyWith(signalDecibels: getWirelessSignalOf(e, state)))
           .toList();
       // Sort the device list in order to correctly build the location map later
       allDevices.sort((device1, device2) {
@@ -236,7 +237,13 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
         );
       }
     });
-    newState.copyWith(wirelessConnections: wireleeConnectionInfo);
+    newState = newState.copyWith(wirelessConnections: wireleeConnectionInfo);
+
+    // update wireless signal for each device
+    final devices = state.deviceList
+        .map((e) => e.copyWith(signalDecibels: getWirelessSignalOf(e, state)))
+        .toList();
+    newState = newState.copyWith(deviceList: devices);
     return newState;
   }
 

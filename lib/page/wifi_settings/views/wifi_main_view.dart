@@ -86,7 +86,7 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView> {
       };
 
   Widget _content(_WiFiSubMenus sub) => switch (sub) {
-        _WiFiSubMenus.wifi => const WiFiListView(),
+        _WiFiSubMenus.wifi => WiFiListView(args: widget.args),
         _WiFiSubMenus.guest => const GuestWiFiSettingsView(),
         _WiFiSubMenus.advanced => const WifiAdvancedSettingsView(),
         _WiFiSubMenus.filtering => const MacFilteringView(),
