@@ -8,12 +8,10 @@ import 'package:privacy_gui/firebase/notification_provider.dart';
 import 'package:privacy_gui/page/components/layouts/idle_checker.dart';
 import 'package:privacy_gui/providers/root/root_config.dart';
 import 'package:privacy_gui/providers/root/root_provider.dart';
-import 'package:privacygui_widgets/widgets/banner/banner_view.dart';
 
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/components/customs/debug_overlay_view.dart';
-import 'package:privacy_gui/page/components/styled/banner_provider.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
@@ -60,7 +58,6 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
                 _buildLayout(Container(child: widget.child ?? const Center()),
                     constraints),
                 ..._handleConnectivity(ref),
-                ..._handleBanner(ref),
                 _handleSpinner(rootConfig),
                 !showDebugPanel
                     ? const Center()
@@ -96,20 +93,6 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
 
   Widget _buildLayout(Widget child, BoxConstraints constraints) {
     return child;
-  }
-
-  List<Widget> _handleBanner(WidgetRef ref) {
-    final bannerInfo = ref.watch(bannerProvider);
-    if (bannerInfo.isDiaplay) {
-      return [
-        AppBanner(
-          style: bannerInfo.style,
-          text: bannerInfo.text,
-        )
-      ];
-    } else {
-      return [];
-    }
   }
 
   List<Widget> _handleConnectivity(WidgetRef ref) {

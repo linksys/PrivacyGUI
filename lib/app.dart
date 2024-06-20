@@ -146,7 +146,7 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
           builders: {
             // No animations for every OS if the app running on the web
             for (final platform in TargetPlatform.values)
-              platform: const NoTransitionsBuilder(),
+              platform: const FadeUpwardsPageTransitionsBuilder(),
           },
         )
       : null;
