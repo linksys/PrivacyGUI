@@ -20,7 +20,6 @@ import 'package:privacygui_widgets/widgets/card/menu_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 
-import 'package:privacygui_widgets/widgets/panel/custom_animated_box.dart';
 import 'package:privacygui_widgets/widgets/panel/general_section.dart';
 
 class DashboardMenuView extends ConsumerStatefulWidget {

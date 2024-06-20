@@ -69,7 +69,7 @@ class LinksysRoute extends GoRoute {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment:
-                  config?.pageAlignment ?? CrossAxisAlignment.center,
+                  config?.pageAlignment ?? CrossAxisAlignment.start,
               children: [
                 const TopBar(),
                 Expanded(
