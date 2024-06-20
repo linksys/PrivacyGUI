@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/theme/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
@@ -50,8 +50,8 @@ class _PnpUnplugModemViewState extends ConsumerState<PnpUnplugModemView> {
                       CustomTheme.of(context).images.modemPlugged,
                       fit: BoxFit.fitWidth,
                     ),
-                    const AppGap.big(),
-                    const AppGap.extraBig(),
+                    const AppGap.large2(),
+                    const AppGap.large3(),
                     Row(
                       children: [
                         AppTextButton(
@@ -89,23 +89,23 @@ class _PnpUnplugModemViewState extends ConsumerState<PnpUnplugModemView> {
 
   Widget _bottomSheetContent() {
     return Padding(
-      padding: const EdgeInsets.all(Spacing.semiBig),
+      padding: const EdgeInsets.all(Spacing.large1),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppText.headlineSmall(
             loc(context).pnpUnplugModemTipTitle,
           ),
-          const AppGap.semiBig(),
+          const AppGap.large1(),
           AppText.bodyMedium(
             loc(context).pnpUnplugModemTipDesc1,
           ),
-          const AppGap.semiBig(),
+          const AppGap.large1(),
           AppText.bodyMedium(
             loc(context).pnpUnplugModemTipDesc2,
           ),
-          const AppGap.regular(),
-          const AppGap.extraBig(),
+          const AppGap.medium(),
+          const AppGap.large3(),
           Container(
             alignment: Alignment.center,
             child: SvgPicture(

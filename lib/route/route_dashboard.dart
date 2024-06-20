@@ -15,17 +15,6 @@ final dashboardRoute = ShellRoute(
         builder: (context, state) => DashboardMenuView(),
         routes: [
           LinksysRoute(
-              name: RouteNamed.accountInfo,
-              path: RoutePath.accountInfo,
-              builder: (context, state) => AccountView(),
-              routes: [
-                LinksysRoute(
-                  name: RouteNamed.twoStepVerification,
-                  path: RoutePath.twoStepVerification,
-                  builder: (context, state) => TwoStepVerificationView(),
-                ),
-              ]),
-          LinksysRoute(
             name: RouteNamed.linkup,
             path: RoutePath.linkup,
             builder: (context, state) => LinkupView(),

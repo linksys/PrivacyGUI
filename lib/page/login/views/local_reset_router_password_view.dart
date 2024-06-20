@@ -69,10 +69,10 @@ class _LocalResetRouterPasswordViewState
                 children: [
                   AppText.headlineSmall(
                       loc(context).localResetRouterPasswordTitle),
-                  const AppGap.regular(),
+                  const AppGap.medium(),
                   AppText.bodyMedium(
                       loc(context).localResetRouterPasswordDescription),
-                  const AppGap.big(),
+                  const AppGap.large2(),
                   AppPasswordField(
                     border: const OutlineInputBorder(),
                     withValidator: state.hasEdited,
@@ -90,13 +90,13 @@ class _LocalResetRouterPasswordViewState
                           .setValidate(isValid);
                     },
                   ),
-                  const AppGap.regular(),
+                  const AppGap.medium(),
                   AppTextField(
                     border: const OutlineInputBorder(),
                     hintText: loc(context).routerPasswordHint,
                     controller: _hintController,
                   ),
-                  const AppGap.big(),
+                  const AppGap.large2(),
                   AppFilledButton(
                     loc(context).save,
                     onTap: state.isValid ? _save : null,

@@ -89,7 +89,7 @@ abstract class PnpStep {
                         ? null
                         : details.onStepCancel,
                   ),
-                  const AppGap.regular(),
+                  const AppGap.medium(),
                 ],
                 AppFilledButton(
                   nextLable(context),
@@ -144,7 +144,7 @@ abstract class PnpStep {
                       AppText.titleLarge(title(context)),
                     ],
                   ),
-                  const AppGap.big(),
+                  const AppGap.large2(),
                   content(context: context, ref: ref, child: child),
                 ],
               );

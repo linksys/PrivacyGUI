@@ -33,7 +33,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
 
   List<String> _markers = [];
 
-  String _status = "IDLE";
+  String _status = "RUNNING";
 
   @override
   void initState() {
@@ -206,11 +206,11 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             const AppText.displaySmall("Latency"),
-            const AppGap.regular(),
+            const AppGap.medium(),
             AppText.displaySmall(latency),
           ],
         ),
-        const AppGap.regular(),
+        const AppGap.medium(),
         const Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -219,7 +219,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
             AppText.displaySmall('Download'),
           ],
         ),
-        const AppGap.regular(),
+        const AppGap.medium(),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -394,11 +394,11 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
   //             crossAxisAlignment: CrossAxisAlignment.center,
   //             children: [
   //               const AppText.displaySmall("Latency"),
-  //               const AppGap.regular(),
+  //               const AppGap.medium(),
   //               AppText.displaySmall(latency),
   //             ],
   //           ),
-  //           const AppGap.regular(),
+  //           const AppGap.medium(),
   //           const Row(
   //             mainAxisAlignment: MainAxisAlignment.spaceBetween,
   //             crossAxisAlignment: CrossAxisAlignment.center,
@@ -407,7 +407,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
   //               AppText.displaySmall('Download'),
   //             ],
   //           ),
-  //           const AppGap.regular(),
+  //           const AppGap.medium(),
   //           Row(
   //             mainAxisAlignment: MainAxisAlignment.spaceBetween,
   //             crossAxisAlignment: CrossAxisAlignment.center,

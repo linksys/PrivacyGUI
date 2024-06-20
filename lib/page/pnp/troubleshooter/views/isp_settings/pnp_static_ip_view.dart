@@ -7,7 +7,7 @@ import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/_
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/utils.dart';
-import 'package:privacygui_widgets/theme/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
@@ -52,13 +52,13 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
             AppText.bodyLarge(
               loc(context).pnpStaticIpDesc,
             ),
-            const AppGap.extraBig(),
+            const AppGap.large3(),
             if (errorMessage != null)
               AppText.bodyLarge(
                 errorMessage!,
                 color: Theme.of(context).colorScheme.error,
               ),
-            const AppGap.extraBig(),
+            const AppGap.large3(),
             AppIPFormField(
               header: AppText.bodyLarge(
                 loc(context).ipAddress,
@@ -67,7 +67,7 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
               border: const OutlineInputBorder(),
               onFocusChanged: (isFocused) {},
             ),
-            const AppGap.semiBig(),
+            const AppGap.large1(),
             AppIPFormField(
               header: AppText.bodyLarge(
                 loc(context).subnetMask,
@@ -75,7 +75,7 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
               controller: _subnetController,
               border: const OutlineInputBorder(),
             ),
-            const AppGap.semiBig(),
+            const AppGap.large1(),
             AppIPFormField(
               header: AppText.bodyLarge(
                 loc(context).defaultGateway,
@@ -83,7 +83,7 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
               controller: _gatewayController,
               border: const OutlineInputBorder(),
             ),
-            const AppGap.semiBig(),
+            const AppGap.large1(),
             AppIPFormField(
               header: AppText.bodyLarge(
                 loc(context).dns1,
@@ -95,7 +95,7 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
               visible: _hasExtraDNS,
               replacement: Padding(
                 padding: const EdgeInsets.only(
-                  top: Spacing.extraBig,
+                  top: Spacing.large3,
                 ),
                 child: AppTextButton.noPadding(
                   loc(context).addDns,
@@ -108,7 +108,7 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
               ),
               child: Padding(
                 padding: const EdgeInsets.only(
-                  top: Spacing.semiBig,
+                  top: Spacing.large1,
                 ),
                 child: AppIPFormField(
                   header: AppText.bodyLarge(
@@ -119,7 +119,7 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
                 ),
               ),
             ),
-            const AppGap.extraBig(),
+            const AppGap.large3(),
           ],
         ),
         footer: AppFilledButton.fillWidth(

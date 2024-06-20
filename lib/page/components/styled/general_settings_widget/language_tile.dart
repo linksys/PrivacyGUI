@@ -52,7 +52,7 @@ class _LanguageTileState extends ConsumerState<LanguageTile> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(widget.icon),
-              const AppGap.regular(),
+              const AppGap.medium(),
               Flexible(child: AppText.labelMedium(locale.displayText)),
             ],
           );

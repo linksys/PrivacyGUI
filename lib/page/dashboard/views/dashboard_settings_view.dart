@@ -52,13 +52,13 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const AppGap.semiBig(),
+            const AppGap.large1(),
             _title(),
-            const AppGap.semiBig(),
+            const AppGap.large1(),
             _section(
               _othersSettingsSection(),
             ),
-            // const AppGap.semiBig(),
+            // const AppGap.large1(),
             // AppSwitchTriggerTile(
             //   value: _pushEnabled,
             //   title: AppText.bodyLarge('Enable Push Notification'),

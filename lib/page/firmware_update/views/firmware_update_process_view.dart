@@ -16,7 +16,8 @@ enum FirmwareUpdateStep {
   ;
 
   static FirmwareUpdateStep resolve(String value) =>
-      values.firstWhereOrNull((element) => element.name == value.toLowerCase()) ??
+      values
+          .firstWhereOrNull((element) => element.name == value.toLowerCase()) ??
       FirmwareUpdateStep.checking;
 
   String getTitle(BuildContext context) => switch (this) {
@@ -69,13 +70,13 @@ class _FirmwareUpdateProcessViewState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Center(child: AppSpinner()),
-        const AppGap.big(),
+        const AppGap.large2(),
         if (percent != null) ...[
           AppText.labelLarge(
               '${widget.current?.$1.getDeviceName() ?? ''} - $percent%'),
-          const AppGap.big(),
+          const AppGap.large2(),
           AppText.titleSmall(step.getTitle(context)),
-          const AppGap.big(),
+          const AppGap.large2(),
           ...step.getMessages(context).map((e) => AppText.bodySmall(e)),
         ],
       ],

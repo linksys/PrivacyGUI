@@ -15,11 +15,13 @@ class ExceptionNoInternetConnection extends PnpException {
 }
 
 class ExceptionRouterUnconfigured extends PnpException {
-  ExceptionRouterUnconfigured() : super(message: '[PnP] Router is unconfigured');
+  ExceptionRouterUnconfigured()
+      : super(message: '[PnP] Router is unconfigured');
 }
 
 class ExceptionSavingChanges extends PnpException {
-  ExceptionSavingChanges() : super(message: '[PnP] Saving changes error!');
+  final Object? error;
+  ExceptionSavingChanges(this.error) : super(message: '[PnP] Saving changes error!');
 }
 
 class ExceptionNeedToReconnect extends PnpException {
@@ -28,6 +30,5 @@ class ExceptionNeedToReconnect extends PnpException {
 }
 
 class ExceptionGoAddNodes extends PnpException {
-  ExceptionGoAddNodes()
-      : super(message: '[PnP] Go add nodes');
+  ExceptionGoAddNodes() : super(message: '[PnP] Go add nodes');
 }

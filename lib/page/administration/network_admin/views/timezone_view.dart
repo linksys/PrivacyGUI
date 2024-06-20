@@ -58,7 +58,7 @@ class _TimezoneContentViewState extends ConsumerState<TimezoneView> {
               content: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const AppGap.semiBig(),
+                  const AppGap.large1(),
                   AppCard(
                     child: AppPanelWithSwitch(
                       title: loc(context).daylightSavingsTime,
@@ -70,7 +70,7 @@ class _TimezoneContentViewState extends ConsumerState<TimezoneView> {
                           : null,
                     ),
                   ),
-                  const AppGap.regular(),
+                  const AppGap.medium(),
                   Expanded(
                     // height: (70.0) * state.supportedTimezones.length +
                     //     16 * (state.supportedTimezones.length - 1),

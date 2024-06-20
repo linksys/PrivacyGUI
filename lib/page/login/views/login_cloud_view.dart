@@ -85,7 +85,6 @@ class _LoginCloudViewState extends ConsumerState<LoginCloudView> {
                   shape: RoundedRectangleBorder(
                     side: BorderSide(
                         color: Theme.of(context).colorScheme.outline),
-                    borderRadius: BorderRadius.circular(8),
                   ),
                   elevation: 0,
                   child: Padding(
@@ -98,7 +97,7 @@ class _LoginCloudViewState extends ConsumerState<LoginCloudView> {
                       children: [
                         AppText.headlineSmall(
                             getAppLocalizations(context).login),
-                        const AppGap.big(),
+                        const AppGap.large2(),
                         SizedBox(
                           width: 289,
                           child: AppTextField(
@@ -119,7 +118,7 @@ class _LoginCloudViewState extends ConsumerState<LoginCloudView> {
                             autofillHints: const [AutofillHints.username],
                           ),
                         ),
-                        const AppGap.regular(),
+                        const AppGap.medium(),
                         SizedBox(
                           width: 289,
                           child: AppPasswordField(
@@ -137,7 +136,7 @@ class _LoginCloudViewState extends ConsumerState<LoginCloudView> {
                             },
                           ),
                         ),
-                        const AppGap.big(),
+                        const AppGap.large2(),
                         AppFilledButton(
                           'Log in',
                           onTap: _isValidEmail ?? true

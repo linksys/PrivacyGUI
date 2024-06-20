@@ -5,7 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/theme/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/bullet_list/bullet_list.dart';
 import 'package:privacygui_widgets/widgets/bullet_list/bullet_style.dart';
@@ -33,7 +33,7 @@ class SpeedTestExternalView extends StatelessWidget {
               children: [
                 Padding(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 0, vertical: Spacing.extraBig),
+                      horizontal: 0, vertical: Spacing.large3),
                   child: SizedBox(
                     width: 224,
                     height: 56,
@@ -43,10 +43,10 @@ class SpeedTestExternalView extends StatelessWidget {
                   ),
                 ),
                 AppText.labelLarge(loc(context).speedTestExternalDesc),
-                const AppGap.big(),
+                const AppGap.large2(),
                 AppBulletList(
                   style: AppBulletStyle.number,
-                  itemSpacing: Spacing.big,
+                  itemSpacing: Spacing.large2,
                   children: [
                     AppText.bodyMedium(loc(context).speedTestExternalStep1),
                     AppText.bodyMedium(loc(context).speedTestExternalStep2),
@@ -56,7 +56,7 @@ class SpeedTestExternalView extends StatelessWidget {
                 ResponsiveLayout.isMobileLayout(context)
                     ? _externalButtonsMobile(context)
                     : _externalButtonsDesktop(context),
-                const AppGap.big(),
+                const AppGap.large2(),
                 Center(
                     child: AppText.bodyMedium(
                         loc(context).speedTestExternalOthers))
@@ -79,7 +79,7 @@ class SpeedTestExternalView extends StatelessWidget {
             openUrl('https://speed.cloudflare.com/');
           },
         ),
-        const AppGap.regular(),
+        const AppGap.medium(),
         AppFilledButton.fillWidth(
           loc(context).speedTestExternalFast,
           onTap: () {
@@ -103,7 +103,7 @@ class SpeedTestExternalView extends StatelessWidget {
             },
           ),
         ),
-        const AppGap.regular(),
+        const AppGap.medium(),
         Expanded(
           child: AppFilledButton.fillWidth(
             loc(context).speedTestExternalFast,

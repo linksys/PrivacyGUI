@@ -35,16 +35,16 @@ class DashboardSupportView extends ArgumentsConsumerStatelessView {
                 context.pushNamed(RouteNamed.faqList);
               },
             ),
-            const AppGap.small(),
-            SupportOptionCard(
-              icon: const Icon(LinksysIcons.supportAgent),
-              title: loc(context).dashboardSupportCallbackTitle,
-              description: loc(context).dashboardSupportCallbackDesc,
-              tapAction: () {
-                context.pushNamed(RouteNamed.callbackDescription);
-              },
-            ),
-            const AppGap.small(),
+            // const AppGap.small2(),
+            // SupportOptionCard(
+            //   icon: const Icon(LinksysIcons.supportAgent),
+            //   title: loc(context).dashboardSupportCallbackTitle,
+            //   description: loc(context).dashboardSupportCallbackDesc,
+            //   tapAction: () {
+            //     context.pushNamed(RouteNamed.callbackDescription);
+            //   },
+            // ),
+            const AppGap.small2(),
             SupportOptionCard(
               icon: const Icon(LinksysIcons.call),
               title: loc(context).dashboardSupportCallSupportTitle,
@@ -85,9 +85,9 @@ class SupportOptionCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             icon,
-            const AppGap.semiSmall(),
+            const AppGap.small2(),
             AppText.titleSmall(title),
-            const AppGap.semiSmall(),
+            const AppGap.small2(),
             AppText.bodyMedium(description),
           ],
         ),

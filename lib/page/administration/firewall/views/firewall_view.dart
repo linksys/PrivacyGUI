@@ -65,7 +65,7 @@ class _FirewallViewState extends ConsumerState<FirewallView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             AppText.labelLarge(loc(context).firewall),
-            const AppGap.regular(),
+            const AppGap.medium(),
             AppCard(
               child: AppSwitchTriggerTile(
                 title:
@@ -88,9 +88,9 @@ class _FirewallViewState extends ConsumerState<FirewallView> {
                 },
               ),
             ),
-            const AppGap.big(),
+            const AppGap.large2(),
             AppText.labelLarge(loc(context).vpnPassthrough),
-            const AppGap.regular(),
+            const AppGap.medium(),
             AppCard(
               child: AppSwitchTriggerTile(
                 title: AppText.labelLarge(loc(context).ipsecPassthrough),
@@ -124,9 +124,9 @@ class _FirewallViewState extends ConsumerState<FirewallView> {
                 },
               ),
             ),
-            const AppGap.big(),
+            const AppGap.large2(),
             AppText.labelLarge(loc(context).internetFilters),
-            const AppGap.regular(),
+            const AppGap.medium(),
             AppCard(
               child: AppSwitchTriggerTile(
                 title: AppText.labelLarge(loc(context).filterAnonymous),
@@ -169,7 +169,7 @@ class _FirewallViewState extends ConsumerState<FirewallView> {
                 },
               ),
             ),
-            const AppGap.big(),
+            const AppGap.large2(),
             AppListCard(
               title: AppText.labelLarge(loc(context).ipv6PortServices),
               trailing: const Icon(LinksysIcons.chevronRight),

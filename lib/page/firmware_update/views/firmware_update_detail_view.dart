@@ -69,13 +69,13 @@ class _FirmwareUpdateDetailViewState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   AppText.titleMedium(loc(context).firmware),
-                  const AppGap.big(),
+                  const AppGap.large2(),
                   AppText.bodyMedium(loc(context).firmwareUpdateDesc1),
-                  const AppGap.regular(),
+                  const AppGap.medium(),
                   AppText.bodyMedium(loc(context).firmwareUpdateDesc2),
-                  const AppGap.regular(),
+                  const AppGap.medium(),
                   AppText.bodyMedium(loc(context).firmwareUpdateDesc3),
-                  const AppGap.extraBig(),
+                  const AppGap.large3(),
                   AppSection.withLabel(
                     title: loc(context).details,
                     content: FirmwareUpdateTableView(
@@ -96,7 +96,7 @@ class _FirmwareUpdateDetailViewState
                                         .updateFirmware();
                                   }),
                           ),
-                          const AppGap.regular(),
+                          const AppGap.medium(),
                           Expanded(
                             child: _cancelButton(),
                           ),
@@ -111,7 +111,7 @@ class _FirmwareUpdateDetailViewState
                                       .read(firmwareUpdateProvider.notifier)
                                       .updateFirmware();
                                 }),
-                          const AppGap.regular(),
+                          const AppGap.medium(),
                           _cancelButton(),
                         ],
                       )),

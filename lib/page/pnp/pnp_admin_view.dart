@@ -136,7 +136,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
                   color: Theme.of(context).colorScheme.primary,
                   size: 48,
                 ),
-                const AppGap.regular(),
+                const AppGap.medium(),
                 AppText.titleMedium(loc(context).launchInternetConnected),
               ],
             ),
@@ -146,7 +146,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const AppSpinner(),
-                const AppGap.regular(),
+                const AppGap.medium(),
                 AppText.titleMedium(loc(context).launchCheckInternet),
               ],
             ),
@@ -159,9 +159,9 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppText.headlineSmall(loc(context).pnpFactoryResetTitle),
-        const AppGap.regular(),
+        const AppGap.medium(),
         AppText.bodyLarge(loc(context).pnpFactoryResetDesc),
-        const AppGap.extraBig(),
+        const AppGap.large3(),
         AppFilledButton(
           loc(context).textContinue,
           onTap: () {
@@ -184,9 +184,9 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppText.headlineSmall(loc(context).welcome),
-        const AppGap.regular(),
+        const AppGap.medium(),
         AppText.bodyLarge(loc(context).pnpRouterLoginDesc),
-        const AppGap.big(),
+        const AppGap.large2(),
         AppPasswordField(
           hintText: loc(context).routerPassword,
           border: const OutlineInputBorder(),
@@ -211,14 +211,14 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
           },
         ),
         ..._checkError(context, _error),
-        const AppGap.big(),
+        const AppGap.large2(),
         AppTextButton.noPadding(
           loc(context).pnpRouterLoginWhereIsIt,
           onTap: () {
             _showRouterPasswordModal();
           },
         ),
-        const AppGap.extraBig(),
+        const AppGap.large3(),
         AppFilledButton(
           loc(context).login,
           onTap: _inputError == null && !_processing

@@ -12,7 +12,6 @@ import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/bluetooth/bluetooth.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
-import 'package:privacy_gui/core/mdns/mdns_helper.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/landing/views/debug_device_info_view.dart';
@@ -80,16 +79,16 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
         const AppText.bodyLarge(
           'Log:',
         ),
-        const AppGap.regular(),
+        const AppGap.medium(),
         AppFilledButton(
           'Export log file',
           onTap: () async {
             _exportLog();
           },
         ),
-        const AppGap.regular(),
+        const AppGap.medium(),
         ..._buildDebug(),
-        const AppGap.regular(),
+        const AppGap.medium(),
       ],
     );
   }
@@ -158,7 +157,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
       //     });
       //   },
       // ),
-      const AppGap.regular(),
+      const AppGap.medium(),
     ];
   }
 
@@ -168,12 +167,12 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
         title: 'Basic Info',
         children: [
           AppText.bodyMedium(appInfo),
-          const AppGap.regular(),
+          const AppGap.medium(),
           AppFilledButton(
             'More',
             onTap: () => _goToDeviceInfoPage(context),
           ),
-          const AppGap.regular(),
+          const AppGap.medium(),
         ],
       ),
     ];
@@ -194,7 +193,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
               'Gateway Ip: ${connectivityState.connectivityInfo.gatewayIp}'),
           AppText.bodyMedium(
               'SSID: ${connectivityState.connectivityInfo.ssid}'),
-          const AppGap.regular(),
+          const AppGap.medium(),
         ],
       ),
     ];
@@ -264,7 +263,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
             ],
           ),
 
-          const AppGap.regular(),
+          const AppGap.medium(),
           // Wrap(
           //   crossAxisAlignment: WrapCrossAlignment.center,
           //   children: [
@@ -276,7 +275,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
           //         })
           //   ],
           // ),
-          // const AppGap.regular(),
+          // const AppGap.medium(),
         ],
       ),
     ];
@@ -345,35 +344,7 @@ class _DebugToolsViewState extends ConsumerState<DebugToolsView> {
               BluetoothManager().disconnect();
             },
           ),
-          const AppGap.regular(),
-        ],
-      ),
-    ];
-  }
-
-  List<Widget> _buildMdnsTestSection() {
-    return [
-      ExpansionTile(
-        expandedAlignment: Alignment.centerLeft,
-        expandedCrossAxisAlignment: CrossAxisAlignment.start,
-        initiallyExpanded: true,
-        title: const AppText.bodyLarge('MDNS testing'),
-        children: [
-          AppFilledButton(
-            'discover',
-            onTap: () async {
-              const String name = '_dartobservatory._tcp.local';
-              String httpType = "_http._tcp";
-              String omsgType = "_omsg._tcp";
-
-              final result = await Future.wait([
-                MDnsHelper.discover(httpType),
-                MDnsHelper.discover(omsgType)
-              ]);
-              logger.d('Result: $result');
-            },
-          ),
-          const AppGap.regular(),
+          const AppGap.medium(),
         ],
       ),
     ];

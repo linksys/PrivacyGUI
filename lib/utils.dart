@@ -131,7 +131,7 @@ extension DateFormatUtils on Utils {
       tokens.add(token);
     }
     if (tokens.isNotEmpty || hours != 0) {
-      final token = context == null ? '${days}h' : loc(context).nHours(hours);
+      final token = context == null ? '${hours}h' : loc(context).nHours(hours);
       tokens.add(token);
     }
     if (tokens.isNotEmpty || minutes != 0) {
@@ -139,7 +139,7 @@ extension DateFormatUtils on Utils {
           context == null ? '${minutes}m' : loc(context).nMinutes(minutes);
       tokens.add(token);
     }
-    final token = context == null ? '${days}s' : loc(context).nSeconds(seconds);
+    final token = context == null ? '${seconds}s' : loc(context).nSeconds(seconds);
     tokens.add(token);
 
     return tokens.join(' ');

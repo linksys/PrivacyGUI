@@ -65,7 +65,7 @@ class _DHCPReservationsContentViewState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   AppText.bodyLarge(loc(context).dhcpReservationDescption),
-                  const AppGap.semiBig(),
+                  const AppGap.large1(),
                   Row(
                     children: [
                       Expanded(
@@ -128,10 +128,10 @@ class _DHCPReservationsContentViewState
                       ),
                     ],
                   ),
-                  const AppGap.big(),
+                  const AppGap.large2(),
                   AppText.labelLarge(
                       loc(context).reservedAddresses.capitalizeWords()),
-                  const AppGap.regular(),
+                  const AppGap.medium(),
                   ...reservedAddresses(dhcpReservedList),
                 ],
               ),

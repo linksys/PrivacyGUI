@@ -51,7 +51,7 @@ class DashboardHomeTitle extends ConsumerWidget {
                             ? Theme.of(context).colorSchemeExt.green
                             : Theme.of(context).colorScheme.surfaceVariant,
                       ),
-                      const AppGap.semiBig(),
+                      const AppGap.large1(),
                       AppText.titleLarge(
                         isOnline
                             ? loc(context).internetOnline
@@ -64,7 +64,7 @@ class DashboardHomeTitle extends ConsumerWidget {
                       children: [
                         Icon(LinksysIcons.uptime,
                             color: Theme.of(context).colorScheme.onSurface),
-                        const AppGap.regular(),
+                        const AppGap.medium(),
                         AppText.bodyMedium('${loc(context).uptime}: $uptime',
                             color: Theme.of(context).colorScheme.onSurface),
                       ],
@@ -75,18 +75,18 @@ class DashboardHomeTitle extends ConsumerWidget {
           ],
         ),
         if (ResponsiveLayout.isMobileLayout(context) && isOnline) ...[
-          const AppGap.regular(),
+          const AppGap.medium(),
           Row(
             children: [
               Icon(LinksysIcons.uptime,
                   color: Theme.of(context).colorScheme.onSurface),
-              const AppGap.regular(),
+              const AppGap.medium(),
               AppText.bodyMedium('${loc(context).uptime}: $uptime',
                   color: Theme.of(context).colorScheme.onSurface),
             ],
           ),
         ],
-        const AppGap.regular(),
+        const AppGap.medium(),
       ],
     );
   }

@@ -75,7 +75,7 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
       ipv4Setting: newState.ipv4Setting.copyWith(
         ipv4ConnectionType: WanType.dhcp.type,
       ),
-    );    
+    );
     context.pushNamed(
       RouteNamed.pnpIspSettingsAuth,
       extra: {'newSettings': newState},
@@ -90,23 +90,20 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
         ? const AppFullScreenSpinner()
         : StyledAppPageView(
             appBarStyle: AppBarStyle.back,
-            title:
-                loc(context).pnpIspTypeSelectionTitle,
+            title: loc(context).pnpIspTypeSelectionTitle,
             child: AppBasicLayout(
               content: ListView(
                 shrinkWrap: true,
                 children: [
                   ISPTypeCard(
                     title: loc(context).dhcpDefault,
-                    description:
-                        loc(context).pnpIspTypeSelectionDhcpDesc,
+                    description: loc(context).pnpIspTypeSelectionDhcpDesc,
                     isCurrentlyApplying: wanType == WanType.dhcp,
                     tapAction: wanType == WanType.dhcp ? null : _showDHCPAlert,
                   ),
                   ISPTypeCard(
                     title: loc(context).connectionTypeStatic,
-                    description:
-                        loc(context).pnpIspTypeSelectionStaticDesc,
+                    description: loc(context).pnpIspTypeSelectionStaticDesc,
                     isCurrentlyApplying: wanType == WanType.static,
                     tapAction: () {
                       context.goNamed(RouteNamed.pnpStaticIp);
@@ -114,8 +111,7 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
                   ),
                   ISPTypeCard(
                     title: loc(context).connectionTypePppoe,
-                    description:
-                        loc(context).pnpIspTypeSelectionPppoeDesc,
+                    description: loc(context).pnpIspTypeSelectionPppoeDesc,
                     isCurrentlyApplying:
                         (wanType == WanType.pppoe && !_hasVLan),
                     tapAction: () {
@@ -125,8 +121,7 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
                   ),
                   ISPTypeCard(
                     title: loc(context).pppoeVlan,
-                    description:
-                        loc(context).pnpIspTypeSelectionPppoeVlanDesc,
+                    description: loc(context).pnpIspTypeSelectionPppoeVlanDesc,
                     isCurrentlyApplying: (wanType == WanType.pppoe && _hasVLan),
                     tapAction: () {
                       context.goNamed(RouteNamed.pnpPPPOE,
@@ -168,12 +163,12 @@ class ISPTypeCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   AppText.labelLarge(title),
-                  const AppGap.small(),
+                  const AppGap.small3(),
                   AppText.bodyMedium(description),
                 ],
               ),
             ),
-            const AppGap.semiSmall(),
+            const AppGap.small2(),
             isCurrentlyApplying
                 ? const Icon(LinksysIcons.check)
                 : const Icon(LinksysIcons.chevronRight),

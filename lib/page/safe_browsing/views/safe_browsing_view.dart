@@ -57,7 +57,7 @@ class _SafeBrowsingViewState extends ConsumerState<SafeBrowsingView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   AppText.bodyLarge(loc(context).safeBrowsingDesc),
-                  const AppGap.big(),
+                  const AppGap.large2(),
                   AppSettingCard(
                     title: loc(context).safeBrowsing,
                     trailing: AppSwitch(
@@ -69,7 +69,7 @@ class _SafeBrowsingViewState extends ConsumerState<SafeBrowsingView> {
                       },
                     ),
                   ),
-                  const AppGap.semiSmall(),
+                  const AppGap.small2(),
                   Opacity(
                     opacity: enableSafeBrowsing ? 1 : 0.5,
                     child: AppSettingCard(

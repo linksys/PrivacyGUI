@@ -714,5 +714,7 @@
         "format": "yMMMd"
       }
     }
-  }
+  },
+  "dashboardFirmwareUpdateToDate": "Firmware is <span>up-to-date</span>",
+  "shareWiFi": "Share WiFi"
 }

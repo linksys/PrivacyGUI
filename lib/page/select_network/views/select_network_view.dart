@@ -14,7 +14,7 @@ import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacygui_widgets/hook/icon_hooks.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/theme/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
@@ -63,7 +63,7 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _title(isLoading, title: title),
-        const AppGap.small(),
+        const AppGap.small3(),
         SizedBox(
           height: 92.0 * networks.length,
           child: ImplicitlyAnimatedList<CloudNetworkModel>(
@@ -85,7 +85,7 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
         AppText.titleLarge(
           title,
         ),
-        const AppGap.regular(),
+        const AppGap.medium(),
         _checkLoadingStatus(isLoading),
       ],
     );
@@ -154,7 +154,7 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
         opacity: network.isOnline ? 1 : 0.8,
         child: Padding(
           padding: const EdgeInsets.symmetric(
-            vertical: Spacing.regular,
+            vertical: Spacing.medium,
           ),
           child: Row(
             children: [
@@ -168,7 +168,7 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
                 width: 60,
                 height: 60,
               ),
-              const AppGap.semiBig(),
+              const AppGap.large1(),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -176,7 +176,7 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
                       color: network.isOnline
                           ? null
                           : Theme.of(context).colorScheme.onInverseSurface),
-                  const AppGap.small(),
+                  const AppGap.small3(),
                 ],
               ),
             ],

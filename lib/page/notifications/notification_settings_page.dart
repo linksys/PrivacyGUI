@@ -36,9 +36,9 @@ class _NotificationSettingsViewState
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const AppGap.semiBig(),
+              const AppGap.large1(),
               _title(),
-              const AppGap.semiBig(),
+              const AppGap.large1(),
               _createNotificationTiles(state),
               //       .map((e) => AppPanelWithSwitch(value: e.$1, title: title))
             ],

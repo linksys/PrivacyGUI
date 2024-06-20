@@ -156,7 +156,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 AppText.headlineSmall(loc(context).login),
-                const AppGap.big(),
+                const AppGap.large2(),
                 SizedBox(
                   width: 289,
                   child: AppPasswordField(
@@ -191,14 +191,14 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
                       ),
                     ),
                   ),
-                const AppGap.big(),
+                const AppGap.large2(),
                 AppTextButton.noPadding(
                   loc(context).forgotPassword,
                   onTap: () {
                     context.pushNamed(RouteNamed.localRouterRecovery);
                   },
                 ),
-                const AppGap.big(),
+                const AppGap.large2(),
                 AppFilledButton(
                   loc(context).login,
                   onTap: _shouldEnableLoginButton()

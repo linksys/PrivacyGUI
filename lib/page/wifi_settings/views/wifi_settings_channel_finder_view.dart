@@ -5,7 +5,7 @@ import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacygui_widgets/hook/icon_hooks.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/base/gap.dart';
+import 'package:privacygui_widgets/widgets/gap/gap.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
@@ -83,7 +83,7 @@ class _WifiSettingsChannelFinderViewState
                 .images
                 .devices
                 .getByName(channel.deviceIcon!)),
-        const AppGap.regular(),
+        const AppGap.medium(),
         Text(channel.deviceName!)
       ],
     );

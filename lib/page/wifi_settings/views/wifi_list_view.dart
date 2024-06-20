@@ -149,7 +149,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
               )
             ],
           ),
-          const AppGap.regular(),
+          const AppGap.medium(),
           AppCard(
             child: Column(
               children: [
@@ -213,7 +213,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               AppText.labelLarge(loc(context).wifi),
-              const AppGap.regular(),
+              const AppGap.medium(),
               AppTextButton(
                 loc(context).showBasic,
                 icon: LinksysIcons.settings,
@@ -225,7 +225,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
               )
             ],
           ),
-          const AppGap.regular(),
+          const AppGap.medium(),
           ...state.mainWiFi.map((radio) => _advancedWiFiCard(radio)),
         ],
       ),
@@ -257,7 +257,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
                 _advancedWiFiChannelCard(radio),
               ],
             )),
-        const AppGap.regular(),
+        const AppGap.medium(),
       ],
     );
   }

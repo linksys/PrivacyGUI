@@ -95,9 +95,9 @@ class _LinkupViewState extends ConsumerState<LinkupView> {
                   const Center(
                     child: AppText.titleLarge('Linksys linkup'),
                   ),
-                  const AppGap.regular(),
+                  const AppGap.medium(),
                   AppText.bodyLarge(data.subject),
-                  const AppGap.big(),
+                  const AppGap.large2(),
                   ...data.contents.map((content) {
                     return AppExpansion(
                       initiallyExpanded: true,

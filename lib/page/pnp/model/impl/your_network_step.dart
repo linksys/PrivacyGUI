@@ -56,7 +56,7 @@ class YourNetworkStep extends PnpStep {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppText.bodyLarge(loc(context).pnpYourNetworkDesc),
-          const AppGap.regular(),
+          const AppGap.medium(),
           Column(
             children: [
               ...state.childNodes
@@ -71,7 +71,7 @@ class YourNetworkStep extends PnpStep {
                   []
             ],
           ),
-          const AppGap.regular(),
+          const AppGap.medium(),
           AppTextButton(
             loc(context).addNodes,
             icon: LinksysIcons.add,

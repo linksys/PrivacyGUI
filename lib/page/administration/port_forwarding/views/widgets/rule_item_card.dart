@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/theme/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/base/gap.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/gap/gap.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
 import 'package:privacygui_widgets/widgets/text/app_text.dart';
 
@@ -16,7 +16,7 @@ class RuleItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppListCard(
-      padding: const EdgeInsets.all(Spacing.semiBig),
+      padding: const EdgeInsets.all(Spacing.large1),
       title: AppText.labelLarge(title),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
@@ -24,7 +24,7 @@ class RuleItemCard extends StatelessWidget {
           AppText.bodyLarge(
             isEnabled ? loc(context).on : loc(context).off,
           ),
-          const AppGap.regular(),
+          const AppGap.medium(),
           const Icon(LinksysIcons.edit),
         ],
       ),

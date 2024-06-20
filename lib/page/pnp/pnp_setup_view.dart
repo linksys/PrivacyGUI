@@ -18,7 +18,7 @@ import 'package:privacy_gui/page/pnp/model/pnp_step.dart';
 import 'package:privacy_gui/page/pnp/widgets/pnp_stepper.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/theme/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
@@ -129,7 +129,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         content: LayoutBuilder(builder: (context, constraints) {
           return Padding(
-            padding: const EdgeInsets.symmetric(vertical: Spacing.extraBig),
+            padding: const EdgeInsets.symmetric(vertical: Spacing.large3),
             child: PnpStepper(
               steps: steps,
               stepperType: StepperType.horizontal,
@@ -151,9 +151,9 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Center(child: AppSpinner()),
-              const AppGap.regular(),
+              const AppGap.medium(),
               AppText.headlineSmall(_loadingMessage),
-              const AppGap.regular(),
+              const AppGap.medium(),
               AppText.bodyLarge(_loadingMessageSub),
             ],
           ),
@@ -166,7 +166,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               AppText.labelLarge(loc(context).saved),
-              const AppGap.regular(),
+              const AppGap.medium(),
               const Icon(
                 LinksysIcons.checkCircle,
               ),
@@ -197,12 +197,12 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
                 color: Theme.of(context).colorScheme.primary,
                 size: 48,
               ),
-              const AppGap.regular(),
+              const AppGap.medium(),
               AppText.headlineSmall(loc(context).pnpWiFiReady(wifiSSID)),
-              const AppGap.regular(),
+              const AppGap.medium(),
               if (_needToReconnect)
                 AppText.bodyMedium(loc(context).pnpWiFiReadyConnectToNewWiFi),
-              const AppGap.extraBig(),
+              const AppGap.large3(),
               AppFilledButton(
                 loc(context).done,
                 onTap: () {
@@ -234,9 +234,9 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
                 color: Theme.of(context).colorScheme.primary,
                 size: 48,
               ),
-              const AppGap.regular(),
+              const AppGap.medium(),
               AppText.headlineSmall(loc(context).pnpReconnectWiFi),
-              const AppGap.extraBig(),
+              const AppGap.large3(),
               AppFilledButton(
                 loc(context).next,
                 onTap: () {
@@ -284,13 +284,14 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
         });
       }
     }, test: (error) => error is ExceptionNeedToReconnect).catchError((error) {
-      logger.d('[pnp] JNAP Error, $error');
+      logger.d('[pnp] Saving Error, $error');
       setState(() {
         _setupStep = _PnpSetupStep.config;
       });
+      final err = error is ExceptionSavingChanges ? error.error : error;
       showSimpleSnackBar(
-          context, 'Unexceped error! <${(error as JNAPError).error}>');
-    }, test: (error) => error is JNAPError).whenComplete(() async {
+          context, 'Unexceped error! <$err}>');
+    }, test: (error) => error is ExceptionSavingChanges).whenComplete(() async {
       logger.d('[pnp] Save complete, $isUnconfigured, $_setupStep');
 
       if (isUnconfigured) {

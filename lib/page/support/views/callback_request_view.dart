@@ -14,7 +14,7 @@ import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/support/providers/support_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/validator_rules/input_validators.dart';
-import 'package:privacygui_widgets/widgets/base/gap.dart';
+import 'package:privacygui_widgets/widgets/gap/gap.dart';
 import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:privacygui_widgets/widgets/input_field/app_text_field.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
@@ -110,7 +110,7 @@ class _CallbackRequestViewState extends ConsumerState<CallbackRequestView> {
                     _onInputChanged();
                   },
                 ),
-                const AppGap.regular(),
+                const AppGap.medium(),
                 Row(
                   children: [
                     Expanded(
@@ -122,7 +122,7 @@ class _CallbackRequestViewState extends ConsumerState<CallbackRequestView> {
                         },
                       ),
                     ),
-                    const AppGap.regular(),
+                    const AppGap.medium(),
                     Expanded(
                       child: AppTextField.outline(
                         headerText: getAppLocalizations(context).lastName,
@@ -134,7 +134,7 @@ class _CallbackRequestViewState extends ConsumerState<CallbackRequestView> {
                     ),
                   ],
                 ),
-                const AppGap.regular(),
+                const AppGap.medium(),
                 Row(
                   children: [
                     SizedBox(
@@ -162,7 +162,7 @@ class _CallbackRequestViewState extends ConsumerState<CallbackRequestView> {
                         ),
                       ),
                     ),
-                    const AppGap.semiSmall(),
+                    const AppGap.small2(),
                     Expanded(
                       child: AppTextField.outline(
                         controller: phoneNumberController,
@@ -182,7 +182,7 @@ class _CallbackRequestViewState extends ConsumerState<CallbackRequestView> {
                     ),
                   ],
                 ),
-                const AppGap.regular(),
+                const AppGap.medium(),
                 AppTextField.outline(
                   maxLines: 5,
                   controller: messageController,

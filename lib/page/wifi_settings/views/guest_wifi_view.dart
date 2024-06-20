@@ -105,7 +105,7 @@ class _GuestWiFiSettingsViewState extends ConsumerState<GuestWiFiSettingsView> {
               ),
             ),
             if (guest.isEnabled) ...[
-              const AppGap.regular(),
+              const AppGap.medium(),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 child: AppText.labelLarge(loc(context).settings),

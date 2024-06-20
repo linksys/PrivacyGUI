@@ -459,16 +459,21 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
           fetchRemote: true,
           cacheLevel: CacheLevel.noCache,
           sideEffectOverrides:
-              const JNAPSideEffectOverrides(maxRetry: 5, retryDelayInSec: 5),
+              const JNAPSideEffectOverrides(maxRetry: 18, retryDelayInSec: 10),
         )
         .catchError((error) {
           // Connection error,
           logger.d('[pnp] Connection changed need to reconnect to the router');
           throw ExceptionNeedToReconnect();
-        }, test: (error) => error is ClientException)
+        },
+            test: (error) =>
+                error is ClientException || error is JNAPSideEffectError)
         .onError((error, stackTrace) {
+          if (error is ExceptionNeedToReconnect) {
+            throw error;
+          }
           // Saving error
-          throw ExceptionSavingChanges();
+          throw ExceptionSavingChanges(error);
         })
         .then((_) async => await Future.delayed(const Duration(seconds: 3)))
         .then((_) => testConnectionReconnected())

@@ -7,7 +7,7 @@ import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_view_provider.dart';
-import 'package:privacygui_widgets/theme/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/panel/switch_trigger_tile.dart';
@@ -94,7 +94,7 @@ class _WifiAdvancedSettingsViewState
                 description:
                     AppText.bodyMedium(loc(context).clientSteeringDesc),
                 value: value,
-                padding: const EdgeInsets.all(Spacing.big),
+                padding: const EdgeInsets.all(Spacing.large2),
                 toggleInCenter: true,
                 onChanged: (value) {
                   ref
@@ -103,7 +103,7 @@ class _WifiAdvancedSettingsViewState
                 },
               ),
             ),
-            const AppGap.semiSmall()
+            const AppGap.small2()
           ]
         : [];
   }
@@ -116,7 +116,7 @@ class _WifiAdvancedSettingsViewState
                 title: AppText.labelLarge(loc(context).nodeSteering),
                 description: AppText.bodyMedium(loc(context).nodeSteeringDesc),
                 value: value,
-                padding: const EdgeInsets.all(Spacing.big),
+                padding: const EdgeInsets.all(Spacing.large2),
                 toggleInCenter: true,
                 onChanged: (value) {
                   ref
@@ -125,7 +125,7 @@ class _WifiAdvancedSettingsViewState
                 },
               ),
             ),
-            const AppGap.semiSmall()
+            const AppGap.small2()
           ]
         : [];
   }
@@ -141,14 +141,14 @@ class _WifiAdvancedSettingsViewState
                 description: const AppText.bodySmall(
                     'IPTV subscribers should turn this feature ON to get the most out of the service. Depending on your network configuration, you might have to reconnect some devices.'),
                 value: value,
-                padding: const EdgeInsets.all(Spacing.big),
+                padding: const EdgeInsets.all(Spacing.large2),
                 toggleInCenter: true,
                 onChanged: (value) {
                   ref.read(wifiAdvancedProvider.notifier).setIptvEnabled(value);
                 },
               ),
             ),
-            const AppGap.semiSmall()
+            const AppGap.small2()
           ]
         : [];
   }
@@ -171,14 +171,14 @@ class _WifiAdvancedSettingsViewState
                   },
                 ),
                 value: value,
-                padding: const EdgeInsets.all(Spacing.big),
+                padding: const EdgeInsets.all(Spacing.large2),
                 toggleInCenter: true,
                 onChanged: (value) {
                   ref.read(wifiAdvancedProvider.notifier).setDFSEnabled(value);
                 },
               ),
             ),
-            const AppGap.semiSmall()
+            const AppGap.small2()
           ]
         : [];
   }
@@ -191,14 +191,14 @@ class _WifiAdvancedSettingsViewState
                 title: AppText.labelLarge(loc(context).mlo),
                 description: AppText.bodyMedium(loc(context).mloDesc),
                 value: value,
-                padding: const EdgeInsets.all(Spacing.big),
+                padding: const EdgeInsets.all(Spacing.large2),
                 toggleInCenter: true,
                 onChanged: (value) {
                   ref.read(wifiAdvancedProvider.notifier).setMLOEnabled(value);
                 },
               ),
             ),
-            const AppGap.semiSmall()
+            const AppGap.small2()
           ]
         : [];
   }

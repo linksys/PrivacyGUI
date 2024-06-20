@@ -12,7 +12,7 @@ import 'package:privacy_gui/page/dashboard/views/components/home_title.dart';
 import 'package:privacy_gui/page/dashboard/views/components/networks.dart';
 import 'package:privacy_gui/page/dashboard/views/components/port_and_speed.dart';
 import 'package:privacy_gui/page/dashboard/views/components/wifi_grid.dart';
-import 'package:privacygui_widgets/theme/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 
@@ -44,17 +44,17 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
       appBarStyle: AppBarStyle.none,
       backState: StyledBackState.none,
       padding: const EdgeInsets.only(
-        top: Spacing.big,
-        left: Spacing.regular,
-        right: Spacing.regular,
-        bottom: Spacing.regular,
+        top: Spacing.large2,
+        left: Spacing.medium,
+        right: Spacing.medium,
+        bottom: Spacing.medium,
       ),
       child: ResponsiveLayout(
         desktop: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
             const DashboardHomeTitle(),
-            const AppGap.big(),
+            const AppGap.large2(),
             horizontalLayout
                 ? const Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -64,7 +64,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
                         child: Column(
                           children: [
                             DashboardHomePortAndSpeed(),
-                            AppGap.semiSmall(),
+                            AppGap.small2(),
                             DashboardWiFiGrid(),
                           ],
                         ),
@@ -85,13 +85,13 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
                         flex: 1,
                         child: DashboardHomePortAndSpeed(),
                       ),
-                      AppGap.regular(),
+                      AppGap.medium(),
                       Expanded(
                           flex: 4,
                           child: Column(
                             children: [
                               DashboardNetworks(),
-                              AppGap.semiSmall(),
+                              AppGap.small2(),
                               DashboardWiFiGrid(),
 
                               // _networkInfoTiles(state, isLoading),
@@ -107,12 +107,12 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
           children: [
             DashboardHomeTitle(),
             DashboardHomePortAndSpeed(),
-            AppGap.semiSmall(),
+            AppGap.small2(),
             DashboardNetworks(),
-            AppGap.semiSmall(),
+            AppGap.small2(),
 
             DashboardWiFiGrid(),
-            // const AppGap.extraBig(),
+            // const AppGap.large3(),
             // _speedTestTile(state, isLoading),
           ],
         ),

@@ -230,7 +230,7 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
               });
             },
           ),
-          const AppGap.big(),
+          const AppGap.large2(),
           AppTextField(
             border: const OutlineInputBorder(),
             controller: hintController,

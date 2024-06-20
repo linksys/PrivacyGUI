@@ -101,7 +101,7 @@ class _NumberPickerViewState extends ConsumerState<NumberPickerView> {
         widget.title,
         color: const Color.fromRGBO(0, 0, 0, 0.2),
       ),
-      const AppGap.semiSmall(),
+      const AppGap.small2(),
       TextButton(
           onPressed: () {
             if (Platform.isAndroid) {
@@ -118,7 +118,7 @@ class _NumberPickerViewState extends ConsumerState<NumberPickerView> {
                   fontSize: 25,
                   fontWeight: FontWeight.w500,
                   color: Colors.black))),
-      const AppGap.small(),
+      const AppGap.small3(),
       Image.asset('assets/images/line.png')
     ]);
   }

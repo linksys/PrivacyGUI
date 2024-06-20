@@ -23,7 +23,7 @@ class _HiddenPasswordWidgetState extends ConsumerState<HiddenPasswordWidget> {
         AppText.headlineMedium(
           _getPasswordContent(),
         ),
-        const AppGap.semiSmall(),
+        const AppGap.small2(),
         AppIconButton(
           icon:
               isPwSecure ? LinksysIcons.visibility : LinksysIcons.visibilityOff,

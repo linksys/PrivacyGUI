@@ -105,16 +105,16 @@ class DashboardWiFiGrid extends ConsumerWidget {
               ),
             ],
           ),
-          const AppGap.regular(),
+          const AppGap.medium(),
           AppText.titleMedium(item.ssid),
-          const AppGap.regular(),
+          const AppGap.medium(),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(
                 children: [
                   const Icon(LinksysIcons.devices),
-                  const AppGap.regular(),
+                  const AppGap.medium(),
                   AppText.labelLarge(
                     loc(context).nDevices(item.numOfConnectedDevices),
                   ),
@@ -138,7 +138,7 @@ class DashboardWiFiGrid extends ConsumerWidget {
 
   _showWiFiShareModal(BuildContext context, DashboardWiFiItem item) {
     showSimpleAppOkDialog(context,
-        title: loc(context).wifi,
+        title: loc(context).shareWiFi,
         content: WiFiShareDetailView(
           ssid: item.ssid,
           password: item.password,

@@ -54,18 +54,18 @@ class _PnpPPPOEViewState extends ConsumerState<PnpPPPOEView> {
             AppText.bodyLarge(
               loc(context).pnpPppoeDesc,
             ),
-            const AppGap.extraBig(),
+            const AppGap.large3(),
             if (errorMessage != null)
               AppText.bodyLarge(
                 errorMessage!,
                 color: Theme.of(context).colorScheme.error,
               ),
-            const AppGap.extraBig(),
+            const AppGap.large3(),
             AppTextField.outline(
               headerText: loc(context).accountName,
               controller: _accountNameController,
             ),
-            const AppGap.semiBig(),
+            const AppGap.large1(),
             AppTextField.outline(
               secured: true,
               headerText: loc(context).password,
@@ -76,7 +76,7 @@ class _PnpPPPOEViewState extends ConsumerState<PnpPPPOEView> {
               replacement: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const AppGap.extraBig(),
+                  const AppGap.large3(),
                   AppTextButton.noPadding(
                     loc(context).pnpPppoeAddVlan,
                     icon: LinksysIcons.add,
@@ -91,13 +91,13 @@ class _PnpPPPOEViewState extends ConsumerState<PnpPPPOEView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const AppGap.semiBig(),
+                  const AppGap.large1(),
                   AppTextField.outline(
                     headerText: loc(context).vlanIdOptional,
                     controller: _vlanController,
                     inputType: TextInputType.number,
                   ),
-                  const AppGap.extraBig(),
+                  const AppGap.large3(),
                   AppTextButton.noPadding(
                     loc(context).pnpPppoeRemoveVlan,
                     icon: LinksysIcons.remove,
