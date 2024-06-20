@@ -239,10 +239,12 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
         : StyledAppPageView(
             scrollable: true,
             title: title,
-            bottomBar: PageBottomBar(
-              isPositiveEnabled: _isEdited(),
-              onPositiveTap: _showRestartAlert,
-            ),
+            bottomBar: isEditing
+                ? PageBottomBar(
+                    isPositiveEnabled: _isEdited(),
+                    onPositiveTap: _showRestartAlert,
+                  )
+                : null,
             onBackTap: _isEdited()
                 ? () async {
                     final goBack = await showUnsavedAlert(context);
@@ -254,6 +256,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
             actions: [
               AppTextButton(
                 isEditing ? loc(context).cancel : loc(context).edit,
+                icon: isEditing ? LinksysIcons.close : LinksysIcons.edit,
                 onTap: isEditing
                     ? () {
                         setState(() {
@@ -327,7 +330,8 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         InternetSettingCard(
-          title: viewType == InternetSettingsViewType.ipv4
+          title: loc(context).connectionType,
+          description: viewType == InternetSettingsViewType.ipv4
               ? state.ipv4Setting.ipv4ConnectionType
               : state.ipv6Setting.ipv6ConnectionType,
           onTap: viewType == InternetSettingsViewType.ipv4
@@ -1062,6 +1066,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
                 ? state.ipv4Setting.ipv4ConnectionType
                 : state.ipv6Setting.ipv6ConnectionType,
             color: Theme.of(context).colorScheme.background,
+            margin: EdgeInsets.zero,
           ),
           if (viewType == InternetSettingsViewType.ipv4)
             ..._buildIpv4InfoByConnectionType(),

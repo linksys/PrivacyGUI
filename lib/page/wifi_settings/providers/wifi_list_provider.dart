@@ -108,6 +108,39 @@ class WifiListNotifier extends Notifier<WiFiState> {
         .then((_) => fetch(true));
   }
 
+  Future<void> saveToggleEnabled(
+      {required List<String> radios, required bool enabled}) async {
+    final settings = state.mainWiFi
+        .map((wifiItem) => NewRadioSettings(
+              radioID: wifiItem.radioID.value,
+              settings: RouterRadioSettings(
+                isEnabled: radios.contains(wifiItem.radioID.value)
+                    ? enabled
+                    : wifiItem.isEnabled,
+                mode: wifiItem.wirelessMode.value,
+                ssid: wifiItem.ssid,
+                broadcastSSID: wifiItem.isBroadcast,
+                channelWidth: wifiItem.channelWidth.value,
+                channel: wifiItem.channel,
+                security: wifiItem.securityType.value,
+                wepSettings: _getWepSettings(wifiItem),
+                wpaPersonalSettings: _getWpaPersonalSettings(wifiItem),
+                wpaEnterpriseSettings: _getWpaEnterpriseSettings(wifiItem),
+              ),
+            ))
+        .toList();
+    final newSettings = SetRadioSettings(radios: settings);
+
+    final routerRepository = ref.read(routerRepositoryProvider);
+    return routerRepository
+        .send(
+          JNAPAction.setRadioSettings,
+          auth: true,
+          data: newSettings.toMap(),
+        )
+        .then((_) => fetch(true));
+  }
+
   WepSettings? _getWepSettings(WiFiItem wifiItem) {
     // 20240124: Only WPA-Personal variant is available from app UI for now
     return wifiItem.securityType == WifiSecurityType.wep

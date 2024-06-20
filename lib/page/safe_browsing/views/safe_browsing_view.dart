@@ -107,6 +107,7 @@ class _SafeBrowsingViewState extends ConsumerState<SafeBrowsingView> {
             content: AppRadioList(
               initial: type,
               mainAxisSize: MainAxisSize.min,
+              itemCrossAxisAlignment: CrossAxisAlignment.center,
               items: [
                 if (hasFortinet)
                   AppRadioListItem(

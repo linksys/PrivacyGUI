@@ -716,5 +716,6 @@
     }
   },
   "dashboardFirmwareUpdateToDate": "Firmware is <span>up-to-date</span>",
-  "shareWiFi": "Share WiFi"
+  "shareWiFi": "Share WiFi",
+  "remove": "Remove"
 }
