@@ -1,4 +1,3 @@
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -177,24 +176,29 @@ class DashboardNetworks extends ConsumerWidget {
   }
 
   Widget _firmwareStatusWidget(BuildContext context, bool newFirmware) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        newFirmware
-            ? AppText.bodySmall(
-                loc(context).newFirmwareAvailable,
-              )
-            : _firmwareUpdateToDateWidget(context),
-        newFirmware
-            ? Icon(
-                LinksysIcons.error,
-                color: Theme.of(context).colorScheme.error,
-              )
-            : Icon(
-                LinksysIcons.check,
-                color: Theme.of(context).colorSchemeExt.green,
-              )
-      ],
+    return InkWell(
+      onTap: newFirmware
+          ? () => context.pushNamed(RouteNamed.firmwareUpdateDetail)
+          : null,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          newFirmware
+              ? AppText.bodySmall(
+                  loc(context).newFirmwareAvailable,
+                )
+              : _firmwareUpdateToDateWidget(context),
+          newFirmware
+              ? Icon(
+                  LinksysIcons.error,
+                  color: Theme.of(context).colorScheme.error,
+                )
+              : Icon(
+                  LinksysIcons.check,
+                  color: Theme.of(context).colorSchemeExt.green,
+                )
+        ],
+      ),
     );
   }
 
