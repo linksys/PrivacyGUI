@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
+import 'package:privacy_gui/page/pnp/troubleshooter/providers/pnp_troubleshooter_provider.dart';
+import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/card/list_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 
 class DashboardHomeTitle extends ConsumerWidget {
@@ -22,6 +27,9 @@ class DashboardHomeTitle extends ConsumerWidget {
     final isOnline = wanStatus == NodeWANStatus.online;
     final uptime =
         DateFormatUtils.formatDuration(Duration(seconds: uptimeInt), context);
+    final isLoading = ref
+        .watch(deviceManagerProvider.select((value) => value.deviceList))
+        .isEmpty;
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -87,7 +95,26 @@ class DashboardHomeTitle extends ConsumerWidget {
           ),
         ],
         const AppGap.medium(),
+        if (!isLoading && !isOnline) _troubleshooting(context, ref),
       ],
+    );
+  }
+
+  Widget _troubleshooting(BuildContext context, WidgetRef ref) {
+    return Padding(
+      padding: const EdgeInsets.only(
+        bottom: 16.0,
+      ),
+      child: AppListCard(
+        title: AppText.labelLarge(loc(context).troubleshoot),
+        trailing: const Icon(LinksysIcons.chevronRight),
+        onTap: () {
+          ref
+              .read(pnpTroubleshooterProvider.notifier)
+              .setEnterRoute(RouteNamed.dashboardHome);
+          context.goNamed(RouteNamed.pnpNoInternetConnection);
+        },
+      ),
     );
   }
 }

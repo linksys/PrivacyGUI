@@ -717,5 +717,7 @@
   },
   "dashboardFirmwareUpdateToDate": "Firmware is <span>up-to-date</span>",
   "shareWiFi": "Share WiFi",
-  "remove": "Remove"
+  "remove": "Remove",
+  "faqLookingFor": "Can’t find what you’re looking for?",
+  "faqVisitLinksysSupport": "Visit Linksys Support"
 }

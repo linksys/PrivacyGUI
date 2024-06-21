@@ -52,7 +52,6 @@ import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_logger.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import '../page/advanced_settings/local_network_settings/_local_network_settings.dart';
 import 'constants.dart';
 
@@ -79,14 +78,20 @@ final routerProvider = Provider<GoRouter>((ref) {
       LinksysRoute(
         name: RouteNamed.prepareDashboard,
         path: RoutePath.prepareDashboard,
-        config: LinksysRouteConfig(pageWidth: FullPageWidth()),
-        builder: (context, state) => PrepareDashboardView(),
+        config: LinksysRouteConfig(
+          pageWidth: FullPageWidth(),
+          pageAlignment: CrossAxisAlignment.center,
+        ),
+        builder: (context, state) => const PrepareDashboardView(),
       ),
       LinksysRoute(
         name: RouteNamed.selectNetwork,
         path: RoutePath.selectNetwork,
-        config: const LinksysRouteConfig(noNaviRail: true),
-        builder: (context, state) => SelectNetworkView(),
+        config: const LinksysRouteConfig(
+          noNaviRail: true,
+          pageAlignment: CrossAxisAlignment.center,
+        ),
+        builder: (context, state) => const SelectNetworkView(),
       ),
       dashboardRoute,
       pnpRoute,

@@ -24,36 +24,39 @@ class DashboardSupportView extends ArgumentsConsumerStatelessView {
       title: loc(context).support,
       enableSafeArea: (left: true, top: false, right: true, bottom: true),
       child: AppBasicLayout(
-        content: ListView(
-          shrinkWrap: true,
-          children: [
-            SupportOptionCard(
-              icon: const Icon(LinksysIcons.faq),
-              title: loc(context).dashboardSupportFAQTitle,
-              description: loc(context).dashboardSupportFAQDesc,
-              tapAction: () {
-                context.pushNamed(RouteNamed.faqList);
-              },
-            ),
-            // const AppGap.small2(),
-            // SupportOptionCard(
-            //   icon: const Icon(LinksysIcons.supportAgent),
-            //   title: loc(context).dashboardSupportCallbackTitle,
-            //   description: loc(context).dashboardSupportCallbackDesc,
-            //   tapAction: () {
-            //     context.pushNamed(RouteNamed.callbackDescription);
-            //   },
-            // ),
-            const AppGap.small2(),
-            SupportOptionCard(
-              icon: const Icon(LinksysIcons.call),
-              title: loc(context).dashboardSupportCallSupportTitle,
-              description: loc(context).dashboardSupportCallSupportDesc,
-              tapAction: () {
-                context.pushNamed(RouteNamed.callSupportMainRegion);
-              },
-            ),
-          ],
+        content: SizedBox(
+          width: 430,
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              SupportOptionCard(
+                icon: const Icon(LinksysIcons.faq),
+                title: loc(context).dashboardSupportFAQTitle,
+                description: loc(context).dashboardSupportFAQDesc,
+                tapAction: () {
+                  context.pushNamed(RouteNamed.faqList);
+                },
+              ),
+              // const AppGap.small2(),
+              // SupportOptionCard(
+              //   icon: const Icon(LinksysIcons.supportAgent),
+              //   title: loc(context).dashboardSupportCallbackTitle,
+              //   description: loc(context).dashboardSupportCallbackDesc,
+              //   tapAction: () {
+              //     context.pushNamed(RouteNamed.callbackDescription);
+              //   },
+              // ),
+              const AppGap.small2(),
+              SupportOptionCard(
+                icon: const Icon(LinksysIcons.call),
+                title: loc(context).dashboardSupportCallSupportTitle,
+                description: loc(context).dashboardSupportCallSupportDesc,
+                tapAction: () {
+                  context.pushNamed(RouteNamed.callSupportMainRegion);
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );

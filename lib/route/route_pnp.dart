@@ -3,7 +3,10 @@ part of 'router_provider.dart';
 final pnpRoute = LinksysRoute(
   name: RouteNamed.pnp,
   path: RoutePath.pnp,
-  config: LinksysRouteConfig(pageWidth: SpecificPageWidth(width: 430)),
+  config: LinksysRouteConfig(
+    pageWidth: SpecificPageWidth(width: 430),
+    pageAlignment: CrossAxisAlignment.center,
+  ),
   builder: (context, state) => PnpAdminView(
     args: state.uri.queryParameters,
   ),
@@ -11,7 +14,10 @@ final pnpRoute = LinksysRoute(
     LinksysRoute(
       name: RouteNamed.pnpConfig,
       path: RoutePath.pnpConfig,
-      config: LinksysRouteConfig(pageWidth: SpecificPageWidth(width: 430)),
+      config: LinksysRouteConfig(
+        pageWidth: SpecificPageWidth(width: 430),
+        pageAlignment: CrossAxisAlignment.center,
+      ),
       builder: (context, state) => const PnpSetupView(),
       routes: [],
     ),
@@ -23,6 +29,7 @@ final pnpTroubleshootingRoute = LinksysRoute(
   path: RoutePath.pnpNoInternetConnection,
   config: LinksysRouteConfig(
     pageWidth: SpecificPageWidth(width: 430),
+    pageAlignment: CrossAxisAlignment.center,
   ),
   builder: (context, state) => PnpNoInternetConnectionView(
     args: state.extra as Map<String, dynamic>? ?? {},
@@ -53,6 +60,7 @@ final pnpTroubleshootingRoute = LinksysRoute(
       path: RoutePath.pnpUnplugModem,
       config: LinksysRouteConfig(
         pageWidth: SpecificPageWidth(width: 430),
+        pageAlignment: CrossAxisAlignment.center,
       ),
       builder: (context, state) => const PnpUnplugModemView(),
       routes: [
@@ -61,6 +69,7 @@ final pnpTroubleshootingRoute = LinksysRoute(
           path: RoutePath.pnpModemLightsOff,
           config: LinksysRouteConfig(
             pageWidth: SpecificPageWidth(width: 430),
+            pageAlignment: CrossAxisAlignment.center,
           ),
           builder: (context, state) => const PnpModemLightsOffView(),
           routes: [
@@ -69,6 +78,7 @@ final pnpTroubleshootingRoute = LinksysRoute(
               path: RoutePath.pnpWaitingModem,
               config: LinksysRouteConfig(
                 pageWidth: SpecificPageWidth(width: 430),
+                pageAlignment: CrossAxisAlignment.center,
               ),
               builder: (context, state) => const PnpWaitingModemView(),
             )
@@ -81,6 +91,7 @@ final pnpTroubleshootingRoute = LinksysRoute(
       path: RoutePath.pnpIspTypeSelection,
       config: LinksysRouteConfig(
         pageWidth: SpecificPageWidth(width: 430),
+        pageAlignment: CrossAxisAlignment.center,
       ),
       builder: (context, state) => const PnpIspTypeSelectionView(),
       routes: [
@@ -89,6 +100,7 @@ final pnpTroubleshootingRoute = LinksysRoute(
           path: RoutePath.pnpStaticIp,
           config: LinksysRouteConfig(
             pageWidth: SpecificPageWidth(width: 430),
+            pageAlignment: CrossAxisAlignment.center,
           ),
           builder: (context, state) => const PnpStaticIpView(),
           routes: [
@@ -97,6 +109,7 @@ final pnpTroubleshootingRoute = LinksysRoute(
               path: RoutePath.pnpIspSettingsAuth,
               config: LinksysRouteConfig(
                 pageWidth: SpecificPageWidth(width: 430),
+                pageAlignment: CrossAxisAlignment.center,
               ),
               builder: (context, state) => PnpIspSettingsAuthView(
                 args: state.extra as Map<String, dynamic>? ?? {},
@@ -109,6 +122,7 @@ final pnpTroubleshootingRoute = LinksysRoute(
           path: RoutePath.pnpPPPOE,
           config: LinksysRouteConfig(
             pageWidth: SpecificPageWidth(width: 430),
+            pageAlignment: CrossAxisAlignment.center,
           ),
           builder: (context, state) => PnpPPPOEView(
             args: state.extra as Map<String, dynamic>? ?? {},
