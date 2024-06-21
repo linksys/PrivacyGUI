@@ -1,20 +1,22 @@
 import 'dart:math';
 
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:privacy_gui/core/jnap/models/health_check_result.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/administration/network_admin/providers/timezone_provider.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
-import 'package:privacy_gui/page/health_check/providers/health_check_state.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/animation/breath_dot.dart';
+import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/container/animated_meter.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
-
-import 'speed_test_button.dart';
+import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 
 class SpeedTestView extends ArgumentsConsumerStatefulView {
   const SpeedTestView({
@@ -26,51 +28,92 @@ class SpeedTestView extends ArgumentsConsumerStatefulView {
   ConsumerState<SpeedTestView> createState() => _SpeedTestViewState();
 }
 
-class _SpeedTestViewState extends ConsumerState<SpeedTestView>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-
-  List<String> _markers = [];
-
-  String _status = "RUNNING";
+class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
+  String _status = "IDLE";
+  double _meterValue = 0.0;
+  double _randomValue = 0.0;
 
   @override
   void initState() {
     super.initState();
-    _controller =
-        AnimationController(vsync: this, duration: const Duration(seconds: 45));
-    _animation = Tween(begin: 0.0, end: 1.0).animate(_controller)
-      ..addListener(() {
-        if (_controller.isCompleted) {
-          setState(() {
-            _status = "COMPLETE";
-          });
-        }
-      });
   }
 
   @override
   void dispose() {
-    _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final healthCheck = ref.watch(healthCheckProvider);
+    final state = ref.watch(healthCheckProvider);
+    ref.listen(healthCheckProvider.select((value) => value.step),
+        (previous, next) {
+      if (next == previous) {
+        return;
+      }
+      if ((previous == 'latency' && next == 'downloadBandwidth')) {
+        setState(() {
+          _meterValue = 0;
+          _randomValue = 0;
+        });
+      } else if ((previous == 'downloadBandwidth' &&
+          next == 'uploadBandwidth')) {
+        setState(() {
+          final downloadBandwidth = ((ref
+                      .read(healthCheckProvider)
+                      .result
+                      .firstOrNull
+                      ?.speedTestResult
+                      ?.downloadBandwidth ??
+                  0) /
+              1000.0);
+          _meterValue = downloadBandwidth;
+          _randomValue = 0;
+        });
+        Future.delayed(const Duration(seconds: 1), () {
+          setState(() {
+            _meterValue = 0;
+            _randomValue = 0;
+          });
+        });
+      }
+      if (next == 'success') {
+        setState(() {
+          _meterValue = 0;
+          _randomValue = 0;
+          _status = 'COMPLETE';
+        });
+      }
+    });
     return StyledAppPageView(
-      title: 'Speed Test',
-      child: AppBasicLayout(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        content: switch (_status) {
-          "RUNNING" => _runningView(healthCheck.step,
-              healthCheck.result.firstOrNull?.speedTestResult),
-          "COMPLETE" =>
-            _finishView(healthCheck.result.firstOrNull?.speedTestResult),
-          _ => _initView()
-        },
-      ),
+      scrollable: true,
+      title: loc(context).speedTest,
+      bottomBar: _status == 'COMPLETE'
+          ? PageBottomBar(
+              positiveLabel: loc(context).testAgain,
+              isPositiveEnabled: true,
+              onPositiveTap: () {
+                ref
+                    .read(healthCheckProvider.notifier)
+                    .runHealthCheck(Module.speedtest);
+                setState(() {
+                  _status = 'RUNNING';
+                });
+              },
+            )
+          : null,
+      child: switch (_status) {
+        'RUNNING' => _runningView(
+            state.step,
+            state.result.firstOrNull?.speedTestResult,
+          ),
+        'COMPLETE' => _finishView(
+            state.step,
+            state.result.firstOrNull?.speedTestResult,
+            state.timestamp,
+          ),
+        _ => _initView()
+      },
     );
   }
 
@@ -78,7 +121,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
     return Stack(
       children: [
         Container(
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
               gradient: LinearGradient(
             colors: [
               Color(0xffeff3ff),
@@ -87,14 +130,19 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
             ],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
+            stops: [0, 0.515, 1],
           )),
         ),
         Container(
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             gradient: RadialGradient(
-                radius: 0.3,
-                center: Alignment.center,
-                colors: [Color(0xffe9efff), Color(0x00ffffff)]),
+              radius: 0.3,
+              center: Alignment.center,
+              colors: [
+                Color(0xffe9efff),
+                Color(0x00ffffff),
+              ],
+            ),
           ),
         ),
       ],
@@ -102,366 +150,391 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView>
   }
 
   Widget _initView() {
-    return Stack(children: [
-      _gradientBackground(),
-      Container(
-        alignment: Alignment.bottomCenter,
-        padding: EdgeInsets.only(bottom: 24),
-        child: Image(
-          image: CustomTheme.of(context).images.speedtestPowered,
-          fit: BoxFit.fitWidth,
+    final background = ResponsiveLayout.isMobile(context)
+        ? OverflowBox(
+            maxWidth: MediaQuery.of(context).size.width,
+            child: _gradientBackground(),
+          )
+        : _gradientBackground();
+    return Stack(
+      children: [
+        background,
+        Container(
+          alignment: Alignment.bottomCenter,
+          padding: const EdgeInsets.only(bottom: 40),
+          child: Image(
+            image: CustomTheme.of(context).images.speedtestPowered,
+            fit: BoxFit.fitWidth,
+          ),
         ),
-      ),
-      Container(
-        alignment: Alignment.center,
-        child: InkWell(
-          onTap: () {
-            Future.delayed(const Duration(milliseconds: 500), () {
-              setState(() {
-                _status = "RUNNING";
-                _controller.forward();
+        Container(
+          alignment: Alignment.center,
+          child: InkWell(
+            onTap: () {
+              Future.delayed(const Duration(milliseconds: 500), () {
+                setState(() {
+                  _status = 'RUNNING';
+                });
               });
-            });
-            ref
-                .read(healthCheckProvider.notifier)
-                .runHealthCheck(Module.speedtest);
-          },
-          child: Container(
-            width: 240,
-            height: 240,
-            decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Theme.of(context).colorScheme.primary),
-            child: Center(
-              child: AppText.displayLarge(
-                'GO',
-                color: Theme.of(context).colorScheme.onPrimary,
+              ref
+                  .read(healthCheckProvider.notifier)
+                  .runHealthCheck(Module.speedtest);
+            },
+            child: Container(
+              width: 240,
+              height: 240,
+              decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Theme.of(context).colorScheme.primary),
+              child: Center(
+                child: AppText.displayLarge(
+                  loc(context).go,
+                  color: Theme.of(context).colorScheme.onPrimary,
+                ),
               ),
             ),
           ),
-        ),
-      ),
-    ]);
-  }
-
-  Widget _runningView(String step, SpeedTestResult? result) {
-    final (latency, downloadBandWidth, uploadBandWidth) = _getDataText(result);
-    final isDownload = uploadBandWidth == '0.00';
-    final value =
-        uploadBandWidth == '0.00' ? downloadBandWidth : uploadBandWidth;
-    final defaultMarkers = <double>[1, 5, 10, 20, 30, 50, 75, 100];
-    return AnimatedMeter(
-      value: double.parse(value),
-      markers: defaultMarkers,
-      centerBuilder: (context, value) {
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AppText.labelMedium(step == 'latency'
-                ? '--'
-                : isDownload
-                    ? 'Download'
-                    : 'Upload'),
-            AppText.titleLarge((value).toStringAsFixed(2)),
-            AppText.bodySmall('Mbps')
-          ],
-        );
-      },
-      bottomBuilder: (context, value) {
-        return Wrap(
-          alignment: WrapAlignment.center,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4.0),
-              child: BreathDot(
-                breathSpeed: const Duration(seconds: 1),
-                lightColor: Theme.of(context).colorScheme.primary,
-                borderColor: Theme.of(context).colorScheme.primary,
-                size: 12,
-                dotSize: 8,
-              ),
-            ),
-            AppText.labelMedium(
-              'Ping:',
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            AppText.bodySmall(
-              step == 'latency' ? '--ms' : '${latency}ms',
-              color: Theme.of(context).colorScheme.primary,
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _finishView(SpeedTestResult? result) {
-    final (latency, downloadBandWidth, uploadBandWidth) = _getDataText(result);
-
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const AppText.displaySmall("Latency"),
-            const AppGap.medium(),
-            AppText.displaySmall(latency),
-          ],
-        ),
-        const AppGap.medium(),
-        const Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            AppText.displaySmall('Upload'),
-            AppText.displaySmall('Download'),
-          ],
-        ),
-        const AppGap.medium(),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            AppText.displaySmall(uploadBandWidth),
-            AppText.displaySmall(downloadBandWidth),
-          ],
         ),
       ],
     );
   }
 
+  Widget _runningView(String step, SpeedTestResult? result) {
+    final (latency, downloadBandWidth, uploadBandWidth) = _getDataText(result);
+    final value =
+        step == 'downloadBandwidth' ? downloadBandWidth : uploadBandWidth;
+    final meterValue =
+        step == 'latency' ? 0.0 : _getRandomMeterValue(double.parse(value));
+    return ResponsiveLayout(
+      desktop: Row(
+        children: [
+          _meterView(step, meterValue, latency),
+          const AppGap.large2(),
+          const AppGap.small2(),
+          SizedBox(
+            width: 315,
+            child: _infoView(step, downloadBandWidth, uploadBandWidth),
+          ),
+        ],
+      ),
+      mobile: Column(
+        children: [
+          const AppGap.small2(),
+          _meterView(step, meterValue, latency),
+          const AppGap.medium(),
+          const Spacer(),
+          _infoView(step, downloadBandWidth, uploadBandWidth),
+          const AppGap.medium(),
+        ],
+      ),
+    );
+  }
+
+  Widget _meterView(String step, double value, String latency) {
+    final defaultMarkers = <double>[0, 1, 5, 10, 20, 30, 50, 75, 100];
+    return AnimatedMeter(
+      size: 400,
+      value: value,
+      markers: defaultMarkers,
+      centerBuilder: (context, value) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppText.titleSmall(switch (step) {
+              'latency' => '',
+              'downloadBandwidth' => loc(context).download,
+              'uploadBandwidth' => loc(context).upload,
+              _ => '',
+            }),
+            AppText.displayLarge(
+                step == 'latency' ? '—' : (value).toStringAsFixed(2)),
+            const AppText.bodyMedium('Mbps'),
+          ],
+        );
+      },
+      bottomBuilder: (context, value) {
+        return _pingView(step, latency);
+      },
+    );
+  }
+
+  Widget _pingView(String step, String latency) {
+    return Column(
+      mainAxisAlignment:
+          step != 'success' ? MainAxisAlignment.end : MainAxisAlignment.center,
+      children: [
+        Row(
+          mainAxisAlignment: step != 'success'
+              ? MainAxisAlignment.center
+              : MainAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(right: 9),
+              child: BreathDot(
+                breathSpeed: const Duration(seconds: 1),
+                lightColor: Theme.of(context).colorScheme.primary,
+                borderColor: Theme.of(context).colorScheme.primary,
+                size: 12,
+                dotSize: 6,
+              ),
+            ),
+            AppText.titleSmall(
+              step == 'latency' ? 'Ping: —' : 'Ping: ',
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            AppText.bodyMedium(
+              step == 'latency' ? 'ms' : '${latency}ms',
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ],
+        ),
+        if (step != 'success') const AppGap.medium(),
+      ],
+    );
+  }
+
+  Widget _infoView(
+      String step, String downloadBandWidth, String uploadBandWidth) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _descriptionCard(step),
+        if (step != 'latency') const AppGap.small3(),
+        if (step != 'latency') _resultCard(downloadBandWidth, uploadBandWidth),
+      ],
+    );
+  }
+
+  Widget _descriptionCard(String step) {
+    List<Widget> children = [];
+    final setpTitle = switch (step) {
+      'latency' => loc(context).testingPing,
+      'downloadBandwidth' => loc(context).testingDownloadSpeed,
+      'uploadBandwidth' => loc(context).testingUploadSpeed,
+      _ => '',
+    };
+    final setpDesc = switch (step) {
+      'latency' => null,
+      'downloadBandwidth' => loc(context).testingDownloadSpeedDescription,
+      'uploadBandwidth' => loc(context).testingUploadSpeedDescription,
+      _ => null,
+    };
+    children.add(AppText.titleSmall(
+      setpTitle,
+      textAlign: TextAlign.center,
+    ));
+    if (setpDesc != null) {
+      children.add(const AppGap.small2());
+      children.add(AppText.bodyMedium(
+        setpDesc,
+        textAlign: TextAlign.center,
+      ));
+    }
+    return SizedBox(
+      width: double.infinity,
+      child: AppCard(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: children,
+        ),
+      ),
+    );
+  }
+
+  Widget _resultCard(String downloadBandWidth, String uploadBandWidth) {
+    final downloadBandWidthView =
+        _status == 'RUNNING' && !ResponsiveLayout.isMobileLayout(context)
+            ? AppText.displaySmall(
+                downloadBandWidth == '0.00' ? '—' : downloadBandWidth)
+            : AppText.displayLarge(
+                downloadBandWidth == '0.00' ? '—' : downloadBandWidth);
+    final uploadBandWidthView =
+        _status == 'RUNNING' && !ResponsiveLayout.isMobileLayout(context)
+            ? AppText.displaySmall(
+                uploadBandWidth == '0.00' ? '—' : uploadBandWidth)
+            : AppText.displayLarge(
+                uploadBandWidth == '0.00' ? '—' : uploadBandWidth);
+    return Row(
+      children: [
+        Expanded(
+          child: AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(LinksysIcons.download),
+                const AppGap.small2(),
+                AppText.titleSmall(loc(context).download),
+                const AppGap.small2(),
+                downloadBandWidthView,
+                const AppGap.small2(),
+                const AppText.bodyMedium('Mbps'),
+              ],
+            ),
+          ),
+        ),
+        const AppGap.small2(),
+        Expanded(
+          child: AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(LinksysIcons.upload),
+                const AppGap.small2(),
+                AppText.titleSmall(loc(context).upload),
+                const AppGap.small2(),
+                uploadBandWidthView,
+                const AppGap.small2(),
+                const AppText.bodyMedium('Mbps'),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _finishView(String step, SpeedTestResult? result, String? timestamp) {
+    final (latency, downloadBandWidth, uploadBandWidth) = _getDataText(result);
+    final (resultTitle, resultDesc) = _getTestResultDesc(result);
+    final date = _getTestResultDate(timestamp);
+    return ResponsiveLayout(
+      desktop: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 448,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppCard(
+                  child: _pingView(step, latency),
+                ),
+                const AppGap.small2(),
+                _resultCard(downloadBandWidth, uploadBandWidth),
+                // ISP info
+              ],
+            ),
+          ),
+          const AppGap.small2(),
+          SizedBox(
+            width: 340,
+            child: AppCard(
+              color: Theme.of(context).colorScheme.background,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(LinksysIcons.bolt),
+                  const AppGap.medium(),
+                  AppText.titleSmall(resultTitle),
+                  const AppGap.small2(),
+                  AppText.bodyMedium(resultDesc),
+                  const AppGap.small2(),
+                  AppText.bodySmall(date),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+      mobile: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppCard(
+            child: _pingView(step, latency),
+          ),
+          const AppGap.small2(),
+          _resultCard(downloadBandWidth, uploadBandWidth),
+          // ISP info
+          const AppGap.small3(),
+          SizedBox(
+            width: double.infinity,
+            child: AppCard(
+              color: Theme.of(context).colorScheme.background,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(LinksysIcons.bolt),
+                  const AppGap.medium(),
+                  AppText.titleSmall(resultTitle),
+                  const AppGap.small2(),
+                  AppText.bodyMedium(resultDesc),
+                  const AppGap.small2(),
+                  AppText.bodySmall(date),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  double _getRandomMeterValue(double value) {
+    if (value == 0) {
+      _meterValue = _meterValue + _randomValue;
+      _randomValue = _randomDouble(-10, 15);
+    } else {
+      return value;
+    }
+    if (_meterValue < 0) {
+      _meterValue = 0;
+    }
+    return _meterValue;
+  }
+
+  double _randomDouble(double min, double max) {
+    return (Random().nextDouble() * (max - min) + min);
+  }
+
   (String, String, String) _getDataText(SpeedTestResult? result) {
-    var latency = result?.latency?.toStringAsFixed(2) ?? '--';
+    var latency = result?.latency?.toStringAsFixed(0) ?? '—';
     var downloadBandWidth =
-        ((result?.downloadBandwidth ?? 0) / 1000.0).toStringAsFixed(2);
+        ((result?.downloadBandwidth ?? 0) / 1000.0).toStringAsFixed(1);
     var uploadBandWidth =
-        ((result?.uploadBandwidth ?? 0) / 1000.0).toStringAsFixed(2);
+        ((result?.uploadBandwidth ?? 0) / 1000.0).toStringAsFixed(1);
     return (latency, downloadBandWidth, uploadBandWidth);
   }
 
-  // Widget _content(BuildContext context, HealthCheckState state) {
-  //   return Stack(children: [
-  //     Container(
-  //       decoration: BoxDecoration(
-  //           gradient: LinearGradient(
-  //         colors: [
-  //           Color(0xffeff3ff),
-  //           Color(0xffd8e2ff),
-  //           Color(0xff005bc1),
-  //         ],
-  //         begin: Alignment.topCenter,
-  //         end: Alignment.bottomCenter,
-  //       )),
-  //     ),
-  //     Container(
-  //       decoration: BoxDecoration(
-  //         gradient: RadialGradient(
-  //             radius: 0.3,
-  //             center: Alignment.center,
-  //             colors: [Color(0xffe9efff), Color(0x00ffffff)]),
-  //       ),
-  //     ),
-  //     Container(
-  //       alignment: Alignment.bottomCenter,
-  //       padding: EdgeInsets.only(bottom: 24),
-  //       child: Image(
-  //         image: CustomTheme.of(context).images.speedtestPowered,
-  //         fit: BoxFit.fitWidth,
-  //       ),
-  //     ),
-  //     Container(
-  //         alignment: Alignment.center,
-  //         child: speedTestSection(context, _status, state))
-  //   ]);
-  // }
+  (String, String) _getTestResultDesc(SpeedTestResult? result) {
+    var downloadBandWidth = (result?.downloadBandwidth ?? 0) / 1000.0;
+    var resultTitle = switch (downloadBandWidth) {
+      < 50 => loc(context).speedOkay,
+      < 100 => loc(context).speedGood,
+      < 150 => loc(context).speedOptimal,
+      _ => loc(context).speedUltra,
+    };
+    var resultDesc = switch (downloadBandWidth) {
+      < 50 => loc(context).speedOkayDescription,
+      < 100 => loc(context).speedGoodDescription,
+      < 150 => loc(context).speedOptimalDescription,
+      _ => loc(context).speedUltraDescription,
+    };
+    return (resultTitle, resultDesc);
+  }
 
-  // Widget speedTestSection(
-  //     BuildContext context, String status, HealthCheckState state) {
-  //   if (state.result.isNotEmpty) {
-  //     logger.d('XXXXX health check - ${state.result.first}');
-  //   }
-
-  //   var downloadBandWidth = '0';
-  //   if (state.result.isNotEmpty &&
-  //       state.result.first.speedTestResult?.downloadBandwidth != null) {
-  //     downloadBandWidth =
-  //         state.result.first.speedTestResult!.downloadBandwidth.toString();
-  //   }
-  //   downloadBandWidth = (int.parse(downloadBandWidth) ~/ 1000).toString();
-  //   var uploadBandWidth = '0';
-  //   if (state.result.isNotEmpty &&
-  //       state.result.first.speedTestResult?.uploadBandwidth != null) {
-  //     uploadBandWidth =
-  //         state.result.first.speedTestResult!.uploadBandwidth.toString();
-  //   }
-  //   uploadBandWidth = (int.parse(uploadBandWidth) ~/ 1000).toString();
-  //   var latency = '0';
-  //   if (state.result.isNotEmpty &&
-  //       state.result.first.speedTestResult?.latency != null) {
-  //     latency = state.result.first.speedTestResult!.latency.toString();
-  //   }
-  //   final defaultMarkers = ['1', '5', '10', '20', '30', '50', '75', '100'];
-  //   if (_markers.isEmpty) {
-  //     _markers = defaultMarkers;
-  //   }
-  //   var dl = int.parse(downloadBandWidth);
-  //   var ul = int.parse(uploadBandWidth);
-  //   var valueMax = max(dl, ul);
-  //   var isDownload = dl > 0 && ul == 0;
-  //   if (valueMax > 0 && valueMax > int.parse(_markers.last)) {
-  //     // rearrange markers
-  //   }
-
-  //   switch (status) {
-  //     case "IDLE":
-  //       return InkWell(
-  //         onTap: () {
-  //           Future.delayed(const Duration(milliseconds: 500), () {
-  //             setState(() {
-  //               _status = "RUNNING";
-  //               _controller.forward();
-  //             });
-  //           });
-  //           ref
-  //               .read(healthCheckProvider.notifier)
-  //               .runHealthCheck(Module.speedtest);
-  //         },
-  //         child: Container(
-  //           width: 240,
-  //           height: 240,
-  //           decoration: BoxDecoration(
-  //               shape: BoxShape.circle,
-  //               color: Theme.of(context).colorScheme.primary),
-  //           child: Center(
-  //             child: AppText.displayLarge(
-  //               'GO',
-  //               color: Theme.of(context).colorScheme.onPrimary,
-  //             ),
-  //           ),
-  //         ),
-  //       );
-  //     case "RUNNING":
-  //       var value = Random().nextDouble();
-  //       logger.d('XXXXX: meter value : $value');
-
-  //       return AnimatedMeter(
-  //         value: value,
-  //         markers: _markers,
-  //         centerBuilder: (context, value) {
-  //           return Column(
-  //             mainAxisSize: MainAxisSize.min,
-  //             children: [
-  //               AppText.labelMedium(isDownload ? 'Download' : 'Upload'),
-  //               AppText.titleLarge((100 * value).toStringAsFixed(2)),
-  //               AppText.bodySmall('Mbps')
-  //             ],
-  //           );
-  //         },
-  //         bottomBuilder: (context, value) {
-  //           return Wrap(
-  //             alignment: WrapAlignment.center,
-  //             children: [
-  //               Padding(
-  //                 padding: const EdgeInsets.symmetric(horizontal: 4.0),
-  //                 child: BreathDot(
-  //                   breathSpeed: const Duration(seconds: 1),
-  //                   lightColor: Theme.of(context).colorScheme.primary,
-  //                   borderColor: Theme.of(context).colorScheme.primary,
-  //                   size: 12,
-  //                   dotSize: 8,
-  //                 ),
-  //               ),
-  //               AppText.labelMedium(
-  //                 'Ping:',
-  //                 color: Theme.of(context).colorScheme.primary,
-  //               ),
-  //               AppText.bodySmall(
-  //                 '--ms',
-  //                 color: Theme.of(context).colorScheme.primary,
-  //               ),
-  //             ],
-  //           );
-  //         },
-  //       );
-  //     case "COMPLETE":
-  //       return Column(
-  //         mainAxisAlignment: MainAxisAlignment.center,
-  //         crossAxisAlignment: CrossAxisAlignment.center,
-  //         children: [
-  //           Row(
-  //             crossAxisAlignment: CrossAxisAlignment.center,
-  //             children: [
-  //               const AppText.displaySmall("Latency"),
-  //               const AppGap.medium(),
-  //               AppText.displaySmall(latency),
-  //             ],
-  //           ),
-  //           const AppGap.medium(),
-  //           const Row(
-  //             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //             crossAxisAlignment: CrossAxisAlignment.center,
-  //             children: [
-  //               AppText.displaySmall('Upload'),
-  //               AppText.displaySmall('Download'),
-  //             ],
-  //           ),
-  //           const AppGap.medium(),
-  //           Row(
-  //             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //             crossAxisAlignment: CrossAxisAlignment.center,
-  //             children: [
-  //               AppText.displaySmall(uploadBandWidth),
-  //               AppText.displaySmall(downloadBandWidth),
-  //             ],
-  //           ),
-  //         ],
-  //       );
-  //     default:
-  //       return Container();
-  //   }
-  // }
-
-  //TODO: Create a speed test provider and move this function into it
-  /*
-  Future<void> runHealthCheck() async {
-    final repo = ref.read(routerRepositoryProvider);
-    final result = await repo.send(JNAPAction.runHealthCheck);
-    if (result.output['resultID'] != null) {
-      Timer.periodic(const Duration(seconds: 5), (timer) async {
-        final speedTestResult = await getHealthCheckStatus();
-        if (speedTestResult.exitCode != 'Unavailable') {
-          final selected = state.selected!;
-          MoabNetwork selectedCopy = MoabNetwork(
-              id: selected.id,
-              deviceInfo: selected.deviceInfo,
-              // wanStatus: selected.wanStatus,
-              radioInfo: selected.radioInfo,
-              devices: selected.devices,
-              healthCheckResults: selected.healthCheckResults,
-              currentSpeedTestStatus: null);
-          state = state.copyWith(selected: selectedCopy);
-          getHealthCheckResults();
-          timer.cancel();
-        }
-      });
+  String _getTestResultDate(String? timestamp) {
+    var date = '—';
+    if (timestamp != null) {
+      DateTime tempDate = DateFormat("yyyy-MM-ddThh:mm:ssZ").parse(timestamp);
+      // Get timezone offset
+      final timezoneState = ref.read(timezoneProvider);
+      final timezoneId = timezoneState.timezoneId;
+      final timezone = timezoneState.supportedTimezones
+          .firstWhereOrNull((element) => element.timeZoneID == timezoneId);
+      if (timezone != null) {
+        tempDate = DateFormat("yyyy-MM-ddThh:mm:ssZ").parse(timestamp).add(
+              Duration(
+                minutes: timezone.utcOffsetMinutes,
+              ),
+            );
+      }
+      // Convert to date string
+      date = DateFormat("h:mm a, MMM d, yyyy").format(tempDate);
     }
+    return date;
   }
-  //TODO: Integrate the following with DashboardManagerProvider
-  Future<void> getHealthCheckResults() async {
-    final repo = ref.read(routerRepositoryProvider);
-    final result = await repo.send(JNAPAction.getHealthCheckResults);
-    final healthCheckResults = List.from(result.output['healthCheckResults'])
-        .map((e) => HealthCheckResult.fromJson(e))
-        .toList();
-    _handleHealthCheckResults(healthCheckResults);
-  }
-
-  _handleHealthCheckResults(List<HealthCheckResult> healthCheckResults) {
-    state = state.copyWith(
-      selected: 
-        state.selected!.copyWith(healthCheckResults: healthCheckResults));
-  }
-  */
 }
