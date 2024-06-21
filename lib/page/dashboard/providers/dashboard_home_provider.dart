@@ -85,7 +85,7 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
     );
 
     final speedTestTimeStamp = DateFormat("yyyy-MM-ddThh:mm:ssZ")
-        .tryParse(latestSpeedTest?.timestamp ?? '')
+        .tryParse(latestSpeedTest?.timestamp ?? '', true)
         ?.millisecondsSinceEpoch;
 
     final isSpeedCheckSupported =

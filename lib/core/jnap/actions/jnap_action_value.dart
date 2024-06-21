@@ -179,17 +179,6 @@ enum _JNAPActionValue {
   refreshSlaveBackhaulData(
       value:
           'http://linksys.com/jnap/nodes/diagnostics/RefreshSlaveBackhaulData'),
-  getNodesHealthCheckStatus(
-      value: 'http://linksys.com/jnap/nodes/healthcheck/GetHealthCheckStatus'),
-  getNodesHealthCheckResults(
-      value: 'http://linksys.com/jnap/nodes/healthcheck/GetHealthCheckResults'),
-  runNodesHealthCheck(
-      value: 'http://linksys.com/jnap/nodes/healthcheck/RunHealthCheck'),
-  stopNodesHealCheck(
-      value: 'http://linksys.com/jnap/nodes/healthcheck/StopHealthCheck'),
-  getNodesSupportedHealthCheckModules(
-      value:
-          'http://linksys.com/jnap/nodes/healthcheck/GetSupportedHealthCheckModules'),
   getNodesWirelessNetworkConnections(
       value:
           'http://linksys.com/jnap/nodes/networkconnections/GetNodesWirelessNetworkConnections'),

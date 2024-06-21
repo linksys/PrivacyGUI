@@ -13,11 +13,12 @@ class TimezoneNotifier extends Notifier<TimezoneState> {
   @override
   TimezoneState build() => TimezoneState.init();
 
-  Future fetch() async {
+  Future fetch({bool fetchRemote = false}) async {
     final repo = ref.read(routerRepositoryProvider);
     final result = await repo.send(
       JNAPAction.getTimeSettings,
       auth: true,
+      fetchRemote: fetchRemote,
     );
     final timezoneId = result.output['timeZoneID'] ?? 'PST8';
     final supportedTimezones = List.from(result.output['supportedTimeZones'])
@@ -42,7 +43,7 @@ class TimezoneNotifier extends Notifier<TimezoneState> {
       auth: true,
     )
         .then<void>((value) async {
-      await fetch();
+      await fetch(fetchRemote: true);
     }).onError((error, stackTrace) {
       if (error is JNAPError) {
         // handle error
