@@ -9,6 +9,7 @@ import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/pnp/data/pnp_exception.dart';
 import 'package:privacy_gui/page/pnp/data/pnp_provider.dart';
+import 'package:privacy_gui/page/pnp/troubleshooter/providers/pnp_troubleshooter_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:privacy_gui/validator_rules/input_validators.dart';
@@ -66,6 +67,12 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
             _internetConnected = true;
           });
         })
+        .then((_) {
+          final routeFrom = ref.read(pnpTroubleshooterProvider).enterRouteName;
+          if (routeFrom.isNotEmpty) {
+            throw ExceptionInterruptAndExit(route: routeFrom);
+          }
+        })
         .then((_) => pnp.checkRouterConfigured())
         .then((_) => adminPasswordFlow(_password))
         .then((_) {
@@ -106,6 +113,9 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
             _inputError = '';
           });
         }, test: (error) => error is ExceptionRouterUnconfigured)
+        .catchError((error, stackTrace) {
+          context.goNamed((error as ExceptionInterruptAndExit).route);
+        }, test: (error) => error is ExceptionInterruptAndExit)
         .onError((error, stackTrace) {
           logger.e('[PnP] Uncaught Error',
               error: error, stackTrace: stackTrace);

@@ -17,6 +17,13 @@ class SpecificPageWidth extends PageWidth {
   });
 }
 
+class ColumnPageWidth extends PageWidth {
+  static const maxColumn = 12;
+  final int column;
+
+  ColumnPageWidth({required this.column}) : assert(column <= 12);
+}
+
 class LinksysRouteConfig extends Equatable {
   const LinksysRouteConfig({
     this.pageWidth,
@@ -56,11 +63,22 @@ class LinksysRoute extends GoRoute {
   }) : super(builder: (context, state) {
           final pagePadding = ResponsiveLayout.pageHorizontalPadding(context);
           final pageWidth = config?.pageWidth;
+          final screenWidth = MediaQuery.of(context).size.width;
+          final mainPageWidth = ResponsiveLayout.pageMainWidth(context);
+
           bool? isFullWidth;
           double? specificWidth;
           (isFullWidth, specificWidth) = switch (pageWidth) {
             FullPageWidth() => (true, null),
             SpecificPageWidth() => (false, pageWidth.width),
+            ColumnPageWidth() => (
+                false,
+                ResponsiveLayout.isMobileLayout(context)
+                    ? mainPageWidth
+                    : mainPageWidth *
+                        pageWidth.column /
+                        ColumnPageWidth.maxColumn
+              ),
             _ => (false, null),
           };
 
@@ -91,8 +109,11 @@ class LinksysRoute extends GoRoute {
                               constraints: isFullWidth
                                   ? null
                                   : BoxConstraints(
-                                      maxWidth: ResponsiveLayout.pageMainWidth(
-                                          context)),
+                                      maxWidth:
+                                          ((specificWidth ?? 0) > mainPageWidth
+                                                  ? specificWidth
+                                                  : mainPageWidth) ??
+                                              mainPageWidth),
                               child: builder(context, state)),
                         ),
                       ),

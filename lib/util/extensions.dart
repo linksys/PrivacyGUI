@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:privacy_gui/util/languages.dart';
 
 extension Unique<E, Id> on List<E> {
@@ -35,5 +36,15 @@ extension LocaleExt on Locale {
   String get displayText {
     final localStr = toLanguageTag();
     return getLanguageData(localStr)['name'] as String;
+  }
+}
+
+extension DateFormatTryParse on DateFormat {
+  DateTime? tryParse(String inputString, [bool utc = false]) {
+    try {
+      return parse(inputString, utc);
+    } on FormatException {
+      return null;
+    }
   }
 }

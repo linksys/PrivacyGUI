@@ -155,7 +155,7 @@ class DashboardHomeState extends Equatable {
     bool? isAnyNodesOffline,
     ({String value, String unit})? uploadResult,
     ({String value, String unit})? downloadResult,
-    int? timestamp,
+    int? speedCheckTimestamp,
     int? uptime,
     String? wanPortConnection,
     List<String>? lanPortConnections,

@@ -21,7 +21,8 @@ class ExceptionRouterUnconfigured extends PnpException {
 
 class ExceptionSavingChanges extends PnpException {
   final Object? error;
-  ExceptionSavingChanges(this.error) : super(message: '[PnP] Saving changes error!');
+  ExceptionSavingChanges(this.error)
+      : super(message: '[PnP] Saving changes error!');
 }
 
 class ExceptionNeedToReconnect extends PnpException {
@@ -31,4 +32,10 @@ class ExceptionNeedToReconnect extends PnpException {
 
 class ExceptionGoAddNodes extends PnpException {
   ExceptionGoAddNodes() : super(message: '[PnP] Go add nodes');
+}
+
+class ExceptionInterruptAndExit extends PnpException {
+  final String route;
+  ExceptionInterruptAndExit({required this.route})
+      : super(message: '[PnP] Interrupted and exit to $route');
 }

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/_constants.dart';
@@ -26,9 +27,13 @@ class SelectNetworkNotifier extends AsyncNotifier<SelectNetworkState> {
     // For now, we only care about node routers
     final networkModels = await Future.wait(
         (await cloudRepository.getNetworks())
-            .where((element) => isCognitiveMeshRouter(
-                modelNumber: element.network.routerModelNumber,
-                hardwareVersion: element.network.routerHardwareVersion))
+            .where((element) => kReleaseMode
+                ? isCognitiveMeshRouter(
+                    modelNumber: element.network.routerModelNumber,
+                    hardwareVersion: element.network.routerHardwareVersion)
+                : isNodeModel(
+                    modelNumber: element.network.routerModelNumber,
+                    hardwareVersion: element.network.routerHardwareVersion))
             .map((e) async {
       return CloudNetworkModel(
         network: e.network,
