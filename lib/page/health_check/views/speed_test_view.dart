@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:privacy_gui/core/jnap/models/health_check_result.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/administration/network_admin/providers/timezone_provider.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
@@ -103,16 +102,52 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
             )
           : null,
       child: switch (_status) {
-        'RUNNING' => _runningView(
-            state.step,
-            state.result.firstOrNull?.speedTestResult,
+        'RUNNING' => ResponsiveLayout(
+            desktop: AppCard(
+              showBorder: false,
+              margin: const EdgeInsets.fromLTRB(0, 0, 0, 40),
+              child: Center(
+                child: _runningView(
+                  state.step,
+                  state.result.firstOrNull?.speedTestResult,
+                ),
+              ),
+            ),
+            mobile: _runningView(
+              state.step,
+              state.result.firstOrNull?.speedTestResult,
+            ),
           ),
-        'COMPLETE' => _finishView(
-            state.step,
-            state.result.firstOrNull?.speedTestResult,
-            state.timestamp,
+        'COMPLETE' => ResponsiveLayout(
+            desktop: AppCard(
+              showBorder: false,
+              margin: const EdgeInsets.fromLTRB(0, 0, 0, 40),
+              padding: const EdgeInsets.all(40),
+              child: Container(
+                alignment: Alignment.topCenter,
+                child: _finishView(
+                  state.step,
+                  state.result.firstOrNull?.speedTestResult,
+                  state.timestamp,
+                ),
+              ),
+            ),
+            mobile: _finishView(
+              state.step,
+              state.result.firstOrNull?.speedTestResult,
+              state.timestamp,
+            ),
           ),
-        _ => _initView()
+        _ => ResponsiveLayout(
+            desktop: AppCard(
+              showBorder: false,
+              margin: const EdgeInsets.fromLTRB(0, 0, 0, 40),
+              padding: EdgeInsets.zero,
+              clipBehavior: Clip.antiAlias,
+              child: _initView(),
+            ),
+            mobile: _initView(),
+          ),
       },
     );
   }
@@ -207,6 +242,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
         step == 'latency' ? 0.0 : _getRandomMeterValue(double.parse(value));
     return ResponsiveLayout(
       desktop: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           _meterView(step, meterValue, latency),
           const AppGap.large2(),
@@ -233,7 +269,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
   Widget _meterView(String step, double value, String latency) {
     final defaultMarkers = <double>[0, 1, 5, 10, 20, 30, 50, 75, 100];
     return AnimatedMeter(
-      size: 400,
+      size: 440,
       value: value,
       markers: defaultMarkers,
       centerBuilder: (context, value) {
@@ -419,9 +455,11 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
           ),
           const AppGap.small2(),
           SizedBox(
-            width: 340,
+            width: 336,
             child: AppCard(
-              color: Theme.of(context).colorScheme.background,
+              color: ResponsiveLayout.isMobileLayout(context)
+                  ? Theme.of(context).colorScheme.background
+                  : null,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -519,21 +557,13 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
   String _getTestResultDate(String? timestamp) {
     var date = '—';
     if (timestamp != null) {
-      DateTime tempDate = DateFormat("yyyy-MM-ddThh:mm:ssZ").parse(timestamp);
-      // Get timezone offset
-      final timezoneState = ref.read(timezoneProvider);
-      final timezoneId = timezoneState.timezoneId;
-      final timezone = timezoneState.supportedTimezones
-          .firstWhereOrNull((element) => element.timeZoneID == timezoneId);
-      if (timezone != null) {
-        tempDate = DateFormat("yyyy-MM-ddThh:mm:ssZ").parse(timestamp).add(
-              Duration(
-                minutes: timezone.utcOffsetMinutes,
-              ),
-            );
-      }
+      final millisecondsSinceEpoch = DateFormat("yyyy-MM-ddThh:mm:ssZ")
+          .parse(timestamp, true)
+          .millisecondsSinceEpoch;
+      DateTime tempDate =
+          DateTime.fromMillisecondsSinceEpoch(millisecondsSinceEpoch);
       // Convert to date string
-      date = DateFormat("h:mm a, MMM d, yyyy").format(tempDate);
+      date = loc(context).speedCheckLatestTime(tempDate, tempDate);
     }
     return date;
   }
