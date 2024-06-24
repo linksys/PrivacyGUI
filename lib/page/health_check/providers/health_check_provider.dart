@@ -52,7 +52,7 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
               action: JNAPAction.getHealthCheckStatus,
               auth: true,
               firstDelayInMilliSec: 0,
-              retryDelayInMilliSec: 1000,
+              retryDelayInMilliSec: 200,
               maxRetry: -1,
               condition: (result) {
                 return result is JNAPSuccess &&
