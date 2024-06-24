@@ -1,15 +1,19 @@
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/jnap/models/firmware_update_status.dart';
 import 'package:privacy_gui/core/jnap/models/firmware_update_status_nodes.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
+import 'package:privacy_gui/core/utils/devices.dart';
+import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/firmware_update/_firmware_update.dart';
+import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacygui_widgets/hook/icon_hooks.dart';
+import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
-import 'package:privacygui_widgets/widgets/panel/general_section.dart';
+import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 
 class FirmwareUpdateDetailView extends ConsumerStatefulWidget {
   const FirmwareUpdateDetailView({
@@ -24,16 +28,11 @@ class FirmwareUpdateDetailView extends ConsumerStatefulWidget {
 class _FirmwareUpdateDetailViewState
     extends ConsumerState<FirmwareUpdateDetailView> {
   @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final nodeStatusList =
-        (ref.watch(firmwareUpdateProvider).nodesStatus ?? []).map((nodeStatus) {
+    final state = ref.watch(firmwareUpdateProvider);
+    // Build records for node deivces and their firmware status
+    final nodeStatusList = (state.nodesStatus ?? []).map((nodeStatus) {
       final nodes = ref.read(deviceManagerProvider).nodeDevices;
-
       return (
         nodeStatus is NodesFirmwareUpdateStatus
             ? nodes.firstWhere((node) => node.deviceID == nodeStatus.deviceUUID)
@@ -41,94 +40,169 @@ class _FirmwareUpdateDetailViewState
         nodeStatus
       );
     }).toList();
-    final current = nodeStatusList.firstWhereOrNull((e) {
-      return e.$2.pendingOperation != null;
-    });
-    final isUpdating = ref.watch(firmwareUpdateProvider).isUpdating;
-    final isFirmwareUpdateAvailable = ref
-            .watch(firmwareUpdateProvider)
-            .nodesStatus
-            ?.any((e) => e.availableUpdate != null) ??
+    // Find any ongoing updating operations
+    final ongoingList = nodeStatusList.where((item) {
+      return item.$2.pendingOperation != null;
+    }).toList();
+    final isUpdating = state.isUpdating;
+    final isUpdateAvailable = state.nodesStatus?.any((status) {
+          return status.availableUpdate != null;
+        }) ??
         false;
 
-    return Center(
-      child: Container(
-        padding: ResponsiveLayout.isMobileLayout(context)
-            ? const EdgeInsets.all(80)
-            : const EdgeInsets.all(120),
-        color: Theme.of(context).colorScheme.background,
-        child: isUpdating
-            ? SizedBox(
-                width: double.infinity,
-                child: FirmwareUpdateProcessView(
-                  current: current,
+    return isUpdating
+        ? _updatingProgressView(ongoingList)
+        : StyledAppPageView(
+            title: loc(context).firmwareUpdate,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppText.bodyLarge(loc(context).firmwareUpdateDesc1),
+                const AppGap.medium(),
+                AppText.bodyLarge(loc(context).firmwareUpdateDesc2),
+                const AppGap.large1(),
+                ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: nodeStatusList.length,
+                  itemBuilder: (context, index) {
+                    final nodeDevice = nodeStatusList[index].$1;
+                    final currentVersion =
+                        nodeDevice.unit.firmwareVersion ?? 'Unknown';
+                    final newVersion = nodeStatusList[index]
+                        .$2
+                        .availableUpdate
+                        ?.firmwareVersion;
+                    final modelNumber = nodeDevice.modelNumber ?? '';
+                    final routerImage = Image(
+                      height: 40,
+                      image: CustomTheme.of(context).images.devices.getByName(
+                            routerIconTestByModel(
+                              modelNumber: modelNumber,
+                            ),
+                          ),
+                    );
+                    return FirmwareUpdateNodeCard(
+                      image: routerImage,
+                      title: nodeDevice.getDeviceName(),
+                      model: modelNumber,
+                      currentVersion: currentVersion,
+                      newVersion: newVersion,
+                    );
+                  },
                 ),
-              )
-            : Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AppText.titleMedium(loc(context).firmware),
-                  const AppGap.large2(),
-                  AppText.bodyMedium(loc(context).firmwareUpdateDesc1),
-                  const AppGap.medium(),
-                  AppText.bodyMedium(loc(context).firmwareUpdateDesc2),
-                  const AppGap.medium(),
-                  AppText.bodyMedium(loc(context).firmwareUpdateDesc3),
-                  const AppGap.large3(),
-                  AppSection.withLabel(
-                    title: loc(context).details,
-                    content: FirmwareUpdateTableView(
-                      nodeStatusList: nodeStatusList,
+                if (isUpdateAvailable)
+                  Padding(
+                    padding: const EdgeInsets.only(top: Spacing.large3),
+                    child: AppFilledButton(
+                      loc(context).updateAll,
+                      onTap: () {
+                        ref
+                            .read(firmwareUpdateProvider.notifier)
+                            .updateFirmware();
+                      },
                     ),
                   ),
-                  const Spacer(),
-                  ResponsiveLayout(
-                      desktop: Row(
-                        children: [
-                          Expanded(
-                            child: _updateButton(isUpdating ||
-                                    !isFirmwareUpdateAvailable
-                                ? null
-                                : () {
-                                    ref
-                                        .read(firmwareUpdateProvider.notifier)
-                                        .updateFirmware();
-                                  }),
-                          ),
-                          const AppGap.medium(),
-                          Expanded(
-                            child: _cancelButton(),
-                          ),
-                        ],
-                      ),
-                      mobile: Column(
-                        children: [
-                          _updateButton(isUpdating || !isFirmwareUpdateAvailable
-                              ? null
-                              : () {
-                                  ref
-                                      .read(firmwareUpdateProvider.notifier)
-                                      .updateFirmware();
-                                }),
-                          const AppGap.medium(),
-                          _cancelButton(),
-                        ],
-                      )),
-                ],
+              ],
+            ),
+          );
+  }
+
+  Widget _updatingProgressView(
+      List<(LinksysDevice, FirmwareUpdateStatus)> list) {
+    return Center(
+      child: list.length == 1
+          ? _buildProgressIndicator(list.first)
+          : GridView.builder(
+              shrinkWrap: true,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                mainAxisExtent: 240,
+                childAspectRatio: 1,
+                crossAxisCount: 2,
+                mainAxisSpacing: Spacing.large3,
+                crossAxisSpacing: Spacing.large3,
               ),
-      ),
+              itemCount: list.length,
+              itemBuilder: (context, index) {
+                return _buildProgressIndicator(list[index]);
+              },
+            ),
     );
   }
 
-  Widget _updateButton(VoidCallback? onTap) => AppFilledButton.fillWidth(
-        loc(context).update,
-        onTap: onTap,
-      );
-  Widget _cancelButton() => AppFilledButton.fillWidth(
-        loc(context).cancel,
-        onTap: () {
-          context.pop();
-        },
-      );
+  Widget _buildProgressIndicator((LinksysDevice, FirmwareUpdateStatus) record) {
+    final name = record.$1.getDeviceName();
+    final operationType = record.$2.pendingOperation?.operation ?? 'In progress';
+    final progressPercent = record.$2.pendingOperation?.progressPercent ?? 0;
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        SizedBox(
+          width: 240,
+          height: 240,
+          child: CircularProgressIndicator(
+            value: progressPercent / 100,
+            color: Theme.of(context).colorScheme.primary,
+            strokeWidth: 8,
+          ),
+        ),
+        Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            AppText.headlineSmall(name),
+            const AppGap.large1(),
+            AppText.bodyLarge(operationType),
+            AppText.bodyLarge('$progressPercent %'),
+          ],
+        )
+      ],
+    );
+  }
+}
+
+class FirmwareUpdateNodeCard extends StatelessWidget {
+  final Image image;
+  final String title;
+  final String model;
+  final String currentVersion;
+  final String? newVersion;
+
+  const FirmwareUpdateNodeCard({
+    required this.image,
+    required this.title,
+    required this.model,
+    required this.currentVersion,
+    this.newVersion,
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      child: Row(
+        children: [
+          image,
+          const AppGap.medium(),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AppText.labelLarge('$title ($model)'),
+              const AppGap.small3(),
+              AppText.bodyMedium(loc(context).currentVersion(currentVersion)),
+              if (newVersion != null)
+                AppText.bodyMedium(loc(context).newVersion(newVersion!))
+            ],
+          ),
+          const Spacer(),
+          if (newVersion != null)
+            AppText.bodyMedium(
+              loc(context).updateAvailable,
+              color: Theme.of(context).colorScheme.error,
+            )
+          else
+            AppText.bodyMedium(loc(context).upToDate),
+        ],
+      ),
+    );
+  }
 }

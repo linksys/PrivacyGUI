@@ -47,6 +47,12 @@ final settings = [
               path: RoutePath.nodeLightSettings,
               builder: (context, state) => const NodeSwitchLightView(),
             ),
+            LinksysRoute(
+              config: LinksysRouteConfig(column: ColumnGrid(column: 9)),
+              name: RouteNamed.firmwareUpdateDetail,
+              path: RoutePath.firmwareUpdateDetail,
+              builder: (context, state) => const FirmwareUpdateDetailView(),
+            ),
           ],
         ),
         LinksysRoute(

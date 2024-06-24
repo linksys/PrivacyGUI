@@ -313,7 +313,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
                     color: Theme.of(context).colorScheme.error,
                   ),
                   onTap: () {
-                    showFirmwareUpdateDialog(context);
+                    context.pushNamed(RouteNamed.firmwareUpdateDetail);
                   },
                 ),
                 child: AppText.labelSmall(loc(context).upToDate)),
