@@ -29,7 +29,7 @@ void main() async {
   //   usePathUrlStrategy();
   // }
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
-  SemanticsBinding.instance.ensureSemantics();
+  // SemanticsBinding.instance.ensureSemantics();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   await Storage.init();
   await initLog();
