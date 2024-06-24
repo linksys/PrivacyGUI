@@ -28,7 +28,6 @@ class FirmwareUpdateState extends Equatable {
 
   FirmwareUpdateState copyWith({
     FirmwareUpdateSettings? settings,
-    FirmwareUpdateStatus? status,
     List<FirmwareUpdateStatus>? nodesStatus,
     bool? isUpdating,
     bool? isChecking,

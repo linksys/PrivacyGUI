@@ -201,11 +201,3 @@ Future<bool?> showUnsavedAlert(BuildContext context,
   );
 }
 
-showFirmwareUpdateDialog(BuildContext context) {
-  return showAdaptiveDialog(
-    context: context,
-    builder: (context) {
-      return const FirmwareUpdateDetailView();
-    },
-  );
-}
