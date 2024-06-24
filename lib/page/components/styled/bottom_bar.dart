@@ -20,7 +20,7 @@ class _BottomBarState extends ConsumerState<BottomBar> {
       child: IntrinsicHeight(
         child: Container(
           color: Theme.of(context).colorScheme.background,
-          constraints: const BoxConstraints(minHeight: 56, maxHeight: 60),
+          constraints: const BoxConstraints(minHeight: 56, maxHeight: 80),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.center,

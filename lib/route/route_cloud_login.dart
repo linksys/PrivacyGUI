@@ -3,7 +3,6 @@ part of 'router_provider.dart';
 final cloudLoginRoute = LinksysRoute(
   name: RouteNamed.cloudLoginAccount,
   path: RoutePath.cloudLoginAccount,
-  config: LinksysRouteConfig(pageWidth: FullPageWidth()),
   builder: (context, state) =>
       LoginCloudView(args: state.extra as Map<String, dynamic>? ?? {}),
   routes: [

@@ -12,9 +12,6 @@ final dashboardRoute = ShellRoute(
     LinksysRoute(
         name: RouteNamed.dashboardMenu,
         path: RoutePath.dashboardMenu,
-        config: LinksysRouteConfig(
-            pageWidth: ColumnPageWidth(column: 9),
-            pageAlignment: CrossAxisAlignment.start),
         builder: (context, state) => DashboardMenuView(),
         routes: [
           LinksysRoute(
@@ -26,16 +23,16 @@ final dashboardRoute = ShellRoute(
             name: RouteNamed.safeBrowsing,
             path: RoutePath.safeBrowsing,
             config: LinksysRouteConfig(
-                pageWidth: ColumnPageWidth(column: 9),
-                pageAlignment: CrossAxisAlignment.start),
+              column: ColumnGrid(column: 9),
+            ),
             builder: (context, state) => const SafeBrowsingView(),
           ),
           LinksysRoute(
             name: RouteNamed.dashboardAdvancedSettings,
             path: RoutePath.dashboardAdvancedSettings,
             config: LinksysRouteConfig(
-                pageWidth: ColumnPageWidth(column: 9),
-                pageAlignment: CrossAxisAlignment.start),
+              column: ColumnGrid(column: 9),
+            ),
             builder: (context, state) => const DashboardAdvancedSettingsView(),
             routes: advancedSettings,
           ),
@@ -43,9 +40,6 @@ final dashboardRoute = ShellRoute(
     LinksysRoute(
       name: RouteNamed.dashboardHome,
       path: RoutePath.dashboardHome,
-      config: LinksysRouteConfig(
-          pageWidth: ColumnPageWidth(column: 12),
-          pageAlignment: CrossAxisAlignment.start),
       builder: (context, state) => DashboardHomeView(),
       routes: [
         LinksysRoute(
@@ -57,16 +51,16 @@ final dashboardRoute = ShellRoute(
           name: RouteNamed.dashboardDevices,
           path: RoutePath.dashboardDevices,
           config: LinksysRouteConfig(
-              pageWidth: ColumnPageWidth(column: 9),
-              pageAlignment: CrossAxisAlignment.start),
+            column: ColumnGrid(column: 9),
+          ),
           builder: (context, state) => DashboardDevices(),
           routes: [
             LinksysRoute(
               name: RouteNamed.deviceDetails,
               path: RoutePath.deviceDetails,
               config: LinksysRouteConfig(
-                  pageWidth: ColumnPageWidth(column: 9),
-                  pageAlignment: CrossAxisAlignment.start),
+                column: ColumnGrid(column: 9),
+              ),
               builder: (context, state) => DeviceDetailView(),
             ),
           ],
@@ -75,40 +69,40 @@ final dashboardRoute = ShellRoute(
             name: RouteNamed.dashboardSettings,
             path: RoutePath.dashboardSettings,
             config: LinksysRouteConfig(
-                pageWidth: ColumnPageWidth(column: 9),
-                pageAlignment: CrossAxisAlignment.start),
+              column: ColumnGrid(column: 9),
+            ),
             builder: (context, state) => DashboardSettingsView(),
             routes: settings),
         LinksysRoute(
           name: RouteNamed.speedTestSelection,
           path: RoutePath.speedTestSelection,
           config: LinksysRouteConfig(
-              pageWidth: ColumnPageWidth(column: 9),
-              pageAlignment: CrossAxisAlignment.start),
+            column: ColumnGrid(column: 9),
+          ),
           builder: (context, state) => SpeedTestSelectionView(),
         ),
         LinksysRoute(
           name: RouteNamed.dashboardSpeedTest,
           path: RoutePath.dashboardSpeedTest,
           config: LinksysRouteConfig(
-              pageWidth: ColumnPageWidth(column: 9),
-              pageAlignment: CrossAxisAlignment.start),
+            column: ColumnGrid(column: 9),
+          ),
           builder: (context, state) => SpeedTestView(),
         ),
         LinksysRoute(
           name: RouteNamed.speedTestExternal,
           path: RoutePath.speedTestExternal,
           config: LinksysRouteConfig(
-              pageWidth: ColumnPageWidth(column: 9),
-              pageAlignment: CrossAxisAlignment.start),
+            column: ColumnGrid(column: 9),
+          ),
           builder: (context, state) => SpeedTestExternalView(),
         ),
         LinksysRoute(
           name: RouteNamed.troubleshooting,
           path: RoutePath.troubleshooting,
           config: LinksysRouteConfig(
-              pageWidth: ColumnPageWidth(column: 9),
-              pageAlignment: CrossAxisAlignment.start),
+            column: ColumnGrid(column: 9),
+          ),
           builder: (context, state) => TroubleshootingView(),
           routes: [
             LinksysRoute(
@@ -128,8 +122,7 @@ final dashboardRoute = ShellRoute(
       name: RouteNamed.dashboardSupport,
       path: RoutePath.dashboardSupport,
       config: LinksysRouteConfig(
-        pageWidth: ColumnPageWidth(column: 9),
-        pageAlignment: CrossAxisAlignment.start,
+        column: ColumnGrid(column: 9),
       ),
       builder: (context, state) => const DashboardSupportView(),
       routes: [
@@ -137,8 +130,7 @@ final dashboardRoute = ShellRoute(
           name: RouteNamed.faqList,
           path: RoutePath.faqList,
           config: LinksysRouteConfig(
-            pageWidth: ColumnPageWidth(column: 9),
-            pageAlignment: CrossAxisAlignment.start,
+            column: ColumnGrid(column: 9),
           ),
           builder: (context, state) => const FaqListView(),
         ),
@@ -146,8 +138,7 @@ final dashboardRoute = ShellRoute(
           name: RouteNamed.callbackDescription,
           path: RoutePath.callbackDescription,
           config: LinksysRouteConfig(
-            pageWidth: ColumnPageWidth(column: 9),
-            pageAlignment: CrossAxisAlignment.start,
+            column: ColumnGrid(column: 9),
           ),
           builder: (context, state) => const CallbackView(),
         ),

@@ -55,7 +55,8 @@ Widget testableSingleRoute({
     routes: [
       LinksysRoute(
         path: '/',
-        config: LinksysRouteConfig(pageWidth: SpecificPageWidth(width: 430)),
+        config:
+            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
         builder: (context, state) => child,
       ),
     ],

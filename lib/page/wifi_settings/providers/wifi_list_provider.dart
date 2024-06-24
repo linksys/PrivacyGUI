@@ -7,6 +7,7 @@ import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart'
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
+import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/_providers.dart';
@@ -105,6 +106,7 @@ class WifiListNotifier extends Notifier<WiFiState> {
           auth: true,
           data: newSettings.toMap(),
         )
+        .then((_) => ref.read(pollingProvider.notifier).forcePolling())
         .then((_) => fetch(true));
   }
 

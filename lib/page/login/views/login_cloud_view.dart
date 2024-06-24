@@ -16,7 +16,9 @@ import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/error_code_handler.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/validator_rules/input_validators.dart';
+import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
@@ -81,26 +83,22 @@ class _LoginCloudViewState extends ConsumerState<LoginCloudView> {
             scrollable: true,
             child: AppBasicLayout(
               content: Center(
-                child: Card(
-                  shape: RoundedRectangleBorder(
-                    side: BorderSide(
-                        color: Theme.of(context).colorScheme.outline),
-                  ),
-                  elevation: 0,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 36.0, vertical: 40.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        AppText.headlineSmall(
-                            getAppLocalizations(context).login),
-                        const AppGap.large2(),
-                        SizedBox(
-                          width: 289,
-                          child: AppTextField(
+                child: SizedBox(
+                  width: 4.col,
+                  child: AppCard(
+                    margin: EdgeInsets.zero,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 36.0, vertical: 40.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          AppText.headlineSmall(
+                              getAppLocalizations(context).login),
+                          const AppGap.large2(),
+                          AppTextField(
                             border: const OutlineInputBorder(),
                             controller: _usernameController,
                             hintText: getAppLocalizations(context).username,
@@ -117,11 +115,8 @@ class _LoginCloudViewState extends ConsumerState<LoginCloudView> {
                             inputType: TextInputType.emailAddress,
                             autofillHints: const [AutofillHints.username],
                           ),
-                        ),
-                        const AppGap.medium(),
-                        SizedBox(
-                          width: 289,
-                          child: AppPasswordField(
+                          const AppGap.medium(),
+                          AppPasswordField(
                             border: const OutlineInputBorder(),
                             controller: _passwordController,
                             hintText: getAppLocalizations(context).password,
@@ -135,17 +130,17 @@ class _LoginCloudViewState extends ConsumerState<LoginCloudView> {
                               });
                             },
                           ),
-                        ),
-                        const AppGap.large2(),
-                        AppFilledButton(
-                          'Log in',
-                          onTap: _isValidEmail ?? true
-                              ? () {
-                                  _cloudLogin();
-                                }
-                              : null,
-                        ),
-                      ],
+                          const AppGap.large2(),
+                          AppFilledButton(
+                            'Log in',
+                            onTap: _isValidEmail ?? true
+                                ? () {
+                                    _cloudLogin();
+                                  }
+                                : null,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

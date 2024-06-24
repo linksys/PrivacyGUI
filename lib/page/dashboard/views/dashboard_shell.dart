@@ -109,33 +109,67 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
     final showNavi = pageRoute?.config == null
         ? !autoHideNaviRail()
         : pageRoute?.config?.noNaviRail != true;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.start,
-      children: [
-        if (showNavi)
-          DashboardNavigationRail(
-            items: _dashboardNaviItems
-                .map((e) => _createNavigationRailDestination(e))
-                .toList(),
-            onItemTapped: _onItemTapped,
-            selected: _selectedIndex,
-          ),
-        const VerticalDivider(
-          width: 1,
-        ),
-        Expanded(
-          child: GestureDetector(
-            onTap: () {
-              if (increase()) {
-                logger.d('Triggered!');
-                context.pushNamed(RouteNamed.debug);
-              }
-            },
-            child: widget.child,
-          ),
-        ),
-      ],
-    );
+    return ResponsiveLayout.isOverBreakpoint3(context)
+        ? Stack(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    if (increase()) {
+                      logger.d('Triggered!');
+                      context.pushNamed(RouteNamed.debug);
+                    }
+                  },
+                  child: widget.child,
+                ),
+              ),
+              if (showNavi)
+                Align(
+                  alignment: Alignment.topLeft,
+                  child: Row(
+                    children: [
+                      DashboardNavigationRail(
+                        items: _dashboardNaviItems
+                            .map((e) => _createNavigationRailDestination(e))
+                            .toList(),
+                        onItemTapped: _onItemTapped,
+                        selected: _selectedIndex,
+                      ),
+                      const VerticalDivider(
+                        width: 1,
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          )
+        : Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              if (showNavi)
+                DashboardNavigationRail(
+                  items: _dashboardNaviItems
+                      .map((e) => _createNavigationRailDestination(e))
+                      .toList(),
+                  onItemTapped: _onItemTapped,
+                  selected: _selectedIndex,
+                ),
+              const VerticalDivider(
+                width: 1,
+              ),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    if (increase()) {
+                      logger.d('Triggered!');
+                      context.pushNamed(RouteNamed.debug);
+                    }
+                  },
+                  child: widget.child,
+                ),
+              ),
+            ],
+          );
   }
 
   Widget _buildMobile() {

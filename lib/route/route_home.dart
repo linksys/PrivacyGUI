@@ -4,8 +4,7 @@ final homeRoute = LinksysRoute(
   name: RouteNamed.home,
   path: RoutePath.home,
   config: LinksysRouteConfig(
-    pageWidth: ColumnPageWidth(column: 9),
-    pageAlignment: CrossAxisAlignment.center,
+    column: ColumnGrid(column: 9, centered: true),
   ),
   builder: (context, state) => const HomeView(),
   routes: [
