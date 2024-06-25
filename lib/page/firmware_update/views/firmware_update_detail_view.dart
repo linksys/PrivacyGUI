@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/jnap/models/firmware_update_status_nodes.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/firmware_update_state.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -14,6 +15,7 @@ import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class FirmwareUpdateDetailView extends ConsumerStatefulWidget {
   const FirmwareUpdateDetailView({
@@ -27,11 +29,24 @@ class FirmwareUpdateDetailView extends ConsumerStatefulWidget {
 
 class _FirmwareUpdateDetailViewState
     extends ConsumerState<FirmwareUpdateDetailView> {
+  late final List<String> candicateIDs;
+
   @override
-  Widget build(BuildContext context) {
-    final state = ref.watch(firmwareUpdateProvider);
-    // Build records for node deivces and their firmware status
-    final nodeStatusList = (state.nodesStatus ?? []).map((nodeStatus) {
+  void initState() {
+    final state = ref.read(firmwareUpdateProvider);
+    final statusRecords = buildIDStatusRecords(state);
+    candicateIDs = statusRecords.where((record) {
+      return record.$2.availableUpdate != null;
+    }).map((record) {
+      return record.$1.deviceID;
+    }).toList();
+
+    super.initState();
+  }
+
+  List<(LinksysDevice, FirmwareUpdateStatus)> buildIDStatusRecords(
+      FirmwareUpdateState state) {
+    return (state.nodesStatus ?? []).map((nodeStatus) {
       final nodes = ref.read(deviceManagerProvider).nodeDevices;
       return (
         nodeStatus is NodesFirmwareUpdateStatus
@@ -40,16 +55,22 @@ class _FirmwareUpdateDetailViewState
         nodeStatus
       );
     }).toList();
-    // Find any ongoing updating operations
-    final ongoingList = nodeStatusList.where((item) {
-      return item.$2.pendingOperation != null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(firmwareUpdateProvider);
+    // Build records for node deivces and their firmware status
+    final statusRecords = buildIDStatusRecords(state);
+    // Find any ongoing updating operations for candicates
+    final ongoingList = statusRecords.where((record) {
+      return record.$2.pendingOperation != null &&
+          candicateIDs.contains(record.$1.deviceID);
     }).toList();
     final isUpdating = state.isUpdating;
-    final isUpdateAvailable = state.nodesStatus?.any((status) {
-          return status.availableUpdate != null;
-        }) ??
-        false;
-
+    final isUpdateAvailable =
+        ref.read(firmwareUpdateProvider.notifier).getAvailableUpdateNumber() >
+            0;
     return isUpdating
         ? _updatingProgressView(ongoingList)
         : StyledAppPageView(
@@ -64,12 +85,12 @@ class _FirmwareUpdateDetailViewState
                 const AppGap.large2(),
                 ListView.builder(
                   shrinkWrap: true,
-                  itemCount: nodeStatusList.length,
+                  itemCount: statusRecords.length,
                   itemBuilder: (context, index) {
-                    final nodeDevice = nodeStatusList[index].$1;
+                    final nodeDevice = statusRecords[index].$1;
                     final currentVersion =
                         nodeDevice.unit.firmwareVersion ?? 'Unknown';
-                    final newVersion = nodeStatusList[index]
+                    final newVersion = statusRecords[index]
                         .$2
                         .availableUpdate
                         ?.firmwareVersion;
@@ -110,6 +131,11 @@ class _FirmwareUpdateDetailViewState
 
   Widget _updatingProgressView(
       List<(LinksysDevice, FirmwareUpdateStatus)> list) {
+    if (list.isEmpty) {
+      // if updating is ture but there are not items in the ongoing list,
+      // it is a temporary blank period before getting the operation data
+      return const AppFullScreenSpinner();
+    }
     return Center(
       child: list.length == 1
           ? _buildProgressIndicator(list.first)
