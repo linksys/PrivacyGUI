@@ -363,7 +363,7 @@ class _TopologyViewState extends ConsumerState<TopologyView> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 AppText.bodyMedium(loc(context).modalMoveChildNodesDesc),
-                const AppGap.large1(),
+                const AppGap.large2(),
                 SvgPicture(CustomTheme.of(context).images.imgMoveNodes),
               ],
             ),

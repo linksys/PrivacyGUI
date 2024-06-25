@@ -68,9 +68,9 @@ class GuestWiFiStep extends PnpStep {
               // update(ref, key: 'isEnabled', value: value);
             },
           ),
-          const AppGap.large2(),
+          const AppGap.large3(),
           AppText.bodyLarge(loc(context).pnpGuestWiFiDesc),
-          const AppGap.large2(),
+          const AppGap.large3(),
           ...isEnabled
               ? [
                   WiFiSSIDField(

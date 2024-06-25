@@ -61,7 +61,7 @@ class _FirmwareUpdateDetailViewState
                 AppText.bodyLarge(loc(context).firmwareUpdateDesc1),
                 const AppGap.medium(),
                 AppText.bodyLarge(loc(context).firmwareUpdateDesc2),
-                const AppGap.large1(),
+                const AppGap.large2(),
                 ListView.builder(
                   shrinkWrap: true,
                   itemCount: nodeStatusList.length,
@@ -93,7 +93,7 @@ class _FirmwareUpdateDetailViewState
                 ),
                 if (isUpdateAvailable)
                   Padding(
-                    padding: const EdgeInsets.only(top: Spacing.large3),
+                    padding: const EdgeInsets.only(top: Spacing.large4),
                     child: AppFilledButton(
                       loc(context).updateAll,
                       onTap: () {
@@ -119,8 +119,8 @@ class _FirmwareUpdateDetailViewState
                 mainAxisExtent: 240,
                 childAspectRatio: 1,
                 crossAxisCount: 2,
-                mainAxisSpacing: Spacing.large3,
-                crossAxisSpacing: Spacing.large3,
+                mainAxisSpacing: Spacing.large4,
+                crossAxisSpacing: Spacing.large4,
               ),
               itemCount: list.length,
               itemBuilder: (context, index) {
@@ -132,7 +132,8 @@ class _FirmwareUpdateDetailViewState
 
   Widget _buildProgressIndicator((LinksysDevice, FirmwareUpdateStatus) record) {
     final name = record.$1.getDeviceName();
-    final operationType = record.$2.pendingOperation?.operation ?? 'In progress';
+    final operationType =
+        record.$2.pendingOperation?.operation ?? 'In progress';
     final progressPercent = record.$2.pendingOperation?.progressPercent ?? 0;
     return Stack(
       alignment: Alignment.center,
@@ -150,7 +151,7 @@ class _FirmwareUpdateDetailViewState
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             AppText.headlineSmall(name),
-            const AppGap.large1(),
+            const AppGap.large2(),
             AppText.bodyLarge(operationType),
             AppText.bodyLarge('$progressPercent %'),
           ],

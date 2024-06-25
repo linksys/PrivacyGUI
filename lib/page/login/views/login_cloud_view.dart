@@ -97,7 +97,7 @@ class _LoginCloudViewState extends ConsumerState<LoginCloudView> {
                         children: [
                           AppText.headlineSmall(
                               getAppLocalizations(context).login),
-                          const AppGap.large2(),
+                          const AppGap.large3(),
                           AppTextField(
                             border: const OutlineInputBorder(),
                             controller: _usernameController,
@@ -130,7 +130,7 @@ class _LoginCloudViewState extends ConsumerState<LoginCloudView> {
                               });
                             },
                           ),
-                          const AppGap.large2(),
+                          const AppGap.large3(),
                           AppFilledButton(
                             'Log in',
                             onTap: _isValidEmail ?? true

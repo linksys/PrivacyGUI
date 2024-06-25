@@ -97,7 +97,7 @@ class _LinkupViewState extends ConsumerState<LinkupView> {
                   ),
                   const AppGap.medium(),
                   AppText.bodyLarge(data.subject),
-                  const AppGap.large2(),
+                  const AppGap.large3(),
                   ...data.contents.map((content) {
                     return AppExpansion(
                       initiallyExpanded: true,

@@ -50,8 +50,8 @@ class _PnpUnplugModemViewState extends ConsumerState<PnpUnplugModemView> {
                       CustomTheme.of(context).images.modemPlugged,
                       fit: BoxFit.fitWidth,
                     ),
-                    const AppGap.large2(),
                     const AppGap.large3(),
+                    const AppGap.large4(),
                     Row(
                       children: [
                         AppTextButton(
@@ -89,23 +89,23 @@ class _PnpUnplugModemViewState extends ConsumerState<PnpUnplugModemView> {
 
   Widget _bottomSheetContent() {
     return Padding(
-      padding: const EdgeInsets.all(Spacing.large1),
+      padding: const EdgeInsets.all(Spacing.large2),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppText.headlineSmall(
             loc(context).pnpUnplugModemTipTitle,
           ),
-          const AppGap.large1(),
+          const AppGap.large2(),
           AppText.bodyMedium(
             loc(context).pnpUnplugModemTipDesc1,
           ),
-          const AppGap.large1(),
+          const AppGap.large2(),
           AppText.bodyMedium(
             loc(context).pnpUnplugModemTipDesc2,
           ),
           const AppGap.medium(),
-          const AppGap.large3(),
+          const AppGap.large4(),
           Container(
             alignment: Alignment.center,
             child: SvgPicture(

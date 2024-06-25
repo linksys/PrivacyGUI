@@ -16,7 +16,7 @@ class LightDifferentColorModal extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         AppText.labelLarge(loc(context).modalLightDifferentSeeRedLightDesc),
-        const AppGap.large1(),
+        const AppGap.large2(),
         LightInfoTile(
           color: ledBlue,
           content: Column(
@@ -28,7 +28,7 @@ class LightDifferentColorModal extends StatelessWidget {
             ],
           ),
         ),
-        const AppGap.large1(),
+        const AppGap.large2(),
         LightInfoTile(
           color: ledPurple,
           content: Column(
@@ -40,7 +40,7 @@ class LightDifferentColorModal extends StatelessWidget {
             ],
           ),
         ),
-        const AppGap.large1(),
+        const AppGap.large2(),
         LightInfoTile(
           color: ledRed,
           content: Column(
@@ -53,9 +53,9 @@ class LightDifferentColorModal extends StatelessWidget {
             ],
           ),
         ),
-        const AppGap.large1(),
+        const AppGap.large2(),
         AppText.labelLarge(loc(context).modalLightDifferentToFactoryReset),
-        const AppGap.large1(),
+        const AppGap.large2(),
         AppBulletList(style: AppBulletStyle.number, itemSpacing: 24, children: [
           AppStyledText.bold(
               loc(context).modalLightDifferentToFactoryResetStep1,

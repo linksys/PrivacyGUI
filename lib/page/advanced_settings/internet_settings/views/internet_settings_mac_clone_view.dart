@@ -95,7 +95,7 @@ class _MACCloneViewState extends ConsumerState<MACCloneView> {
                         });
                       },
                     ),
-                  const AppGap.large2(),
+                  const AppGap.large3(),
                   if (_isEnabled)
                     AppTextButton.noPadding(
                       loc(context).cloneCurrentClientMac,

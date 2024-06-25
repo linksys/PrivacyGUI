@@ -50,7 +50,7 @@ class _PortForwardingContentViewState
         content: Column(
           children: [
             AppListCard(
-              padding: const EdgeInsets.all(Spacing.large1),
+              padding: const EdgeInsets.all(Spacing.large2),
               title: AppText.labelLarge(loc(context).singlePortForwarding),
               trailing: const Icon(LinksysIcons.chevronRight),
               onTap: () {
@@ -58,7 +58,7 @@ class _PortForwardingContentViewState
               },
             ),
             AppListCard(
-              padding: const EdgeInsets.all(Spacing.large1),
+              padding: const EdgeInsets.all(Spacing.large2),
               title: AppText.labelLarge(loc(context).portRangeForwarding),
               trailing: const Icon(LinksysIcons.chevronRight),
               onTap: () {
@@ -66,7 +66,7 @@ class _PortForwardingContentViewState
               },
             ),
             AppListCard(
-              padding: const EdgeInsets.all(Spacing.large1),
+              padding: const EdgeInsets.all(Spacing.large2),
               title: AppText.labelLarge(loc(context).portRangeTriggering),
               trailing: const Icon(LinksysIcons.chevronRight),
               onTap: () {

@@ -68,14 +68,7 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView> {
         : StyledAppPageView(
             scrollable: true,
             appBarStyle: AppBarStyle.none,
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            // onBackTap: () {
-            //   if (_preservedState != state) {
-            //     _showUnsavedAlert();
-            //   } else {
-            //     context.pop();
-            //   }
-            // },
+            padding: EdgeInsets.zero,
             title: loc(context).macFiltering,
             bottomBar: PageBottomBar(
                 isPositiveEnabled: _preservedState != state,
@@ -113,7 +106,7 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView> {
                       },
                     ),
                   ),
-                  const AppGap.large1(),
+                  const AppGap.medium(),
                   ..._buildEnabledContent(state)
                 ],
               ),
@@ -140,6 +133,7 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView> {
                 onTap: () async {
                   _selectAccessModal();
                 }),
+                const AppGap.medium(),
             AppListCard(
               title: AppText.labelLarge(loc(context).filteredDevices),
               trailing: Row(

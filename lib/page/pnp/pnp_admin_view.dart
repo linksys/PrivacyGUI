@@ -171,7 +171,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
         AppText.headlineSmall(loc(context).pnpFactoryResetTitle),
         const AppGap.medium(),
         AppText.bodyLarge(loc(context).pnpFactoryResetDesc),
-        const AppGap.large3(),
+        const AppGap.large4(),
         AppFilledButton(
           loc(context).textContinue,
           onTap: () {
@@ -196,7 +196,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
         AppText.headlineSmall(loc(context).welcome),
         const AppGap.medium(),
         AppText.bodyLarge(loc(context).pnpRouterLoginDesc),
-        const AppGap.large2(),
+        const AppGap.large3(),
         AppPasswordField(
           hintText: loc(context).routerPassword,
           border: const OutlineInputBorder(),
@@ -221,14 +221,14 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
           },
         ),
         ..._checkError(context, _error),
-        const AppGap.large2(),
+        const AppGap.large3(),
         AppTextButton.noPadding(
           loc(context).pnpRouterLoginWhereIsIt,
           onTap: () {
             _showRouterPasswordModal();
           },
         ),
-        const AppGap.large3(),
+        const AppGap.large4(),
         AppFilledButton(
           loc(context).login,
           onTap: _inputError == null && !_processing

@@ -209,7 +209,7 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
               AppText.labelMedium('Internet IP address: ${state.ipAddress}'),
               const AppGap.medium(),
               AppText.labelMedium('Status: ${state.status}'),
-              const AppGap.large2(),
+              const AppGap.large3(),
               AppFilledButton(
                 'Update',
                 onTap: () {

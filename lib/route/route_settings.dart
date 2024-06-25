@@ -9,7 +9,8 @@ final settings = [
   LinksysRoute(
       name: RouteNamed.settingsWifi,
       path: RoutePath.settingsWifi,
-      config: const LinksysRouteConfig(noNaviRail: true),
+      config:
+          LinksysRouteConfig(column: ColumnGrid(column: 12), noNaviRail: true),
       builder: (context, state) => WiFiMainView(
             args: state.extra as Map<String, dynamic>? ?? const {},
           ),
@@ -17,12 +18,18 @@ final settings = [
         LinksysRoute(
           name: RouteNamed.macFilteringInput,
           path: RoutePath.macFilteringInput,
+          config: LinksysRouteConfig(
+            column: ColumnGrid(column: 9),
+          ),
           builder: (context, state) => FilteredDevicesView(),
         ),
       ]),
   LinksysRoute(
     name: RouteNamed.wifiAdvancedSettings,
     path: RoutePath.wifiAdvancedSettings,
+    config: LinksysRouteConfig(
+      column: ColumnGrid(column: 9),
+    ),
     builder: (context, state) => WifiAdvancedSettingsView(),
   ),
   LinksysRoute(
@@ -35,18 +42,11 @@ final settings = [
         LinksysRoute(
           name: RouteNamed.nodeDetails,
           path: RoutePath.nodeDetails,
+          config: LinksysRouteConfig(
+            column: ColumnGrid(column: 12),
+          ),
           builder: (context, state) => NodeDetailView(),
           routes: [
-            LinksysRoute(
-              name: RouteNamed.changeNodeName,
-              path: RoutePath.changeNodeName,
-              builder: (context, state) => const ChangeNodeNameView(),
-            ),
-            LinksysRoute(
-              name: RouteNamed.nodeLightSettings,
-              path: RoutePath.nodeLightSettings,
-              builder: (context, state) => const NodeSwitchLightView(),
-            ),
             LinksysRoute(
               config: LinksysRouteConfig(column: ColumnGrid(column: 9)),
               name: RouteNamed.firmwareUpdateDetail,
@@ -55,26 +55,30 @@ final settings = [
             ),
           ],
         ),
-        LinksysRoute(
-          name: RouteNamed.nodeLight,
-          path: RoutePath.nodeLight,
-          builder: (context, state) => NodeLightGuideView(),
-        ),
       ]),
   LinksysRoute(
       name: RouteNamed.settingsNetworkAdmin,
       path: RoutePath.settingsNetworkAdmin,
+      config: LinksysRouteConfig(
+        column: ColumnGrid(column: 9),
+      ),
       builder: (context, state) => NetworkAdminView(),
       routes: [
         LinksysRoute(
           name: RouteNamed.settingsTimeZone,
           path: RoutePath.settingsTimeZone,
+          config: LinksysRouteConfig(
+            column: ColumnGrid(column: 9),
+          ),
           builder: (context, state) => TimezoneView(),
         ),
       ]),
   LinksysRoute(
     name: RouteNamed.devicePicker,
     path: RoutePath.devicePicker,
+    config: LinksysRouteConfig(
+      column: ColumnGrid(column: 9),
+    ),
     builder: (context, state) => SelectDeviceView(
       args: state.extra as Map<String, dynamic>? ?? {},
     ),

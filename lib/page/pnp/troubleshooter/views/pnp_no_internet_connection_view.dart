@@ -53,7 +53,7 @@ class _PnpNoInternetConnectionState
     final state = ref.watch(pnpTroubleshooterProvider);
     return Center(
       child: AppCard(
-        padding: const EdgeInsets.all(Spacing.large2),
+        padding: const EdgeInsets.all(Spacing.large3),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -62,13 +62,13 @@ class _PnpNoInternetConnectionState
               LinksysIcons.publicOff,
               size: 48,
             ),
-            const AppGap.large2(),
+            const AppGap.large3(),
             _titleView(context),
             const AppGap.medium(),
             AppText.bodyLarge(
               loc(context).noInternetConnectionDescription,
             ),
-            const AppGap.large2(),
+            const AppGap.large3(),
             if (state.hasResetModem)
               AppCard(
                 onTap: () {
@@ -142,7 +142,7 @@ class _PnpNoInternetConnectionState
                 ],
               ),
             ),
-            const AppGap.large2(),
+            const AppGap.large3(),
             AppFilledButton(
               loc(context).tryAgain,
               onTap: () {

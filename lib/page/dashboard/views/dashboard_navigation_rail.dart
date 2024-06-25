@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/theme/custom_theme.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 
@@ -37,10 +38,16 @@ class _DashboardNavigationRailState
           : Padding(
               padding: const EdgeInsets.only(
                   top: 8, left: 24, bottom: 60, right: 24),
-              child: SvgPicture(
-                CustomTheme.of(context).images.linksysLogoBlack,
-                width: 20,
-                height: 20,
+              child: InkWell(
+                child: SvgPicture(
+                  CustomTheme.of(context).images.linksysLogoBlack,
+                  width: 20,
+                  height: 20,
+                ),
+                onTap: () {
+                  showColumnOverlayNotifier.value =
+                      !showColumnOverlayNotifier.value;
+                },
               ),
             ),
       labelType: NavigationRailLabelType.all,

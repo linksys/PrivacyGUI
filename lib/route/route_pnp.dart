@@ -35,13 +35,17 @@ final pnpTroubleshootingRoute = LinksysRoute(
     LinksysRoute(
       name: RouteNamed.callSupportMainRegion,
       path: RoutePath.callSupportMainRegion,
-      config: const LinksysRouteConfig(),
+      config: LinksysRouteConfig(
+        column: ColumnGrid(column: 12),
+      ),
       builder: (context, state) => const CallSupportMainRegionView(),
       routes: [
         LinksysRoute(
           name: RouteNamed.callSupportMoreRegion,
           path: RoutePath.callSupportMoreRegion,
-          config: const LinksysRouteConfig(),
+          config: LinksysRouteConfig(
+            column: ColumnGrid(column: 12),
+          ),
           builder: (context, state) => CallSupportMoreRegionView(
             args: state.extra as Map<String, dynamic>? ?? {},
           ),

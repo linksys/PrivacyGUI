@@ -1,5 +1,4 @@
 import 'package:collection/collection.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -129,6 +128,7 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
                     ),
                   ]),
                 ),
+                const AppGap.medium(),
                 AppCard(
                   child: AppSwitchTriggerTile(
                     value: isFwAutoUpdate,
@@ -144,6 +144,8 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
                     },
                   ),
                 ),
+                const AppGap.medium(),
+
                 AppListCard(
                   title: AppText.bodyLarge(loc(context).timezone),
                   description: AppText.labelLarge(_getTimezone(timezoneState)),
@@ -230,7 +232,7 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
               });
             },
           ),
-          const AppGap.large2(),
+          const AppGap.large3(),
           AppTextField(
             border: const OutlineInputBorder(),
             controller: hintController,

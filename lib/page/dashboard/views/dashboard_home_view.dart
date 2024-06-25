@@ -10,6 +10,7 @@ import 'package:privacy_gui/page/dashboard/views/components/home_title.dart';
 import 'package:privacy_gui/page/dashboard/views/components/networks.dart';
 import 'package:privacy_gui/page/dashboard/views/components/port_and_speed.dart';
 import 'package:privacy_gui/page/dashboard/views/components/wifi_grid.dart';
+import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
@@ -42,9 +43,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
       appBarStyle: AppBarStyle.none,
       backState: StyledBackState.none,
       padding: const EdgeInsets.only(
-        top: Spacing.large2,
-        left: Spacing.medium,
-        right: Spacing.medium,
+        top: Spacing.large3,
         bottom: Spacing.medium,
       ),
       child: ResponsiveLayout(
@@ -52,49 +51,50 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
             const DashboardHomeTitle(),
-            const AppGap.large2(),
+            const AppGap.large3(),
             horizontalLayout
-                ? const Row(
+                ? Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        flex: 2,
-                        child: Column(
+                      SizedBox(
+                        width: 8.col,
+                        child: const Column(
                           children: [
                             DashboardHomePortAndSpeed(),
-                            AppGap.small2(),
+                            AppGap.medium(),
                             DashboardWiFiGrid(),
                           ],
                         ),
                       ),
-                      Expanded(
-                          child: Column(
-                        children: [
-                          DashboardNetworks(),
-                          // _networkInfoTiles(state, isLoading),
-                        ],
-                      )),
-                    ],
-                  )
-                : const Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        flex: 1,
-                        child: DashboardHomePortAndSpeed(),
-                      ),
-                      AppGap.medium(),
-                      Expanded(
-                          flex: 4,
-                          child: Column(
+                      const AppGap.gutter(),
+                      SizedBox(
+                          width: 4.col,
+                          child: const Column(
                             children: [
                               DashboardNetworks(),
-                              AppGap.small2(),
-                              DashboardWiFiGrid(),
-
                               // _networkInfoTiles(state, isLoading),
                             ],
                           )),
+                    ],
+                  )
+                : Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: 3.col,
+                        child: const DashboardHomePortAndSpeed(),
+                      ),
+                      const AppGap.gutter(),
+                      SizedBox(
+                        width: 9.col,
+                        child: const Column(
+                          children: [
+                            DashboardNetworks(),
+                            AppGap.medium(),
+                            DashboardWiFiGrid(),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
           ],
@@ -105,12 +105,11 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
           children: [
             DashboardHomeTitle(),
             DashboardHomePortAndSpeed(),
-            AppGap.small2(),
+            AppGap.medium(),
             DashboardNetworks(),
-            AppGap.small2(),
-
+            AppGap.medium(),
             DashboardWiFiGrid(),
-            // const AppGap.large3(),
+            // const AppGap.large4(),
             // _speedTestTile(state, isLoading),
           ],
         ),

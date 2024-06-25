@@ -6,6 +6,8 @@ import 'package:privacygui_widgets/widgets/container/responsive_column_layout.da
 
 import 'package:privacy_gui/page/components/styled/top_bar.dart';
 
+ValueNotifier<bool> showColumnOverlayNotifier = ValueNotifier(false);
+
 class ColumnGrid {
   final int column;
   final bool centered;
@@ -51,12 +53,33 @@ class LinksysRoute extends GoRoute {
     this.config,
     super.routes = const <RouteBase>[],
   }) : super(builder: (context, state) {
-          return AppResponsiveColumnLayout(
-            column: config?.column?.column,
-            centered: config?.column?.centered ?? false,
-            topWidget: const TopBar(),
-            builder: () => builder(context, state),
-            showColumnOverlay: true,
-          );
+          return ValueListenableBuilder<bool>(
+              valueListenable: showColumnOverlayNotifier,
+              builder: (context, showColumnOverlay, _) {
+                return AppResponsiveColumnLayout(
+                  column: config?.column?.column,
+                  centered: config?.column?.centered ?? false,
+                  isShowNaviRail: isShowNaviRail(context, config),
+                  topWidget: const TopBar(),
+                  builder: () => builder(context, state),
+                  showColumnOverlay: showColumnOverlay,
+                );
+              });
         });
+
+  static bool isShowNaviRail(
+          BuildContext context, LinksysRouteConfig? config) =>
+      config == null ? !autoHideNaviRail(context) : config.noNaviRail != true;
+
+  static bool autoHideNaviRail(BuildContext context) =>
+      (GoRouter.of(context)
+              .routerDelegate
+              .currentConfiguration
+              .matches
+              .lastOrNull
+              ?.matchedLocation
+              .split('/')
+              .length ??
+          0) >
+      2;
 }

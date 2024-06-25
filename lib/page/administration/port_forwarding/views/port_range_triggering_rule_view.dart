@@ -129,7 +129,7 @@ class _AddRuleContentViewState
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const AppGap.large1(),
+            const AppGap.large2(),
             if (state.mode == RuleMode.editing)
               ..._buildEditContents(state)
             else
@@ -157,7 +157,7 @@ class _AddRuleContentViewState
           },
         ),
       ),
-      const AppGap.large1(),
+      const AppGap.large2(),
       ...buildInputForms(),
     ];
   }
@@ -166,7 +166,7 @@ class _AddRuleContentViewState
     return [
       AppTextField.outline(
           headerText: loc(context).ruleName, controller: _ruleNameController),
-      const AppGap.large1(),
+      const AppGap.large2(),
       AppSection.withLabel(
         title: loc(context).triggeredRange,
         content: Column(

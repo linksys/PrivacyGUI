@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -77,10 +78,25 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       builder: (context, child) => Material(
-        child: CustomResponsive(
-          child: AppRootContainer(
-            routeConfig: _currentRoute?.config ?? const LinksysRouteConfig(),
-            child: child,
+        child: Shortcuts(
+          shortcuts: {
+            LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyO):
+                ToggleDisplayColumnOverlayIntent()
+          },
+          child: Actions(
+            dispatcher: AppGlobalActionDispatcher(),
+            actions: {
+              ToggleDisplayColumnOverlayIntent: CallbackAction(
+                  onInvoke: (intent) => showColumnOverlayNotifier.value =
+                      !showColumnOverlayNotifier.value)
+            },
+            child: CustomResponsive(
+              child: AppRootContainer(
+                routeConfig:
+                    _currentRoute?.config ?? const LinksysRouteConfig(),
+                child: child,
+              ),
+            ),
           ),
         ),
       ),
@@ -165,5 +181,31 @@ class NoTransitionsBuilder extends PageTransitionsBuilder {
   ) {
     // only return the child without warping it with animations
     return child!;
+  }
+}
+
+class ToggleDisplayColumnOverlayIntent extends Intent {}
+
+class AppGlobalActionDispatcher extends ActionDispatcher {
+  @override
+  Object? invokeAction(
+    covariant Action<Intent> action,
+    covariant Intent intent, [
+    BuildContext? context,
+  ]) {
+    logger.d('Action invoked: $action($intent) from $context');
+    super.invokeAction(action, intent, context);
+
+    return null;
+  }
+
+  @override
+  (bool, Object?) invokeActionIfEnabled(
+    covariant Action<Intent> action,
+    covariant Intent intent, [
+    BuildContext? context,
+  ]) {
+    logger.d('Action invoked: $action($intent) from $context');
+    return super.invokeActionIfEnabled(action, intent, context);
   }
 }

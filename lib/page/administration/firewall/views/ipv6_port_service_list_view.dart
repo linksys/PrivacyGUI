@@ -48,7 +48,7 @@ class _Ipv6PortServiceListViewState
           children: [
             AppText.bodyLarge(loc(context).ipv6PortServices),
             if (!_notifier.isExceedMax()) ...[
-              const AppGap.large1(),
+              const AppGap.large2(),
               AddRuleCard(
                 onTap: () {
                   context.pushNamed<bool?>(RouteNamed.ipv6PortServiceRule,
@@ -60,7 +60,7 @@ class _Ipv6PortServiceListViewState
                 },
               ),
             ],
-            const AppGap.large1(),
+            const AppGap.large2(),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

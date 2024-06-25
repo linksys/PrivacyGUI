@@ -185,7 +185,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
   }
 
   Widget _initView() {
-    final background = ResponsiveLayout.isMobile(context)
+    final background = ResponsiveLayout.isMobileLayout(context)
         ? OverflowBox(
             maxWidth: MediaQuery.of(context).size.width,
             child: _gradientBackground(),
@@ -245,7 +245,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           _meterView(step, meterValue, latency),
-          const AppGap.large2(),
+          const AppGap.large3(),
           const AppGap.small2(),
           SizedBox(
             width: 315,

@@ -51,7 +51,7 @@ final dashboardRoute = ShellRoute(
           name: RouteNamed.dashboardDevices,
           path: RoutePath.dashboardDevices,
           config: LinksysRouteConfig(
-            column: ColumnGrid(column: 9),
+            column: ColumnGrid(column: 12),
           ),
           builder: (context, state) => DashboardDevices(),
           routes: [
@@ -59,7 +59,7 @@ final dashboardRoute = ShellRoute(
               name: RouteNamed.deviceDetails,
               path: RoutePath.deviceDetails,
               config: LinksysRouteConfig(
-                column: ColumnGrid(column: 9),
+                column: ColumnGrid(column: 12),
               ),
               builder: (context, state) => DeviceDetailView(),
             ),
@@ -108,12 +108,18 @@ final dashboardRoute = ShellRoute(
             LinksysRoute(
                 name: RouteNamed.troubleshootingPing,
                 path: RoutePath.troubleshootingPing,
+                config: LinksysRouteConfig(
+                  column: ColumnGrid(column: 9),
+                ),
                 builder: (context, state) => TroubleshootingPingView()),
           ],
         ),
         LinksysRoute(
           name: RouteNamed.settingsDDNS,
           path: RoutePath.settingsDDNS,
+          config: LinksysRouteConfig(
+            column: ColumnGrid(column: 9),
+          ),
           builder: (context, state) => DDNSSettingsView(),
         ),
       ],
@@ -122,7 +128,7 @@ final dashboardRoute = ShellRoute(
       name: RouteNamed.dashboardSupport,
       path: RoutePath.dashboardSupport,
       config: LinksysRouteConfig(
-        column: ColumnGrid(column: 9),
+        column: ColumnGrid(column: 6),
       ),
       builder: (context, state) => const DashboardSupportView(),
       routes: [
@@ -130,7 +136,7 @@ final dashboardRoute = ShellRoute(
           name: RouteNamed.faqList,
           path: RoutePath.faqList,
           config: LinksysRouteConfig(
-            column: ColumnGrid(column: 9),
+            column: ColumnGrid(column: 12),
           ),
           builder: (context, state) => const FaqListView(),
         ),

@@ -16,7 +16,7 @@ class RuleItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppListCard(
-      padding: const EdgeInsets.all(Spacing.large1),
+      padding: const EdgeInsets.all(Spacing.large2),
       title: AppText.labelLarge(title),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,

@@ -9,7 +9,6 @@ import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
 class DashboardSupportView extends ArgumentsConsumerStatelessView {
   const DashboardSupportView({
@@ -23,41 +22,36 @@ class DashboardSupportView extends ArgumentsConsumerStatelessView {
       backState: StyledBackState.none,
       title: loc(context).support,
       enableSafeArea: (left: true, top: false, right: true, bottom: true),
-      child: AppBasicLayout(
-        content: SizedBox(
-          width: 430,
-          child: ListView(
-            shrinkWrap: true,
-            children: [
-              SupportOptionCard(
-                icon: const Icon(LinksysIcons.faq),
-                title: loc(context).dashboardSupportFAQTitle,
-                description: loc(context).dashboardSupportFAQDesc,
-                tapAction: () {
-                  context.pushNamed(RouteNamed.faqList);
-                },
-              ),
-              // const AppGap.small2(),
-              // SupportOptionCard(
-              //   icon: const Icon(LinksysIcons.supportAgent),
-              //   title: loc(context).dashboardSupportCallbackTitle,
-              //   description: loc(context).dashboardSupportCallbackDesc,
-              //   tapAction: () {
-              //     context.pushNamed(RouteNamed.callbackDescription);
-              //   },
-              // ),
-              const AppGap.small2(),
-              SupportOptionCard(
-                icon: const Icon(LinksysIcons.call),
-                title: loc(context).dashboardSupportCallSupportTitle,
-                description: loc(context).dashboardSupportCallSupportDesc,
-                tapAction: () {
-                  context.pushNamed(RouteNamed.callSupportMainRegion);
-                },
-              ),
-            ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SupportOptionCard(
+            icon: const Icon(LinksysIcons.faq),
+            title: loc(context).dashboardSupportFAQTitle,
+            description: loc(context).dashboardSupportFAQDesc,
+            tapAction: () {
+              context.pushNamed(RouteNamed.faqList);
+            },
           ),
-        ),
+          // const AppGap.small2(),
+          // SupportOptionCard(
+          //   icon: const Icon(LinksysIcons.supportAgent),
+          //   title: loc(context).dashboardSupportCallbackTitle,
+          //   description: loc(context).dashboardSupportCallbackDesc,
+          //   tapAction: () {
+          //     context.pushNamed(RouteNamed.callbackDescription);
+          //   },
+          // ),
+          const AppGap.small2(),
+          SupportOptionCard(
+            icon: const Icon(LinksysIcons.call),
+            title: loc(context).dashboardSupportCallSupportTitle,
+            description: loc(context).dashboardSupportCallSupportDesc,
+            tapAction: () {
+              context.pushNamed(RouteNamed.callSupportMainRegion);
+            },
+          ),
+        ],
       ),
     );
   }
@@ -79,10 +73,10 @@ class SupportOptionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      onTap: tapAction,
-      child: SizedBox(
-        width: 430,
+    return SizedBox(
+      width: double.infinity,
+      child: AppCard(
+        onTap: tapAction,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,

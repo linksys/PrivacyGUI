@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
+import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/devices/_devices.dart';
@@ -13,6 +14,7 @@ import 'package:privacy_gui/page/devices/views/device_list_widget.dart';
 import 'package:privacy_gui/page/devices/views/devices_filter_widget.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/device_list_card.dart';
@@ -56,19 +58,71 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
     final filteredDeviceList = ref.watch(filteredDeviceListProvider);
     final isOnlineFilter = ref.watch(
         deviceFilterConfigProvider.select((value) => value.connectionFilter));
-    // final filteredChips =
-    //     ref.watch(filteredDeviceListProvider.select((value) => value.$3));
     final count = filteredDeviceList.length;
     return _isLoading
         ? const AppFullScreenSpinner()
         : StyledAppPageView(
             padding: const EdgeInsets.only(),
-            title: loc(context).devices,
+            title: _isEdit ? loc(context).editDevices : loc(context).devices,
             menuWidget: const DevicesFilterWidget(),
+            bottomBar: _isEdit
+                ? InversePageBottomBar(
+                    isPositiveEnabled: _selectedList.isNotEmpty,
+                    onPositiveTap: () {
+                      _showConfirmDialog();
+                    },
+                    positiveLabel: loc(context).delete)
+                : null,
+            actions: _isEdit
+                ? [
+                    AppTextButton(
+                      filteredDeviceList.length == _selectedList.length
+                          ? loc(context).clearAll
+                          : loc(context).selectAll,
+                      icon: filteredDeviceList.length == _selectedList.length
+                          ? LinksysIcons.close
+                          : LinksysIcons.check,
+                      color: filteredDeviceList.length == _selectedList.length
+                          ? Theme.of(context).colorScheme.error
+                          : Theme.of(context).colorScheme.primary,
+                      onTap: () {
+                        setState(() {
+                          _selectedList =
+                              filteredDeviceList.length == _selectedList.length
+                                  ? []
+                                  : filteredDeviceList
+                                      .map((e) => e.deviceId)
+                                      .toList();
+                        });
+                      },
+                    ),
+                  ]
+                : !isOnlineFilter
+                    ? [
+                        AppIconButton(
+                          icon: LinksysIcons.edit,
+                          onTap: () {
+                            setState(() {
+                              _isEdit = !_isEdit;
+                            });
+                          },
+                        ),
+                      ]
+                    : null,
+            appBarStyle: _isEdit ? AppBarStyle.close : AppBarStyle.back,
+            onBackTap: () {
+              if (_isEdit) {
+                setState(() {
+                  _isEdit = !_isEdit;
+                  _selectedList.clear();
+                });
+              } else {
+                context.pop();
+              }
+            },
             child: AppBasicLayout(
               header: Padding(
-                  padding: const EdgeInsets.only(
-                      left: Spacing.small2, bottom: Spacing.medium),
+                  padding: const EdgeInsets.only(bottom: Spacing.medium),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.start,
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -77,21 +131,10 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           AppText.labelLarge(loc(context).nDevices(count)),
-                          if (!isOnlineFilter)
-                            _buildEditWidget(filteredDeviceList),
+                          // if (!isOnlineFilter)
+                          //   _buildEditWidget(filteredDeviceList),
                         ],
                       ),
-                      // const AppGap.medium(),
-                      // Wrap(
-                      //   spacing: 16,
-                      //   children: filteredChips
-                      //       .map((e) => FilterChip(
-                      //             label: AppText.bodySmall(e ?? ''),
-                      //             selected: true,
-                      //             onSelected: (bool value) {},
-                      //           ))
-                      //       .toList(),
-                      // ),
                     ],
                   )),
               content: DeviceListWidget(
@@ -142,18 +185,9 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
               _showConfirmDialog();
             },
           ),
-          AppTextButton(
-            loc(context).cancel,
-            color: Theme.of(context).colorScheme.onSurface,
-            onTap: () {
-              setState(() {
-                _isEdit = !_isEdit;
-              });
-            },
-          ),
         ],
       false => [
-          AppTextButton.noPadding(
+          AppTextButton(
             loc(context).edit,
             icon: LinksysIcons.edit,
             onTap: () {
@@ -179,10 +213,10 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
       child: AppDeviceListCard(
         isSelected: _selectedList.contains(item.deviceId),
         title: '${item.name} [${item.signalStrength}]',
-        description: ResponsiveLayout.isMobile(context) || !item.isOnline
+        description: ResponsiveLayout.isMobileLayout(context) || !item.isOnline
             ? null
             : item.upstreamDevice,
-        band: ResponsiveLayout.isMobile(context) ? null : item.band,
+        band: ResponsiveLayout.isMobileLayout(context) ? null : item.band,
         leading: IconDeviceCategoryExt.resolveByName(item.icon),
         trailing: item.isOnline
             ? getWifiSignalIconData(

@@ -4,10 +4,10 @@ import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/components/styled/general_settings_widget/general_settings_widget.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
-import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/select_network/_select_network.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/util/debug_mixin.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/theme/custom_theme.dart';
@@ -49,16 +49,23 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    (loginType == LoginType.none ||
-                            ResponsiveLayout.isMobileLayout(context))
-                        ? InkWell(
-                            child: SvgPicture(
+                    InkWell(
+                      child: (loginType == LoginType.none ||
+                              ResponsiveLayout.isMobileLayout(context))
+                          ? SvgPicture(
                               CustomTheme.of(context).images.linksysLogoBlack,
                               width: 20,
                               height: 20,
+                            )
+                          : const SizedBox(
+                              width: 20,
+                              height: 20,
                             ),
-                          )
-                        : const Center(),
+                      onTap: () {
+                        showColumnOverlayNotifier.value =
+                            !showColumnOverlayNotifier.value;
+                      },
+                    ),
                     Wrap(
                       children: [
                         if (loginType == LoginType.remote) _networkSelect(),

@@ -88,7 +88,7 @@ class _FirewallViewState extends ConsumerState<FirewallView> {
                 },
               ),
             ),
-            const AppGap.large2(),
+            const AppGap.large3(),
             AppText.labelLarge(loc(context).vpnPassthrough),
             const AppGap.medium(),
             AppCard(
@@ -124,7 +124,7 @@ class _FirewallViewState extends ConsumerState<FirewallView> {
                 },
               ),
             ),
-            const AppGap.large2(),
+            const AppGap.large3(),
             AppText.labelLarge(loc(context).internetFilters),
             const AppGap.medium(),
             AppCard(
@@ -169,7 +169,7 @@ class _FirewallViewState extends ConsumerState<FirewallView> {
                 },
               ),
             ),
-            const AppGap.large2(),
+            const AppGap.large3(),
             AppListCard(
               title: AppText.labelLarge(loc(context).ipv6PortServices),
               trailing: const Icon(LinksysIcons.chevronRight),

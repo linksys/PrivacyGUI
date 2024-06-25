@@ -72,7 +72,7 @@ class _LocalResetRouterPasswordViewState
                   const AppGap.medium(),
                   AppText.bodyMedium(
                       loc(context).localResetRouterPasswordDescription),
-                  const AppGap.large2(),
+                  const AppGap.large3(),
                   AppPasswordField(
                     border: const OutlineInputBorder(),
                     withValidator: state.hasEdited,
@@ -96,7 +96,7 @@ class _LocalResetRouterPasswordViewState
                     hintText: loc(context).routerPasswordHint,
                     controller: _hintController,
                   ),
-                  const AppGap.large2(),
+                  const AppGap.large3(),
                   AppFilledButton(
                     loc(context).save,
                     onTap: state.isValid ? _save : null,

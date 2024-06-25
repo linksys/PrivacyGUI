@@ -394,7 +394,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       WanType.pptp => _pptpEditing(),
       WanType.l2tp => _l2tpEditing(),
       WanType.bridge => [
-          const AppGap.large2(),
+          const AppGap.large3(),
           AppStyledText.bold(
               '${loc(context).toLogInLocallyWhileInBridgeMode}http://${ref.read(internetSettingsProvider.notifier).hostname}.local',
               defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
@@ -406,7 +406,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
 
   List<Widget> _pppoeEditing() {
     return [
-      const AppGap.large1(),
+      const AppGap.large2(),
       Padding(
         padding: inputPadding,
         child: AppTextField(
@@ -493,7 +493,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
 
   List<Widget> _staticIpEditing() {
     return [
-      const AppGap.large1(),
+      const AppGap.large2(),
       Padding(
         padding: inputPadding,
         child: AppIPFormField(
@@ -627,7 +627,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
 
   List<Widget> _pptpEditing() {
     return [
-      const AppGap.large1(),
+      const AppGap.large2(),
       Padding(
         padding: inputPadding,
         child: AppTextField(
@@ -697,7 +697,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
 
   List<Widget> _l2tpEditing() {
     return [
-      const AppGap.large1(),
+      const AppGap.large2(),
       Padding(
         padding: inputPadding,
         child: AppTextField(
@@ -910,7 +910,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
 
   List<Widget> _ipv6AutomaticEditing() {
     return [
-      const AppGap.large1(),
+      const AppGap.large2(),
       AppSettingCard.noBorder(
         title: loc(context).ipv6Automatic,
         color: Theme.of(context).colorScheme.background,

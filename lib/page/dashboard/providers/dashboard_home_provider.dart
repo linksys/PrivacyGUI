@@ -108,7 +108,7 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
       uploadResult: uploadResult,
       downloadResult: downloadResult,
       speedCheckTimestamp: speedTestTimeStamp,
-      isHorizontalLayout: horizontalPortLayout,
+      isHorizontalLayout: true,
       isHealthCheckSupported: isSpeedCheckSupported,
     );
   }

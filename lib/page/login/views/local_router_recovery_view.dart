@@ -61,7 +61,7 @@ class _LocalRouterRecoveryViewState
                   const AppGap.medium(),
                   AppText.bodyMedium(
                       loc(context).localRouterRecoveryDescription),
-                  const AppGap.large2(),
+                  const AppGap.large3(),
                   PinCodeTextField(
                     errorTextSpace: 0,
                     onChanged: (String value) {
@@ -76,7 +76,8 @@ class _LocalRouterRecoveryViewState
                     autoDismissKeyboard: true,
                     pinTheme: PinTheme(
                       shape: PinCodeFieldShape.box,
-                      borderRadius: CustomTheme.of(context).radius.asBorderRadius().small,
+                      borderRadius:
+                          CustomTheme.of(context).radius.asBorderRadius().small,
                       borderWidth: 1,
                       fieldHeight: 56,
                       fieldWidth: 40,
@@ -93,7 +94,7 @@ class _LocalRouterRecoveryViewState
                         color: Theme.of(context).colorScheme.error,
                       ),
                     ),
-                  const AppGap.large3(),
+                  const AppGap.large4(),
                   AppFilledButton(
                     loc(context).textContinue,
                     onTap: userInputCode.length == 5

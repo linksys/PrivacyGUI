@@ -145,7 +145,7 @@ class _AddRuleContentViewState
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const AppGap.large1(),
+            const AppGap.large2(),
             if (state.mode == RuleMode.editing)
               ..._buildEditContents(state)
             else
@@ -173,7 +173,7 @@ class _AddRuleContentViewState
           },
         ),
       ),
-      const AppGap.large1(),
+      const AppGap.large2(),
       ...buildInputForms(),
     ];
   }
@@ -184,28 +184,28 @@ class _AddRuleContentViewState
         headerText: loc(context).ruleName,
         controller: _ruleNameController,
       ),
-      const AppGap.large1(),
+      const AppGap.large2(),
       AppTextField.minMaxNumber(
         border: const OutlineInputBorder(),
         headerText: loc(context).startPort,
         controller: _firstExternalPortController,
         max: 65535,
       ),
-      const AppGap.large1(),
+      const AppGap.large2(),
       AppTextField.minMaxNumber(
         border: const OutlineInputBorder(),
         headerText: loc(context).endPort,
         controller: _lastExternalPortController,
         max: 65535,
       ),
-      const AppGap.large1(),
+      const AppGap.large2(),
       AppText.labelMedium(loc(context).ipAddress),
       const AppGap.medium(),
       AppIPv6FormField(
         controller: _ipAddressController,
         border: const OutlineInputBorder(),
       ),
-      const AppGap.large1(),
+      const AppGap.large2(),
       AppTextButton(
         loc(context).selectDevices,
         onTap: () async {
@@ -219,7 +219,7 @@ class _AddRuleContentViewState
           }
         },
       ),
-      const AppGap.large1(),
+      const AppGap.large2(),
       AppListCard(
         title: AppText.labelLarge(loc(context).protocol),
         description: AppText.bodyLarge(getProtocolTitle(context, _protocol)),

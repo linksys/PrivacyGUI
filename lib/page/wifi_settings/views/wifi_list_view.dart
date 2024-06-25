@@ -93,15 +93,6 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
     ref.listen(wifiListProvider, (previous, next) {
       ref.read(wifiViewProvider.notifier).setChanged(next != _preservedState);
     });
-    // logger.d(
-    //     'XXXXX: $_isLoading, $_hasInitScrolled, ${_scrollController.hasClients}!!!');
-    // if (!_isLoading && !_hasInitScrolled && _scrollController.hasClients) {
-    //   // final offset = widget.args['wifiOffset'] as int? ?? 0;
-    //   logger.d('XXXXX: SCROLL!!!');
-    //   _hasInitScrolled = true;
-    //   final offset = 200.0;
-    //   _scrollController.jumpTo(offset);
-    // }
 
     return _isLoading
         ? AppFullScreenSpinner(
@@ -111,7 +102,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
             appBarStyle: AppBarStyle.none,
             scrollable: true,
             controller: _scrollController,
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            padding: EdgeInsets.zero,
             bottomBar: PageBottomBar(
                 isPositiveEnabled: _mode == WiFiListViewMode.simple
                     ? _preservedState?.simpleWiFi != state.simpleWiFi
@@ -275,7 +266,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
                 _advancedWiFiChannelCard(radio),
               ],
             )),
-        const AppGap.small3(),
+        const AppGap.medium(),
       ],
     );
   }

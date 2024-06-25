@@ -144,7 +144,7 @@ abstract class PnpStep {
                       AppText.titleLarge(title(context)),
                     ],
                   ),
-                  const AppGap.large2(),
+                  const AppGap.large3(),
                   content(context: context, ref: ref, child: child),
                 ],
               );

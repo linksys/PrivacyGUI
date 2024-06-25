@@ -33,7 +33,7 @@ class SpeedTestExternalView extends StatelessWidget {
               children: [
                 Padding(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 0, vertical: Spacing.large3),
+                      horizontal: 0, vertical: Spacing.large4),
                   child: SizedBox(
                     width: 224,
                     height: 56,
@@ -43,10 +43,10 @@ class SpeedTestExternalView extends StatelessWidget {
                   ),
                 ),
                 AppText.labelLarge(loc(context).speedTestExternalDesc),
-                const AppGap.large2(),
+                const AppGap.large3(),
                 AppBulletList(
                   style: AppBulletStyle.number,
-                  itemSpacing: Spacing.large2,
+                  itemSpacing: Spacing.large3,
                   children: [
                     AppText.bodyMedium(loc(context).speedTestExternalStep1),
                     AppText.bodyMedium(loc(context).speedTestExternalStep2),
@@ -56,7 +56,7 @@ class SpeedTestExternalView extends StatelessWidget {
                 ResponsiveLayout.isMobileLayout(context)
                     ? _externalButtonsMobile(context)
                     : _externalButtonsDesktop(context),
-                const AppGap.large2(),
+                const AppGap.large3(),
                 Center(
                     child: AppText.bodyMedium(
                         loc(context).speedTestExternalOthers))
