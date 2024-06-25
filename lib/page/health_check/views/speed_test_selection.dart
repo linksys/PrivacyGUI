@@ -28,21 +28,20 @@ class SpeedTestSelectionView extends ConsumerWidget {
     return StyledAppPageView(
       title: loc(context).speedTest,
       child: AppBasicLayout(
-          content: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppText.bodyMedium(loc(context).speedTestDesc),
-          const AppGap.large3(),
-          Container(
-            constraints: const BoxConstraints(maxWidth: 430),
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          content: SizedBox(
+        width: 6.col,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppText.bodyMedium(loc(context).speedTestDesc),
+            const AppGap.large3(),
+            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               _createInternetToRouterCard(context, isSpeedCheckSupported),
               _createInternetToDeviceCard(context, isBehindRouter),
-            ]),
-          )
-        ],
+            ])
+          ],
+        ),
       )),
     );
   }

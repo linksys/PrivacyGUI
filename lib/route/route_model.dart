@@ -2,11 +2,13 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_column_layout.dart';
 
 import 'package:privacy_gui/page/components/styled/top_bar.dart';
 
-ValueNotifier<bool> showColumnOverlayNotifier = ValueNotifier(false);
+ValueNotifier<bool> showColumnOverlayNotifier =
+    ValueNotifier(BuildConfig.showColumnOverlay);
 
 class ColumnGrid {
   final int column;

@@ -109,7 +109,8 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                 ),
               ),
             ),
-            if (state.settings.isDMZEnabled)
+            if (state.settings.isDMZEnabled) ...[
+              const AppGap.medium(),
               AppCard(
                 child: Column(
                   children: [
@@ -119,6 +120,7 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                   ],
                 ),
               ),
+            ]
           ],
         ));
   }

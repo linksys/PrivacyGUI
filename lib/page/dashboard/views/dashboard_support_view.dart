@@ -7,8 +7,10 @@ import 'package:flutter/material.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 
 class DashboardSupportView extends ArgumentsConsumerStatelessView {
   const DashboardSupportView({
@@ -22,7 +24,23 @@ class DashboardSupportView extends ArgumentsConsumerStatelessView {
       backState: StyledBackState.none,
       title: loc(context).support,
       enableSafeArea: (left: true, top: false, right: true, bottom: true),
-      child: Column(
+      child: LayoutBuilder(builder: (context, constraints) {
+        return ResponsiveLayout(
+            desktop: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 6.col,
+                  child: supportCards(context),
+                ),
+              ],
+            ),
+            mobile: supportCards(context));
+      }),
+    );
+  }
+
+  Widget supportCards(BuildContext context) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SupportOptionCard(
@@ -52,9 +70,7 @@ class DashboardSupportView extends ArgumentsConsumerStatelessView {
             },
           ),
         ],
-      ),
-    );
-  }
+      );
 }
 
 class SupportOptionCard extends StatelessWidget {

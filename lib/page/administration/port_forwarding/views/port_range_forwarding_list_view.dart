@@ -79,7 +79,8 @@ class _PortRangeForwardingContentViewState
                 AppText.labelLarge(loc(context).rules),
                 const AppGap.medium(),
                 if (state.rules.isNotEmpty)
-                  ...state.rules.map(
+                  ...state.rules
+                      .map(
                     (e) => RuleItemCard(
                       title: e.description,
                       isEnabled: e.isEnabled,
@@ -96,7 +97,11 @@ class _PortRangeForwardingContentViewState
                         });
                       },
                     ),
-                  ),
+                  )
+                      .expand((element) sync* {
+                    yield element;
+                    yield const AppGap.medium();
+                  }),
                 if (state.rules.isEmpty) const EmptyRuleCard(),
               ],
             ),

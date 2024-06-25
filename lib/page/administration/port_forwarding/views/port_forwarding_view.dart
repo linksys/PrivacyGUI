@@ -57,6 +57,7 @@ class _PortForwardingContentViewState
                 context.pushNamed(RouteNamed.singlePortForwardingList);
               },
             ),
+            const AppGap.medium(),
             AppListCard(
               padding: const EdgeInsets.all(Spacing.large2),
               title: AppText.labelLarge(loc(context).portRangeForwarding),
@@ -65,6 +66,7 @@ class _PortForwardingContentViewState
                 context.pushNamed(RouteNamed.portRangeForwardingList);
               },
             ),
+            const AppGap.medium(),
             AppListCard(
               padding: const EdgeInsets.all(Spacing.large2),
               title: AppText.labelLarge(loc(context).portRangeTriggering),

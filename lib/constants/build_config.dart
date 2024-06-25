@@ -43,6 +43,8 @@ class BuildConfig {
 
   static ForceCommand forceCommandType = ForceCommand.reslove(
       const String.fromEnvironment('force', defaultValue: 'none'));
+  static bool showColumnOverlay =
+      const bool.fromEnvironment('overlay', defaultValue: false);
 
   static load() async {
     logger.d('load build configuration');

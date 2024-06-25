@@ -1,10 +1,11 @@
-while getopts l:s:f:c: flag
+while getopts l:s:f:c:o: flag
 do
     case "${flag}" in
         l) locales=${OPTARG};;
         s) screens=${OPTARG};;
         f) file=${OPTARG};;
         c) copy=true;;
+        o) overlay=true;;
     esac
 done
 if [ -z "$locales" ]; then
@@ -13,17 +14,21 @@ fi
 if [ -z "$screens" ]; then
   screens="all"
 fi
+if [ -z "$overlay" ]; then
+  overlay="false"
+fi
 echo "*********************Generating Localization snapshots********************"
 echo "Locales: $locales"
 echo "Screens: $screens"
+echo "Show overlay: $overlay"
 
 mkdir ./snapshots/
 if [ -z "$file" ]; then
-  flutter test --file-reporter json:snapshots/tests.json --tags=loc --update-goldens --dart-define=locales="$locales" --dart-define=screens="$screens" 
+  flutter test --file-reporter json:snapshots/tests.json --tags=loc --update-goldens --dart-define=locales="$locales" --dart-define=screens="$screens" --dart-define=overlay="$overlay"
   dart test_scripts/test_result_parser.dart snapshots/tests.json snapshots/localizations-test-reports.html
 else
   echo "Target file: $file"
-  flutter test $file --tags=loc --update-goldens --dart-define=locales="$locales" --dart-define=screens="$screens" 
+  flutter test $file --tags=loc --update-goldens --dart-define=locales="$locales" --dart-define=screens="$screens" --dart-define=overlay="$overlay"
 fi
 echo 'Generating Localization snapshots Finished!******************************************'
 

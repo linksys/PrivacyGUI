@@ -17,6 +17,7 @@ final localLoginRoute = LinksysRoute(
         LinksysRoute(
           name: RouteNamed.localPasswordReset,
           path: RoutePath.localPasswordReset,
+          config: const LinksysRouteConfig(noNaviRail: true),
           builder: (context, state) => LocalResetRouterPasswordView(
             args: state.extra as Map<String, dynamic>? ?? {},
           ),

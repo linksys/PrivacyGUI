@@ -95,7 +95,10 @@ class _PortRangeTriggeringContentViewState
                         });
                       },
                     ),
-                  ),
+                  ).expand((element) sync* {
+                    yield element;
+                    yield const AppGap.medium();
+                  }),
                 if (state.rules.isEmpty) const EmptyRuleCard(),
               ],
             ),

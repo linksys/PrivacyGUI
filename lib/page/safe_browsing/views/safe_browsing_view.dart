@@ -69,7 +69,7 @@ class _SafeBrowsingViewState extends ConsumerState<SafeBrowsingView> {
                       },
                     ),
                   ),
-                  const AppGap.small2(),
+                  const AppGap.medium(),
                   Opacity(
                     opacity: enableSafeBrowsing ? 1 : 0.5,
                     child: AppSettingCard(

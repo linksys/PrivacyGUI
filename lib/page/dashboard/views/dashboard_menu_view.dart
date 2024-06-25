@@ -71,7 +71,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
             : ResponsiveLayout.isOverMedimumLayout(context)
                 ? 2
                 : 1,
-        mainAxisSpacing: Spacing.small2,
+        mainAxisSpacing: Spacing.medium,
         crossAxisSpacing: ResponsiveLayout.columnPadding(context),
         childAspectRatio: (205 / 125),
         mainAxisExtent: 205,

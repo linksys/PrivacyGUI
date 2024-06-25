@@ -67,7 +67,8 @@ class _Ipv6PortServiceListViewState
                 AppText.labelLarge(loc(context).rules),
                 const AppGap.medium(),
                 if (state.rules.isNotEmpty)
-                  ...state.rules.map(
+                  ...state.rules
+                      .map(
                     (e) => RuleItemCard(
                       title: e.description,
                       isEnabled: e.isEnabled,
@@ -83,7 +84,11 @@ class _Ipv6PortServiceListViewState
                         });
                       },
                     ),
-                  ),
+                  )
+                      .expand((element) sync* {
+                    yield element;
+                    yield const AppGap.medium();
+                  }),
                 if (state.rules.isEmpty) const EmptyRuleCard(),
               ],
             ),

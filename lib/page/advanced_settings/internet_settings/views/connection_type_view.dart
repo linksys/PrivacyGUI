@@ -24,6 +24,7 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/dropdown/dropdown_menu.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/panel/general_section.dart';
@@ -76,7 +77,8 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
   bool isEditing = false;
   bool isLoading = false;
   String loadingTitle = '';
-  static const inputPadding = EdgeInsets.symmetric(horizontal: 4, vertical: 12);
+  static const inputPadding = EdgeInsets.symmetric(
+      horizontal: Spacing.small1, vertical: Spacing.medium);
 
   @override
   void initState() {
@@ -276,6 +278,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _content(),
+                  const AppGap.medium(),
                   if (viewType == InternetSettingsViewType.ipv4 &&
                       wanType != WanType.bridge)
                     AppSettingCard(

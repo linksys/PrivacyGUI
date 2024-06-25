@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/advanced_settings/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/gap/gap.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
@@ -89,7 +91,7 @@ class _InternetSettingsContentViewState
                           },
                         ),
                         const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 24.0),
+                          padding: EdgeInsets.symmetric(horizontal: Spacing.large2),
                           child: Divider(),
                         ),
                         InternetSettingCard(
@@ -107,6 +109,7 @@ class _InternetSettingsContentViewState
                       ],
                     ),
                   ),
+                  const AppGap.medium(),
                   InternetSettingCard(
                     title: loc(context).macAddressClone.capitalizeWords(),
                     description:

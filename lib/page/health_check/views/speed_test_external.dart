@@ -23,47 +23,44 @@ class SpeedTestExternalView extends StatelessWidget {
     return StyledAppPageView(
       title: loc(context).speedTestInternetToDevice,
       child: AppBasicLayout(
-          content: Stack(
-        children: [
-          Align(
-            alignment: Alignment.topCenter,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 0, vertical: Spacing.large4),
-                  child: SizedBox(
-                    width: 224,
-                    height: 56,
-                    child: SvgPicture(
-                      CustomTheme.of(context).images.internetToDevice,
-                    ),
+          content: SizedBox(
+        width: 6.col,
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 0, vertical: Spacing.large4),
+                child: SizedBox(
+                  width: 224,
+                  height: 56,
+                  child: SvgPicture(
+                    CustomTheme.of(context).images.internetToDevice,
                   ),
                 ),
-                AppText.labelLarge(loc(context).speedTestExternalDesc),
-                const AppGap.large3(),
-                AppBulletList(
-                  style: AppBulletStyle.number,
-                  itemSpacing: Spacing.large3,
-                  children: [
-                    AppText.bodyMedium(loc(context).speedTestExternalStep1),
-                    AppText.bodyMedium(loc(context).speedTestExternalStep2),
-                    AppText.bodyMedium(loc(context).speedTestExternalStep3),
-                  ],
-                ),
-                ResponsiveLayout.isMobileLayout(context)
-                    ? _externalButtonsMobile(context)
-                    : _externalButtonsDesktop(context),
-                const AppGap.large3(),
-                Center(
-                    child: AppText.bodyMedium(
-                        loc(context).speedTestExternalOthers))
-              ],
-            ),
+              ),
+              AppText.labelLarge(loc(context).speedTestExternalDesc),
+              const AppGap.large3(),
+              AppBulletList(
+                style: AppBulletStyle.number,
+                itemSpacing: Spacing.large3,
+                children: [
+                  AppText.bodyMedium(loc(context).speedTestExternalStep1),
+                  AppText.bodyMedium(loc(context).speedTestExternalStep2),
+                  AppText.bodyMedium(loc(context).speedTestExternalStep3),
+                ],
+              ),
+              ResponsiveLayout.isMobileLayout(context)
+                  ? _externalButtonsMobile(context)
+                  : _externalButtonsDesktop(context),
+              const AppGap.large3(),
+              AppText.bodyMedium(loc(context).speedTestExternalOthers)
+            ],
           ),
-        ],
+        ),
       )),
     );
   }

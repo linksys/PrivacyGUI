@@ -77,6 +77,7 @@ class _FirewallViewState extends ConsumerState<FirewallView> {
                 },
               ),
             ),
+            const AppGap.medium(),
             AppCard(
               child: AppSwitchTriggerTile(
                 title:
@@ -102,6 +103,7 @@ class _FirewallViewState extends ConsumerState<FirewallView> {
                 },
               ),
             ),
+            const AppGap.medium(),
             AppCard(
               child: AppSwitchTriggerTile(
                 title: AppText.labelLarge(loc(context).pptpPassthrough),
@@ -113,6 +115,7 @@ class _FirewallViewState extends ConsumerState<FirewallView> {
                 },
               ),
             ),
+            const AppGap.medium(),
             AppCard(
               child: AppSwitchTriggerTile(
                 title: AppText.labelLarge(loc(context).l2tpPassthrough),
@@ -137,6 +140,7 @@ class _FirewallViewState extends ConsumerState<FirewallView> {
                 },
               ),
             ),
+            const AppGap.medium(),
             AppCard(
               child: AppSwitchTriggerTile(
                 title: AppText.labelLarge(loc(context).filterMulticast),
@@ -147,6 +151,7 @@ class _FirewallViewState extends ConsumerState<FirewallView> {
                 },
               ),
             ),
+            const AppGap.medium(),
             AppCard(
               child: AppSwitchTriggerTile(
                 title: AppText.labelLarge(
@@ -158,6 +163,7 @@ class _FirewallViewState extends ConsumerState<FirewallView> {
                 },
               ),
             ),
+            const AppGap.medium(),
             AppCard(
               child: AppSwitchTriggerTile(
                 title: AppText.labelLarge(loc(context).filterIdent),
@@ -176,7 +182,8 @@ class _FirewallViewState extends ConsumerState<FirewallView> {
               onTap: () {
                 context.pushNamed(RouteNamed.ipv6PortServiceList);
               },
-            )
+            ),
+            const AppGap.medium(),
           ],
         ),
       ),

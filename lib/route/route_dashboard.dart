@@ -77,7 +77,7 @@ final dashboardRoute = ShellRoute(
           name: RouteNamed.speedTestSelection,
           path: RoutePath.speedTestSelection,
           config: LinksysRouteConfig(
-            column: ColumnGrid(column: 9),
+            column: ColumnGrid(column: 12),
           ),
           builder: (context, state) => SpeedTestSelectionView(),
         ),
@@ -85,7 +85,7 @@ final dashboardRoute = ShellRoute(
           name: RouteNamed.dashboardSpeedTest,
           path: RoutePath.dashboardSpeedTest,
           config: LinksysRouteConfig(
-            column: ColumnGrid(column: 9),
+            column: ColumnGrid(column: 12),
           ),
           builder: (context, state) => SpeedTestView(),
         ),
@@ -93,7 +93,7 @@ final dashboardRoute = ShellRoute(
           name: RouteNamed.speedTestExternal,
           path: RoutePath.speedTestExternal,
           config: LinksysRouteConfig(
-            column: ColumnGrid(column: 9),
+            column: ColumnGrid(column: 12),
           ),
           builder: (context, state) => SpeedTestExternalView(),
         ),
@@ -128,7 +128,7 @@ final dashboardRoute = ShellRoute(
       name: RouteNamed.dashboardSupport,
       path: RoutePath.dashboardSupport,
       config: LinksysRouteConfig(
-        column: ColumnGrid(column: 6),
+        column: ColumnGrid(column: 12),
       ),
       builder: (context, state) => const DashboardSupportView(),
       routes: [
