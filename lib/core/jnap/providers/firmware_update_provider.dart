@@ -1,8 +1,5 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
-
 import 'dart:async';
 import 'dart:convert';
-
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,7 +9,6 @@ import 'package:http_parser/http_parser.dart';
 import 'package:privacy_gui/constants/jnap_const.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/http/linksys_http_client.dart';
-
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/models/firmware_update_settings.dart';
@@ -148,15 +144,10 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
         );
     _sub?.cancel();
     ref.read(pollingProvider.notifier).stopPolling();
-    final targetFirmwareUpdateRecords = state.nodesStatus ?? [];
-    final availableCount = targetFirmwareUpdateRecords
-        .where((e) => e.availableUpdate != null)
-        .length;
-    // check firmware update up to 480 seconds for per router
     _sub = _startCheckFirmwareUpdateStatus(
-      retryTimes: 180 * availableCount,
+      retryTimes: 180 * getAvailableUpdateNumber(),
       stopCondition: (result) =>
-          _checkFirmwareUpdateComplete(result, targetFirmwareUpdateRecords),
+          _checkFirmwareUpdateComplete(result, state.nodesStatus ?? []),
       onCompleted: () {
         logger.i('[FIRMWARE]: update firmware COMPLETED!');
         final polling = ref.read(pollingProvider.notifier);
@@ -198,6 +189,12 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
       logger.i('[FIRMWARE]: error: $result, maybe reboot');
       return false;
     }
+  }
+
+  int getAvailableUpdateNumber() {
+    return (state.nodesStatus ?? [])
+        .where((e) => e.availableUpdate != null)
+        .length;
   }
 
   ///
