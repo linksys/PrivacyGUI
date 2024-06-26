@@ -48,7 +48,7 @@ class _DebugDeviceInfoViewState extends ConsumerState<DebugDeviceInfoView> {
         AppText.bodyLarge(
           _appInfoFromLogger,
         ),
-        const AppGap.regular(),
+        const AppGap.medium(),
         AppText.bodyLarge(
           getScreenInfo(context),
         ),

@@ -104,7 +104,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
                 },
               ),
             ),
-            const AppGap.big(),
+            const AppGap.large3(),
             Visibility(
               visible: state.isDHCPEnabled,
               child: dhcpSettings(),
@@ -163,7 +163,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
             });
           },
         ),
-        const AppGap.big(),
+        const AppGap.large3(),
         AppTextField.minMaxNumber(
           headerText: loc(context).maximumNumberOfUsers,
           descriptionText: '1 ${loc(context).to} ${state.maxUserLimit}',
@@ -188,9 +188,9 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
             });
           },
         ),
-        const AppGap.big(),
+        const AppGap.large3(),
         _ipAddressRange(),
-        const AppGap.big(),
+        const AppGap.large3(),
         AppTextField.minMaxNumber(
           headerText: loc(context).clientLeaseTime,
           min: state.minAllowDHCPLeaseMinutes,
@@ -216,7 +216,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
             });
           },
         ),
-        const AppGap.big(),
+        const AppGap.large3(),
         _dnsAndWinsInput(),
       ],
     );
@@ -227,13 +227,13 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppText.bodySmall(loc(context).ipAddressRange),
-        const AppGap.small(),
+        const AppGap.small3(),
         Row(
           children: [
             AppText.labelLarge(state.firstIPAddress),
-            const AppGap.regular(),
+            const AppGap.medium(),
             AppText.bodyMedium(loc(context).to),
-            const AppGap.regular(),
+            const AppGap.medium(),
             AppText.labelLarge(state.lastIPAddress),
           ],
         ),
@@ -270,7 +270,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
             }
           },
         ),
-        const AppGap.regular(),
+        const AppGap.medium(),
         AppIPFormField(
           header: AppText.bodySmall(
             loc(context).staticDns2,
@@ -296,7 +296,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
             }
           },
         ),
-        const AppGap.regular(),
+        const AppGap.medium(),
         AppIPFormField(
           header: AppText.bodySmall(
             loc(context).staticDns3,
@@ -322,7 +322,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
             }
           },
         ),
-        const AppGap.regular(),
+        const AppGap.medium(),
         AppIPFormField(
           header: AppText.bodySmall(
             loc(context).wins,

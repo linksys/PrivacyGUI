@@ -7,7 +7,6 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/page/account/_account.dart';
 import 'package:privacy_gui/page/administration/dmz/views/dmz_settings_view.dart';
 import 'package:privacy_gui/page/administration/firewall/_firewall.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/_internet_settings.dart';
@@ -18,6 +17,7 @@ import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/ddns/_ddns.dart';
 import 'package:privacy_gui/page/devices/_devices.dart';
 import 'package:privacy_gui/page/devices/views/select_device_view.dart';
+import 'package:privacy_gui/page/firmware_update/_firmware_update.dart';
 import 'package:privacy_gui/page/health_check/_health_check.dart';
 import 'package:privacy_gui/page/landing/_landing.dart';
 
@@ -26,7 +26,6 @@ import 'package:privacy_gui/page/login/views/_views.dart';
 import 'package:privacy_gui/page/login/views/local_reset_router_password_view.dart';
 import 'package:privacy_gui/page/nodes/_nodes.dart';
 import 'package:privacy_gui/page/nodes/views/add_nodes_view.dart';
-import 'package:privacy_gui/page/notifications/notification_settings_page.dart';
 import 'package:privacy_gui/page/otp_flow/providers/_providers.dart';
 import 'package:privacy_gui/page/otp_flow/views/_views.dart';
 import 'package:privacy_gui/page/pnp/troubleshooter/views/call_support/call_support_main_region_view.dart';
@@ -66,9 +65,11 @@ part 'route_otp.dart';
 part 'route_pnp.dart';
 part 'route_add_nodes.dart';
 
+final routerKey = GlobalKey<NavigatorState>();
 final routerProvider = Provider<GoRouter>((ref) {
   final router = RouterNotifier(ref);
   return GoRouter(
+    navigatorKey: routerKey,
     refreshListenable: router,
     observers: [ref.read(routerLoggerProvider)],
     initialLocation: '/',
@@ -79,14 +80,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       LinksysRoute(
         name: RouteNamed.prepareDashboard,
         path: RoutePath.prepareDashboard,
-        config: LinksysRouteConfig(pageWidth: FullPageWidth()),
-        builder: (context, state) => PrepareDashboardView(),
+        config: LinksysRouteConfig(
+          column: ColumnGrid(column: 4, centered: true),
+        ),
+        builder: (context, state) => const PrepareDashboardView(),
       ),
       LinksysRoute(
         name: RouteNamed.selectNetwork,
         path: RoutePath.selectNetwork,
-        config: const LinksysRouteConfig(noNaviRail: true),
-        builder: (context, state) => SelectNetworkView(),
+        config: const LinksysRouteConfig(
+          noNaviRail: true,
+        ),
+        builder: (context, state) => const SelectNetworkView(),
       ),
       dashboardRoute,
       pnpRoute,
@@ -134,7 +139,6 @@ class RouterNotifier extends ChangeNotifier {
     bool shouldGoPnp = false;
     final routerType =
         _ref.read(connectivityProvider).connectivityInfo.routerType;
-    logger.d('XXXXX: routerType: $routerType');
     if (BuildConfig.forceCommandType == ForceCommand.local ||
         (routerType != RouterType.others && loginType != LoginType.remote)) {
       shouldGoPnp = await pnp.fetchDeviceInfo().then((_) async =>

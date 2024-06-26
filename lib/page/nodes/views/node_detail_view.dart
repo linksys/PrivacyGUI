@@ -22,7 +22,6 @@ import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/card/info_card.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
@@ -72,11 +71,12 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
-              width: 280,
+              width: 3.col,
               child: infoTab(state),
             ),
-            const AppGap.regular(),
-            Expanded(
+            const AppGap.gutter(),
+            SizedBox(
+                width: 9.col,
                 child: deviceTab(
                     state, constraint.maxHeight - kDefaultToolbarHeight))
           ],
@@ -120,11 +120,11 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        const AppGap.semiSmall(),
+        const AppGap.small2(),
         _avatarCard(state),
-        const AppGap.regular(),
+        const AppGap.medium(),
         _detailSection(state),
-        const AppGap.regular(),
+        const AppGap.medium(),
         _lightCard(state),
         const Spacer(),
       ],
@@ -136,10 +136,10 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const AppGap.semiSmall(),
+        const AppGap.small2(),
         AppText.labelLarge(
             loc(context).nDevices(state.connectedDevices.length)),
-        const AppGap.semiSmall(),
+        const AppGap.small2(),
         SizedBox(
           height: listHeight,
           child: ConnectedDeviceListWidget(
@@ -191,7 +191,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
                 ],
               ),
             ),
-            // const AppGap.regular(),
+            // const AppGap.medium(),
             AppSettingCard(
               title: loc(context).connectTo,
               description: _checkEmptyValue(state.upstreamDevice),
@@ -221,7 +221,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
         ..._createNodeLightTile(state.nodeLightSettings),
         ...hasBlinkFunction
             ? [
-                const AppGap.regular(),
+                const AppGap.medium(),
                 const BlinkNodeLightWidget(),
               ]
             : [],
@@ -285,7 +285,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
             description: state.lanIpAddress,
           ),
           if (state.isMaster) ...[
-            const AppGap.semiSmall(),
+            const AppGap.small2(),
             AppSettingCard(
               showBorder: false,
               padding: EdgeInsets.zero,
@@ -301,7 +301,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
           //   title: loc(context).modelNumber,
           //   description: _checkEmptyValue(state.modelNumber),
           // ),
-          const AppGap.semiSmall(),
+          const AppGap.small2(),
 
           AppSettingCard(
             showBorder: false,
@@ -316,12 +316,12 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
                     color: Theme.of(context).colorScheme.error,
                   ),
                   onTap: () {
-                    showFirmwareUpdateDialog(context);
+                    context.pushNamed(RouteNamed.firmwareUpdateDetail);
                   },
                 ),
                 child: AppText.labelSmall(loc(context).upToDate)),
           ),
-          const AppGap.regular(),
+          const AppGap.medium(),
           AppTextButton(
             loc(context).moreInfo,
             padding: const EdgeInsets.all(4),
@@ -350,7 +350,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
             controller: textController,
           ),
           if (hasBlinkFunction) ...[
-            const AppGap.regular(),
+            const AppGap.medium(),
             const BlinkNodeLightWidget(),
           ],
         ],
@@ -374,7 +374,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
         children: [
           AppText.labelLarge(loc(context).model),
           AppText.bodyMedium(state.modelNumber),
-          const AppGap.regular(),
+          const AppGap.medium(),
           AppText.labelLarge(loc(context).serialNumber.camelCapitalize()),
           AppText.bodyMedium(state.serialNumber),
         ],

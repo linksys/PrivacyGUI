@@ -249,6 +249,7 @@ const List<Map<String, dynamic>> _velopModelMap = [
     'seriesModel': 'LN11',
     'isMeshRouter': false,
     'isCognitiveMesh': true,
+    'isHorizontalPorts': true,
     'pattern': 'ln11',
   },
   {
@@ -411,3 +412,13 @@ bool isServiceSupport(JNAPService service, [List<String>? services]) {
   }
   return false;
 }
+
+bool isHorizontalPorts({
+  required String modelNumber,
+  required String hardwareVersion,
+}) =>
+    doVelopModelTests(
+        modelNumber: modelNumber,
+        hardwareVersion: hardwareVersion,
+        paramName: 'isHorizontalPorts') ??
+    false;

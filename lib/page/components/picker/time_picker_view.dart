@@ -93,7 +93,7 @@ class _TimePickerViewState extends ConsumerState<TimePickerView> {
             widget.title,
             color: const Color.fromRGBO(0, 0, 0, 0.4),
           ),
-          const AppGap.semiSmall(),
+          const AppGap.small2(),
           TextButton(
             onPressed: () {
               if (Platform.isAndroid) {
@@ -109,9 +109,9 @@ class _TimePickerViewState extends ConsumerState<TimePickerView> {
               DateFormatUtils.formatTimeAmPm(_current.inSeconds),
             ),
           ),
-          const AppGap.small(),
+          const AppGap.small3(),
           Image.asset('assets/images/line.png'),
-          const AppGap.small(),
+          const AppGap.small3(),
           Visibility(
             visible: widget.isNextDay,
             maintainSize: true,

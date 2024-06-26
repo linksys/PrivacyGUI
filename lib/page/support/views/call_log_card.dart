@@ -153,14 +153,14 @@ class _CallLogCardState extends State<CallLogCard> {
           Row(
             children: [
               const Icon(LinksysIcons.calendar),
-              const AppGap.semiSmall(),
+              const AppGap.small2(),
               AppText.bodyMedium(
                 _getDateString(ticket.createdAt),
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
-              const AppGap.semiBig(),
+              const AppGap.large2(),
               const Icon(LinksysIcons.confirmationNumber),
-              const AppGap.semiSmall(),
+              const AppGap.small2(),
               AppText.bodyMedium(
                 '#${ticket.salesforceCaseNumber}',
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -169,13 +169,13 @@ class _CallLogCardState extends State<CallLogCard> {
               _getStatusWidget(ticket.status)
             ],
           ),
-          const AppGap.semiBig(),
+          const AppGap.large2(),
           AppText.bodyMedium(
             ticket.description,
             maxLines: expanded ? 2000 : 2,
             overflow: TextOverflow.ellipsis,
           ),
-          const AppGap.semiBig(),
+          const AppGap.large2(),
           Row(
             children: [
               AppIconButton(

@@ -7,7 +7,8 @@ import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/administration/network_admin/providers/_providers.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacygui_widgets/theme/const/spacing.dart';
+import 'package:privacygui_widgets/theme/_theme.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
@@ -57,9 +58,10 @@ class _LocalRouterRecoveryViewState
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   AppText.headlineSmall(loc(context).forgotPassword),
-                  const AppGap.regular(),
-                  AppText.bodyMedium(loc(context).localRouterRecoveryDescription),
-                  const AppGap.big(),
+                  const AppGap.medium(),
+                  AppText.bodyMedium(
+                      loc(context).localRouterRecoveryDescription),
+                  const AppGap.large3(),
                   PinCodeTextField(
                     errorTextSpace: 0,
                     onChanged: (String value) {
@@ -74,7 +76,8 @@ class _LocalRouterRecoveryViewState
                     autoDismissKeyboard: true,
                     pinTheme: PinTheme(
                       shape: PinCodeFieldShape.box,
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius:
+                          CustomTheme.of(context).radius.asBorderRadius().small,
                       borderWidth: 1,
                       fieldHeight: 56,
                       fieldWidth: 40,
@@ -85,13 +88,13 @@ class _LocalRouterRecoveryViewState
                   ),
                   if (state.remainingErrorAttempts != null)
                     Padding(
-                      padding: const EdgeInsets.only(top: Spacing.semiSmall),
+                      padding: const EdgeInsets.only(top: Spacing.small2),
                       child: AppText.bodyMedium(
                         '${loc(context).localRouterRecoveryKeyErorr}\n${loc(context).localLoginRemainingAttempts(state.remainingErrorAttempts!)}',
                         color: Theme.of(context).colorScheme.error,
                       ),
                     ),
-                  const AppGap.extraBig(),
+                  const AppGap.large4(),
                   AppFilledButton(
                     loc(context).textContinue,
                     onTap: userInputCode.length == 5

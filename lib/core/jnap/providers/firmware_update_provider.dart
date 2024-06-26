@@ -1,8 +1,5 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
-
 import 'dart:async';
 import 'dart:convert';
-
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,7 +9,6 @@ import 'package:http_parser/http_parser.dart';
 import 'package:privacy_gui/constants/jnap_const.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/http/linksys_http_client.dart';
-
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/models/firmware_update_settings.dart';
@@ -132,6 +128,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
   }
 
   Future updateFirmware() async {
+    logger.i('[FIRMWARE]: update firmware START!');
     final benchmark = BenchMarkLogger(name: 'FirmwareUpdate');
     benchmark.start();
     state = state.copyWith(isUpdating: true);
@@ -147,29 +144,24 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
         );
     _sub?.cancel();
     ref.read(pollingProvider.notifier).stopPolling();
-    final targetFirmwareUpdateRecords = state.nodesStatus ?? [];
-    final availableCount = targetFirmwareUpdateRecords
-        .where((e) => e.availableUpdate != null)
-        .length;
-    // check firmware update up to 480 seconds for per router
     _sub = _startCheckFirmwareUpdateStatus(
-        retryTimes: 180 * availableCount,
-        stopCondition: (result) =>
-            _checkFirmwareUpdateComplete(result, targetFirmwareUpdateRecords),
-        onCompleted: () {
-          logger.i('[FIRMWARE]: update firmware COMPLETED!');
-          final polling = ref.read(pollingProvider.notifier);
-          polling
-              .forcePolling()
-              .then((_) => checkFirmwareUpdateStatus())
-              .then((_) {
-            polling.startPolling();
-            _sub?.cancel();
-            state = state.copyWith(isUpdating: false);
-            benchmark.end();
-          });
-        }).listen((statusList) {
-      logger.i('[FIRMWARE]: update firmware state: $statusList');
+      retryTimes: 180 * getAvailableUpdateNumber(),
+      stopCondition: (result) =>
+          _checkFirmwareUpdateComplete(result, state.nodesStatus ?? []),
+      onCompleted: () {
+        logger.i('[FIRMWARE]: update firmware COMPLETED!');
+        final polling = ref.read(pollingProvider.notifier);
+        polling
+            .forcePolling()
+            .then((_) => checkFirmwareUpdateStatus())
+            .then((_) {
+          state = state.copyWith(isUpdating: false);
+          polling.startPolling();
+          _sub?.cancel();
+          benchmark.end();
+        });
+      },
+    ).listen((statusList) {
       state = state.copyWith(nodesStatus: statusList);
     });
   }
@@ -191,12 +183,18 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
           !statusList.any((status) => status.pendingOperation != null);
       final isDataConsitent = _isRecordConsistent(statusList, records);
       logger.i(
-          '[FIRMWARE]: check are all finished: $statusList, $isSatisfied, $isDataConsitent');
+          '[FIRMWARE]: check if updates are all finished: $statusList, $isSatisfied, $isDataConsitent');
       return isSatisfied && isDataConsitent;
     } else {
       logger.i('[FIRMWARE]: error: $result, maybe reboot');
       return false;
     }
+  }
+
+  int getAvailableUpdateNumber() {
+    return (state.nodesStatus ?? [])
+        .where((e) => e.availableUpdate != null)
+        .length;
   }
 
   ///
@@ -208,6 +206,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     List<FirmwareUpdateStatus> records,
   ) =>
       _isRecordConsistent(list, records);
+
   bool _isRecordConsistent(
     List<FirmwareUpdateStatus> list,
     List<FirmwareUpdateStatus> records,
@@ -228,7 +227,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
   }
 
   Stream<List<FirmwareUpdateStatus>> _startCheckFirmwareUpdateStatus({
-    int? retryTimes = 3,
+    int? retryTimes = 1,
     int? retryDelayInMilliSec,
     bool Function(JNAPResult)? stopCondition,
     Function()? onCompleted,

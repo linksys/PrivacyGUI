@@ -18,8 +18,8 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:privacygui_widgets/widgets/card/menu_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 
-import 'package:privacygui_widgets/widgets/panel/custom_animated_box.dart';
 import 'package:privacygui_widgets/widgets/panel/general_section.dart';
 
 class DashboardMenuView extends ConsumerStatefulWidget {
@@ -66,24 +66,20 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
   Widget _buildMenuGridView(List<AppSectionItemData> items) {
     return GridView.builder(
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: ResponsiveLayout.isOverBreakpoint4(context)
+        crossAxisCount: ResponsiveLayout.isOverExtraLargeLayout(context)
             ? 3
-            : ResponsiveLayout.isOverBreakpoint2(context)
+            : ResponsiveLayout.isOverMedimumLayout(context)
                 ? 2
                 : 1,
-        mainAxisSpacing: 8,
-        crossAxisSpacing: 10,
-        childAspectRatio: (3 / 2),
-        mainAxisExtent: 120,
+        mainAxisSpacing: Spacing.medium,
+        crossAxisSpacing: ResponsiveLayout.columnPadding(context),
+        childAspectRatio: (205 / 125),
+        mainAxisExtent: 205,
       ),
       physics: const ScrollPhysics(),
       itemCount: items.length,
       itemBuilder: (context, index) {
-        return CustomAnimatedBox(
-            value: false,
-            selectable: false,
-            onChanged: (value) {},
-            child: _buildDeviceGridCell(items[index]));
+        return _buildDeviceGridCell(items[index]);
       },
     );
   }
@@ -142,21 +138,21 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
           onTap: () {
             _navigateTo(RouteNamed.dashboardAdvancedSettings);
           }),
-      AppSectionItemData(
-          title: 'Settings',
-          description: 'This is a description for this tile',
-          iconData: LinksysIcons.settings,
-          onTap: () {
-            _navigateTo(RouteNamed.dashboardSettings);
-          }),
-      if (isCloudLogin)
-        AppSectionItemData(
-            title: loc(context).account,
-            description: 'This is a description for this tile',
-            iconData: LinksysIcons.accountCircle,
-            onTap: () {
-              _navigateTo(RouteNamed.accountInfo);
-            }),
+      // AppSectionItemData(
+      //     title: 'Settings',
+      //     description: 'This is a description for this tile',
+      //     iconData: LinksysIcons.settings,
+      //     onTap: () {
+      //       _navigateTo(RouteNamed.dashboardSettings);
+      //     }),
+      // if (isCloudLogin)
+      //   AppSectionItemData(
+      //       title: loc(context).account,
+      //       description: 'This is a description for this tile',
+      //       iconData: LinksysIcons.accountCircle,
+      //       onTap: () {
+      //         _navigateTo(RouteNamed.accountInfo);
+      //       }),
       // AppSectionItemData(
       //     title: 'Linksys LinkUp',
       //     iconData: getCharactersIcons(context).bellDefault,

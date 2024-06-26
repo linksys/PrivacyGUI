@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
@@ -7,11 +6,11 @@ import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/pnp/troubleshooter/views/call_support/call_support_main_region_view.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/theme/const/spacing.dart';
+import 'package:privacygui_widgets/theme/_theme.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
 class CallSupportMoreRegionView extends ArgumentsConsumerStatelessView {
   const CallSupportMoreRegionView({
@@ -28,37 +27,43 @@ class CallSupportMoreRegionView extends ArgumentsConsumerStatelessView {
     return StyledAppPageView(
       title: title,
       enableSafeArea: (left: true, top: false, right: true, bottom: true),
-      child: AppBasicLayout(
-        content: ResponsiveLayout(
-          desktop: _desktopLayout(regionList),
-          mobile: _mobileLayout(regionList),
-        ),
+      child: ResponsiveLayout(
+        desktop: _desktopLayout(context, regionList),
+        mobile: _mobileLayout(regionList),
       ),
     );
   }
 
-  Widget _desktopLayout(List<CallSupportRegion> regionList) {
+  Widget _desktopLayout(
+      BuildContext context, List<CallSupportRegion> regionList) {
     return GridView.builder(
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        mainAxisSpacing: Spacing.semiSmall,
-        crossAxisSpacing: Spacing.semiBig,
-        childAspectRatio: 5.8,
+        mainAxisSpacing: Spacing.medium,
+        crossAxisSpacing: ResponsiveLayout.columnPadding(context),
+        mainAxisExtent: 72,
       ),
       itemCount: regionList.length,
       itemBuilder: (context, index) {
         final region = regionList[index];
-        return _buildRegionCard(context, region);
+        return SizedBox(width: 6.col, child: _buildRegionCard(context, region));
       },
     );
   }
 
   Widget _mobileLayout(List<CallSupportRegion> regionList) {
-    return ListView.builder(
+    return ListView.separated(
       itemCount: regionList.length,
       itemBuilder: (context, index) {
         final region = regionList[index];
         return _buildRegionCard(context, region);
+      },
+      separatorBuilder: (BuildContext context, int index) {
+        if (index != regionList.length - 1) {
+          return const AppGap.medium();
+        } else {
+          return const Center();
+        }
       },
     );
   }
@@ -104,7 +109,7 @@ class CallSupportMoreRegionView extends ArgumentsConsumerStatelessView {
                     size: 24,
                     color: Theme.of(context).colorScheme.primary,
                   ),
-                  const AppGap.regular(),
+                  const AppGap.medium(),
                   Flexible(
                     child: AppText.titleLarge(
                       number,
@@ -117,14 +122,14 @@ class CallSupportMoreRegionView extends ArgumentsConsumerStatelessView {
               Padding(
                 padding: const EdgeInsets.only(
                   left: 40,
-                  top: Spacing.semiSmall,
+                  top: Spacing.small2,
                 ),
                 child: AppText.bodyMedium(
                     loc(context).callSupportDetailTwentyFourSeven),
               ),
             ],
           ),
-          const AppGap.extraBig(),
+          const AppGap.large4(),
           AppText.bodyLarge(loc(context).callSupportDetailDesc),
           AppText.bodyLarge(loc(context).callSupportDetailDesc2),
         ],

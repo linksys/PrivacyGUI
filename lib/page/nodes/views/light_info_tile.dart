@@ -23,7 +23,7 @@ class LightInfoTile extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         _createLightCircle(context, color),
-        const AppGap.regular(),
+        const AppGap.medium(),
         Flexible(
           child: content,
         )

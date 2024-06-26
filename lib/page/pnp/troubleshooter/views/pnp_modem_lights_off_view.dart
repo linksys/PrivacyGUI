@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/theme/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/bullet_list/bullet_list.dart';
 import 'package:privacygui_widgets/widgets/bullet_list/bullet_style.dart';
@@ -51,8 +51,8 @@ class _PnpLightOffViewState extends ConsumerState<PnpModemLightsOffView> {
                     CustomTheme.of(context).images.modemDevice,
                     fit: BoxFit.fitWidth,
                   ),
-                  const AppGap.big(),
-                  const AppGap.extraBig(),
+                  const AppGap.large3(),
+                  const AppGap.large4(),
                   Row(
                     children: [
                       Flexible(
@@ -91,7 +91,7 @@ class _PnpLightOffViewState extends ConsumerState<PnpModemLightsOffView> {
 
   Widget _bottomSheetContent() {
     return Padding(
-      padding: const EdgeInsets.all(Spacing.semiBig),
+      padding: const EdgeInsets.all(Spacing.large2),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -99,11 +99,11 @@ class _PnpLightOffViewState extends ConsumerState<PnpModemLightsOffView> {
           AppText.headlineSmall(
             loc(context).pnpModemLightsOffTipTitle,
           ),
-          const AppGap.semiBig(),
+          const AppGap.large2(),
           AppText.bodyMedium(
             loc(context).pnpModemLightsOffTipDesc,
           ),
-          const AppGap.semiBig(),
+          const AppGap.large2(),
           AppBulletList(style: AppBulletStyle.number, children: [
             AppText.bodyMedium(
               loc(context).pnpModemLightsOffTipStep1,

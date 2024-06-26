@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/page/base_page_view.dart';
 
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -64,6 +66,17 @@ class PageBottomBar extends Equatable {
   }
 }
 
+class InversePageBottomBar extends PageBottomBar {
+  const InversePageBottomBar({
+    required super.isPositiveEnabled,
+    super.isNegitiveEnabled,
+    super.positiveLabel,
+    super.negitiveLable,
+    required super.onPositiveTap,
+    super.onNegitiveTap,
+  });
+}
+
 class PageMenu {
   final String? title;
   List<PageMenuItem> items;
@@ -107,6 +120,7 @@ class StyledAppPageView extends ConsumerWidget {
   final ScrollController? controller;
   final ({bool left, bool top, bool right, bool bottom}) enableSafeArea;
   final PageBottomBar? bottomBar;
+  final bool menuOnRight;
 
   const StyledAppPageView({
     super.key,
@@ -129,10 +143,23 @@ class StyledAppPageView extends ConsumerWidget {
     this.controller,
     this.enableSafeArea = (left: true, top: true, right: true, bottom: true),
     this.bottomBar,
+    this.menuOnRight = false,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final views = [
+      if (!ResponsiveLayout.isMobileLayout(context) && hasMenu()) ...[
+        SizedBox(
+          width: 3.col,
+          child: AppCard(
+            child: _createMenuWidget(context),
+          ),
+        ),
+        const AppGap.gutter(),
+      ],
+      Expanded(child: child),
+    ];
     return Stack(
       children: [
         Padding(
@@ -141,6 +168,7 @@ class StyledAppPageView extends ConsumerWidget {
             appBar: _buildAppBar(context, ref),
             padding: padding,
             scrollable: scrollable,
+            scrollController: controller,
             bottomSheet: bottomSheet,
             bottomNavigationBar: bottomNavigationBar,
             background: Theme.of(context).colorScheme.background,
@@ -153,13 +181,7 @@ class StyledAppPageView extends ConsumerWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (!ResponsiveLayout.isMobileLayout(context) && hasMenu())
-                  AppCard(
-                    child: _createMenuWidget(context, 200),
-                  ),
-                Expanded(child: child),
-              ],
+              children: menuOnRight ? views.reversed.toList() : views,
             ),
           ),
         ),
@@ -209,6 +231,7 @@ class StyledAppPageView extends ConsumerWidget {
                   })
               : null,
           showBack: backState != StyledBackState.none,
+          trailing: _buildActions(context),
         );
       case AppBarStyle.none:
         return null;
@@ -218,7 +241,7 @@ class StyledAppPageView extends ConsumerWidget {
   List<Widget>? _buildActions(BuildContext context) {
     return !hasMenu() || !ResponsiveLayout.isMobileLayout(context)
         ? actions
-        : ((actions ?? [])..add(_createMenuAction(context)));
+        : [_createMenuAction(context), ...(actions ?? [])];
   }
 
   Widget _bottomWidget(BuildContext context) {
@@ -247,9 +270,10 @@ class StyledAppPageView extends ConsumerWidget {
                                         bottomBar?.onNegitiveTap?.call();
                                       }
                                     : null,
+                                color: Theme.of(context).colorScheme.outline,
                               ),
                             ),
-                            const AppGap.regular(),
+                            const AppGap.medium(),
                           ],
                           Expanded(
                             child: AppFilledButton.fillWidth(
@@ -259,6 +283,9 @@ class StyledAppPageView extends ConsumerWidget {
                                       bottomBar?.onPositiveTap.call();
                                     }
                                   : null,
+                              color: bottomBar is InversePageBottomBar
+                                  ? Theme.of(context).colorScheme.error
+                                  : null,
                             ),
                           ),
                         ],
@@ -266,14 +293,14 @@ class StyledAppPageView extends ConsumerWidget {
                           if (bottomBar?.isNegitiveEnabled != null) ...[
                             AppOutlinedButton(
                               bottomBar?.negitiveLable ?? loc(context).cancel,
-                              color: Theme.of(context).colorScheme.error,
+                              color: Theme.of(context).colorScheme.outline,
                               onTap: bottomBar?.isNegitiveEnabled == true
                                   ? () {
                                       bottomBar?.onNegitiveTap?.call();
                                     }
                                   : null,
                             ),
-                            const AppGap.regular(),
+                            const AppGap.medium(),
                           ],
                           AppFilledButton(
                             bottomBar?.positiveLabel ?? loc(context).save,
@@ -281,6 +308,9 @@ class StyledAppPageView extends ConsumerWidget {
                                 ? () {
                                     bottomBar?.onPositiveTap.call();
                                   }
+                                : null,
+                            color: bottomBar is InversePageBottomBar
+                                ? Theme.of(context).colorScheme.error
                                 : null,
                           ),
                         ],
@@ -295,14 +325,17 @@ class StyledAppPageView extends ConsumerWidget {
   }
 
   Widget _createMenuAction(BuildContext context) {
-    return AppIconButton.noPadding(
+    return AppIconButton(
       icon: menuIcon ?? LinksysIcons.moreHoriz,
       onTap: () {
         showModalBottomSheet(
           context: context,
           isScrollControlled: true,
           useRootNavigator: true,
-          builder: (context) => _createMenuWidget(context),
+          builder: (context) => Container(
+              padding: const EdgeInsets.all(Spacing.large2),
+              width: double.infinity,
+              child: _createMenuWidget(context)),
         );
       },
     );
@@ -322,8 +355,10 @@ class StyledAppPageView extends ConsumerWidget {
                     left: 24.0, right: 24.0, top: 24.0, bottom: 0.0),
                 child: AppText.titleSmall(menu?.title ?? ''),
               ),
-              const AppGap.regular(),
+              const AppGap.medium(),
               ...(menu?.items ?? []).map((e) => ListTile(
+                    shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(100))),
                     leading: e.icon != null ? Icon(e.icon) : null,
                     title: AppText.bodySmall(e.label),
                     onTap: e.onTap,

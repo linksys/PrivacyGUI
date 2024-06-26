@@ -1,15 +1,15 @@
-import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/build_config.dart';
+import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/troubleshooting/_troubleshooting.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/theme/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
@@ -108,7 +108,7 @@ class _TroubleshootingViewState extends ConsumerState<TroubleshootingView> {
                           ),
                     ],
                   ),
-                  const AppGap.big(),
+                  const AppGap.large3(),
                   Table(
                     border: TableBorder.all(
                         color: Theme.of(context).colorScheme.onBackground),
@@ -148,7 +148,7 @@ class _TroubleshootingViewState extends ConsumerState<TroubleshootingView> {
                           ),
                     ],
                   ),
-                  const AppGap.big(),
+                  const AppGap.large3(),
                   AppTextButton(
                     'Ping',
                     onTap: () {
@@ -169,16 +169,23 @@ class _TroubleshootingViewState extends ConsumerState<TroubleshootingView> {
                     AppTextButton(
                       'Factory Reset',
                       onTap: () {
-                        showAlertDialog<bool>(
-                            context: context,
+                        showMessageAppDialog<bool>(context,
                             title: 'Important',
                             message:
                                 'When you reset your router, it reboots, disconnects from the internet and clears all current settings. All devices connected to the router will also be disconnected. When the reset completes, the router will need to be set up again and then all devices will have to reconnect using the new settings.\n\nDo you want to continue?',
                             actions: [
-                              const AlertDialogAction<bool>(
-                                  key: true, label: 'Yes'),
-                              const AlertDialogAction<bool>(
-                                  key: false, label: 'No'),
+                              AppFilledButton(
+                                'Yes',
+                                onTap: () {
+                                  context.pop(true);
+                                },
+                              ),
+                              AppFilledButton(
+                                'No',
+                                onTap: () {
+                                  context.pop();
+                                },
+                              ),
                             ]).then((value) {
                           if ((value ?? false)) {
                             ref
@@ -199,7 +206,7 @@ class _TroubleshootingViewState extends ConsumerState<TroubleshootingView> {
 
   Widget _paddingTableCell({required Widget child}) {
     return Padding(
-      padding: const EdgeInsets.all(Spacing.semiSmall),
+      padding: const EdgeInsets.all(Spacing.small2),
       child: child,
     );
   }
@@ -222,7 +229,7 @@ class _TroubleshootingViewState extends ConsumerState<TroubleshootingView> {
                 },
               ),
             ),
-            const AppGap.big(),
+            const AppGap.large3(),
             Table(
               border: TableBorder.all(
                   color: Theme.of(context).colorScheme.onBackground),
@@ -301,7 +308,7 @@ class _TroubleshootingViewState extends ConsumerState<TroubleshootingView> {
               hintText: '(optional)',
               onFocusChanged: (hasFocus) {},
             ),
-            const AppGap.small(),
+            const AppGap.small3(),
             const AppText.bodyMedium(
                 "Send to multiple emails by separating them with a comma."),
           ],

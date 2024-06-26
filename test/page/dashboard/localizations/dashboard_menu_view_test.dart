@@ -1,19 +1,12 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 
 import '../../../common/config.dart';
-import '../../../common/mock_firebase_messaging.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
 
 void main() async {
-  setupFirebaseMessagingMocks();
-  // FirebaseMessaging? messaging;
-  await Firebase.initializeApp();
-  // FirebaseMessagingPlatform.instance = kMockMessagingPlatform;
-  // messaging = FirebaseMessaging.instance;
 
   testLocalizations('Dashboard Menu View', (tester, locale) async {
     await tester.pumpWidget(

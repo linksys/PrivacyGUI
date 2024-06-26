@@ -129,7 +129,7 @@ class _AddRuleContentViewState
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const AppGap.semiBig(),
+            const AppGap.large2(),
             if (state.mode == RuleMode.editing)
               ..._buildEditContents(state)
             else
@@ -157,7 +157,7 @@ class _AddRuleContentViewState
           },
         ),
       ),
-      const AppGap.semiBig(),
+      const AppGap.large2(),
       ...buildInputForms(),
     ];
   }
@@ -166,7 +166,7 @@ class _AddRuleContentViewState
     return [
       AppTextField.outline(
           headerText: loc(context).ruleName, controller: _ruleNameController),
-      const AppGap.semiBig(),
+      const AppGap.large2(),
       AppSection.withLabel(
         title: loc(context).triggeredRange,
         content: Column(
@@ -180,7 +180,7 @@ class _AddRuleContentViewState
               controller: _firstTriggerPortController,
               max: 65535,
             ),
-            const AppGap.regular(),
+            const AppGap.medium(),
             AppTextField.minMaxNumber(
               border: const OutlineInputBorder(),
               headerText: loc(context).endPort,
@@ -188,7 +188,7 @@ class _AddRuleContentViewState
               controller: _lastTriggerPortController,
               max: 65535,
             ),
-            const AppGap.regular(),
+            const AppGap.medium(),
           ],
         ),
       ),
@@ -205,7 +205,7 @@ class _AddRuleContentViewState
               controller: _firstForwardedPortController,
               max: 65535,
             ),
-            const AppGap.regular(),
+            const AppGap.medium(),
             AppTextField.minMaxNumber(
               border: const OutlineInputBorder(),
               headerText: loc(context).endPort,
@@ -213,7 +213,7 @@ class _AddRuleContentViewState
               controller: _lastForwardedPortController,
               max: 65535,
             ),
-            const AppGap.regular(),
+            const AppGap.medium(),
           ],
         ),
       ),

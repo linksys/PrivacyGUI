@@ -131,8 +131,10 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
       const MapEntry(JNAPAction.getDeviceInfo, {}),
     ];
     if (isServiceSupport(JNAPService.healthCheckManager)) {
-      commands.add(const MapEntry(
-          JNAPAction.getHealthCheckResults, {'includeModuleResults': true}));
+      commands.add(const MapEntry(JNAPAction.getHealthCheckResults, {
+        'includeModuleResults': true,
+        "lastNumberOfResults": 5,
+      }));
       commands
           .add(const MapEntry(JNAPAction.getSupportedHealthCheckModules, {}));
     }

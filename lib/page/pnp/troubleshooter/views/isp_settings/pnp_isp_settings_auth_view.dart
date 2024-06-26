@@ -194,13 +194,13 @@ class _PnpIspSettingsAuthViewState
                     headerText: loc(context).password,
                     controller: _passwordController,
                   ),
-                  const AppGap.extraBig(),
+                  const AppGap.large4(),
                   if (_inputPasswordError != null)
                     AppText.bodyLarge(
                       _inputPasswordError!,
                       color: Theme.of(context).colorScheme.error,
                     ),
-                  const AppGap.extraBig(),
+                  const AppGap.large4(),
                   AppTextButton.noPadding(
                     loc(context).pnpRouterLoginWhereIsIt,
                     onTap: () {

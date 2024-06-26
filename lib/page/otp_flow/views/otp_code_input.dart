@@ -97,7 +97,7 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const AppGap.big(),
+            const AppGap.large3(),
             AppPinCodeInput(
               key: const Key('otp_input_view_input_field_code'),
               onChanged: (String value) {
@@ -119,7 +119,7 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
                   });
                 },
               ),
-            const AppGap.regular(),
+            const AppGap.medium(),
             AppTextButton.noPadding(getAppLocalizations(context).resendCode,
                 onTap: () {
               _setLoading(true);

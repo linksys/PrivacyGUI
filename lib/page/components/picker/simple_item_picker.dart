@@ -59,7 +59,7 @@ class _SimpleItemPickerViewState extends ConsumerState<SimpleItemPickerView> {
       child: AppBasicLayout(
         content: Column(
           children: [
-            const AppGap.semiBig(),
+            const AppGap.large2(),
             ..._items.map((item) {
               return InkWell(
                 onTap: _disabled.contains(item.id)

@@ -4,7 +4,7 @@ final addNodesRoute = LinksysRoute(
   name: RouteNamed.addNodes,
   path: RoutePath.addNodes,
   config: LinksysRouteConfig(
-      noNaviRail: true, pageWidth: SpecificPageWidth(width: 488)),
+      noNaviRail: true, column: ColumnGrid(column: 6, centered: true)),
   builder: (context, state) => AddNodesView(
     args: state.extra as Map<String, dynamic>? ?? {},
   ),

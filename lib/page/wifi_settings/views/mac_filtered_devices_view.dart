@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/mac_filtering_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/mac_filtering_state.dart';
@@ -13,11 +12,10 @@ import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/validator_rules/_validator_rules.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
-import 'package:privacygui_widgets/widgets/fab/expandable_fab.dart';
 
 class FilteredDevicesView extends ArgumentsConsumerStatefulView {
   const FilteredDevicesView({super.key, super.args});
@@ -28,6 +26,9 @@ class FilteredDevicesView extends ArgumentsConsumerStatefulView {
 }
 
 class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
+  bool _isEdit = false;
+  final List<String> _selectedMACs = [];
+
   @override
   void initState() {
     super.initState();
@@ -45,47 +46,61 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
     return StyledAppPageView(
       title: loc(context).filteredDevices,
       scrollable: true,
+      actions: !_isEdit
+          ? [
+              AppTextButton(
+                loc(context).edit,
+                icon: LinksysIcons.edit,
+                onTap: state.macAddresses.isNotEmpty
+                    ? () {
+                        _toggleEdit();
+                      }
+                    : null,
+              )
+            ]
+          : null,
+      bottomBar: _isEdit
+          ? InversePageBottomBar(
+              isPositiveEnabled: true,
+              onPositiveTap: () {
+                ref
+                    .read(macFilteringProvider.notifier)
+                    .removeSelection(_selectedMACs);
+                _toggleEdit();
+              },
+              positiveLabel: loc(context).remove,
+              isNegitiveEnabled: true,
+              onNegitiveTap: () {
+                _toggleEdit();
+              },
+            )
+          : null,
       child: AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: AppListCard(
-                    title:
-                        AppText.labelLarge(loc(context).selectFromMyDeviceList),
-                    trailing: const Icon(LinksysIcons.add),
-                    onTap: () async {
-                      final results = await context
-                          .pushNamed<List<DeviceListItem>?>(
-                              RouteNamed.devicePicker,
-                              extra: {
-                            'type': 'mac',
-                            'selected':
-                                ref.read(macFilteringProvider).macAddresses
-                          });
-                      if (results != null) {
-                        ref.read(macFilteringProvider.notifier).setSelection(
-                            results.map((e) => e.macAddress).toList());
-                      }
-                    },
-                  ),
-                ),
-                Expanded(
-                  child: AppListCard(
-                    title: AppText.labelLarge(loc(context).manuallyAddDevice),
-                    trailing: const Icon(LinksysIcons.add),
-                    onTap: () {
+            AppListCard(
+              title: AppText.labelLarge(loc(context).selectFromMyDeviceList),
+              trailing: !_isEdit ? const Icon(LinksysIcons.add) : null,
+              onTap: !_isEdit
+                  ? () {
+                      _pickDevices();
+                    }
+                  : null,
+            ),
+            const AppGap.medium(),
+            AppListCard(
+              title: AppText.labelLarge(loc(context).manuallyAddDevice),
+              trailing: !_isEdit ? const Icon(LinksysIcons.add) : null,
+              onTap: !_isEdit
+                  ? () {
                       _showManuallyAddModal();
-                    },
-                  ),
-                ),
-              ],
+                    }
+                  : null,
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16.0),
+              padding: const EdgeInsets.symmetric(vertical: Spacing.medium),
               child: AppText.labelLarge(loc(context).filteredDevices),
             ),
             _buildFilteredDevices(state),
@@ -93,6 +108,26 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
         ),
       ),
     );
+  }
+
+  void _toggleEdit() {
+    setState(() {
+      _isEdit = !_isEdit;
+      _selectedMACs.clear();
+    });
+  }
+
+  void _pickDevices() async {
+    final results = await context
+        .pushNamed<List<DeviceListItem>?>(RouteNamed.devicePicker, extra: {
+      'type': 'mac',
+      'selected': ref.read(macFilteringProvider).macAddresses
+    });
+    if (results != null) {
+      ref
+          .read(macFilteringProvider.notifier)
+          .setSelection(results.map((e) => e.macAddress).toList());
+    }
   }
 
   Widget _buildFilteredDevices(MacFilteringState state) {
@@ -108,50 +143,59 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
           )
         : SizedBox(
             height: 76.0 * state.macAddresses.length,
-            child: ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: state.macAddresses.length,
-                itemBuilder: (context, index) {
-                  final device = state.macAddresses[index];
-                  return SizedBox(
-                      height: 76,
-                      child: AppCard(
-                          child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            AppText.labelLarge(device),
-                            // AppIconButton(
-                            //   icon: LinksysIcons.delete,
-                            //   color: Theme.of(context).colorScheme.error,
-                            //   onTap: () {
-                            //     ref
-                            //         .read(macFilteringProvider.notifier)
-                            //         .removeSelection([device]);
-                            //   },
-                            // ),
-                            ExpandableFab(
-                              key: ObjectKey(device),
-                              distance: 48,
-                              icon: LinksysIcons.delete,
-                              iconColor: Theme.of(context).colorScheme.error,
-                              children: [
-                                AppIconButton.filled(
-                                  icon: LinksysIcons.check,
-                                  onTap: () {
-                                    ref
-                                        .read(macFilteringProvider.notifier)
-                                        .removeSelection([device]);
-                                  },
-                                ),
-                              ],
+            child: ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: state.macAddresses.length,
+              itemBuilder: (context, index) {
+                final device = state.macAddresses[index];
+                return SizedBox(
+                  height: 76,
+                  child: AppCard(
+                    color: _selectedMACs.contains(device)
+                        ? Theme.of(context).colorScheme.primaryContainer
+                        : null,
+                    borderColor: _selectedMACs.contains(device)
+                        ? Theme.of(context).colorScheme.primary
+                        : null,
+                    onTap: _isEdit
+                        ? () {
+                            setState(() {
+                              if (_selectedMACs.contains(device)) {
+                                _selectedMACs.remove(device);
+                              } else {
+                                _selectedMACs.add(device);
+                              }
+                            });
+                          }
+                        : null,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          if (_isEdit)
+                            IgnorePointer(
+                              child: AppCheckbox(
+                                value: _selectedMACs.contains(device),
+                                onChanged: (value) {},
+                              ),
                             ),
-                          ],
-                        ),
-                      )));
-                }),
+                          Expanded(child: AppText.labelLarge(device)),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+              separatorBuilder: (BuildContext context, int index) {
+                if (index != state.macAddresses.length - 1) {
+                  return const AppGap.medium();
+                } else {
+                  return const Center();
+                }
+              },
+            ),
           );
   }
 

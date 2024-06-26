@@ -56,10 +56,10 @@ class _PortRangeTriggeringContentViewState
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const AppGap.semiBig(),
+            const AppGap.large2(),
             AppText.bodyLarge(loc(context).portRangeForwardingDescription),
             if (!_notifier.isExceedMax()) ...[
-              const AppGap.semiBig(),
+              const AppGap.large2(),
               AddRuleCard(
                 onTap: () {
                   context.pushNamed<bool?>(RouteNamed.protRangeTriggeringRule,
@@ -71,12 +71,12 @@ class _PortRangeTriggeringContentViewState
                 },
               ),
             ],
-            const AppGap.semiBig(),
+            const AppGap.large2(),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 AppText.labelLarge(loc(context).rules),
-                const AppGap.regular(),
+                const AppGap.medium(),
                 if (state.rules.isNotEmpty)
                   ...state.rules.map(
                     (e) => RuleItemCard(
@@ -95,7 +95,10 @@ class _PortRangeTriggeringContentViewState
                         });
                       },
                     ),
-                  ),
+                  ).expand((element) sync* {
+                    yield element;
+                    yield const AppGap.medium();
+                  }),
                 if (state.rules.isEmpty) const EmptyRuleCard(),
               ],
             ),

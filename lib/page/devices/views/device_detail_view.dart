@@ -15,10 +15,10 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/devices/_devices.dart';
 import 'package:privacy_gui/page/devices/extensions/icon_device_category_ext.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/theme/const/spacing.dart';
+import 'package:privacygui_widgets/theme/_theme.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/card/info_card.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/loadable_widget/loadable_widget.dart';
@@ -76,18 +76,19 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          width: 280,
+          width: 3.col,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               _avatarCard(state),
-              const AppGap.small(),
+              const AppGap.medium(),
               _extraInfoSection(state),
             ],
           ),
         ),
-        const AppGap.regular(),
-        Expanded(
+        const AppGap.gutter(),
+        SizedBox(
+          width: 9.col,
           child: _detailSection(state),
         ),
       ],
@@ -108,7 +109,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
 
   Widget _avatarCard(ExternalDeviceDetailState state) {
     return AppCard(
-      padding: const EdgeInsets.all(Spacing.semiSmall),
+      padding: const EdgeInsets.all(Spacing.small2),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -153,19 +154,20 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
         if (!state.item.isWired)
           AppSettingCard(
             padding: const EdgeInsets.symmetric(
-              horizontal: Spacing.semiBig,
-              vertical: Spacing.regular,
+              horizontal: Spacing.large2,
+              vertical: Spacing.medium,
             ),
             title: loc(context).wifi,
             description:
                 _formatEmptyValue('${state.item.ssid} (${state.item.band})'),
           ),
+        const AppGap.medium(),
         AppSettingCard(
           padding: const EdgeInsets.fromLTRB(
-            Spacing.semiBig,
-            Spacing.regular,
-            Spacing.small,
-            Spacing.regular,
+            Spacing.large2,
+            Spacing.medium,
+            Spacing.small1,
+            Spacing.medium,
           ),
           title: loc(context).ipAddress,
           description: _formatEmptyValue(state.item.ipv4Address),
@@ -176,18 +178,20 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
             },
           ),
         ),
+        const AppGap.medium(),
         AppSettingCard(
           padding: const EdgeInsets.symmetric(
-            horizontal: Spacing.semiBig,
-            vertical: Spacing.regular,
+            horizontal: Spacing.large2,
+            vertical: Spacing.medium,
           ),
           title: loc(context).macAddress,
           description: _formatEmptyValue(state.item.macAddress),
         ),
+        const AppGap.medium(),
         AppSettingCard(
           padding: const EdgeInsets.symmetric(
-            horizontal: Spacing.semiBig,
-            vertical: Spacing.regular,
+            horizontal: Spacing.large2,
+            vertical: Spacing.medium,
           ),
           title: loc(context).ipv6Address,
           description: _formatEmptyValue(state.item.ipv6Address),
@@ -205,10 +209,10 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
           AppSettingCard(
             showBorder: false,
             padding: const EdgeInsets.fromLTRB(
-              Spacing.semiSmall,
+              Spacing.small2,
               0,
-              Spacing.semiSmall,
-              Spacing.semiSmall,
+              Spacing.small2,
+              Spacing.small2,
             ),
             title: loc(context).manufacturer,
             description: _formatEmptyValue(state.item.manufacturer),
@@ -220,9 +224,9 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
           AppSettingCard(
             showBorder: false,
             padding: const EdgeInsets.fromLTRB(
-              Spacing.semiSmall,
-              Spacing.semiSmall,
-              Spacing.semiSmall,
+              Spacing.small2,
+              Spacing.small2,
+              Spacing.small2,
               0,
             ),
             title: loc(context).device,
@@ -287,7 +291,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          const AppGap.semiBig(),
+          const AppGap.large2(),
           AppTextField.outline(
             controller: _deviceNameController,
             headerText: loc(context).deviceName,
@@ -298,9 +302,9 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
               });
             },
           ),
-          const AppGap.big(),
+          const AppGap.large3(),
           AppText.labelLarge(loc(context).selectIcon),
-          const AppGap.big(),
+          const AppGap.large3(),
           GridView.builder(
             shrinkWrap: true,
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(

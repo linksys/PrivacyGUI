@@ -12,7 +12,7 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/storage.dart';
 import 'package:privacy_gui/util/wifi_credential.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/theme/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/info_card.dart';
@@ -41,12 +41,10 @@ enum ShareWifiOption {
 class WiFiShareDetailView extends ConsumerStatefulWidget {
   final String ssid;
   final String password;
-  final int numOfDevices;
   const WiFiShareDetailView({
     Key? key,
     required this.ssid,
     required this.password,
-    required this.numOfDevices,
   }) : super(key: key);
 
   @override
@@ -66,29 +64,15 @@ class _WiFiShareDetailViewState extends ConsumerState<WiFiShareDetailView> {
 
   @override
   Widget build(BuildContext context) {
-    return StyledAppPageView(
-      appBarStyle: AppBarStyle.none,
-      backState: StyledBackState.none,
-      scrollable: true,
-      padding: const EdgeInsets.symmetric(horizontal: Spacing.semiBig),
-      menuWidget: ResponsiveLayout.isMobileLayout(context)
-          ? null
-          : IntrinsicWidth(child: _qrcodeSection()),
-      child: AppBasicLayout(
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _wifiInfoSection(),
-            // const AppGap.big(),
-            // _optionSection(),
-            if (ResponsiveLayout.isMobileLayout(context))
-              AppCard(child: _qrcodeSection()),
-            if (!ResponsiveLayout.isMobileLayout(context))
-              AppCard(child: _shareSection()),
-          ],
-        ),
-        crossAxisAlignment: CrossAxisAlignment.start,
-      ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _wifiInfoSection(),
+        // const AppGap.large3(),
+        // _optionSection(),
+        AppCard(child: _qrcodeSection()),
+      ],
     );
   }
 
@@ -104,7 +88,7 @@ class _WiFiShareDetailViewState extends ConsumerState<WiFiShareDetailView> {
             child: AppText.labelLarge(loc(context).wifiShareQRScan),
           ),
           const Divider(),
-          const AppGap.semiBig(),
+          const AppGap.large2(),
           RepaintBoundary(
             key: globalKey,
             child: Container(
@@ -121,9 +105,7 @@ class _WiFiShareDetailViewState extends ConsumerState<WiFiShareDetailView> {
               ),
             ),
           ),
-          const AppGap.semiBig(),
-          const Divider(),
-          if (ResponsiveLayout.isMobileLayout(context)) _shareSection(),
+          const AppGap.large2(),
         ],
       ),
     );
@@ -160,7 +142,7 @@ class _WiFiShareDetailViewState extends ConsumerState<WiFiShareDetailView> {
           title: loc(context).wifiName,
           description: widget.ssid,
         ),
-        const AppGap.small(),
+        const AppGap.small3(),
         AppListCard(
           title: AppText.bodyMedium(loc(context).wifiPassword),
           description: IntrinsicWidth(
@@ -177,7 +159,7 @@ class _WiFiShareDetailViewState extends ConsumerState<WiFiShareDetailView> {
             ),
           ),
           trailing: AppIconButton(
-            icon: LinksysIcons.copyAll,
+            icon: LinksysIcons.fileCopy,
             onTap: () {
               Clipboard.setData(ClipboardData(text: widget.password)).then(
                   (value) =>

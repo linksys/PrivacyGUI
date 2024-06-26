@@ -57,7 +57,7 @@ class _SafeBrowsingViewState extends ConsumerState<SafeBrowsingView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   AppText.bodyLarge(loc(context).safeBrowsingDesc),
-                  const AppGap.big(),
+                  const AppGap.large3(),
                   AppSettingCard(
                     title: loc(context).safeBrowsing,
                     trailing: AppSwitch(
@@ -69,7 +69,7 @@ class _SafeBrowsingViewState extends ConsumerState<SafeBrowsingView> {
                       },
                     ),
                   ),
-                  const AppGap.semiSmall(),
+                  const AppGap.medium(),
                   Opacity(
                     opacity: enableSafeBrowsing ? 1 : 0.5,
                     child: AppSettingCard(
@@ -107,6 +107,7 @@ class _SafeBrowsingViewState extends ConsumerState<SafeBrowsingView> {
             content: AppRadioList(
               initial: type,
               mainAxisSize: MainAxisSize.min,
+              itemCrossAxisAlignment: CrossAxisAlignment.center,
               items: [
                 if (hasFortinet)
                   AppRadioListItem(

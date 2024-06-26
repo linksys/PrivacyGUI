@@ -133,7 +133,7 @@ class _AddRuleContentViewState
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const AppGap.semiBig(),
+            const AppGap.large2(),
             if (state.mode == RuleMode.editing)
               ..._buildEditContents(state)
             else
@@ -161,7 +161,7 @@ class _AddRuleContentViewState
           },
         ),
       ),
-      const AppGap.semiBig(),
+      const AppGap.large2(),
       ...buildInputForms(),
     ];
   }
@@ -172,23 +172,23 @@ class _AddRuleContentViewState
     return [
       AppTextField.outline(
           headerText: loc(context).ruleName, controller: _ruleNameController),
-      const AppGap.semiBig(),
+      const AppGap.large2(),
       AppTextField.minMaxNumber(
         border: const OutlineInputBorder(),
         headerText: loc(context).startPort,
         controller: _firstExternalPortController,
         max: 65535,
       ),
-      const AppGap.semiBig(),
+      const AppGap.large2(),
       AppTextField.minMaxNumber(
         border: const OutlineInputBorder(),
         headerText: loc(context).endPort,
         controller: _lastExternalPortController,
         max: 65535,
       ),
-      const AppGap.semiBig(),
+      const AppGap.large2(),
       AppText.labelMedium(loc(context).ipAddress),
-      const AppGap.regular(),
+      const AppGap.medium(),
       AppIPFormField(
         controller: _deviceIpAddressController,
         border: const OutlineInputBorder(),
@@ -197,7 +197,7 @@ class _AddRuleContentViewState
         octet3ReadOnly: submaskToken[2] == '255',
         octet4ReadOnly: submaskToken[3] == '255',
       ),
-      const AppGap.semiBig(),
+      const AppGap.large2(),
       AppTextButton(
         loc(context).selectDevices,
         onTap: () async {
@@ -211,7 +211,7 @@ class _AddRuleContentViewState
           }
         },
       ),
-      const AppGap.semiBig(),
+      const AppGap.large2(),
       AppListCard(
         title: AppText.labelLarge(loc(context).protocol),
         description: AppText.bodyLarge(getProtocolTitle(context, _protocol)),

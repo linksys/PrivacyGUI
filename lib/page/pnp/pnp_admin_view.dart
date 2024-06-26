@@ -9,6 +9,7 @@ import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/pnp/data/pnp_exception.dart';
 import 'package:privacy_gui/page/pnp/data/pnp_provider.dart';
+import 'package:privacy_gui/page/pnp/troubleshooter/providers/pnp_troubleshooter_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:privacy_gui/validator_rules/input_validators.dart';
@@ -66,6 +67,12 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
             _internetConnected = true;
           });
         })
+        .then((_) {
+          final routeFrom = ref.read(pnpTroubleshooterProvider).enterRouteName;
+          if (routeFrom.isNotEmpty) {
+            throw ExceptionInterruptAndExit(route: routeFrom);
+          }
+        })
         .then((_) => pnp.checkRouterConfigured())
         .then((_) => adminPasswordFlow(_password))
         .then((_) {
@@ -106,6 +113,9 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
             _inputError = '';
           });
         }, test: (error) => error is ExceptionRouterUnconfigured)
+        .catchError((error, stackTrace) {
+          context.goNamed((error as ExceptionInterruptAndExit).route);
+        }, test: (error) => error is ExceptionInterruptAndExit)
         .onError((error, stackTrace) {
           logger.e('[PnP] Uncaught Error',
               error: error, stackTrace: stackTrace);
@@ -136,7 +146,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
                   color: Theme.of(context).colorScheme.primary,
                   size: 48,
                 ),
-                const AppGap.regular(),
+                const AppGap.medium(),
                 AppText.titleMedium(loc(context).launchInternetConnected),
               ],
             ),
@@ -146,7 +156,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const AppSpinner(),
-                const AppGap.regular(),
+                const AppGap.medium(),
                 AppText.titleMedium(loc(context).launchCheckInternet),
               ],
             ),
@@ -159,9 +169,9 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppText.headlineSmall(loc(context).pnpFactoryResetTitle),
-        const AppGap.regular(),
+        const AppGap.medium(),
         AppText.bodyLarge(loc(context).pnpFactoryResetDesc),
-        const AppGap.extraBig(),
+        const AppGap.large4(),
         AppFilledButton(
           loc(context).textContinue,
           onTap: () {
@@ -184,9 +194,9 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppText.headlineSmall(loc(context).welcome),
-        const AppGap.regular(),
+        const AppGap.medium(),
         AppText.bodyLarge(loc(context).pnpRouterLoginDesc),
-        const AppGap.big(),
+        const AppGap.large3(),
         AppPasswordField(
           hintText: loc(context).routerPassword,
           border: const OutlineInputBorder(),
@@ -211,14 +221,14 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
           },
         ),
         ..._checkError(context, _error),
-        const AppGap.big(),
+        const AppGap.large3(),
         AppTextButton.noPadding(
           loc(context).pnpRouterLoginWhereIsIt,
           onTap: () {
             _showRouterPasswordModal();
           },
         ),
-        const AppGap.extraBig(),
+        const AppGap.large4(),
         AppFilledButton(
           loc(context).login,
           onTap: _inputError == null && !_processing

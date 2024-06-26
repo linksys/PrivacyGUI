@@ -39,14 +39,14 @@ class OptionCard extends ConsumerWidget {
                   AppText.bodyLarge(
                     title,
                   ),
-                  const AppGap.regular(),
+                  const AppGap.medium(),
                   AppText.bodyMedium(
                     description,
                   ),
                 ],
               ),
             ),
-            const AppGap.big(),
+            const AppGap.large3(),
             Image.asset(
               'assets/images/arrow_point_to_right.png',
               width: 10,

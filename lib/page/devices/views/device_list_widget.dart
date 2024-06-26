@@ -3,9 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/page/devices/extensions/icon_device_category_ext.dart';
 import 'package:privacy_gui/page/devices/providers/device_list_state.dart';
-import 'package:privacygui_widgets/theme/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/card/device_list_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
+import 'package:privacygui_widgets/widgets/gap/gap.dart';
 
 class DeviceListWidget extends ConsumerStatefulWidget {
   final List<DeviceListItem> devices;
@@ -33,11 +34,18 @@ class DeviceListWidget extends ConsumerStatefulWidget {
 class _DeviceListWidgetState extends ConsumerState<DeviceListWidget> {
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
+    return ListView.separated(
       padding: EdgeInsets.zero,
       itemCount: widget.devices.length,
       itemBuilder: widget.itemBuilder ??
           (context, index) => _buildCell(index, widget.devices),
+      separatorBuilder: (BuildContext context, int index) {
+        if (index != widget.devices.length - 1) {
+          return const AppGap.medium();
+        } else {
+          return const Center();
+        }
+      },
     );
   }
 
@@ -49,12 +57,18 @@ class _DeviceListWidgetState extends ConsumerState<DeviceListWidget> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: Spacing.zero),
       child: AppDeviceListCard(
+        color: (widget.isItemSelected?.call(item) ?? false)
+            ? Theme.of(context).colorScheme.primaryContainer
+            : null,
+        borderColor: (widget.isItemSelected?.call(item) ?? false)
+            ? Theme.of(context).colorScheme.primary
+            : null,
         isSelected: widget.isItemSelected?.call(item) ?? false,
         title: item.name,
-        description: ResponsiveLayout.isMobile(context) || !item.isOnline
+        description: ResponsiveLayout.isMobileLayout(context) || !item.isOnline
             ? null
             : item.upstreamDevice,
-        band: ResponsiveLayout.isMobile(context)
+        band: ResponsiveLayout.isMobileLayout(context)
             ? null
             : !item.isOnline
                 ? null
@@ -73,7 +87,8 @@ class _DeviceListWidgetState extends ConsumerState<DeviceListWidget> {
             : null,
         onTap: () {
           if (widget.isEdit) {
-            return;
+            widget.onItemSelected
+                ?.call(!(widget.isItemSelected?.call(item) ?? false), item);
           } else {
             widget.onItemClick?.call(item);
           }

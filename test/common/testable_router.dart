@@ -47,6 +47,7 @@ Widget testableSingleRoute({
   ThemeMode themeMode = ThemeMode.system,
   ThemeData? theme,
   ThemeData? darkTheme,
+  LinksysRouteConfig? config,
   Locale? locale,
 }) {
   final router = GoRouter(
@@ -55,7 +56,7 @@ Widget testableSingleRoute({
     routes: [
       LinksysRoute(
         path: '/',
-        config: LinksysRouteConfig(pageWidth: SpecificPageWidth(width: 430)),
+        config: config,
         builder: (context, state) => child,
       ),
     ],

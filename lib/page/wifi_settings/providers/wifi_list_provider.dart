@@ -7,6 +7,7 @@ import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart'
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
+import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/_providers.dart';
@@ -105,6 +106,40 @@ class WifiListNotifier extends Notifier<WiFiState> {
           auth: true,
           data: newSettings.toMap(),
         )
+        .then((_) => ref.read(pollingProvider.notifier).forcePolling())
+        .then((_) => fetch(true));
+  }
+
+  Future<void> saveToggleEnabled(
+      {required List<String> radios, required bool enabled}) async {
+    final settings = state.mainWiFi
+        .map((wifiItem) => NewRadioSettings(
+              radioID: wifiItem.radioID.value,
+              settings: RouterRadioSettings(
+                isEnabled: radios.contains(wifiItem.radioID.value)
+                    ? enabled
+                    : wifiItem.isEnabled,
+                mode: wifiItem.wirelessMode.value,
+                ssid: wifiItem.ssid,
+                broadcastSSID: wifiItem.isBroadcast,
+                channelWidth: wifiItem.channelWidth.value,
+                channel: wifiItem.channel,
+                security: wifiItem.securityType.value,
+                wepSettings: _getWepSettings(wifiItem),
+                wpaPersonalSettings: _getWpaPersonalSettings(wifiItem),
+                wpaEnterpriseSettings: _getWpaEnterpriseSettings(wifiItem),
+              ),
+            ))
+        .toList();
+    final newSettings = SetRadioSettings(radios: settings);
+
+    final routerRepository = ref.read(routerRepositoryProvider);
+    return routerRepository
+        .send(
+          JNAPAction.setRadioSettings,
+          auth: true,
+          data: newSettings.toMap(),
+        )
         .then((_) => fetch(true));
   }
 
@@ -142,7 +177,7 @@ class WifiListNotifier extends Notifier<WiFiState> {
   bool isAllBandsConsistent() {
     return !state.mainWiFi.any((element) =>
         element.ssid != state.simpleWiFi.ssid ||
-        element.password != state.simpleWiFi.ssid);
+        element.password != state.simpleWiFi.password);
   }
 
   int? checkIfChannelLegalWithWidth(

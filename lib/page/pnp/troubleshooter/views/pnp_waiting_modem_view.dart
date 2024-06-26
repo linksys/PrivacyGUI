@@ -52,7 +52,7 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             AppText.headlineSmall(loc(context).pnpWaitingModemTitle),
-            const AppGap.big(),
+            const AppGap.large3(),
             AppText.bodyLarge(loc(context).pnpWaitingModemDesc),
             Expanded(
               child: Center(
@@ -131,7 +131,7 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
                       });
                     },
                   ),
-                  const AppGap.regular(),
+                  const AppGap.medium(),
                 ],
               ),
       ),

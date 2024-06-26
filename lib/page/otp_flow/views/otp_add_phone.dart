@@ -16,7 +16,7 @@ import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/error_code_handler.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacygui_widgets/theme/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
@@ -155,8 +155,8 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
           children: [
             Padding(
               padding: const EdgeInsets.only(
-                top: Spacing.extraBig,
-                bottom: Spacing.semiSmall,
+                top: Spacing.large4,
+                bottom: Spacing.small2,
               ),
               child: AppText.bodyLarge(getAppLocalizations(context).phone),
             ),
@@ -190,7 +190,7 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
                       ),
                     ),
                   ),
-                  const AppGap.small(),
+                  const AppGap.small3(),
                   // Expanded(
                   //   child: FutureBuilder<String>(
                   //       future: _getPhoneHint(currentRegion.countryCode),
@@ -209,7 +209,7 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
                 ],
               ),
             ),
-            const AppGap.semiSmall(),
+            const AppGap.small2(),
             Offstage(
               offstage: !isInputInvalid,
               child: AppText.bodyLarge(

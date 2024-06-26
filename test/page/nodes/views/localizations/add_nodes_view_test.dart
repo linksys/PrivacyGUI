@@ -1,7 +1,4 @@
-import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
@@ -9,10 +6,10 @@ import 'package:privacy_gui/core/jnap/models/device.dart';
 import 'package:privacy_gui/page/nodes/providers/add_nodes_provider.dart';
 import 'package:privacy_gui/page/nodes/providers/add_nodes_state.dart';
 import 'package:privacy_gui/page/nodes/views/add_nodes_view.dart';
+import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
-import '../../../../common/mock_firebase_messaging.dart';
 import '../../../../common/test_responsive_widget.dart';
 import '../../../../common/testable_router.dart';
 import '../../../../common/utils.dart';
@@ -23,9 +20,6 @@ import 'add_nodes_view_test_mocks.dart';
 void main() async {
   late MockAddNodesNotifier mockAddNodesNotifier;
 
-  setupFirebaseMessagingMocks();
-  await Firebase.initializeApp();
-
   setUp(() {
     mockAddNodesNotifier = MockAddNodesNotifier();
     when(mockAddNodesNotifier.build()).thenReturn(const AddNodesState());
@@ -35,6 +29,8 @@ void main() async {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const AddNodesView(),
+        config:
+            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
         locale: locale,
         overrides: [
           addNodesProvider.overrideWith(() => mockAddNodesNotifier),
@@ -49,6 +45,8 @@ void main() async {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const AddNodesView(),
+        config:
+            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
         locale: locale,
         overrides: [
           addNodesProvider.overrideWith(() => mockAddNodesNotifier),
@@ -66,6 +64,8 @@ void main() async {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const AddNodesView(),
+        config:
+            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
         locale: locale,
         overrides: [
           addNodesProvider.overrideWith(() => simple),
@@ -85,6 +85,8 @@ void main() async {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const AddNodesView(),
+        config:
+            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
         locale: locale,
         overrides: [
           addNodesProvider.overrideWith(() => simple),
@@ -106,6 +108,8 @@ void main() async {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const AddNodesView(),
+        config:
+            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
         locale: locale,
         overrides: [
           addNodesProvider.overrideWith(() => mockAddNodesNotifier),
@@ -123,6 +127,8 @@ void main() async {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const AddNodesView(),
+        config:
+            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
         locale: locale,
         overrides: [
           addNodesProvider.overrideWith(() => mockAddNodesNotifier),
@@ -146,6 +152,8 @@ void main() async {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const AddNodesView(),
+        config:
+            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
         locale: locale,
         overrides: [
           addNodesProvider.overrideWith(() => mockAddNodesNotifier),
@@ -173,6 +181,8 @@ void main() async {
       await tester.pumpWidget(
         testableSingleRoute(
           child: const AddNodesView(),
+          config:
+              LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
           locale: locale,
           overrides: [
             addNodesProvider.overrideWith(() => mockAddNodesNotifier),

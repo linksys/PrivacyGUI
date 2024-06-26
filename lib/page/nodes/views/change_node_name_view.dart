@@ -7,7 +7,7 @@ import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/nodes/_nodes.dart';
 import 'package:privacy_gui/page/nodes/providers/node_detail_id_provider.dart';
-import 'package:privacygui_widgets/theme/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
@@ -47,7 +47,7 @@ class __ChangeNodeNameViewState extends ConsumerState<ChangeNodeNameView> {
       title: getAppLocalizations(context).deviceName,
       actions: [
         Padding(
-          padding: const EdgeInsets.only(right: Spacing.regular),
+          padding: const EdgeInsets.only(right: Spacing.medium),
           child: AppTextButton.noPadding(
             getAppLocalizations(context).save,
             onTap: isChanged ? _checkInputData : null,

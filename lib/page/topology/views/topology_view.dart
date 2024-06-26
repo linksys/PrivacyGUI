@@ -18,6 +18,7 @@ import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/bullet_list/bullet_list.dart';
 import 'package:privacygui_widgets/widgets/bullet_list/bullet_style.dart';
+import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'package:privacygui_widgets/widgets/topology/tree_item.dart';
@@ -71,7 +72,9 @@ class _TopologyViewState extends ConsumerState<TopologyView> {
                     Flexible(
                         child: AppTreeView(
                       onlineRoot: topologyState.onlineRoot
-                        ..width = constraint.maxWidth,
+                        ..width = ResponsiveLayout.isMobileLayout(context)
+                            ? constraint.maxWidth
+                            : 280,
                       offlineRoot: topologyState.offlineRoot,
                       itemBuilder: (node) {
                         // return Container(color: Colors.amber);
@@ -235,7 +238,7 @@ class _TopologyViewState extends ConsumerState<TopologyView> {
                             loc(context).modalOfflineNodeCheckTitle1),
                         AppText.bodyMedium(
                             loc(context).modalOfflineNodeCheckDesc1),
-                        const AppGap.regular(),
+                        const AppGap.medium(),
                         AppTextButton.noPadding(
                           loc(context).modalOfflineNodeGoToNightMode,
                           onTap: () {
@@ -274,7 +277,7 @@ class _TopologyViewState extends ConsumerState<TopologyView> {
                     },
                   ),
                 ),
-                const AppGap.regular(),
+                const AppGap.medium(),
                 Align(
                   alignment: Alignment.centerRight,
                   child: AppTextButton(
@@ -360,7 +363,7 @@ class _TopologyViewState extends ConsumerState<TopologyView> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 AppText.bodyMedium(loc(context).modalMoveChildNodesDesc),
-                const AppGap.semiBig(),
+                const AppGap.large2(),
                 SvgPicture(CustomTheme.of(context).images.imgMoveNodes),
               ],
             ),

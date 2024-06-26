@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/page/administration/network_admin/providers/timezone_provider.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_state.dart';
 
 import '../../../core/jnap/actions/better_action.dart';
@@ -31,27 +32,43 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
 
   Future<void> runHealthCheck(Module module) async {
     if (module == Module.speedtest) {
+      // Reset state
+      state = HealthCheckState.init();
       final repo = ref.read(routerRepositoryProvider);
-      final result = await repo.send(JNAPAction.runHealthCheck,
-          data: {"runHealthCheckModule": module.value},
-          fetchRemote: true,
-          cacheLevel: CacheLevel.noCache);
+      final result = await repo.send(
+        JNAPAction.runHealthCheck,
+        data: {"runHealthCheckModule": module.value},
+        auth: true,
+        fetchRemote: true,
+        cacheLevel: CacheLevel.noCache,
+      );
       if (result.output['resultID'] == null) {
-        // error handling
+        // TODO: error handling
         return;
       }
       _streamSubscription?.cancel();
       _streamSubscription = repo
           .scheduledCommand(
               action: JNAPAction.getHealthCheckStatus,
+              auth: true,
               firstDelayInMilliSec: 0,
-              retryDelayInMilliSec: 1,
+              retryDelayInMilliSec: 200,
               maxRetry: -1,
               condition: (result) {
                 return result is JNAPSuccess &&
                         result.output['speedTestResult']['exitCode'] !=
                             'Unavailable' ||
                     result is JNAPError;
+              },
+              onCompleted: () async {
+                final resultId = state.result.firstOrNull?.resultID;
+                // Get health check result with resultId
+                await getHealthCheckResults(module, 1, resultId);
+                // TODO: error handling
+                // Get timezone
+                await ref.read(timezoneProvider.notifier).fetch();
+                // Set state
+                state = state.copyWith(step: 'success');
               })
           .listen((result) {
         logger.d('[SpeedTest] Get Health Check Result - $result');
@@ -63,13 +80,17 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
         if (step.isNotEmpty) {
           final speedtestTempResult = SpeedTestResult.fromJson(
               (result as JNAPSuccess).output['speedTestResult']);
-          state = state.copyWith(result: [
-            HealthCheckResult(
-                resultID: 0,
+          state = state.copyWith(
+            result: [
+              HealthCheckResult(
+                resultID: speedtestTempResult.resultID,
                 timestamp: '',
                 healthCheckModulesRequested: const ['SpeedTest'],
-                speedTestResult: speedtestTempResult)
-          ], step: step);
+                speedTestResult: speedtestTempResult,
+              ),
+            ],
+            step: step,
+          );
         }
         // getHealthCheckResults(module, 1);
       });
@@ -77,16 +98,23 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
   }
 
   Future<void> getHealthCheckResults(
-      Module module, int numberOfMostRecentResults) async {
+    Module module,
+    int numberOfMostRecentResults,
+    int? resultId,
+  ) async {
     final repo = ref.read(routerRepositoryProvider);
-    final result = await repo.send(JNAPAction.getHealthCheckResults,
-        data: {
-          "includeModuleResults": true,
-          "healthCheckModule": module.value,
-          "lastNumberOfResults": numberOfMostRecentResults
-        },
-        fetchRemote: true,
-        cacheLevel: CacheLevel.noCache);
+    final result = await repo.send(
+      JNAPAction.getHealthCheckResults,
+      data: {
+        "includeModuleResults": true,
+        "healthCheckModule": module.value,
+        "lastNumberOfResults": numberOfMostRecentResults,
+        'resultIDs': resultId != null ? [resultId] : null,
+      }..removeWhere((key, value) => value == null),
+      auth: true,
+      fetchRemote: true,
+      cacheLevel: CacheLevel.noCache,
+    );
     final healthCheckResults = List.from(result.output['healthCheckResults'])
         .map((e) => HealthCheckResult.fromJson(e))
         .toList();
@@ -94,20 +122,18 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
   }
 
   _handleHealthCheckResults(List<HealthCheckResult> healthCheckResults) {
-    state = state.copyWith(result: healthCheckResults);
+    final timestamp = healthCheckResults.firstOrNull?.timestamp;
+    state = state.copyWith(result: healthCheckResults, timestamp: timestamp);
   }
 
   Future<void> stopHealthCheck() async {
     final repo = ref.read(routerRepositoryProvider);
-    final result = await repo.send(JNAPAction.stopHealthCheck,
-        fetchRemote: true, cacheLevel: CacheLevel.noCache);
-  }
-
-  Future<JNAPResult> _getHealthCheckStatus() async {
-    final repo = ref.read(routerRepositoryProvider);
-    final result = await repo.send(JNAPAction.getHealthCheckStatus,
-        fetchRemote: true, cacheLevel: CacheLevel.noCache);
-    return result;
+    final result = await repo.send(
+      JNAPAction.stopHealthCheck,
+      auth: true,
+      fetchRemote: true,
+      cacheLevel: CacheLevel.noCache,
+    );
   }
 
   bool _getErrorCode(JNAPResult result) {
@@ -137,19 +163,19 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
     if (result is JNAPSuccess) {
       final speedTestResult =
           SpeedTestResult.fromJson(result.output['speedTestResult']);
-      if (result.output['healthCheckModuleCurrentlyRunning'] == 'SpeedTest' &&
-          speedTestResult.downloadBandwidth != null &&
-          speedTestResult.downloadBandwidth != 0) {
-        return 'uploadBandwidth';
-      } else if (result.output['healthCheckModuleCurrentlyRunning'] ==
-              'SpeedTest' &&
-          speedTestResult.latency != null &&
-          speedTestResult.latency != 0) {
-        return 'downloadBandwidth';
-      } else if (result.output['healthCheckModuleCurrentlyRunning'] ==
-          'SpeedTest') {
-        return 'latency';
+      if (result.output['healthCheckModuleCurrentlyRunning'] == 'SpeedTest') {
+        // SpeedTest
+        final latency = speedTestResult.latency;
+        final downloadBandwidth = speedTestResult.downloadBandwidth;
+        if (downloadBandwidth != null && downloadBandwidth != 0) {
+          return 'uploadBandwidth';
+        } else if (latency != null && latency != 0) {
+          return 'downloadBandwidth';
+        } else {
+          return 'latency';
+        }
       } else {
+        // TODO: Others module
         return '';
       }
     } else {

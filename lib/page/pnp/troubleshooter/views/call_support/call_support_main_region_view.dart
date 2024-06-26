@@ -7,11 +7,11 @@ import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/theme/const/spacing.dart';
+import 'package:privacygui_widgets/theme/_theme.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
 enum CallSupportRegion {
   us(phone: '(800) 326-7114'),
@@ -141,11 +141,9 @@ class CallSupportMainRegionView extends ArgumentsConsumerStatelessView {
     return StyledAppPageView(
       title: loc(context).callSupportSelectionTitle,
       enableSafeArea: (left: true, top: false, right: true, bottom: true),
-      child: AppBasicLayout(
-        content: ResponsiveLayout(
-          desktop: _desktopLayout(),
-          mobile: _mobileLayout(),
-        ),
+      child: ResponsiveLayout(
+        desktop: _desktopLayout(context),
+        mobile: _mobileLayout(),
       ),
     );
   }
@@ -156,23 +154,33 @@ class CallSupportMainRegionView extends ArgumentsConsumerStatelessView {
           element.phone == null))
       .toList();
 
-  Widget _desktopLayout() {
+  Widget _desktopLayout(BuildContext context) {
     return GridView.builder(
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        mainAxisSpacing: Spacing.semiSmall,
-        crossAxisSpacing: Spacing.semiBig,
-        childAspectRatio: 5.8,
+        mainAxisSpacing: Spacing.medium,
+        crossAxisSpacing: ResponsiveLayout.columnPadding(context),
+        mainAxisExtent: 72,
       ),
       itemCount: getMainRegions().length,
-      itemBuilder: (context, index) => _buildRegionCard(context, index),
+      itemBuilder: (context, index) => SizedBox(
+        width: 6.col,
+        child: _buildRegionCard(context, index),
+      ),
     );
   }
 
   Widget _mobileLayout() {
-    return ListView.builder(
+    return ListView.separated(
       itemCount: getMainRegions().length,
       itemBuilder: (context, index) => _buildRegionCard(context, index),
+      separatorBuilder: (BuildContext context, int index) {
+        if (index != getMainRegions().length - 1) {
+          return const AppGap.medium();
+        } else {
+          return const Center();
+        }
+      },
     );
   }
 
@@ -237,7 +245,7 @@ class CallSupportMainRegionView extends ArgumentsConsumerStatelessView {
                     size: 24,
                     color: Theme.of(context).colorScheme.primary,
                   ),
-                  const AppGap.regular(),
+                  const AppGap.medium(),
                   Flexible(
                     child: AppText.titleLarge(
                       number,
@@ -250,14 +258,14 @@ class CallSupportMainRegionView extends ArgumentsConsumerStatelessView {
               Padding(
                 padding: const EdgeInsets.only(
                   left: 40,
-                  top: Spacing.semiSmall,
+                  top: Spacing.small2,
                 ),
                 child: AppText.bodyMedium(
                     loc(context).callSupportDetailTwentyFourSeven),
               ),
             ],
           ),
-          const AppGap.extraBig(),
+          const AppGap.large4(),
           AppText.bodyLarge(loc(context).callSupportDetailDesc),
           AppText.bodyLarge(loc(context).callSupportDetailDesc2),
         ],

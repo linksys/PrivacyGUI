@@ -68,9 +68,9 @@ class GuestWiFiStep extends PnpStep {
               // update(ref, key: 'isEnabled', value: value);
             },
           ),
-          const AppGap.big(),
+          const AppGap.large3(),
           AppText.bodyLarge(loc(context).pnpGuestWiFiDesc),
-          const AppGap.big(),
+          const AppGap.large3(),
           ...isEnabled
               ? [
                   WiFiSSIDField(
@@ -90,7 +90,7 @@ class GuestWiFiStep extends PnpStep {
                       _check(ref);
                     },
                   ),
-                  const AppGap.regular(),
+                  const AppGap.medium(),
                   WiFiPasswordField(
                     controller: _passwordEditController!,
                     label: loc(context).guestWiFiPassword,
@@ -108,7 +108,7 @@ class GuestWiFiStep extends PnpStep {
                       _check(ref);
                     },
                   ),
-                  const AppGap.regular(),
+                  const AppGap.medium(),
                 ]
               : [],
         ],

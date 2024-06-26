@@ -62,13 +62,19 @@ class PnpTroubleshooterNotifier extends Notifier<PnpTroubleshooterState> {
       hasResetModem: hasReset,
     );
   }
+
+  void setEnterRoute(String route) {
+    state = state.copyWith(enterRouteName: route);
+  }
 }
 
 class PnpTroubleshooterState {
   final bool hasResetModem;
+  final String enterRouteName;
 
   PnpTroubleshooterState({
     required this.hasResetModem,
+    this.enterRouteName = '',
   });
 
   factory PnpTroubleshooterState.init() {
@@ -77,23 +83,25 @@ class PnpTroubleshooterState {
     );
   }
 
-  PnpTroubleshooterState copyWith({
-    bool? hasResetModem,
-  }) {
+  PnpTroubleshooterState copyWith(
+      {bool? hasResetModem, String? enterRouteName}) {
     return PnpTroubleshooterState(
       hasResetModem: hasResetModem ?? this.hasResetModem,
+      enterRouteName: enterRouteName ?? this.enterRouteName,
     );
   }
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'hasResetModem': hasResetModem,
+      'enterRouteName': enterRouteName,
     };
   }
 
   factory PnpTroubleshooterState.fromMap(Map<String, dynamic> map) {
     return PnpTroubleshooterState(
       hasResetModem: map['hasResetModem'] as bool,
+      enterRouteName: map['enterRouteName'] as String? ?? '',
     );
   }
 

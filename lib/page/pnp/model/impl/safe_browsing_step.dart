@@ -46,7 +46,7 @@ class SafeBrowsingStep extends PnpStep {
         children: [
           const AppText.bodyLarge(
               'Block malicious content such as phishing using DNS security. This will apply to all devices connected to your Wi-Fi.'),
-          const AppGap.semiSmall(),
+          const AppGap.small2(),
           AppSwitch.withIcon(
             value: isEnabled,
             onChanged: (value) {

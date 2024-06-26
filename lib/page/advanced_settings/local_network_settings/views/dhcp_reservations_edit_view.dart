@@ -8,7 +8,7 @@ import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/validator_rules/input_validators.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
-import 'package:privacygui_widgets/widgets/base/gap.dart';
+import 'package:privacygui_widgets/widgets/gap/gap.dart';
 import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:privacygui_widgets/widgets/input_field/app_text_field.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
@@ -78,7 +78,7 @@ class _DHCPReservationsEditViewState
                 });
               },
             ),
-            const AppGap.big(),
+            const AppGap.large3(),
             AppIPFormField(
               header: AppText.bodySmall(loc(context).assignIpAddress),
               controller: _ipController,
@@ -89,7 +89,7 @@ class _DHCPReservationsEditViewState
                 });
               },
             ),
-            const AppGap.big(),
+            const AppGap.large3(),
             AppTextField.macAddress(
               headerText: loc(context).macAddress,
               controller: _macController,

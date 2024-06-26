@@ -1,4 +1,3 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,17 +9,11 @@ import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 
-import '../../../common/mock_firebase_messaging.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
 import '../../../mock_notifiers/mock_auth_notifier.dart';
 
 void main() async {
-  setupFirebaseMessagingMocks();
-  // FirebaseMessaging? messaging;
-  await Firebase.initializeApp();
-  // FirebaseMessagingPlatform.instance = kMockMessagingPlatform;
-  // messaging = FirebaseMessaging.instance;
   late AuthNotifier mockAuthNotifier;
 
   setUp(() {

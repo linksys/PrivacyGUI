@@ -9,7 +9,7 @@ import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/theme/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
@@ -28,21 +28,20 @@ class SpeedTestSelectionView extends ConsumerWidget {
     return StyledAppPageView(
       title: loc(context).speedTest,
       child: AppBasicLayout(
-          content: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppText.bodyMedium(loc(context).speedTestDesc),
-          const AppGap.big(),
-          Container(
-            constraints: const BoxConstraints(maxWidth: 430),
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          content: SizedBox(
+        width: 6.col,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppText.bodyMedium(loc(context).speedTestDesc),
+            const AppGap.large3(),
+            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               _createInternetToRouterCard(context, isSpeedCheckSupported),
               _createInternetToDeviceCard(context, isBehindRouter),
-            ]),
-          )
-        ],
+            ])
+          ],
+        ),
       )),
     );
   }
@@ -61,15 +60,15 @@ class SpeedTestSelectionView extends ConsumerWidget {
           child: Container(
             width: double.infinity,
             constraints: const BoxConstraints(minHeight: 164),
-            padding: const EdgeInsets.all(Spacing.regular),
+            padding: const EdgeInsets.all(Spacing.medium),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 AppText.bodyLarge(loc(context).speedTestInternetToRouter),
-                const AppGap.regular(),
+                const AppGap.medium(),
                 AppText.bodySmall(loc(context).speedTestInternetToRouterDesc),
-                const AppGap.big(),
+                const AppGap.large3(),
                 SvgPicture(
                   CustomTheme.of(context).images.internetToRouter,
                   width: 192,
@@ -97,15 +96,15 @@ class SpeedTestSelectionView extends ConsumerWidget {
           child: Container(
             width: double.infinity,
             constraints: const BoxConstraints(minHeight: 164),
-            padding: const EdgeInsets.all(Spacing.regular),
+            padding: const EdgeInsets.all(Spacing.medium),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 AppText.bodyLarge(loc(context).speedTestInternetToDevice),
-                const AppGap.regular(),
+                const AppGap.medium(),
                 AppText.bodySmall(loc(context).speedTestInternetToDeviceDesc),
-                const AppGap.big(),
+                const AppGap.large3(),
                 SvgPicture(
                   CustomTheme.of(context).images.internetToDevice,
                   width: 192,

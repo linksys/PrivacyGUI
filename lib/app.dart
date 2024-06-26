@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,12 +9,10 @@ import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/firebase/notification_helper.dart';
 import 'package:privacy_gui/page/components/layouts/root_container.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_provider.dart';
-import 'package:privacy_gui/page/dashboard/providers/smart_device_provider.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacy_gui/util/languages.dart';
@@ -45,7 +45,6 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     ref.read(connectivityProvider.notifier).stop();
-    apnsStreamSubscription?.cancel();
     ref
         .read(routerProvider)
         .routerDelegate
@@ -60,24 +59,40 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     final appSettings = ref.watch(appSettingsProvider);
     final systemLocaleStr = Intl.getCurrentLocale();
     final systemLocale = Locale(getLanguageData(systemLocaleStr)['value']);
-    ref.read(smartDeviceProvider.notifier).init();
     final router = ref.watch(routerProvider);
     router.routerDelegate.removeListener(_onReceiveRouteChanged);
     router.routerDelegate.addListener(_onReceiveRouteChanged);
 
     return MaterialApp.router(
       onGenerateTitle: (context) => loc(context).appTitle,
-      theme: linksysLightThemeData,
-      darkTheme: linksysDarkThemeData,
+      theme: linksysLightThemeData.copyWith(
+          pageTransitionsTheme: pageTransitionsTheme),
+      darkTheme: linksysDarkThemeData.copyWith(
+          pageTransitionsTheme: pageTransitionsTheme),
       themeMode: appSettings.themeMode,
       locale: appSettings.locale ?? systemLocale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       builder: (context, child) => Material(
-        child: CustomResponsive(
-          child: AppRootContainer(
-            routeConfig: _currentRoute?.config ?? const LinksysRouteConfig(),
-            child: child,
+        child: Shortcuts(
+          shortcuts: {
+            LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyO):
+                ToggleDisplayColumnOverlayIntent()
+          },
+          child: Actions(
+            dispatcher: AppGlobalActionDispatcher(),
+            actions: {
+              ToggleDisplayColumnOverlayIntent: CallbackAction(
+                  onInvoke: (intent) => showColumnOverlayNotifier.value =
+                      !showColumnOverlayNotifier.value)
+            },
+            child: CustomResponsive(
+              child: AppRootContainer(
+                routeConfig:
+                    _currentRoute?.config ?? const LinksysRouteConfig(),
+                child: child,
+              ),
+            ),
           ),
         ),
       ),
@@ -136,5 +151,57 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
         _currentRoute = null;
       }
     });
+  }
+
+  PageTransitionsTheme? get pageTransitionsTheme => kIsWeb
+      ? PageTransitionsTheme(
+          builders: {
+            // No animations for every OS if the app running on the web
+            for (final platform in TargetPlatform.values)
+              platform: const FadeUpwardsPageTransitionsBuilder(),
+          },
+        )
+      : null;
+}
+
+class NoTransitionsBuilder extends PageTransitionsBuilder {
+  const NoTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T>? route,
+    BuildContext? context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget? child,
+  ) {
+    // only return the child without warping it with animations
+    return child!;
+  }
+}
+
+class ToggleDisplayColumnOverlayIntent extends Intent {}
+
+class AppGlobalActionDispatcher extends ActionDispatcher {
+  @override
+  Object? invokeAction(
+    covariant Action<Intent> action,
+    covariant Intent intent, [
+    BuildContext? context,
+  ]) {
+    logger.d('Action invoked: $action($intent) from $context');
+    super.invokeAction(action, intent, context);
+
+    return null;
+  }
+
+  @override
+  (bool, Object?) invokeActionIfEnabled(
+    covariant Action<Intent> action,
+    covariant Intent intent, [
+    BuildContext? context,
+  ]) {
+    logger.d('Action invoked: $action($intent) from $context');
+    return super.invokeActionIfEnabled(action, intent, context);
   }
 }

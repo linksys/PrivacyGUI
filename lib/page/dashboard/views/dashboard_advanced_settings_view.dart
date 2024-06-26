@@ -6,6 +6,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/panel/general_section.dart';
 
@@ -32,7 +33,7 @@ class _DashboardAdvancedSettingsViewState
     }
     return StyledAppPageView(
       title: loc(context).advancedSettings,
-      child: ListView.builder(
+      child: ListView.separated(
         itemCount: advancedSettings.length,
         shrinkWrap: true,
         itemBuilder: (context, index) {
@@ -41,6 +42,9 @@ class _DashboardAdvancedSettingsViewState
             trailing: const Icon(LinksysIcons.chevronRight),
             onTap: advancedSettings[index].onTap,
           );
+        },
+        separatorBuilder: (BuildContext context, int index) {
+          return const AppGap.medium();
         },
       ),
     );

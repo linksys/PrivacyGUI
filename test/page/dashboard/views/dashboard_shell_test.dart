@@ -1,4 +1,3 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg_test/flutter_svg_test.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,7 +11,6 @@ import 'package:privacygui_widgets/theme/custom_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 import '../../../common/config.dart';
-import '../../../common/mock_firebase_messaging.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
 
@@ -42,11 +40,6 @@ final mockDashboardRoute = ShellRoute(
   ],
 );
 void main() async {
-  setupFirebaseMessagingMocks();
-  // FirebaseMessaging? messaging;
-  await Firebase.initializeApp();
-  // FirebaseMessagingPlatform.instance = kMockMessagingPlatform;
-  // messaging = FirebaseMessaging.instance;
 
   testResponsiveWidgets('Test Dashboard Navigations', (tester) async {
     await tester.pumpWidget(

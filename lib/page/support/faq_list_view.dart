@@ -5,9 +5,9 @@ import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/expansion_card.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class FaqListView extends ArgumentsConsumerStatelessView {
@@ -21,8 +21,23 @@ class FaqListView extends ArgumentsConsumerStatelessView {
     return StyledAppPageView(
       title: loc(context).faqs,
       enableSafeArea: (left: true, top: false, right: true, bottom: true),
-      child: AppBasicLayout(
-        content: ListView(
+      menuWidget: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AppText.bodySmall(loc(context).faqLookingFor),
+          const AppGap.medium(),
+          AppTextButton.noPadding(
+            loc(context).faqVisitLinksysSupport,
+            onTap: () {
+              _launchUrl('https://www.linksys.com/linksys-support');
+            },
+          ),
+        ],
+      ),
+      menuOnRight: true,
+      child: SizedBox(
+        width: 9.col,
+        child: ListView(
           shrinkWrap: true,
           children: [
             _buildExpansionCard(
@@ -30,7 +45,8 @@ class FaqListView extends ArgumentsConsumerStatelessView {
               children: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  AppTextButton(loc(context).faqListCannotAddChildNode, onTap: () {
+                  AppTextButton(loc(context).faqListCannotAddChildNode,
+                      onTap: () {
                     _launchUrl(
                         'https://www.linksys.com/us/support-article?articleNum=333430#Q1PlaceNodes');
                   }),
@@ -42,6 +58,7 @@ class FaqListView extends ArgumentsConsumerStatelessView {
                 ],
               ),
             ),
+            const AppGap.small2(),
             _buildExpansionCard(
               title: loc(context).connectivity,
               children: Column(
@@ -67,6 +84,7 @@ class FaqListView extends ArgumentsConsumerStatelessView {
                 ],
               ),
             ),
+            const AppGap.small2(),
             _buildExpansionCard(
               title: loc(context).speed,
               children: Column(
@@ -76,12 +94,12 @@ class FaqListView extends ArgumentsConsumerStatelessView {
                     _launchUrl(
                         'https://www.linksys.com/us/support-article?articleNum=333431#q2');
                   }),
-                  AppTextButton(loc(context).faqListSpecificDeviceSlow, onTap: () {
+                  AppTextButton(loc(context).faqListSpecificDeviceSlow,
+                      onTap: () {
                     _launchUrl(
                         'https://www.linksys.com/us/support-article?articleNum=333431#q3');
                   }),
-                  AppTextButton(
-                      loc(context).faqListSlowAfterAddNode,
+                  AppTextButton(loc(context).faqListSlowAfterAddNode,
                       onTap: () {
                     _launchUrl(
                         'https://www.linksys.com/us/support-article?articleNum=333431#q4');
@@ -89,6 +107,7 @@ class FaqListView extends ArgumentsConsumerStatelessView {
                 ],
               ),
             ),
+            const AppGap.small2(),
             _buildExpansionCard(
               title: loc(context).passwordAndAccess,
               children: Column(
@@ -99,11 +118,13 @@ class FaqListView extends ArgumentsConsumerStatelessView {
                     _launchUrl(
                         'https://www.linksys.com/us/support-article?articleNum=333431#q2');
                   }),
-                  AppTextButton(loc(context).faqListForgotRouterPassword, onTap: () {
+                  AppTextButton(loc(context).faqListForgotRouterPassword,
+                      onTap: () {
                     _launchUrl(
                         'https://www.linksys.com/us/support-article?articleNum=274484#q4');
                   }),
-                  AppTextButton(loc(context).faqListChangeWiFiNamePassword, onTap: () {
+                  AppTextButton(loc(context).faqListChangeWiFiNamePassword,
+                      onTap: () {
                     _launchUrl(
                         'https://www.linksys.com/us/support-article?articleNum=203471');
                   }),
@@ -115,25 +136,28 @@ class FaqListView extends ArgumentsConsumerStatelessView {
                 ],
               ),
             ),
+            const AppGap.small2(),
             _buildExpansionCard(
               title: loc(context).hardware,
               children: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  AppTextButton(loc(context).faqListWhatLightsMean,
-                      onTap: () {
+                  AppTextButton(loc(context).faqListWhatLightsMean, onTap: () {
                     _launchUrl(
                         'https://www.linksys.com/us/support-article?articleNum=217443');
                   }),
-                  AppTextButton(loc(context).faqListHowToFactoryReset, onTap: () {
+                  AppTextButton(loc(context).faqListHowToFactoryReset,
+                      onTap: () {
                     _launchUrl(
                         'https://www.linksys.com/us/support-article?articleNum=224178');
                   }),
-                  AppTextButton(loc(context).faqListNodeKeepRestarting, onTap: () {
+                  AppTextButton(loc(context).faqListNodeKeepRestarting,
+                      onTap: () {
                     _launchUrl(
                         'https://www.linksys.com/us/support-article?articleNum=333429#Restarting');
                   }),
-                  AppTextButton(loc(context).faqListLightsNotWorking, onTap: () {
+                  AppTextButton(loc(context).faqListLightsNotWorking,
+                      onTap: () {
                     _launchUrl(
                         'https://www.linksys.com/us/support-article?articleNum=333429#LightNotWorking');
                   }),
@@ -141,7 +165,8 @@ class FaqListView extends ArgumentsConsumerStatelessView {
                     _launchUrl(
                         'https://www.linksys.com/us/support-article?articleNum=333429#NotTurningOn');
                   }),
-                  AppTextButton(loc(context).faqListEthernetPortNotWorking, onTap: () {
+                  AppTextButton(loc(context).faqListEthernetPortNotWorking,
+                      onTap: () {
                     _launchUrl(
                         'https://www.linksys.com/us/support-article?articleNum=333429#PortsNotWorking');
                   }),
@@ -166,7 +191,6 @@ class FaqListView extends ArgumentsConsumerStatelessView {
         Row(
           children: [
             children,
-            const Spacer(),
           ],
         ),
       ],

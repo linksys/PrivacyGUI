@@ -24,6 +24,7 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/dropdown/dropdown_menu.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/panel/general_section.dart';
@@ -76,7 +77,8 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
   bool isEditing = false;
   bool isLoading = false;
   String loadingTitle = '';
-  static const inputPadding = EdgeInsets.symmetric(horizontal: 4, vertical: 12);
+  static const inputPadding = EdgeInsets.symmetric(
+      horizontal: Spacing.small1, vertical: Spacing.medium);
 
   @override
   void initState() {
@@ -225,7 +227,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
   Widget build(BuildContext context) {
     ref.listen(redirectionProvider, (previous, next) {
       if (kIsWeb && previous != next && next != null) {
-                logger.d('Redirect to $next');
+        logger.d('Redirect to $next');
         assignWebLocation(next);
       }
     });
@@ -239,10 +241,12 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
         : StyledAppPageView(
             scrollable: true,
             title: title,
-            bottomBar: PageBottomBar(
-              isPositiveEnabled: _isEdited(),
-              onPositiveTap: _showRestartAlert,
-            ),
+            bottomBar: isEditing
+                ? PageBottomBar(
+                    isPositiveEnabled: _isEdited(),
+                    onPositiveTap: _showRestartAlert,
+                  )
+                : null,
             onBackTap: _isEdited()
                 ? () async {
                     final goBack = await showUnsavedAlert(context);
@@ -254,6 +258,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
             actions: [
               AppTextButton(
                 isEditing ? loc(context).cancel : loc(context).edit,
+                icon: isEditing ? LinksysIcons.close : LinksysIcons.edit,
                 onTap: isEditing
                     ? () {
                         setState(() {
@@ -273,6 +278,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _content(),
+                  const AppGap.medium(),
                   if (viewType == InternetSettingsViewType.ipv4 &&
                       wanType != WanType.bridge)
                     AppSettingCard(
@@ -306,7 +312,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
                               }
                             },
                     ),
-                  const AppGap.regular(),
+                  const AppGap.medium(),
                 ],
               ),
             ),
@@ -327,7 +333,8 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         InternetSettingCard(
-          title: viewType == InternetSettingsViewType.ipv4
+          title: loc(context).connectionType,
+          description: viewType == InternetSettingsViewType.ipv4
               ? state.ipv4Setting.ipv4ConnectionType
               : state.ipv6Setting.ipv6ConnectionType,
           onTap: viewType == InternetSettingsViewType.ipv4
@@ -390,7 +397,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       WanType.pptp => _pptpEditing(),
       WanType.l2tp => _l2tpEditing(),
       WanType.bridge => [
-          const AppGap.big(),
+          const AppGap.large3(),
           AppStyledText.bold(
               '${loc(context).toLogInLocallyWhileInBridgeMode}http://${ref.read(internetSettingsProvider.notifier).hostname}.local',
               defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
@@ -402,7 +409,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
 
   List<Widget> _pppoeEditing() {
     return [
-      const AppGap.semiBig(),
+      const AppGap.large2(),
       Padding(
         padding: inputPadding,
         child: AppTextField(
@@ -481,15 +488,15 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
           },
         ),
       ),
-      const AppGap.regular(),
+      const AppGap.medium(),
       _connectionMode(),
-      const AppGap.regular(),
+      const AppGap.medium(),
     ];
   }
 
   List<Widget> _staticIpEditing() {
     return [
-      const AppGap.semiBig(),
+      const AppGap.large2(),
       Padding(
         padding: inputPadding,
         child: AppIPFormField(
@@ -617,13 +624,13 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
           },
         ),
       ),
-      const AppGap.regular(),
+      const AppGap.medium(),
     ];
   }
 
   List<Widget> _pptpEditing() {
     return [
-      const AppGap.semiBig(),
+      const AppGap.large2(),
       Padding(
         padding: inputPadding,
         child: AppTextField(
@@ -682,18 +689,18 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
           },
         ),
       ),
-      const AppGap.regular(),
+      const AppGap.medium(),
       _pptpIpAddressMode(),
       if (state.ipv4Setting.useStaticSettings == true) ..._staticIpEditing(),
-      const AppGap.regular(),
+      const AppGap.medium(),
       _connectionMode(),
-      const AppGap.regular(),
+      const AppGap.medium(),
     ];
   }
 
   List<Widget> _l2tpEditing() {
     return [
-      const AppGap.semiBig(),
+      const AppGap.large2(),
       Padding(
         padding: inputPadding,
         child: AppTextField(
@@ -752,9 +759,9 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
           },
         ),
       ),
-      const AppGap.regular(),
+      const AppGap.medium(),
       _connectionMode(),
-      const AppGap.regular(),
+      const AppGap.medium(),
     ];
   }
 
@@ -775,7 +782,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
                   ? Row(
                       children: [
                         AppText.bodyMedium(loc(context).maxIdleTime),
-                        const AppGap.regular(),
+                        const AppGap.medium(),
                         SizedBox(
                           width: 70,
                           height: 56,
@@ -797,7 +804,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
                             },
                           ),
                         ),
-                        const AppGap.regular(),
+                        const AppGap.medium(),
                         AppText.bodyMedium(loc(context).minutes),
                       ],
                     )
@@ -811,7 +818,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
                       ? Row(
                           children: [
                             AppText.bodyMedium(loc(context).redialPeriod),
-                            const AppGap.regular(),
+                            const AppGap.medium(),
                             SizedBox(
                               width: 70,
                               height: 56,
@@ -833,7 +840,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
                                 },
                               ),
                             ),
-                            const AppGap.regular(),
+                            const AppGap.medium(),
                             AppText.bodyMedium(loc(context).seconds),
                           ],
                         )
@@ -906,7 +913,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
 
   List<Widget> _ipv6AutomaticEditing() {
     return [
-      const AppGap.semiBig(),
+      const AppGap.large2(),
       AppSettingCard.noBorder(
         title: loc(context).ipv6Automatic,
         color: Theme.of(context).colorScheme.background,
@@ -1062,6 +1069,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
                 ? state.ipv4Setting.ipv4ConnectionType
                 : state.ipv6Setting.ipv6ConnectionType,
             color: Theme.of(context).colorScheme.background,
+            margin: EdgeInsets.zero,
           ),
           if (viewType == InternetSettingsViewType.ipv4)
             ..._buildIpv4InfoByConnectionType(),
@@ -1187,7 +1195,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
             AppText.bodyLarge(
               loc(context).toLogInLocallyWhileInBridgeMode,
             ),
-            const AppGap.semiSmall(),
+            const AppGap.small2(),
             AppTextButton.noPadding(
               state.ipv4Setting.redirection ?? '',
               icon: Icons.open_in_new,
@@ -1195,7 +1203,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
                 openUrl(state.ipv4Setting.redirection ?? '');
               },
             ),
-            const AppGap.regular(),
+            const AppGap.medium(),
           ],
         ),
       ),

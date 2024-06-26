@@ -6,9 +6,9 @@ import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/theme/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
 class PortForwardingView extends ArgumentsConsumerStatelessView {
@@ -50,23 +50,25 @@ class _PortForwardingContentViewState
         content: Column(
           children: [
             AppListCard(
-              padding: const EdgeInsets.all(Spacing.semiBig),
+              padding: const EdgeInsets.all(Spacing.large2),
               title: AppText.labelLarge(loc(context).singlePortForwarding),
               trailing: const Icon(LinksysIcons.chevronRight),
               onTap: () {
                 context.pushNamed(RouteNamed.singlePortForwardingList);
               },
             ),
+            const AppGap.medium(),
             AppListCard(
-              padding: const EdgeInsets.all(Spacing.semiBig),
+              padding: const EdgeInsets.all(Spacing.large2),
               title: AppText.labelLarge(loc(context).portRangeForwarding),
               trailing: const Icon(LinksysIcons.chevronRight),
               onTap: () {
                 context.pushNamed(RouteNamed.portRangeForwardingList);
               },
             ),
+            const AppGap.medium(),
             AppListCard(
-              padding: const EdgeInsets.all(Spacing.semiBig),
+              padding: const EdgeInsets.all(Spacing.large2),
               title: AppText.labelLarge(loc(context).portRangeTriggering),
               trailing: const Icon(LinksysIcons.chevronRight),
               onTap: () {

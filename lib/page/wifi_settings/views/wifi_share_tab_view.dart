@@ -51,7 +51,6 @@ class _WiFiShareTabViewState extends ConsumerState<WiFiShareTabView> {
     return WiFiShareDetailView(
       ssid: ssid,
       password: password,
-      numOfDevices: numOfDevices,
     );
   }
 }

@@ -65,73 +65,64 @@ class _DHCPReservationsContentViewState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   AppText.bodyLarge(loc(context).dhcpReservationDescption),
-                  const AppGap.semiBig(),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: AppSettingCard(
-                          title: loc(context).selectFromMyDHCPList,
-                          trailing: const Icon(LinksysIcons.add),
-                          onTap: () async {
-                            final result = await context
-                                .pushNamed<List<DeviceListItem>?>(
-                                    RouteNamed.devicePicker,
-                                    extra: {
-                                  'type': 'ipv4AndMac',
-                                  'selectMode': 'multiple',
-                                });
+                  const AppGap.large2(),
+                  AppSettingCard(
+                    title: loc(context).selectFromMyDHCPList,
+                    trailing: const Icon(LinksysIcons.add),
+                    onTap: () async {
+                      final result = await context
+                          .pushNamed<List<DeviceListItem>?>(
+                              RouteNamed.devicePicker,
+                              extra: {
+                            'type': 'ipv4AndMac',
+                            'selectMode': 'multiple',
+                          });
 
-                            if (result != null) {
-                              final addedList = result.map((e) {
-                                return DHCPReservation(
-                                  description:
-                                      e.name.replaceAll(RegExp(r' '), ''),
-                                  ipAddress: e.ipv4Address,
-                                  macAddress: e.macAddress,
-                                );
-                              }).toList();
-                              ref
-                                  .read(localNetworkSettingProvider.notifier)
-                                  .updateDHCPReservationList(addedList);
-                            }
-                          },
-                        ),
-                      ),
-                      Expanded(
-                        child: AppSettingCard(
-                          title: loc(context).manuallyAddReservation,
-                          trailing: const Icon(LinksysIcons.add),
-                          onTap: () async {
-                            final result = await context
-                                .pushNamed<DHCPReservation?>(
-                                    RouteNamed.dhcpReservationEdit,
-                                    extra: {
-                                  'viewType': 'add',
-                                });
-                            if (result != null) {
-                              final isReservationOverlap = ref
-                                  .read(localNetworkSettingProvider.notifier)
-                                  .isReservationOverlap(item: result);
-                              if (!isReservationOverlap) {
-                                ref
-                                    .read(localNetworkSettingProvider.notifier)
-                                    .updateDHCPReservationList([result]);
-                              } else {
-                                showFailedSnackBar(
-                                  context,
-                                  loc(context).ipOrMacAddressOverlap,
-                                );
-                              }
-                            }
-                          },
-                        ),
-                      ),
-                    ],
+                      if (result != null) {
+                        final addedList = result.map((e) {
+                          return DHCPReservation(
+                            description: e.name.replaceAll(RegExp(r' '), ''),
+                            ipAddress: e.ipv4Address,
+                            macAddress: e.macAddress,
+                          );
+                        }).toList();
+                        ref
+                            .read(localNetworkSettingProvider.notifier)
+                            .updateDHCPReservationList(addedList);
+                      }
+                    },
                   ),
-                  const AppGap.big(),
+                  const AppGap.medium(),
+                  AppSettingCard(
+                    title: loc(context).manuallyAddReservation,
+                    trailing: const Icon(LinksysIcons.add),
+                    onTap: () async {
+                      final result = await context.pushNamed<DHCPReservation?>(
+                          RouteNamed.dhcpReservationEdit,
+                          extra: {
+                            'viewType': 'add',
+                          });
+                      if (result != null) {
+                        final isReservationOverlap = ref
+                            .read(localNetworkSettingProvider.notifier)
+                            .isReservationOverlap(item: result);
+                        if (!isReservationOverlap) {
+                          ref
+                              .read(localNetworkSettingProvider.notifier)
+                              .updateDHCPReservationList([result]);
+                        } else {
+                          showFailedSnackBar(
+                            context,
+                            loc(context).ipOrMacAddressOverlap,
+                          );
+                        }
+                      }
+                    },
+                  ),
+                  const AppGap.large3(),
                   AppText.labelLarge(
                       loc(context).reservedAddresses.capitalizeWords()),
-                  const AppGap.regular(),
+                  const AppGap.medium(),
                   ...reservedAddresses(dhcpReservedList),
                 ],
               ),
@@ -155,7 +146,7 @@ class _DHCPReservationsContentViewState
       return [
         SizedBox(
           height: reserved.length * 100,
-          child: ListView.builder(
+          child: ListView.separated(
             itemCount: reserved.length,
             itemBuilder: (context, index) {
               final item = reserved[index];
@@ -173,6 +164,9 @@ class _DHCPReservationsContentViewState
                   goDHCPReservationEdit(item, index);
                 },
               );
+            },
+            separatorBuilder: (BuildContext context, int index) {
+              return const AppGap.medium();
             },
           ),
         ),

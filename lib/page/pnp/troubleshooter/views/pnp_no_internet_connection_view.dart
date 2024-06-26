@@ -9,7 +9,7 @@ import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/pnp/troubleshooter/providers/pnp_troubleshooter_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/theme/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
@@ -53,7 +53,7 @@ class _PnpNoInternetConnectionState
     final state = ref.watch(pnpTroubleshooterProvider);
     return Center(
       child: AppCard(
-        padding: const EdgeInsets.all(Spacing.big),
+        padding: const EdgeInsets.all(Spacing.large3),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -62,13 +62,13 @@ class _PnpNoInternetConnectionState
               LinksysIcons.publicOff,
               size: 48,
             ),
-            const AppGap.big(),
+            const AppGap.large3(),
             _titleView(context),
-            const AppGap.regular(),
+            const AppGap.medium(),
             AppText.bodyLarge(
               loc(context).noInternetConnectionDescription,
             ),
-            const AppGap.big(),
+            const AppGap.large3(),
             if (state.hasResetModem)
               AppCard(
                 onTap: () {
@@ -83,7 +83,7 @@ class _PnpNoInternetConnectionState
                           AppText.labelLarge(
                             loc(context).needHelp,
                           ),
-                          const AppGap.small(),
+                          const AppGap.small3(),
                           AppText.bodyMedium(
                             loc(context).pnpNoInternetConnectionContactSupport,
                           ),
@@ -107,7 +107,7 @@ class _PnpNoInternetConnectionState
                         AppText.labelLarge(
                           loc(context).pnpNoInternetConnectionRestartModem,
                         ),
-                        const AppGap.small(),
+                        const AppGap.small3(),
                         AppText.bodyMedium(
                           loc(context).pnpNoInternetConnectionRestartModemDesc,
                         ),
@@ -131,7 +131,7 @@ class _PnpNoInternetConnectionState
                         AppText.labelLarge(
                           loc(context).pnpNoInternetConnectionEnterISP,
                         ),
-                        const AppGap.small(),
+                        const AppGap.small3(),
                         AppText.bodyMedium(
                           loc(context).pnpNoInternetConnectionEnterISPDesc,
                         ),
@@ -142,7 +142,7 @@ class _PnpNoInternetConnectionState
                 ],
               ),
             ),
-            const AppGap.big(),
+            const AppGap.large3(),
             AppFilledButton(
               loc(context).tryAgain,
               onTap: () {

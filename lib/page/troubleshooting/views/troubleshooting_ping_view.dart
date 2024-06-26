@@ -51,12 +51,12 @@ class _TroubleshootingPingViewState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             AppText.labelLarge('Ping IPv4'),
-            const AppGap.regular(),
+            const AppGap.medium(),
             AppTextField(
               controller: _controller,
               headerText: 'IP or host name',
             ),
-            const AppGap.regular(),
+            const AppGap.medium(),
             AppDropdownMenu<String>(
               items: ['5', '10', '15', 'Unlimited'],
               label: (item) => item,
@@ -64,7 +64,7 @@ class _TroubleshootingPingViewState
                 _pingCount = int.tryParse(value);
               },
             ),
-            const AppGap.regular(),
+            const AppGap.medium(),
             AppFilledButton(
               'Ping',
               onTap: () {
@@ -91,7 +91,7 @@ class _TroubleshootingPingViewState
                 });
               },
             ),
-            const AppGap.extraBig(),
+            const AppGap.large4(),
             AppText.bodySmall(_log),
           ],
         ),

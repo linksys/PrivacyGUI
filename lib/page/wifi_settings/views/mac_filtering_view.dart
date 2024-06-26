@@ -68,14 +68,7 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView> {
         : StyledAppPageView(
             scrollable: true,
             appBarStyle: AppBarStyle.none,
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            // onBackTap: () {
-            //   if (_preservedState != state) {
-            //     _showUnsavedAlert();
-            //   } else {
-            //     context.pop();
-            //   }
-            // },
+            padding: EdgeInsets.zero,
             title: loc(context).macFiltering,
             bottomBar: PageBottomBar(
                 isPositiveEnabled: _preservedState != state,
@@ -113,7 +106,7 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView> {
                       },
                     ),
                   ),
-                  const AppGap.semiBig(),
+                  const AppGap.medium(),
                   ..._buildEnabledContent(state)
                 ],
               ),
@@ -130,14 +123,17 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    AppText.labelLarge(state.mode.name),
-                    const AppGap.regular(),
+                    AppText.labelLarge(state.mode == MacFilterMode.allow
+                        ? loc(context).allow
+                        : loc(context).deny),
+                    const AppGap.medium(),
                     const Icon(LinksysIcons.chevronRight)
                   ],
                 ),
                 onTap: () async {
                   _selectAccessModal();
                 }),
+                const AppGap.medium(),
             AppListCard(
               title: AppText.labelLarge(loc(context).filteredDevices),
               trailing: Row(
@@ -145,7 +141,7 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   AppText.labelLarge('${state.macAddresses.length}'),
-                  const AppGap.regular(),
+                  const AppGap.medium(),
                   const Icon(LinksysIcons.chevronRight)
                 ],
               ),
@@ -169,9 +165,12 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView> {
             AppRadioList(
               initial: initValue,
               mainAxisSize: MainAxisSize.min,
+              withDivider: true,
+              itemCrossAxisAlignment: CrossAxisAlignment.center,
               items: [
                 AppRadioListItem(
                   title: loc(context).allowAccess,
+                  titleWidget: AppText.bodyLarge(loc(context).allowAccess),
                   subtitleWidget: AppText.bodyMedium(
                     loc(context).allowAccessDesc,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -180,6 +179,7 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView> {
                 ),
                 AppRadioListItem(
                   title: loc(context).denyAccess,
+                  titleWidget: AppText.bodyLarge(loc(context).denyAccess),
                   subtitleWidget: AppText.bodyMedium(
                     loc(context).denyAccessDesc,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
