@@ -14,10 +14,11 @@ final responsiveAllScreens = [
 final responsiveMobileScreens = [
   // device320w,
   device480w,
-  // device744w,
+  device744w,
 ];
 final responsiveDesktopScreens = [
-  // device1280w,
+  device1080w,
+  device1280w,
   device1440w,
 ];
 
@@ -28,17 +29,19 @@ final responsiveAllVariants = ValueVariant<ScreenSize>({
 final responsiveMobileVariants = ValueVariant<ScreenSize>({
   // device320w,
   device480w,
-  // device744w,
+  device744w,
 });
 final responsiveDesktopVariants = ValueVariant<ScreenSize>({
-  // device1280w,
+  device1080w,
+  device1280w,
   device1440w,
 });
 
 // const device320w = ScreenSize('Device320w', 320, 568, 1);
 const device480w = ScreenSize('Device480w', 480, 932, 1);
-// const device744w = ScreenSize('Device744w', 744, 1133, 1);
-// const device1280w = ScreenSize('Device1280w', 1280, 720, 1);
+const device744w = ScreenSize('Device744w', 744, 1133, 1);
+const device1080w = ScreenSize('Device1080w', 1080, 720, 1);
+const device1280w = ScreenSize('Device1280w', 1280, 720, 1);
 const device1440w = ScreenSize('Device1440w', 1440, 900, 1);
 
 bool _screenConfigured = false;
@@ -57,8 +60,9 @@ List<ScreenSize> get targetScreens {
           .map((e) => switch (e) {
                 // 'd320' || '320' => device320w,
                 'd480' || '480' => device480w,
-                // 'd744' || '744' => device744w,
-                // 'd1280' || '1280' => device1280w,
+                'd744' || '744' => device744w,
+                'd1080' || '1080' => device1080w,
+                'd1280' || '1280' => device1280w,
                 'd1440' || '1440' => device1440w,
                 _ => device1440w
               })

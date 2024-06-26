@@ -1,10 +1,7 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
-import 'package:privacy_gui/firebase/notification_provider.dart';
 import 'package:privacy_gui/page/components/layouts/idle_checker.dart';
 import 'package:privacy_gui/providers/root/root_config.dart';
 import 'package:privacy_gui/providers/root/root_provider.dart';
@@ -35,13 +32,11 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
   @override
   void initState() {
     super.initState();
-    Future.doWhile(() => !mounted).then((value) => _registerNotification());
   }
 
   @override
   Widget build(BuildContext context) {
     logger.d('Root Container:: build: ${widget.routeConfig}');
-    final fwUpdate = ref.watch(firmwareUpdateProvider);
     final rootConfig = ref.watch(rootProvider);
     return LayoutBuilder(builder: ((context, constraints) {
       return IdleChecker(
@@ -119,31 +114,5 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
     //   }
     // }
     return [];
-  }
-
-  void _registerNotification() {
-    // ref.read(notificationProvider.notifier).load();
-    // FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-    //   logger.d(
-    //       '[Notification][WEB] Got a message whilst in the foreground! $message');
-    //   logger.d('[Notification][WEB] Message data: ${message.data}');
-
-    //   if (message.notification != null) {
-    //     logger.d(
-    //         '[Notification][WEB] Message also contained a notification: ${message.notification}');
-    //     saveNotificationMessage(message);
-    //   }
-    // });
-  }
-
-  void saveNotificationMessage(RemoteMessage message) {
-    if (message.notification?.title == null &&
-        message.notification?.body == null) {
-      return;
-    }
-    ref.read(notificationProvider.notifier).onReceiveNotification(
-        message.notification?.title,
-        message.notification?.body,
-        message.sentTime?.millisecondsSinceEpoch);
   }
 }

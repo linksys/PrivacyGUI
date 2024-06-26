@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/error_code.dart';
+import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/page/components/styled/bottom_bar.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
@@ -50,7 +51,10 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
     Future.doWhile(() => !mounted).then((value) {
       _getAdminPasswordHint();
     });
-    ref.read(dashboardManagerProvider.notifier).checkDeviceInfo(null);
+    ref
+        .read(dashboardManagerProvider.notifier)
+        .checkDeviceInfo(null)
+        .then((value) => buildBetterActions(value.services));
   }
 
   @override

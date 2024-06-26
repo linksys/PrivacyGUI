@@ -2,11 +2,6 @@ part of 'router_provider.dart';
 
 final settings = [
   LinksysRoute(
-    name: RouteNamed.settingsNotification,
-    path: RoutePath.settingsNotification,
-    builder: (context, state) => NotificationSettingsView(),
-  ),
-  LinksysRoute(
       name: RouteNamed.settingsWifi,
       path: RoutePath.settingsWifi,
       config:

@@ -9,10 +9,10 @@ do
     esac
 done
 if [ -z "$locales" ]; then
-  locales="all"
+  locales="en"
 fi
 if [ -z "$screens" ]; then
-  screens="all"
+  screens="480,1440"
 fi
 if [ -z "$overlay" ]; then
   overlay="false"

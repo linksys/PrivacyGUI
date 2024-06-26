@@ -8,11 +8,6 @@ final homeRoute = LinksysRoute(
   ),
   builder: (context, state) => const HomeView(),
   routes: [
-    LinksysRoute(
-      name: RouteNamed.debug,
-      path: RoutePath.debug,
-      builder: (context, state) => const DebugToolsView(),
-    ),
     cloudLoginRoute,
     //setupRoute
   ],
