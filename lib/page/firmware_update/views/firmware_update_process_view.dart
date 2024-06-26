@@ -70,13 +70,13 @@ class _FirmwareUpdateProcessViewState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Center(child: AppSpinner()),
-        const AppGap.large2(),
+        const AppGap.large3(),
         if (percent != null) ...[
           AppText.labelLarge(
               '${widget.current?.$1.getDeviceName() ?? ''} - $percent%'),
-          const AppGap.large2(),
+          const AppGap.large3(),
           AppText.titleSmall(step.getTitle(context)),
-          const AppGap.large2(),
+          const AppGap.large3(),
           ...step.getMessages(context).map((e) => AppText.bodySmall(e)),
         ],
       ],

@@ -109,16 +109,18 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                 ),
               ),
             ),
-            if (state.settings.isDMZEnabled)
+            if (state.settings.isDMZEnabled) ...[
+              const AppGap.medium(),
               AppCard(
                 child: Column(
                   children: [
                     _sourceIPWidget(state),
-                    const AppGap.large2(),
+                    const AppGap.large3(),
                     _destinationIPWidget(state)
                   ],
                 ),
               ),
+            ]
           ],
         ));
   }

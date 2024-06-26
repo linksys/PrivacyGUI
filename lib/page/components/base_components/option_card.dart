@@ -46,7 +46,7 @@ class OptionCard extends ConsumerWidget {
                 ],
               ),
             ),
-            const AppGap.large2(),
+            const AppGap.large3(),
             Image.asset(
               'assets/images/arrow_point_to_right.png',
               width: 10,

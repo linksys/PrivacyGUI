@@ -53,7 +53,7 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
             const AppText.headlineSmall(
               'Giving your modem time to contact your ISP',
             ),
-            const AppGap.large2(),
+            const AppGap.large3(),
             const AppText.bodyLarge(
                 'Your ISP needs time to issue a new IP address to your router to connect to the internet'),
             Expanded(

@@ -1,5 +1,6 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -71,9 +72,8 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
         .routes
         .last as LinksysRoute?;
 
-    final showNavi = pageRoute?.config == null
-        ? !autoHideNaviRail()
-        : pageRoute?.config?.noNaviRail != true;
+    final showNavi = LinksysRoute.isShowNaviRail(context, pageRoute?.config);
+
     return StyledAppPageView(
         backState: StyledBackState.none,
         appBarStyle: AppBarStyle.none,
@@ -106,36 +106,82 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
         .routes
         .last as LinksysRoute?;
 
-    final showNavi = pageRoute?.config == null
-        ? !autoHideNaviRail()
-        : pageRoute?.config?.noNaviRail != true;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.start,
-      children: [
-        if (showNavi)
-          DashboardNavigationRail(
-            items: _dashboardNaviItems
-                .map((e) => _createNavigationRailDestination(e))
-                .toList(),
-            onItemTapped: _onItemTapped,
-            selected: _selectedIndex,
-          ),
-        const VerticalDivider(
-          width: 1,
-        ),
-        Expanded(
-          child: GestureDetector(
-            onTap: () {
-              if (increase()) {
-                logger.d('Triggered!');
-                context.pushNamed(RouteNamed.debug);
-              }
-            },
-            child: widget.child,
-          ),
-        ),
-      ],
-    );
+    final showNavi = LinksysRoute.isShowNaviRail(context, pageRoute?.config);
+    return ResponsiveLayout.isOverLargeLayout(context)
+        ? Stack(
+            children: [
+              GestureDetector(
+                onTap: () {
+                  if (increase()) {
+                    logger.d('Triggered!');
+                    context.pushNamed(RouteNamed.debug);
+                  }
+                },
+                child: widget.child,
+              ),
+              if (showNavi)
+                Align(
+                  alignment: Alignment.topLeft,
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: ResponsiveLayout.isOverLargeLayout(context)
+                            ? ResponsiveLayout.naviRailWidth
+                            : ResponsiveLayout.naviRailWidthThin,
+                        child: DashboardNavigationRail(
+                          items: _dashboardNaviItems
+                              .map((e) => _createNavigationRailDestination(e))
+                              .toList(),
+                          onItemTapped: _onItemTapped,
+                          selected: _selectedIndex,
+                        ),
+                      ),
+                      const VerticalDivider(
+                        width: 1,
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          )
+        : Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              if (showNavi)
+                SizedBox(
+                  width: ResponsiveLayout.isOverLargeLayout(context)
+                      ? ResponsiveLayout.naviRailWidth
+                      : ResponsiveLayout.naviRailWidthThin,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: DashboardNavigationRail(
+                          items: _dashboardNaviItems
+                              .map((e) => _createNavigationRailDestination(e))
+                              .toList(),
+                          onItemTapped: _onItemTapped,
+                          selected: _selectedIndex,
+                        ),
+                      ),
+                      const VerticalDivider(
+                        width: 1,
+                      ),
+                    ],
+                  ),
+                ),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    if (increase()) {
+                      logger.d('Triggered!');
+                      context.pushNamed(RouteNamed.debug);
+                    }
+                  },
+                  child: widget.child,
+                ),
+              ),
+            ],
+          );
   }
 
   Widget _buildMobile() {
@@ -149,18 +195,6 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
       child: widget.child,
     );
   }
-
-  bool autoHideNaviRail() =>
-      (GoRouter.of(context)
-              .routerDelegate
-              .currentConfiguration
-              .matches
-              .lastOrNull
-              ?.matchedLocation
-              .split('/')
-              .length ??
-          0) >
-      2;
 
   void _onItemTapped(int index) {
     shellNavigatorKey.currentContext!

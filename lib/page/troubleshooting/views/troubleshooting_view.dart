@@ -108,7 +108,7 @@ class _TroubleshootingViewState extends ConsumerState<TroubleshootingView> {
                           ),
                     ],
                   ),
-                  const AppGap.large2(),
+                  const AppGap.large3(),
                   Table(
                     border: TableBorder.all(
                         color: Theme.of(context).colorScheme.onBackground),
@@ -148,7 +148,7 @@ class _TroubleshootingViewState extends ConsumerState<TroubleshootingView> {
                           ),
                     ],
                   ),
-                  const AppGap.large2(),
+                  const AppGap.large3(),
                   AppTextButton(
                     'Ping',
                     onTap: () {
@@ -229,7 +229,7 @@ class _TroubleshootingViewState extends ConsumerState<TroubleshootingView> {
                 },
               ),
             ),
-            const AppGap.large2(),
+            const AppGap.large3(),
             Table(
               border: TableBorder.all(
                   color: Theme.of(context).colorScheme.onBackground),

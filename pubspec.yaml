@@ -84,6 +84,7 @@ dependencies:
   http_parser: ^4.0.2
   meta: ^1.11.0
   file_picker: ^8.0.3
+  wolt_responsive_layout_grid: ^0.0.3
 
 dev_dependencies:
   flutter_test:

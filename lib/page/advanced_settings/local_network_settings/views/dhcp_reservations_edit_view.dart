@@ -78,7 +78,7 @@ class _DHCPReservationsEditViewState
                 });
               },
             ),
-            const AppGap.large2(),
+            const AppGap.large3(),
             AppIPFormField(
               header: AppText.bodySmall(loc(context).assignIpAddress),
               controller: _ipController,
@@ -89,7 +89,7 @@ class _DHCPReservationsEditViewState
                 });
               },
             ),
-            const AppGap.large2(),
+            const AppGap.large3(),
             AppTextField.macAddress(
               headerText: loc(context).macAddress,
               controller: _macController,

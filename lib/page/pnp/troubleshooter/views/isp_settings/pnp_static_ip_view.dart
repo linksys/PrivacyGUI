@@ -52,13 +52,13 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
             AppText.bodyLarge(
               loc(context).pnpStaticIpDesc,
             ),
-            const AppGap.large3(),
+            const AppGap.large4(),
             if (errorMessage != null)
               AppText.bodyLarge(
                 errorMessage!,
                 color: Theme.of(context).colorScheme.error,
               ),
-            const AppGap.large3(),
+            const AppGap.large4(),
             AppIPFormField(
               header: AppText.bodyLarge(
                 loc(context).ipAddress,
@@ -67,7 +67,7 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
               border: const OutlineInputBorder(),
               onFocusChanged: (isFocused) {},
             ),
-            const AppGap.large1(),
+            const AppGap.large2(),
             AppIPFormField(
               header: AppText.bodyLarge(
                 loc(context).subnetMask,
@@ -75,7 +75,7 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
               controller: _subnetController,
               border: const OutlineInputBorder(),
             ),
-            const AppGap.large1(),
+            const AppGap.large2(),
             AppIPFormField(
               header: AppText.bodyLarge(
                 loc(context).defaultGateway,
@@ -83,7 +83,7 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
               controller: _gatewayController,
               border: const OutlineInputBorder(),
             ),
-            const AppGap.large1(),
+            const AppGap.large2(),
             AppIPFormField(
               header: AppText.bodyLarge(
                 loc(context).dns1,
@@ -95,7 +95,7 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
               visible: _hasExtraDNS,
               replacement: Padding(
                 padding: const EdgeInsets.only(
-                  top: Spacing.large3,
+                  top: Spacing.large4,
                 ),
                 child: AppTextButton.noPadding(
                   loc(context).addDns,
@@ -108,7 +108,7 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
               ),
               child: Padding(
                 padding: const EdgeInsets.only(
-                  top: Spacing.large1,
+                  top: Spacing.large2,
                 ),
                 child: AppIPFormField(
                   header: AppText.bodyLarge(
@@ -119,7 +119,7 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
                 ),
               ),
             ),
-            const AppGap.large3(),
+            const AppGap.large4(),
           ],
         ),
         footer: AppFilledButton.fillWidth(

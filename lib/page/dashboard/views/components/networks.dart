@@ -44,7 +44,7 @@ class DashboardNetworks extends ConsumerWidget {
                     : _desktopVertical(context, ref),
                 mobile: _mobile(context, ref),
               ),
-              const AppGap.large1(),
+              const AppGap.large2(),
               // ...state.nodes.mapIndexed((index, e) => _nodeCard(context, ref, e)),
               SizedBox(
                 height: state.nodes.length * 86,
@@ -73,7 +73,7 @@ class DashboardNetworks extends ConsumerWidget {
         AppText.titleSmall(loc(context).myNetwork),
         const AppGap.medium(),
         _firmwareStatusWidget(context, newFirmware),
-        const AppGap.large1(),
+        const AppGap.large2(),
         Row(
           children: [
             Expanded(
@@ -82,6 +82,7 @@ class DashboardNetworks extends ConsumerWidget {
               ref,
               state,
             )),
+            const AppGap.gutter(),
             Expanded(
               child: _devicesInfoTile(
                 context,
@@ -119,6 +120,7 @@ class DashboardNetworks extends ConsumerWidget {
                 ref,
                 state,
               )),
+              const AppGap.gutter(),
               Expanded(
                 child: _devicesInfoTile(
                   context,
@@ -155,6 +157,7 @@ class DashboardNetworks extends ConsumerWidget {
               ref,
               state,
             )),
+            const AppGap.gutter(),
             Expanded(
               child: _devicesInfoTile(
                 context,

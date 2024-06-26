@@ -15,6 +15,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/devices/_devices.dart';
 import 'package:privacy_gui/page/devices/extensions/icon_device_category_ext.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
@@ -75,17 +76,19 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          width: 280,
+          width: 3.col,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               _avatarCard(state),
+              const AppGap.medium(),
               _extraInfoSection(state),
             ],
           ),
         ),
-        const AppGap.medium(),
-        Expanded(
+        const AppGap.gutter(),
+        SizedBox(
+          width: 9.col,
           child: _detailSection(state),
         ),
       ],
@@ -151,16 +154,17 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
         if (!state.item.isWired)
           AppSettingCard(
             padding: const EdgeInsets.symmetric(
-              horizontal: Spacing.large1,
+              horizontal: Spacing.large2,
               vertical: Spacing.medium,
             ),
             title: loc(context).wifi,
             description:
                 _formatEmptyValue('${state.item.ssid} (${state.item.band})'),
           ),
+        const AppGap.medium(),
         AppSettingCard(
           padding: const EdgeInsets.fromLTRB(
-            Spacing.large1,
+            Spacing.large2,
             Spacing.medium,
             Spacing.small1,
             Spacing.medium,
@@ -174,17 +178,19 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
             },
           ),
         ),
+        const AppGap.medium(),
         AppSettingCard(
           padding: const EdgeInsets.symmetric(
-            horizontal: Spacing.large1,
+            horizontal: Spacing.large2,
             vertical: Spacing.medium,
           ),
           title: loc(context).macAddress,
           description: _formatEmptyValue(state.item.macAddress),
         ),
+        const AppGap.medium(),
         AppSettingCard(
           padding: const EdgeInsets.symmetric(
-            horizontal: Spacing.large1,
+            horizontal: Spacing.large2,
             vertical: Spacing.medium,
           ),
           title: loc(context).ipv6Address,
@@ -285,7 +291,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          const AppGap.large1(),
+          const AppGap.large2(),
           AppTextField.outline(
             controller: _deviceNameController,
             headerText: loc(context).deviceName,
@@ -296,9 +302,9 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
               });
             },
           ),
-          const AppGap.large2(),
+          const AppGap.large3(),
           AppText.labelLarge(loc(context).selectIcon),
-          const AppGap.large2(),
+          const AppGap.large3(),
           GridView.builder(
             shrinkWrap: true,
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(

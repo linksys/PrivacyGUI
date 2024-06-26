@@ -24,6 +24,7 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/dropdown/dropdown_menu.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/panel/general_section.dart';
@@ -76,7 +77,8 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
   bool isEditing = false;
   bool isLoading = false;
   String loadingTitle = '';
-  static const inputPadding = EdgeInsets.symmetric(horizontal: 4, vertical: 12);
+  static const inputPadding = EdgeInsets.symmetric(
+      horizontal: Spacing.small1, vertical: Spacing.medium);
 
   @override
   void initState() {
@@ -276,6 +278,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _content(),
+                  const AppGap.medium(),
                   if (viewType == InternetSettingsViewType.ipv4 &&
                       wanType != WanType.bridge)
                     AppSettingCard(
@@ -394,7 +397,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       WanType.pptp => _pptpEditing(),
       WanType.l2tp => _l2tpEditing(),
       WanType.bridge => [
-          const AppGap.large2(),
+          const AppGap.large3(),
           AppStyledText.bold(
               '${loc(context).toLogInLocallyWhileInBridgeMode}http://${ref.read(internetSettingsProvider.notifier).hostname}.local',
               defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
@@ -406,7 +409,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
 
   List<Widget> _pppoeEditing() {
     return [
-      const AppGap.large1(),
+      const AppGap.large2(),
       Padding(
         padding: inputPadding,
         child: AppTextField(
@@ -493,7 +496,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
 
   List<Widget> _staticIpEditing() {
     return [
-      const AppGap.large1(),
+      const AppGap.large2(),
       Padding(
         padding: inputPadding,
         child: AppIPFormField(
@@ -627,7 +630,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
 
   List<Widget> _pptpEditing() {
     return [
-      const AppGap.large1(),
+      const AppGap.large2(),
       Padding(
         padding: inputPadding,
         child: AppTextField(
@@ -697,7 +700,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
 
   List<Widget> _l2tpEditing() {
     return [
-      const AppGap.large1(),
+      const AppGap.large2(),
       Padding(
         padding: inputPadding,
         child: AppTextField(
@@ -910,7 +913,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
 
   List<Widget> _ipv6AutomaticEditing() {
     return [
-      const AppGap.large1(),
+      const AppGap.large2(),
       AppSettingCard.noBorder(
         title: loc(context).ipv6Automatic,
         color: Theme.of(context).colorScheme.background,

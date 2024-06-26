@@ -58,7 +58,7 @@ class _TimezoneContentViewState extends ConsumerState<TimezoneView> {
               content: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const AppGap.large1(),
+                  const AppGap.large2(),
                   AppCard(
                     child: AppPanelWithSwitch(
                       title: loc(context).daylightSavingsTime,

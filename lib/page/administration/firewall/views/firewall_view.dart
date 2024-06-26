@@ -77,6 +77,7 @@ class _FirewallViewState extends ConsumerState<FirewallView> {
                 },
               ),
             ),
+            const AppGap.medium(),
             AppCard(
               child: AppSwitchTriggerTile(
                 title:
@@ -88,7 +89,7 @@ class _FirewallViewState extends ConsumerState<FirewallView> {
                 },
               ),
             ),
-            const AppGap.large2(),
+            const AppGap.large3(),
             AppText.labelLarge(loc(context).vpnPassthrough),
             const AppGap.medium(),
             AppCard(
@@ -102,6 +103,7 @@ class _FirewallViewState extends ConsumerState<FirewallView> {
                 },
               ),
             ),
+            const AppGap.medium(),
             AppCard(
               child: AppSwitchTriggerTile(
                 title: AppText.labelLarge(loc(context).pptpPassthrough),
@@ -113,6 +115,7 @@ class _FirewallViewState extends ConsumerState<FirewallView> {
                 },
               ),
             ),
+            const AppGap.medium(),
             AppCard(
               child: AppSwitchTriggerTile(
                 title: AppText.labelLarge(loc(context).l2tpPassthrough),
@@ -124,7 +127,7 @@ class _FirewallViewState extends ConsumerState<FirewallView> {
                 },
               ),
             ),
-            const AppGap.large2(),
+            const AppGap.large3(),
             AppText.labelLarge(loc(context).internetFilters),
             const AppGap.medium(),
             AppCard(
@@ -137,6 +140,7 @@ class _FirewallViewState extends ConsumerState<FirewallView> {
                 },
               ),
             ),
+            const AppGap.medium(),
             AppCard(
               child: AppSwitchTriggerTile(
                 title: AppText.labelLarge(loc(context).filterMulticast),
@@ -147,6 +151,7 @@ class _FirewallViewState extends ConsumerState<FirewallView> {
                 },
               ),
             ),
+            const AppGap.medium(),
             AppCard(
               child: AppSwitchTriggerTile(
                 title: AppText.labelLarge(
@@ -158,6 +163,7 @@ class _FirewallViewState extends ConsumerState<FirewallView> {
                 },
               ),
             ),
+            const AppGap.medium(),
             AppCard(
               child: AppSwitchTriggerTile(
                 title: AppText.labelLarge(loc(context).filterIdent),
@@ -169,14 +175,15 @@ class _FirewallViewState extends ConsumerState<FirewallView> {
                 },
               ),
             ),
-            const AppGap.large2(),
+            const AppGap.large3(),
             AppListCard(
               title: AppText.labelLarge(loc(context).ipv6PortServices),
               trailing: const Icon(LinksysIcons.chevronRight),
               onTap: () {
                 context.pushNamed(RouteNamed.ipv6PortServiceList);
               },
-            )
+            ),
+            const AppGap.medium(),
           ],
         ),
       ),

@@ -69,7 +69,7 @@ class _WiFiShareDetailViewState extends ConsumerState<WiFiShareDetailView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _wifiInfoSection(),
-        // const AppGap.large2(),
+        // const AppGap.large3(),
         // _optionSection(),
         AppCard(child: _qrcodeSection()),
       ],
@@ -88,7 +88,7 @@ class _WiFiShareDetailViewState extends ConsumerState<WiFiShareDetailView> {
             child: AppText.labelLarge(loc(context).wifiShareQRScan),
           ),
           const Divider(),
-          const AppGap.large1(),
+          const AppGap.large2(),
           RepaintBoundary(
             key: globalKey,
             child: Container(
@@ -105,7 +105,7 @@ class _WiFiShareDetailViewState extends ConsumerState<WiFiShareDetailView> {
               ),
             ),
           ),
-          const AppGap.large1(),
+          const AppGap.large2(),
         ],
       ),
     );

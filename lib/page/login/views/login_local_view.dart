@@ -15,6 +15,7 @@ import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/error_code_handler.dart';
+import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
@@ -149,65 +150,68 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
       scrollable: true,
       child: AppBasicLayout(
         content: Center(
-          child: AppCard(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AppText.headlineSmall(loc(context).login),
-                const AppGap.large2(),
-                SizedBox(
-                  width: 289,
-                  child: AppPasswordField(
-                    border: const OutlineInputBorder(),
-                    controller: _passwordController,
-                    hintText: loc(context).routerPassword,
-                    onChanged: (value) {
-                      setState(() {
-                        _shouldEnableLoginButton();
-                      });
-                    },
-                    errorText: _errorMessage,
-                  ),
-                ),
-                if (_passwordHint != null)
-                  Theme(
-                    data: Theme.of(context)
-                        .copyWith(dividerColor: Colors.transparent),
-                    child: SizedBox(
-                      width: 200,
-                      child: ExpansionTile(
-                        title: AppText.labelMedium(
-                          getAppLocalizations(context).showHint,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        tilePadding: EdgeInsets.zero,
-                        backgroundColor: Colors.transparent,
-                        trailing: const SizedBox(),
-                        expandedAlignment: Alignment.centerLeft,
-                        expandedCrossAxisAlignment: CrossAxisAlignment.start,
-                        children: [AppText.bodySmall(_passwordHint!)],
-                      ),
+          child: SizedBox(
+            width: 4.col,
+            child: AppCard(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AppText.headlineSmall(loc(context).login),
+                  const AppGap.large3(),
+                  SizedBox(
+                    width: 289,
+                    child: AppPasswordField(
+                      border: const OutlineInputBorder(),
+                      controller: _passwordController,
+                      hintText: loc(context).routerPassword,
+                      onChanged: (value) {
+                        setState(() {
+                          _shouldEnableLoginButton();
+                        });
+                      },
+                      errorText: _errorMessage,
                     ),
                   ),
-                const AppGap.large2(),
-                AppTextButton.noPadding(
-                  loc(context).forgotPassword,
-                  onTap: () {
-                    context.pushNamed(RouteNamed.localRouterRecovery);
-                  },
-                ),
-                const AppGap.large2(),
-                AppFilledButton(
-                  loc(context).login,
-                  onTap: _shouldEnableLoginButton()
-                      ? () {
-                          _localLogin();
-                        }
-                      : null,
-                ),
-              ],
+                  if (_passwordHint != null)
+                    Theme(
+                      data: Theme.of(context)
+                          .copyWith(dividerColor: Colors.transparent),
+                      child: SizedBox(
+                        width: 200,
+                        child: ExpansionTile(
+                          title: AppText.labelMedium(
+                            getAppLocalizations(context).showHint,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          tilePadding: EdgeInsets.zero,
+                          backgroundColor: Colors.transparent,
+                          trailing: const SizedBox(),
+                          expandedAlignment: Alignment.centerLeft,
+                          expandedCrossAxisAlignment: CrossAxisAlignment.start,
+                          children: [AppText.bodySmall(_passwordHint!)],
+                        ),
+                      ),
+                    ),
+                  const AppGap.large3(),
+                  AppTextButton.noPadding(
+                    loc(context).forgotPassword,
+                    onTap: () {
+                      context.pushNamed(RouteNamed.localRouterRecovery);
+                    },
+                  ),
+                  const AppGap.large3(),
+                  AppFilledButton(
+                    loc(context).login,
+                    onTap: _shouldEnableLoginButton()
+                        ? () {
+                            _localLogin();
+                          }
+                        : null,
+                  ),
+                ],
+              ),
             ),
           ),
         ),

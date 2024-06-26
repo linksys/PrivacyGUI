@@ -71,11 +71,12 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
-              width: 280,
+              width: 3.col,
               child: infoTab(state),
             ),
-            const AppGap.medium(),
-            Expanded(
+            const AppGap.gutter(),
+            SizedBox(
+                width: 9.col,
                 child: deviceTab(
                     state, constraint.maxHeight - kDefaultToolbarHeight))
           ],
@@ -121,7 +122,9 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
       children: [
         const AppGap.small2(),
         _avatarCard(state),
+        const AppGap.medium(),
         _detailSection(state),
+        const AppGap.medium(),
         _lightCard(state),
         const Spacer(),
       ],

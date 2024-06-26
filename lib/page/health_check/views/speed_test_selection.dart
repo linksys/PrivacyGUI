@@ -28,21 +28,20 @@ class SpeedTestSelectionView extends ConsumerWidget {
     return StyledAppPageView(
       title: loc(context).speedTest,
       child: AppBasicLayout(
-          content: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppText.bodyMedium(loc(context).speedTestDesc),
-          const AppGap.large2(),
-          Container(
-            constraints: const BoxConstraints(maxWidth: 430),
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          content: SizedBox(
+        width: 6.col,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppText.bodyMedium(loc(context).speedTestDesc),
+            const AppGap.large3(),
+            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               _createInternetToRouterCard(context, isSpeedCheckSupported),
               _createInternetToDeviceCard(context, isBehindRouter),
-            ]),
-          )
-        ],
+            ])
+          ],
+        ),
       )),
     );
   }
@@ -69,7 +68,7 @@ class SpeedTestSelectionView extends ConsumerWidget {
                 AppText.bodyLarge(loc(context).speedTestInternetToRouter),
                 const AppGap.medium(),
                 AppText.bodySmall(loc(context).speedTestInternetToRouterDesc),
-                const AppGap.large2(),
+                const AppGap.large3(),
                 SvgPicture(
                   CustomTheme.of(context).images.internetToRouter,
                   width: 192,
@@ -105,7 +104,7 @@ class SpeedTestSelectionView extends ConsumerWidget {
                 AppText.bodyLarge(loc(context).speedTestInternetToDevice),
                 const AppGap.medium(),
                 AppText.bodySmall(loc(context).speedTestInternetToDeviceDesc),
-                const AppGap.large2(),
+                const AppGap.large3(),
                 SvgPicture(
                   CustomTheme.of(context).images.internetToDevice,
                   width: 192,

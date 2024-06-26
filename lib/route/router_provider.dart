@@ -66,9 +66,11 @@ part 'route_otp.dart';
 part 'route_pnp.dart';
 part 'route_add_nodes.dart';
 
+final routerKey = GlobalKey<NavigatorState>();
 final routerProvider = Provider<GoRouter>((ref) {
   final router = RouterNotifier(ref);
   return GoRouter(
+    navigatorKey: routerKey,
     refreshListenable: router,
     observers: [ref.read(routerLoggerProvider)],
     initialLocation: '/',
@@ -80,8 +82,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: RouteNamed.prepareDashboard,
         path: RoutePath.prepareDashboard,
         config: LinksysRouteConfig(
-          pageWidth: FullPageWidth(),
-          pageAlignment: CrossAxisAlignment.center,
+          column: ColumnGrid(column: 4, centered: true),
         ),
         builder: (context, state) => const PrepareDashboardView(),
       ),
@@ -90,7 +91,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: RoutePath.selectNetwork,
         config: const LinksysRouteConfig(
           noNaviRail: true,
-          pageAlignment: CrossAxisAlignment.center,
         ),
         builder: (context, state) => const SelectNetworkView(),
       ),

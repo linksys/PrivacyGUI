@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -17,7 +16,6 @@ import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
-import 'package:privacygui_widgets/widgets/fab/expandable_fab.dart';
 
 class FilteredDevicesView extends ArgumentsConsumerStatefulView {
   const FilteredDevicesView({super.key, super.args});
@@ -91,6 +89,7 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
                     }
                   : null,
             ),
+            const AppGap.medium(),
             AppListCard(
               title: AppText.labelLarge(loc(context).manuallyAddDevice),
               trailing: !_isEdit ? const Icon(LinksysIcons.add) : null,
@@ -144,76 +143,59 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
           )
         : SizedBox(
             height: 76.0 * state.macAddresses.length,
-            child: ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: state.macAddresses.length,
-                itemBuilder: (context, index) {
-                  final device = state.macAddresses[index];
-                  return SizedBox(
-                    height: 76,
-                    child: AppCard(
-                      color: _selectedMACs.contains(device)
-                          ? Theme.of(context).colorScheme.primaryContainer
-                          : null,
-                      borderColor: _selectedMACs.contains(device)
-                          ? Theme.of(context).colorScheme.primary
-                          : null,
-                      onTap: _isEdit
-                          ? () {
-                              setState(() {
-                                if (_selectedMACs.contains(device)) {
-                                  _selectedMACs.remove(device);
-                                } else {
-                                  _selectedMACs.add(device);
-                                }
-                              });
-                            }
-                          : null,
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            if (_isEdit)
-                              IgnorePointer(
-                                child: AppCheckbox(
-                                  value: _selectedMACs.contains(device),
-                                  onChanged: (value) {},
-                                ),
+            child: ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: state.macAddresses.length,
+              itemBuilder: (context, index) {
+                final device = state.macAddresses[index];
+                return SizedBox(
+                  height: 76,
+                  child: AppCard(
+                    color: _selectedMACs.contains(device)
+                        ? Theme.of(context).colorScheme.primaryContainer
+                        : null,
+                    borderColor: _selectedMACs.contains(device)
+                        ? Theme.of(context).colorScheme.primary
+                        : null,
+                    onTap: _isEdit
+                        ? () {
+                            setState(() {
+                              if (_selectedMACs.contains(device)) {
+                                _selectedMACs.remove(device);
+                              } else {
+                                _selectedMACs.add(device);
+                              }
+                            });
+                          }
+                        : null,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          if (_isEdit)
+                            IgnorePointer(
+                              child: AppCheckbox(
+                                value: _selectedMACs.contains(device),
+                                onChanged: (value) {},
                               ),
-                            Expanded(child: AppText.labelLarge(device)),
-                            // AppIconButton(
-                            //   icon: LinksysIcons.delete,
-                            //   color: Theme.of(context).colorScheme.error,
-                            //   onTap: () {
-                            //     ref
-                            //         .read(macFilteringProvider.notifier)
-                            //         .removeSelection([device]);
-                            //   },
-                            // ),
-                            // ExpandableFab(
-                            //   key: ObjectKey(device),
-                            //   distance: 48,
-                            //   icon: LinksysIcons.delete,
-                            //   iconColor: Theme.of(context).colorScheme.error,
-                            //   children: [
-                            //     AppIconButton.filled(
-                            //       icon: LinksysIcons.check,
-                            //       onTap: () {
-                            //         ref
-                            //             .read(macFilteringProvider.notifier)
-                            //             .removeSelection([device]);
-                            //       },
-                            //     ),
-                            //   ],
-                            // ),
-                          ],
-                        ),
+                            ),
+                          Expanded(child: AppText.labelLarge(device)),
+                        ],
                       ),
                     ),
-                  );
-                }),
+                  ),
+                );
+              },
+              separatorBuilder: (BuildContext context, int index) {
+                if (index != state.macAddresses.length - 1) {
+                  return const AppGap.medium();
+                } else {
+                  return const Center();
+                }
+              },
+            ),
           );
   }
 

@@ -158,7 +158,7 @@ class _CallLogCardState extends State<CallLogCard> {
                 _getDateString(ticket.createdAt),
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
-              const AppGap.large1(),
+              const AppGap.large2(),
               const Icon(LinksysIcons.confirmationNumber),
               const AppGap.small2(),
               AppText.bodyMedium(
@@ -169,13 +169,13 @@ class _CallLogCardState extends State<CallLogCard> {
               _getStatusWidget(ticket.status)
             ],
           ),
-          const AppGap.large1(),
+          const AppGap.large2(),
           AppText.bodyMedium(
             ticket.description,
             maxLines: expanded ? 2000 : 2,
             overflow: TextOverflow.ellipsis,
           ),
-          const AppGap.large1(),
+          const AppGap.large2(),
           Row(
             children: [
               AppIconButton(

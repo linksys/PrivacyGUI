@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/page/base_page_view.dart';
 
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -118,6 +120,7 @@ class StyledAppPageView extends ConsumerWidget {
   final ScrollController? controller;
   final ({bool left, bool top, bool right, bool bottom}) enableSafeArea;
   final PageBottomBar? bottomBar;
+  final bool menuOnRight;
 
   const StyledAppPageView({
     super.key,
@@ -140,10 +143,23 @@ class StyledAppPageView extends ConsumerWidget {
     this.controller,
     this.enableSafeArea = (left: true, top: true, right: true, bottom: true),
     this.bottomBar,
+    this.menuOnRight = false,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final views = [
+      if (!ResponsiveLayout.isMobileLayout(context) && hasMenu()) ...[
+        SizedBox(
+          width: 3.col,
+          child: AppCard(
+            child: _createMenuWidget(context),
+          ),
+        ),
+        const AppGap.gutter(),
+      ],
+      Expanded(child: child),
+    ];
     return Stack(
       children: [
         Padding(
@@ -165,15 +181,7 @@ class StyledAppPageView extends ConsumerWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (!ResponsiveLayout.isMobileLayout(context) && hasMenu()) ...[
-                  AppCard(
-                    child: _createMenuWidget(context, 205),
-                  ),
-                  const AppGap.small3(),
-                ],
-                Expanded(child: child),
-              ],
+              children: menuOnRight ? views.reversed.toList() : views,
             ),
           ),
         ),
@@ -223,6 +231,7 @@ class StyledAppPageView extends ConsumerWidget {
                   })
               : null,
           showBack: backState != StyledBackState.none,
+          trailing: _buildActions(context),
         );
       case AppBarStyle.none:
         return null;
@@ -232,7 +241,7 @@ class StyledAppPageView extends ConsumerWidget {
   List<Widget>? _buildActions(BuildContext context) {
     return !hasMenu() || !ResponsiveLayout.isMobileLayout(context)
         ? actions
-        : ((actions ?? [])..add(_createMenuAction(context)));
+        : [_createMenuAction(context), ...(actions ?? [])];
   }
 
   Widget _bottomWidget(BuildContext context) {
@@ -316,14 +325,17 @@ class StyledAppPageView extends ConsumerWidget {
   }
 
   Widget _createMenuAction(BuildContext context) {
-    return AppIconButton.noPadding(
+    return AppIconButton(
       icon: menuIcon ?? LinksysIcons.moreHoriz,
       onTap: () {
         showModalBottomSheet(
           context: context,
           isScrollControlled: true,
           useRootNavigator: true,
-          builder: (context) => _createMenuWidget(context),
+          builder: (context) => Container(
+              padding: const EdgeInsets.all(Spacing.large2),
+              width: double.infinity,
+              child: _createMenuWidget(context)),
         );
       },
     );

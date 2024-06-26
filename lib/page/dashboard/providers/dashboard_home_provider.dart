@@ -113,17 +113,6 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
     );
   }
 
-  int _getNumberOfAvailableWifi(DashboardManagerState state) {
-    var count = 0;
-    var ssids = <String>{};
-    for (final radio in state.mainRadios) {
-      ssids.add(radio.settings.ssid);
-    }
-    count += ssids.length;
-    count += state.isGuestNetworkEnabled ? 1 : 0;
-    return count;
-  }
-
   ({String value, String unit}) _formatHealthCheckResult({required int speed}) {
     if (speed == 0) {
       return (

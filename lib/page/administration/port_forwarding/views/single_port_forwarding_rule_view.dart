@@ -132,7 +132,7 @@ class _AddRuleContentViewState
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const AppGap.large1(),
+            const AppGap.large2(),
             if (state.mode == RuleMode.editing)
               ..._buildEditContents(state)
             else
@@ -160,7 +160,7 @@ class _AddRuleContentViewState
           },
         ),
       ),
-      const AppGap.large1(),
+      const AppGap.large2(),
       ...buildInputForms(),
     ];
   }
@@ -172,7 +172,7 @@ class _AddRuleContentViewState
           headerText: loc(context).ruleName,
           border: const OutlineInputBorder(),
           controller: _ruleNameController),
-      const AppGap.large1(),
+      const AppGap.large2(),
       AppTextField.minMaxNumber(
         headerText: loc(context).externalPort,
         inputType: TextInputType.number,
@@ -181,7 +181,7 @@ class _AddRuleContentViewState
         max: 65535,
         min: 0,
       ),
-      const AppGap.large1(),
+      const AppGap.large2(),
       AppTextField.minMaxNumber(
         headerText: loc(context).internalPort,
         inputType: TextInputType.number,
@@ -190,7 +190,7 @@ class _AddRuleContentViewState
         max: 65535,
         min: 0,
       ),
-      const AppGap.large1(),
+      const AppGap.large2(),
       AppText.labelMedium(loc(context).ipAddress),
       const AppGap.medium(),
       AppIPFormField(
@@ -201,7 +201,7 @@ class _AddRuleContentViewState
         octet3ReadOnly: submaskToken[2] == '255',
         octet4ReadOnly: submaskToken[3] == '255',
       ),
-      const AppGap.large1(),
+      const AppGap.large2(),
       AppTextButton(
         loc(context).selectDevices,
         onTap: () async {
@@ -215,7 +215,7 @@ class _AddRuleContentViewState
           }
         },
       ),
-      const AppGap.large1(),
+      const AppGap.large2(),
       AppListCard(
         title: AppText.labelLarge(loc(context).protocol),
         description: AppText.bodyLarge(getProtocolTitle(context, _protocol)),

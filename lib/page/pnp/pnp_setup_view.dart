@@ -128,7 +128,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         content: LayoutBuilder(builder: (context, constraints) {
           return Padding(
-            padding: const EdgeInsets.symmetric(vertical: Spacing.large3),
+            padding: const EdgeInsets.symmetric(vertical: Spacing.large4),
             child: PnpStepper(
               steps: steps,
               stepperType: StepperType.horizontal,
@@ -201,7 +201,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
               const AppGap.medium(),
               if (_needToReconnect)
                 AppText.bodyMedium(loc(context).pnpWiFiReadyConnectToNewWiFi),
-              const AppGap.large3(),
+              const AppGap.large4(),
               AppFilledButton(
                 loc(context).done,
                 onTap: () {
@@ -235,7 +235,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
               ),
               const AppGap.medium(),
               AppText.headlineSmall(loc(context).pnpReconnectWiFi),
-              const AppGap.large3(),
+              const AppGap.large4(),
               AppFilledButton(
                 loc(context).next,
                 onTap: () {
@@ -288,8 +288,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
         _setupStep = _PnpSetupStep.config;
       });
       final err = error is ExceptionSavingChanges ? error.error : error;
-      showSimpleSnackBar(
-          context, 'Unexceped error! <$err}>');
+      showSimpleSnackBar(context, 'Unexceped error! <$err}>');
     }, test: (error) => error is ExceptionSavingChanges).whenComplete(() async {
       logger.d('[pnp] Save complete, $isUnconfigured, $_setupStep');
 

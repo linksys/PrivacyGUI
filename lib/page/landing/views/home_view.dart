@@ -126,7 +126,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
   List<Widget> showDebugButton() {
     if (_isOpenDebug) {
       return [
-        const AppGap.large1(),
+        const AppGap.large2(),
         AppTextButton(
           'Debug Tools',
           onTap: () {

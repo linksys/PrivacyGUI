@@ -57,10 +57,10 @@ class _PortRangeForwardingContentViewState
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const AppGap.large1(),
+            const AppGap.large2(),
             AppText.bodyLarge(loc(context).portRangeForwardingDescription),
             if (!_notifier.isExceedMax()) ...[
-              const AppGap.large1(),
+              const AppGap.large2(),
               AddRuleCard(
                 onTap: () {
                   context.pushNamed<bool?>(RouteNamed.portRangeForwardingRule,
@@ -72,14 +72,15 @@ class _PortRangeForwardingContentViewState
                 },
               ),
             ],
-            const AppGap.large1(),
+            const AppGap.large2(),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 AppText.labelLarge(loc(context).rules),
                 const AppGap.medium(),
                 if (state.rules.isNotEmpty)
-                  ...state.rules.map(
+                  ...state.rules
+                      .map(
                     (e) => RuleItemCard(
                       title: e.description,
                       isEnabled: e.isEnabled,
@@ -96,7 +97,11 @@ class _PortRangeForwardingContentViewState
                         });
                       },
                     ),
-                  ),
+                  )
+                      .expand((element) sync* {
+                    yield element;
+                    yield const AppGap.medium();
+                  }),
                 if (state.rules.isEmpty) const EmptyRuleCard(),
               ],
             ),

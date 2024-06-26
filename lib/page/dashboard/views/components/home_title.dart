@@ -59,7 +59,7 @@ class DashboardHomeTitle extends ConsumerWidget {
                             ? Theme.of(context).colorSchemeExt.green
                             : Theme.of(context).colorScheme.surfaceVariant,
                       ),
-                      const AppGap.large1(),
+                      const AppGap.large2(),
                       AppText.titleLarge(
                         isOnline
                             ? loc(context).internetOnline

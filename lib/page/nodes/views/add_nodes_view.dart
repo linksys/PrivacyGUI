@@ -133,7 +133,7 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
               ref.read(addNodesProvider.notifier).startAutoOnboarding();
             },
           ),
-          const AppGap.large2(),
+          const AppGap.large3(),
           AppFilledButton(
             loc(context).next,
             onTap: () {
@@ -162,7 +162,7 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
           AppStyledText.bold(loc(context).addNodesDesc,
               defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
               tags: const ['b']),
-          const AppGap.large1(),
+          const AppGap.large2(),
           SvgPicture(CustomTheme.of(context).images.imgAddNodes),
           LightInfoTile(
               color: ledBlue,
@@ -176,7 +176,7 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
               _showLightDifferentColorModal();
             },
           ),
-          const AppGap.large2(),
+          const AppGap.large3(),
           AppFilledButton(
             loc(context).next,
             onTap: () {

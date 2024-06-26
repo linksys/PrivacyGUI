@@ -51,8 +51,8 @@ class _PnpLightOffViewState extends ConsumerState<PnpLightsOffView> {
                     CustomTheme.of(context).images.modemDevice,
                     fit: BoxFit.fitWidth,
                   ),
-                  const AppGap.large2(),
                   const AppGap.large3(),
+                  const AppGap.large4(),
                   Row(
                     children: [
                       AppTextButton(
@@ -89,7 +89,7 @@ class _PnpLightOffViewState extends ConsumerState<PnpLightsOffView> {
 
   Widget _bottomSheetContent() {
     return Padding(
-      padding: const EdgeInsets.all(Spacing.large1),
+      padding: const EdgeInsets.all(Spacing.large2),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -97,11 +97,11 @@ class _PnpLightOffViewState extends ConsumerState<PnpLightsOffView> {
           const AppText.headlineSmall(
             'You may have a battery-powered modem that requires extra steps',
           ),
-          const AppGap.large1(),
+          const AppGap.large2(),
           const AppText.bodyMedium(
             'Your modem may have a backup battery. To restart, DO NOT remove the battery. Follow these instructions:',
           ),
-          const AppGap.large1(),
+          const AppGap.large2(),
           AppBulletList(style: AppBulletStyle.number, children: [
             const AppText.bodyMedium(
               'Find the modem\'s power, reboot or restart button. Press and hold it. Do not press RESET as it may restore the modem to factory settings. If your modem does not have a power, reboot or restart button, contact your Internet Service Provider for guidance.',

@@ -738,5 +738,6 @@
   "shareWiFi": "Share WiFi",
   "remove": "Remove",
   "faqLookingFor": "Can’t find what you’re looking for?",
-  "faqVisitLinksysSupport": "Visit Linksys Support"
+  "faqVisitLinksysSupport": "Visit Linksys Support",
+  "editDevices": "Edit devices"
 }

@@ -10,7 +10,6 @@ import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
 import 'package:privacy_gui/page/dashboard/views/components/shimmer.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/guest_wif_provider.dart';
-import 'package:privacy_gui/page/wifi_settings/views/wifi_share_detail_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -30,7 +29,7 @@ class DashboardWiFiGrid extends ConsumerWidget {
 
     final crossAxisCount =
         (ResponsiveLayout.isMobileLayout(context) || !isHorizontal) ? 1 : 2;
-    const mainSpacing = 8.0;
+    final mainSpacing = ResponsiveLayout.columnPadding(context);
     const itemHeight = 160.0;
     final mainAxisCount = (items.length / crossAxisCount);
     return SizedBox(
@@ -42,7 +41,7 @@ class DashboardWiFiGrid extends ConsumerWidget {
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: crossAxisCount,
           mainAxisSpacing: mainSpacing,
-          crossAxisSpacing: 4,
+          crossAxisSpacing: mainSpacing,
           // childAspectRatio: (3 / 2),
           mainAxisExtent: itemHeight,
         ),
@@ -117,9 +116,9 @@ class DashboardWiFiGrid extends ConsumerWidget {
               ),
             ],
           ),
-          const AppGap.medium(),
+          // const AppGap.medium(),
           AppText.titleMedium(item.ssid),
-          const AppGap.medium(),
+          const Spacer(),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [

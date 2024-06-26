@@ -91,7 +91,7 @@ class _DynDNSFormState extends State<DynDNSForm> {
         Row(
           children: [
             AppText.labelMedium('System:'),
-            const AppGap.large2(),
+            const AppGap.large3(),
             AppDropdownMenu(
               items: DynDDNSSystem.values,
               label: (item) => item.name.capitalizeWords(),
@@ -118,7 +118,7 @@ class _DynDNSFormState extends State<DynDNSForm> {
         Row(
           children: [
             AppText.labelMedium('Backup MX:'),
-            const AppGap.large2(),
+            const AppGap.large3(),
             AppCheckbox(
               value: _isBackup,
               text: 'Enabled',
@@ -140,7 +140,7 @@ class _DynDNSFormState extends State<DynDNSForm> {
         Row(
           children: [
             AppText.labelMedium('Wildcard:'),
-            const AppGap.large2(),
+            const AppGap.large3(),
             AppCheckbox(
               value: _wildcard,
               text: 'Enabled',

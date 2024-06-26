@@ -51,8 +51,8 @@ class _PnpLightOffViewState extends ConsumerState<PnpModemLightsOffView> {
                     CustomTheme.of(context).images.modemDevice,
                     fit: BoxFit.fitWidth,
                   ),
-                  const AppGap.large2(),
                   const AppGap.large3(),
+                  const AppGap.large4(),
                   Row(
                     children: [
                       Flexible(
@@ -91,7 +91,7 @@ class _PnpLightOffViewState extends ConsumerState<PnpModemLightsOffView> {
 
   Widget _bottomSheetContent() {
     return Padding(
-      padding: const EdgeInsets.all(Spacing.large1),
+      padding: const EdgeInsets.all(Spacing.large2),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -99,11 +99,11 @@ class _PnpLightOffViewState extends ConsumerState<PnpModemLightsOffView> {
           AppText.headlineSmall(
             loc(context).pnpModemLightsOffTipTitle,
           ),
-          const AppGap.large1(),
+          const AppGap.large2(),
           AppText.bodyMedium(
             loc(context).pnpModemLightsOffTipDesc,
           ),
-          const AppGap.large1(),
+          const AppGap.large2(),
           AppBulletList(style: AppBulletStyle.number, children: [
             AppText.bodyMedium(
               loc(context).pnpModemLightsOffTipStep1,

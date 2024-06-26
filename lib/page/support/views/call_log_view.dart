@@ -59,7 +59,7 @@ class _CallLogViewState extends ConsumerState<CallLogView> {
           LinksysIcons.phoneDisabled,
           size: 66,
         ),
-        const AppGap.large2(),
+        const AppGap.large3(),
         AppText.bodyLarge(loc(context).noCallbacksDescription),
       ],
     );

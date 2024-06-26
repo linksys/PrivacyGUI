@@ -7,6 +7,7 @@ import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/util/string_mapping.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
+import 'package:privacygui_widgets/widgets/gap/gap.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
 class ConnectionTypeSelectionView extends ArgumentsConsumerStatefulView {
@@ -60,6 +61,9 @@ class _ConnectionTypeSelectionViewState
                         },
                 ),
               );
+            }).expand<Widget>((element) sync* {
+              yield element;
+              yield const AppGap.medium();
             }).toList(),
           ],
         ),

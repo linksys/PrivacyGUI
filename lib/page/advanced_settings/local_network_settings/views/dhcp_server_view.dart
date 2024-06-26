@@ -104,7 +104,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
                 },
               ),
             ),
-            const AppGap.large2(),
+            const AppGap.large3(),
             Visibility(
               visible: state.isDHCPEnabled,
               child: dhcpSettings(),
@@ -163,7 +163,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
             });
           },
         ),
-        const AppGap.large2(),
+        const AppGap.large3(),
         AppTextField.minMaxNumber(
           headerText: loc(context).maximumNumberOfUsers,
           descriptionText: '1 ${loc(context).to} ${state.maxUserLimit}',
@@ -188,9 +188,9 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
             });
           },
         ),
-        const AppGap.large2(),
+        const AppGap.large3(),
         _ipAddressRange(),
-        const AppGap.large2(),
+        const AppGap.large3(),
         AppTextField.minMaxNumber(
           headerText: loc(context).clientLeaseTime,
           min: state.minAllowDHCPLeaseMinutes,
@@ -216,7 +216,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
             });
           },
         ),
-        const AppGap.large2(),
+        const AppGap.large3(),
         _dnsAndWinsInput(),
       ],
     );

@@ -168,7 +168,7 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
                 width: 60,
                 height: 60,
               ),
-              const AppGap.large1(),
+              const AppGap.large2(),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
