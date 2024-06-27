@@ -264,7 +264,7 @@ class AppMenuCard extends StatelessWidget {
               child: AppText.titleSmall(
                 title ?? '',
                 maxLines: 1,
-                overflow: TextOverflow.fade,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           if (description != null)
