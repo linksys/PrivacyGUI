@@ -10,13 +10,11 @@ import 'package:privacy_gui/page/components/shortcuts/spinners.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/topology/providers/topology_provider.dart';
-import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/buttons/button.dart';
-import 'package:privacygui_widgets/widgets/card/menu_card.dart';
+import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 
@@ -66,15 +64,14 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
   Widget _buildMenuGridView(List<AppSectionItemData> items) {
     return GridView.builder(
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: ResponsiveLayout.isOverExtraLargeLayout(context)
-            ? 3
-            : ResponsiveLayout.isOverMedimumLayout(context)
-                ? 2
-                : 1,
-        mainAxisSpacing: Spacing.medium,
+        crossAxisCount: ResponsiveLayout.isOverMedimumLayout(context) ? 3 : 1,
+        mainAxisSpacing: ResponsiveLayout.isOverMedimumLayout(context)
+            ? Spacing.medium
+            : Spacing.small2,
         crossAxisSpacing: ResponsiveLayout.columnPadding(context),
-        childAspectRatio: (205 / 125),
-        mainAxisExtent: 205,
+        childAspectRatio: (205 / 152),
+        mainAxisExtent:
+            ResponsiveLayout.isOverMedimumLayout(context) ? 152 : 112,
       ),
       physics: const ScrollPhysics(),
       itemCount: items.length,
@@ -94,8 +91,8 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
   }
 
   List<AppSectionItemData> createMenuItems() {
-    final isCloudLogin =
-        ref.watch(authProvider).value?.loginType == LoginType.remote;
+    // final isCloudLogin =
+    //     ref.watch(authProvider).value?.loginType == LoginType.remote;
     return [
       AppSectionItemData(
           title: loc(context).wifi,
@@ -218,6 +215,71 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
           },
         )
       ],
+    );
+  }
+}
+
+class AppMenuCard extends StatelessWidget {
+  const AppMenuCard({
+    super.key,
+    this.iconData,
+    this.title,
+    this.description,
+    this.onTap,
+    this.color,
+    this.borderColor,
+  });
+
+  final IconData? iconData;
+  final String? title;
+  final String? description;
+  final VoidCallback? onTap;
+  final Color? color;
+  final Color? borderColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      onTap: onTap,
+      color: color,
+      borderColor: borderColor,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Tooltip(
+            message: title ?? '',
+            waitDuration: const Duration(milliseconds: 500),
+            child: FittedBox(
+              fit: BoxFit.fill,
+              child: Icon(
+                iconData,
+                size: 24,
+              ),
+            ),
+          ),
+          if (title != null)
+            Padding(
+              padding: const EdgeInsets.only(top: Spacing.small2),
+              child: AppText.titleSmall(
+                title ?? '',
+                maxLines: 1,
+                overflow: TextOverflow.fade,
+              ),
+            ),
+          if (description != null)
+            Padding(
+              padding: const EdgeInsets.only(top: Spacing.small1),
+              child: AppText.bodyMedium(
+                description ?? '',
+                overflow: TextOverflow.ellipsis,
+                maxLines: ResponsiveLayout.isOverMedimumLayout(context) ? 3 : 1,
+                color:
+                    Theme.of(context).colorScheme.onBackground.withOpacity(0.5),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

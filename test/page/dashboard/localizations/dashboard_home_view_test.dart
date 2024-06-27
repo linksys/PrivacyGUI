@@ -7,7 +7,9 @@ import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_state.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
+import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/custom_theme.dart';
 
 import '../../../common/config.dart';
@@ -136,6 +138,120 @@ void main() async {
             CustomTheme.of(context).images.devices.routerWhw03, context);
         await precacheImage(
             CustomTheme.of(context).images.devices.routerMr7500, context);
+        await tester.pumpAndSettle();
+      });
+    }, screens: responsiveDesktopScreens);
+
+    testLocalizations(
+        'Dashboard Home View - 4-ports mobile layout with speed check',
+        (tester, locale) async {
+      when(mockDashboardHomeNotifier.build()).thenReturn(
+          DashboardHomeState.fromMap(dashboardHomeStateData)
+              .copyWith(isHealthCheckSupported: true));
+      await tester.runAsync(() async {
+        await tester.pumpWidget(
+          testableRouteShellWidget(
+            child: const DashboardHomeView(),
+            locale: locale,
+            overrides: [
+              dashboardHomeProvider
+                  .overrideWith(() => mockDashboardHomeNotifier),
+              firmwareUpdateProvider
+                  .overrideWith(() => mockFirmwareUpdateNotifier),
+              deviceManagerProvider
+                  .overrideWith(() => mockDeviceManagerNotifier),
+              nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+        final context = tester.element(find.byType(DashboardHomeView));
+        await precacheImage(
+            CustomTheme.of(context).images.devices.routerMx6200, context);
+        await precacheImage(
+            CustomTheme.of(context).images.devices.routerWhw03, context);
+        await precacheImage(
+            CustomTheme.of(context).images.devices.routerMr7500, context);
+        await tester.pumpAndSettle();
+      });
+    }, screens: responsiveMobileScreens);
+
+    testLocalizations(
+        'Dashboard Home View - 4-ports horizontal layout with speed check',
+        (tester, locale) async {
+      when(mockDashboardHomeNotifier.build()).thenReturn(
+          DashboardHomeState.fromMap(dashboardHomeStateData).copyWith(
+        isHorizontalLayout: true,
+        isHealthCheckSupported: true,
+      ));
+      await tester.runAsync(() async {
+        await tester.pumpWidget(
+          testableRouteShellWidget(
+            child: const DashboardHomeView(),
+            locale: locale,
+            overrides: [
+              dashboardHomeProvider
+                  .overrideWith(() => mockDashboardHomeNotifier),
+              firmwareUpdateProvider
+                  .overrideWith(() => mockFirmwareUpdateNotifier),
+              deviceManagerProvider
+                  .overrideWith(() => mockDeviceManagerNotifier),
+              nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(DashboardHomeView));
+        await precacheImage(
+            CustomTheme.of(context).images.devices.routerMx6200, context);
+        await precacheImage(
+            CustomTheme.of(context).images.devices.routerWhw03, context);
+        await precacheImage(
+            CustomTheme.of(context).images.devices.routerMr7500, context);
+        await tester.pumpAndSettle();
+      });
+    }, screens: responsiveDesktopScreens);
+
+    testLocalizations(
+        'Dashboard Home View - 4-ports vertical layout with speed check',
+        (tester, locale) async {
+      when(mockDashboardHomeNotifier.build()).thenReturn(
+          DashboardHomeState.fromMap(dashboardHomeStateData).copyWith(
+        isHorizontalLayout: false,
+        isHealthCheckSupported: true,
+      ));
+      await tester.runAsync(() async {
+        await tester.pumpWidget(
+          testableRouteShellWidget(
+            child: const DashboardHomeView(),
+            locale: locale,
+            overrides: [
+              dashboardHomeProvider
+                  .overrideWith(() => mockDashboardHomeNotifier),
+              firmwareUpdateProvider
+                  .overrideWith(() => mockFirmwareUpdateNotifier),
+              deviceManagerProvider
+                  .overrideWith(() => mockDeviceManagerNotifier),
+              nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(DashboardHomeView));
+        await precacheImage(
+            CustomTheme.of(context).images.devices.routerMx6200, context);
+        await precacheImage(
+            CustomTheme.of(context).images.devices.routerWhw03, context);
+        await precacheImage(
+            CustomTheme.of(context).images.devices.routerMr7500, context);
+        await tester.pumpAndSettle();
+        final speedCheckFinder = find.byKey(const ValueKey('speedCheck'));
+        await tester.scrollUntilVisible(speedCheckFinder, 10,
+            scrollable: find.descendant(
+                of: find.byType(StyledAppPageView),
+                matching: find.byType(Scrollable)).last);
         await tester.pumpAndSettle();
       });
     }, screens: responsiveDesktopScreens);
@@ -439,6 +555,117 @@ void main() async {
       when(mockDashboardHomeNotifier.build()).thenReturn(
           DashboardHomeState.fromMap(dashboardHomeStateData).copyWith(
               isHorizontalLayout: false, lanPortConnections: ["None", "None"]));
+      await tester.runAsync(() async {
+        await tester.pumpWidget(
+          testableRouteShellWidget(
+            child: const DashboardHomeView(),
+            locale: locale,
+            overrides: [
+              dashboardHomeProvider
+                  .overrideWith(() => mockDashboardHomeNotifier),
+              firmwareUpdateProvider
+                  .overrideWith(() => mockFirmwareUpdateNotifier),
+              deviceManagerProvider
+                  .overrideWith(() => mockDeviceManagerNotifier),
+              nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(DashboardHomeView));
+        await precacheImage(
+            CustomTheme.of(context).images.devices.routerMx6200, context);
+        await precacheImage(
+            CustomTheme.of(context).images.devices.routerWhw03, context);
+        await precacheImage(
+            CustomTheme.of(context).images.devices.routerMr7500, context);
+        await tester.pumpAndSettle();
+      });
+    }, screens: responsiveDesktopScreens);
+
+    testLocalizations(
+        'Dashboard Home View - 2-ports mobile layout with speed check',
+        (tester, locale) async {
+      when(mockDashboardHomeNotifier.build()).thenReturn(
+          DashboardHomeState.fromMap(dashboardHomeStateData).copyWith(
+        lanPortConnections: ["None", "None"],
+        isHealthCheckSupported: true,
+      ));
+      await tester.runAsync(() async {
+        await tester.pumpWidget(
+          testableRouteShellWidget(
+            child: const DashboardHomeView(),
+            locale: locale,
+            overrides: [
+              dashboardHomeProvider
+                  .overrideWith(() => mockDashboardHomeNotifier),
+              firmwareUpdateProvider
+                  .overrideWith(() => mockFirmwareUpdateNotifier),
+              deviceManagerProvider
+                  .overrideWith(() => mockDeviceManagerNotifier),
+              nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(DashboardHomeView));
+        await precacheImage(
+            CustomTheme.of(context).images.devices.routerMx6200, context);
+        await precacheImage(
+            CustomTheme.of(context).images.devices.routerWhw03, context);
+        await precacheImage(
+            CustomTheme.of(context).images.devices.routerMr7500, context);
+        await tester.pumpAndSettle();
+      });
+    }, screens: responsiveMobileScreens);
+
+    testLocalizations(
+        'Dashboard Home View - 2-ports horizontal layout with speed check',
+        (tester, locale) async {
+      when(mockDashboardHomeNotifier.build()).thenReturn(
+          DashboardHomeState.fromMap(dashboardHomeStateData).copyWith(
+              isHorizontalLayout: true,
+              lanPortConnections: ["None", "None"],
+              isHealthCheckSupported: true));
+      await tester.runAsync(() async {
+        await tester.pumpWidget(
+          testableRouteShellWidget(
+            child: const DashboardHomeView(),
+            locale: locale,
+            overrides: [
+              dashboardHomeProvider
+                  .overrideWith(() => mockDashboardHomeNotifier),
+              firmwareUpdateProvider
+                  .overrideWith(() => mockFirmwareUpdateNotifier),
+              deviceManagerProvider
+                  .overrideWith(() => mockDeviceManagerNotifier),
+              nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(DashboardHomeView));
+        await precacheImage(
+            CustomTheme.of(context).images.devices.routerMx6200, context);
+        await precacheImage(
+            CustomTheme.of(context).images.devices.routerWhw03, context);
+        await precacheImage(
+            CustomTheme.of(context).images.devices.routerMr7500, context);
+        await tester.pumpAndSettle();
+      });
+    }, screens: responsiveDesktopScreens);
+
+    testLocalizations(
+        'Dashboard Home View - 2-ports vertical layout with speed check',
+        (tester, locale) async {
+      when(mockDashboardHomeNotifier.build()).thenReturn(
+          DashboardHomeState.fromMap(dashboardHomeStateData).copyWith(
+              isHorizontalLayout: false,
+              lanPortConnections: ["None", "None"],
+              isHealthCheckSupported: true));
       await tester.runAsync(() async {
         await tester.pumpWidget(
           testableRouteShellWidget(
