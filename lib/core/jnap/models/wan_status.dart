@@ -52,21 +52,22 @@ class RouterWANStatus extends Equatable {
     );
   }
 
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toMap() {
     return {
       'macAddress': macAddress,
       'detectedWANType': detectedWANType,
       'wanStatus': wanStatus,
       'wanIPv6Status': wanIPv6Status,
-      'wanConnection': wanConnection?.toJson(),
-      'wanIPv6Connection': wanIPv6Connection?.toJson(),
+      'wanConnection': wanConnection?.toMap(),
+      'wanIPv6Connection': wanIPv6Connection?.toMap(),
       'supportedWANTypes': supportedWANTypes,
       'supportedIPv6WANTypes': supportedIPv6WANTypes,
-      'supportedWANCombinations': supportedWANCombinations,
+      'supportedWANCombinations':
+          supportedWANCombinations.map((e) => e.toMap()).toList(),
     }..removeWhere((key, value) => value == null);
   }
 
-  factory RouterWANStatus.fromJson(Map<String, dynamic> json) {
+  factory RouterWANStatus.fromMap(Map<String, dynamic> json) {
     return RouterWANStatus(
       macAddress: json['macAddress'],
       detectedWANType: json['detectedWANType'],
@@ -74,10 +75,10 @@ class RouterWANStatus extends Equatable {
       wanIPv6Status: json['wanIPv6Status'],
       wanConnection: json['wanConnection'] == null
           ? null
-          : WANConnectionInfo.fromJson(json['wanConnection']),
+          : WANConnectionInfo.fromMap(json['wanConnection']),
       wanIPv6Connection: json['wanIPv6Connection'] == null
           ? null
-          : WANIPv6ConnectionInfo.fromJson(json['wanIPv6Connection']),
+          : WANIPv6ConnectionInfo.fromMap(json['wanIPv6Connection']),
       supportedWANTypes: List.from(json['supportedWANTypes']),
       supportedIPv6WANTypes: json['supportedIPv6WANTypes'] == null
           ? []
@@ -89,6 +90,11 @@ class RouterWANStatus extends Equatable {
               .toList(),
     );
   }
+
+  String toJson() => json.encode(toMap());
+
+  factory RouterWANStatus.fromJson(String source) =>
+      RouterWANStatus.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
   List<Object?> get props => [
@@ -164,7 +170,7 @@ class WANConnectionInfo extends Equatable {
     );
   }
 
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toMap() {
     return {
       'wanType': wanType,
       'ipAddress': ipAddress,
@@ -178,7 +184,7 @@ class WANConnectionInfo extends Equatable {
     }..removeWhere((key, value) => value == null);
   }
 
-  factory WANConnectionInfo.fromJson(Map<String, dynamic> json) {
+  factory WANConnectionInfo.fromMap(Map<String, dynamic> json) {
     return WANConnectionInfo(
       wanType: json['wanType'],
       ipAddress: json['ipAddress'],
@@ -191,6 +197,11 @@ class WANConnectionInfo extends Equatable {
       dnsServer3: json['dnsServer3'],
     );
   }
+
+  String toJson() => json.encode(toMap());
+
+  factory WANConnectionInfo.fromJson(String source) =>
+      WANConnectionInfo.fromMap(json.decode(source) as Map<String, dynamic>);
 }
 
 class WANIPv6ConnectionInfo extends Equatable {
@@ -215,21 +226,27 @@ class WANIPv6ConnectionInfo extends Equatable {
     );
   }
 
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toMap() {
     return {
       'wanType': wanType,
       'networkInfo': networkInfo,
     }..removeWhere((key, value) => value == null);
   }
 
-  factory WANIPv6ConnectionInfo.fromJson(Map<String, dynamic> json) {
+  factory WANIPv6ConnectionInfo.fromMap(Map<String, dynamic> json) {
     return WANIPv6ConnectionInfo(
       wanType: json['wanType'],
       networkInfo: json['networkInfo'] == null
           ? null
-          : IPv6NetworkInfo.fromJson(json['networkInfo']),
+          : IPv6NetworkInfo.fromMap(json['networkInfo']),
     );
   }
+
+  String toJson() => json.encode(toMap());
+
+  factory WANIPv6ConnectionInfo.fromJson(String source) =>
+      WANIPv6ConnectionInfo.fromMap(
+          json.decode(source) as Map<String, dynamic>);
 }
 
 class IPv6NetworkInfo extends Equatable {
@@ -277,7 +294,7 @@ class IPv6NetworkInfo extends Equatable {
     );
   }
 
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toMap() {
     return {
       'ipAddress': ipAddress,
       'gateway': gateway,
@@ -288,7 +305,7 @@ class IPv6NetworkInfo extends Equatable {
     };
   }
 
-  factory IPv6NetworkInfo.fromJson(Map<String, dynamic> json) {
+  factory IPv6NetworkInfo.fromMap(Map<String, dynamic> json) {
     return IPv6NetworkInfo(
       ipAddress: json['ipAddress'],
       gateway: json['gateway'],
@@ -298,6 +315,11 @@ class IPv6NetworkInfo extends Equatable {
       dnsServer3: json['dnsServer3'],
     );
   }
+
+  String toJson() => json.encode(toMap());
+
+  factory IPv6NetworkInfo.fromJson(String source) =>
+      IPv6NetworkInfo.fromMap(json.decode(source) as Map<String, dynamic>);
 }
 
 class SupportedWANCombination extends Equatable {
@@ -338,7 +360,9 @@ class SupportedWANCombination extends Equatable {
 
   String toJson() => json.encode(toMap());
 
-  factory SupportedWANCombination.fromJson(String source) => SupportedWANCombination.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory SupportedWANCombination.fromJson(String source) =>
+      SupportedWANCombination.fromMap(
+          json.decode(source) as Map<String, dynamic>);
 
   @override
   bool get stringify => true;

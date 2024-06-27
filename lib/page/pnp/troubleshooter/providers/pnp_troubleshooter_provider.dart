@@ -47,7 +47,7 @@ class PnpTroubleshooterNotifier extends Notifier<PnpTroubleshooterState> {
   }
 
   bool _isNewSettingPassed(JNAPSuccess jnapResult, WanType byType) {
-    final status = RouterWANStatus.fromJson(jnapResult.output);
+    final status = RouterWANStatus.fromMap(jnapResult.output);
     if (byType == WanType.static || byType == WanType.dhcp) {
       return status.wanStatus == 'Connected';
     } else {

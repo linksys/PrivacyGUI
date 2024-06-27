@@ -244,6 +244,14 @@ const List<Map<String, dynamic>> _velopModelMap = [
     'pattern': '^mbe70',
   },
   {
+    'model': 'MBE7100',
+    'baseModel': 'MBE7100',
+    'seriesModel': 'MBE7100',
+    'isMeshRouter': false,
+    'isCognitiveMesh': true,
+    'pattern': '^mbe71',
+  },
+  {
     'model': 'LN11',
     'baseModel': 'LN11',
     'seriesModel': 'LN11',

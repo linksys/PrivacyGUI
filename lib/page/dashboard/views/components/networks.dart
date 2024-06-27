@@ -4,8 +4,10 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
@@ -67,12 +69,16 @@ class DashboardNetworks extends ConsumerWidget {
   Widget _desktopHorizontal(BuildContext context, WidgetRef ref) {
     final state = ref.watch(dashboardHomeProvider);
     final newFirmware = hasNewFirmware(ref);
+    final wanStatus = ref.watch(nodeWanStatusProvider);
+    final isOnline = wanStatus == NodeWANStatus.online;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppText.titleSmall(loc(context).myNetwork),
-        const AppGap.medium(),
-        _firmwareStatusWidget(context, newFirmware),
+        if (isOnline) ...[
+          const AppGap.medium(),
+          _firmwareStatusWidget(context, newFirmware),
+        ],
         const AppGap.large2(),
         Row(
           children: [
@@ -99,6 +105,8 @@ class DashboardNetworks extends ConsumerWidget {
   Widget _desktopVertical(BuildContext context, WidgetRef ref) {
     final state = ref.watch(dashboardHomeProvider);
     final newFirmware = hasNewFirmware(ref);
+    final wanStatus = ref.watch(nodeWanStatusProvider);
+    final isOnline = wanStatus == NodeWANStatus.online;
     return Row(
       children: [
         Expanded(
@@ -106,7 +114,7 @@ class DashboardNetworks extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               AppText.titleSmall(loc(context).myNetwork),
-              _firmwareStatusWidget(context, newFirmware),
+              if (isOnline) _firmwareStatusWidget(context, newFirmware),
             ],
           ),
         ),
@@ -138,6 +146,8 @@ class DashboardNetworks extends ConsumerWidget {
   Widget _mobile(BuildContext context, WidgetRef ref) {
     final state = ref.watch(dashboardHomeProvider);
     final newFirmware = hasNewFirmware(ref);
+    final wanStatus = ref.watch(nodeWanStatusProvider);
+    final isOnline = wanStatus == NodeWANStatus.online;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -145,7 +155,7 @@ class DashboardNetworks extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             AppText.titleSmall(loc(context).myNetwork),
-            _firmwareStatusWidget(context, newFirmware),
+            if (isOnline) _firmwareStatusWidget(context, newFirmware),
           ],
         ),
         const AppGap.medium(),

@@ -116,8 +116,13 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                                     false),
                               ))
                           .toList(),
-                      _portWidget(context, state.wanPortConnection,
-                          loc(context).wan, true)
+                      _portWidget(
+                          context,
+                          state.wanPortConnection == 'None'
+                              ? null
+                              : state.wanPortConnection,
+                          loc(context).wan,
+                          true)
                     ],
                   ),
                 ),
@@ -160,8 +165,13 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                               ))
                           .toList(),
                       Expanded(
-                        child: _portWidget(context, state.wanPortConnection,
-                            loc(context).wan, true),
+                        child: _portWidget(
+                            context,
+                            state.wanPortConnection == 'None'
+                                ? null
+                                : state.wanPortConnection,
+                            loc(context).wan,
+                            true),
                       )
                     ],
                   ),
