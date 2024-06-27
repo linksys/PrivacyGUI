@@ -52,7 +52,7 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
         JNAPAction.getWANStatus, Map.fromEntries(results));
     final wanStatus = wanStatusResult == null
         ? null
-        : RouterWANStatus.fromJson(wanStatusResult.output);
+        : RouterWANStatus.fromMap(wanStatusResult.output);
     // MAC Address Clone Setting
     final macAddressCloneSettingsResult = JNAPTransactionSuccessWrap.getResult(
         JNAPAction.getMACAddressCloneSettings, Map.fromEntries(results));

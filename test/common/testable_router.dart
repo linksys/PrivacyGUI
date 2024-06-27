@@ -76,6 +76,7 @@ Widget testableRouteShellWidget({
   required Widget child,
   List<Override> overrides = const [],
   ThemeMode themeMode = ThemeMode.system,
+  LinksysRouteConfig? config,
   ThemeData? theme,
   ThemeData? darkTheme,
   Locale? locale,
@@ -91,6 +92,7 @@ Widget testableRouteShellWidget({
             LinksysRoute(
               name: '/',
               path: '/',
+              config: config,
               builder: (context, state) => child,
             ),
           ])

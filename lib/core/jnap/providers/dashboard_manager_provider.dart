@@ -11,7 +11,6 @@ import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/bench_mark.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final dashboardManagerProvider =
@@ -23,12 +22,10 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
   @override
   DashboardManagerState build() {
     final coreTransactionData = ref.watch(pollingProvider).value;
-    logger.d('dashboard manager provider - rebuild - $coreTransactionData');
     return createState(pollingResult: coreTransactionData);
   }
 
   DashboardManagerState createState({CoreTransactionData? pollingResult}) {
-    logger.d('dashboard manager provider - createState - $pollingResult');
 
     // Map<String, dynamic>? getDeviceInfoData;
     Map<String, dynamic>? getRadioInfoData;

@@ -206,7 +206,7 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
           timeoutMs: 3000,
           retries: 0,
         )
-        .then((response) => RouterWANStatus.fromJson(response.output))
+        .then((response) => RouterWANStatus.fromMap(response.output))
         .then((status) {
       final wanConnected = status.wanStatus == 'Connected' ||
           status.wanIPv6Status == 'Connected';

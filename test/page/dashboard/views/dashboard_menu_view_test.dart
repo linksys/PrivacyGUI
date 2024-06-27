@@ -5,7 +5,6 @@ import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/card/menu_card.dart';
 
 import '../../../common/config.dart';
 import '../../../common/test_responsive_widget.dart';
