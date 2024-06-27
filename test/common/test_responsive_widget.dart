@@ -53,7 +53,7 @@ void testResponsiveWidgets(
             '${goldenFilename ?? description}-${variant.currentValue!.toShort()}',
             tester);
       }
-      await tester.pumpAndSettle();
+      // await tester.pumpAndSettle();
       // for some scenario w/ timer, pump a few seconds to avoid exception occurs
       await tester.pump(const Duration(seconds: 5));
     },
