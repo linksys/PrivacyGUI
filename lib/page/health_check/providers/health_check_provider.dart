@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/page/administration/network_admin/providers/timezone_provider.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_state.dart';
 
 import '../../../core/jnap/actions/better_action.dart';
@@ -65,8 +64,6 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
                 // Get health check result with resultId
                 await getHealthCheckResults(module, 1, resultId);
                 // TODO: error handling
-                // Get timezone
-                await ref.read(timezoneProvider.notifier).fetch();
                 // Set state
                 state = state.copyWith(step: 'success');
               })
