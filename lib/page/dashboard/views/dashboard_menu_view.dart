@@ -138,21 +138,21 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
           onTap: () {
             _navigateTo(RouteNamed.dashboardAdvancedSettings);
           }),
-      AppSectionItemData(
-          title: 'Settings',
-          description: 'This is a description for this tile',
-          iconData: LinksysIcons.settings,
-          onTap: () {
-            _navigateTo(RouteNamed.dashboardSettings);
-          }),
-      if (isCloudLogin)
-        AppSectionItemData(
-            title: loc(context).account,
-            description: 'This is a description for this tile',
-            iconData: LinksysIcons.accountCircle,
-            onTap: () {
-              _navigateTo(RouteNamed.accountInfo);
-            }),
+      // AppSectionItemData(
+      //     title: 'Settings',
+      //     description: 'This is a description for this tile',
+      //     iconData: LinksysIcons.settings,
+      //     onTap: () {
+      //       _navigateTo(RouteNamed.dashboardSettings);
+      //     }),
+      // if (isCloudLogin)
+      //   AppSectionItemData(
+      //       title: loc(context).account,
+      //       description: 'This is a description for this tile',
+      //       iconData: LinksysIcons.accountCircle,
+      //       onTap: () {
+      //         _navigateTo(RouteNamed.accountInfo);
+      //       }),
       // AppSectionItemData(
       //     title: 'Linksys LinkUp',
       //     iconData: getCharactersIcons(context).bellDefault,

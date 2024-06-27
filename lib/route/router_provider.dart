@@ -26,7 +26,6 @@ import 'package:privacy_gui/page/login/views/_views.dart';
 import 'package:privacy_gui/page/login/views/local_reset_router_password_view.dart';
 import 'package:privacy_gui/page/nodes/_nodes.dart';
 import 'package:privacy_gui/page/nodes/views/add_nodes_view.dart';
-import 'package:privacy_gui/page/notifications/notification_settings_page.dart';
 import 'package:privacy_gui/page/otp_flow/providers/_providers.dart';
 import 'package:privacy_gui/page/otp_flow/views/_views.dart';
 import 'package:privacy_gui/page/pnp/troubleshooter/views/call_support/call_support_main_region_view.dart';
@@ -140,7 +139,6 @@ class RouterNotifier extends ChangeNotifier {
     bool shouldGoPnp = false;
     final routerType =
         _ref.read(connectivityProvider).connectivityInfo.routerType;
-    logger.d('XXXXX: routerType: $routerType');
     if (BuildConfig.forceCommandType == ForceCommand.local ||
         (routerType != RouterType.others && loginType != LoginType.remote)) {
       shouldGoPnp = await pnp.fetchDeviceInfo().then((_) async =>

@@ -9,12 +9,10 @@ import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/firebase/notification_helper.dart';
 import 'package:privacy_gui/page/components/layouts/root_container.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_provider.dart';
-import 'package:privacy_gui/page/dashboard/providers/smart_device_provider.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacy_gui/util/languages.dart';
@@ -47,7 +45,6 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     ref.read(connectivityProvider.notifier).stop();
-    apnsStreamSubscription?.cancel();
     ref
         .read(routerProvider)
         .routerDelegate
@@ -62,7 +59,6 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     final appSettings = ref.watch(appSettingsProvider);
     final systemLocaleStr = Intl.getCurrentLocale();
     final systemLocale = Locale(getLanguageData(systemLocaleStr)['value']);
-    ref.read(smartDeviceProvider.notifier).init();
     final router = ref.watch(routerProvider);
     router.routerDelegate.removeListener(_onReceiveRouteChanged);
     router.routerDelegate.addListener(_onReceiveRouteChanged);

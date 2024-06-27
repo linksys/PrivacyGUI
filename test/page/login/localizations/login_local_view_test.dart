@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
@@ -14,7 +13,6 @@ import 'package:privacy_gui/page/login/views/login_local_view.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
-import '../../../common/mock_firebase_messaging.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
 import '../../../test_data/device_info_test_data.dart';
@@ -25,9 +23,6 @@ import 'login_local_view_test_mocks.dart';
 void main() async {
   late DashboardManagerNotifier mockDashboardManagerNotifier;
   late MockRouterRepository mockRouterRepository;
-
-  setupFirebaseMessagingMocks();
-  await Firebase.initializeApp();
 
   setUp(() {
     mockDashboardManagerNotifier = MockDashboardManagerNotifier();

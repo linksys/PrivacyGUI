@@ -1,10 +1,8 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/topology/_topology.dart';
 import 'package:mockito/mockito.dart';
 
-import '../../../common/mock_firebase_messaging.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
 import '../../../test_data/topology_data.dart';
@@ -13,11 +11,6 @@ import '../topology_view_test_mocks.dart';
 void main() async {
   late TopologyNotifier mockTopologyNotifier;
 
-  setupFirebaseMessagingMocks();
-  // FirebaseMessaging? messaging;
-  await Firebase.initializeApp();
-  // FirebaseMessagingPlatform.instance = kMockMessagingPlatform;
-  // messaging = FirebaseMessaging.instance;
   setUp(() {
     mockTopologyNotifier = MockTopologyNotifier();
     when(mockTopologyNotifier.isSupportAutoOnboarding()).thenReturn(true);

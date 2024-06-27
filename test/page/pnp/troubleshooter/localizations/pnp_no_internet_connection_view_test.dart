@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
@@ -9,7 +8,7 @@ import 'package:privacy_gui/page/pnp/data/pnp_exception.dart';
 import 'package:privacy_gui/page/pnp/data/pnp_provider.dart';
 import 'package:privacy_gui/page/pnp/troubleshooter/providers/pnp_troubleshooter_provider.dart';
 import 'package:privacy_gui/page/pnp/troubleshooter/views/pnp_no_internet_connection_view.dart';
-import '../../../../common/mock_firebase_messaging.dart';
+import 'package:privacy_gui/route/route_model.dart';
 import '../../../../common/test_responsive_widget.dart';
 import '../../../../common/testable_router.dart';
 import '../../../../test_data/device_info_test_data.dart';
@@ -22,9 +21,6 @@ import '../../pnp_no_internet_connection_view_test_mocks.dart';
 void main() async {
   late Mock.MockPnpNotifier mockPnpNotifier;
   late MockPnpTroubleshooterNotifier mockPnpTroubleshooterNotifier;
-
-  setupFirebaseMessagingMocks();
-  await Firebase.initializeApp();
 
   setUp(() {
     mockPnpNotifier = Mock.MockPnpNotifier();
@@ -44,6 +40,8 @@ void main() async {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const PnpNoInternetConnectionView(),
+        config:
+            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
         locale: locale,
         overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
       ),
@@ -58,6 +56,8 @@ void main() async {
         child: const PnpNoInternetConnectionView(
           args: {'ssid': 'AwesomeSSID'},
         ),
+        config:
+            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
         locale: locale,
         overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
       ),
@@ -74,6 +74,8 @@ void main() async {
         child: const PnpNoInternetConnectionView(
           args: {'ssid': 'AwesomeSSID'},
         ),
+        config:
+            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
         locale: locale,
         overrides: [
           pnpProvider.overrideWith(() => mockPnpNotifier),
