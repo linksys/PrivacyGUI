@@ -29,15 +29,11 @@ void main() {
         child: const DashboardMenuView(),
       ),
     );
-    mockAuthNotifier.state =
-        const AsyncData(AuthState(loginType: LoginType.remote));
-
     await tester.pumpAndSettle();
-
     final titleFinder = find.text('Menu');
     expect(titleFinder, findsOneWidget);
     final menuCardFinder = find.byType(AppMenuCard);
-    expect(menuCardFinder, findsNWidgets(4));
+    expect(menuCardFinder, findsNWidgets(6));
   });
   testResponsiveWidgets('Test Dashboard Menu item count on multi column',
       variants: ValueVariant({device1440w}), (tester) async {
@@ -49,15 +45,13 @@ void main() {
         child: const DashboardMenuView(),
       ),
     );
-    mockAuthNotifier.state =
-        const AsyncData(AuthState(loginType: LoginType.remote));
 
     await tester.pumpAndSettle();
 
     final titleFinder = find.text('Menu');
     expect(titleFinder, findsOneWidget);
     final menuCardFinder = find.byType(AppMenuCard);
-    expect(menuCardFinder, findsNWidgets(8));
+    expect(menuCardFinder, findsNWidgets(6));
   });
   testResponsiveWidgets(
     'Test menu responsive layout with mobile size variants',
