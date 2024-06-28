@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/models/firmware_update_status.dart';
-import 'package:privacy_gui/core/jnap/models/firmware_update_status_nodes.dart';
-import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
-import 'package:privacy_gui/core/jnap/providers/firmware_update_state.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -33,8 +30,8 @@ class _FirmwareUpdateDetailViewState
 
   @override
   void initState() {
-    final state = ref.read(firmwareUpdateProvider);
-    final statusRecords = buildIDStatusRecords(state);
+    final statusRecords =
+        ref.read(firmwareUpdateProvider.notifier).getIDStatusRecords();
     candicateIDs = statusRecords.where((record) {
       return record.$2.availableUpdate != null;
     }).map((record) {
@@ -44,24 +41,12 @@ class _FirmwareUpdateDetailViewState
     super.initState();
   }
 
-  List<(LinksysDevice, FirmwareUpdateStatus)> buildIDStatusRecords(
-      FirmwareUpdateState state) {
-    return (state.nodesStatus ?? []).map((nodeStatus) {
-      final nodes = ref.read(deviceManagerProvider).nodeDevices;
-      return (
-        nodeStatus is NodesFirmwareUpdateStatus
-            ? nodes.firstWhere((node) => node.deviceID == nodeStatus.deviceUUID)
-            : ref.read(deviceManagerProvider).masterDevice,
-        nodeStatus
-      );
-    }).toList();
-  }
-
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(firmwareUpdateProvider);
     // Build records for node deivces and their firmware status
-    final statusRecords = buildIDStatusRecords(state);
+    final statusRecords =
+        ref.read(firmwareUpdateProvider.notifier).getIDStatusRecords();
     // Find any ongoing updating operations for candicates
     final ongoingList = statusRecords.where((record) {
       return record.$2.pendingOperation != null &&
@@ -83,7 +68,7 @@ class _FirmwareUpdateDetailViewState
                 const AppGap.medium(),
                 AppText.bodyLarge(loc(context).firmwareUpdateDesc2),
                 const AppGap.large2(),
-                ListView.builder(
+                ListView.separated(
                   shrinkWrap: true,
                   itemCount: statusRecords.length,
                   itemBuilder: (context, index) {
@@ -111,6 +96,8 @@ class _FirmwareUpdateDetailViewState
                       newVersion: newVersion,
                     );
                   },
+                  separatorBuilder: (BuildContext context, int index) =>
+                      const AppGap.medium(),
                 ),
                 if (isUpdateAvailable)
                   Padding(
