@@ -5,7 +5,7 @@ import 'package:mockito/mockito.dart';
 class MockAuthNotifier extends AuthNotifier with Mock {
   @override
   AsyncValue<AuthState> get state =>
-      const AsyncData(AuthState(loginType: LoginType.remote));
+      const AsyncData(AuthState(loginType: LoginType.local));
 
   @override
   set state(AsyncValue<AuthState> newState) {

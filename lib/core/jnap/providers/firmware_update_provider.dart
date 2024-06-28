@@ -63,13 +63,14 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
       _ => [],
     };
 
-    return FirmwareUpdateState(
+    final state = FirmwareUpdateState(
       settings: fwUpdateSettings ??
           FirmwareUpdateSettings(
               updatePolicy: FirmwareUpdateSettings.firmwareUpdatePolicyAuto,
               autoUpdateWindow: FirmwareAutoUpdateWindow.simple()),
       nodesStatus: fwUpdateStatusList,
     );
+    return state;
   }
 
   Future setFirmwareUpdatePolicy(String policy) {

@@ -36,6 +36,7 @@ void testResponsiveWidgets(
   WidgetTesterCallback callback, {
   String? goldenFilename,
   Future<void> Function(String sizeName, WidgetTester tester)? goldenCallback,
+  Future<void> Function(WidgetTester tester)? onCompleted,
   bool? skip,
   Timeout? timeout,
   bool semanticsEnabled = true,
@@ -53,9 +54,12 @@ void testResponsiveWidgets(
             '${goldenFilename ?? description}-${variant.currentValue!.toShort()}',
             tester);
       }
-      await tester.pumpAndSettle();
-      // for some scenario w/ timer, pump a few seconds to avoid exception occurs
-      await tester.pump(const Duration(seconds: 5));
+      if (onCompleted != null) {
+        await onCompleted.call(tester);
+      } else {
+        // for some scenario w/ timer, pump a few seconds to avoid exception occurs
+        await tester.pump(const Duration(seconds: 5));
+      }
     },
     skip: skip,
     timeout: timeout,
@@ -75,15 +79,24 @@ void testLocalizations(
   bool? skip,
   Timeout? timeout,
   bool semanticsEnabled = true,
+  Future<void> Function(WidgetTester tester)? onCompleted,
 }) async {
   final envLocales = targetLocales;
   final envScreens = targetScreens;
   final supportedLocales =
       hasLocaleConfig ? envLocales : (locales ?? envLocales);
   //
-  final isScreenIncluded = screens == null ? true :envScreens.any((element) =>
-      screens.any((element2) => element2.name == element.name));
-  final supportedDevices = screens ?? envScreens;
+  // final isScreenIncluded = screens == null
+  //     ? true
+  //     : envScreens.any((element) =>
+  //         screens.any((element2) => element2.name == element.name));
+  // final supportedDevices = screens ?? envScreens;
+  final supportedDevices = (screens ?? responsiveAllScreens)
+      .toSet()
+      .where((element) => envScreens.toSet().contains(element))
+      .toList();
+  final isScreenIncluded = supportedDevices.isNotEmpty;
+  print('XXXXX: supportedDevice - ${supportedDevices.length}, skip:${(skip ?? false) || !isScreenIncluded}');
   final set = supportedLocales
       .map((locale) => supportedDevices.map((device) =>
           LocalizedScreen.fromScreenSize(locale: locale, screen: device)))
@@ -103,7 +116,8 @@ void testLocalizations(
       final actualFinder = find.byWidgetPredicate((w) => true).first;
       await expectLater(actualFinder, matchesGoldenFile('goldens/$name.png'));
     },
-    variants: variants,
+    onCompleted: onCompleted,
+    variants: !isScreenIncluded ? null : variants,
     skip: (skip ?? false) || !isScreenIncluded,
     timeout: timeout,
     semanticsEnabled: semanticsEnabled,

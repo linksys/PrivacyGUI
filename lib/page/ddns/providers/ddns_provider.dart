@@ -45,7 +45,7 @@ class DDNSNotifier extends Notifier<DDNSState> {
         .then((results) {
       final wanStatusData = results[JNAPAction.getWANStatus];
       final wanStatus = wanStatusData != null
-          ? RouterWANStatus.fromJson(wanStatusData.output)
+          ? RouterWANStatus.fromMap(wanStatusData.output)
           : null;
 
       final ddnsSettingsData = results[JNAPAction.getDDNSSettings];

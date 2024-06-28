@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
@@ -36,13 +37,16 @@ class DashboardHomeTitle extends ConsumerWidget {
       children: [
         Stack(
           children: [
-            AnimatedOpacity(
-              opacity: isFirstPolling ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 300),
-              child: const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(),
+            Visibility(
+              visible: isFirstPolling,
+              child: AnimatedOpacity(
+                opacity: isFirstPolling ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 300),
+                child: const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(),
+                ),
               ),
             ),
             AnimatedOpacity(

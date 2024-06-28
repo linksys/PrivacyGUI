@@ -205,6 +205,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
         Container(
           alignment: Alignment.center,
           child: InkWell(
+            key: const Key('goBtn'),
             onTap: () {
               Future.delayed(const Duration(milliseconds: 500), () {
                 setState(() {
@@ -283,7 +284,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
               _ => '',
             }),
             AppText.displayLarge(
-                step == 'latency' ? '—' : (value).toStringAsFixed(2)),
+                step == 'latency' ? '—' : (value).toStringAsFixed(1)),
             const AppText.bodyMedium('Mbps'),
           ],
         );
@@ -312,6 +313,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
                 borderColor: Theme.of(context).colorScheme.primary,
                 size: 12,
                 dotSize: 6,
+                animated: latency == '—',
               ),
             ),
             AppText.titleSmall(
@@ -324,7 +326,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
             ),
           ],
         ),
-        if (step != 'success') const AppGap.medium(),
+        if (step != 'success') const AppGap.large2(),
       ],
     );
   }
@@ -382,15 +384,15 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
     final downloadBandWidthView =
         _status == 'RUNNING' && !ResponsiveLayout.isMobileLayout(context)
             ? AppText.displaySmall(
-                downloadBandWidth == '0.00' ? '—' : downloadBandWidth)
+                double.parse(downloadBandWidth) == 0 ? '—' : downloadBandWidth)
             : AppText.displayLarge(
-                downloadBandWidth == '0.00' ? '—' : downloadBandWidth);
+                double.parse(downloadBandWidth) == 0 ? '—' : downloadBandWidth);
     final uploadBandWidthView =
         _status == 'RUNNING' && !ResponsiveLayout.isMobileLayout(context)
             ? AppText.displaySmall(
-                uploadBandWidth == '0.00' ? '—' : uploadBandWidth)
+                double.parse(uploadBandWidth) == 0 ? '—' : uploadBandWidth)
             : AppText.displayLarge(
-                uploadBandWidth == '0.00' ? '—' : uploadBandWidth);
+                double.parse(uploadBandWidth) == 0 ? '—' : uploadBandWidth);
     return Row(
       children: [
         Expanded(

@@ -95,7 +95,7 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
         modelNumber: deviceInfo?.modelNumber ?? '',
         hardwareVersion: deviceInfo?.hardwareVersion ?? '1');
 
-    return newState.copyWith(
+    newState = newState.copyWith(
       wifis: wifiList,
       nodes: nodeList,
       uptime: dashboardManagerState.uptimes,
@@ -111,6 +111,7 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
       isHorizontalLayout: horizontalPortLayout,
       isHealthCheckSupported: isSpeedCheckSupported,
     );
+    return newState;
   }
 
   ({String value, String unit}) _formatHealthCheckResult({required int speed}) {

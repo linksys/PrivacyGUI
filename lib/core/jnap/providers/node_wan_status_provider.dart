@@ -18,7 +18,7 @@ final nodeWanStatusProvider = StateProvider<NodeWANStatus>((ref) {
   final wanStatusRaw = pollingState.value?.data[JNAPAction.getWANStatus];
   logger.d('[WAN] $wanStatusRaw');
   if (wanStatusRaw != null && wanStatusRaw is JNAPSuccess) {
-    final wanStatus = RouterWANStatus.fromJson(wanStatusRaw.output);
+    final wanStatus = RouterWANStatus.fromMap(wanStatusRaw.output);
     return wanStatus.wanStatus == 'Connected'
         ? NodeWANStatus.online
         : NodeWANStatus.offline;
