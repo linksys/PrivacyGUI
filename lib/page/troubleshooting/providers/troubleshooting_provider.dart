@@ -138,6 +138,7 @@ class TroubleshootingNotifier extends Notifier<TroubleshootingState> {
     return ref.read(routerRepositoryProvider).send(JNAPAction.startPing,
         fetchRemote: true,
         cacheLevel: CacheLevel.noCache,
+        auth: true,
         data: {'host': host, 'packetSizeBytes': 32, 'pingCount': pingCount}
           ..removeWhere((key, value) => value == null));
   }
@@ -168,16 +169,18 @@ class TroubleshootingNotifier extends Notifier<TroubleshootingState> {
     return ref
         .read(routerRepositoryProvider)
         .scheduledCommand(
-            action: JNAPAction.getPinStatus,
-            retryDelayInMilliSec: 10,
-            condition: (result) {
-              if (result is JNAPSuccess) {
-                final status = PingStatus.fromMap(result.output);
-                return !status.isRunning;
-              } else {
-                return false;
-              }
-            })
+          action: JNAPAction.getPinStatus,
+          retryDelayInMilliSec: 100,
+          condition: (result) {
+            if (result is JNAPSuccess) {
+              final status = PingStatus.fromMap(result.output);
+              return !status.isRunning;
+            } else {
+              return false;
+            }
+          },
+          auth: true,
+        )
         .map((event) {
       if (event is JNAPSuccess) {
         return PingStatus.fromMap(event.output);
