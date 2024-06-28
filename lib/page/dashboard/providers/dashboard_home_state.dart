@@ -215,8 +215,8 @@ class DashboardHomeState extends Equatable {
         ),
       ),
       wifis: List<DashboardWiFiItem>.from(
-        map['wifis'].map<WiFiItem>(
-          (x) => WiFiItem.fromMap(x as Map<String, dynamic>),
+        map['wifis'].map<DashboardWiFiItem>(
+          (x) => DashboardWiFiItem.fromMap(x as Map<String, dynamic>),
         ),
       ),
     );

@@ -126,7 +126,9 @@ class LinksysDevice extends RawDevice {
               WifiConnectionType.main
           : WifiConnectionType.main,
       signalDecibels: map['signalDecibels'],
-      upstream: map['upstream'],
+      upstream: map['upstream'] != null
+          ? LinksysDevice.fromMap(map['upstream'])
+          : null,
     );
   }
 
@@ -211,7 +213,7 @@ class DeviceManagerState extends Equatable {
       'wirelessConnections': wirelessConnectionMap,
       'radioInfos': radioInfoMap,
       'deviceList': deviceList.map((x) => x.toMap()).toList(),
-      'wanStatus': wanStatus?.toJson(),
+      'wanStatus': wanStatus?.toMap(),
       'backhaulInfoData': backhaulInfoData.map((x) => x.toMap()).toList(),
       'lastUpdateTime': lastUpdateTime,
     };
@@ -240,7 +242,7 @@ class DeviceManagerState extends Equatable {
         ),
       ),
       wanStatus: map['wanStatus'] != null
-          ? RouterWANStatus.fromJson(map['wanStatus'] as Map<String, dynamic>)
+          ? RouterWANStatus.fromMap(map['wanStatus'] as Map<String, dynamic>)
           : null,
       backhaulInfoData: List<BackHaulInfoData>.from(
         map['backhaulInfoData'].map<BackHaulInfoData>(

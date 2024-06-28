@@ -65,8 +65,6 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
                 // Get health check result with resultId
                 await getHealthCheckResults(module, 1, resultId);
                 // TODO: error handling
-                // Get timezone
-                await ref.read(timezoneProvider.notifier).fetch();
                 // Set state
                 state = state.copyWith(step: 'success');
               })

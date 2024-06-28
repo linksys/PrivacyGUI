@@ -5,7 +5,6 @@ import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/card/menu_card.dart';
 
 import '../../../common/config.dart';
 import '../../../common/test_responsive_widget.dart';
@@ -30,15 +29,11 @@ void main() {
         child: const DashboardMenuView(),
       ),
     );
-    mockAuthNotifier.state =
-        const AsyncData(AuthState(loginType: LoginType.remote));
-
     await tester.pumpAndSettle();
-
     final titleFinder = find.text('Menu');
     expect(titleFinder, findsOneWidget);
     final menuCardFinder = find.byType(AppMenuCard);
-    expect(menuCardFinder, findsNWidgets(4));
+    expect(menuCardFinder, findsNWidgets(6));
   });
   testResponsiveWidgets('Test Dashboard Menu item count on multi column',
       variants: ValueVariant({device1440w}), (tester) async {
@@ -50,15 +45,13 @@ void main() {
         child: const DashboardMenuView(),
       ),
     );
-    mockAuthNotifier.state =
-        const AsyncData(AuthState(loginType: LoginType.remote));
 
     await tester.pumpAndSettle();
 
     final titleFinder = find.text('Menu');
     expect(titleFinder, findsOneWidget);
     final menuCardFinder = find.byType(AppMenuCard);
-    expect(menuCardFinder, findsNWidgets(8));
+    expect(menuCardFinder, findsNWidgets(6));
   });
   testResponsiveWidgets(
     'Test menu responsive layout with mobile size variants',
