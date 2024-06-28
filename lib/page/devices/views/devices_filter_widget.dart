@@ -184,10 +184,10 @@ class _FilteredChipsWidgetState<T>
           runSpacing: 8,
           children: [
             ...widget.dataList.map((e) => FilterChip(
-                  label: AppText.bodySmall(widget.chipName(e)),
-                  // shape: const RoundedRectangleBorder(
-                  //     borderRadius: BorderRadius.all(Radius.circular(40))),
-                  // showCheckmark: false,
+                  label: AppText.bodySmall(
+                    widget.chipName(e),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                   onSelected: widget.onSelected != null
                       ? (value) {
                           widget.onSelected?.call(e, value);
