@@ -96,6 +96,7 @@ void testLocalizations(
       .where((element) => envScreens.toSet().contains(element))
       .toList();
   final isScreenIncluded = supportedDevices.isNotEmpty;
+  print('XXXXX: supportedDevice - ${supportedDevices.length}, skip:${(skip ?? false) || !isScreenIncluded}');
   final set = supportedLocales
       .map((locale) => supportedDevices.map((device) =>
           LocalizedScreen.fromScreenSize(locale: locale, screen: device)))
@@ -116,7 +117,7 @@ void testLocalizations(
       await expectLater(actualFinder, matchesGoldenFile('goldens/$name.png'));
     },
     onCompleted: onCompleted,
-    variants: variants,
+    variants: !isScreenIncluded ? null : variants,
     skip: (skip ?? false) || !isScreenIncluded,
     timeout: timeout,
     semanticsEnabled: semanticsEnabled,
