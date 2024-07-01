@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:meta/meta.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import 'config.dart';
 import 'screen.dart';
@@ -83,20 +84,16 @@ void testLocalizations(
 }) async {
   final envLocales = targetLocales;
   final envScreens = targetScreens;
-  final supportedLocales =
-      hasLocaleConfig ? envLocales : (locales ?? envLocales);
-  //
-  // final isScreenIncluded = screens == null
-  //     ? true
-  //     : envScreens.any((element) =>
-  //         screens.any((element2) => element2.name == element.name));
-  // final supportedDevices = screens ?? envScreens;
+
+  final supportedLocales = (locales ?? AppLocalizations.supportedLocales)
+      .toSet()
+      .where((element) => envLocales.toSet().contains(element))
+      .toList();
   final supportedDevices = (screens ?? responsiveAllScreens)
       .toSet()
       .where((element) => envScreens.toSet().contains(element))
       .toList();
   final isScreenIncluded = supportedDevices.isNotEmpty;
-  print('XXXXX: supportedDevice - ${supportedDevices.length}, skip:${(skip ?? false) || !isScreenIncluded}');
   final set = supportedLocales
       .map((locale) => supportedDevices.map((device) =>
           LocalizedScreen.fromScreenSize(locale: locale, screen: device)))
