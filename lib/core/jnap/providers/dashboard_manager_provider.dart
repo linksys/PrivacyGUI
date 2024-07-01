@@ -26,8 +26,7 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
   }
 
   DashboardManagerState createState({CoreTransactionData? pollingResult}) {
-
-    // Map<String, dynamic>? getDeviceInfoData;
+    Map<String, dynamic>? getDeviceInfoData;
     Map<String, dynamic>? getRadioInfoData;
     Map<String, dynamic>? getGuestRadioSettingsData;
     Map<String, dynamic>? getHealthCheckResultsData;
@@ -37,8 +36,8 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
 
     final result = pollingResult?.data;
     if (result != null) {
-      // getDeviceInfoData =
-      //     (result[JNAPAction.getDeviceInfo] as JNAPSuccess?)?.output;
+      getDeviceInfoData =
+          (result[JNAPAction.getDeviceInfo] as JNAPSuccess?)?.output;
       getRadioInfoData =
           (result[JNAPAction.getRadioInfo] as JNAPSuccess?)?.output;
       getGuestRadioSettingsData =
@@ -56,9 +55,10 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
     }
 
     var newState = const DashboardManagerState();
-    // if (getDeviceInfoData != null) {
-    //   newState = _getAvailableDeviceServices(newState, getDeviceInfoData);
-    // }
+    if (getDeviceInfoData != null) {
+      newState = newState.copyWith(
+          deviceInfo: NodeDeviceInfo.fromJson(getDeviceInfoData));
+    }
     if (getRadioInfoData != null) {
       newState = _getMainRadioList(newState, getRadioInfoData);
     }
