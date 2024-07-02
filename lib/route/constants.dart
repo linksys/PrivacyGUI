@@ -37,6 +37,7 @@ class RoutePath {
   static const settingsPort = 'portSettings';
   static const settingsFirewall = 'firewall';
   static const settingsDMZ = 'dmz';
+  static const settingsAdministration = "administration";
 
   /// otp
   static const otpStart = 'otp';
@@ -118,7 +119,7 @@ class RoutePath {
   static const callSupportMainRegion = 'callSupportMainRegion';
   static const callSupportMoreRegion = 'callSupportMoreRegion';
   static const callbackDescription = 'callbackDescription';
-  
+
   /// DDNS
   static const settingsDDNS = 'ddnsSettings';
 
@@ -171,6 +172,7 @@ class RouteNamed {
   static const settingsPort = 'portSettings';
   static const settingsFirewall = 'firewall';
   static const settingsDMZ = 'dmz';
+  static const settingsAdministration = "administration";
 
   /// otp
   static const otpStart = 'otp';
@@ -252,7 +254,7 @@ class RouteNamed {
   static const faqList = 'faqList';
   static const callSupportMainRegion = 'callSupportMainRegion';
   static const callSupportMoreRegion = 'callSupportMoreRegion';
-  static const callbackDescription = 'callbackDescription';  
+  static const callbackDescription = 'callbackDescription';
 
   /// DDNS
   static const settingsDDNS = 'ddnsSettings';

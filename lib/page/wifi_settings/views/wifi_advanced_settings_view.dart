@@ -184,12 +184,25 @@ class _WifiAdvancedSettingsViewState
   }
 
   List<Widget> _buildMLO(bool? value) {
+    final wifiList = ref.read(wifiListProvider).mainWiFi;
+    bool showMLOWarning = ref
+        .read(wifiListProvider.notifier)
+        .checkingMLOSettingsConflicts(
+            Map.fromIterables(wifiList.map((e) => e.radioID), wifiList));
     return value != null
         ? [
             AppCard(
               child: AppSwitchTriggerTile(
                 title: AppText.labelLarge(loc(context).mlo),
-                description: AppText.bodyMedium(loc(context).mloDesc),
+                description: Column(
+                  children: [
+                    AppText.bodyMedium(loc(context).mloDesc),
+                    if (showMLOWarning) ...[
+                      const AppGap.medium(),
+                      AppText.labelLarge(loc(context).mloWarning),
+                    ],
+                  ],
+                ),
                 value: value,
                 padding: const EdgeInsets.all(Spacing.large3),
                 toggleInCenter: true,

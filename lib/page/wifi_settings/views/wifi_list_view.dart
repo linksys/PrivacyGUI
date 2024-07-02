@@ -713,6 +713,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             AppText.bodyMedium(loc(context).wifiListSaveModalDesc),
+            ..._mloWarning(newState),
             const AppGap.medium(),
             ..._buildNewSettings(newState),
             const AppGap.medium(),
@@ -733,6 +734,29 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
     );
 
     if (result != null) {}
+  }
+
+  List<Widget> _mloWarning(WiFiState state) {
+    final radios = _mode == WiFiListViewMode.simple
+        ? Map.fromIterables(
+            state.mainWiFi.map((e) => e.radioID),
+            state.mainWiFi.map((e) => e.copyWith(
+                ssid: state.simpleWiFi.ssid,
+                password: state.simpleWiFi.password)))
+        : Map.fromIterables(
+            state.mainWiFi.map((e) => e.radioID), state.mainWiFi);
+    final isMLOEnabled = ref.read(wifiAdvancedProvider).isMLOEnabled ?? false;
+    return ref
+            .read(wifiListProvider.notifier)
+            .checkingMLOSettingsConflicts(radios, isMloEnabled: isMLOEnabled)
+        ? [
+            const AppGap.small3(),
+            AppText.labelLarge(
+              loc(context).mloWarning,
+              color: Theme.of(context).colorScheme.error,
+            ),
+          ]
+        : [];
   }
 
   List<Widget> _buildNewSettings(WiFiState state) {
