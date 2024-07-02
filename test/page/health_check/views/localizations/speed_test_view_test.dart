@@ -31,13 +31,35 @@ Future<void> main() async {
     await tester.pumpWidget(widget);
   });
 
+  testLocalizations('Speedtest - ping init', (tester, locale) async {
+    when(mockHealthCheckProvider.build())
+        .thenReturn(HealthCheckState.fromJson(healthCheckStatePingInit));
+    when(mockHealthCheckProvider.runHealthCheck(Module.speedtest))
+        .thenAnswer((_) async {
+      await Future.delayed(const Duration(seconds: 5));
+    });
+
+    final widget = testableSingleRoute(
+      overrides: [
+        healthCheckProvider.overrideWith(() => mockHealthCheckProvider),
+      ],
+      locale: locale,
+      child: const SpeedTestView(),
+    );
+    await tester.pumpWidget(widget);
+
+    final goBtnFinder = find.byKey(const Key('goBtn')).first;
+    await tester.tap(goBtnFinder);
+    await tester.pump(const Duration(seconds: 2));
+  });
+
   testLocalizations('Speedtest - ping finished', (tester, locale) async {
     when(mockHealthCheckProvider.build())
         .thenReturn(HealthCheckState.fromJson(healthCheckStatePing));
     when(mockHealthCheckProvider.runHealthCheck(Module.speedtest))
         .thenAnswer((_) async {
-          await Future.delayed(const Duration(seconds: 5));
-        });
+      await Future.delayed(const Duration(seconds: 5));
+    });
 
     final widget = testableSingleRoute(
       overrides: [
@@ -54,53 +76,54 @@ Future<void> main() async {
   });
 
   testLocalizations('Speedtest - download', (tester, locale) async {
-      when(mockHealthCheckProvider.build())
-          .thenReturn(HealthCheckState.fromJson(healthCheckStateDownload));
-      when(mockHealthCheckProvider.runHealthCheck(Module.speedtest))
-          .thenAnswer((_) async {
-            await Future.delayed(const Duration(seconds: 3));
-          });
-
-      final widget = testableSingleRoute(
-        overrides: [
-          healthCheckProvider.overrideWith(() => mockHealthCheckProvider),
-        ],
-        locale: locale,
-        child: const SpeedTestView(),
-      );
-      await tester.pumpWidget(widget);
-
-      final goBtnFinder = find.byKey(const Key('goBtn')).first;
-      await tester.tap(goBtnFinder);
-      await tester.pump(const Duration(seconds: 2));
+    when(mockHealthCheckProvider.build())
+        .thenReturn(HealthCheckState.fromJson(healthCheckStateDownload));
+    when(mockHealthCheckProvider.runHealthCheck(Module.speedtest))
+        .thenAnswer((_) async {
+      await Future.delayed(const Duration(seconds: 3));
     });
+
+    final widget = testableSingleRoute(
+      overrides: [
+        healthCheckProvider.overrideWith(() => mockHealthCheckProvider),
+      ],
+      locale: locale,
+      child: const SpeedTestView(),
+    );
+    await tester.pumpWidget(widget);
+
+    final goBtnFinder = find.byKey(const Key('goBtn')).first;
+    await tester.tap(goBtnFinder);
+    await tester.pump(const Duration(seconds: 2));
+  });
 
   testLocalizations('Speedtest - upload', (tester, locale) async {
-      when(mockHealthCheckProvider.build())
-          .thenReturn(HealthCheckState.fromJson(healthCheckStateUpload));
-      when(mockHealthCheckProvider.runHealthCheck(Module.speedtest))
-          .thenAnswer((_) async {});
+    when(mockHealthCheckProvider.build())
+        .thenReturn(HealthCheckState.fromJson(healthCheckStateUpload));
+    when(mockHealthCheckProvider.runHealthCheck(Module.speedtest))
+        .thenAnswer((_) async {});
 
-      final widget = testableSingleRoute(
-        overrides: [
-          healthCheckProvider.overrideWith(() => mockHealthCheckProvider),
-        ],
-        locale: locale,
-        child: const SpeedTestView(),
-      );
-      await tester.pumpWidget(widget);
+    final widget = testableSingleRoute(
+      overrides: [
+        healthCheckProvider.overrideWith(() => mockHealthCheckProvider),
+      ],
+      locale: locale,
+      child: const SpeedTestView(),
+    );
+    await tester.pumpWidget(widget);
 
-      final goBtnFinder = find.byKey(const Key('goBtn')).first;
-      await tester.tap(goBtnFinder);
-      await tester.pump(const Duration(seconds: 2));
-    });
+    final goBtnFinder = find.byKey(const Key('goBtn')).first;
+    await tester.tap(goBtnFinder);
+    await tester.pump(const Duration(seconds: 2));
+  });
 
   group('Speedtest - success', () {
     testLocalizations('Speedtest - success ultra', (tester, locale) async {
       final healthCheckSuccessUltraProvider = HealthCheckSuccessUltraProvider();
       final widget = testableSingleRoute(
         overrides: [
-          healthCheckProvider.overrideWith(() => healthCheckSuccessUltraProvider),
+          healthCheckProvider
+              .overrideWith(() => healthCheckSuccessUltraProvider),
         ],
         locale: locale,
         child: const SpeedTestView(),
@@ -113,10 +136,12 @@ Future<void> main() async {
     });
 
     testLocalizations('Speedtest - success optimal', (tester, locale) async {
-      final healthCheckSuccessOptimalProvider = HealthCheckSuccessOptimalProvider();
+      final healthCheckSuccessOptimalProvider =
+          HealthCheckSuccessOptimalProvider();
       final widget = testableSingleRoute(
         overrides: [
-          healthCheckProvider.overrideWith(() => healthCheckSuccessOptimalProvider),
+          healthCheckProvider
+              .overrideWith(() => healthCheckSuccessOptimalProvider),
         ],
         locale: locale,
         child: const SpeedTestView(),
@@ -132,7 +157,8 @@ Future<void> main() async {
       final healthCheckSuccessGoodProvider = HealthCheckSuccessGoodProvider();
       final widget = testableSingleRoute(
         overrides: [
-          healthCheckProvider.overrideWith(() => healthCheckSuccessGoodProvider),
+          healthCheckProvider
+              .overrideWith(() => healthCheckSuccessGoodProvider),
         ],
         locale: locale,
         child: const SpeedTestView(),
@@ -148,7 +174,8 @@ Future<void> main() async {
       final healthCheckSuccessOkayProvider = HealthCheckSuccessOkayProvider();
       final widget = testableSingleRoute(
         overrides: [
-          healthCheckProvider.overrideWith(() => healthCheckSuccessOkayProvider),
+          healthCheckProvider
+              .overrideWith(() => healthCheckSuccessOkayProvider),
         ],
         locale: locale,
         child: const SpeedTestView(),
@@ -160,11 +187,28 @@ Future<void> main() async {
       await tester.pump(const Duration(seconds: 2));
     });
   });
+
+  testLocalizations('Speedtest - error', (tester, locale) async {
+    final healthCheckErrorProvider = HealthCheckErrorProvider();
+    final widget = testableSingleRoute(
+      overrides: [
+        healthCheckProvider.overrideWith(() => healthCheckErrorProvider),
+      ],
+      locale: locale,
+      child: const SpeedTestView(),
+    );
+    await tester.pumpWidget(widget);
+
+    final goBtnFinder = find.byKey(const Key('goBtn')).first;
+    await tester.tap(goBtnFinder);
+    await tester.pump(const Duration(seconds: 2));
+  });
 }
 
 class MockHealthCheckSuccessProvider extends HealthCheckProvider with Mock {
   @override
-  HealthCheckState build() => HealthCheckState.fromJson(healthCheckStateSuccessUltra);
+  HealthCheckState build() =>
+      HealthCheckState.fromJson(healthCheckStateSuccessUltra);
 
   @override
   Future runHealthCheck(Module module) async {
@@ -175,20 +219,35 @@ class MockHealthCheckSuccessProvider extends HealthCheckProvider with Mock {
 
 class HealthCheckSuccessUltraProvider extends MockHealthCheckSuccessProvider {
   @override
-  HealthCheckState build() => HealthCheckState.fromJson(healthCheckStateSuccessUltra);
+  HealthCheckState build() =>
+      HealthCheckState.fromJson(healthCheckStateSuccessUltra);
 }
 
 class HealthCheckSuccessOptimalProvider extends MockHealthCheckSuccessProvider {
   @override
-  HealthCheckState build() => HealthCheckState.fromJson(healthCheckStateSuccessOptimal);
+  HealthCheckState build() =>
+      HealthCheckState.fromJson(healthCheckStateSuccessOptimal);
 }
 
 class HealthCheckSuccessGoodProvider extends MockHealthCheckSuccessProvider {
   @override
-  HealthCheckState build() => HealthCheckState.fromJson(healthCheckStateSuccessGood);
+  HealthCheckState build() =>
+      HealthCheckState.fromJson(healthCheckStateSuccessGood);
 }
 
 class HealthCheckSuccessOkayProvider extends MockHealthCheckSuccessProvider {
   @override
-  HealthCheckState build() => HealthCheckState.fromJson(healthCheckStateSuccessOkay);
+  HealthCheckState build() =>
+      HealthCheckState.fromJson(healthCheckStateSuccessOkay);
+}
+
+class HealthCheckErrorProvider extends MockHealthCheckSuccessProvider {
+  @override
+  HealthCheckState build() => HealthCheckState.init();
+
+  @override
+  Future runHealthCheck(Module module) async {
+    await Future.delayed(const Duration(seconds: 1));
+    state = HealthCheckState.fromJson(healthCheckStateError);
+  }
 }
