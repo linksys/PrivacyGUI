@@ -1,12 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/firmware_update/views/firmware_update_detail_view.dart';
 import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
 import 'package:privacygui_widgets/widgets/text/app_text.dart';
 
 const kDefaultDialogWidth = 328.0;
+
+Future<T?> doSomethingWithSpinner<T>(BuildContext context, Future<T> task) {
+  Future.delayed(Duration.zero, () => showAppSpinnerDialog(context));
+  return task.then((value) {
+    context.pop();
+    return value;
+  });
+}
+
+Future<T?> showAppSpinnerDialog<T>(
+  BuildContext context, {
+  Widget? icon,
+  String? title,
+  Widget? loadingWidget,
+  double? width,
+}) {
+  return showDialog<T?>(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) {
+      return StatefulBuilder(builder: (context, setState) {
+        return AlertDialog(
+          icon: icon,
+          title: title != null
+              ? SizedBox(
+                  width: width ?? kDefaultDialogWidth,
+                  child: AppText.titleLarge(title))
+              : null,
+          content: SizedBox(
+              width: width ?? kDefaultDialogWidth,
+              child: loadingWidget ?? const AppSpinner()),
+        );
+      });
+    },
+  );
+}
 
 Future<T?> showSubmitAppDialog<T>(
   BuildContext context, {
@@ -200,4 +235,3 @@ Future<bool?> showUnsavedAlert(BuildContext context,
     ],
   );
 }
-

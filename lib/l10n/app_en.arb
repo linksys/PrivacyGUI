@@ -744,5 +744,12 @@
   "wifiListSaveModalDesc": "Changing Wi-Fi settings will disconnect all devices, including this one, from the router. Simply reconnect the devices using the new wireless settings shown below. You may want to write them down before continuing.",
   "mloWarning": "Multi-Link Operation (MLO) requires all bands to have the same settings. MLO will not work correctly if you continue.",
   "doYouWantToContinue": "Do you want to Continue?",
-  "advancedMLOWarning": "Your bands do not share the same settings which will prevent MLO from working. Go to the Wireless tab and change the SSID and passwords to be the same."
+  "advancedMLOWarning": "Your bands do not share the same settings which will prevent MLO from working. Go to the Wireless tab and change the SSID and passwords to be the same.",
+  "administrationAllowLocalManagementWirelessly": "Allow local management wirelessly",
+  "administrationUPnPAllowUsersConfigure": "Allow users to configure",
+  "administrationUPnPAllowUsersDisableInternetAccess": "Allow users to disable internet access",
+  "administrationApplicationLayerGateway": "Application Layer Gateway (SIP)",
+  "administrationExpressForwarding": "Express Forwarding",
+  "upnp": "UPnP"
+
 }

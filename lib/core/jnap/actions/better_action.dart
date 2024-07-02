@@ -195,6 +195,8 @@ void _updateBetterActions(JNAPService service) {
           _JNAPActionValue.setIPv6Settings2.value;
       break;
     case JNAPService.router6:
+      _betterActionMap[JNAPAction.getExpressForwardingSettings] =
+          _JNAPActionValue.getExpressForwardingSettings.value;
       break;
     case JNAPService.router7:
       _betterActionMap[JNAPAction.getWANSettings] =
@@ -225,6 +227,8 @@ void _updateBetterActions(JNAPService service) {
           _JNAPActionValue.setManagementSettings2.value;
       break;
     case JNAPService.routerManagement3:
+      break;
+    case JNAPService.routerUPnP:
       break;
     case JNAPService.setup:
       break;
@@ -432,6 +436,10 @@ void initBetterActions() {
       _JNAPActionValue.getDMZSettings.value;
   _betterActionMap[JNAPAction.setDMZSettings] =
       _JNAPActionValue.setDMZSettings.value;
+  _betterActionMap[JNAPAction.getALGSettings] =
+      _JNAPActionValue.getALGSettings.value;
+  _betterActionMap[JNAPAction.setALGSettings] =
+      _JNAPActionValue.setALGSettings.value;
   _betterActionMap[JNAPAction.getFirmwareUpdateStatus] =
       _JNAPActionValue.getFirmwareUpdateStatus.value;
   _betterActionMap[JNAPAction.getNodesFirmwareUpdateStatus] =
@@ -640,6 +648,10 @@ void initBetterActions() {
       _JNAPActionValue.getAutoConfigurationSettings.value;
   _betterActionMap[JNAPAction.setUserAcknowledgedAutoConfiguration] =
       _JNAPActionValue.setUserAcknowledgedAutoConfiguration.value;
+  _betterActionMap[JNAPAction.getUPnPSettings] =
+      _JNAPActionValue.getUPnPSettings.value;
+  _betterActionMap[JNAPAction.setUPnPSettings] =
+      _JNAPActionValue.setUPnPSettings.value;
 }
 
 void buildBetterActions(List<String> routerServices) {

@@ -2,17 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/advanced_settings/firewall/providers/firewall_provider.dart';
-import 'package:privacy_gui/page/advanced_settings/firewall/providers/firewall_state.dart';
+import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
+import 'package:privacy_gui/page/advanced_settings/administration/providers/administration_settings_provider.dart';
+import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/shortcuts/spinners.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
-import 'package:privacy_gui/route/constants.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/card/list_card.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/panel/switch_trigger_tile.dart';
 
@@ -20,20 +18,22 @@ class AdministrationSettingsView extends ArgumentsConsumerStatefulView {
   const AdministrationSettingsView({super.key, super.args});
 
   @override
-  ConsumerState<AdministrationSettingsView> createState() => _AdministrationSettingsViewState();
+  ConsumerState<AdministrationSettingsView> createState() =>
+      _AdministrationSettingsViewState();
 }
 
-class _AdministrationSettingsViewState extends ConsumerState<AdministrationSettingsView> {
+class _AdministrationSettingsViewState
+    extends ConsumerState<AdministrationSettingsView> {
   OverlayEntry? _loadingEntry;
-  FirewallState? _preservedState;
+  AdministrationSettingsState? _preservedState;
 
   @override
   void initState() {
     super.initState();
-    // _loadingEntry = showFullScreenSpinner(context);
-    ref.read(firewallProvider.notifier).fetch().then((value) {
+    doSomethingWithSpinner(
+            context, ref.read(administrationSettingsProvider.notifier).fetch())
+        .then((value) {
       _preservedState = value;
-      _loadingEntry?.remove();
     });
   }
 
@@ -44,15 +44,19 @@ class _AdministrationSettingsViewState extends ConsumerState<AdministrationSetti
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(firewallProvider);
+    final state = ref.watch(administrationSettingsProvider);
     return StyledAppPageView(
       scrollable: true,
-      title: loc(context).firewall,
+      title: loc(context).administration,
       bottomBar: PageBottomBar(
-          isPositiveEnabled: _preservedState != state,
+          isPositiveEnabled:
+              _preservedState != null && _preservedState != state,
           onPositiveTap: () {
             _loadingEntry = showFullScreenSpinner(context);
-            ref.read(firewallProvider.notifier).save().then((value) {
+            ref
+                .read(administrationSettingsProvider.notifier)
+                .save()
+                .then((value) {
               _preservedState = value;
               showSuccessSnackBar(context, loc(context).saved);
             }).onError((error, stackTrace) {
@@ -64,90 +68,74 @@ class _AdministrationSettingsViewState extends ConsumerState<AdministrationSetti
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AppText.labelLarge(loc(context).firewall),
-            const AppGap.medium(),
+            if (state.managementSettings.isManageWirelesslySupported) ...[
+              AppCard(
+                child: AppSwitchTriggerTile(
+                  title: AppText.labelLarge(loc(context)
+                      .administrationAllowLocalManagementWirelessly),
+                  value: state.managementSettings.canManageWirelessly ?? false,
+                  onChanged: (value) {
+                    ref
+                        .read(administrationSettingsProvider.notifier)
+                        .setManagementSettings(value);
+                  },
+                ),
+              ),
+              const AppGap.medium(),
+            ],
             AppCard(
-              child: AppSwitchTriggerTile(
-                title:
-                    AppText.labelLarge(loc(context).ipv4SPIFirewallProtection),
-                value: state.settings.isIPv4FirewallEnabled,
-                onChanged: (value) {
-                  ref.read(firewallProvider.notifier).setSettings(
-                      state.settings.copyWith(isIPv4FirewallEnabled: value));
-                },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppSwitchTriggerTile(
+                    title: AppText.labelLarge(loc(context).upnp),
+                    value: state.isUPnPEnabled,
+                    onChanged: (value) {
+                      ref
+                          .read(administrationSettingsProvider.notifier)
+                          .setUPnPEnabled(value);
+                    },
+                  ),
+                  const Divider(),
+                  AppCheckbox(
+                    value: state.canUsersConfigure,
+                    text: loc(context).administrationUPnPAllowUsersConfigure,
+                    onChanged: (value) {
+                      if (value == null) {
+                        return;
+                      }
+                      ref
+                          .read(administrationSettingsProvider.notifier)
+                          .setCanUsersConfigure(value);
+                    },
+                  ),
+                  const AppGap.medium(),
+                  AppCheckbox(
+                    value: state.canUsersDisableWANAccess,
+                    text: loc(context)
+                        .administrationUPnPAllowUsersDisableInternetAccess,
+                    onChanged: (value) {
+                      if (value == null) {
+                        return;
+                      }
+                      ref
+                          .read(administrationSettingsProvider.notifier)
+                          .setCanUsersDisableWANAccess(value);
+                    },
+                  ),
+                ],
               ),
             ),
             const AppGap.medium(),
             AppCard(
               child: AppSwitchTriggerTile(
-                title:
-                    AppText.labelLarge(loc(context).ipv6SPIFirewallProtection),
-                value: state.settings.isIPv6FirewallEnabled,
-                onChanged: (value) {
-                  ref.read(firewallProvider.notifier).setSettings(
-                      state.settings.copyWith(isIPv6FirewallEnabled: value));
-                },
-              ),
-            ),
-            const AppGap.large3(),
-            AppText.labelLarge(loc(context).vpnPassthrough),
-            const AppGap.medium(),
-            AppCard(
-              child: AppSwitchTriggerTile(
-                title: AppText.labelLarge(loc(context).ipsecPassthrough),
-                value: !state.settings.blockIPSec,
+                title: AppText.labelLarge(
+                    loc(context).administrationApplicationLayerGateway),
+                value: state.enabledALG,
                 onChanged: (value) {
                   ref
-                      .read(firewallProvider.notifier)
-                      .setSettings(state.settings.copyWith(blockIPSec: !value));
-                },
-              ),
-            ),
-            const AppGap.medium(),
-            AppCard(
-              child: AppSwitchTriggerTile(
-                title: AppText.labelLarge(loc(context).pptpPassthrough),
-                value: !state.settings.blockPPTP,
-                onChanged: (value) {
-                  ref
-                      .read(firewallProvider.notifier)
-                      .setSettings(state.settings.copyWith(blockPPTP: !value));
-                },
-              ),
-            ),
-            const AppGap.medium(),
-            AppCard(
-              child: AppSwitchTriggerTile(
-                title: AppText.labelLarge(loc(context).l2tpPassthrough),
-                value: !state.settings.blockL2TP,
-                onChanged: (value) {
-                  ref
-                      .read(firewallProvider.notifier)
-                      .setSettings(state.settings.copyWith(blockL2TP: !value));
-                },
-              ),
-            ),
-            const AppGap.large3(),
-            AppText.labelLarge(loc(context).internetFilters),
-            const AppGap.medium(),
-            AppCard(
-              child: AppSwitchTriggerTile(
-                title: AppText.labelLarge(loc(context).filterAnonymous),
-                value: state.settings.blockAnonymousRequests,
-                onChanged: (value) {
-                  ref.read(firewallProvider.notifier).setSettings(
-                      state.settings.copyWith(blockAnonymousRequests: value));
-                },
-              ),
-            ),
-            const AppGap.medium(),
-            AppCard(
-              child: AppSwitchTriggerTile(
-                title: AppText.labelLarge(loc(context).filterMulticast),
-                value: state.settings.blockMulticast,
-                onChanged: (value) {
-                  ref.read(firewallProvider.notifier).setSettings(
-                      state.settings.copyWith(blockMulticast: value));
+                      .read(administrationSettingsProvider.notifier)
+                      .setALGEnabled(value);
                 },
               ),
             ),
@@ -155,33 +143,14 @@ class _AdministrationSettingsViewState extends ConsumerState<AdministrationSetti
             AppCard(
               child: AppSwitchTriggerTile(
                 title: AppText.labelLarge(
-                    loc(context).filterInternetNATRedirection),
-                value: state.settings.blockNATRedirection,
-                onChanged: (value) {
-                  ref.read(firewallProvider.notifier).setSettings(
-                      state.settings.copyWith(blockNATRedirection: value));
-                },
-              ),
-            ),
-            const AppGap.medium(),
-            AppCard(
-              child: AppSwitchTriggerTile(
-                title: AppText.labelLarge(loc(context).filterIdent),
-                value: state.settings.blockIDENT,
+                    loc(context).administrationExpressForwarding),
+                value: state.enabledExpressForwarfing,
                 onChanged: (value) {
                   ref
-                      .read(firewallProvider.notifier)
-                      .setSettings(state.settings.copyWith(blockIDENT: value));
+                      .read(administrationSettingsProvider.notifier)
+                      .setExpressForwarding(value);
                 },
               ),
-            ),
-            const AppGap.large3(),
-            AppListCard(
-              title: AppText.labelLarge(loc(context).ipv6PortServices),
-              trailing: const Icon(LinksysIcons.chevronRight),
-              onTap: () {
-                context.pushNamed(RouteNamed.ipv6PortServiceList);
-              },
             ),
             const AppGap.medium(),
           ],
