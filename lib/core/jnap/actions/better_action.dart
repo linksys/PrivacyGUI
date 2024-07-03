@@ -166,6 +166,8 @@ void _updateBetterActions(JNAPService service) {
       break;
     case JNAPService.powerTable:
       break;
+    case JNAPService.product:
+      break;
     case JNAPService.qos:
       break;
     case JNAPService.qos2:
@@ -516,6 +518,8 @@ void initBetterActions() {
       _JNAPActionValue.getParentalControlSettings.value;
   _betterActionMap[JNAPAction.getPowerTableSettings] =
       _JNAPActionValue.getPowerTableSettings.value;
+  _betterActionMap[JNAPAction.getSoftSKUSettings] =
+      _JNAPActionValue.getSoftSKUSettings.value;
   _betterActionMap[JNAPAction.getQoSSettings] =
       _JNAPActionValue.getQoSSettings.value;
   _betterActionMap[JNAPAction.getDHCPClientLeases] =

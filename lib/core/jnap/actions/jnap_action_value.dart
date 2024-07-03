@@ -207,6 +207,7 @@ enum _JNAPActionValue {
           'http://linksys.com/jnap/parentalcontrol/GetParentalControlSettings'),
   getPowerTableSettings(
       value: 'http://linksys.com/jnap/powertable/GetPowerTableSettings'),
+  getSoftSKUSettings(value: 'http://linksys.com/jnap/product/GetSoftSKUSettings'),
   getQoSSettings(value: 'http://linksys.com/jnap/qos/GetQoSSettings'),
   getQoSSettings2(value: 'http://linksys.com/jnap/qos/GetQoSSettings2'),
   getDHCPClientLeases(

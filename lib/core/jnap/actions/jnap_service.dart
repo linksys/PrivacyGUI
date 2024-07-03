@@ -99,6 +99,7 @@ enum JNAPService {
   parentalControl2(
       value: 'http://linksys.com/jnap/parentalcontrol/ParentalControl2'),
   powerTable(value: 'http://linksys.com/jnap/powertable/PowerTable'),
+  product(value:'http://linksys.com/jnap/product/Product'),
   qos(value: 'http://linksys.com/jnap/qos/QoS'),
   qos2(value: 'http://linksys.com/jnap/qos/QoS2'),
   qos3(value: 'http://linksys.com/jnap/qos/QoS3'),

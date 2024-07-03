@@ -750,6 +750,37 @@
   "administrationUPnPAllowUsersDisableInternetAccess": "Allow users to disable internet access",
   "administrationApplicationLayerGateway": "Application Layer Gateway (SIP)",
   "administrationExpressForwarding": "Express Forwarding",
-  "upnp": "UPnP"
-
+  "upnp": "UPnP",
+  "systemTestDateFormat": "{date}",
+  "@systemTestDateFormat": {
+    "description": "System test date format",
+    "placeholders": {
+      "date": {
+        "type": "DateTime",
+        "format": "yMd"
+      }
+    }
+  },
+  "systemTestDateTime": "{time}",
+  "@systemTestDateTime": {
+    "description": "System test time format",
+    "placeholders": {
+      "time": {
+        "type": "DateTime",
+        "format": "jms"
+      }
+    }
+  },
+  "deviceInfo": "Device Info",
+  "sku": "SKU",
+  "nDNS": "{count, plural, other{DNS 1|2|3} one{DNS 1} two{DNS 1|2}}",
+  "@nDNS": {
+    "description": "DNS label with numbers",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "1"
+      }
+    }
+  }
 }

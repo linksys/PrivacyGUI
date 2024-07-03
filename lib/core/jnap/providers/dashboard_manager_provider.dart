@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
 import 'package:privacy_gui/core/jnap/models/health_check_result.dart';
 import 'package:privacy_gui/core/jnap/models/radio_info.dart';
+import 'package:privacy_gui/core/jnap/models/soft_sku_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
@@ -87,6 +88,12 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
           lanConnections: lanPortConnections, wanConnection: wanPortConnection);
     }
 
+    final softSKUSettings = JNAPTransactionSuccessWrap.getResult(
+        JNAPAction.getSoftSKUSettings, result ?? {});
+    if (softSKUSettings != null) {
+      final settings = SoftSKUSettings.fromMap(softSKUSettings.output);
+      newState = newState.copyWith(skuModelNumber: settings.modelNumber);
+    }
     return newState;
   }
 
