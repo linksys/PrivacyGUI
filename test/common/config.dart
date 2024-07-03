@@ -90,7 +90,7 @@ List<Locale> get targetLocales {
       return value
           .split(',')
           .map((e) => allLocales
-              .firstWhereOrNull((locale) => locale.languageCode == e.trim()))
+              .firstWhereOrNull((locale) => locale.toLanguageTag() == e.trim()))
           .whereNotNull()
           .toList();
     } catch (e) {

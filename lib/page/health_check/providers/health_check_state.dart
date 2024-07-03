@@ -61,7 +61,10 @@ class HealthCheckState extends Equatable {
           (x) => HealthCheckResult.fromJson(x as Map<String, dynamic>),
         ),
       ),
-      error: map['error']
+      error: map['error'] == null
+          ? null
+          : JNAPError(
+              result: map['error']?['result'], error: map['error']?['error']),
     );
   }
 
