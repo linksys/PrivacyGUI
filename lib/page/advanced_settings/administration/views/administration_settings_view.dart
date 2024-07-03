@@ -24,7 +24,6 @@ class AdministrationSettingsView extends ArgumentsConsumerStatefulView {
 
 class _AdministrationSettingsViewState
     extends ConsumerState<AdministrationSettingsView> {
-  OverlayEntry? _loadingEntry;
   AdministrationSettingsState? _preservedState;
 
   @override
@@ -52,17 +51,18 @@ class _AdministrationSettingsViewState
           isPositiveEnabled:
               _preservedState != null && _preservedState != state,
           onPositiveTap: () {
-            _loadingEntry = showFullScreenSpinner(context);
-            ref
-                .read(administrationSettingsProvider.notifier)
-                .save()
-                .then((value) {
-              _preservedState = value;
-              showSuccessSnackBar(context, loc(context).saved);
-            }).onError((error, stackTrace) {
-              showFailedSnackBar(
-                  context, loc(context).unknownErrorCode(error ?? ''));
-            }).whenComplete(() => _loadingEntry?.remove());
+            doSomethingWithSpinner(
+                context,
+                ref
+                    .read(administrationSettingsProvider.notifier)
+                    .save()
+                    .then((value) {
+                  _preservedState = value;
+                  showSuccessSnackBar(context, loc(context).saved);
+                }).onError((error, stackTrace) {
+                  showFailedSnackBar(
+                      context, loc(context).unknownErrorCode(error ?? ''));
+                }));
           }),
       child: AppBasicLayout(
         content: Column(

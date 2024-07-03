@@ -4,8 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/firewall/providers/firewall_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/firewall/providers/firewall_state.dart';
+import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
-import 'package:privacy_gui/page/components/shortcuts/spinners.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -24,17 +24,16 @@ class FirewallView extends ArgumentsConsumerStatefulView {
 }
 
 class _FirewallViewState extends ConsumerState<FirewallView> {
-  OverlayEntry? _loadingEntry;
   FirewallState? _preservedState;
 
   @override
   void initState() {
     super.initState();
-    // _loadingEntry = showFullScreenSpinner(context);
-    ref.read(firewallProvider.notifier).fetch().then((value) {
-      _preservedState = value;
-      _loadingEntry?.remove();
-    });
+    doSomethingWithSpinner(
+        context,
+        ref.read(firewallProvider.notifier).fetch().then((value) {
+          _preservedState = value;
+        }));
   }
 
   @override
@@ -51,14 +50,15 @@ class _FirewallViewState extends ConsumerState<FirewallView> {
       bottomBar: PageBottomBar(
           isPositiveEnabled: _preservedState != state,
           onPositiveTap: () {
-            _loadingEntry = showFullScreenSpinner(context);
-            ref.read(firewallProvider.notifier).save().then((value) {
-              _preservedState = value;
-              showSuccessSnackBar(context, loc(context).saved);
-            }).onError((error, stackTrace) {
-              showFailedSnackBar(
-                  context, loc(context).unknownErrorCode(error ?? ''));
-            }).whenComplete(() => _loadingEntry?.remove());
+            doSomethingWithSpinner(
+                context,
+                ref.read(firewallProvider.notifier).save().then((value) {
+                  _preservedState = value;
+                  showSuccessSnackBar(context, loc(context).saved);
+                }).onError((error, stackTrace) {
+                  showFailedSnackBar(
+                      context, loc(context).unknownErrorCode(error ?? ''));
+                }));
           }),
       child: AppBasicLayout(
         content: Column(

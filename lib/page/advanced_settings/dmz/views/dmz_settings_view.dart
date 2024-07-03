@@ -7,7 +7,6 @@ import 'package:privacy_gui/page/advanced_settings/dmz/providers/dmz_settings_pr
 import 'package:privacy_gui/page/advanced_settings/dmz/providers/dmz_settings_state.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
-import 'package:privacy_gui/page/components/shortcuts/spinners.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/devices/providers/device_list_state.dart';
@@ -37,7 +36,6 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
   late TextEditingController _destinationMACController;
   String? _sourceError;
   String? _destinationError;
-  OverlayEntry? _spinnerEntry;
 
   @override
   void initState() {
@@ -48,17 +46,22 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
     _destinationIPController = TextEditingController();
     _destinationMACController = TextEditingController();
 
-    ref.read(dmzSettingsProvider.notifier).fetch().then((value) {
-      _preservedState = value;
-      _sourceFirstIPController.text =
-          value.settings.sourceRestriction?.firstIPAddress ?? '';
-      _sourceLastIPController.text =
-          value.settings.sourceRestriction?.lastIPAddress ?? '';
-      _destinationIPController.text = value.settings.destinationIPAddress ??
-          ref.read(dmzSettingsProvider.notifier).ipAddress.replaceAll('.0', '');
-      _destinationMACController.text =
-          value.settings.destinationMACAddress ?? '';
-    });
+    doSomethingWithSpinner(
+        context,
+        ref.read(dmzSettingsProvider.notifier).fetch().then((value) {
+          _preservedState = value;
+          _sourceFirstIPController.text =
+              value.settings.sourceRestriction?.firstIPAddress ?? '';
+          _sourceLastIPController.text =
+              value.settings.sourceRestriction?.lastIPAddress ?? '';
+          _destinationIPController.text = value.settings.destinationIPAddress ??
+              ref
+                  .read(dmzSettingsProvider.notifier)
+                  .ipAddress
+                  .replaceAll('.0', '');
+          _destinationMACController.text =
+              value.settings.destinationMACAddress ?? '';
+        }));
   }
 
   @override
@@ -80,18 +83,17 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
             isPositiveEnabled: _preservedState != state &&
                 (_sourceError == null && _destinationError == null),
             onPositiveTap: () {
-              _spinnerEntry = showFullScreenSpinner(context);
-              ref.read(dmzSettingsProvider.notifier).save().then((value) {
-                setState(() {
-                  _preservedState = value;
-                });
-                showSuccessSnackBar(context, loc(context).saved);
-              }).onError((error, stackTrace) {
-                showFailedSnackBar(
-                    context, loc(context).unknownErrorCode(error ?? ''));
-              }).whenComplete(() {
-                _spinnerEntry?.remove();
-              });
+              doSomethingWithSpinner(
+                  context,
+                  ref.read(dmzSettingsProvider.notifier).save().then((value) {
+                    setState(() {
+                      _preservedState = value;
+                    });
+                    showSuccessSnackBar(context, loc(context).saved);
+                  }).onError((error, stackTrace) {
+                    showFailedSnackBar(
+                        context, loc(context).unknownErrorCode(error ?? ''));
+                  }));
             }),
         child: Column(
           children: [

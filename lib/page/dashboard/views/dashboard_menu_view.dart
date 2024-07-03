@@ -186,26 +186,25 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
           onTap: () {
             context.pop();
 
-            final spinner = showFullScreenSpinner(
-                shellNavigatorKey.currentContext ?? context,
-                messages: [
-                  '${loc(context).restarting}.',
-                  '${loc(context).restarting}..',
-                  '${loc(context).restarting}...'
-                ]);
-            ref.read(pollingProvider.notifier).stopPolling();
-            ref
-                .read(topologyProvider.notifier)
-                .reboot()
-                .then((value) {
-                  showSuccessSnackBar(context, loc(context).successExclamation);
-                })
-                .onError((error, stackTrace) => showFailedSnackBar(
-                    context, loc(context).unknownErrorCode(error ?? '')))
-                .whenComplete(() {
-                  ref.read(pollingProvider.notifier).startPolling();
-                  spinner.remove();
-                });
+            final reboot = Future.sync(
+                    () => ref.read(pollingProvider.notifier).stopPolling())
+                .then((_) => ref
+                    .read(topologyProvider.notifier)
+                    .reboot()
+                    .then((value) {
+                      showSuccessSnackBar(
+                          context, loc(context).successExclamation);
+                    })
+                    .onError((error, stackTrace) => showFailedSnackBar(
+                        context, loc(context).unknownErrorCode(error ?? '')))
+                    .whenComplete(() {
+                      ref.read(pollingProvider.notifier).startPolling();
+                    }));
+            doSomethingWithSpinner(context, reboot, messages: [
+              '${loc(context).restarting}.',
+              '${loc(context).restarting}..',
+              '${loc(context).restarting}...'
+            ]);
           },
         ),
         AppOutlinedButton(
