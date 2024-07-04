@@ -46,7 +46,6 @@ class StyledAppTabPageView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) => AppPageView(
         // appBar: _buildAppBar(context, ref),
-        padding: const EdgeInsets.only(),
         child: AppTabLayout(
           flexibleSpace: FlexibleSpaceBar(
             background: Column(

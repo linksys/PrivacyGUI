@@ -68,6 +68,11 @@ class _DashboardAdvancedSettingsViewState
       //   onTap: () => context.goNamed(RouteNamed.settingsIpDetails),
       // ),
       AppSectionItemData(
+        title: loc(context).administration,
+        // iconData: getCharactersIcons(context).nodesDefault,
+        onTap: () => context.goNamed(RouteNamed.settingsAdministration),
+      ),
+      AppSectionItemData(
         title: loc(context).firewall,
         // iconData: getCharactersIcons(context).nodesDefault,
         onTap: () => context.goNamed(RouteNamed.settingsFirewall),

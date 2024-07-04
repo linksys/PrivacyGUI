@@ -1,12 +1,79 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/firmware_update/views/firmware_update_detail_view.dart';
 import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
 import 'package:privacygui_widgets/widgets/text/app_text.dart';
 
 const kDefaultDialogWidth = 328.0;
+
+Future<T?> doSomethingWithSpinner<T>(
+  BuildContext context,
+  Future<T> task, {
+  Widget? icon,
+  String? title,
+  List<String> messages = const [],
+  Duration? period,
+}) {
+  Future.delayed(
+      Duration.zero,
+      () => showAppSpinnerDialog(
+            context,
+            title: title,
+            icon: icon,
+            messages: messages,
+            period: period,
+          ));
+  return task.then((value) {
+    context.pop();
+    return value;
+  });
+}
+
+Future<T?> showAppSpinnerDialog<T>(
+  BuildContext context, {
+  Widget? icon,
+  String? title,
+  Widget? loadingWidget,
+  double? width,
+  List<String> messages = const [],
+  Duration? period,
+}) {
+  return showDialog<T?>(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) {
+      return StatefulBuilder(builder: (context, setState) {
+        int currentIndex = 0;
+        final stream = Stream.periodic(period ?? const Duration(seconds: 3))
+            .map((_) => messages[currentIndex++ % messages.length]);
+
+        return StreamBuilder<String>(
+            stream: stream,
+            initialData: messages.firstOrNull,
+            builder: (context, snapshot) {
+              return AlertDialog(
+                icon: icon,
+                title: title != null
+                    ? SizedBox(
+                        width: width ?? kDefaultDialogWidth,
+                        child: AppText.titleLarge(title))
+                    : null,
+                content: SizedBox(
+                    width: width ?? kDefaultDialogWidth,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        loadingWidget ?? const AppSpinner(),
+                        if (snapshot.hasData) AppText.labelLarge(snapshot.data!)
+                      ],
+                    )),
+              );
+            });
+      });
+    },
+  );
+}
 
 Future<T?> showSubmitAppDialog<T>(
   BuildContext context, {
@@ -200,4 +267,3 @@ Future<bool?> showUnsavedAlert(BuildContext context,
     ],
   );
 }
-

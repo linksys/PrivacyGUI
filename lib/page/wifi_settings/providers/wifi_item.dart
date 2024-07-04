@@ -234,6 +234,11 @@ enum WifiSecurityType {
     return WifiSecurityType.values.firstWhere((item) => item.value == value);
   }
 
+  bool get isWPA3Variant =>
+      this == WifiSecurityType.wpa2Or3MixedPersonal ||
+      this == WifiSecurityType.wpa3Personal ||
+      this == WifiSecurityType.wpa3Enterprise;
+
   bool get isWpaPersonalVariant =>
       this == WifiSecurityType.wpaPersonal ||
       this == WifiSecurityType.wpa2Personal ||
@@ -282,6 +287,8 @@ enum WifiWirelessMode {
   static WifiWirelessMode getByValue(String value) {
     return WifiWirelessMode.values.firstWhere((item) => item.value == value);
   }
+
+  bool get isIncludeBeMixedMode => this == axbe || this == anacaxbe;
 }
 
 enum WifiChannelWidth {

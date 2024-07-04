@@ -81,6 +81,8 @@ enum _JNAPActionValue {
       value: 'http://linksys.com/jnap/firewall/SetFirewallSettings'),
   getDMZSettings(value: 'http://linksys.com/jnap/firewall/GetDMZSettings'),
   setDMZSettings(value: 'http://linksys.com/jnap/firewall/SetDMZSettings'),
+  getALGSettings(value: 'http://linksys.com/jnap/firewall/GetALGSettings'),
+  setALGSettings(value: 'http://linksys.com/jnap/firewall/SetALGSettings'),
   getFirmwareUpdateStatus(
       value: 'http://linksys.com/jnap/firmwareupdate/GetFirmwareUpdateStatus'),
   getNodesFirmwareUpdateStatus(
@@ -205,6 +207,7 @@ enum _JNAPActionValue {
           'http://linksys.com/jnap/parentalcontrol/GetParentalControlSettings'),
   getPowerTableSettings(
       value: 'http://linksys.com/jnap/powertable/GetPowerTableSettings'),
+  getSoftSKUSettings(value: 'http://linksys.com/jnap/product/GetSoftSKUSettings'),
   getQoSSettings(value: 'http://linksys.com/jnap/qos/GetQoSSettings'),
   getQoSSettings2(value: 'http://linksys.com/jnap/qos/GetQoSSettings2'),
   getDHCPClientLeases(
@@ -241,6 +244,8 @@ enum _JNAPActionValue {
       value: 'http://linksys.com/jnap/router/RenewDHCPIPv6WANLease'),
   getEthernetPortConnections(
       value: 'http://linksys.com/jnap/router/GetEthernetPortConnections'),
+  getExpressForwardingSettings(
+      value: 'http://linksys.com/jnap/router/GetExpressForwardingSettings'),
   getManagementSettings(
       value: 'http://linksys.com/jnap/routermanagement/GetManagementSettings'),
   getManagementSettings2(
@@ -249,6 +254,8 @@ enum _JNAPActionValue {
       value: 'http://linksys.com/jnap/routermanagement/SetManagementSettings'),
   setManagementSettings2(
       value: 'http://linksys.com/jnap/routermanagement/SetManagementSettings2'),
+  getUPnPSettings(value: 'http://linksys.com/jnap/routerupnp/GetUPnPSettings'),
+  setUPnPSettings(value: 'http://linksys.com/jnap/routerupnp/SetUPnPSettings'),
   isAdminPasswordSetByUser(
       value: 'http://linksys.com/jnap/nodes/setup/IsAdminPasswordSetByUser'),
   setupSetAdminPassword(

@@ -147,6 +147,10 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
         const MapEntry(JNAPAction.getFirmwareUpdateStatus, {}),
       );
     }
+    if (isServiceSupport(JNAPService.product)) {
+      commands.add(const MapEntry(JNAPAction.getSoftSKUSettings, {}));
+    }
+
     return commands;
   }
 }

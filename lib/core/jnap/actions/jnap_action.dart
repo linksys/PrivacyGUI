@@ -62,6 +62,8 @@ enum JNAPAction {
   setFirewallSettings,
   getDMZSettings,
   setDMZSettings,
+  getALGSettings,
+  setALGSettings,
   // firmwareUpdate
   getFirmwareUpdateStatus,
   getNodesFirmwareUpdateStatus,
@@ -120,6 +122,8 @@ enum JNAPAction {
   getParentalControlSettings,
   // powerTable
   getPowerTableSettings,
+  // product
+  getSoftSKUSettings,
   // qos
   getQoSSettings,
   // router
@@ -136,9 +140,13 @@ enum JNAPAction {
   renewDHCPWANLease,
   renewDHCPIPv6WANLease,
   getEthernetPortConnections,
+  getExpressForwardingSettings,
   // routerManagement
   getManagementSettings,
   setManagementSettings,
+  // routerUpnp
+  getUPnPSettings,
+  setUPnPSettings,
   // selectableWAN
   getPortConnectionStatus,
   getWANPort,

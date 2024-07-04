@@ -23,7 +23,10 @@ class WifiListNotifier extends Notifier<WiFiState> {
   WiFiState build() {
     final dashboardManagerState = ref.read(dashboardManagerProvider);
     final deviceManagerState = ref.read(deviceManagerProvider);
-    return _getWifiList(deviceManagerState, dashboardManagerState);
+    return _getWifiList(
+      deviceManagerState,
+      dashboardManagerState,
+    );
   }
 
   Future<WiFiState> fetch([bool force = false]) async {
@@ -31,6 +34,7 @@ class WifiListNotifier extends Notifier<WiFiState> {
         .read(routerRepositoryProvider)
         .send(JNAPAction.getRadioInfo, fetchRemote: force, auth: true)
         .then((result) => GetRadioInfo.fromMap(result.output));
+    await ref.read(wifiAdvancedProvider.notifier).fetch();
     final deviceManagerState = ref.read(deviceManagerProvider);
     final wifiItems = radioInfo.radios
         .map(
@@ -45,7 +49,9 @@ class WifiListNotifier extends Notifier<WiFiState> {
         )
         .toList();
     state = state.copyWith(
-        mainWiFi: wifiItems, simpleWiFi: wifiItems.first.copyWith());
+      mainWiFi: wifiItems,
+      simpleWiFi: wifiItems.first.copyWith(),
+    );
     return state;
   }
 
@@ -65,14 +71,13 @@ class WifiListNotifier extends Notifier<WiFiState> {
               }).length),
         )
         .toList();
-
     return WiFiState(
       mainWiFi: wifiItems,
-      simpleWiFi: wifiItems.first,
+      simpleWiFi: wifiItems.first.copyWith(),
     );
   }
 
-  Future<void> save(WiFiListViewMode mode) {
+  Future<WiFiState> save(WiFiListViewMode mode) {
     final result = switch (mode) {
       WiFiListViewMode.simple => state.mainWiFi
           .map((e) => e.copyWith(
@@ -172,6 +177,35 @@ class WifiListNotifier extends Notifier<WiFiState> {
             sharedKey: '',
           )
         : null;
+  }
+
+  bool checkingMLOSettingsConflicts(Map<WifiRadioBand, WiFiItem> radios,
+      {bool? isMloEnabled}) {
+    if (radios.isEmpty) {
+      return false;
+    }
+    // Bands do not have the same main settings (SSID/PW/Security Type)
+    final first = radios.values.first;
+    final isMainSettingsInconsitent = radios.values.any((element) =>
+        element.ssid != first.ssid || element.password != first.password);
+    // 5 or 6 GHz band has non-WPA3 Security Type (covers scenario that all bands were set to “Enhanced Open Only”)
+    final hasNonWPA3SecurityType =
+        radios.values.any((element) => !element.securityType.isWPA3Variant);
+    // 5 or 6 GHz band is Disabled
+    final hasDisabled5G6GBand = radios.entries
+        .where((e) => e.key != WifiRadioBand.radio_24)
+        .map((e) => e.value)
+        .any((element) => !element.isEnabled);
+    // 5 or 6 GHz band is not set to “Mixed” Network Mode (non-802.11be mode)
+    final has5G6GModeNotMixed = radios.entries
+        .where((e) => e.key != WifiRadioBand.radio_24)
+        .map((e) => e.value)
+        .any((element) => !element.wirelessMode.isIncludeBeMixedMode);
+    return (isMloEnabled ?? false) ||
+        isMainSettingsInconsitent ||
+        hasNonWPA3SecurityType ||
+        hasDisabled5G6GBand ||
+        has5G6GModeNotMixed;
   }
 
   bool isAllBandsConsistent() {
