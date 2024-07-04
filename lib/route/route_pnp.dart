@@ -26,7 +26,7 @@ final pnpTroubleshootingRoute = LinksysRoute(
   name: RouteNamed.pnpNoInternetConnection,
   path: RoutePath.pnpNoInternetConnection,
   config: LinksysRouteConfig(
-    column: ColumnGrid(column: 6, centered: true),
+    column: ColumnGrid(column: 5, centered: true),
   ),
   builder: (context, state) => PnpNoInternetConnectionView(
     args: state.extra as Map<String, dynamic>? ?? {},
@@ -56,7 +56,7 @@ final pnpTroubleshootingRoute = LinksysRoute(
       name: RouteNamed.pnpUnplugModem,
       path: RoutePath.pnpUnplugModem,
       config: LinksysRouteConfig(
-        column: ColumnGrid(column: 6, centered: true),
+        column: ColumnGrid(column: 5, centered: true),
       ),
       builder: (context, state) => const PnpUnplugModemView(),
       routes: [
@@ -64,7 +64,7 @@ final pnpTroubleshootingRoute = LinksysRoute(
           name: RouteNamed.pnpModemLightsOff,
           path: RoutePath.pnpModemLightsOff,
           config: LinksysRouteConfig(
-            column: ColumnGrid(column: 6, centered: true),
+            column: ColumnGrid(column: 5, centered: true),
           ),
           builder: (context, state) => const PnpModemLightsOffView(),
           routes: [
@@ -72,7 +72,7 @@ final pnpTroubleshootingRoute = LinksysRoute(
               name: RouteNamed.pnpWaitingModem,
               path: RoutePath.pnpWaitingModem,
               config: LinksysRouteConfig(
-                column: ColumnGrid(column: 6, centered: true),
+                column: ColumnGrid(column: 5, centered: true),
               ),
               builder: (context, state) => const PnpWaitingModemView(),
             )
@@ -84,7 +84,7 @@ final pnpTroubleshootingRoute = LinksysRoute(
       name: RouteNamed.pnpIspTypeSelection,
       path: RoutePath.pnpIspTypeSelection,
       config: LinksysRouteConfig(
-        column: ColumnGrid(column: 6, centered: true),
+        column: ColumnGrid(column: 5, centered: true),
       ),
       builder: (context, state) => const PnpIspTypeSelectionView(),
       routes: [
@@ -92,7 +92,7 @@ final pnpTroubleshootingRoute = LinksysRoute(
           name: RouteNamed.pnpStaticIp,
           path: RoutePath.pnpStaticIp,
           config: LinksysRouteConfig(
-            column: ColumnGrid(column: 6, centered: true),
+            column: ColumnGrid(column: 5, centered: true),
           ),
           builder: (context, state) => const PnpStaticIpView(),
           routes: [
@@ -100,7 +100,7 @@ final pnpTroubleshootingRoute = LinksysRoute(
               name: RouteNamed.pnpIspSettingsAuth,
               path: RoutePath.pnpIspSettingsAuth,
               config: LinksysRouteConfig(
-                column: ColumnGrid(column: 6, centered: true),
+                column: ColumnGrid(column: 5, centered: true),
               ),
               builder: (context, state) => PnpIspSettingsAuthView(
                 args: state.extra as Map<String, dynamic>? ?? {},
@@ -112,7 +112,7 @@ final pnpTroubleshootingRoute = LinksysRoute(
           name: RouteNamed.pnpPPPOE,
           path: RoutePath.pnpPPPOE,
           config: LinksysRouteConfig(
-            column: ColumnGrid(column: 6, centered: true),
+            column: ColumnGrid(column: 5, centered: true),
           ),
           builder: (context, state) => PnpPPPOEView(
             args: state.extra as Map<String, dynamic>? ?? {},

@@ -70,28 +70,31 @@ class _PnpNoInternetConnectionState
             ),
             const AppGap.large3(),
             if (state.hasResetModem)
-              AppCard(
-                onTap: () {
-                  context.pushNamed(RouteNamed.callSupportMainRegion);
-                },
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          AppText.labelLarge(
-                            loc(context).needHelp,
-                          ),
-                          const AppGap.small3(),
-                          AppText.bodyMedium(
-                            loc(context).pnpNoInternetConnectionContactSupport,
-                          ),
-                        ],
+              Padding(
+                padding: const EdgeInsets.only(bottom: Spacing.small2),
+                child: AppCard(
+                  onTap: () {
+                    context.pushNamed(RouteNamed.callSupportMainRegion);
+                  },
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            AppText.labelLarge(
+                              loc(context).needHelp,
+                            ),
+                            const AppGap.small3(),
+                            AppText.bodyMedium(
+                              loc(context).pnpNoInternetConnectionContactSupport,
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    const Icon(LinksysIcons.chevronRight),
-                  ],
+                      const Icon(LinksysIcons.chevronRight),
+                    ],
+                  ),
                 ),
               ),
             AppCard(
@@ -118,6 +121,7 @@ class _PnpNoInternetConnectionState
                 ],
               ),
             ),
+            const AppGap.small2(),
             AppCard(
               onTap: () {
                 context.pushNamed(RouteNamed.pnpIspTypeSelection);
