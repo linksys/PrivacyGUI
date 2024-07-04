@@ -14,9 +14,9 @@ class PortRangeTriggeringListNotifier
   @override
   PortRangeTriggeringListState build() => const PortRangeTriggeringListState();
 
-  fetch() async {
+  Future fetch() async {
     final repo = ref.read(routerRepositoryProvider);
-    repo
+    await repo
         .send(
       JNAPAction.getPortRangeTriggeringRules,
       fetchRemote: true,

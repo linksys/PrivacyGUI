@@ -32,16 +32,16 @@ class MacFilteringView extends ArgumentsConsumerStatefulView {
 
 class _MacFilteringViewState extends ConsumerState<MacFilteringView> {
   late final MacFilteringNotifier _notifier;
-  late MacFilteringState _preservedState;
+  MacFilteringState? _preservedState;
   @override
   void initState() {
     _notifier = ref.read(macFilteringProvider.notifier);
     doSomethingWithSpinner(
       context,
       _notifier.fetch().then(
-        (_) {
+        (state) {
           ref.read(wifiViewProvider.notifier).setChanged(false);
-          _preservedState = ref.read(macFilteringProvider);
+          _preservedState = state;
         },
       ),
     );

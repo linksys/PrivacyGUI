@@ -36,10 +36,12 @@ class _PortRangeTriggeringContentViewState
 
   @override
   void initState() {
-    _notifier = ref.read(portRangeTriggeringListProvider.notifier);
-    doSomethingWithSpinner(context, _notifier.fetch(),);
-
     super.initState();
+    _notifier = ref.read(portRangeTriggeringListProvider.notifier);
+    doSomethingWithSpinner(
+      context,
+      _notifier.fetch(),
+    );
   }
 
   @override

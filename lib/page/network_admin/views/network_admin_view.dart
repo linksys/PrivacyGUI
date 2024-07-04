@@ -185,9 +185,10 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
 
   String _getTimezone(TimezoneState timezoneState) {
     final timezone = timezoneState.supportedTimezones.firstWhereOrNull(
-            (element) => element.timeZoneID == timezoneState.timezoneId) ??
-        timezoneState.supportedTimezones[0];
-    return '(${getTimezoneGMT(timezone.description)}) ${getTimeZoneRegionName(context, timezone.timeZoneID)}';
+        (element) => element.timeZoneID == timezoneState.timezoneId);
+    return timezone != null
+        ? '(${getTimezoneGMT(timezone.description)}) ${getTimeZoneRegionName(context, timezone.timeZoneID)}'
+        : '--';
   }
 
   _showRouterPasswordModal(String? hint) {

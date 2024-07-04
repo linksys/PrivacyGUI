@@ -36,7 +36,7 @@ class LocalNetworkSettingsView extends ArgumentsConsumerStatefulView {
 
 class _LocalNetworkSettingsViewState
     extends ConsumerState<LocalNetworkSettingsView> {
-  late LocalNetworkSettingsState originalSettings;
+  LocalNetworkSettingsState? originalSettings;
 
   @override
   void initState() {
@@ -65,7 +65,7 @@ class _LocalNetworkSettingsViewState
   @override
   Widget build(BuildContext context) {
     ref.listen(redirectionProvider, (previous, next) {
-      if (kIsWeb && next != null && originalSettings.ipAddress != next) {
+      if (kIsWeb && next != null && originalSettings?.ipAddress != next) {
         logger.d('Redirect to $next');
         assignWebLocation(next);
       }
