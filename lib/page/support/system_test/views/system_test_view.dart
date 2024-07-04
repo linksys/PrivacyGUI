@@ -1,12 +1,16 @@
+import 'dart:math';
+
 import 'package:collection/collection.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:privacy_gui/core/jnap/models/health_check_result.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_tab_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
@@ -14,13 +18,17 @@ import 'package:flutter/material.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/dashboard/views/components/shimmer.dart';
 import 'package:privacy_gui/page/health_check/_health_check.dart';
-import 'package:privacy_gui/page/support/providers/system_connectivity_provider.dart';
+import 'package:privacy_gui/page/support/system_test/providers/system_connectivity_provider.dart';
+import 'package:privacy_gui/page/support/system_test/views/ping_network_modal.dart';
+import 'package:privacy_gui/page/support/system_test/views/speed_test_widget.dart';
+import 'package:privacy_gui/page/support/system_test/views/traceroute_modal.dart';
 import 'package:privacy_gui/page/topology/_topology.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:privacygui_widgets/widgets/container/animated_meter.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 
@@ -50,6 +58,13 @@ class SystemTestView extends ArgumentsConsumerStatelessView {
     return StyledAppTabPageView(
       backState: StyledBackState.none,
       title: 'System Test',
+      actions: [
+        AppTextButton(
+          'Print',
+          icon: LinksysIcons.person,
+          onTap: () {},
+        )
+      ],
       tabs: tabs.map((e) => AppTab(title: e)).toList(),
       tabContentViews: tabContents,
       expandedHeight: 120,
@@ -509,6 +524,9 @@ class SystemTestView extends ArgumentsConsumerStatelessView {
                       AppText.labelMedium('Ping')
                     ],
                   ),
+                  onTap: () {
+                    _showPingNetworkModal(context, ref);
+                  },
                 ),
               ),
               const AppGap.small2(),
@@ -522,6 +540,9 @@ class SystemTestView extends ArgumentsConsumerStatelessView {
                       AppText.labelMedium('Traceroute')
                     ],
                   ),
+                  onTap: () {
+                    _showTracerouteModal(context, ref);
+                  },
                 ),
               ),
             ],
@@ -534,7 +555,7 @@ class SystemTestView extends ArgumentsConsumerStatelessView {
       children: [
         _headerWidget('Speed Test'),
         const AppGap.large2(),
-        SizedBox(width: 326, height: 326, child: SpeedTestView()),
+        SpeedTestWidget()
       ],
     );
   }
@@ -557,69 +578,22 @@ class SystemTestView extends ArgumentsConsumerStatelessView {
                 horizontal: Spacing.medium, vertical: Spacing.medium),
         child: child,
       );
-}
 
-class AppExpansionCard extends StatefulWidget {
-  final Widget collapsedChild;
-  final Widget expandedChild;
+  _showPingNetworkModal(BuildContext context, WidgetRef ref) {
+    showSimpleAppDialog(
+      context,
+      dismissible: false,
+      title: 'Ping Network',
+      content: PingNetworkModal(),
+    );
+  }
 
-  const AppExpansionCard({
-    super.key,
-    required this.collapsedChild,
-    required this.expandedChild,
-  });
-
-  @override
-  State<AppExpansionCard> createState() => _AppExpansionCardState();
-}
-
-class _AppExpansionCardState extends State<AppExpansionCard> {
-  bool _isExpanded = false;
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
-        padding: EdgeInsets.zero,
-        child: Column(
-          children: [
-            AnimatedContainer(
-                duration: const Duration(milliseconds: 500),
-                curve: Curves.easeInOut,
-                child: Padding(
-                  padding: const EdgeInsets.all(Spacing.large2),
-                  child: _isExpanded
-                      ? widget.expandedChild
-                      : widget.collapsedChild,
-                )),
-            Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary,
-                  borderRadius: CustomTheme.of(context)
-                      .radius
-                      .asBorderRadius()
-                      .medium
-                      .copyWith(topLeft: Radius.zero, topRight: Radius.zero)),
-              child: InkWell(
-                borderRadius: CustomTheme.of(context)
-                    .radius
-                    .asBorderRadius()
-                    .medium
-                    .copyWith(topLeft: Radius.zero, topRight: Radius.zero),
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(Spacing.medium),
-                    child:
-                        AppText.labelLarge(_isExpanded ? 'Collaspe' : 'Expand'),
-                  ),
-                ),
-                onTap: () {
-                  setState(() {
-                    _isExpanded = !_isExpanded;
-                  });
-                },
-              ),
-            ),
-          ],
-        ));
+  _showTracerouteModal(BuildContext context, WidgetRef ref) {
+    showSimpleAppDialog(
+      context,
+      dismissible: false,
+      title: 'Traceroute',
+      content: TracerouteModal(),
+    );
   }
 }

@@ -12,7 +12,7 @@ Future<T?> doSomethingWithSpinner<T>(
   Future<T> task, {
   Widget? icon,
   String? title,
-  List<String> messages = const [],
+  List<String>? messages,
   Duration? period,
 }) {
   Future.delayed(
@@ -21,7 +21,7 @@ Future<T?> doSomethingWithSpinner<T>(
             context,
             title: title,
             icon: icon,
-            messages: messages,
+            messages: messages ?? [loc(context).processing],
             period: period,
           ));
   return task.then((value) {

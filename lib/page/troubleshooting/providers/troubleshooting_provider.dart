@@ -134,15 +134,6 @@ class TroubleshootingNotifier extends Notifier<TroubleshootingState> {
     });
   }
 
-  Future ping({required String host, required int? pingCount}) {
-    return ref.read(routerRepositoryProvider).send(JNAPAction.startPing,
-        fetchRemote: true,
-        cacheLevel: CacheLevel.noCache,
-        auth: true,
-        data: {'host': host, 'packetSizeBytes': 32, 'pingCount': pingCount}
-          ..removeWhere((key, value) => value == null));
-  }
-
   Future sendRouterInfo({required String userEmailList}) {
     if (kDebugMode) {}
     List<String> emailList = [
@@ -164,6 +155,16 @@ class TroubleshootingNotifier extends Notifier<TroubleshootingState> {
           timeoutMs: 30000,
         );
   }
+  
+  Future ping({required String host, required int? pingCount}) {
+    return ref.read(routerRepositoryProvider).send(JNAPAction.startPing,
+        fetchRemote: true,
+        cacheLevel: CacheLevel.noCache,
+        auth: true,
+        data: {'host': host, 'packetSizeBytes': 32, 'pingCount': pingCount}
+          ..removeWhere((key, value) => value == null));
+  }
+
 
   Stream<PingStatus> getPingStatus() {
     return ref
