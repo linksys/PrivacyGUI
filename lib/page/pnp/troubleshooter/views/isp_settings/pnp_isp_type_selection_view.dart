@@ -4,13 +4,11 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/_providers.dart';
-import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class PnpIspTypeSelectionView extends ConsumerStatefulWidget {
@@ -89,10 +87,8 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
     return _isLoading
         ? const AppFullScreenSpinner()
         : StyledAppPageView(
-            appBarStyle: AppBarStyle.back,
             title: loc(context).pnpIspTypeSelectionTitle,
-            child: AppBasicLayout(
-              content: ListView(
+            child: ListView(
                 shrinkWrap: true,
                 children: [
                   ISPTypeCard(
@@ -101,6 +97,7 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
                     isCurrentlyApplying: wanType == WanType.dhcp,
                     tapAction: wanType == WanType.dhcp ? null : _showDHCPAlert,
                   ),
+                  const AppGap.small1(),
                   ISPTypeCard(
                     title: loc(context).connectionTypeStatic,
                     description: loc(context).pnpIspTypeSelectionStaticDesc,
@@ -109,6 +106,7 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
                       context.goNamed(RouteNamed.pnpStaticIp);
                     },
                   ),
+                  const AppGap.small1(),
                   ISPTypeCard(
                     title: loc(context).connectionTypePppoe,
                     description: loc(context).pnpIspTypeSelectionPppoeDesc,
@@ -119,6 +117,7 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
                           extra: {'needVlanId': false});
                     },
                   ),
+                  const AppGap.small1(),
                   ISPTypeCard(
                     title: loc(context).pppoeVlan,
                     description: loc(context).pnpIspTypeSelectionPppoeVlanDesc,
@@ -130,7 +129,6 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
                   ),
                 ],
               ),
-            ),
           );
   }
 }

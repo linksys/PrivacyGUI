@@ -11,6 +11,7 @@ import 'package:privacy_gui/page/pnp/troubleshooter/providers/pnp_troubleshooter
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/theme/custom_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 
@@ -45,13 +46,12 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
 
   Widget _countdownPage() {
     return StyledAppPageView(
-      appBarStyle: AppBarStyle.none,
-      backState: StyledBackState.none,
+      backState: StyledBackState.disabled,
+      title: loc(context).pnpWaitingModemTitle,
       child: AppBasicLayout(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AppText.headlineSmall(loc(context).pnpWaitingModemTitle),
             const AppGap.large3(),
             AppText.bodyLarge(loc(context).pnpWaitingModemDesc),
             Expanded(
@@ -67,73 +67,62 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
 
   Widget _plugBackPage() {
     return StyledAppPageView(
-      appBarStyle: AppBarStyle.none,
-      backState: StyledBackState.none,
-      child: AppBasicLayout(
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AppText.headlineMedium(
-              _isPlugged
-                  ? _isCheckingInternet
-                      ? loc(context).pnpWaitingModemCheckingInternet
-                      : loc(context).pnpWaitingModemWaitStartUp
-                  : loc(context).pnpWaitingModemPlugBack,
-            ),
-            Expanded(
-              child: Center(
-                child: _isPlugged
-                    ? SvgPicture(
-                        CustomTheme.of(context).images.modemWaiting,
-                        fit: BoxFit.fitWidth,
-                      )
-                    : SvgPicture(
-                        CustomTheme.of(context).images.modemPlugged,
-                        fit: BoxFit.fitWidth,
-                      ),
+      backState: StyledBackState.disabled,
+      title: _isPlugged
+          ? _isCheckingInternet
+              ? loc(context).pnpWaitingModemCheckingInternet
+              : loc(context).pnpWaitingModemWaitStartUp
+          : loc(context).pnpWaitingModemPlugBack,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                vertical: Spacing.large4 + Spacing.large3,
+              ),
+              child: SvgPicture(
+                _isPlugged
+                    ? CustomTheme.of(context).images.modemWaiting
+                    : CustomTheme.of(context).images.modemPlugged,
+                fit: BoxFit.fitWidth,
               ),
             ),
-          ],
-        ),
-        footer: _isPlugged
-            ? null
-            : Column(
-                children: [
-                  AppFilledButton.fillWidth(
-                    loc(context).pnpWaitingModemPluggedIn,
-                    onTap: () {
-                      logger.i(
-                          '[PNP Troubleshooter]: Waiting for the modem to start up after plugging it back');
-                      setState(() {
-                        _isPlugged = true;
-                      });
-                      Future.delayed(const Duration(seconds: 5)).then((value) {
-                        setState(() {
-                          _isCheckingInternet = true;
-                          ref
-                              .read(pnpTroubleshooterProvider.notifier)
-                              .resetModem(true);
-                        });
-                        ref
-                            .read(pnpProvider.notifier)
-                            .checkInternetConnection()
-                            .then((value) {
-                          logger.i(
-                              '[PNP Troubleshooter]: Internet connection is OK after resetting the modem');
-                          context.goNamed(RouteNamed.pnp);
-                        }).catchError((error, stackTrace) {
-                          logger.e(
-                              '[PNP Troubleshooter]: Internet connection still fails after resetting the modem');
-                          context.goNamed(RouteNamed.pnpNoInternetConnection);
-                        }, test: (error) {
-                          return error is ExceptionNoInternetConnection;
-                        });
-                      });
-                    },
-                  ),
-                  const AppGap.medium(),
-                ],
-              ),
+          ),
+          if (!_isPlugged)
+            AppFilledButton(
+              loc(context).pnpWaitingModemPluggedIn,
+              onTap: () {
+                logger.i(
+                    '[PNP Troubleshooter]: Waiting for the modem to start up after plugging it back');
+                setState(() {
+                  _isPlugged = true;
+                });
+                Future.delayed(const Duration(seconds: 5)).then((value) {
+                  setState(() {
+                    _isCheckingInternet = true;
+                    ref
+                        .read(pnpTroubleshooterProvider.notifier)
+                        .resetModem(true);
+                  });
+                  ref
+                      .read(pnpProvider.notifier)
+                      .checkInternetConnection()
+                      .then((value) {
+                    logger.i(
+                        '[PNP Troubleshooter]: Internet connection is OK after resetting the modem');
+                    context.goNamed(RouteNamed.pnp);
+                  }).catchError((error, stackTrace) {
+                    logger.e(
+                        '[PNP Troubleshooter]: Internet connection still fails after resetting the modem');
+                    context.goNamed(RouteNamed.pnpNoInternetConnection);
+                  }, test: (error) {
+                    return error is ExceptionNoInternetConnection;
+                  });
+                });
+              },
+            ),
+        ],
       ),
     );
   }

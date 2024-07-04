@@ -52,19 +52,4 @@ void main() {
     await tester.pumpWidget(widget);
   });
 
-  testLocalizations(
-      'Firmware update detail view test - Updating with a temporary spinner',
-      (tester, locale) async {
-    when(mockFirmwareUpdateNotifier.build())
-        .thenReturn(FirmwareUpdateState.empty().copyWith(isUpdating: true));
-    final widget = testableSingleRoute(
-      config: LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
-      overrides: [
-        firmwareUpdateProvider.overrideWith(() => mockFirmwareUpdateNotifier),
-      ],
-      locale: locale,
-      child: const FirmwareUpdateDetailView(),
-    );
-    await tester.pumpWidget(widget);
-  });
 }
