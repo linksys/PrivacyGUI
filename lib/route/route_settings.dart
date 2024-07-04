@@ -43,7 +43,7 @@ final settings = [
           builder: (context, state) => NodeDetailView(),
           routes: [
             LinksysRoute(
-              config: LinksysRouteConfig(column: ColumnGrid(column: 9)),
+              config: LinksysRouteConfig(column: ColumnGrid(column: 12)),
               name: RouteNamed.firmwareUpdateDetail,
               path: RoutePath.firmwareUpdateDetail,
               builder: (context, state) => const FirmwareUpdateDetailView(),

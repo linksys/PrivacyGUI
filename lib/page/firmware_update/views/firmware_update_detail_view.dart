@@ -193,29 +193,41 @@ class FirmwareUpdateNodeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppCard(
-      child: Row(
-        children: [
-          image,
-          const AppGap.medium(),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AppText.labelLarge('$title ($model)'),
-              const AppGap.small3(),
-              AppText.bodyMedium(loc(context).currentVersion(currentVersion)),
-              if (newVersion != null)
-                AppText.bodyMedium(loc(context).newVersion(newVersion!))
-            ],
-          ),
-          const Spacer(),
-          if (newVersion != null)
-            AppText.bodyMedium(
-              loc(context).updateAvailable,
-              color: Theme.of(context).colorScheme.error,
-            )
-          else
-            AppText.bodyMedium(loc(context).upToDate),
-        ],
+      child: SizedBox(
+        height: 76,
+        child: Row(
+          children: [
+            image,
+            const AppGap.medium(),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppText.labelLarge('$title ($model)'),
+                const AppGap.small3(),
+                AppText.bodyMedium(loc(context).currentVersion(currentVersion)),
+                if (newVersion != null)
+                  AppText.bodyMedium(loc(context).newVersion(newVersion!))
+              ],
+            ),
+            if (newVersion != null)
+              Expanded(
+                child: AppText.bodyMedium(
+                  textAlign: TextAlign.right,
+                  maxLines: 2,
+                  loc(context).updateAvailable,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              )
+            else
+              Expanded(
+                child: AppText.bodyMedium(
+                  textAlign: TextAlign.right,
+                  loc(context).upToDate,
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
