@@ -240,7 +240,7 @@ class DashboardNetworks extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Icon(node.isOnline()
-              ? node.isAuthority
+              ? node.isAuthority | node.isWiredConnection()
                   ? LinksysIcons.ethernet
                   : getWifiSignalIconData(context, node.signalDecibels)
               : LinksysIcons.signalWifiNone),
