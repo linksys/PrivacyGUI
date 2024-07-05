@@ -25,7 +25,6 @@ class SafeBrowsingView extends ArgumentsConsumerStatefulView {
 
 class _SafeBrowsingViewState extends ConsumerState<SafeBrowsingView> {
   late final SafeBrowsingNotifier _notifier;
-  bool isLoading = true;
   bool enableSafeBrowsing = false;
   SafeBrowsingType currentSafeBrowsingType = SafeBrowsingType.fortinet;
   String loadingDesc = '';
@@ -33,6 +32,7 @@ class _SafeBrowsingViewState extends ConsumerState<SafeBrowsingView> {
   @override
   void initState() {
     _notifier = ref.read(safeBrowsingProvider.notifier);
+
     _fetchData();
     super.initState();
   }
@@ -40,61 +40,56 @@ class _SafeBrowsingViewState extends ConsumerState<SafeBrowsingView> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(safeBrowsingProvider);
-    return isLoading
-        ? AppFullScreenSpinner(
-            title: loc(context).safeBrowsing,
-            text: loadingDesc,
-          )
-        : StyledAppPageView(
-            scrollable: true,
-            title: loc(context).safeBrowsing,
-            bottomBar: PageBottomBar(
-              isPositiveEnabled: _edited(state.safeBrowsingType),
-              onPositiveTap: _showRestartAlert,
-            ),
-            child: AppBasicLayout(
-              content: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AppText.bodyLarge(loc(context).safeBrowsingDesc),
-                  const AppGap.large3(),
-                  AppSettingCard(
-                    title: loc(context).safeBrowsing,
-                    trailing: AppSwitch(
-                      value: enableSafeBrowsing,
-                      onChanged: (enable) {
-                        setState(() {
-                          enableSafeBrowsing = enable;
-                        });
-                      },
-                    ),
-                  ),
-                  const AppGap.medium(),
-                  Opacity(
-                    opacity: enableSafeBrowsing ? 1 : 0.5,
-                    child: AppSettingCard(
-                      title: loc(context).provider,
-                      description:
-                          _getTextFormSafeBrowsingType(currentSafeBrowsingType),
-                      trailing: AppIconButton(
-                        icon: Icons.edit,
-                        onTap: enableSafeBrowsing
-                            ? () {
-                                _showProviderSelector(state.hasFortinet);
-                              }
-                            : null,
-                      ),
-                      onTap: enableSafeBrowsing
-                          ? () {
-                              _showProviderSelector(state.hasFortinet);
-                            }
-                          : null,
-                    ),
-                  ),
-                ],
+    return StyledAppPageView(
+      scrollable: true,
+      title: loc(context).safeBrowsing,
+      bottomBar: PageBottomBar(
+        isPositiveEnabled: _edited(state.safeBrowsingType),
+        onPositiveTap: _showRestartAlert,
+      ),
+      child: AppBasicLayout(
+        content: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppText.bodyLarge(loc(context).safeBrowsingDesc),
+            const AppGap.large3(),
+            AppSettingCard(
+              title: loc(context).safeBrowsing,
+              trailing: AppSwitch(
+                value: enableSafeBrowsing,
+                onChanged: (enable) {
+                  setState(() {
+                    enableSafeBrowsing = enable;
+                  });
+                },
               ),
             ),
-          );
+            const AppGap.medium(),
+            Opacity(
+              opacity: enableSafeBrowsing ? 1 : 0.5,
+              child: AppSettingCard(
+                title: loc(context).provider,
+                description:
+                    _getTextFormSafeBrowsingType(currentSafeBrowsingType),
+                trailing: AppIconButton(
+                  icon: Icons.edit,
+                  onTap: enableSafeBrowsing
+                      ? () {
+                          _showProviderSelector(state.hasFortinet);
+                        }
+                      : null,
+                ),
+                onTap: enableSafeBrowsing
+                    ? () {
+                        _showProviderSelector(state.hasFortinet);
+                      }
+                    : null,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   _showProviderSelector(bool hasFortinet) {
@@ -186,43 +181,49 @@ class _SafeBrowsingViewState extends ConsumerState<SafeBrowsingView> {
 
   void _setSafeBrowsing() {
     setState(() {
-      isLoading = true;
       loadingDesc = loc(context).restartingWifi;
     });
-    _notifier
-        .setSafeBrowsing(
-            enableSafeBrowsing ? currentSafeBrowsingType : SafeBrowsingType.off)
-        .then((_) {
-      _initCurrentState();
-      showSuccessSnackBar(
-        context,
-        loc(context).settingsSaved,
-      );
-    }).onError((error, stackTrace) {
-      final errorMsg = switch (error) {
-        SafeBrowsingError => (error as SafeBrowsingError).message,
-        _ => 'Unknown error',
-      };
-      showFailedSnackBar(
-        context,
-        errorMsg ?? '',
-      );
-    }).whenComplete(() {
-      setState(() {
-        isLoading = false;
-        loadingDesc = '';
-      });
-    });
+    doSomethingWithSpinner(
+      context,
+      messages: [loadingDesc],
+      _notifier
+          .setSafeBrowsing(enableSafeBrowsing
+              ? currentSafeBrowsingType
+              : SafeBrowsingType.off)
+          .then((_) {
+        _initCurrentState();
+        showSuccessSnackBar(
+          context,
+          loc(context).settingsSaved,
+        );
+      }).onError((error, stackTrace) {
+        final errorMsg = switch (error) {
+          SafeBrowsingError => (error as SafeBrowsingError).message,
+          _ => 'Unknown error',
+        };
+        showFailedSnackBar(
+          context,
+          errorMsg ?? '',
+        );
+      }).whenComplete(
+        () {
+          setState(() {
+            loadingDesc = '';
+          });
+        },
+      ),
+    );
   }
 
   Future _fetchData() async {
-    _notifier.fetchLANSettings().then((_) {
-      _initCurrentState();
-    }).whenComplete(() {
-      setState(() {
-        isLoading = false;
-      });
-    });
+    doSomethingWithSpinner(
+      context,
+      _notifier.fetchLANSettings().then(
+        (_) {
+          _initCurrentState();
+        },
+      ),
+    );
   }
 
   _initCurrentState() {

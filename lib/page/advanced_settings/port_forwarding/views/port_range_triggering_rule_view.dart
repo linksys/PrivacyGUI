@@ -5,6 +5,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/core/jnap/models/port_range_triggering_rule.dart';
 import 'package:privacy_gui/page/advanced_settings/port_forwarding/_port_forwarding.dart';
 import 'package:privacy_gui/page/advanced_settings/port_forwarding/providers/consts.dart';
+import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
@@ -104,17 +105,22 @@ class _AddRuleContentViewState
               firstForwardedPort: int.parse(_firstForwardedPortController.text),
               lastForwardedPort: int.parse(_lastForwardedPortController.text),
               description: _ruleNameController.text);
-          _notifier.save(rule).then((value) {
-            if (value) {
-              showSuccessSnackBar(
-                  context,
-                  _notifier.isEdit()
-                      ? loc(context).ruleUpdated
-                      : loc(context).ruleAdded);
+          doSomethingWithSpinner(
+            context,
+            _notifier.save(rule).then(
+              (value) {
+                if (value) {
+                  showSuccessSnackBar(
+                      context,
+                      _notifier.isEdit()
+                          ? loc(context).ruleUpdated
+                          : loc(context).ruleAdded);
 
-              context.pop(true);
-            }
-          });
+                  context.pop(true);
+                }
+              },
+            ),
+          );
         },
         onNegitiveTap: () {
           _notifier.delete().then((value) {

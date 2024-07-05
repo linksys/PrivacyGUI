@@ -126,7 +126,9 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                     ],
                   ),
                 ),
-                _speedCheckWidget(context, ref, state),
+                SizedBox(
+                    width: double.infinity,
+                    child: _speedCheckWidget(context, ref, state)),
               ],
             )),
       ),
@@ -193,7 +195,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
     final dateTimeStr = loc(context).speedCheckLatestTime(dateTime, dateTime);
     return state.isHealthCheckSupported
         ? Container(
-          key: const ValueKey('speedCheck'),
+            key: const ValueKey('speedCheck'),
             color: Theme.of(context).colorSchemeExt.surfaceContainerLow,
             padding: const EdgeInsets.all(48.0),
             child: Column(

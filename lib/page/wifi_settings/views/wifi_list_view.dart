@@ -2,7 +2,6 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
@@ -18,6 +17,7 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/input_field/validator_widget.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
@@ -39,7 +39,6 @@ class WiFiListView extends ArgumentsConsumerStatefulView {
 class _WiFiListViewState extends ConsumerState<WiFiListView> {
   WiFiState? _preservedState;
 
-  bool _isLoading = false;
   WiFiListViewMode _preseveredMode = WiFiListViewMode.simple;
   WiFiListViewMode _mode = WiFiListViewMode.simple;
 
@@ -56,9 +55,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
     final index = widget.args['wifiIndex'] as int? ?? 0;
     _scrollController = ScrollController(initialScrollOffset: 760.0 * index);
 
-    setState(() {
-      _isLoading = true;
-    });
+    doSomethingWithSpinner(context, 
     ref.read(wifiListProvider.notifier).fetch().then((state) {
       ref.read(wifiViewProvider.notifier).setChanged(false);
       setState(() {
@@ -68,7 +65,6 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
                 : WiFiListViewMode.advanced;
         _mode = _preseveredMode;
         _preservedState = state;
-        _isLoading = false;
         _simplePasswordController.text =
             state.mainWiFi.firstOrNull?.password ?? '';
         for (var wifi in state.mainWiFi) {
@@ -76,8 +72,8 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
           _advancedPasswordController.putIfAbsent(
               wifi.radioID, () => controller);
         }
-      });
-    });
+      },);
+    },),);
   }
 
   @override
@@ -101,11 +97,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
             ? _preservedState?.simpleWiFi != state.simpleWiFi
             : !const ListEquality()
                 .equals(_preservedState?.mainWiFi, state.mainWiFi));
-    return _isLoading
-        ? AppFullScreenSpinner(
-            text: loc(context).processing,
-          )
-        : StyledAppPageView(
+    return StyledAppPageView(
             appBarStyle: AppBarStyle.none,
             scrollable: true,
             controller: _scrollController,
@@ -113,24 +105,6 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
             bottomBar: PageBottomBar(
                 isPositiveEnabled: isPositiveEnabled,
                 onPositiveTap: () {
-                  // setState(() {
-                  //   _isLoading = true;
-                  // });
-                  // ref
-                  //     .read(wifiListProvider.notifier)
-                  //     .save(_mode)
-                  //     .then((_) {
-                  //       ref.read(wifiViewProvider.notifier).setChanged(false);
-                  //       setState(() {
-                  //         _preservedState = state;
-                  //       });
-                  //       showSuccessSnackBar(context, loc(context).saved);
-                  //     })
-                  //     .onError((error, stackTrace) => showFailedSnackBar(
-                  //         context, loc(context).generalError))
-                  //     .whenComplete(() => setState(() {
-                  //           _isLoading = false;
-                  //         }));
                   _showSaveConfirmModal();
                 }),
             child: switch (_mode) {
@@ -251,7 +225,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppCard(
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 24),
+            padding: const EdgeInsets.symmetric(vertical: Spacing.small2, horizontal: Spacing.large2),
             child: Column(
               children: [
                 _advancedWiFiBandCard(radio),
@@ -732,8 +706,6 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
             showFailedSnackBar(context, loc(context).generalError));
       },
     );
-
-    if (result != null) {}
   }
 
   List<Widget> _mloWarning(WiFiState state) {

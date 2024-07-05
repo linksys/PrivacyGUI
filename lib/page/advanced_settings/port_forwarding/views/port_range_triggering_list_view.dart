@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/port_forwarding/_port_forwarding.dart';
 import 'package:privacy_gui/page/advanced_settings/port_forwarding/views/widgets/_widgets.dart';
+import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -35,10 +36,12 @@ class _PortRangeTriggeringContentViewState
 
   @override
   void initState() {
-    _notifier = ref.read(portRangeTriggeringListProvider.notifier);
-    _notifier.fetch();
-
     super.initState();
+    _notifier = ref.read(portRangeTriggeringListProvider.notifier);
+    doSomethingWithSpinner(
+      context,
+      _notifier.fetch(),
+    );
   }
 
   @override
@@ -78,7 +81,8 @@ class _PortRangeTriggeringContentViewState
                 AppText.labelLarge(loc(context).rules),
                 const AppGap.medium(),
                 if (state.rules.isNotEmpty)
-                  ...state.rules.map(
+                  ...state.rules
+                      .map(
                     (e) => RuleItemCard(
                       title: e.description,
                       isEnabled: e.isEnabled,
@@ -95,7 +99,8 @@ class _PortRangeTriggeringContentViewState
                         });
                       },
                     ),
-                  ).expand((element) sync* {
+                  )
+                      .expand((element) sync* {
                     yield element;
                     yield const AppGap.medium();
                   }),

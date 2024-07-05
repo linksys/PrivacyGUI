@@ -15,7 +15,7 @@ class PortRangeForwardingListNotifier
   PortRangeForwardingListState build() => const PortRangeForwardingListState();
 
   Future fetch() async {
-    ref
+    await ref
         .read(routerRepositoryProvider)
         .send(JNAPAction.getPortRangeForwardingRules,
             fetchRemote: true, auth: true)

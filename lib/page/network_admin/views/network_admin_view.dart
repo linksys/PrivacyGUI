@@ -5,8 +5,6 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/models/firmware_update_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/network_admin/providers/timezone_provider.dart';
-import 'package:privacy_gui/page/network_admin/providers/timezone_state.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
@@ -40,7 +38,6 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
   late final RouterPasswordNotifier _routerPasswordNotifier;
   late final TimezoneNotifier _timezoneNotifier;
   final TextEditingController _passwordController = TextEditingController();
-  bool _isLoading = false;
 
   @override
   void initState() {
@@ -48,15 +45,16 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
 
     _routerPasswordNotifier = ref.read(routerPasswordProvider.notifier);
     _timezoneNotifier = ref.read(timezoneProvider.notifier);
-    _isLoading = true;
-    Future.wait([_routerPasswordNotifier.fetch(), _timezoneNotifier.fetch()])
-        .then((_) {
-      setState(() {
-        _isLoading = false;
-      });
-      final provider = ref.read(routerPasswordProvider);
-      _passwordController.text = provider.adminPassword;
-    });
+    doSomethingWithSpinner(
+      context,
+      Future.wait([_routerPasswordNotifier.fetch(), _timezoneNotifier.fetch()])
+          .then(
+        (_) {
+          final provider = ref.read(routerPasswordProvider);
+          _passwordController.text = provider.adminPassword;
+        },
+      ),
+    );
   }
 
   @override
@@ -75,125 +73,122 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
         FirmwareUpdateSettings.firmwareUpdatePolicyAuto;
     final loginType = ref.watch(authProvider).value?.loginType;
 
-    return _isLoading
-        ? const AppFullScreenSpinner()
-        : StyledAppPageView(
-            scrollable: true,
-            title: loc(context).networkAdmin,
-            child: Column(
-              children: [
-                AppCard(
-                  child: Column(children: [
-                    AppListCard(
-                      padding: EdgeInsets.zero,
-                      showBorder: false,
-                      title: AppText.bodyLarge(loc(context).routerPassword),
-                      description: Theme(
-                        data: Theme.of(context).copyWith(
-                            inputDecorationTheme: const InputDecorationTheme(
-                                isDense: true,
-                                contentPadding: EdgeInsets.zero)),
-                        child: IntrinsicWidth(
-                          child: loginType == LoginType.local
-                              ? AppPasswordField(
-                                  readOnly: true,
-                                  border: InputBorder.none,
-                                  controller: _passwordController
-                                    ..text = routerPasswordState.adminPassword,
-                                  suffixIconConstraints: const BoxConstraints(),
-                                )
-                              : AppTextField(
-                                  readOnly: true,
-                                  border: InputBorder.none,
-                                  controller: _passwordController
-                                    ..text = '**********',
-                                  secured: true,
-                                  suffixIconConstraints: const BoxConstraints(),
-                                ),
-                        ),
-                      ),
-                      trailing: const Icon(LinksysIcons.edit),
-                      onTap: () {
-                        _showRouterPasswordModal(routerPasswordState.hint);
-                      },
-                    ),
-                    const Divider(),
-                    AppListCard(
-                      padding: EdgeInsets.zero,
-                      showBorder: false,
-                      title: AppText.bodyLarge(loc(context).routerPasswordHint),
-                      description: routerPasswordState.hint.isEmpty
-                          ? const AppText.labelLarge('Set one')
-                          : AppText.bodyMedium(routerPasswordState.hint),
-                    ),
-                  ]),
-                ),
-                const AppGap.medium(),
-                AppCard(
-                  child: AppSwitchTriggerTile(
-                    value: isFwAutoUpdate,
-                    title: AppText.labelLarge(loc(context).autoFirmwareUpdate),
-                    onChanged: (value) {},
-                    event: (value) async {
-                      await ref
-                          .read(firmwareUpdateProvider.notifier)
-                          .setFirmwareUpdatePolicy(value
-                              ? FirmwareUpdateSettings.firmwareUpdatePolicyAuto
-                              : FirmwareUpdateSettings
-                                  .firmwareUpdatePolicyManual);
-                    },
+    return StyledAppPageView(
+      scrollable: true,
+      title: loc(context).networkAdmin,
+      child: Column(
+        children: [
+          AppCard(
+            child: Column(children: [
+              AppListCard(
+                padding: EdgeInsets.zero,
+                showBorder: false,
+                title: AppText.bodyLarge(loc(context).routerPassword),
+                description: Theme(
+                  data: Theme.of(context).copyWith(
+                      inputDecorationTheme: const InputDecorationTheme(
+                          isDense: true, contentPadding: EdgeInsets.zero)),
+                  child: IntrinsicWidth(
+                    child: loginType == LoginType.local
+                        ? AppPasswordField(
+                            readOnly: true,
+                            border: InputBorder.none,
+                            controller: _passwordController
+                              ..text = routerPasswordState.adminPassword,
+                            suffixIconConstraints: const BoxConstraints(),
+                          )
+                        : AppTextField(
+                            readOnly: true,
+                            border: InputBorder.none,
+                            controller: _passwordController
+                              ..text = '**********',
+                            secured: true,
+                            suffixIconConstraints: const BoxConstraints(),
+                          ),
                   ),
                 ),
-                const AppGap.medium(),
-
-                AppListCard(
-                  title: AppText.bodyLarge(loc(context).timezone),
-                  description: AppText.labelLarge(_getTimezone(timezoneState)),
-                  trailing: const Icon(LinksysIcons.chevronRight),
-                  onTap: () {
-                    context
-                        .pushNamed<bool?>(RouteNamed.settingsTimeZone)
-                        .then((result) {
-                      if (result == true) {
-                        showSuccessSnackBar(context, loc(context).done);
-                      }
-                    });
-                  },
-                ),
-                // AppListCard(
-                //   title: AppText.bodyLarge('Manual Firmware update'),
-                //   trailing: const Icon(LinksysIcons.add),
-                //   onTap: () async {
-                //     final result = await FilePicker.platform.pickFiles();
-                //     if (result != null) {
-                //       final file = result.files.single;
-                //       logger.d(
-                //           'XXXXX: Manual Firmware update: file: ${file.name}');
-                //       ref
-                //           .read(firmwareUpdateProvider.notifier)
-                //           .manualFirmwareUpdate(file.name, file.bytes ?? [])
-                //           .then((value) {
-                //         if (value) {
-                //           showSuccessSnackBar(
-                //               context, 'Firmware update success');
-                //         } else {
-                //           showFailedSnackBar(
-                //               context, 'Error updating firmware');
-                //         }
-                //       });
-                //     }
-                //   },
-                // ),
-              ],
+                trailing: const Icon(LinksysIcons.edit),
+                onTap: () {
+                  _showRouterPasswordModal(routerPasswordState.hint);
+                },
+              ),
+              const Divider(),
+              AppListCard(
+                padding: EdgeInsets.zero,
+                showBorder: false,
+                title: AppText.bodyLarge(loc(context).routerPasswordHint),
+                description: routerPasswordState.hint.isEmpty
+                    ? const AppText.labelLarge('Set one')
+                    : AppText.bodyMedium(routerPasswordState.hint),
+              ),
+            ]),
+          ),
+          const AppGap.medium(),
+          AppCard(
+            child: AppSwitchTriggerTile(
+              value: isFwAutoUpdate,
+              title: AppText.labelLarge(loc(context).autoFirmwareUpdate),
+              onChanged: (value) {},
+              event: (value) async {
+                await ref
+                    .read(firmwareUpdateProvider.notifier)
+                    .setFirmwareUpdatePolicy(value
+                        ? FirmwareUpdateSettings.firmwareUpdatePolicyAuto
+                        : FirmwareUpdateSettings.firmwareUpdatePolicyManual);
+              },
             ),
-          );
+          ),
+          const AppGap.medium(),
+
+          AppListCard(
+            title: AppText.bodyLarge(loc(context).timezone),
+            description: AppText.labelLarge(_getTimezone(timezoneState)),
+            trailing: const Icon(LinksysIcons.chevronRight),
+            onTap: () {
+              context
+                  .pushNamed<bool?>(RouteNamed.settingsTimeZone)
+                  .then((result) {
+                if (result == true) {
+                  showSuccessSnackBar(context, loc(context).done);
+                }
+              });
+            },
+          ),
+          // AppListCard(
+          //   title: AppText.bodyLarge('Manual Firmware update'),
+          //   trailing: const Icon(LinksysIcons.add),
+          //   onTap: () async {
+          //     final result = await FilePicker.platform.pickFiles();
+          //     if (result != null) {
+          //       final file = result.files.single;
+          //       logger.d(
+          //           'XXXXX: Manual Firmware update: file: ${file.name}');
+          //       ref
+          //           .read(firmwareUpdateProvider.notifier)
+          //           .manualFirmwareUpdate(file.name, file.bytes ?? [])
+          //           .then((value) {
+          //         if (value) {
+          //           showSuccessSnackBar(
+          //               context, 'Firmware update success');
+          //         } else {
+          //           showFailedSnackBar(
+          //               context, 'Error updating firmware');
+          //         }
+          //       });
+          //     }
+          //   },
+          // ),
+        ],
+      ),
+    );
   }
 
   String _getTimezone(TimezoneState timezoneState) {
     final timezone = timezoneState.supportedTimezones.firstWhereOrNull(
-            (element) => element.timeZoneID == timezoneState.timezoneId) ??
-        timezoneState.supportedTimezones[0];
-    return '(${getTimezoneGMT(timezone.description)}) ${getTimeZoneRegionName(context, timezone.timeZoneID)}';
+        (element) => element.timeZoneID == timezoneState.timezoneId);
+    return timezone != null
+        ? '(${getTimezoneGMT(timezone.description)}) ${getTimeZoneRegionName(context, timezone.timeZoneID)}'
+        : '--';
   }
 
   _showRouterPasswordModal(String? hint) {

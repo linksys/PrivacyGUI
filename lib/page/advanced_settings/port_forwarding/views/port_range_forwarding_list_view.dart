@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/port_forwarding/_port_forwarding.dart';
 import 'package:privacy_gui/page/advanced_settings/port_forwarding/views/widgets/_widgets.dart';
+import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
@@ -37,7 +38,10 @@ class _PortRangeForwardingContentViewState
   @override
   void initState() {
     _notifier = ref.read(portRangeForwardingListProvider.notifier);
-    _notifier.fetch();
+    doSomethingWithSpinner(
+      context,
+      _notifier.fetch(),
+    );
 
     super.initState();
   }

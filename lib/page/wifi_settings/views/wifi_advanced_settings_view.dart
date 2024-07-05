@@ -23,23 +23,26 @@ class WifiAdvancedSettingsView extends ArgumentsConsumerStatefulView {
 
 class _WifiAdvancedSettingsViewState
     extends ConsumerState<WifiAdvancedSettingsView> {
-  bool _isLoading = false;
   WifiAdvancedSettingsState? _preservedState;
 
   @override
   void initState() {
     super.initState();
-    setState(() {
-      _isLoading = true;
-    });
-    ref.read(wifiAdvancedProvider.notifier).fetch().then((value) {
-      ref.read(wifiViewProvider.notifier).setChanged(false);
-      final state = ref.read(wifiAdvancedProvider);
-      setState(() {
-        _preservedState = state;
-        _isLoading = false;
-      });
-    });
+
+    doSomethingWithSpinner(
+      context,
+      ref.read(wifiAdvancedProvider.notifier).fetch().then(
+        (value) {
+          ref.read(wifiViewProvider.notifier).setChanged(false);
+          final state = ref.read(wifiAdvancedProvider);
+          setState(
+            () {
+              _preservedState = state;
+            },
+          );
+        },
+      ),
+    );
   }
 
   @override
@@ -47,29 +50,25 @@ class _WifiAdvancedSettingsViewState
     ref.listen(wifiAdvancedProvider, (previous, next) {
       ref.read(wifiViewProvider.notifier).setChanged(next != _preservedState);
     });
-    return _isLoading
-        ? AppFullScreenSpinner(
-            text: loc(context).processing,
-          )
-        : StyledAppPageView(
-            appBarStyle: AppBarStyle.none,
-            padding: EdgeInsets.zero,
-            bottomBar: PageBottomBar(
-                isPositiveEnabled:
-                    _preservedState != ref.read(wifiAdvancedProvider),
-                onPositiveTap: () {
+    return StyledAppPageView(
+      appBarStyle: AppBarStyle.none,
+      padding: EdgeInsets.zero,
+      bottomBar: PageBottomBar(
+          isPositiveEnabled: _preservedState != ref.read(wifiAdvancedProvider),
+          onPositiveTap: () {
+            doSomethingWithSpinner(
+              context,
+              ref.read(wifiAdvancedProvider.notifier).save().then(
+                (_) {
                   setState(() {
-                    _isLoading = true;
+                    ref.read(wifiViewProvider.notifier).setChanged(false);
                   });
-                  ref.read(wifiAdvancedProvider.notifier).save().then((_) {
-                    setState(() {
-                      _isLoading = false;
-                      ref.read(wifiViewProvider.notifier).setChanged(false);
-                    });
-                  });
-                }),
-            child: _buildGrid(),
-          );
+                },
+              ),
+            );
+          }),
+      child: _buildGrid(),
+    );
   }
 
   Widget _buildGrid() {

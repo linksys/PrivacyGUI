@@ -32,21 +32,19 @@ class MacFilteringView extends ArgumentsConsumerStatefulView {
 
 class _MacFilteringViewState extends ConsumerState<MacFilteringView> {
   late final MacFilteringNotifier _notifier;
-  bool _isLoading = false;
-  late MacFilteringState _preservedState;
+  MacFilteringState? _preservedState;
   @override
   void initState() {
-    setState(() {
-      _isLoading = true;
-    });
     _notifier = ref.read(macFilteringProvider.notifier);
-    _notifier.fetch().then((_) {
-      ref.read(wifiViewProvider.notifier).setChanged(false);
-      _preservedState = ref.read(macFilteringProvider);
-      setState(() {
-        _isLoading = false;
-      });
-    });
+    doSomethingWithSpinner(
+      context,
+      _notifier.fetch().then(
+        (state) {
+          ref.read(wifiViewProvider.notifier).setChanged(false);
+          _preservedState = state;
+        },
+      ),
+    );
     super.initState();
   }
 
@@ -61,57 +59,47 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView> {
     ref.listen(macFilteringProvider, (previous, next) {
       ref.read(wifiViewProvider.notifier).setChanged(next != _preservedState);
     });
-    return _isLoading
-        ? AppFullScreenSpinner(
-            title: loc(context).processing,
-          )
-        : StyledAppPageView(
-            scrollable: true,
-            appBarStyle: AppBarStyle.none,
-            padding: EdgeInsets.zero,
-            title: loc(context).macFiltering,
-            bottomBar: PageBottomBar(
-                isPositiveEnabled: _preservedState != state,
-                onPositiveTap: () {
-                  setState(() {
-                    _isLoading = true;
-                  });
-                  _notifier
-                      .save()
-                      .then((value) {
-                        ref.read(wifiViewProvider.notifier).setChanged(false);
-                        setState(() {
-                          _preservedState = ref.read(macFilteringProvider);
-                        });
-                      })
-                      .then((value) =>
-                          showSuccessSnackBar(context, loc(context).saved))
-                      .onError((error, stackTrace) => showFailedSnackBar(
-                          context, loc(context).generalError))
-                      .whenComplete(() {
-                        setState(() {
-                          _isLoading = false;
-                        });
+    return StyledAppPageView(
+      scrollable: true,
+      appBarStyle: AppBarStyle.none,
+      padding: EdgeInsets.zero,
+      title: loc(context).macFiltering,
+      bottomBar: PageBottomBar(
+          isPositiveEnabled: _preservedState != state,
+          onPositiveTap: () {
+            doSomethingWithSpinner(
+                context,
+                _notifier
+                    .save()
+                    .then((value) {
+                      ref.read(wifiViewProvider.notifier).setChanged(false);
+                      setState(() {
+                        _preservedState = ref.read(macFilteringProvider);
                       });
-                }),
-            child: AppBasicLayout(
-              content: Column(
-                children: [
-                  AppCard(
-                    child: AppSwitchTriggerTile(
-                      value: state.mode != MacFilterMode.disabled,
-                      title: AppText.labelLarge(loc(context).wifiMacFilters),
-                      onChanged: (value) {
-                        _notifier.setEnable(value);
-                      },
-                    ),
-                  ),
-                  const AppGap.medium(),
-                  ..._buildEnabledContent(state)
-                ],
+                    })
+                    .then((value) =>
+                        showSuccessSnackBar(context, loc(context).saved))
+                    .onError((error, stackTrace) => showFailedSnackBar(
+                        context, loc(context).generalError)));
+          }),
+      child: AppBasicLayout(
+        content: Column(
+          children: [
+            AppCard(
+              child: AppSwitchTriggerTile(
+                value: state.mode != MacFilterMode.disabled,
+                title: AppText.labelLarge(loc(context).wifiMacFilters),
+                onChanged: (value) {
+                  _notifier.setEnable(value);
+                },
               ),
             ),
-          );
+            const AppGap.medium(),
+            ..._buildEnabledContent(state)
+          ],
+        ),
+      ),
+    );
   }
 
   List<Widget> _buildEnabledContent(MacFilteringState state) {
@@ -133,7 +121,7 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView> {
                 onTap: () async {
                   _selectAccessModal();
                 }),
-                const AppGap.medium(),
+            const AppGap.medium(),
             AppListCard(
               title: AppText.labelLarge(loc(context).filteredDevices),
               trailing: Row(

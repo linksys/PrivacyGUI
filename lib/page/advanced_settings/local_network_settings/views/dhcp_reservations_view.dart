@@ -39,7 +39,6 @@ class DHCPReservationsContentView extends ArgumentsConsumerStatefulView {
 
 class _DHCPReservationsContentViewState
     extends ConsumerState<DHCPReservationsContentView> {
-  bool _isLoading = false;
 
   @override
   void initState() {
@@ -55,9 +54,7 @@ class _DHCPReservationsContentViewState
   Widget build(BuildContext context) {
     final dhcpReservedList = ref.watch(localNetworkSettingProvider
         .select((value) => value.dhcpReservationList));
-    return _isLoading
-        ? const AppFullScreenSpinner()
-        : StyledAppPageView(
+    return StyledAppPageView(
             scrollable: true,
             title: loc(context).dhcpReservations.capitalizeWords(),
             child: AppBasicLayout(

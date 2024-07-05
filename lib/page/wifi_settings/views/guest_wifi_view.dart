@@ -29,23 +29,24 @@ class _GuestWiFiSettingsViewState extends ConsumerState<GuestWiFiSettingsView> {
 
   GuestWiFiState? _preservedState;
 
-  bool _isLoading = false;
-
   @override
   void initState() {
     super.initState();
     _guestPasswordController = TextEditingController();
-    setState(() {
-      _isLoading = true;
-    });
-    ref.read(guestWifiProvider.notifier).fetch().then((state) {
-      ref.read(wifiViewProvider.notifier).setChanged(false);
-      setState(() {
-        _preservedState = state;
-        _guestPasswordController.text = state.password;
-        _isLoading = false;
-      });
-    });
+    doSomethingWithSpinner(
+      context,
+      ref.read(guestWifiProvider.notifier).fetch().then(
+        (state) {
+          ref.read(wifiViewProvider.notifier).setChanged(false);
+          setState(
+            () {
+              _preservedState = state;
+              _guestPasswordController.text = state.password;
+            },
+          );
+        },
+      ),
+    );
   }
 
   @override
@@ -60,31 +61,30 @@ class _GuestWiFiSettingsViewState extends ConsumerState<GuestWiFiSettingsView> {
     ref.listen(guestWifiProvider, (previous, next) {
       ref.read(wifiViewProvider.notifier).setChanged(next != _preservedState);
     });
-    return _isLoading
-        ? AppFullScreenSpinner(
-            text: loc(context).processing,
-          )
-        : StyledAppPageView(
-            appBarStyle: AppBarStyle.none,
-            padding: EdgeInsets.zero,
-            bottomBar: PageBottomBar(
-                isPositiveEnabled: state != _preservedState,
-                onPositiveTap: () {
-                  setState(() {
-                    _isLoading = true;
-                  });
-                  ref.read(guestWifiProvider.notifier).save().then((state) {
-                    ref.read(wifiViewProvider.notifier).setChanged(false);
-                    setState(() {
-                      _preservedState = state;
-                      _isLoading = false;
-                    });
-                    showSuccessSnackBar(context, loc(context).saved);
-                  }).onError((error, stackTrace) => showFailedSnackBar(
-                      context, loc(context).unknownErrorCode(error ?? '')));
-                }),
-            child: _guestWiFiContent(),
-          );
+    return StyledAppPageView(
+      appBarStyle: AppBarStyle.none,
+      padding: EdgeInsets.zero,
+      bottomBar: PageBottomBar(
+          isPositiveEnabled: state != _preservedState,
+          onPositiveTap: () {
+            doSomethingWithSpinner(
+              context,
+              ref.read(guestWifiProvider.notifier).save().then((state) {
+                ref.read(wifiViewProvider.notifier).setChanged(false);
+                setState(() {
+                  _preservedState = state;
+                });
+                showSuccessSnackBar(context, loc(context).saved);
+              }).onError(
+                (error, stackTrace) => showFailedSnackBar(
+                  context,
+                  loc(context).unknownErrorCode(error ?? ''),
+                ),
+              ),
+            );
+          }),
+      child: _guestWiFiContent(),
+    );
   }
 
   Widget _guestWiFiContent() {

@@ -17,7 +17,7 @@ class SinglePortForwardingListNotifier
 
   fetch() async {
     final repo = ref.read(routerRepositoryProvider);
-    repo
+    await repo
         .send(
       JNAPAction.getSinglePortForwardingRules,
       fetchRemote: true,

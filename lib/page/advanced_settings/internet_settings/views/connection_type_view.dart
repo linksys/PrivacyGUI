@@ -75,7 +75,6 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
   late final InternetSettingsViewType viewType;
   late InternetSettingsState state;
   bool isEditing = false;
-  bool isLoading = false;
   String loadingTitle = '';
   static const inputPadding = EdgeInsets.symmetric(
       horizontal: Spacing.small1, vertical: Spacing.medium);
@@ -234,89 +233,83 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
     final title =
         '${viewType == InternetSettingsViewType.ipv4 ? loc(context).ipv4 : loc(context).ipv6} ${loc(context).connectionType}';
     final wanType = WanType.resolve(state.ipv4Setting.ipv4ConnectionType);
-    return isLoading
-        ? AppFullScreenSpinner(
-            title: loadingTitle,
-          )
-        : StyledAppPageView(
-            scrollable: true,
-            title: title,
-            bottomBar: isEditing
-                ? PageBottomBar(
-                    isPositiveEnabled: _isEdited(),
-                    onPositiveTap: _showRestartAlert,
-                  )
-                : null,
-            onBackTap: _isEdited()
-                ? () async {
-                    final goBack = await showUnsavedAlert(context);
-                    if (goBack == true) {
-                      context.pop();
-                    }
-                  }
-                : null,
-            actions: [
-              AppTextButton(
-                isEditing ? loc(context).cancel : loc(context).edit,
-                icon: isEditing ? LinksysIcons.close : LinksysIcons.edit,
-                onTap: isEditing
-                    ? () {
-                        setState(() {
-                          isEditing = false;
-                          state = ref.read(internetSettingsProvider).copyWith();
-                        });
-                      }
-                    : () {
-                        setState(() {
-                          isEditing = true;
-                        });
+    return StyledAppPageView(
+      scrollable: true,
+      title: title,
+      bottomBar: isEditing
+          ? PageBottomBar(
+              isPositiveEnabled: _isEdited(),
+              onPositiveTap: _showRestartAlert,
+            )
+          : null,
+      onBackTap: _isEdited()
+          ? () async {
+              final goBack = await showUnsavedAlert(context);
+              if (goBack == true) {
+                context.pop();
+              }
+            }
+          : null,
+      actions: [
+        AppTextButton(
+          isEditing ? loc(context).cancel : loc(context).edit,
+          icon: isEditing ? LinksysIcons.close : LinksysIcons.edit,
+          onTap: isEditing
+              ? () {
+                  setState(() {
+                    isEditing = false;
+                    state = ref.read(internetSettingsProvider).copyWith();
+                  });
+                }
+              : () {
+                  setState(() {
+                    isEditing = true;
+                  });
+                },
+        ),
+      ],
+      child: AppBasicLayout(
+        content: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _content(),
+            const AppGap.medium(),
+            if (viewType == InternetSettingsViewType.ipv4 &&
+                wanType != WanType.bridge)
+              AppSettingCard(
+                title: loc(context).mtu,
+                description: state.ipv4Setting.mtu == 0
+                    ? loc(context).auto
+                    : loc(context).manual,
+                trailing:
+                    isEditing ? const Icon(LinksysIcons.chevronRight) : null,
+                onTap: state.ipv4Setting.ipv4ConnectionType ==
+                            WanType.bridge.type ||
+                        !isEditing
+                    ? null
+                    : () async {
+                        int? value = await context.pushNamed(
+                          RouteNamed.mtuPicker,
+                          extra: {
+                            'selected': state.ipv4Setting.mtu,
+                            'wanType': state.ipv4Setting.ipv4ConnectionType
+                          },
+                        );
+                        if (value != null) {
+                          setState(() {
+                            state = state.copyWith(
+                              ipv4Setting:
+                                  state.ipv4Setting.copyWith(mtu: value),
+                            );
+                          });
+                        }
                       },
               ),
-            ],
-            child: AppBasicLayout(
-              content: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _content(),
-                  const AppGap.medium(),
-                  if (viewType == InternetSettingsViewType.ipv4 &&
-                      wanType != WanType.bridge)
-                    AppSettingCard(
-                      title: loc(context).mtu,
-                      description: state.ipv4Setting.mtu == 0
-                          ? loc(context).auto
-                          : loc(context).manual,
-                      trailing: isEditing
-                          ? const Icon(LinksysIcons.chevronRight)
-                          : null,
-                      onTap: state.ipv4Setting.ipv4ConnectionType ==
-                                  WanType.bridge.type ||
-                              !isEditing
-                          ? null
-                          : () async {
-                              int? value = await context.pushNamed(
-                                RouteNamed.mtuPicker,
-                                extra: {
-                                  'selected': state.ipv4Setting.mtu,
-                                  'wanType':
-                                      state.ipv4Setting.ipv4ConnectionType
-                                },
-                              );
-                              if (value != null) {
-                                setState(() {
-                                  state = state.copyWith(
-                                    ipv4Setting:
-                                        state.ipv4Setting.copyWith(mtu: value),
-                                  );
-                                });
-                              }
-                            },
-                    ),
-                  const AppGap.medium(),
-                ],
-              ),
-            ),
-          );
+            const AppGap.medium(),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _content() {
@@ -1284,36 +1277,40 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
         });
   }
 
-  Future _onRestartButtonTap() {
+  _onRestartButtonTap() {
     setState(() {
-      isLoading = true;
       loadingTitle = loc(context).restarting;
     });
-    return _saveChange(viewType).then((value) {
-      setState(() {
-        isEditing = false;
-        state = ref.read(internetSettingsProvider).copyWith();
-        initUI();
-      });
-      showSuccessSnackBar(
-        context,
-        loc(context).changesSaved,
-      );
-    }).catchError(
-      (error, stackTrace) {
-        final errorMsg = (error as JNAPError).result;
-        showFailedSnackBar(
+
+    doSomethingWithSpinner(
+      context,
+      _saveChange(viewType).then((value) {
+        setState(() {
+          isEditing = false;
+          state = ref.read(internetSettingsProvider).copyWith();
+          initUI();
+        });
+        showSuccessSnackBar(
           context,
-          errorMsg,
+          loc(context).changesSaved,
         );
-      },
-      test: (error) => error is JNAPError,
-    ).whenComplete(() {
-      setState(() {
-        isLoading = false;
-        loadingTitle = '';
-      });
-    });
+      }).catchError(
+        (error, stackTrace) {
+          final errorMsg = (error as JNAPError).result;
+          showFailedSnackBar(
+            context,
+            errorMsg,
+          );
+        },
+        test: (error) => error is JNAPError,
+      ).whenComplete(
+        () {
+          setState(() {
+            loadingTitle = '';
+          });
+        },
+      ),
+    );
   }
 
   Future _saveChange(InternetSettingsViewType viewType) {

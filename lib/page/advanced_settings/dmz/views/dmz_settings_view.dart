@@ -61,7 +61,8 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                   .replaceAll('.0', '');
           _destinationMACController.text =
               value.settings.destinationMACAddress ?? '';
-        }));
+          return value;
+        })).then((value) => null);
   }
 
   @override
