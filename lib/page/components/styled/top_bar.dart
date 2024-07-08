@@ -37,7 +37,6 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
           }
         },
         child: Container(
-          color: Theme.of(context).colorScheme.surface,
           height: 56,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
@@ -84,9 +83,6 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
                 ),
               ),
               const Spacer(),
-              const Divider(
-                height: 1,
-              )
             ],
           ),
         ),

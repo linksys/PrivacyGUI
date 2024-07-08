@@ -11,6 +11,7 @@ import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/nodes/providers/node_detail_id_provider.dart';
 import 'package:privacy_gui/page/topology/_topology.dart';
+import 'package:privacy_gui/page/topology/views/topology_data.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/hook/icon_hooks.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
@@ -25,22 +26,19 @@ import 'package:privacygui_widgets/widgets/topology/tree_item.dart';
 import 'package:privacygui_widgets/widgets/topology/tree_node.dart';
 import 'package:privacygui_widgets/widgets/topology/tree_view.dart';
 
-class TopologyView extends ArgumentsConsumerStatefulView {
-  const TopologyView({super.key, super.args});
+class TopologyDetailedView extends ArgumentsConsumerStatefulView {
+  const TopologyDetailedView({super.key, super.args});
 
   @override
   ConsumerState<ConsumerStatefulWidget> createState() => _TopologyViewState();
 }
 
-class _TopologyViewState extends ConsumerState<TopologyView> {
+class _TopologyViewState extends ConsumerState<TopologyDetailedView> {
   bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
     final topologyState = ref.watch(topologyProvider);
-
-    final isShowingDeviceChain =
-        ref.watch(topologySelectedIdProvider).isNotEmpty;
     final autoOnboarding =
         ref.read(topologyProvider.notifier).isSupportAutoOnboarding();
     return LayoutBuilder(builder: (context, constraint) {
@@ -73,23 +71,21 @@ class _TopologyViewState extends ConsumerState<TopologyView> {
                   children: [
                     Flexible(
                         child: AppTreeView(
+                      itemHeight: 192,
+                      detailMode: true,
                       onlineRoot: topologyState.onlineRoot
                         ..width = ResponsiveLayout.isMobileLayout(context)
                             ? constraint.maxWidth
-                            : 280,
+                            : 280
+                        ..height = 104,
                       offlineRoot: topologyState.offlineRoot,
                       itemBuilder: (node) {
                         // return Container(color: Colors.amber);
                         return switch (node.runtimeType) {
                           OnlineTopologyNode =>
                             _buildHeader(context, ref, node),
-                          OfflineTopologyNode =>
-                            _buildOfflineHeader(context, ref, node),
-                          RouterTopologyNode =>
-                            topologyState.onlineRoot.toFlatList().length == 2
-                                ? _buildNodeLarge(context, ref, node)
-                                : _buildNode(context, ref, node),
-                          _ => _buildHeader(context, ref, node),
+                          RouterTopologyNode => _buildNode(context, ref, node),
+                          _ => const Center(),
                         };
                       },
                     )),
@@ -100,21 +96,25 @@ class _TopologyViewState extends ConsumerState<TopologyView> {
     });
   }
 
-  Widget _buildNodeLarge(
+  Widget _buildNode(
       BuildContext context, WidgetRef ref, AppTreeNode<TopologyModel> node) {
-    return AppTreeNodeItemLarge(
+    return AppTreeNodeDetailedItem(
       name: node.data.location,
       image: CustomTheme.of(context).images.devices.getByName(node.data.icon),
-      status: node.data.isOnline
-          ? loc(context).nDevices(node.data.connectedDeviceCount)
-          : loc(context).offline,
+      details: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: _buildNodeDetails(context, ref, node, node.data.isMaster),
+      ),
       tail: node.data.isOnline
           ? Icon(
               node.data.isWiredConnection
                   ? getWifiSignalIconData(context, null)
                   : getWifiSignalIconData(context, node.data.signalStrength),
             )
-          : null,
+          : const Icon(
+              LinksysIcons.signalWifiNone,
+            ),
       background: node.data.isOnline
           ? Theme.of(context).colorScheme.surface
           : Theme.of(context).colorScheme.surfaceVariant,
@@ -124,28 +124,63 @@ class _TopologyViewState extends ConsumerState<TopologyView> {
     );
   }
 
-  Widget _buildNode(
-      BuildContext context, WidgetRef ref, AppTreeNode<TopologyModel> node) {
-    return AppTreeNodeItem(
-      name: node.data.location,
-      image: CustomTheme.of(context).images.devices.getByName(node.data.icon),
-      status: node.data.isOnline
-          ? loc(context).nDevices(node.data.connectedDeviceCount)
-          : 'Offline',
-      tail: node.data.isOnline
-          ? Icon(
-              node.data.isWiredConnection
-                  ? getWifiSignalIconData(context, null)
-                  : getWifiSignalIconData(context, node.data.signalStrength),
-            )
-          : null,
-      background: node.data.isOnline
-          ? Theme.of(context).colorScheme.surface
-          : Theme.of(context).colorScheme.surfaceVariant,
-      onTap: () {
-        onNodeTap(context, ref, node);
-      },
-    );
+  List<Widget> _buildNodeDetails(BuildContext context, WidgetRef ref,
+      AppTreeNode<TopologyModel> node, bool isMaster) {
+    if (isMaster) {
+      return [
+        AppStyledText.bold('<a>Model:</a> ${node.data.model}',
+            defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
+            tags: const ['a']),
+        AppStyledText.bold('<a>Serial#:</a> ${node.data.serialNumber}',
+            defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
+            tags: const ['a']),
+        AppStyledText.bold('<a>FW Version:</a> ${node.data.fwVersion}',
+            defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
+            tags: const ['a']),
+        AppStyledText.bold('<a>Mesh Health:</a> Excellent',
+            defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
+            tags: const ['a']),
+      ];
+    }
+    if (node.tag == 'offline') {
+      return [
+        AppStyledText.bold('<a>Model:</a> ${node.data.model}',
+            defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
+            tags: const ['a']),
+        AppStyledText.bold('<a>Serial#:</a> ${node.data.serialNumber}',
+            defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
+            tags: const ['a']),
+        AppStyledText.bold('<a>FW Version:</a> ${node.data.fwVersion}',
+            defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
+            tags: const ['a']),
+        AppStyledText.bold('<a>Connection:</a> ${loc(context).offline}',
+            defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
+            tags: const ['a']),
+      ];
+    }
+
+    return [
+      AppStyledText.bold('<a>Model:</a> ${node.data.model}',
+          defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
+          tags: const ['a']),
+      AppStyledText.bold('<a>Serial#:</a> ${node.data.serialNumber}',
+          defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
+          tags: const ['a']),
+      AppStyledText.bold('<a>FW Version:</a> ${node.data.fwVersion}',
+          defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
+          tags: const ['a']),
+      AppStyledText.bold(
+          '<a>Connection:</a> ${node.data.isWiredConnection ? loc(context).wired : loc(context).wireless}',
+          defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
+          tags: const ['a']),
+      if (!node.data.isWiredConnection)
+        AppStyledText.bold('<a>Signal:</a> ${node.data.signalStrength}',
+            defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
+            tags: const ['a']),
+      AppStyledText.bold('<a>IP Address:</a> ${node.data.ipAddress}',
+          defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
+          tags: const ['a']),
+    ];
   }
 
   Widget _buildHeader(
@@ -158,33 +193,6 @@ class _TopologyViewState extends ConsumerState<TopologyView> {
       showConnector: node is OnlineTopologyNode,
       width: node.width,
     );
-  }
-
-  Widget _buildOfflineHeader(
-      BuildContext context, WidgetRef ref, AppTreeNode<TopologyModel> node) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        InfoCell(
-          name: loc(context).nNodesOffline(node.children.length),
-        ),
-        Wrap(
-          spacing: 24,
-          runSpacing: 24,
-          children:
-              node.children.map((e) => _buildNode(context, ref, e)).toList(),
-        ),
-      ],
-    );
-  }
-
-  List<RouterTreeNode> _getNodes(
-      TopologyState topologyState, bool showOffline) {
-    return [
-      topologyState.onlineRoot,
-      if (showOffline && topologyState.offlineRoot.children.isNotEmpty)
-        topologyState.offlineRoot,
-    ];
   }
 
   void onNodeTap(BuildContext context, WidgetRef ref, RouterTreeNode node) {

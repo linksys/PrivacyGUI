@@ -782,5 +782,7 @@
         "example": "1"
       }
     }
-  }
+  },
+  "wired": "Wired",
+  "wireless": "Wireless"
 }
