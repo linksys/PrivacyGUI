@@ -110,7 +110,7 @@ class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
               },
             ),
           ),
-        const AppGap.large4(),
+        const AppGap.large5(),
         _resultCard(downloadBandWidth, uploadBandWidth),
         const AppGap.large3(),
         Wrap(
@@ -139,7 +139,7 @@ class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
             AppText.labelMedium('$latency ms'),
           ],
         ),
-        const AppGap.large4(),
+        const AppGap.large5(),
         Container(
           alignment: Alignment.bottomCenter,
           padding: const EdgeInsets.only(bottom: 40),

@@ -101,7 +101,7 @@ class _FirmwareUpdateDetailViewState
                 ),
                 if (isUpdateAvailable)
                   Padding(
-                    padding: const EdgeInsets.only(top: Spacing.large4),
+                    padding: const EdgeInsets.only(top: Spacing.large5),
                     child: AppFilledButton(
                       loc(context).updateAll,
                       onTap: () {
@@ -132,8 +132,8 @@ class _FirmwareUpdateDetailViewState
                 mainAxisExtent: 240,
                 childAspectRatio: 1,
                 crossAxisCount: 2,
-                mainAxisSpacing: Spacing.large4,
-                crossAxisSpacing: Spacing.large4,
+                mainAxisSpacing: Spacing.large5,
+                crossAxisSpacing: Spacing.large5,
               ),
               itemCount: list.length,
               itemBuilder: (context, index) {

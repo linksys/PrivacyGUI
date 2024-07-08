@@ -98,7 +98,7 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
             visible: _hasExtraDNS,
             replacement: Padding(
               padding: const EdgeInsets.only(
-                top: Spacing.large4,
+                top: Spacing.large5,
               ),
               child: AppTextButton.noPadding(
                 loc(context).addDns,
@@ -122,7 +122,7 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
               ),
             ),
           ),
-          const AppGap.large4(),
+          const AppGap.large5(),
           AppFilledButton(
             loc(context).next,
             onTap: onNext,

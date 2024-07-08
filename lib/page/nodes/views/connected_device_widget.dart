@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/page/devices/extensions/icon_device_category_ext.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/card/device_list_card.dart';
 
@@ -36,12 +37,15 @@ class ConnectedDeviceListWidget extends ConsumerStatefulWidget {
 class _DeviceListWidgetState extends ConsumerState<ConnectedDeviceListWidget> {
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
+    return ListView.separated(
       physics: widget.physics,
       padding: EdgeInsets.zero,
       itemCount: widget.devices.length,
       itemBuilder: widget.itemBuilder ??
           (context, index) => _buildCell(index, widget.devices),
+      separatorBuilder: (BuildContext context, int index) {
+        return const AppGap.small2();
+      },
     );
   }
 
@@ -65,7 +69,7 @@ class _DeviceListWidgetState extends ConsumerState<ConnectedDeviceListWidget> {
           }
         },
         trailing: getWifiSignalIconData(
-            context, item.isWiredConnection() ? null : item.signalDecibels),
+            context, !item.isWirelessConnection() ? null : item.signalDecibels),
       ),
     );
   }

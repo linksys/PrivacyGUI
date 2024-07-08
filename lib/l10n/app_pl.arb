@@ -257,7 +257,7 @@
   "textMessage": "Wiadomość SMS",
   "nodes": "Węzły",
   "troubleshoot": "Rozwiązywanie problemów",
-  "newFirmwareAvailable": "Dostępna aktualizacja oprogramowania sprzętowego",
+  "updateFirmware": "Dostępna aktualizacja oprogramowania sprzętowego",
   "send": "Wyślij",
   "oopsPleaseSpecifyValidEmailAddress": "Podaj prawidłowy adres e-mail",
   "pleaseEnterValidPhoneNumber": "Podaj prawidłowy numer telefonu.",

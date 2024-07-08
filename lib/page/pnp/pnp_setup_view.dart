@@ -128,7 +128,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         content: LayoutBuilder(builder: (context, constraints) {
           return Padding(
-            padding: const EdgeInsets.symmetric(vertical: Spacing.large4),
+            padding: const EdgeInsets.symmetric(vertical: Spacing.large5),
             child: PnpStepper(
               steps: steps,
               stepperType: StepperType.horizontal,
@@ -201,7 +201,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
               const AppGap.medium(),
               if (_needToReconnect)
                 AppText.bodyMedium(loc(context).pnpWiFiReadyConnectToNewWiFi),
-              const AppGap.large4(),
+              const AppGap.large5(),
               AppFilledButton(
                 loc(context).done,
                 onTap: () {
@@ -235,7 +235,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
               ),
               const AppGap.medium(),
               AppText.headlineSmall(loc(context).pnpReconnectWiFi),
-              const AppGap.large4(),
+              const AppGap.large5(),
               AppFilledButton(
                 loc(context).next,
                 onTap: () {

@@ -44,7 +44,7 @@ class _DashboardAdvancedSettingsViewState
           );
         },
         separatorBuilder: (BuildContext context, int index) {
-          return const AppGap.medium();
+          return const AppGap.small2();
         },
       ),
     );

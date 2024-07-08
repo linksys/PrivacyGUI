@@ -171,7 +171,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
         AppText.headlineSmall(loc(context).pnpFactoryResetTitle),
         const AppGap.medium(),
         AppText.bodyLarge(loc(context).pnpFactoryResetDesc),
-        const AppGap.large4(),
+        const AppGap.large5(),
         AppFilledButton(
           loc(context).textContinue,
           onTap: () {
@@ -228,7 +228,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
             _showRouterPasswordModal();
           },
         ),
-        const AppGap.large4(),
+        const AppGap.large5(),
         AppFilledButton(
           loc(context).login,
           onTap: _inputError == null && !_processing

@@ -257,7 +257,7 @@
   "textMessage": "문자 메시지",
   "nodes": "노드",
   "troubleshoot": "문제 해결",
-  "newFirmwareAvailable": "펌웨어 업데이트 사용 가능",
+  "updateFirmware": "펌웨어 업데이트 사용 가능",
   "send": "전송",
   "oopsPleaseSpecifyValidEmailAddress": "유효한 이메일 주소를 지정하십시오.",
   "pleaseEnterValidPhoneNumber": "유효한 전화 번호를 입력하십시오.",

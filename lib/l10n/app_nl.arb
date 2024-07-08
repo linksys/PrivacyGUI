@@ -257,7 +257,7 @@
   "textMessage": "Sms",
   "nodes": "Nodes",
   "troubleshoot": "Problemen oplossen",
-  "newFirmwareAvailable": "Firmware-update beschikbaar",
+  "updateFirmware": "Firmware-update beschikbaar",
   "send": "Verzenden",
   "oopsPleaseSpecifyValidEmailAddress": "Geef een geldig e-mailadres op",
   "pleaseEnterValidPhoneNumber": "Voer een geldig telefoonnummer in.",

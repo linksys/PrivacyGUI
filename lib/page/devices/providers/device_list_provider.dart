@@ -51,7 +51,7 @@ class DeviceListNotifier extends Notifier<DeviceListState> {
     var model = '';
     var operatingSystem = '';
     var band = '';
-    var signalStrength = 0;
+    int? signalStrength = 0;
     var isOnline = false;
     var isWired = false;
     var type = WifiConnectionType.main;
@@ -63,7 +63,7 @@ class DeviceListNotifier extends Notifier<DeviceListState> {
     upstreamDeviceID = upstream?.deviceID ?? '';
     upstreamIcon = routerIconTest(upstream?.toMap() ?? {});
     isOnline = device.isOnline();
-    isWired = device.isWiredConnection();
+    isWired = !device.isWirelessConnection();
     ipv4Address = isOnline ? (device.connections.first.ipAddress ?? '') : '';
     ipv6Address = isOnline ? (device.connections.first.ipv6Address ?? '') : '';
     macAddress = device.getMacAddress();
@@ -71,8 +71,7 @@ class DeviceListNotifier extends Notifier<DeviceListState> {
     model = device.modelNumber ?? '';
     operatingSystem = device.operatingSystem ?? '';
     band = ref.read(deviceManagerProvider.notifier).getBandConnectedBy(device);
-    signalStrength =
-        ref.read(deviceManagerProvider.notifier).getWirelessSignalOf(device);
+    signalStrength = device.signalDecibels;
     type = device.connectedWifiType;
     final ssid =
         ref.read(deviceManagerProvider.notifier).getSsidConnectedBy(device);

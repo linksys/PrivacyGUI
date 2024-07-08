@@ -257,7 +257,7 @@
   "textMessage": "Tekstmelding",
   "nodes": "Noder",
   "troubleshoot": "Feilsøk",
-  "newFirmwareAvailable": "Fastvareoppdatering tilgjengelig",
+  "updateFirmware": "Fastvareoppdatering tilgjengelig",
   "send": "Send",
   "oopsPleaseSpecifyValidEmailAddress": "Oj, bruk en gyldig e-postadresse",
   "pleaseEnterValidPhoneNumber": "Skriv inn et gyldig telefonnummer.",

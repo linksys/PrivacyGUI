@@ -1,4 +1,6 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
@@ -7,7 +9,6 @@ import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
@@ -23,6 +24,7 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 
 class DashboardNetworks extends ConsumerWidget {
   const DashboardNetworks({super.key});
@@ -49,7 +51,7 @@ class DashboardNetworks extends ConsumerWidget {
               const AppGap.large2(),
               // ...state.nodes.mapIndexed((index, e) => _nodeCard(context, ref, e)),
               SizedBox(
-                height: state.nodes.length * 86,
+                height: state.nodes.length * 88,
                 child: ListView.separated(
                     physics: const NeverScrollableScrollPhysics(),
                     shrinkWrap: true,
@@ -109,32 +111,29 @@ class DashboardNetworks extends ConsumerWidget {
     final isOnline = wanStatus == NodeWANStatus.online;
     return Row(
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AppText.titleSmall(loc(context).myNetwork),
-              if (isOnline) _firmwareStatusWidget(context, newFirmware),
-            ],
-          ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppText.titleSmall(loc(context).myNetwork),
+            if (isOnline) _firmwareStatusWidget(context, newFirmware),
+          ],
         ),
-        const AppGap.medium(),
+        const Spacer(),
         Expanded(
+          flex: 3,
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              Expanded(
-                  child: _nodesInfoTile(
+              _nodesInfoTile(
                 context,
                 ref,
                 state,
-              )),
+              ),
               const AppGap.gutter(),
-              Expanded(
-                child: _devicesInfoTile(
-                  context,
-                  ref,
-                  state,
-                ),
+              _devicesInfoTile(
+                context,
+                ref,
+                state,
               )
             ],
           ),
@@ -197,14 +196,15 @@ class DashboardNetworks extends ConsumerWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           newFirmware
-              ? AppText.bodySmall(
-                  loc(context).newFirmwareAvailable,
+              ? AppText.labelMedium(
+                  loc(context).updateFirmware,
+                  color: Theme.of(context).colorScheme.primary,
                 )
               : _firmwareUpdateToDateWidget(context),
           newFirmware
               ? Icon(
-                  LinksysIcons.error,
-                  color: Theme.of(context).colorScheme.error,
+                  LinksysIcons.cloudDownload,
+                  color: Theme.of(context).colorScheme.primary,
                 )
               : Icon(
                   LinksysIcons.check,
@@ -229,22 +229,26 @@ class DashboardNetworks extends ConsumerWidget {
 
   Widget _nodeCard(BuildContext context, WidgetRef ref, LinksysDevice node) {
     return AppListCard(
-      padding: EdgeInsets.zero,
+      padding: const EdgeInsets.symmetric(vertical: Spacing.medium),
       title: AppText.titleMedium(node.getDeviceLocation()),
       description: AppText.bodyMedium(
           loc(context).nDevices(node.connectedDevices.length)),
       leading: Image(
-          image: CustomTheme.of(context).images.devices.getByName(
-              routerIconTestByModel(modelNumber: node.modelNumber ?? ''))),
+        image: CustomTheme.of(context).images.devices.getByName(
+              routerIconTestByModel(modelNumber: node.modelNumber ?? ''),
+            ),
+        width: 40,
+        height: 40,
+      ),
       trailing: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Icon(node.isOnline()
-              ? node.isAuthority | node.isWiredConnection()
+              ? node.isAuthority | !node.isWirelessConnection()
                   ? LinksysIcons.ethernet
                   : getWifiSignalIconData(context, node.signalDecibels)
               : LinksysIcons.signalWifiNone),
-          if (!node.isAuthority && !node.isWiredConnection() && node.isOnline())
+          if (!node.isAuthority && node.isWirelessConnection() && node.isOnline())
             AppText.bodySmall('${node.signalDecibels} dBM')
         ],
       ),
@@ -255,24 +259,6 @@ class DashboardNetworks extends ConsumerWidget {
           // Update the current target Id for node state
           context.pushNamed(RouteNamed.nodeDetails);
         }
-        //  else {
-        //   // context.pushNamed(RouteNamed.nodeOffline);
-        //   _showOfflineNodeModal(node).then((value) {
-        //     if (value == 'nightMode') {
-        //     } else if (value == 'remove') {
-        //       _showRemoveNodeModal(node).then((value) {
-        //         if ((value ?? false)) {
-        //           // Do remove
-        //           _doRemoveNode(node).then((result) {
-        //             showSimpleSnackBar(context, loc(context).nodeRemoved);
-        //           }).onError((error, stackTrace) {
-        //             showSimpleSnackBar(context, loc(context).unknownError);
-        //           });
-        //         }
-        //       });
-        //     }
-        //   });
-        // }
       },
     );
   }
@@ -320,27 +306,29 @@ class DashboardNetworks extends ConsumerWidget {
     Widget? sub,
     VoidCallback? onTap,
   }) {
-    return AppCard(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              AppText.titleSmall('$count'),
-              Icon(
-                iconData,
-                size: 20,
-              ),
-              if (sub != null) sub,
-            ],
-          ),
-          const AppGap.medium(),
-          AppText.titleSmall(text),
-        ],
+    return Container(
+      constraints: const BoxConstraints(minWidth: 112),
+      child: AppCard(
+        onTap: onTap,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppText.titleSmall('$count'),
+                const AppGap.medium(),
+                AppText.titleSmall(text),
+              ],
+            ),
+            Icon(
+              iconData,
+              size: 20,
+            ),
+            if (sub != null) sub,
+          ],
+        ),
       ),
     );
   }

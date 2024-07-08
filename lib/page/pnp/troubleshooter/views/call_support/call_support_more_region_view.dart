@@ -39,7 +39,7 @@ class CallSupportMoreRegionView extends ArgumentsConsumerStatelessView {
     return GridView.builder(
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        mainAxisSpacing: Spacing.medium,
+        mainAxisSpacing: Spacing.small2,
         crossAxisSpacing: ResponsiveLayout.columnPadding(context),
         mainAxisExtent: 72,
       ),
@@ -60,7 +60,7 @@ class CallSupportMoreRegionView extends ArgumentsConsumerStatelessView {
       },
       separatorBuilder: (BuildContext context, int index) {
         if (index != regionList.length - 1) {
-          return const AppGap.medium();
+          return const AppGap.small2();
         } else {
           return const Center();
         }
@@ -129,7 +129,7 @@ class CallSupportMoreRegionView extends ArgumentsConsumerStatelessView {
               ),
             ],
           ),
-          const AppGap.large4(),
+          const AppGap.large5(),
           AppText.bodyLarge(loc(context).callSupportDetailDesc),
           AppText.bodyLarge(loc(context).callSupportDetailDesc2),
         ],

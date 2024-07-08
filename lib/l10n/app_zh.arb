@@ -257,7 +257,7 @@
   "textMessage": "文本信息",
   "nodes": "节点",
   "troubleshoot": "故障排除",
-  "newFirmwareAvailable": "可用固件更新",
+  "updateFirmware": "可用固件更新",
   "send": "发送",
   "oopsPleaseSpecifyValidEmailAddress": "哎呀，请注明有效的电子邮件地址",
   "pleaseEnterValidPhoneNumber": "请输入有效的电话号码。",

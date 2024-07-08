@@ -257,7 +257,7 @@
   "textMessage": "SMS",
   "nodes": "Noder",
   "troubleshoot": "Fejlfinding",
-  "newFirmwareAvailable": "Firmwareopdatering tilgængelig",
+  "updateFirmware": "Firmwareopdatering tilgængelig",
   "send": "Send",
   "oopsPleaseSpecifyValidEmailAddress": "Ups! Du skal indtaste en gyldig e-mailadresse",
   "pleaseEnterValidPhoneNumber": "Indtast venligst et gyldigt telefonnummer.",

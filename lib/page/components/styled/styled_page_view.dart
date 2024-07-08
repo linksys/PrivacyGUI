@@ -121,6 +121,7 @@ class StyledAppPageView extends ConsumerWidget {
   final ({bool left, bool top, bool right, bool bottom}) enableSafeArea;
   final PageBottomBar? bottomBar;
   final bool menuOnRight;
+  final bool largeMenu;
 
   const StyledAppPageView({
     super.key,
@@ -144,6 +145,7 @@ class StyledAppPageView extends ConsumerWidget {
     this.enableSafeArea = (left: true, top: true, right: true, bottom: true),
     this.bottomBar,
     this.menuOnRight = false,
+    this.largeMenu = false,
   });
 
   @override
@@ -151,7 +153,7 @@ class StyledAppPageView extends ConsumerWidget {
     final views = [
       if (!ResponsiveLayout.isMobileLayout(context) && hasMenu()) ...[
         SizedBox(
-          width: 3.col,
+          width: largeMenu ? 4.col : 3.col,
           child: AppCard(
             child: _createMenuWidget(context),
           ),

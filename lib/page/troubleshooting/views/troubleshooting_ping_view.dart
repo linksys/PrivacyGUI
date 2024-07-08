@@ -91,7 +91,7 @@ class _TroubleshootingPingViewState
                 });
               },
             ),
-            const AppGap.large4(),
+            const AppGap.large5(),
             AppText.bodySmall(_log),
           ],
         ),

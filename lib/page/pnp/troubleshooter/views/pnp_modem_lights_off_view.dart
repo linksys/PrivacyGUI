@@ -42,7 +42,7 @@ class _PnpLightOffViewState extends ConsumerState<PnpModemLightsOffView> {
                   fit: BoxFit.fitWidth,
                 ),
                 const AppGap.large3(),
-                const AppGap.large4(),
+                const AppGap.large5(),
                 Row(
                   children: [
                     Flexible(

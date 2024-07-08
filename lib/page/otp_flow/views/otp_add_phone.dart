@@ -155,7 +155,7 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
           children: [
             Padding(
               padding: const EdgeInsets.only(
-                top: Spacing.large4,
+                top: Spacing.large5,
                 bottom: Spacing.small2,
               ),
               child: AppText.bodyLarge(getAppLocalizations(context).phone),

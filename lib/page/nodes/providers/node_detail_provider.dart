@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -76,7 +75,7 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
             : (device.upstream?.getDeviceLocation() ??
                 master?.getDeviceLocation() ??
                 '');
-        isWired = device.isWiredConnection();
+        isWired = !device.isWirelessConnection();
         signalStrength = device.signalDecibels ?? 0;
         serialNumber = device.unit.serialNumber ?? '';
         modelNumber = device.model.modelNumber ?? '';

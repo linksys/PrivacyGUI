@@ -257,7 +257,7 @@
   "textMessage": "SMS",
   "nodes": "Κόμβοι",
   "troubleshoot": "Επίλυση προβλήματος",
-  "newFirmwareAvailable": "Υπάρχει διαθέσιμη ενημέρωση υλικολογισμικού",
+  "updateFirmware": "Υπάρχει διαθέσιμη ενημέρωση υλικολογισμικού",
   "send": "Αποστολή",
   "oopsPleaseSpecifyValidEmailAddress": "Ουπς, εισάγετε έγκυρη διεύθυνση email",
   "pleaseEnterValidPhoneNumber": "Συμπληρώστε έγκυρο αριθμό τηλεφώνου.",

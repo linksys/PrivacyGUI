@@ -13,6 +13,9 @@ class LinksysDevice extends RawDevice {
   final WifiConnectionType connectedWifiType;
   final int? signalDecibels;
   final LinksysDevice? upstream;
+  final String connectionType;
+  final WirelessConnectionInfo? wirelessConnectionInfo;
+  final String speedMbps;
 
   const LinksysDevice({
     required super.connections,
@@ -31,6 +34,9 @@ class LinksysDevice extends RawDevice {
     this.connectedWifiType = WifiConnectionType.main,
     this.signalDecibels,
     this.upstream,
+    this.connectionType = 'wireless',
+    this.wirelessConnectionInfo,
+    this.speedMbps = '--',
   });
 
   @override
@@ -51,6 +57,9 @@ class LinksysDevice extends RawDevice {
     WifiConnectionType? connectedWifiType,
     int? signalDecibels,
     LinksysDevice? upstream,
+    String? connectionType,
+    WirelessConnectionInfo? wirelessConnectionInfo,
+    String? speedMbps,
   }) {
     return LinksysDevice(
       connections: connections ?? this.connections,
@@ -69,6 +78,10 @@ class LinksysDevice extends RawDevice {
       connectedWifiType: connectedWifiType ?? this.connectedWifiType,
       signalDecibels: signalDecibels ?? this.signalDecibels,
       upstream: upstream ?? this.upstream,
+      connectionType: connectionType ?? this.connectionType,
+      wirelessConnectionInfo:
+          wirelessConnectionInfo ?? this.wirelessConnectionInfo,
+      speedMbps: speedMbps ?? this.speedMbps,
     );
   }
 
@@ -80,6 +93,9 @@ class LinksysDevice extends RawDevice {
       'connectedWifiType': connectedWifiType.value,
       'signalDecibels': signalDecibels,
       'upstream': upstream?.toMap(),
+      'connectionType': connectionType,
+      'wirelessConnectionInfo': wirelessConnectionInfo?.toMap(),
+      'speedMbps': speedMbps,
     }..removeWhere((key, value) => value == null);
   }
 
@@ -129,6 +145,11 @@ class LinksysDevice extends RawDevice {
       upstream: map['upstream'] != null
           ? LinksysDevice.fromMap(map['upstream'])
           : null,
+      connectionType: map['connectionType'] ?? 'wireless',
+      wirelessConnectionInfo: map['wirelessConnectionInfo'] != null
+          ? WirelessConnectionInfo.fromMap(map['wirelessConnectionInfo'])
+          : null,
+      speedMbps: map['speedMbps'] ?? '--',
     );
   }
 

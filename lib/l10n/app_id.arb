@@ -257,7 +257,7 @@
   "textMessage": "Pesan Teks",
   "nodes": "Simpul",
   "troubleshoot": "Pemecahan Masalah",
-  "newFirmwareAvailable": "Pemutakhiran firmware tersedia",
+  "updateFirmware": "Pemutakhiran firmware tersedia",
   "send": "Kirim",
   "oopsPleaseSpecifyValidEmailAddress": "Ups, harap berikan alamat email yang valid",
   "pleaseEnterValidPhoneNumber": "Masukkan nomor telepon yang sah.",

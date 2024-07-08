@@ -126,7 +126,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               AppText.labelLarge(loc(context).wifi),
-              AppTextButton(
+              AppTextButton.noPadding(
                 loc(context).showAdvanced,
                 icon: LinksysIcons.settings,
                 onTap: () {
@@ -202,7 +202,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
             children: [
               AppText.labelLarge(loc(context).wifi),
               const AppGap.medium(),
-              AppTextButton(
+              AppTextButton.noPadding(
                 loc(context).showBasic,
                 icon: LinksysIcons.settings,
                 onTap: () {

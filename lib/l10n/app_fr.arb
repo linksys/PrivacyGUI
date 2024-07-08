@@ -257,7 +257,7 @@
   "textMessage": "SMS",
   "nodes": "Bornes",
   "troubleshoot": "Dépannage",
-  "newFirmwareAvailable": "Mise à jour du micrologiciel disponible",
+  "updateFirmware": "Mise à jour du micrologiciel disponible",
   "send": "Envoyer",
   "oopsPleaseSpecifyValidEmailAddress": "Veuillez saisir une adresse e-mail correcte",
   "pleaseEnterValidPhoneNumber": "Veuillez saisir un numéro de téléphone valide.",

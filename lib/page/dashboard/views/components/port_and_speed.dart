@@ -100,7 +100,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: Spacing.small2,
-                    vertical: Spacing.large3,
+                    vertical: Spacing.large4,
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -360,11 +360,10 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
         if (connection != null) AppText.bodySmall(connection),
         if (isWan) AppText.labelMedium(loc(context).internet),
         Container(
-          constraints: const BoxConstraints(maxWidth: 120),
-          width: 120,
+          constraints: const BoxConstraints(maxWidth: 60),
+          width: 60,
           child: isWan
-              ? Divider(
-                  height: 8, color: Theme.of(context).colorSchemeExt.orange)
+              ? Container(height: 2, color: Color(orangeTonal.get(80)))
               : null,
         ),
       ],

@@ -257,7 +257,7 @@
   "textMessage": "Message texte",
   "nodes": "Nœuds",
   "troubleshoot": "Résolvez le problème",
-  "newFirmwareAvailable": "Mise à jour du micrologiciel disponible",
+  "updateFirmware": "Mise à jour du micrologiciel disponible",
   "send": "Envoyer",
   "oopsPleaseSpecifyValidEmailAddress": "Oups, veuillez préciser une adresse de courriel valide.",
   "pleaseEnterValidPhoneNumber": "Veuillez saisir un numéro de téléphone valide.",

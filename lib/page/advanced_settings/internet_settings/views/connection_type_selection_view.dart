@@ -63,7 +63,7 @@ class _ConnectionTypeSelectionViewState
               );
             }).expand<Widget>((element) sync* {
               yield element;
-              yield const AppGap.medium();
+              yield const AppGap.small2();
             }).toList(),
           ],
         ),

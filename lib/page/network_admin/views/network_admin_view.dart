@@ -83,7 +83,7 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
               AppListCard(
                 padding: EdgeInsets.zero,
                 showBorder: false,
-                title: AppText.bodyLarge(loc(context).routerPassword),
+                title: AppText.bodyMedium(loc(context).routerPassword),
                 description: Theme(
                   data: Theme.of(context).copyWith(
                       inputDecorationTheme: const InputDecorationTheme(
@@ -116,14 +116,14 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
               AppListCard(
                 padding: EdgeInsets.zero,
                 showBorder: false,
-                title: AppText.bodyLarge(loc(context).routerPasswordHint),
+                title: AppText.bodySmall(loc(context).routerPasswordHint),
                 description: routerPasswordState.hint.isEmpty
                     ? const AppText.labelLarge('Set one')
                     : AppText.bodyMedium(routerPasswordState.hint),
               ),
             ]),
           ),
-          const AppGap.medium(),
+          const AppGap.small2(),
           AppCard(
             child: AppSwitchTriggerTile(
               value: isFwAutoUpdate,
@@ -138,7 +138,7 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
               },
             ),
           ),
-          const AppGap.medium(),
+          const AppGap.small2(),
 
           AppListCard(
             title: AppText.bodyLarge(loc(context).timezone),

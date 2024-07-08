@@ -80,7 +80,7 @@ class _PnpPPPOEViewState extends ConsumerState<PnpPPPOEView> {
             replacement: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const AppGap.large4(),
+                const AppGap.large5(),
                 AppTextButton.noPadding(
                   loc(context).pnpPppoeAddVlan,
                   icon: LinksysIcons.add,
@@ -101,7 +101,7 @@ class _PnpPPPOEViewState extends ConsumerState<PnpPPPOEView> {
                   controller: _vlanController,
                   inputType: TextInputType.number,
                 ),
-                const AppGap.large4(),
+                const AppGap.large5(),
                 AppTextButton.noPadding(
                   loc(context).pnpPppoeRemoveVlan,
                   icon: LinksysIcons.remove,
