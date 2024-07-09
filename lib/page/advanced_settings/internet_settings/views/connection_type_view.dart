@@ -251,7 +251,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
             }
           : null,
       actions: [
-        AppTextButton(
+        AppTextButton.noPadding(
           isEditing ? loc(context).cancel : loc(context).edit,
           icon: isEditing ? LinksysIcons.close : LinksysIcons.edit,
           onTap: isEditing

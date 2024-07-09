@@ -7,6 +7,7 @@ import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
+import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
@@ -206,6 +207,16 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
               showBorder: false,
               padding: const EdgeInsets.all(Spacing.medium),
             ),
+            if (!state.isMaster)
+            AppSettingCard.noBorder(
+              padding: const EdgeInsets.all(Spacing.medium),
+              title: loc(context).signalStrength,
+              description: _checkEmptyValue('${state.signalStrength} dBM'),
+              trailing: Icon(getWifiSignalIconData(
+                context,
+                state.isWiredConnection ? null : state.signalStrength,
+              )),
+            ),
           ],
         ),
       ),
@@ -259,6 +270,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
       final title = loc(context).nodeLight;
       return [
         AppSettingCard(
+          key: const ValueKey('nodeLightSettings'),
           title: title,
           showBorder: false,
           padding: const EdgeInsets.all(Spacing.medium),

@@ -102,7 +102,7 @@ class _PortRangeTriggeringContentViewState
                   )
                       .expand((element) sync* {
                     yield element;
-                    yield const AppGap.medium();
+                    yield const AppGap.small2();
                   }),
                 if (state.rules.isEmpty) const EmptyRuleCard(),
               ],
