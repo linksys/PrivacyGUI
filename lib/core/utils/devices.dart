@@ -1,5 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:privacy_gui/core/jnap/models/device.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 
 extension DeviceUtil on RawDevice {
   String getDeviceLocation() {
@@ -88,14 +89,19 @@ extension DeviceUtil on RawDevice {
     return connections.any((element) => element.ipv6Address == ip);
   }
 
-  bool isWiredConnection() {
-    final interfaces = knownInterfaces;
-    return interfaces
-            ?.firstWhereOrNull((element) => element.interfaceType == 'Wired') !=
-        null;
-  }
-
   bool isOnline() {
     return connections.isNotEmpty;
+  }
+}
+
+extension LinksysDeviceExt on LinksysDevice {
+  bool isWirelessConnection() {
+    if (nodeType == 'Slave') {
+      return connectionType == 'Wireless' && wirelessConnectionInfo != null;
+    }
+    final interfaces = knownInterfaces;
+    return interfaces?.firstWhereOrNull(
+            (element) => element.interfaceType == 'Wireless') !=
+        null;
   }
 }

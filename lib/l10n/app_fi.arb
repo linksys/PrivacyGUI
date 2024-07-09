@@ -257,7 +257,7 @@
   "textMessage": "Tekstiviesti",
   "nodes": "Solmut",
   "troubleshoot": "Vianmääritys",
-  "newFirmwareAvailable": "Laiteohjelmiston päivitys saatavilla",
+  "updateFirmware": "Laiteohjelmiston päivitys saatavilla",
   "send": "Lähetä",
   "oopsPleaseSpecifyValidEmailAddress": "Uups. Määritä kelvollinen sähköpostiosoite.",
   "pleaseEnterValidPhoneNumber": "Anna kelvollinen puhelinnumero.",

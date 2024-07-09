@@ -101,7 +101,7 @@ class _LocalNetworkSettingsViewState
                 _showHostNameEditDialog(state.hostName);
               },
             ),
-            const AppGap.medium(),
+            const AppGap.small2(),
             InternetSettingCard(
               title: loc(context).ipAddress.capitalizeWords(),
               description: state.ipAddress,
@@ -109,7 +109,7 @@ class _LocalNetworkSettingsViewState
                 _showIpAddressEditDialog(state.ipAddress);
               },
             ),
-            const AppGap.medium(),
+            const AppGap.small2(),
             InternetSettingCard(
               title: loc(context).subnetMask,
               description: state.subnetMask,
@@ -117,7 +117,7 @@ class _LocalNetworkSettingsViewState
                 _showSubnetMaskEditDialog(state.subnetMask);
               },
             ),
-            const AppGap.medium(),
+            const AppGap.small2(),
             InternetSettingCard(
               title: loc(context).dhcpServer,
               description:
@@ -126,7 +126,7 @@ class _LocalNetworkSettingsViewState
                 context.pushNamed(RouteNamed.dhcpServer);
               },
             ),
-            const AppGap.medium(),
+            const AppGap.small2(),
             InternetSettingCard(
               title: loc(context).dhcpReservations,
               padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 24),

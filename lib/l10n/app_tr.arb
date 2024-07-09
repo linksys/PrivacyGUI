@@ -257,7 +257,7 @@
   "textMessage": "SMS Mesajı",
   "nodes": "Düğümler",
   "troubleshoot": "Sorun Giderme",
-  "newFirmwareAvailable": "Ürün Yazılımı Güncellemeleri Var",
+  "updateFirmware": "Ürün Yazılımı Güncellemeleri Var",
   "send": "Gönder",
   "oopsPleaseSpecifyValidEmailAddress": "Bir sorun oluştu. Lütfen geçerli bir e-posta adresi belirleyin",
   "pleaseEnterValidPhoneNumber": "Lütfen geçerli bir telefon numarası girin.",

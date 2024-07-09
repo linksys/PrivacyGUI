@@ -257,7 +257,7 @@
   "textMessage": "ข้อความ",
   "nodes": "โหนด",
   "troubleshoot": "แก้ไขปัญหา",
-  "newFirmwareAvailable": "มีการอัปเดตสำหรับเฟิร์มแวร์",
+  "updateFirmware": "มีการอัปเดตสำหรับเฟิร์มแวร์",
   "send": "ส่ง",
   "oopsPleaseSpecifyValidEmailAddress": "ขออภัย โปรดระบุอีเมล์ที่ถูกต้อง",
   "pleaseEnterValidPhoneNumber": "โปรดป้อนหมายเลขโทรศัพท์ที่ถูกต้อง",

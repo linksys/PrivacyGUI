@@ -41,7 +41,7 @@ class _DeviceListWidgetState extends ConsumerState<DeviceListWidget> {
           (context, index) => _buildCell(index, widget.devices),
       separatorBuilder: (BuildContext context, int index) {
         if (index != widget.devices.length - 1) {
-          return const AppGap.medium();
+          return const AppGap.small2();
         } else {
           return const Center();
         }

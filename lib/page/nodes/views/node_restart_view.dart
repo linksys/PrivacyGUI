@@ -62,11 +62,11 @@ class _NodeRestartViewState extends ConsumerState<NodeRestartView> {
     return const Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppGap.large4(),
+        AppGap.large5(),
         AppText.displayLarge(
           'Restarting your network...',
         ),
-        AppGap.large4(),
+        AppGap.large5(),
         IndeterminateProgressBar(),
       ],
     );

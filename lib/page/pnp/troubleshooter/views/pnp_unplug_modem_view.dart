@@ -50,7 +50,7 @@ class _PnpUnplugModemViewState extends ConsumerState<PnpUnplugModemView> {
                   fit: BoxFit.fitWidth,
                 ),
                 const AppGap.large3(),
-                const AppGap.large4(),
+                const AppGap.large5(),
                 Row(
                   children: [
                     AppTextButton.noPadding(
@@ -103,7 +103,7 @@ class _PnpUnplugModemViewState extends ConsumerState<PnpUnplugModemView> {
             loc(context).pnpUnplugModemTipDesc2,
           ),
           const AppGap.medium(),
-          const AppGap.large4(),
+          const AppGap.large5(),
           Container(
             alignment: Alignment.center,
             child: SvgPicture(

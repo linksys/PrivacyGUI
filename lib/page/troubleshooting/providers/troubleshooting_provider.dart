@@ -74,7 +74,7 @@ class TroubleshootingNotifier extends Notifier<TroubleshootingState> {
         final ipv4 = device.connections.firstOrNull?.ipAddress;
         final ipv6 = device.connections.firstOrNull?.ipv6Address;
         final mac = device.getMacAddress();
-        final isWired = device.isWiredConnection();
+        final isWired = !device.isWirelessConnection();
         if (ipv4 != null) {
           previousValue.add(DeviceStatusModel.ipv4(
               name: name,
@@ -105,7 +105,7 @@ class TroubleshootingNotifier extends Notifier<TroubleshootingState> {
         final interface = (devices
                     .firstWhereOrNull(
                         (element) => element.getMacAddress() == mac)
-                    ?.isWiredConnection() ??
+                    ?.isWirelessConnection() ??
                 false)
             ? 'LAN'
             : 'Wireless';
@@ -155,7 +155,7 @@ class TroubleshootingNotifier extends Notifier<TroubleshootingState> {
           timeoutMs: 30000,
         );
   }
-  
+
   Future ping({required String host, required int? pingCount}) {
     return ref.read(routerRepositoryProvider).send(JNAPAction.startPing,
         fetchRemote: true,
@@ -164,7 +164,6 @@ class TroubleshootingNotifier extends Notifier<TroubleshootingState> {
         data: {'host': host, 'packetSizeBytes': 32, 'pingCount': pingCount}
           ..removeWhere((key, value) => value == null));
   }
-
 
   Stream<PingStatus> getPingStatus() {
     return ref

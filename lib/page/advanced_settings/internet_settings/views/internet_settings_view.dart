@@ -8,7 +8,6 @@ import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/gap/gap.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -106,7 +105,7 @@ class _InternetSettingsContentViewState
                 ],
               ),
             ),
-            const AppGap.medium(),
+            const AppGap.small2(),
             InternetSettingCard(
               title: loc(context).macAddressClone.capitalizeWords(),
               description: state.macClone ? loc(context).on : loc(context).off,

@@ -94,7 +94,7 @@ class _LocalRouterRecoveryViewState
                         color: Theme.of(context).colorScheme.error,
                       ),
                     ),
-                  const AppGap.large4(),
+                  const AppGap.large5(),
                   AppFilledButton(
                     loc(context).textContinue,
                     onTap: userInputCode.length == 5

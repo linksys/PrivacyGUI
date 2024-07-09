@@ -257,7 +257,7 @@
   "textMessage": "Tin nhắn văn bản",
   "nodes": "Điểm nút",
   "troubleshoot": "Xử lý sự cố",
-  "newFirmwareAvailable": "Có bản cập nhật phần mềm điều khiển",
+  "updateFirmware": "Có bản cập nhật phần mềm điều khiển",
   "send": "Gửi",
   "oopsPleaseSpecifyValidEmailAddress": "Rất tiếc, vui lòng nhập địa chỉ email hợp lệ",
   "pleaseEnterValidPhoneNumber": "Vui lòng nhập số điện thoại hợp lệ.",

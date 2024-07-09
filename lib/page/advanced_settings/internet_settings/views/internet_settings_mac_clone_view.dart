@@ -76,6 +76,7 @@ class _MACCloneViewState extends ConsumerState<MACCloneView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             AppSettingCard.noBorder(
+              padding: EdgeInsets.zero,
               title: loc(context).macAddressClone,
               color: Theme.of(context).colorScheme.background,
               trailing: AppSwitch(

@@ -25,6 +25,7 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
 import 'package:collection/collection.dart';
@@ -72,12 +73,12 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
-              width: 3.col,
+              width: 4.col,
               child: infoTab(state),
             ),
             const AppGap.gutter(),
             SizedBox(
-                width: 9.col,
+                width: 8.col,
                 child: deviceTab(
                     state, constraint.maxHeight - kDefaultToolbarHeight))
           ],
@@ -123,9 +124,9 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
       children: [
         const AppGap.small2(),
         _avatarCard(state),
-        const AppGap.medium(),
+        const AppGap.small2(),
         _detailSection(state),
-        const AppGap.medium(),
+        const AppGap.small2(),
         _lightCard(state),
         const Spacer(),
       ],
@@ -158,7 +159,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
 
   Widget _avatarCard(NodeDetailState state) {
     return AppCard(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(Spacing.small2),
       child: SizedBox(
         // height: 160,
         child: Column(
@@ -166,7 +167,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 24.0),
+              padding: const EdgeInsets.symmetric(vertical: Spacing.large2),
               child: Center(
                 child: Image(
                   height: 120,
@@ -178,7 +179,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
             ),
             AppCard(
               showBorder: false,
-              padding: EdgeInsets.zero,
+              padding: const EdgeInsets.all(Spacing.medium),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -203,7 +204,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
               title: loc(context).connectTo,
               description: _checkEmptyValue(state.upstreamDevice),
               showBorder: false,
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: const EdgeInsets.all(Spacing.medium),
             ),
           ],
         ),
@@ -220,20 +221,23 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
       return const Center();
     }
     return AppCard(
+        padding: const EdgeInsets.all(Spacing.small2),
         child: Column(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ..._createNodeLightTile(state.nodeLightSettings),
-        ...hasBlinkFunction
-            ? [
-                const AppGap.medium(),
-                const BlinkNodeLightWidget(),
-              ]
-            : [],
-      ],
-    ));
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ..._createNodeLightTile(state.nodeLightSettings),
+            ...hasBlinkFunction
+                ? [
+                    const Padding(
+                      padding: EdgeInsets.all(Spacing.medium),
+                      child: BlinkNodeLightWidget(),
+                    ),
+                  ]
+                : [],
+          ],
+        ));
   }
 
   String _checkEmptyValue(String? value) {
@@ -257,7 +261,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
         AppSettingCard(
           title: title,
           showBorder: false,
-          padding: EdgeInsets.zero,
+          padding: const EdgeInsets.all(Spacing.medium),
           trailing: AppText.bodySmall(
             NodeLightStatus.getStatus(nodeLightSettings).resolveString(context),
           ),
@@ -282,12 +286,13 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
             .select((value) => value.nodesStatus?.firstOrNull));
     final isFwUpToDate = updateInfo?.availableUpdate == null;
     return AppCard(
+      padding: const EdgeInsets.all(Spacing.small2),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppSettingCard(
             showBorder: false,
-            padding: EdgeInsets.zero,
+            padding: const EdgeInsets.all(Spacing.medium),
             title: loc(context).lanIPAddress,
             description: state.lanIpAddress,
           ),
@@ -295,7 +300,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
             const AppGap.small2(),
             AppSettingCard(
               showBorder: false,
-              padding: EdgeInsets.zero,
+              padding: const EdgeInsets.all(Spacing.medium),
               title: loc(context).wanIPAddress,
               description: state.wanIpAddress,
             ),
@@ -308,30 +313,31 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
           //   title: loc(context).modelNumber,
           //   description: _checkEmptyValue(state.modelNumber),
           // ),
-          const AppGap.small2(),
 
           AppSettingCard(
             showBorder: false,
-            padding: EdgeInsets.zero,
+            padding: const EdgeInsets.all(Spacing.medium),
             title: loc(context).firmwareVersion,
             description: _checkEmptyValue(state.firmwareVersion),
             trailing: Visibility(
                 visible: isFwUpToDate,
                 replacement: InkWell(
                   child: AppText.labelSmall(
-                    loc(context).updateAvailable,
-                    color: Theme.of(context).colorScheme.error,
+                    loc(context).update,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                   onTap: () {
                     context.pushNamed(RouteNamed.firmwareUpdateDetail);
                   },
                 ),
-                child: AppText.labelSmall(loc(context).upToDate)),
+                child: AppText.labelSmall(
+                  loc(context).upToDate,
+                  color: Theme.of(context).colorSchemeExt.green,
+                )),
           ),
-          const AppGap.medium(),
           AppTextButton(
             loc(context).moreInfo,
-            padding: const EdgeInsets.all(4),
+            padding: const EdgeInsets.all(Spacing.medium),
             onTap: () {
               _showMoreRouterInfoModal(state);
             },

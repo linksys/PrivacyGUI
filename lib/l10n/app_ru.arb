@@ -257,7 +257,7 @@
   "textMessage": "SMS-сообщение",
   "nodes": "Узлы",
   "troubleshoot": "Устранение неполадок",
-  "newFirmwareAvailable": "Доступно обновление микропрограммы",
+  "updateFirmware": "Доступно обновление микропрограммы",
   "send": "Отправить",
   "oopsPleaseSpecifyValidEmailAddress": "Укажите действующий адрес электронной почты",
   "pleaseEnterValidPhoneNumber": "Введите допустимый номер телефона.",

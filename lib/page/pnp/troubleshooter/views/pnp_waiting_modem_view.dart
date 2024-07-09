@@ -79,7 +79,7 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
           Center(
             child: Padding(
               padding: const EdgeInsets.symmetric(
-                vertical: Spacing.large4 + Spacing.large3,
+                vertical: Spacing.large5 + Spacing.large3,
               ),
               child: SvgPicture(
                 _isPlugged

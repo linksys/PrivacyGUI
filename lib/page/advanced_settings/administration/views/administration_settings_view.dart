@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
-import 'package:privacy_gui/page/advanced_settings/administration/providers/administration_settings_provider.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
-import 'package:privacy_gui/page/components/shortcuts/spinners.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -81,7 +78,7 @@ class _AdministrationSettingsViewState
                   },
                 ),
               ),
-              const AppGap.medium(),
+              const AppGap.small2(),
             ],
             AppCard(
               child: Column(
@@ -109,7 +106,7 @@ class _AdministrationSettingsViewState
                           .setCanUsersConfigure(value);
                     },
                   ),
-                  const AppGap.medium(),
+                  const AppGap.small2(),
                   AppCheckbox(
                     value: state.canUsersDisableWANAccess,
                     text: loc(context)
@@ -126,7 +123,7 @@ class _AdministrationSettingsViewState
                 ],
               ),
             ),
-            const AppGap.medium(),
+            const AppGap.small2(),
             AppCard(
               child: AppSwitchTriggerTile(
                 title: AppText.labelLarge(
@@ -139,7 +136,7 @@ class _AdministrationSettingsViewState
                 },
               ),
             ),
-            const AppGap.medium(),
+            const AppGap.small2(),
             AppCard(
               child: AppSwitchTriggerTile(
                 title: AppText.labelLarge(
@@ -152,7 +149,7 @@ class _AdministrationSettingsViewState
                 },
               ),
             ),
-            const AppGap.medium(),
+            const AppGap.small2(),
           ],
         ),
       ),

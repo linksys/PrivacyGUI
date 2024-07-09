@@ -257,7 +257,7 @@
   "textMessage": "SMS",
   "nodes": "Nodes",
   "troubleshoot": "Fehlerbehebung",
-  "newFirmwareAvailable": "Firmware-Update verfügbar",
+  "updateFirmware": "Firmware-Update verfügbar",
   "send": "Senden",
   "oopsPleaseSpecifyValidEmailAddress": "Geben Sie eine gültige E-Mail-Adresse ein",
   "pleaseEnterValidPhoneNumber": "Bitte geben Sie eine gültige Telefonnummer ein.",

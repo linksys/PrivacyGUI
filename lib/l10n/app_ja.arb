@@ -257,7 +257,7 @@
   "textMessage": "SMS",
   "nodes": "ノード",
   "troubleshoot": "トラブルシューティング",
-  "newFirmwareAvailable": "ファームウェアの更新プログラムが利用可能です",
+  "updateFirmware": "ファームウェアの更新プログラムが利用可能です",
   "send": "送信",
   "oopsPleaseSpecifyValidEmailAddress": "有効なメール アドレスを指定してください",
   "pleaseEnterValidPhoneNumber": "有効な電話番号を入力してください。",

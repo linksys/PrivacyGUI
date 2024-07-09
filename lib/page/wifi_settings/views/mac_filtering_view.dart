@@ -94,7 +94,7 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView> {
                 },
               ),
             ),
-            const AppGap.medium(),
+            const AppGap.small2(),
             ..._buildEnabledContent(state)
           ],
         ),
@@ -121,7 +121,7 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView> {
                 onTap: () async {
                   _selectAccessModal();
                 }),
-            const AppGap.medium(),
+            const AppGap.small2(),
             AppListCard(
               title: AppText.labelLarge(loc(context).filteredDevices),
               trailing: Row(

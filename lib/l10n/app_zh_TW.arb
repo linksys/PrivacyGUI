@@ -257,7 +257,7 @@
   "textMessage": "文字訊息",
   "nodes": "節點",
   "troubleshoot": "故障排除",
-  "newFirmwareAvailable": "有可用的韌體更新",
+  "updateFirmware": "有可用的韌體更新",
   "send": "傳送",
   "oopsPleaseSpecifyValidEmailAddress": "糟糕了，請提供有效的電子郵件地址",
   "pleaseEnterValidPhoneNumber": "請輸入一個有效的電話號碼。",

@@ -76,19 +76,17 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          width: 3.col,
+          width: 4.col,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               _avatarCard(state),
-              const AppGap.medium(),
-              _extraInfoSection(state),
             ],
           ),
         ),
         const AppGap.gutter(),
         SizedBox(
-          width: 9.col,
+          width: 8.col,
           child: _detailSection(state),
         ),
       ],
@@ -122,7 +120,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
             ),
           ),
           AppSettingCard.noBorder(
-            padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+            padding: const EdgeInsets.all(Spacing.medium),
             title: state.item.name,
             trailing: AppIconButton(
               icon: LinksysIcons.edit,
@@ -130,12 +128,12 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
             ),
           ),
           AppSettingCard.noBorder(
-            padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+            padding: const EdgeInsets.all(Spacing.medium),
             title: loc(context).connectTo,
             description: state.item.upstreamDevice,
           ),
           AppSettingCard.noBorder(
-            padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+            padding: const EdgeInsets.all(Spacing.medium),
             title: loc(context).signalStrength,
             description: _formatEmptyValue('${state.item.signalStrength} dBM'),
             trailing: Icon(getWifiSignalIconData(
@@ -161,14 +159,10 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
             description:
                 _formatEmptyValue('${state.item.ssid} (${state.item.band})'),
           ),
-        const AppGap.medium(),
+        const AppGap.small2(),
         AppSettingCard(
-          padding: const EdgeInsets.fromLTRB(
-            Spacing.large2,
-            Spacing.medium,
-            Spacing.small1,
-            Spacing.medium,
-          ),
+          padding: const EdgeInsets.symmetric(
+              horizontal: Spacing.large2, vertical: Spacing.medium),
           title: loc(context).ipAddress,
           description: _formatEmptyValue(state.item.ipv4Address),
           trailing: AppLoadableWidget.textButton(
@@ -178,7 +172,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
             },
           ),
         ),
-        const AppGap.medium(),
+        const AppGap.small2(),
         AppSettingCard(
           padding: const EdgeInsets.symmetric(
             horizontal: Spacing.large2,
@@ -187,7 +181,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
           title: loc(context).macAddress,
           description: _formatEmptyValue(state.item.macAddress),
         ),
-        const AppGap.medium(),
+        const AppGap.small2(),
         AppSettingCard(
           padding: const EdgeInsets.symmetric(
             horizontal: Spacing.large2,
@@ -196,6 +190,20 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
           title: loc(context).ipv6Address,
           description: _formatEmptyValue(state.item.ipv6Address),
         ),
+        const AppGap.small2(),
+        AppSettingCard(
+          padding: const EdgeInsets.symmetric(
+              horizontal: Spacing.large2, vertical: Spacing.medium),
+          title: loc(context).manufacturer,
+          description: _formatEmptyValue(state.item.manufacturer),
+        ),
+        const AppGap.small2(),
+        AppSettingCard(
+          padding: const EdgeInsets.symmetric(
+              horizontal: Spacing.large2, vertical: Spacing.medium),
+          title: loc(context).device,
+          description: _formatEmptyValue(state.item.model),
+        )
       ],
     );
   }

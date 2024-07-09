@@ -257,7 +257,7 @@
   "textMessage": "رسالة نصية",
   "nodes": "العُقد",
   "troubleshoot": "استكشاف الأخطاء وإصلاحها",
-  "newFirmwareAvailable": "يتوفّر تحديث للبرنامج الثابت",
+  "updateFirmware": "يتوفّر تحديث للبرنامج الثابت",
   "send": "إرسال",
   "oopsPleaseSpecifyValidEmailAddress": "معذرةً، يرجى تحديد عنوان بريد إلكتروني صالح.",
   "pleaseEnterValidPhoneNumber": "الرجاء إدخال رقم هاتف صالح.",

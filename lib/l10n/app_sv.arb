@@ -257,7 +257,7 @@
   "textMessage": "SMS",
   "nodes": "Noder",
   "troubleshoot": "Felsökning",
-  "newFirmwareAvailable": "Uppdatering av fast programvara finns tillgänglig",
+  "updateFirmware": "Uppdatering av fast programvara finns tillgänglig",
   "send": "Skicka",
   "oopsPleaseSpecifyValidEmailAddress": "Hoppsan, ange en giltig e-postadress",
   "pleaseEnterValidPhoneNumber": "Ange ett giltigt telefonnummer.",

@@ -257,7 +257,7 @@
   "textMessage": "Messaggio di testo",
   "nodes": "Nodi",
   "troubleshoot": "Risoluzione dei problemi",
-  "newFirmwareAvailable": "Aggiornamento firmware disponibile",
+  "updateFirmware": "Aggiornamento firmware disponibile",
   "send": "Invia",
   "oopsPleaseSpecifyValidEmailAddress": "Ops, specifica un indirizzo e-mail valido",
   "pleaseEnterValidPhoneNumber": "Inserisci un numero di telefono valido.",

@@ -88,12 +88,12 @@ class _WifiAdvancedSettingsViewState
     return value != null
         ? [
             AppCard(
+              padding: const EdgeInsets.all(Spacing.large2),
               child: AppSwitchTriggerTile(
                 title: AppText.labelLarge(loc(context).clientSteering),
                 description:
                     AppText.bodyMedium(loc(context).clientSteeringDesc),
                 value: value,
-                padding: const EdgeInsets.all(Spacing.large3),
                 toggleInCenter: true,
                 onChanged: (value) {
                   ref
@@ -102,7 +102,7 @@ class _WifiAdvancedSettingsViewState
                 },
               ),
             ),
-            const AppGap.medium()
+            const AppGap.small2()
           ]
         : [];
   }
@@ -111,11 +111,11 @@ class _WifiAdvancedSettingsViewState
     return value != null
         ? [
             AppCard(
+              padding: const EdgeInsets.all(Spacing.large2),
               child: AppSwitchTriggerTile(
                 title: AppText.labelLarge(loc(context).nodeSteering),
                 description: AppText.bodyMedium(loc(context).nodeSteeringDesc),
                 value: value,
-                padding: const EdgeInsets.all(Spacing.large3),
                 toggleInCenter: true,
                 onChanged: (value) {
                   ref
@@ -124,7 +124,7 @@ class _WifiAdvancedSettingsViewState
                 },
               ),
             ),
-            const AppGap.medium()
+            const AppGap.small2()
           ]
         : [];
   }
@@ -133,6 +133,7 @@ class _WifiAdvancedSettingsViewState
     return value != null
         ? [
             AppCard(
+              padding: const EdgeInsets.all(Spacing.large2),
               child: AppSwitchTriggerTile(
                 title: const AppText.labelLarge('IPTV'),
                 subtitle: const AppText.labelSmall(
@@ -140,14 +141,13 @@ class _WifiAdvancedSettingsViewState
                 description: const AppText.bodySmall(
                     'IPTV subscribers should turn this feature ON to get the most out of the service. Depending on your network configuration, you might have to reconnect some devices.'),
                 value: value,
-                padding: const EdgeInsets.all(Spacing.large3),
                 toggleInCenter: true,
                 onChanged: (value) {
                   ref.read(wifiAdvancedProvider.notifier).setIptvEnabled(value);
                 },
               ),
             ),
-            const AppGap.medium()
+            const AppGap.small2()
           ]
         : [];
   }
@@ -156,6 +156,7 @@ class _WifiAdvancedSettingsViewState
     return value != null
         ? [
             AppCard(
+              padding: const EdgeInsets.all(Spacing.large2),
               child: AppSwitchTriggerTile(
                 title: AppText.labelLarge(loc(context).dfs),
                 description: AppStyledText.bold(
@@ -170,14 +171,13 @@ class _WifiAdvancedSettingsViewState
                   },
                 ),
                 value: value,
-                padding: const EdgeInsets.all(Spacing.large3),
                 toggleInCenter: true,
                 onChanged: (value) {
                   ref.read(wifiAdvancedProvider.notifier).setDFSEnabled(value);
                 },
               ),
             ),
-            const AppGap.medium()
+            const AppGap.small2()
           ]
         : [];
   }
@@ -191,6 +191,7 @@ class _WifiAdvancedSettingsViewState
     return value != null
         ? [
             AppCard(
+              padding: const EdgeInsets.all(Spacing.large2),
               child: AppSwitchTriggerTile(
                 title: AppText.labelLarge(loc(context).mlo),
                 description: Column(
@@ -203,14 +204,13 @@ class _WifiAdvancedSettingsViewState
                   ],
                 ),
                 value: value,
-                padding: const EdgeInsets.all(Spacing.large3),
                 toggleInCenter: true,
                 onChanged: (value) {
                   ref.read(wifiAdvancedProvider.notifier).setMLOEnabled(value);
                 },
               ),
             ),
-            const AppGap.medium()
+            const AppGap.small2()
           ]
         : [];
   }

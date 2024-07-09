@@ -273,7 +273,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _content(),
-            const AppGap.medium(),
+            const AppGap.small2(),
             if (viewType == InternetSettingsViewType.ipv4 &&
                 wanType != WanType.bridge)
               AppSettingCard(
@@ -305,7 +305,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
                         }
                       },
               ),
-            const AppGap.medium(),
+            const AppGap.small2(),
           ],
         ),
       ),
@@ -481,9 +481,9 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
           },
         ),
       ),
-      const AppGap.medium(),
+      const AppGap.small2(),
       _connectionMode(),
-      const AppGap.medium(),
+      const AppGap.small2(),
     ];
   }
 
