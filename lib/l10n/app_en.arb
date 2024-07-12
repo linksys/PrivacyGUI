@@ -740,6 +740,7 @@
   "faqLookingFor": "Can’t find what you’re looking for?",
   "faqVisitLinksysSupport": "Visit Linksys Support",
   "editDevices": "Edit devices",
+  "refresh": "Refresh",
   "wifiListSaveModalTitle": "You're updating WiFi settings",
   "wifiListSaveModalDesc": "Changing Wi-Fi settings will disconnect all devices, including this one, from the router. Simply reconnect the devices using the new wireless settings shown below. You may want to write them down before continuing.",
   "mloWarning": "Multi-Link Operation (MLO) requires all bands to have the same settings. MLO will not work correctly if you continue.",

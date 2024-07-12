@@ -96,6 +96,19 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
           content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Row(
+            children: [
+              AppText.bodyMedium(loc(context).pnpYourNetworkDesc),
+              const AppGap.small1(),
+              AppTextButton.noPadding(
+                loc(context).refresh,
+                onTap: () {
+                  ref.read(addNodesProvider.notifier).startRefresh();
+                },
+              ),
+            ],
+          ),
+          const AppGap.medium(),
           if (state?.addedNodes?.isEmpty == true)
             AppStyledText.link(
               loc(context).addNodesNoNodesFound,
