@@ -784,5 +784,6 @@
     }
   },
   "wired": "Wired",
-  "wireless": "Wireless"
+  "wireless": "Wireless",
+  "setOne": "Set one"
 }

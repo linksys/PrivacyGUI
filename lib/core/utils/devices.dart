@@ -96,11 +96,12 @@ extension DeviceUtil on RawDevice {
 
 extension LinksysDeviceExt on LinksysDevice {
   bool isWirelessConnection() {
+    bool ret = false;
     if (nodeType == 'Slave') {
-      return connectionType == 'Wireless' && wirelessConnectionInfo != null;
+      ret = connectionType == 'Wireless' && wirelessConnectionInfo != null;
     }
     final interfaces = knownInterfaces;
-    return interfaces?.firstWhereOrNull(
+    return ret || interfaces?.firstWhereOrNull(
             (element) => element.interfaceType == 'Wireless') !=
         null;
   }

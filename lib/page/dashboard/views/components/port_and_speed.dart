@@ -1,10 +1,13 @@
 import 'package:collection/collection.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
@@ -190,9 +193,14 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
     final horizontalLayout = state.isHorizontalLayout;
 
     final dateTime = state.speedCheckTimestamp == null
-        ? DateTime.now()
+        ? null
         : DateTime.fromMillisecondsSinceEpoch(state.speedCheckTimestamp!);
-    final dateTimeStr = loc(context).speedCheckLatestTime(dateTime, dateTime);
+    final isLegacy = dateTime == null
+        ? true
+        : DateTime.now().difference(dateTime).inDays > 1;
+    final dateTimeStr = dateTime == null
+        ? ''
+        : loc(context).speedCheckLatestTime(dateTime, dateTime);
     return state.isHealthCheckSupported
         ? Container(
             key: const ValueKey('speedCheck'),
@@ -208,16 +216,24 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Expanded(
-                                child: _downloadSpeedResult(
-                                    context,
-                                    state.downloadResult?.value ?? '--',
-                                    state.downloadResult?.unit),
+                                child: Opacity(
+                                  opacity: isLegacy ? 0.6 : 1,
+                                  child: _downloadSpeedResult(
+                                      context,
+                                      state.downloadResult?.value ?? '--',
+                                      state.downloadResult?.unit,
+                                      isLegacy),
+                                ),
                               ),
                               Expanded(
-                                child: _uploadSpeedResult(
-                                    context,
-                                    state.uploadResult?.value ?? '--',
-                                    state.uploadResult?.unit),
+                                child: Opacity(
+                                  opacity: isLegacy ? 0.6 : 1,
+                                  child: _uploadSpeedResult(
+                                      context,
+                                      state.uploadResult?.value ?? '--',
+                                      state.uploadResult?.unit,
+                                      isLegacy),
+                                ),
                               ),
                               Expanded(
                                 child: _speedTestButton(context),
@@ -230,12 +246,14 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                                 _downloadSpeedResult(
                                     context,
                                     state.downloadResult?.value ?? '--',
-                                    state.downloadResult?.unit),
+                                    state.downloadResult?.unit,
+                                    isLegacy),
                                 const AppGap.large2(),
                                 _uploadSpeedResult(
                                     context,
                                     state.uploadResult?.value ?? '--',
-                                    state.uploadResult?.unit),
+                                    state.uploadResult?.unit,
+                                    isLegacy),
                                 const AppGap.large2(),
                                 _speedTestButton(context),
                               ]),
@@ -250,6 +268,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                                     context,
                                     state.downloadResult?.value ?? '--',
                                     state.downloadResult?.unit,
+                                    isLegacy,
                                     WrapAlignment.center),
                               ),
                               const AppGap.large2(),
@@ -258,6 +277,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                                     context,
                                     state.uploadResult?.value ?? '--',
                                     state.uploadResult?.unit,
+                                    isLegacy,
                                     WrapAlignment.center),
                               ),
                             ],
@@ -281,7 +301,8 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
     );
   }
 
-  Widget _downloadSpeedResult(BuildContext context, String value, String? unit,
+  Widget _downloadSpeedResult(
+      BuildContext context, String value, String? unit, bool isLegacy,
       [WrapAlignment alignment = WrapAlignment.start]) {
     return Wrap(
       alignment: alignment,
@@ -291,13 +312,25 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
           LinksysIcons.arrowDownward,
           color: Theme.of(context).colorScheme.primary,
         ),
-        AppText.titleLarge(value),
-        if (unit != null) AppText.bodySmall('${unit}ps')
+        AppText.titleLarge(
+          value,
+          color: isLegacy
+              ? Theme.of(context).colorScheme.outline
+              : Theme.of(context).colorScheme.onSurface,
+        ),
+        if (unit != null)
+          AppText.bodySmall(
+            '${unit}ps',
+            color: isLegacy
+                ? Theme.of(context).colorScheme.outline
+                : Theme.of(context).colorScheme.onSurface,
+          )
       ],
     );
   }
 
-  Widget _uploadSpeedResult(BuildContext context, String value, String? unit,
+  Widget _uploadSpeedResult(
+      BuildContext context, String value, String? unit, bool isLegacy,
       [WrapAlignment alignment = WrapAlignment.start]) {
     return Wrap(
       alignment: alignment,
@@ -307,8 +340,19 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
           LinksysIcons.arrowUpward,
           color: Theme.of(context).colorScheme.primary,
         ),
-        AppText.titleLarge(value),
-        if (unit != null) AppText.bodySmall('${unit}ps')
+        AppText.titleLarge(
+          value,
+          color: isLegacy
+              ? Theme.of(context).colorScheme.outline
+              : Theme.of(context).colorScheme.onSurface,
+        ),
+        if (unit != null)
+          AppText.bodySmall(
+            '${unit}ps',
+            color: isLegacy
+                ? Theme.of(context).colorScheme.outline
+                : Theme.of(context).colorScheme.onSurface,
+          )
       ],
     );
   }
@@ -363,7 +407,11 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
           constraints: const BoxConstraints(maxWidth: 60),
           width: 60,
           child: isWan
-              ? Container(height: 2, color: Color(orangeTonal.get(80)))
+              ? Container(
+                  height: 2,
+                  color: connection == null
+                      ? Theme.of(context).colorScheme.outlineVariant
+                      : Color(orangeTonal.get(80)))
               : null,
         ),
       ],

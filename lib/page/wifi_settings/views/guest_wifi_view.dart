@@ -6,7 +6,7 @@ import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/guest_wif_provider.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/guest_wifi_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/guest_wifi_state.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_view_provider.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';

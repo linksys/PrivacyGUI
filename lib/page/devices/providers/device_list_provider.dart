@@ -26,13 +26,14 @@ class DeviceListNotifier extends Notifier<DeviceListState> {
   }
 
   DeviceListState createState(DeviceManagerState deviceManagerState) {
-    const newState = DeviceListState();
+    var newState = const DeviceListState();
     final list = deviceManagerState.externalDevices
         .map((device) => createItem(device))
         .toList();
-    return newState.copyWith(
+    newState = newState.copyWith(
       devices: list,
     );
+    return newState;
   }
 
   DeviceListItem createItem(LinksysDevice device) {

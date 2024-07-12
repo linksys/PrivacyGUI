@@ -93,7 +93,6 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     newState = newState.copyWith(
       lastUpdateTime: pollingResult?.lastUpdate,
     );
-    logger.d('DeviceManagerProvider: ${newState.toJson()}');
     return newState;
   }
 

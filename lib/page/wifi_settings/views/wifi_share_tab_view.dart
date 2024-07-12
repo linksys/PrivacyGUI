@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/styled_tab_page_view.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/guest_wif_provider.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/guest_wifi_provider.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 class WiFiShareTabView extends ConsumerStatefulWidget {

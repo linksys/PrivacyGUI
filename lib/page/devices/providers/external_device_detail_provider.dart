@@ -26,8 +26,9 @@ class ExternalDeviceDetailNotifier extends Notifier<ExternalDeviceDetailState> {
     final targetItem = filteredDevices.firstWhere(
       (device) => device.deviceId == targetId,
     );
-    return newState.copyWith(
+    newState = newState.copyWith(
       item: targetItem,
     );
+    return newState;
   }
 }
