@@ -116,8 +116,7 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
 
     state = state.copyWith(isLoading: true, loadingMessage: 'onboarding');
     if (onboardingProceed && anyOnboarded) {
-      await for (final result
-          in pollForNodesOnline(nodeSnapshot, onboardedMACList)) {
+      await for (final result in pollForNodesOnline(onboardedMACList)) {
         childNodes =
             result.where((element) => element.nodeType == 'Slave').toList();
         addedDevices = result
@@ -149,21 +148,20 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
       addedNodes: addedDevices,
       childNodes: childNodes,
       isLoading: false,
+      onboardedMACList: onboardedMACList,
     );
   }
 
-  Stream<List<RawDevice>> pollForNodesOnline(
-    List<LinksysDevice> initDeviceList,
-    List<String> onboardedMACList,
-  ) {
+  Stream<List<RawDevice>> pollForNodesOnline(List<String> onboardedMACList,
+      {bool refreshing = false}) {
     logger.d(
         '[AddNodes]: [pollForNodesOnline] start, onboardedMACList: $onboardedMACList');
     final repo = ref.read(routerRepositoryProvider);
     return repo
         .scheduledCommand(
-            firstDelayInMilliSec: 20000,
-            retryDelayInMilliSec: 20000,
-            maxRetry: 9,
+            firstDelayInMilliSec: refreshing ? 1000 : 20000,
+            retryDelayInMilliSec: refreshing ? 3000 : 20000,
+            maxRetry: refreshing ? 5 : 9,
             auth: true,
             action: JNAPAction.getDevices,
             condition: (result) {
@@ -218,6 +216,23 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
           }
         },
       ),
+    );
+  }
+
+  Future startRefresh() async {
+    state = state.copyWith(isLoading: true, loadingMessage: 'searching');
+
+    List<RawDevice> childNodes = [];
+    await for (final result
+        in pollForNodesOnline(state.onboardedMACList ?? [], refreshing: true)) {
+      childNodes =
+          result.where((element) => element.nodeType == 'Slave').toList();
+    }
+
+    state = state.copyWith(
+      childNodes: childNodes,
+      isLoading: false,
+      loadingMessage: '',
     );
   }
 }
