@@ -528,6 +528,8 @@ void initBetterActions() {
       _JNAPActionValue.getIPv6Settings.value;
   _betterActionMap[JNAPAction.getLANSettings] =
       _JNAPActionValue.getLANSettings.value;
+  _betterActionMap[JNAPAction.getRoutingSettings] =
+      _JNAPActionValue.getRoutingSettings.value;
   _betterActionMap[JNAPAction.getMACAddressCloneSettings] =
       _JNAPActionValue.getMACAddressCloneSettings.value;
   _betterActionMap[JNAPAction.getWANSettings] =
@@ -542,6 +544,8 @@ void initBetterActions() {
       _JNAPActionValue.setWANSettings.value;
   _betterActionMap[JNAPAction.setLANSettings] =
       _JNAPActionValue.setLANSettings.value;
+  _betterActionMap[JNAPAction.setRoutingSettings] =
+      _JNAPActionValue.setRoutingSettings.value;
   _betterActionMap[JNAPAction.getManagementSettings] =
       _JNAPActionValue.getManagementSettings.value;
   _betterActionMap[JNAPAction.setManagementSettings] =
