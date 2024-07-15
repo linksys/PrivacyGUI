@@ -22,7 +22,7 @@ class TimezoneNotifier extends Notifier<TimezoneState> {
     );
     final timezoneId = result.output['timeZoneID'] ?? 'PST8';
     final supportedTimezones = List.from(result.output['supportedTimeZones'])
-        .map((e) => SupportedTimezone.fromJson(e))
+        .map((e) => SupportedTimezone.fromMap(e))
         .toList();
     final autoAdjustForDST = result.output['autoAdjustForDST'] ?? false;
     state = state.copyWith(

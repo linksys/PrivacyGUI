@@ -99,8 +99,8 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         _avatarCard(state),
+        const AppGap.small2(),
         _detailSection(state),
-        _extraInfoSection(state),
       ],
     );
   }

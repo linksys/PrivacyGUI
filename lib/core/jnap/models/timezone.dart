@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:equatable/equatable.dart';
 
 class SupportedTimezone extends Equatable {
@@ -35,7 +37,7 @@ class SupportedTimezone extends Equatable {
     );
   }
 
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toMap() {
     return {
       'observesDST': observesDST,
       'timeZoneID': timeZoneID,
@@ -44,7 +46,7 @@ class SupportedTimezone extends Equatable {
     }..removeWhere((key, value) => value == null);
   }
 
-  factory SupportedTimezone.fromJson(Map<String, dynamic> json) {
+  factory SupportedTimezone.fromMap(Map<String, dynamic> json) {
     return SupportedTimezone(
       observesDST: json['observesDST'],
       timeZoneID: json['timeZoneID'],
@@ -52,4 +54,11 @@ class SupportedTimezone extends Equatable {
       utcOffsetMinutes: json['utcOffsetMinutes'],
     );
   }
+  String toJson() => json.encode(toMap());
+
+  factory SupportedTimezone.fromJson(String source) =>
+      SupportedTimezone.fromMap(json.decode(source) as Map<String, dynamic>);
+
+  @override
+  bool get stringify => true;
 }

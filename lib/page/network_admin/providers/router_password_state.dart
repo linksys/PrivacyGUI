@@ -1,3 +1,6 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
+import 'dart:convert';
+
 import 'package:equatable/equatable.dart';
 
 class RouterPasswordState extends Equatable {
@@ -68,4 +71,34 @@ class RouterPasswordState extends Equatable {
           remainingErrorAttempts ?? this.remainingErrorAttempts,
     );
   }
+
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'adminPassword': adminPassword,
+      'hint': hint,
+      'isValid': isValid,
+      'isDefault': isDefault,
+      'isSetByUser': isSetByUser,
+      'hasEdited': hasEdited,
+      'error': error,
+      'remainingErrorAttempts': remainingErrorAttempts,
+    };
+  }
+
+  factory RouterPasswordState.fromMap(Map<String, dynamic> map) {
+    return RouterPasswordState(
+      adminPassword: map['adminPassword'] as String,
+      hint: map['hint'] as String,
+      isValid: map['isValid'] as bool,
+      isDefault: map['isDefault'] as bool,
+      isSetByUser: map['isSetByUser'] as bool,
+      hasEdited: map['hasEdited'] as bool,
+      error: map['error'] != null ? map['error'] as String : null,
+      remainingErrorAttempts: map['remainingErrorAttempts'] != null ? map['remainingErrorAttempts'] as int : null,
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory RouterPasswordState.fromJson(String source) => RouterPasswordState.fromMap(json.decode(source) as Map<String, dynamic>);
 }

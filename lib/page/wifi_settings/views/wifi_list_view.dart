@@ -20,7 +20,6 @@ import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/input_field/validator_widget.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'package:privacygui_widgets/widgets/radios/radio_list.dart';
 
 enum WiFiListViewMode {
@@ -55,25 +54,32 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
     final index = widget.args['wifiIndex'] as int? ?? 0;
     _scrollController = ScrollController(initialScrollOffset: 760.0 * index);
 
-    doSomethingWithSpinner(context, 
-    ref.read(wifiListProvider.notifier).fetch().then((state) {
-      ref.read(wifiViewProvider.notifier).setChanged(false);
-      setState(() {
-        _preseveredMode =
-            ref.read(wifiListProvider.notifier).isAllBandsConsistent()
-                ? WiFiListViewMode.simple
-                : WiFiListViewMode.advanced;
-        _mode = _preseveredMode;
-        _preservedState = state;
-        _simplePasswordController.text =
-            state.mainWiFi.firstOrNull?.password ?? '';
-        for (var wifi in state.mainWiFi) {
-          final controller = TextEditingController()..text = wifi.password;
-          _advancedPasswordController.putIfAbsent(
-              wifi.radioID, () => controller);
-        }
-      },);
-    },),);
+    doSomethingWithSpinner(
+      context,
+      ref.read(wifiListProvider.notifier).fetch().then(
+        (state) {
+          ref.read(wifiViewProvider.notifier).setChanged(false);
+          setState(
+            () {
+              _preseveredMode =
+                  ref.read(wifiListProvider.notifier).isAllBandsConsistent()
+                      ? WiFiListViewMode.simple
+                      : WiFiListViewMode.advanced;
+              _mode = _preseveredMode;
+              _preservedState = state;
+              _simplePasswordController.text =
+                  state.mainWiFi.firstOrNull?.password ?? '';
+              for (var wifi in state.mainWiFi) {
+                final controller = TextEditingController()
+                  ..text = wifi.password;
+                _advancedPasswordController.putIfAbsent(
+                    wifi.radioID, () => controller);
+              }
+            },
+          );
+        },
+      ),
+    );
   }
 
   @override
@@ -98,20 +104,20 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
             : !const ListEquality()
                 .equals(_preservedState?.mainWiFi, state.mainWiFi));
     return StyledAppPageView(
-            appBarStyle: AppBarStyle.none,
-            scrollable: true,
-            controller: _scrollController,
-            padding: EdgeInsets.zero,
-            bottomBar: PageBottomBar(
-                isPositiveEnabled: isPositiveEnabled,
-                onPositiveTap: () {
-                  _showSaveConfirmModal();
-                }),
-            child: switch (_mode) {
-              WiFiListViewMode.simple => _simpleWiFiView(),
-              WiFiListViewMode.advanced => _advancedWiFiView(),
-            },
-          );
+      appBarStyle: AppBarStyle.none,
+      scrollable: true,
+      controller: _scrollController,
+      padding: EdgeInsets.zero,
+      bottomBar: PageBottomBar(
+          isPositiveEnabled: isPositiveEnabled,
+          onPositiveTap: () {
+            _showSaveConfirmModal();
+          }),
+      child: switch (_mode) {
+        WiFiListViewMode.simple => _simpleWiFiView(),
+        WiFiListViewMode.advanced => _advancedWiFiView(),
+      },
+    );
   }
 
   Widget _simpleWiFiView() {
@@ -225,7 +231,8 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppCard(
-            padding: const EdgeInsets.symmetric(vertical: Spacing.small2, horizontal: Spacing.large2),
+            padding: const EdgeInsets.symmetric(
+                vertical: Spacing.small2, horizontal: Spacing.large2),
             child: Column(
               children: [
                 _advancedWiFiBandCard(radio),

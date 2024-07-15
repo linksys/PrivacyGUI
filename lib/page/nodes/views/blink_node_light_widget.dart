@@ -44,23 +44,27 @@ class _BlinkNodeLightWidgetState extends ConsumerState<BlinkNodeLightWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return _isBlinking
-        ? AppStyledText.link(
-            loc(context).nodeDetailBlinkingCounting(_count),
-            defaultTextStyle: Theme.of(context).textTheme.bodySmall!,
-            tags: const ['u'],
-            callbackTags: {
-              'u': (String? text, Map<String?, String?> attrs) {
-                _stopBlink();
-              }
-            },
-          )
-        : AppTextButton.noPadding(
-            loc(context).nodeDetailBlinkNodeLightBtn,
-            onTap: () {
-              _startBlink();
-            },
-          );
+    return Padding(
+      padding: widget.padding ?? const EdgeInsets.all(4.0),
+      child: _isBlinking
+          ? AppStyledText.link(
+              loc(context).nodeDetailBlinkingCounting(_count),
+              defaultTextStyle: Theme.of(context).textTheme.bodySmall!,
+              tags: const ['u'],
+              callbackTags: {
+                'u': (String? text, Map<String?, String?> attrs) {
+                  _stopBlink();
+                }
+              },
+            )
+          : AppTextButton.noPadding(
+            key: const ValueKey('blinkNodeButton'),
+              loc(context).nodeDetailBlinkNodeLightBtn,
+              onTap: () {
+                _startBlink();
+              },
+            ),
+    );
   }
 
   _startBlink() async {

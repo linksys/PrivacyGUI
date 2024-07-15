@@ -11,7 +11,6 @@ import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/network_admin/providers/_providers.dart';
-import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/timezone.dart';
 import 'package:privacy_gui/validator_rules/_validator_rules.dart';
@@ -21,7 +20,6 @@ import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
 import 'package:privacygui_widgets/widgets/input_field/validator_widget.dart';
 import 'package:privacygui_widgets/widgets/panel/switch_trigger_tile.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class NetworkAdminView extends ArgumentsConsumerStatefulView {
   const NetworkAdminView({
@@ -71,7 +69,6 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
     final isFwAutoUpdate = ref.watch(firmwareUpdateProvider
             .select((value) => value.settings.updatePolicy)) ==
         FirmwareUpdateSettings.firmwareUpdatePolicyAuto;
-    final loginType = ref.watch(authProvider).value?.loginType;
 
     return StyledAppPageView(
       scrollable: true,
@@ -89,23 +86,13 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
                       inputDecorationTheme: const InputDecorationTheme(
                           isDense: true, contentPadding: EdgeInsets.zero)),
                   child: IntrinsicWidth(
-                    child: loginType == LoginType.local
-                        ? AppPasswordField(
-                            readOnly: true,
-                            border: InputBorder.none,
-                            controller: _passwordController
-                              ..text = routerPasswordState.adminPassword,
-                            suffixIconConstraints: const BoxConstraints(),
-                          )
-                        : AppTextField(
-                            readOnly: true,
-                            border: InputBorder.none,
-                            controller: _passwordController
-                              ..text = '**********',
-                            secured: true,
-                            suffixIconConstraints: const BoxConstraints(),
-                          ),
-                  ),
+                      child: AppPasswordField(
+                    readOnly: true,
+                    border: InputBorder.none,
+                    controller: _passwordController
+                      ..text = routerPasswordState.adminPassword,
+                    suffixIconConstraints: const BoxConstraints(),
+                  )),
                 ),
                 trailing: const Icon(LinksysIcons.edit),
                 onTap: () {
@@ -118,7 +105,7 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
                 showBorder: false,
                 title: AppText.bodySmall(loc(context).routerPasswordHint),
                 description: routerPasswordState.hint.isEmpty
-                    ? const AppText.labelLarge('Set one')
+                    ? AppText.labelLarge(loc(context).setOne)
                     : AppText.bodyMedium(routerPasswordState.hint),
               ),
             ]),

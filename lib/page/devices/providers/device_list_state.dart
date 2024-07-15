@@ -1,11 +1,12 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
+import 'dart:convert';
+
+import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
-import 'package:flutter/foundation.dart';
 
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 
-@immutable
-class DeviceListState {
+class DeviceListState extends Equatable {
   final List<DeviceListItem> devices;
 
   const DeviceListState({
@@ -19,6 +20,33 @@ class DeviceListState {
       devices: devices ?? this.devices,
     );
   }
+
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'devices': devices.map((x) => x.toMap()).toList(),
+    };
+  }
+
+  factory DeviceListState.fromMap(Map<String, dynamic> map) {
+    return DeviceListState(
+      devices: List<DeviceListItem>.from(
+        map['devices'].map(
+          (x) => DeviceListItem.fromMap(x as Map<String, dynamic>),
+        ),
+      ),
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory DeviceListState.fromJson(String source) =>
+      DeviceListState.fromMap(json.decode(source) as Map<String, dynamic>);
+
+  @override
+  bool get stringify => true;
+
+  @override
+  List<Object> get props => [devices];
 }
 
 class DeviceListItem extends Equatable {
@@ -127,4 +155,57 @@ class DeviceListItem extends Equatable {
       ssid,
     ];
   }
+
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'deviceId': deviceId,
+      'name': name,
+      'icon': icon,
+      'upstreamDevice': upstreamDevice,
+      'upstreamDeviceID': upstreamDeviceID,
+      'upstreamIcon': upstreamIcon,
+      'ipv4Address': ipv4Address,
+      'ipv6Address': ipv6Address,
+      'macAddress': macAddress,
+      'manufacturer': manufacturer,
+      'model': model,
+      'operatingSystem': operatingSystem,
+      'band': band,
+      'signalStrength': signalStrength,
+      'isOnline': isOnline,
+      'isWired': isWired,
+      'type': type.value,
+      'ssid': ssid,
+    };
+  }
+
+  factory DeviceListItem.fromMap(Map<String, dynamic> map) {
+    return DeviceListItem(
+      deviceId: map['deviceId'] as String,
+      name: map['name'] as String,
+      icon: map['icon'] as String,
+      upstreamDevice: map['upstreamDevice'] as String,
+      upstreamDeviceID: map['upstreamDeviceID'] as String,
+      upstreamIcon: map['upstreamIcon'] as String,
+      ipv4Address: map['ipv4Address'] as String,
+      ipv6Address: map['ipv6Address'] as String,
+      macAddress: map['macAddress'] as String,
+      manufacturer: map['manufacturer'] as String,
+      model: map['model'] as String,
+      operatingSystem: map['operatingSystem'] as String,
+      band: map['band'] as String,
+      signalStrength: map['signalStrength'] as int,
+      isOnline: map['isOnline'] as bool,
+      isWired: map['isWired'] as bool,
+      type:
+          WifiConnectionType.values.firstWhereOrNull((e) => e == map['type']) ??
+              WifiConnectionType.main,
+      ssid: map['ssid'] as String,
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory DeviceListItem.fromJson(String source) =>
+      DeviceListItem.fromMap(json.decode(source) as Map<String, dynamic>);
 }

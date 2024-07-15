@@ -11,7 +11,6 @@ import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/panel/switch_trigger_tile.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class WifiAdvancedSettingsView extends ArgumentsConsumerStatefulView {
   const WifiAdvancedSettingsView({super.key});

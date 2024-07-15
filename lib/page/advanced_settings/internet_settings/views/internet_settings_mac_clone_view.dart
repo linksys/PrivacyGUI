@@ -9,7 +9,9 @@ import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/_internet_settings.dart';
 import 'package:privacy_gui/validator_rules/_validator_rules.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
@@ -71,14 +73,16 @@ class _MACCloneViewState extends ConsumerState<MACCloneView> {
           );
         },
       ),
-      child: AppBasicLayout(
-        content: Column(
+      child: AppCard(
+        padding: const EdgeInsets.symmetric(
+            horizontal: Spacing.large2, vertical: Spacing.medium),
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             AppSettingCard.noBorder(
               padding: EdgeInsets.zero,
               title: loc(context).macAddressClone,
-              color: Theme.of(context).colorScheme.background,
               trailing: AppSwitch(
                 value: _isEnabled,
                 onChanged: (value) {
@@ -88,7 +92,11 @@ class _MACCloneViewState extends ConsumerState<MACCloneView> {
                 },
               ),
             ),
-            if (_isEnabled)
+            if (_isEnabled) ...[
+              const Divider(
+                thickness: 1,
+                height: Spacing.large2 * 2 + 1,
+              ),
               AppTextField.macAddress(
                 controller: _valueController,
                 border: const OutlineInputBorder(),
@@ -98,8 +106,7 @@ class _MACCloneViewState extends ConsumerState<MACCloneView> {
                   });
                 },
               ),
-            const AppGap.large3(),
-            if (_isEnabled)
+              const AppGap.large2(),
               AppTextButton.noPadding(
                 loc(context).cloneCurrentClientMac,
                 onTap: () {
@@ -114,6 +121,7 @@ class _MACCloneViewState extends ConsumerState<MACCloneView> {
                   });
                 },
               ),
+            ],
           ],
         ),
       ),

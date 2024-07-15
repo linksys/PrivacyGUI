@@ -63,7 +63,7 @@ class MacFilteringState extends Equatable {
   factory MacFilteringState.fromMap(Map<String, dynamic> map) {
     return MacFilteringState(
       mode: MacFilterMode.reslove(map['status']),
-      macAddresses: List<String>.from((map['macAddresses'] as List<String>)),
+      macAddresses: List.from(map['macAddresses']),
       maxMacAddresses: map['maxMacAddresses'] as int,
     );
   }

@@ -228,38 +228,44 @@ class DashboardNetworks extends ConsumerWidget {
   }
 
   Widget _nodeCard(BuildContext context, WidgetRef ref, LinksysDevice node) {
-    return AppListCard(
-      padding: const EdgeInsets.symmetric(vertical: Spacing.medium),
-      title: AppText.titleMedium(node.getDeviceLocation()),
-      description: AppText.bodyMedium(
-          loc(context).nDevices(node.connectedDevices.length)),
-      leading: Image(
-        image: CustomTheme.of(context).images.devices.getByName(
-              routerIconTestByModel(modelNumber: node.modelNumber ?? ''),
-            ),
-        width: 40,
-        height: 40,
+    return Opacity(
+      opacity: node.isOnline() ? 1 : 0.6,
+      child: AppListCard(
+        padding: const EdgeInsets.symmetric(vertical: Spacing.medium),
+        title: AppText.titleMedium(node.getDeviceLocation()),
+        description: AppText.bodyMedium(
+            loc(context).nDevices(node.connectedDevices.length)),
+        leading: Image(
+          image: CustomTheme.of(context).images.devices.getByName(
+                routerIconTestByModel(modelNumber: node.modelNumber ?? ''),
+              ),
+          width: 40,
+          height: 40,
+        ),
+        trailing: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Icon(node.isOnline()
+                ? node.isAuthority | !node.isWirelessConnection()
+                    ? LinksysIcons.ethernet
+                    : getWifiSignalIconData(context, node.signalDecibels)
+                : LinksysIcons.signalWifiNone),
+            if (!node.isAuthority &&
+                node.isWirelessConnection() &&
+                node.isOnline())
+              AppText.bodySmall('${node.signalDecibels} dBM'),
+            if (!node.isOnline()) AppText.bodySmall(loc(context).offline)
+          ],
+        ),
+        showBorder: false,
+        onTap: () {
+          ref.read(nodeDetailIdProvider.notifier).state = node.deviceID;
+          if (node.isOnline()) {
+            // Update the current target Id for node state
+            context.pushNamed(RouteNamed.nodeDetails);
+          }
+        },
       ),
-      trailing: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Icon(node.isOnline()
-              ? node.isAuthority | !node.isWirelessConnection()
-                  ? LinksysIcons.ethernet
-                  : getWifiSignalIconData(context, node.signalDecibels)
-              : LinksysIcons.signalWifiNone),
-          if (!node.isAuthority && node.isWirelessConnection() && node.isOnline())
-            AppText.bodySmall('${node.signalDecibels} dBM')
-        ],
-      ),
-      showBorder: false,
-      onTap: () {
-        ref.read(nodeDetailIdProvider.notifier).state = node.deviceID;
-        if (node.isOnline()) {
-          // Update the current target Id for node state
-          context.pushNamed(RouteNamed.nodeDetails);
-        }
-      },
     );
   }
 

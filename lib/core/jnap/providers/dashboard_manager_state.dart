@@ -96,28 +96,29 @@ class DashboardManagerState extends Equatable {
       deviceInfo: map['deviceInfo'] != null
           ? NodeDeviceInfo.fromJson(map['deviceInfo'])
           : null,
-      mainRadios: List<RouterRadio>.from(
-        map['mainRadios'].map<RouterRadio>(
-          (x) => RouterRadio.fromMap(x as Map<String, dynamic>),
-        ),
-      ),
-      guestRadios: List<GuestRadioInfo>.from(
-        map['guestRadios'].map<GuestRadioInfo>(
-          (x) => GuestRadioInfo.fromMap(x as Map<String, dynamic>),
-        ),
-      ),
+      mainRadios: map['mainRadios'] != null
+          ? List<RouterRadio>.from(
+              map['mainRadios'].map<RouterRadio>(
+                (x) => RouterRadio.fromMap(x),
+              ),
+            )
+          : [],
+      guestRadios: map['guestRadios'] != null
+          ? List<GuestRadioInfo>.from(
+              map['guestRadios'].map<GuestRadioInfo>(
+                (x) => GuestRadioInfo.fromMap(x),
+              ),
+            )
+          : [],
       isGuestNetworkEnabled: map['isGuestNetworkEnabled'] as bool,
       latestSpeedTest: map['latestSpeedTest'] != null
-          ? HealthCheckResult.fromJson(
-              map['latestSpeedTest'] as Map<String, dynamic>)
+          ? HealthCheckResult.fromJson(map['latestSpeedTest'])
           : null,
-      healthCheckModules:
-          List<String>.from(map['healthCheckModules'] as List<String>),
+      healthCheckModules: List<String>.from(map['healthCheckModules']),
       uptimes: map['uptimes'] as int,
-      wanConnection:
-          map['wanConnection'] != null ? map['wanConnection'] as String : null,
+      wanConnection: map['wanConnection'],
       lanConnections: List<String>.from(
-        (map['lanConnections'] as List<String>),
+        map['lanConnections'],
       ),
       skuModelNumber: map['skuModelNumber'],
     );
