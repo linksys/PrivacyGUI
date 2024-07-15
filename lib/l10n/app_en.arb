@@ -786,5 +786,14 @@
   },
   "wired": "Wired",
   "wireless": "Wireless",
-  "setOne": "Set one"
+  "setOne": "Set one",
+  "staticRouting": "Static routing",
+  "nat": "NAT",
+  "dynamicRouting": "Dynamic routing (RIP)",
+  "addStaticRoute": "Add static route",
+  "staticRoute": "Static route/s",
+  "destinationIPAddress": "Destination IP address",
+  "noStaticRoutes": "You have no static route/s",
+  "gateway": "Gateway",
+  "routeName": "Route name"
 }

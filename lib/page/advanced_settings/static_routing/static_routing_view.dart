@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_state.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
@@ -39,7 +40,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView> {
   Widget build(BuildContext context) {
     final state = ref.watch(staticRoutingProvider);
     return StyledAppPageView(
-      title: 'Static Routing',
+      title: loc(context).advancedRouting,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -49,11 +50,11 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView> {
                 : RoutingSettingNetwork.dynamicRouting,
             items: [
               AppRadioListItem(
-                title: 'NAT',
+                title: loc(context).nat,
                 value: RoutingSettingNetwork.nat,
               ),
               AppRadioListItem(
-                title: 'Dynamic Routing (RIP)',
+                title: loc(context).dynamicRouting,
                 value: RoutingSettingNetwork.dynamicRouting,
               ),
             ],
@@ -70,7 +71,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView> {
           ),
           const AppGap.large2(),
           AppInfoCard(
-            title: 'Static Routing',
+            title: loc(context).staticRouting,
             trailing: const Icon(LinksysIcons.chevronRight),
             onTap: () {
               context.pushNamed(RouteNamed.settingsStaticRoutingList);

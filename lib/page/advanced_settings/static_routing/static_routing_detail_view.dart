@@ -6,6 +6,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_state.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/utils.dart';
@@ -64,7 +65,9 @@ class _StaticRoutingDetailViewState
     );
     return StyledAppPageView(
       scrollable: true,
-      title: _currentSetting == null ? 'Add Static Route' : loc(context).edit,
+      title: _currentSetting == null
+          ? loc(context).addStaticRoute
+          : loc(context).edit,
       bottomBar: PageBottomBar(
         isPositiveEnabled: _isInputValid(),
         isNegitiveEnabled: _currentSetting != null,
@@ -77,7 +80,7 @@ class _StaticRoutingDetailViewState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppTextField.outline(
-            hintText: 'Route name',
+            hintText: loc(context).routeName,
             controller: _routeNameController,
             onChanged: (text) {
               setState(() => _isInputValid());
@@ -98,7 +101,7 @@ class _StaticRoutingDetailViewState
           const AppGap.large2(),
           AppIPFormField(
             header: AppText.bodyLarge(
-              'Destination IP address',
+              loc(context).destinationIPAddress,
             ),
             controller: _destinationIpController,
             border: const OutlineInputBorder(),
@@ -120,7 +123,7 @@ class _StaticRoutingDetailViewState
           const AppGap.large2(),
           AppIPFormField(
             header: AppText.bodyLarge(
-              'Gateway',
+              loc(context).gateway,
             ),
             controller: _gatewayController,
             border: const OutlineInputBorder(),
@@ -180,7 +183,11 @@ class _StaticRoutingDetailViewState
       ref
           .read(staticRoutingProvider.notifier)
           .saveRoutingSettingList(settingList)
-          .then((value) => context.pop()),
+          .then((value) {
+        showSuccessSnackBar(context, loc(context).saved);
+        context.pop();
+      }).onError((error, stackTrace) =>
+              showFailedSnackBar(context, loc(context).unknownError)),
     );
   }
 

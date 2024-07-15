@@ -135,7 +135,7 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
         title: AppText.labelLarge(loc(context).dmzSourceIPAddress),
         description: AppRadioList(
           initial: state.sourceType,
-          itemCrossAxisAlignment: CrossAxisAlignment.start,
+          itemCrossAxisAlignment: CrossAxisAlignment.center,
           items: [
             AppRadioListItem(
                 title: loc(context).automatic, value: DMZSourceType.auto),
@@ -143,7 +143,6 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                 title: loc(context).specifiedRange,
                 subtitleWidget: state.sourceType == DMZSourceType.range
                     ? Container(
-                        constraints: const BoxConstraints(maxWidth: 429),
                         padding: const EdgeInsets.symmetric(
                             vertical: Spacing.medium),
                         child: Column(

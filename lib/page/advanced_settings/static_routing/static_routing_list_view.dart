@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/models/get_routing_settings.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_provider.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
@@ -29,7 +30,7 @@ class _StaticRoutingListViewState extends ConsumerState<StaticRoutingListView> {
   Widget build(BuildContext context) {
     final state = ref.watch(staticRoutingProvider);
     return StyledAppPageView(
-      title: 'Static Routing',
+      title: loc(context).staticRouting,
       scrollable: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -38,7 +39,7 @@ class _StaticRoutingListViewState extends ConsumerState<StaticRoutingListView> {
           AppListCard(
             padding: const EdgeInsets.all(Spacing.large2),
             title: AppText.labelLarge(
-              'Add static route',
+              loc(context).addStaticRoute,
             ),
             trailing: const Icon(LinksysIcons.add),
             onTap: () {
@@ -49,7 +50,7 @@ class _StaticRoutingListViewState extends ConsumerState<StaticRoutingListView> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              AppText.labelLarge('Static Route/s'),
+              AppText.labelLarge(loc(context).staticRoute),
               const AppGap.medium(),
               if (state.setting.entries.isNotEmpty)
                 ...state.setting.entries.map(
@@ -60,7 +61,7 @@ class _StaticRoutingListViewState extends ConsumerState<StaticRoutingListView> {
                   child: SizedBox(
                     height: 180,
                     child: Center(
-                      child: AppText.bodyLarge('You have no Static Route/s'),
+                      child: AppText.bodyLarge(loc(context).noStaticRoutes),
                     ),
                   ),
                 ),
@@ -85,11 +86,26 @@ class _StaticRoutingListViewState extends ConsumerState<StaticRoutingListView> {
             children: [
               AppText.labelLarge(setting.name),
               AppText.bodyMedium(setting.settings.interface),
-              AppText.bodyMedium(
-                  'Destination IP address: ${setting.settings.destinationLAN}'),
-              AppText.bodyMedium(
-                  'Subnet mask: ${NetworkUtils.prefixLengthToSubnetMask(setting.settings.networkPrefixLength)}'),
-              AppText.bodyMedium('Gateway: ${setting.settings.gateway ?? ''}'),
+              Wrap(
+                children: [
+                  AppText.labelLarge(loc(context).destinationIPAddress),
+                  AppText.bodyMedium(setting.settings.destinationLAN),
+                ],
+              ),
+              Wrap(
+                children: [
+                  AppText.labelLarge(loc(context).subnetMask),
+                  AppText.bodyMedium(NetworkUtils.prefixLengthToSubnetMask(
+                      setting.settings.networkPrefixLength)),
+                ],
+              ),
+              Wrap(
+                children: [
+                  AppText.labelLarge(loc(context).gateway),
+                  AppText.bodyMedium(
+                      setting.settings.gateway ?? ''),
+                ],
+              ),
             ],
           ),
           Row(

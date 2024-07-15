@@ -89,7 +89,7 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
                     }
                   : null,
             ),
-            const AppGap.medium(),
+            const AppGap.small2(),
             AppListCard(
               title: AppText.labelLarge(loc(context).manuallyAddDevice),
               trailing: !_isEdit ? const Icon(LinksysIcons.add) : null,
