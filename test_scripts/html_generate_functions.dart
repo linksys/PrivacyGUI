@@ -125,10 +125,24 @@ String generateHTMLGroup(Map<String, dynamic> group) {
 }
 
 String generateHTMLTest(Map<String, dynamic> test) {
+  final name = test['name'];
+  final regex = RegExp(r'(.*) \(variant: (.*)-(.*)_.*');
+  final match = regex.firstMatch(name);
+  final tsName = match?.group(1)?.trim();
+  final deviceType = match?.group(2);
+  final locale = match?.group(3);
+  String? link;
+  if (tsName != null && locale != null && deviceType != null) {
+    link = './$locale/$deviceType/$tsName-$deviceType-$locale.png';
+  }
+  final nameTdScript =
+      link == null ? '${test['name']}' : '<a href="$link">${test['name']}</a>';
+  final skip = test['metadata']?['skip'] ?? false;
+  final result = skip ? 'Skip' : '${test['result']}';
   return '''
   <tr>
-    <td style="width:80%;text-indent:20px" >${test['name']}</th>
-    <td style="width:20%" class="textCenter ${test['result']}">${test['result']}</th>
+    <td style="width:80%;text-indent:20px" >$nameTdScript</th>
+    <td style="width:20%" class="textCenter $result">$result</th>
   </tr>
 ''';
 }
