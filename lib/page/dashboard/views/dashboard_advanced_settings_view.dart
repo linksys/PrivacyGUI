@@ -62,11 +62,11 @@ class _DashboardAdvancedSettingsViewState
         // iconData: getCharactersIcons(context).nodesDefault,
         onTap: () => context.goNamed(RouteNamed.settingsLocalNetwork),
       ),
-      // AppSectionItemData(
-      //   title: loc(context).advancedRouting,
-      //   // iconData: getCharactersIcons(context).infoRound,
-      //   onTap: () => context.goNamed(RouteNamed.settingsIpDetails),
-      // ),
+      AppSectionItemData(
+        title: loc(context).advancedRouting,
+        // iconData: getCharactersIcons(context).infoRound,
+        onTap: () => context.goNamed(RouteNamed.settingsStaticRouting),
+      ),
       AppSectionItemData(
         title: loc(context).administration,
         // iconData: getCharactersIcons(context).nodesDefault,

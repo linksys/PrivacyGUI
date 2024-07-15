@@ -38,6 +38,9 @@ class RoutePath {
   static const settingsFirewall = 'firewall';
   static const settingsDMZ = 'dmz';
   static const settingsAdministration = "administration";
+  static const settingsStaticRouting = "staticRouting";
+  static const settingsStaticRoutingList = "staticRoutingList";
+  static const settingsStaticRoutingDetail = "staticRoutingDetail";
 
   /// otp
   static const otpStart = 'otp';
@@ -173,6 +176,9 @@ class RouteNamed {
   static const settingsFirewall = 'firewall';
   static const settingsDMZ = 'dmz';
   static const settingsAdministration = "administration";
+  static const settingsStaticRouting = "staticRouting";
+  static const settingsStaticRoutingList = "staticRoutingList";
+  static const settingsStaticRoutingDetail = "staticRoutingDetail";
 
   /// otp
   static const otpStart = 'otp';

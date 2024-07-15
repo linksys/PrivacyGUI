@@ -227,6 +227,7 @@ enum _JNAPActionValue {
   // TODO - Checking for the reference
   getWANStatus2(value: 'http://linksys.com/jnap/router/GetWANStatus2'),
   getWANStatus3(value: 'http://linksys.com/jnap/router/GetWANStatus3'),
+  getRoutingSettings(value: 'http://linksys.com/jnap/router/GetRoutingSettings'),
   getWANDetectionStatus(
       value: 'http://linksys.com/jnap/nodes/setup/GetWANDetectionStatus'),
   setIPv6Settings(value: 'http://linksys.com/jnap/router/SetIPv6Settings'),
@@ -239,6 +240,7 @@ enum _JNAPActionValue {
   setWANSettings3(value: 'http://linksys.com/jnap/router/SetWANSettings3'),
   setWANSettings4(value: 'http://linksys.com/jnap/router/SetWANSettings4'),
   setLANSettings(value: 'http://linksys.com/jnap/router/SetLANSettings'),
+  setRoutingSettings(value: 'http://linksys.com/jnap/router/SetRoutingSettings'),
   renewDHCPWANLease(value: 'http://linksys.com/jnap/router/RenewDHCPWANLease'),
   renewDHCPIPv6Lease(
       value: 'http://linksys.com/jnap/router/RenewDHCPIPv6WANLease'),
