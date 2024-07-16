@@ -62,6 +62,7 @@ class SafeBrowsingStep extends PnpStep {
                       AppRadioListItem<String>(
                           title: 'OpenDNS (Cisco)', value: 'cisco'),
                     ],
+                    itemHeight: 56,
                     onChanged: (int index, String? value) {
                       ref
                           .read(pnpProvider.notifier)

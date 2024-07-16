@@ -25,7 +25,7 @@ class SinglePortForwardingListNotifier
     )
         .then<JNAPSuccess?>((value) {
       final rules = List.from(value.output['rules'])
-          .map((e) => SinglePortForwardingRule.fromJson(e))
+          .map((e) => SinglePortForwardingRule.fromMap(e))
           .toList();
       final int maxRules = value.output['maxRules'] ?? 50;
       final int maxDesc = value.output['maxDescriptionLength'] ?? 32;

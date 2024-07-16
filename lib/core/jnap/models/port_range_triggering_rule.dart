@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:equatable/equatable.dart';
 
 /// isEnabled : true
@@ -52,7 +54,7 @@ class PortRangeTriggeringRule extends Equatable {
     );
   }
 
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toMap() {
     return {
       'isEnabled': isEnabled,
       'firstTriggerPort': firstTriggerPort,
@@ -63,7 +65,7 @@ class PortRangeTriggeringRule extends Equatable {
     };
   }
 
-  factory PortRangeTriggeringRule.fromJson(Map<String, dynamic> json) {
+  factory PortRangeTriggeringRule.fromMap(Map<String, dynamic> json) {
     return PortRangeTriggeringRule(
       isEnabled: json['isEnabled'],
       firstTriggerPort: json['firstTriggerPort'],
@@ -73,4 +75,10 @@ class PortRangeTriggeringRule extends Equatable {
       description: json['description'],
     );
   }
+    
+  String toJson() => json.encode(toMap());
+
+  factory PortRangeTriggeringRule.fromJson(String source) =>
+      PortRangeTriggeringRule.fromMap(
+          json.decode(source) as Map<String, dynamic>);
 }

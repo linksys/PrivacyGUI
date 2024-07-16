@@ -51,7 +51,7 @@ class _PnpUnplugModemViewState extends ConsumerState<PnpUnplugModemView> {
                 ),
                 const AppGap.large3(),
                 const AppGap.large5(),
-                Row(
+                Wrap(
                   children: [
                     AppTextButton.noPadding(
                       loc(context).pnpUnplugModemTip,

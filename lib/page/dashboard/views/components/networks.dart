@@ -159,6 +159,7 @@ class DashboardNetworks extends ConsumerWidget {
         ),
         const AppGap.medium(),
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
                 child: _nodesInfoTile(
@@ -316,9 +317,9 @@ class DashboardNetworks extends ConsumerWidget {
       constraints: const BoxConstraints(minWidth: 112),
       child: AppCard(
         onTap: onTap,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.start,
           children: [
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,

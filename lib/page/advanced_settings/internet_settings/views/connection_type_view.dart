@@ -765,12 +765,13 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
         height: 150,
         child: AppRadioList(
           mainAxisSize: MainAxisSize.min,
+          itemHeight: 56,
           initial: state.ipv4Setting.behavior,
           items: [
             AppRadioListItem(
               title: loc(context).connectOnDemand,
               value: PPPConnectionBehavior.connectOnDemand,
-              subtitleWidget: state.ipv4Setting.behavior ==
+              expandedWidget: state.ipv4Setting.behavior ==
                       PPPConnectionBehavior.connectOnDemand
                   ? Row(
                       children: [
@@ -806,7 +807,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
             AppRadioListItem(
               title: loc(context).keepAlive,
               value: PPPConnectionBehavior.keepAlive,
-              subtitleWidget:
+              expandedWidget:
                   state.ipv4Setting.behavior == PPPConnectionBehavior.keepAlive
                       ? Row(
                           children: [
@@ -864,6 +865,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
           initial: useStaticSettings
               ? PPTPIpAddressMode.specify
               : PPTPIpAddressMode.dhcp,
+          itemHeight: 56,
           items: [
             AppRadioListItem(
               title: loc(context).obtainIPv4AddressAutomatically,

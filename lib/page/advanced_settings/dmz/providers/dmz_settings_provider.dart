@@ -9,7 +9,6 @@ import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/advanced_settings/dmz/providers/dmz_settings_state.dart';
 import 'package:privacy_gui/utils.dart';
-import 'package:privacy_gui/validator_rules/input_validators.dart';
 
 final dmzSettingsProvider =
     NotifierProvider<DMZSettingNotifier, DMZSettingsState>(
@@ -20,7 +19,6 @@ class DMZSettingNotifier extends Notifier<DMZSettingsState> {
   String get subnetMask => _subnetMask;
   String _ipAddress = '192.168.1.1';
   String get ipAddress => _ipAddress;
-  InputValidator? _localIpValidator;
 
   @override
   DMZSettingsState build() {
@@ -58,8 +56,6 @@ class DMZSettingNotifier extends Notifier<DMZSettingsState> {
             lanSettings.networkPrefixLength);
         _ipAddress =
             NetworkUtils.getIpPrefix(lanSettings.ipAddress, subnetMask);
-        _localIpValidator =
-            IpAddressAsLocalIpValidator(_ipAddress, _subnetMask);
       }
       if (dmzResult != null && dmzResult is JNAPSuccess) {
         final dmzSettings = DMZSettings.fromMap(dmzResult.output);

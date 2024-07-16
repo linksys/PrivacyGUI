@@ -24,7 +24,7 @@ class PortRangeTriggeringListNotifier
     )
         .then<JNAPSuccess?>((value) {
       final rules = List.from(value.output['rules'])
-          .map((e) => PortRangeTriggeringRule.fromJson(e))
+          .map((e) => PortRangeTriggeringRule.fromMap(e))
           .toList();
       final int maxRules = value.output['maxRules'] ?? 50;
       final int maxDesc = value.output['maxDescriptionLength'] ?? 32;

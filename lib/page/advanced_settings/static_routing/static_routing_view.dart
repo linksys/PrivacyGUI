@@ -48,6 +48,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView> {
             initial: state.setting.isNATEnabled
                 ? RoutingSettingNetwork.nat
                 : RoutingSettingNetwork.dynamicRouting,
+            itemHeight: 56,
             items: [
               AppRadioListItem(
                 title: loc(context).nat,

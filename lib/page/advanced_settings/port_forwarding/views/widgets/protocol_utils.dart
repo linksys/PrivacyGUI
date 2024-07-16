@@ -31,6 +31,7 @@ Future<String?> showSelectProtocolModal(
             AppRadioList<String>(
               initial: value,
               mainAxisSize: MainAxisSize.min,
+              itemHeight: 56,
               items: ['TCP', 'UDP', 'Both']
                   .map((e) => AppRadioListItem(
                         title: getProtocolTitle(context, e),

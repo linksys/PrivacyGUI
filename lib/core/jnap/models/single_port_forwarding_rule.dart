@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:equatable/equatable.dart';
 
 /// isEnabled : true
@@ -25,8 +27,7 @@ class SinglePortForwardingRule extends Equatable {
   final String description;
 
   @override
-  List<Object> get props =>
-      [
+  List<Object> get props => [
         isEnabled,
         externalPort,
         protocol,
@@ -54,7 +55,7 @@ class SinglePortForwardingRule extends Equatable {
     );
   }
 
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toMap() {
     return {
       'isEnabled': isEnabled,
       'externalPort': externalPort,
@@ -65,7 +66,7 @@ class SinglePortForwardingRule extends Equatable {
     };
   }
 
-  factory SinglePortForwardingRule.fromJson(Map<String, dynamic> json) {
+  factory SinglePortForwardingRule.fromMap(Map<String, dynamic> json) {
     return SinglePortForwardingRule(
       isEnabled: json['isEnabled'],
       externalPort: json['externalPort'],
@@ -75,4 +76,10 @@ class SinglePortForwardingRule extends Equatable {
       description: json['description'],
     );
   }
+
+  String toJson() => json.encode(toMap());
+
+  factory SinglePortForwardingRule.fromJson(String source) =>
+      SinglePortForwardingRule.fromMap(
+          json.decode(source) as Map<String, dynamic>);
 }

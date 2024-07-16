@@ -1,0 +1,144 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
+import 'package:privacy_gui/core/jnap/models/dmz_settings.dart';
+import 'package:privacy_gui/page/advanced_settings/dmz/providers/dmz_settings_provider.dart';
+import 'package:privacy_gui/page/advanced_settings/dmz/providers/dmz_settings_state.dart';
+import 'package:privacy_gui/page/advanced_settings/dmz/views/dmz_settings_view.dart';
+import 'package:privacy_gui/page/devices/providers/device_list_provider.dart';
+import 'package:privacy_gui/page/devices/providers/device_list_state.dart';
+import 'package:privacy_gui/page/devices/views/select_device_view.dart';
+import 'package:privacy_gui/route/route_model.dart';
+
+import '../../../../../common/test_responsive_widget.dart';
+import '../../../../../common/testable_router.dart';
+import '../../../../../test_data/device_list_test_state.dart';
+import '../../../../../test_data/dmz_settings_test_state.dart';
+import '../../../../wifi_settings/mock_spec_mocks.dart';
+import '../../dmz_settings_view_test_mocks.dart';
+
+@GenerateNiceMocks([
+  MockSpec<DMZSettingNotifier>(),
+])
+void main() {
+  late DMZSettingNotifier mockDMZSettingNotifier;
+
+  setUp(() {
+    mockDMZSettingNotifier = MockDMZSettingNotifier();
+    when(mockDMZSettingNotifier.build())
+        .thenReturn(DMZSettingsState.fromMap(dmzSettingsTestState));
+    when(mockDMZSettingNotifier.fetch()).thenAnswer((_) async {
+      await Future.delayed(const Duration(seconds: 1));
+      return DMZSettingsState.fromMap(dmzSettingsTestState);
+    });
+    when(mockDMZSettingNotifier.subnetMask).thenReturn('255.255.0.0');
+    when(mockDMZSettingNotifier.ipAddress).thenReturn('192.168.1.1');
+  });
+  testLocalizations('DMZ settings view - disabled', (tester, locale) async {
+    final state = DMZSettingsState.fromMap(dmzSettingsTestState)
+        .copyWith(settings: const DMZSettings(isDMZEnabled: false));
+    when(mockDMZSettingNotifier.build()).thenReturn(state);
+    when(mockDMZSettingNotifier.fetch()).thenAnswer((_) async {
+      await Future.delayed(const Duration(seconds: 1));
+      return state;
+    });
+    await tester.pumpWidget(
+      testableSingleRoute(
+        child: const DMZSettingsView(),
+        config: LinksysRouteConfig(
+          column: ColumnGrid(column: 9),
+        ),
+        locale: locale,
+        overrides: [
+          dmzSettingsProvider.overrideWith(() => mockDMZSettingNotifier),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+  });
+  testLocalizations('DMZ settings view - enabled', (tester, locale) async {
+    await tester.pumpWidget(
+      testableSingleRoute(
+        child: const DMZSettingsView(),
+        config: LinksysRouteConfig(
+          column: ColumnGrid(column: 9),
+        ),
+        locale: locale,
+        overrides: [
+          dmzSettingsProvider.overrideWith(() => mockDMZSettingNotifier),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+  });
+
+  testLocalizations('DMZ settings view - enabled with specific range source',
+      (tester, locale) async {
+    var state = DMZSettingsState.fromMap(dmzSettingsTestState);
+    state = state.copyWith(sourceType: DMZSourceType.range);
+    when(mockDMZSettingNotifier.build()).thenReturn(state);
+    when(mockDMZSettingNotifier.fetch()).thenAnswer((_) async {
+      await Future.delayed(const Duration(seconds: 1));
+      return state;
+    });
+    await tester.pumpWidget(
+      testableSingleRoute(
+        child: const DMZSettingsView(),
+        config: LinksysRouteConfig(
+          column: ColumnGrid(column: 9),
+        ),
+        locale: locale,
+        overrides: [
+          dmzSettingsProvider.overrideWith(() => mockDMZSettingNotifier),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+  });
+
+  testLocalizations('DMZ settings view - enabled with mac address destination',
+      (tester, locale) async {
+    var state = DMZSettingsState.fromMap(dmzSettingsTestState);
+    state = state.copyWith(destinationType: DMZDestinationType.mac);
+    when(mockDMZSettingNotifier.build()).thenReturn(state);
+    when(mockDMZSettingNotifier.fetch()).thenAnswer((_) async {
+      await Future.delayed(const Duration(seconds: 1));
+      return state;
+    });
+    await tester.pumpWidget(
+      testableSingleRoute(
+        child: const DMZSettingsView(),
+        config: LinksysRouteConfig(
+          column: ColumnGrid(column: 9),
+        ),
+        locale: locale,
+        overrides: [
+          dmzSettingsProvider.overrideWith(() => mockDMZSettingNotifier),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+  });
+
+  testLocalizations('DMZ settings view - view DHCP client table',
+      (tester, locale) async {
+    final mockDeviceListNotifier = MockDeviceListNotifier();
+    when(mockDeviceListNotifier.build())
+        .thenReturn(DeviceListState.fromMap(deviceListTestState));
+    await tester.pumpWidget(
+      testableSingleRoute(
+        child: const SelectDeviceView(args: {
+          'type': 'ipv4AndMac',
+          'selectMode': 'single',
+          'onlineOnly': true,
+        }),
+        locale: locale,
+        overrides: [
+          dmzSettingsProvider.overrideWith(() => mockDMZSettingNotifier),
+          deviceListProvider.overrideWith(() => mockDeviceListNotifier),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+  });
+}

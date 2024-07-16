@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/models/port_range_forwarding_rule.dart';
-import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/advanced_settings/port_forwarding/_port_forwarding.dart';
 
@@ -19,9 +18,9 @@ class PortRangeForwardingListNotifier
         .read(routerRepositoryProvider)
         .send(JNAPAction.getPortRangeForwardingRules,
             fetchRemote: true, auth: true)
-        .then<JNAPSuccess?>((value) {
+        .then((value) {
       final rules = List.from(value.output['rules'])
-          .map((e) => PortRangeForwardingRule.fromJson(e))
+          .map((e) => PortRangeForwardingRule.fromMap(e))
           .toList();
       final int maxRules = value.output['maxRules'] ?? 50;
       final int maxDesc = value.output['maxDescriptionLength'] ?? 32;

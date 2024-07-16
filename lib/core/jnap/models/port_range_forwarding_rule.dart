@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:equatable/equatable.dart';
 
 /// isEnabled : true
@@ -25,8 +27,7 @@ class PortRangeForwardingRule extends Equatable {
   final String description;
 
   @override
-  List<Object> get props =>
-      [
+  List<Object> get props => [
         isEnabled,
         firstExternalPort,
         protocol,
@@ -54,7 +55,7 @@ class PortRangeForwardingRule extends Equatable {
     );
   }
 
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toMap() {
     return {
       'isEnabled': isEnabled,
       'firstExternalPort': firstExternalPort,
@@ -65,7 +66,7 @@ class PortRangeForwardingRule extends Equatable {
     };
   }
 
-  factory PortRangeForwardingRule.fromJson(Map<String, dynamic> json) {
+  factory PortRangeForwardingRule.fromMap(Map<String, dynamic> json) {
     return PortRangeForwardingRule(
       isEnabled: json['isEnabled'],
       firstExternalPort: json['firstExternalPort'],
@@ -75,4 +76,10 @@ class PortRangeForwardingRule extends Equatable {
       description: json['description'],
     );
   }
+
+  String toJson() => json.encode(toMap());
+
+  factory PortRangeForwardingRule.fromJson(String source) =>
+      PortRangeForwardingRule.fromMap(
+          json.decode(source) as Map<String, dynamic>);
 }
