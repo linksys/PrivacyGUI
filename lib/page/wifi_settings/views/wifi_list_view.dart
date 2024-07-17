@@ -488,6 +488,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
             AppRadioList<WifiSecurityType>(
               initial: type,
               mainAxisSize: MainAxisSize.min,
+              itemHeight: 56,
               items: list
                   .map((e) => AppRadioListItem(
                         title: getWifiSecurityTypeTitle(context, e),
@@ -538,6 +539,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
           children: [
             AppRadioList<WifiWirelessMode>(
               initial: mode,
+              itemHeight: 56,
               mainAxisSize: MainAxisSize.min,
               items: list
                   .map((e) => AppRadioListItem(
@@ -591,6 +593,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
             children: [
               AppRadioList<int>(
                 initial: channel,
+                itemHeight: 56,
                 mainAxisSize: MainAxisSize.min,
                 items: list
                     .map((e) => AppRadioListItem(
@@ -643,6 +646,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
             children: [
               AppRadioList<WifiChannelWidth>(
                 initial: channelWidth,
+                itemHeight: 56,
                 mainAxisSize: MainAxisSize.min,
                 items: list
                     .map((e) => AppRadioListItem(

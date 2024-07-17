@@ -99,6 +99,7 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
                     }
                   : null,
             ),
+            const AppGap.small2(),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: Spacing.medium),
               child: AppText.labelLarge(loc(context).filteredDevices),

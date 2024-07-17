@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/models/dmz_settings.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/dmz/providers/dmz_settings_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/dmz/providers/dmz_settings_state.dart';
@@ -118,7 +119,7 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                 child: Column(
                   children: [
                     _sourceIPWidget(state),
-                    const AppGap.large3(),
+                    const AppGap.large4(),
                     _destinationIPWidget(state)
                   ],
                 ),
@@ -135,16 +136,15 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
         title: AppText.labelLarge(loc(context).dmzSourceIPAddress),
         description: AppRadioList(
           initial: state.sourceType,
-          itemCrossAxisAlignment: CrossAxisAlignment.center,
+          itemHeight: 56,
           items: [
             AppRadioListItem(
                 title: loc(context).automatic, value: DMZSourceType.auto),
             AppRadioListItem(
                 title: loc(context).specifiedRange,
-                subtitleWidget: state.sourceType == DMZSourceType.range
+                expandedWidget: state.sourceType == DMZSourceType.range
                     ? Container(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: Spacing.medium),
+                        constraints: const BoxConstraints(maxWidth: 429),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -249,14 +249,12 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
         children: [
           AppRadioList(
             initial: state.destinationType,
-            itemCrossAxisAlignment: CrossAxisAlignment.start,
+            itemHeight: 56,
             items: [
               AppRadioListItem(
                   title: loc(context).ipAddress,
-                  subtitleWidget: state.destinationType == DMZDestinationType.ip
+                  expandedWidget: state.destinationType == DMZDestinationType.ip
                       ? Container(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: Spacing.medium),
                           constraints: const BoxConstraints(maxWidth: 429),
                           child: AppIPFormField(
                             border: const OutlineInputBorder(),
@@ -283,11 +281,9 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                   value: DMZDestinationType.ip),
               AppRadioListItem(
                   title: loc(context).macAddress,
-                  subtitleWidget: state.destinationType ==
+                  expandedWidget: state.destinationType ==
                           DMZDestinationType.mac
                       ? Container(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: Spacing.medium),
                           constraints: const BoxConstraints(maxWidth: 429),
                           child: AppTextField.macAddress(
                             border: const OutlineInputBorder(),

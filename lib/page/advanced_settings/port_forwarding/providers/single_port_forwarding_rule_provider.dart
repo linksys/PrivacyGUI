@@ -60,7 +60,7 @@ class SinglePortForwardingRuleNotifier
     final result = await repo
         .send(
           JNAPAction.setSinglePortForwardingRules,
-          data: {'rules': rules.map((e) => e.toJson()).toList()},
+          data: {'rules': rules.map((e) => e.toMap()).toList()},
           auth: true,
         )
         .then((value) => true)
@@ -77,7 +77,7 @@ class SinglePortForwardingRuleNotifier
       final result = await repo
           .send(
             JNAPAction.setSinglePortForwardingRules,
-            data: {'rules': rules.map((e) => e.toJson()).toList()},
+            data: {'rules': rules.map((e) => e.toMap()).toList()},
             auth: true,
           )
           .then((value) => true)

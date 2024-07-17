@@ -58,7 +58,7 @@ class PortRangeTriggeringRuleNotifier
           JNAPAction.setPortRangeTriggeringRules,
           auth: true,
           data: {
-            'rules': rules.map((e) => e.toJson()).toList(),
+            'rules': rules.map((e) => e.toMap()).toList(),
           },
         )
         .then((value) => true)
@@ -77,7 +77,7 @@ class PortRangeTriggeringRuleNotifier
             JNAPAction.setPortRangeTriggeringRules,
             auth: true,
             data: {
-              'rules': rules.map((e) => e.toJson()).toList(),
+              'rules': rules.map((e) => e.toMap()).toList(),
             },
           )
           .then((value) => true)

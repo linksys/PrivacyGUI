@@ -153,12 +153,11 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView> {
               initial: initValue,
               mainAxisSize: MainAxisSize.min,
               withDivider: true,
-              itemCrossAxisAlignment: CrossAxisAlignment.center,
               items: [
                 AppRadioListItem(
                   title: loc(context).allowAccess,
                   titleWidget: AppText.bodyLarge(loc(context).allowAccess),
-                  subtitleWidget: AppText.bodyMedium(
+                  subTitleWidget: AppText.bodyMedium(
                     loc(context).allowAccessDesc,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -167,7 +166,7 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView> {
                 AppRadioListItem(
                   title: loc(context).denyAccess,
                   titleWidget: AppText.bodyLarge(loc(context).denyAccess),
-                  subtitleWidget: AppText.bodyMedium(
+                  subTitleWidget: AppText.bodyMedium(
                     loc(context).denyAccessDesc,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),

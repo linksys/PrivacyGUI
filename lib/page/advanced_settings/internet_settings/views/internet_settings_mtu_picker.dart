@@ -56,6 +56,7 @@ class _MTUPickerViewState extends ConsumerState<MTUPickerView> {
           children: [
             AppRadioList(
               initial: _selected,
+              itemHeight: 56,
               items: [
                 AppRadioListItem(
                   title: loc(context).auto,

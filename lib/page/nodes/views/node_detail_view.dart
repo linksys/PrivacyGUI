@@ -208,15 +208,15 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
               padding: const EdgeInsets.all(Spacing.medium),
             ),
             if (!state.isMaster)
-            AppSettingCard.noBorder(
-              padding: const EdgeInsets.all(Spacing.medium),
-              title: loc(context).signalStrength,
-              description: _checkEmptyValue('${state.signalStrength} dBM'),
-              trailing: Icon(getWifiSignalIconData(
-                context,
-                state.isWiredConnection ? null : state.signalStrength,
-              )),
-            ),
+              AppSettingCard.noBorder(
+                padding: const EdgeInsets.all(Spacing.medium),
+                title: loc(context).signalStrength,
+                description: _checkEmptyValue('${state.signalStrength} dBM'),
+                trailing: Icon(getWifiSignalIconData(
+                  context,
+                  state.isWiredConnection ? null : state.signalStrength,
+                )),
+              ),
           ],
         ),
       ),
@@ -427,6 +427,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
           AppRadioList(
             initial: nodeLightStatus,
             mainAxisSize: MainAxisSize.min,
+            itemHeight: 56,
             items: [
               AppRadioListItem(
                 title: loc(context).off,

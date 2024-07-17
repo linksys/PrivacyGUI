@@ -7,10 +7,10 @@ import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/safe_browsing/providers/_providers.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'package:privacygui_widgets/widgets/radios/radio_list.dart';
 
 class SafeBrowsingView extends ArgumentsConsumerStatefulView {
@@ -72,7 +72,7 @@ class _SafeBrowsingViewState extends ConsumerState<SafeBrowsingView> {
                 description:
                     _getTextFormSafeBrowsingType(currentSafeBrowsingType),
                 trailing: AppIconButton(
-                  icon: Icons.edit,
+                  icon: LinksysIcons.edit,
                   onTap: enableSafeBrowsing
                       ? () {
                           _showProviderSelector(state.hasFortinet);
@@ -102,7 +102,7 @@ class _SafeBrowsingViewState extends ConsumerState<SafeBrowsingView> {
             content: AppRadioList(
               initial: type,
               mainAxisSize: MainAxisSize.min,
-              itemCrossAxisAlignment: CrossAxisAlignment.center,
+              itemHeight: 56,
               items: [
                 if (hasFortinet)
                   AppRadioListItem(
