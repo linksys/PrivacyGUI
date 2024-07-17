@@ -11,6 +11,7 @@ import 'package:privacygui_widgets/hook/icon_hooks.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
@@ -128,12 +129,12 @@ class _FirmwareUpdateDetailViewState
           ? _buildProgressIndicator(list.first)
           : GridView.builder(
               shrinkWrap: true,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                mainAxisExtent: 240,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                mainAxisExtent: ResponsiveLayout.isMobileLayout(context) ? 4.col : 3.col,
                 childAspectRatio: 1,
-                crossAxisCount: 2,
-                mainAxisSpacing: Spacing.large5,
-                crossAxisSpacing: Spacing.large5,
+                crossAxisCount: ResponsiveLayout.isMobileLayout(context) ? 1 : 2,
+                mainAxisSpacing: ResponsiveLayout.columnPadding(context),
+                crossAxisSpacing: Spacing.large4,
               ),
               itemCount: list.length,
               itemBuilder: (context, index) {
