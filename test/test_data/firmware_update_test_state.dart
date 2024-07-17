@@ -7,7 +7,7 @@ const _firmwareUpdateNodeMaster = '''
   "connections": [
     {
       "macAddress": "80:69:1A:13:16:1A",
-      "ipAddress": "10.79.1.1",
+      "ipAddress": "10.11.1.1",
       "ipv6Address": null,
       "parentDeviceID": null,
       "isGuest": null
@@ -30,12 +30,12 @@ const _firmwareUpdateNodeMaster = '''
     "modelDescription": null
   },
   "isAuthority": true,
-  "lastChangeRevision": 50,
+  "lastChangeRevision": 178,
   "friendlyName": "Linksys00062",
   "knownInterfaces": [
     {
       "macAddress": "80:69:1A:13:16:1A",
-      "interfaceType": "Unknown",
+      "interfaceType": "Wired",
       "band": null
     }
   ],
@@ -45,7 +45,7 @@ const _firmwareUpdateNodeMaster = '''
       "connections": [
         {
           "macAddress": "A4:83:E7:36:4C:22",
-          "ipAddress": "10.79.1.39",
+          "ipAddress": "10.11.1.39",
           "ipv6Address": null,
           "parentDeviceID": "095aca62-3759-4249-88aa-80691a13161a",
           "isGuest": null
@@ -58,7 +58,7 @@ const _firmwareUpdateNodeMaster = '''
         "firmwareDate": null,
         "operatingSystem": "macOS"
       },
-      "deviceID": "f94dc5b4-5d86-4ce0-918c-cba67cf17525",
+      "deviceID": "620808b2-2a1e-4836-97ae-d2eade9a6e51",
       "maxAllowedProperties": 16,
       "model": {
         "deviceType": "Computer",
@@ -68,7 +68,7 @@ const _firmwareUpdateNodeMaster = '''
         "modelDescription": null
       },
       "isAuthority": false,
-      "lastChangeRevision": 43,
+      "lastChangeRevision": 188,
       "friendlyName": "ASTWP-028292",
       "knownInterfaces": [
         {
@@ -78,157 +78,32 @@ const _firmwareUpdateNodeMaster = '''
         }
       ],
       "connectedDevices": [],
-      "connectedWifiType": "main"
+      "connectedWifiType": "main",
+      "signalDecibels": -26,
+      "connectionType": "wireless",
+      "speedMbps": "--"
     }
   ],
   "connectedWifiType": "main",
-  "signalDecibels": -1
+  "signalDecibels": -1,
+  "connectionType": "wireless",
+  "speedMbps": "--"
 }
 ''';
 
-const _firmwareUpdateNodeSlave1 = '''
+const _firmwareUpdateNodeSlave = '''
 {
   "connections": [
     {
-      "macAddress": "80:69:1A:13:14:FA",
-      "ipAddress": "10.79.1.74",
-      "ipv6Address": "fe80:0000:0000:0000:8269:1aff:fe13:14fa",
-      "parentDeviceID": null,
-      "isGuest": null
-    }
-  ],
-  "properties": [],
-  "unit": {
-    "serialNumber": "59A10M23D00014",
-    "firmwareVersion": "1.0.11.215518",
-    "firmwareDate": "2024-03-21T17:56:13Z",
-    "operatingSystem": null
-  },
-  "deviceID": "a55ccc01-1c72-419a-855d-80691a1314fa",
-  "maxAllowedProperties": 16,
-  "model": {
-    "deviceType": "Infrastructure",
-    "manufacturer": "Linksys",
-    "modelNumber": "MBE70",
-    "hardwareVersion": "1",
-    "modelDescription": null
-  },
-  "isAuthority": false,
-  "lastChangeRevision": 152,
-  "friendlyName": "Linksys00014",
-  "knownInterfaces": [
-    {
-      "macAddress": "80:69:1A:13:14:FD",
-      "interfaceType": "Wireless",
-      "band": null
-    },
-    {
-      "macAddress": "80:69:1A:13:14:FA",
-      "interfaceType": "Unknown",
-      "band": null
-    }
-  ],
-  "nodeType": "Slave",
-  "connectedDevices": [],
-  "connectedWifiType": "main",
-  "signalDecibels": -55,
-  "upstream": {
-    "connections": [
-      {
-        "macAddress": "80:69:1A:13:16:1A",
-        "ipAddress": "10.79.1.1",
-        "ipv6Address": null,
-        "parentDeviceID": null,
-        "isGuest": null
-      }
-    ],
-    "properties": [],
-    "unit": {
-      "serialNumber": "59A10M23D00062",
-      "firmwareVersion": "1.0.11.215518",
-      "firmwareDate": "2024-03-21T17:56:13Z",
-      "operatingSystem": null
-    },
-    "deviceID": "095aca62-3759-4249-88aa-80691a13161a",
-    "maxAllowedProperties": 16,
-    "model": {
-      "deviceType": "Infrastructure",
-      "manufacturer": "Linksys",
-      "modelNumber": "MBE70",
-      "hardwareVersion": "1",
-      "modelDescription": null
-    },
-    "isAuthority": true,
-    "lastChangeRevision": 50,
-    "friendlyName": "Linksys00062",
-    "knownInterfaces": [
-      {
-        "macAddress": "80:69:1A:13:16:1A",
-        "interfaceType": "Unknown",
-        "band": null
-      }
-    ],
-    "nodeType": "Master",
-    "connectedDevices": [
-      {
-        "connections": [
-          {
-            "macAddress": "A4:83:E7:36:4C:22",
-            "ipAddress": "10.79.1.39",
-            "ipv6Address": null,
-            "parentDeviceID": "095aca62-3759-4249-88aa-80691a13161a",
-            "isGuest": null
-          }
-        ],
-        "properties": [],
-        "unit": {
-          "serialNumber": null,
-          "firmwareVersion": null,
-          "firmwareDate": null,
-          "operatingSystem": "macOS"
-        },
-        "deviceID": "f94dc5b4-5d86-4ce0-918c-cba67cf17525",
-        "maxAllowedProperties": 16,
-        "model": {
-          "deviceType": "Computer",
-          "manufacturer": "Apple Inc.",
-          "modelNumber": "MacBook Pro",
-          "hardwareVersion": null,
-          "modelDescription": null
-        },
-        "isAuthority": false,
-        "lastChangeRevision": 43,
-        "friendlyName": "ASTWP-028292",
-        "knownInterfaces": [
-          {
-            "macAddress": "A4:83:E7:36:4C:22",
-            "interfaceType": "Wireless",
-            "band": "5GHz"
-          }
-        ],
-        "connectedDevices": [],
-        "connectedWifiType": "main"
-      }
-    ],
-    "connectedWifiType": "main",
-    "signalDecibels": -1
-  }
-}
-''';
-
-const _firmwareUpdateNodeSlave2 = '''
-{
-  "connections": [
-    {
-      "macAddress": "80:69:1A:A0:B1:0E",
-      "ipAddress": "10.79.1.166",
-      "ipv6Address": "fe80:0000:0000:0000:8269:1aff:fea0:b10e",
+      "macAddress": "80:69:1A:13:0B:B3",
+      "ipAddress": "10.11.1.62",
+      "ipv6Address": "fe80:0000:0000:0000:8269:1aff:fe13:0bb3",
       "parentDeviceID": null,
       "isGuest": null
     },
     {
-      "macAddress": "80:69:1A:A0:B1:0D",
-      "ipAddress": "10.79.1.166",
+      "macAddress": "80:69:1A:13:0B:B2",
+      "ipAddress": "10.11.1.62",
       "ipv6Address": null,
       "parentDeviceID": null,
       "isGuest": null
@@ -236,36 +111,36 @@ const _firmwareUpdateNodeSlave2 = '''
   ],
   "properties": [],
   "unit": {
-    "serialNumber": "60D20M21E00027",
-    "firmwareVersion": "2.0.4.215745",
+    "serialNumber": "54H10M2BC00113",
+    "firmwareVersion": "1.0.10.215969",
     "firmwareDate": null,
     "operatingSystem": null
   },
-  "deviceID": "8ab6e1d2-aa51-41b8-8396-80691aa0b10d",
+  "deviceID": "293f7622-3fca-47ff-9c02-80691a130bb2",
   "maxAllowedProperties": 16,
   "model": {
     "deviceType": "Infrastructure",
     "manufacturer": "Linksys",
-    "modelNumber": "LN12",
+    "modelNumber": "MX62",
     "hardwareVersion": null,
     "modelDescription": null
   },
   "isAuthority": false,
-  "lastChangeRevision": 182,
-  "friendlyName": "Linksys00027",
+  "lastChangeRevision": 189,
+  "friendlyName": "Linksys00113",
   "knownInterfaces": [
     {
-      "macAddress": "86:69:1A:A0:B1:10",
+      "macAddress": "80:69:1A:13:0B:B6",
       "interfaceType": "Wireless",
-      "band": "5GHz"
+      "band": null
     },
     {
-      "macAddress": "80:69:1A:A0:B1:0E",
+      "macAddress": "80:69:1A:13:0B:B3",
       "interfaceType": "Unknown",
       "band": null
     },
     {
-      "macAddress": "80:69:1A:A0:B1:0D",
+      "macAddress": "80:69:1A:13:0B:B2",
       "interfaceType": "Unknown",
       "band": null
     }
@@ -273,12 +148,12 @@ const _firmwareUpdateNodeSlave2 = '''
   "nodeType": "Slave",
   "connectedDevices": [],
   "connectedWifiType": "main",
-  "signalDecibels": -23,
+  "signalDecibels": -50,
   "upstream": {
     "connections": [
       {
         "macAddress": "80:69:1A:13:16:1A",
-        "ipAddress": "10.79.1.1",
+        "ipAddress": "10.11.1.1",
         "ipv6Address": null,
         "parentDeviceID": null,
         "isGuest": null
@@ -301,12 +176,12 @@ const _firmwareUpdateNodeSlave2 = '''
       "modelDescription": null
     },
     "isAuthority": true,
-    "lastChangeRevision": 50,
+    "lastChangeRevision": 178,
     "friendlyName": "Linksys00062",
     "knownInterfaces": [
       {
         "macAddress": "80:69:1A:13:16:1A",
-        "interfaceType": "Unknown",
+        "interfaceType": "Wired",
         "band": null
       }
     ],
@@ -316,7 +191,7 @@ const _firmwareUpdateNodeSlave2 = '''
         "connections": [
           {
             "macAddress": "A4:83:E7:36:4C:22",
-            "ipAddress": "10.79.1.39",
+            "ipAddress": "10.11.1.39",
             "ipv6Address": null,
             "parentDeviceID": "095aca62-3759-4249-88aa-80691a13161a",
             "isGuest": null
@@ -329,7 +204,7 @@ const _firmwareUpdateNodeSlave2 = '''
           "firmwareDate": null,
           "operatingSystem": "macOS"
         },
-        "deviceID": "f94dc5b4-5d86-4ce0-918c-cba67cf17525",
+        "deviceID": "620808b2-2a1e-4836-97ae-d2eade9a6e51",
         "maxAllowedProperties": 16,
         "model": {
           "deviceType": "Computer",
@@ -339,7 +214,7 @@ const _firmwareUpdateNodeSlave2 = '''
           "modelDescription": null
         },
         "isAuthority": false,
-        "lastChangeRevision": 43,
+        "lastChangeRevision": 188,
         "friendlyName": "ASTWP-028292",
         "knownInterfaces": [
           {
@@ -349,18 +224,33 @@ const _firmwareUpdateNodeSlave2 = '''
           }
         ],
         "connectedDevices": [],
-        "connectedWifiType": "main"
+        "connectedWifiType": "main",
+        "signalDecibels": -26,
+        "connectionType": "wireless",
+        "speedMbps": "--"
       }
     ],
     "connectedWifiType": "main",
-    "signalDecibels": -1
-  }
+    "signalDecibels": -1,
+    "connectionType": "wireless",
+    "speedMbps": "--"
+  },
+  "connectionType": "Wireless",
+  "wirelessConnectionInfo": {
+    "radioID": "6G",
+    "channel": 189,
+    "apRSSI": -19,
+    "stationRSSI": -50,
+    "apBSSID": "82:69:1A:13:16:1D",
+    "stationBSSID": "80:69:1A:13:0B:B6"
+  },
+  "speedMbps": "138.836"
 }
 ''';
 
 const _firmwareUpdateStatusMaster = '''
 {
-  "lastSuccessfulCheckTime": "2024-06-27T08:38:59Z",
+  "lastSuccessfulCheckTime": "2024-07-16T03:43:35Z",
   "availableUpdate": {
     "firmwareVersion": "1.0.11.215726",
     "firmwareDate": "2024-05-08T00:44:58Z",
@@ -372,27 +262,95 @@ const _firmwareUpdateStatusMaster = '''
 }
 ''';
 
-const _firmwareUpdateStatusSlave1 = '''
-{
-  "lastSuccessfulCheckTime": "2024-06-27T08:38:59Z",
-  "availableUpdate": {
-    "firmwareVersion": "1.0.11.215726",
-    "firmwareDate": "2024-05-08T00:44:58Z",
-    "description": ""
-  },
-  "pendingOperation": null,
-  "lastOperationFailure": "CheckFailed",
-  "deviceUUID": "a55ccc01-1c72-419a-855d-80691a1314fa"
-}
-''';
-
-const _firmwareUpdateStatusSlave2 = '''
+const _firmwareUpdateStatusSlaveNoAvailable = '''
 {
   "lastSuccessfulCheckTime": "1970-01-01T00:00:00Z",
   "availableUpdate": null,
   "pendingOperation": null,
   "lastOperationFailure": "CheckFailed",
-  "deviceUUID": "8ab6e1d2-aa51-41b8-8396-80691aa0b10d"
+  "deviceUUID": "293f7622-3fca-47ff-9c02-80691a130bb2"
+}
+''';
+
+const _firmwareUpdateStatusSlaveHasAvailable = '''
+{
+  "lastSuccessfulCheckTime": "2024-07-16T09:01:55Z",
+  "availableUpdate": {
+    "firmwareVersion": "1.0.10.215967",
+    "firmwareDate": "2024-06-28T06:48:38Z",
+    "description": ""
+  },
+  "pendingOperation": null,
+  "lastOperationFailure": null,
+  "deviceUUID": "293f7622-3fca-47ff-9c02-80691a130bb2"
+}
+''';
+
+const _firmwareUpdateStatusSlaveInDownloading = '''
+{
+  "lastSuccessfulCheckTime": "2024-07-16T09:01:55Z",
+  "availableUpdate": {
+    "firmwareVersion": "1.0.10.215967",
+    "firmwareDate": "2024-06-28T06:48:38Z",
+    "description": ""
+  },
+  "pendingOperation": {
+    "operation": "Downloading",
+    "progressPercent": 95
+  },
+  "lastOperationFailure": null,
+  "deviceUUID": "293f7622-3fca-47ff-9c02-80691a130bb2"
+}
+''';
+
+const _firmwareUpdateStatusMasterInChecking = '''
+{
+  "lastSuccessfulCheckTime": "2024-07-16T03:43:35Z",
+  "availableUpdate": {
+    "firmwareVersion": "1.0.11.215726",
+    "firmwareDate": "2024-05-08T00:44:58Z",
+    "description": ""
+  },
+  "pendingOperation": {
+    "operation": "Checking",
+    "progressPercent": 45
+  },
+  "lastOperationFailure": null,
+  "deviceUUID": "095aca62-3759-4249-88aa-80691a13161a"
+}
+''';
+
+const _firmwareUpdateStatusMasterInInstalling = '''
+{
+  "lastSuccessfulCheckTime": "2024-07-16T03:43:35Z",
+  "availableUpdate": {
+    "firmwareVersion": "1.0.11.215726",
+    "firmwareDate": "2024-05-08T00:44:58Z",
+    "description": ""
+  },
+  "pendingOperation": {
+    "operation": "Installing",
+    "progressPercent": 70
+  },
+  "lastOperationFailure": null,
+  "deviceUUID": "095aca62-3759-4249-88aa-80691a13161a"
+}
+''';
+
+const _firmwareUpdateStatusMasterInRebooting = '''
+{
+  "lastSuccessfulCheckTime": "2024-07-16T03:43:35Z",
+  "availableUpdate": {
+    "firmwareVersion": "1.0.11.215726",
+    "firmwareDate": "2024-05-08T00:44:58Z",
+    "description": ""
+  },
+  "pendingOperation": {
+    "operation": "Rebooting",
+    "progressPercent": 90
+  },
+  "lastOperationFailure": null,
+  "deviceUUID": "095aca62-3759-4249-88aa-80691a13161a"
 }
 ''';
 
@@ -409,68 +367,99 @@ final testFirmwareUpdateStatusRecords2 = [
     NodesFirmwareUpdateStatus.fromJson(_firmwareUpdateStatusMaster),
   ),
   (
-    LinksysDevice.fromJson(_firmwareUpdateNodeSlave1),
-    NodesFirmwareUpdateStatus.fromJson(_firmwareUpdateStatusSlave1),
-  ),
-  (
-    LinksysDevice.fromJson(_firmwareUpdateNodeSlave2),
-    NodesFirmwareUpdateStatus.fromJson(_firmwareUpdateStatusSlave2),
+    LinksysDevice.fromJson(_firmwareUpdateNodeSlave),
+    NodesFirmwareUpdateStatus.fromJson(_firmwareUpdateStatusSlaveNoAvailable),
   ),
 ];
 
-// const testFirmwareUpdateState1 = '''
-// {
-//   "settings": {
-//     "updatePolicy": "Manual",
-//     "autoUpdateWindow": {
-//       "startMinute": 0,
-//       "durationMinutes": 240
-//     }
-//   },
-//   "nodesStatus": [
-//     {
-//       "lastSuccessfulCheckTime": "2024-06-27T08:38:59Z",
-//       "availableUpdate": {
-//         "firmwareVersion": "1.0.11.215726",
-//         "firmwareDate": "2024-05-08T00:44:58Z",
-//         "description": ""
-//       },
-//       "pendingOperation": null,
-//       "lastOperationFailure": null,
-//       "deviceUUID": "095aca62-3759-4249-88aa-80691a13161a"
-//     }
-//   ],
-//   "isUpdating": false,
-//   "isChecking": false
-// }
-// ''';
+final testFirmwareUpdateStatusRecords3 = [
+  (
+    LinksysDevice.fromJson(_firmwareUpdateNodeMaster),
+    NodesFirmwareUpdateStatus.fromJson(_firmwareUpdateStatusMasterInChecking),
+  ),
+  (
+    LinksysDevice.fromJson(_firmwareUpdateNodeSlave),
+    NodesFirmwareUpdateStatus.fromJson(_firmwareUpdateStatusSlaveNoAvailable),
+  ),
+];
 
-// const testFirmwareUpdateState2 = '''
-// {
-//   "settings": {
-//     "updatePolicy": "Manual",
-//     "autoUpdateWindow": {
-//       "startMinute": 0,
-//       "durationMinutes": 240
-//     }
-//   },
-//   "nodesStatus": [
-//     {
-//       "lastSuccessfulCheckTime": "2024-06-27T08:38:59Z",
-//       "availableUpdate": {
-//         "firmwareVersion": "1.0.11.215726",
-//         "firmwareDate": "2024-05-08T00:44:58Z",
-//         "description": ""
-//       },
-//       "pendingOperation": null,
-//       "lastOperationFailure": null,
-//       "deviceUUID": "095aca62-3759-4249-88aa-80691a13161a"
-//     }
-//   ],
-//   "isUpdating": false,
-//   "isChecking": false
-// }
-// ''';
+final testFirmwareUpdateStatusRecords4 = [
+  (
+    LinksysDevice.fromJson(_firmwareUpdateNodeMaster),
+    NodesFirmwareUpdateStatus.fromJson(_firmwareUpdateStatusMasterInInstalling),
+  ),
+  (
+    LinksysDevice.fromJson(_firmwareUpdateNodeSlave),
+    NodesFirmwareUpdateStatus.fromJson(_firmwareUpdateStatusSlaveNoAvailable),
+  ),
+];
+
+final testFirmwareUpdateStatusRecords5 = [
+  (
+    LinksysDevice.fromJson(_firmwareUpdateNodeMaster),
+    NodesFirmwareUpdateStatus.fromJson(_firmwareUpdateStatusMasterInRebooting),
+  ),
+  (
+    LinksysDevice.fromJson(_firmwareUpdateNodeSlave),
+    NodesFirmwareUpdateStatus.fromJson(_firmwareUpdateStatusSlaveNoAvailable),
+  ),
+];
+
+final testFirmwareUpdateStatusRecords6 = [
+  (
+    LinksysDevice.fromJson(_firmwareUpdateNodeMaster),
+    NodesFirmwareUpdateStatus.fromJson(_firmwareUpdateStatusMaster),
+  ),
+  (
+    LinksysDevice.fromJson(_firmwareUpdateNodeSlave),
+    NodesFirmwareUpdateStatus.fromJson(_firmwareUpdateStatusSlaveHasAvailable),
+  ),
+];
+
+final testFirmwareUpdateStatusRecords7 = [
+  (
+    LinksysDevice.fromJson(_firmwareUpdateNodeMaster),
+    NodesFirmwareUpdateStatus.fromJson(_firmwareUpdateStatusMasterInChecking),
+  ),
+  (
+    LinksysDevice.fromJson(_firmwareUpdateNodeSlave),
+    NodesFirmwareUpdateStatus.fromJson(_firmwareUpdateStatusSlaveInDownloading),
+  ),
+];
+
+final testFirmwareUpdateStatusRecords8 = [
+  (
+    LinksysDevice.fromJson(_firmwareUpdateNodeMaster),
+    NodesFirmwareUpdateStatus.fromJson(_firmwareUpdateStatusMasterInChecking),
+  ),
+  (
+    LinksysDevice.fromJson(_firmwareUpdateNodeSlave),
+    NodesFirmwareUpdateStatus.fromJson(_firmwareUpdateStatusSlaveInDownloading),
+  ),
+  (
+    LinksysDevice.fromJson(_firmwareUpdateNodeSlave),
+    NodesFirmwareUpdateStatus.fromJson(_firmwareUpdateStatusSlaveInDownloading),
+  ),
+];
+
+final testFirmwareUpdateStatusRecords9 = [
+  (
+    LinksysDevice.fromJson(_firmwareUpdateNodeMaster),
+    NodesFirmwareUpdateStatus.fromJson(_firmwareUpdateStatusMasterInChecking),
+  ),
+  (
+    LinksysDevice.fromJson(_firmwareUpdateNodeSlave),
+    NodesFirmwareUpdateStatus.fromJson(_firmwareUpdateStatusSlaveInDownloading),
+  ),
+  (
+    LinksysDevice.fromJson(_firmwareUpdateNodeSlave),
+    NodesFirmwareUpdateStatus.fromJson(_firmwareUpdateStatusSlaveInDownloading),
+  ),
+  (
+    LinksysDevice.fromJson(_firmwareUpdateNodeSlave),
+    NodesFirmwareUpdateStatus.fromJson(_firmwareUpdateStatusSlaveInDownloading),
+  ),
+];
 
 const firmwareUpdateTestData = {
   "settings": {
