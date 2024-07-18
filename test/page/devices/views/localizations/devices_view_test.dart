@@ -9,7 +9,6 @@ import 'package:privacy_gui/page/devices/_devices.dart';
 import 'package:privacy_gui/page/devices/providers/device_filtered_list_state.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 
-import '../../../../common/config.dart';
 import '../../../../common/test_responsive_widget.dart';
 import '../../../../common/testable_router.dart';
 import '../../../../test_data/dashboard_manager_test_state.dart';

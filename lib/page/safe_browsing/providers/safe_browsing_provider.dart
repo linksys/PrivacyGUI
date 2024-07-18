@@ -40,6 +40,9 @@ final compatibilityMap = [
     compatibleFW: CompatibilityFW(min: '1.0.2.213420'),
   ),
   const CompatibilityItem(modelRegExp: '^LN14'),
+  const CompatibilityItem(modelRegExp: '^LN15'),
+  const CompatibilityItem(modelRegExp: '^LN16'),
+  const CompatibilityItem(modelRegExp: '^MX57'),
 ];
 
 class SafeBrowsingNotifier extends Notifier<SafeBrowsingState> {

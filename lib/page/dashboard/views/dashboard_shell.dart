@@ -1,6 +1,5 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -112,10 +111,10 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
             children: [
               GestureDetector(
                 onTap: () {
-                  if (increase()) {
-                    logger.d('Triggered!');
-                    context.pushNamed(RouteNamed.debug);
-                  }
+                  // if (increase()) {
+                  //   logger.d('Triggered!');
+                  //   context.pushNamed(RouteNamed.debug);
+                  // }
                 },
                 child: widget.child,
               ),
