@@ -70,9 +70,9 @@ class _StaticRoutingDetailViewState
           : loc(context).edit,
       bottomBar: PageBottomBar(
         isPositiveEnabled: _isInputValid(),
-        isNegitiveEnabled: _currentSetting != null,
+        isNegitiveEnabled: _currentSetting != null ? true : null,
         positiveLabel: loc(context).save,
-        negitiveLable: loc(context).delete,
+        negitiveLable: _currentSetting != null ? loc(context).delete : null,
         onPositiveTap: _save,
         onNegitiveTap: _delete,
       ),
@@ -93,7 +93,7 @@ class _StaticRoutingDetailViewState
               RoutingSettingInterface.internet,
             ],
             initial: selectedInterface,
-            label: (item) => item.value,
+            label: (item) => getInterfaceTitle(item.value),
             onChanged: (value) {
               selectedInterface = value;
             },
@@ -134,6 +134,16 @@ class _StaticRoutingDetailViewState
         ],
       ),
     );
+  }
+
+  String getInterfaceTitle(String interface) {
+    final resolved = RoutingSettingInterface.resolve(interface);
+    return switch (resolved) {
+      RoutingSettingInterface.lan => loc(context).lanWireless,
+      RoutingSettingInterface.internet =>
+        RoutingSettingInterface.internet.value,
+      _ => loc(context).lanWireless,
+    };
   }
 
   bool _isInputValid() {

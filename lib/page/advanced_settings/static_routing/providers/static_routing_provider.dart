@@ -56,7 +56,4 @@ class StaticRoutingNotifier extends Notifier<StaticRoutingState> {
         .then((_) => fetchSettings());
   }
 
-  // setSettings(FirewallSettings settings) {
-  //   state = state.copyWith(settings: settings);
-  // }
 }
