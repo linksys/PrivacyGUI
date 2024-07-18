@@ -9,6 +9,7 @@ import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/bench_mark.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/nodes.dart';
+import 'package:privacy_gui/providers/auth/_auth.dart';
 
 const int pollDurationInSec = 120;
 const int pollFirstDelayInSec = 1;
@@ -81,6 +82,8 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
             data: Map.fromEntries(data)))
         .onError((error, stackTrace) {
       logger.d('[Polling] Error: $error, $stackTrace');
+      ref.read(authProvider.notifier).logout();
+
       throw error ?? '';
     });
 

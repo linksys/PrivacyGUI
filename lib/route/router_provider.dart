@@ -169,6 +169,12 @@ class RouterNotifier extends ChangeNotifier {
       return RoutePath.prepareDashboard;
     }
 
+    // if have no login type and navigate inot dashboard, then back to home
+    if ((loginType == null || loginType == LoginType.none) &&
+        state.matchedLocation.startsWith('/dashboard')) {
+      return _home();
+    }
+
     return state.matchedLocation == RoutePath.home ? _home() : null;
   }
 

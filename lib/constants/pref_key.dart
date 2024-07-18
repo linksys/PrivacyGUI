@@ -19,6 +19,8 @@ const pNotifications = 'Notifications';
 const pPnpConfiguredSN = "PnPLinksysSN";
 const pPnpSetup = "PnPSetup";
 
+const pAppSettings = "AppSettings";
+
 // secured
 const pSessionToken = 'SessionToken';
 const pSessionTokenTs = 'SessionTokenTimeStamp';

@@ -39,6 +39,8 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     final connectivity = ref.read(connectivityProvider.notifier);
     connectivity.start();
     connectivity.forceUpdate().then((value) => _initAuth());
+
+    ref.read(appSettingsProvider.notifier).load();
   }
 
   @override
@@ -55,7 +57,7 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
   @override
   Widget build(BuildContext context) {
     logger.d('App:: build: $_currentRoute');
-
+    
     final appSettings = ref.watch(appSettingsProvider);
     final systemLocaleStr = Intl.getCurrentLocale();
     final systemLocale = Locale(getLanguageData(systemLocaleStr)['value']);
