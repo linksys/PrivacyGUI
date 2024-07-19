@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 
 showSuccessSnackBar(BuildContext context, String message) {
   showSimpleSnackBar(
@@ -34,9 +35,11 @@ showSimpleSnackBar(
           icon,
           const AppGap.medium(),
         ],
-        AppText.labelMedium(
-          message,
-          color: Theme.of(context).colorScheme.onInverseSurface,
+        Flexible(
+          child: AppText.labelMedium(
+            message,
+            color: Theme.of(context).colorScheme.onInverseSurface,
+          ),
         ),
       ],
     ),
@@ -49,13 +52,17 @@ showSnackBar(BuildContext context,
     SnackBar(
       behavior: SnackBarBehavior.floating,
       margin: ResponsiveLayout.isMobileLayout(context)
-          ? const EdgeInsets.only(left: 24, right: 24, bottom: 24)
+          ? const EdgeInsets.only(
+              left: Spacing.large2,
+              right: Spacing.large2,
+              bottom: Spacing.large2)
           : EdgeInsets.only(
-              left: MediaQuery.of(context).size.width * 0.6,
-              right: 24,
-              bottom: 24),
+              left: ResponsiveLayout.getContentWidth(context) * 0.6,
+              right: Spacing.large2,
+              bottom: Spacing.large2),
       content: content,
       backgroundColor: background,
+      elevation: 0,
     ),
   );
 }

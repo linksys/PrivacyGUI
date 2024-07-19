@@ -91,6 +91,18 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                     setState(() {
                       _preservedState = value;
                     });
+                    _sourceFirstIPController.text =
+                        value.settings.sourceRestriction?.firstIPAddress ?? '';
+                    _sourceLastIPController.text =
+                        value.settings.sourceRestriction?.lastIPAddress ?? '';
+                    _destinationIPController.text =
+                        value.settings.destinationIPAddress ??
+                            ref
+                                .read(dmzSettingsProvider.notifier)
+                                .ipAddress
+                                .replaceAll('.0', '');
+                    _destinationMACController.text =
+                        value.settings.destinationMACAddress ?? '';
                     showSuccessSnackBar(context, loc(context).saved);
                   }).onError((error, stackTrace) {
                     showFailedSnackBar(
