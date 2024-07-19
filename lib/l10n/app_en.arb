@@ -149,6 +149,7 @@
   "deviceName": "Device Name",
   "manufacturer": "Manufacturer",
   "lan": "LAN",
+  "lanWireless": "LAN/Wireless",
   "modelNumber": "Model number",
   "nodeName": "Node name",
   "serialNumber": "Serial number",
