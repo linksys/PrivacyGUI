@@ -183,9 +183,6 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
       macClone: macAddressCloneSettings?.isMACAddressCloneEnabled ?? false,
       macCloneAddress: macAddressCloneSettings?.macAddress ?? '',
     );
-    final json = state.toJson();
-    InternetSettingsState.fromJson(json);
-    logger.d('XXXXX: InternetSettingsState $json');
     return state;
   }
 

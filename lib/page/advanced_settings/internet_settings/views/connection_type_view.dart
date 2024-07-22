@@ -28,7 +28,6 @@ import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/panel/general_section.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'package:privacygui_widgets/widgets/radios/radio_list.dart';
 import 'package:privacy_gui/core/jnap/providers/assign_ip/base_assign_ip.dart'
     if (dart.library.html) 'package:privacy_gui/core/jnap/providers/assign_ip/web_assign_ip.dart';
@@ -141,6 +140,10 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
         if (selectedPPTPIpAddressMode == PPTPIpAddressMode.specify) {
           _staticIpAddressController.text =
               state.ipv4Setting.staticIpAddress ?? '';
+          final networkPrefixLength = state.ipv4Setting.networkPrefixLength;
+          _staticSubnetController.text = networkPrefixLength != null
+              ? NetworkUtils.prefixLengthToSubnetMask(networkPrefixLength)
+              : NetworkUtils.prefixLengthToSubnetMask(24);
           _staticGatewayController.text = state.ipv4Setting.staticGateway ?? '';
           _staticDns1Controller.text = state.ipv4Setting.staticDns1 ?? '';
           _staticDns2Controller.text = state.ipv4Setting.staticDns2 ?? '';
@@ -155,6 +158,10 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       case WanType.static:
         _staticIpAddressController.text =
             state.ipv4Setting.staticIpAddress ?? '';
+        final networkPrefixLength = state.ipv4Setting.networkPrefixLength;
+        _staticSubnetController.text = networkPrefixLength != null
+            ? NetworkUtils.prefixLengthToSubnetMask(networkPrefixLength)
+            : NetworkUtils.prefixLengthToSubnetMask(24);
         _staticGatewayController.text = state.ipv4Setting.staticGateway ?? '';
         _staticDns1Controller.text = state.ipv4Setting.staticDns1 ?? '';
         _staticDns2Controller.text = state.ipv4Setting.staticDns2 ?? '';
@@ -277,6 +284,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
             if (viewType == InternetSettingsViewType.ipv4 &&
                 wanType != WanType.bridge)
               AppSettingCard(
+                key: const Key('mtu'),
                 title: loc(context).mtu,
                 description: state.ipv4Setting.mtu == 0
                     ? loc(context).auto
@@ -343,11 +351,13 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
   }
 
   void goIpv4ConnectionSelection() async {
-    String? select =
-        await context.pushNamed(RouteNamed.connectionTypeSelection, extra: {
-      'supportedList': state.ipv4Setting.supportedIPv4ConnectionType,
-      'selected': state.ipv4Setting.ipv4ConnectionType,
-    });
+    String? select = await context.pushNamed(
+      RouteNamed.connectionTypeSelection,
+      extra: {
+        'supportedList': state.ipv4Setting.supportedIPv4ConnectionType,
+        'selected': state.ipv4Setting.ipv4ConnectionType,
+      },
+    );
     if (select != null) {
       setState(() {
         state = state.copyWith(
@@ -393,7 +403,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
           const AppGap.large3(),
           AppStyledText.bold(
               '${loc(context).toLogInLocallyWhileInBridgeMode}http://${ref.read(internetSettingsProvider.notifier).hostname}.local',
-              defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
+              defaultTextStyle: Theme.of(context).textTheme.bodyLarge!,
               tags: const ['b'])
         ],
       _ => [],
@@ -406,6 +416,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       Padding(
         padding: inputPadding,
         child: AppTextField(
+          key: const Key('pppoeUsername'),
           headerText: loc(context).username,
           hintText: loc(context).username,
           controller: _pppoeUsernameController,
@@ -425,6 +436,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       Padding(
         padding: inputPadding,
         child: AppPasswordField(
+          key: const Key('pppoePassword'),
           headerText: loc(context).password,
           hintText: loc(context).password,
           controller: _pppoePasswordController,
@@ -513,6 +525,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       Padding(
         padding: inputPadding,
         child: AppIPFormField(
+          key: const Key('staticSubnet'),
           header: AppText.bodySmall(
             loc(context).subnetMask.capitalizeWords(),
           ),
@@ -522,14 +535,14 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
             if (!focused) {
               final subnetMaskValidator = SubnetMaskValidator();
               final isValidSubnetMask =
-                  subnetMaskValidator.validate(_staticGatewayController.text);
+                  subnetMaskValidator.validate(_staticSubnetController.text);
               if (isValidSubnetMask) {
                 setState(() {
                   state = state.copyWith(
                     ipv4Setting: state.ipv4Setting.copyWith(
                         networkPrefixLength:
                             NetworkUtils.subnetMaskToPrefixLength(
-                                _staticGatewayController.text)),
+                                _staticSubnetController.text)),
                   );
                 });
               }
@@ -759,20 +772,21 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
   }
 
   Widget _connectionMode() {
+    final behavior =
+        state.ipv4Setting.behavior ?? PPPConnectionBehavior.keepAlive;
     return AppSection(
       header: AppText.titleSmall(loc(context).connectionMode),
       child: SizedBox(
-        height: 150,
+        height: 200,
         child: AppRadioList(
           mainAxisSize: MainAxisSize.min,
           itemHeight: 56,
-          initial: state.ipv4Setting.behavior,
+          initial: behavior,
           items: [
             AppRadioListItem(
               title: loc(context).connectOnDemand,
               value: PPPConnectionBehavior.connectOnDemand,
-              expandedWidget: state.ipv4Setting.behavior ==
-                      PPPConnectionBehavior.connectOnDemand
+              expandedWidget: behavior == PPPConnectionBehavior.connectOnDemand
                   ? Row(
                       children: [
                         AppText.bodyMedium(loc(context).maxIdleTime),
@@ -790,6 +804,8 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
                                 setState(() {
                                   state = state.copyWith(
                                     ipv4Setting: state.ipv4Setting.copyWith(
+                                        behavior: PPPConnectionBehavior
+                                            .connectOnDemand,
                                         maxIdleMinutes: int.parse(
                                             _idleTimeController.text)),
                                   );
@@ -807,38 +823,39 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
             AppRadioListItem(
               title: loc(context).keepAlive,
               value: PPPConnectionBehavior.keepAlive,
-              expandedWidget:
-                  state.ipv4Setting.behavior == PPPConnectionBehavior.keepAlive
-                      ? Row(
-                          children: [
-                            AppText.bodyMedium(loc(context).redialPeriod),
-                            const AppGap.medium(),
-                            SizedBox(
-                              width: 70,
-                              height: 56,
-                              child: AppTextField.minMaxNumber(
-                                max: 180,
-                                min: 20,
-                                controller: _redialPeriodController,
-                                border: const OutlineInputBorder(),
-                                onFocusChanged: (focused) {
-                                  if (!focused) {
-                                    setState(() {
-                                      state = state.copyWith(
-                                        ipv4Setting: state.ipv4Setting.copyWith(
-                                            reconnectAfterSeconds: int.parse(
-                                                _redialPeriodController.text)),
-                                      );
-                                    });
-                                  }
-                                },
-                              ),
-                            ),
-                            const AppGap.medium(),
-                            AppText.bodyMedium(loc(context).seconds),
-                          ],
-                        )
-                      : null,
+              expandedWidget: behavior == PPPConnectionBehavior.keepAlive
+                  ? Row(
+                      children: [
+                        AppText.bodyMedium(loc(context).redialPeriod),
+                        const AppGap.medium(),
+                        SizedBox(
+                          width: 70,
+                          height: 56,
+                          child: AppTextField.minMaxNumber(
+                            max: 180,
+                            min: 20,
+                            controller: _redialPeriodController,
+                            border: const OutlineInputBorder(),
+                            onFocusChanged: (focused) {
+                              if (!focused) {
+                                setState(() {
+                                  state = state.copyWith(
+                                    ipv4Setting: state.ipv4Setting.copyWith(
+                                        behavior:
+                                            PPPConnectionBehavior.keepAlive,
+                                        reconnectAfterSeconds: int.parse(
+                                            _redialPeriodController.text)),
+                                  );
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                        const AppGap.medium(),
+                        AppText.bodyMedium(loc(context).seconds),
+                      ],
+                    )
+                  : null,
             ),
           ],
           onChanged: (index, type) {
@@ -1029,6 +1046,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
         Padding(
           padding: inputPadding,
           child: AppTextField.minMaxNumber(
+            key: const Key('borderRelayLength'),
             headerText: loc(context).borderRelayLength,
             hintText: '',
             max: 32,
@@ -1187,8 +1205,10 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AppText.bodyLarge(
+            AppStyledText.bold(
               loc(context).toLogInLocallyWhileInBridgeMode,
+              defaultTextStyle: Theme.of(context).textTheme.bodyLarge!,
+              tags: const ['b'],
             ),
             const AppGap.small2(),
             AppTextButton.noPadding(
