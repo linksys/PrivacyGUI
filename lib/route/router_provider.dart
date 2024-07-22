@@ -7,11 +7,10 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/page/administration/dmz/views/dmz_settings_view.dart';
-import 'package:privacy_gui/page/administration/firewall/_firewall.dart';
-import 'package:privacy_gui/page/advanced_settings/internet_settings/_internet_settings.dart';
-import 'package:privacy_gui/page/administration/port_forwarding/_port_forwarding.dart';
-import 'package:privacy_gui/page/administration/network_admin/_router_password.dart';
+import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
+import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_detail_view.dart';
+import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_list_view.dart';
+import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_view.dart';
 import 'package:privacy_gui/page/components/picker/region_picker_view.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/ddns/_ddns.dart';
@@ -24,6 +23,7 @@ import 'package:privacy_gui/page/landing/_landing.dart';
 import 'package:privacy_gui/page/linkup/views/linkup_view.dart';
 import 'package:privacy_gui/page/login/views/_views.dart';
 import 'package:privacy_gui/page/login/views/local_reset_router_password_view.dart';
+import 'package:privacy_gui/page/network_admin/_network_admin.dart';
 import 'package:privacy_gui/page/nodes/_nodes.dart';
 import 'package:privacy_gui/page/nodes/views/add_nodes_view.dart';
 import 'package:privacy_gui/page/otp_flow/providers/_providers.dart';
@@ -167,6 +167,12 @@ class RouterNotifier extends ChangeNotifier {
 
       logger.d('empty network');
       return RoutePath.prepareDashboard;
+    }
+
+    // if have no login type and navigate inot dashboard, then back to home
+    if ((loginType == null || loginType == LoginType.none) &&
+        state.matchedLocation.startsWith('/dashboard')) {
+      return _home();
     }
 
     return state.matchedLocation == RoutePath.home ? _home() : null;

@@ -24,8 +24,11 @@ echo "Show overlay: $overlay"
 
 mkdir ./snapshots/
 if [ -z "$file" ]; then
+  locStr=${locales//,/_}
+  screenStr=${screens//,/_}
   flutter test --file-reporter json:snapshots/tests.json --tags=loc --update-goldens --dart-define=locales="$locales" --dart-define=screens="$screens" --dart-define=overlay="$overlay"
-  dart test_scripts/test_result_parser.dart snapshots/tests.json snapshots/localizations-test-reports.html
+  dart test_scripts/test_result_parser.dart snapshots/tests.json "snapshots/localizations-test-reports-$locStr-$screenStr.html"
+  rm snapshots/tests.json
 else
   echo "Target file: $file"
   flutter test $file --tags=loc --update-goldens --dart-define=locales="$locales" --dart-define=screens="$screens" --dart-define=overlay="$overlay"

@@ -89,7 +89,7 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
                     }
                   : null,
             ),
-            const AppGap.medium(),
+            const AppGap.small2(),
             AppListCard(
               title: AppText.labelLarge(loc(context).manuallyAddDevice),
               trailing: !_isEdit ? const Icon(LinksysIcons.add) : null,
@@ -99,6 +99,7 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
                     }
                   : null,
             ),
+            const AppGap.small2(),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: Spacing.medium),
               child: AppText.labelLarge(loc(context).filteredDevices),
@@ -142,7 +143,8 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
             ),
           )
         : SizedBox(
-            height: 76.0 * state.macAddresses.length,
+            height: 76.0 * state.macAddresses.length +
+                Spacing.small2 * state.macAddresses.length,
             child: ListView.separated(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -190,7 +192,7 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
               },
               separatorBuilder: (BuildContext context, int index) {
                 if (index != state.macAddresses.length - 1) {
-                  return const AppGap.medium();
+                  return const AppGap.small2();
                 } else {
                   return const Center();
                 }

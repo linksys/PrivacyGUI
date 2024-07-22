@@ -74,7 +74,7 @@ class TroubleshootingNotifier extends Notifier<TroubleshootingState> {
         final ipv4 = device.connections.firstOrNull?.ipAddress;
         final ipv6 = device.connections.firstOrNull?.ipv6Address;
         final mac = device.getMacAddress();
-        final isWired = device.isWiredConnection();
+        final isWired = !device.isWirelessConnection();
         if (ipv4 != null) {
           previousValue.add(DeviceStatusModel.ipv4(
               name: name,
@@ -105,7 +105,7 @@ class TroubleshootingNotifier extends Notifier<TroubleshootingState> {
         final interface = (devices
                     .firstWhereOrNull(
                         (element) => element.getMacAddress() == mac)
-                    ?.isWiredConnection() ??
+                    ?.isWirelessConnection() ??
                 false)
             ? 'LAN'
             : 'Wireless';
@@ -134,14 +134,6 @@ class TroubleshootingNotifier extends Notifier<TroubleshootingState> {
     });
   }
 
-  Future ping({required String host, required int? pingCount}) {
-    return ref.read(routerRepositoryProvider).send(JNAPAction.startPing,
-        fetchRemote: true,
-        cacheLevel: CacheLevel.noCache,
-        data: {'host': host, 'packetSizeBytes': 32, 'pingCount': pingCount}
-          ..removeWhere((key, value) => value == null));
-  }
-
   Future sendRouterInfo({required String userEmailList}) {
     if (kDebugMode) {}
     List<String> emailList = [
@@ -164,20 +156,31 @@ class TroubleshootingNotifier extends Notifier<TroubleshootingState> {
         );
   }
 
+  Future ping({required String host, required int? pingCount}) {
+    return ref.read(routerRepositoryProvider).send(JNAPAction.startPing,
+        fetchRemote: true,
+        cacheLevel: CacheLevel.noCache,
+        auth: true,
+        data: {'host': host, 'packetSizeBytes': 32, 'pingCount': pingCount}
+          ..removeWhere((key, value) => value == null));
+  }
+
   Stream<PingStatus> getPingStatus() {
     return ref
         .read(routerRepositoryProvider)
         .scheduledCommand(
-            action: JNAPAction.getPinStatus,
-            retryDelayInMilliSec: 10,
-            condition: (result) {
-              if (result is JNAPSuccess) {
-                final status = PingStatus.fromMap(result.output);
-                return !status.isRunning;
-              } else {
-                return false;
-              }
-            })
+          action: JNAPAction.getPinStatus,
+          retryDelayInMilliSec: 100,
+          condition: (result) {
+            if (result is JNAPSuccess) {
+              final status = PingStatus.fromMap(result.output);
+              return !status.isRunning;
+            } else {
+              return false;
+            }
+          },
+          auth: true,
+        )
         .map((event) {
       if (event is JNAPSuccess) {
         return PingStatus.fromMap(event.output);

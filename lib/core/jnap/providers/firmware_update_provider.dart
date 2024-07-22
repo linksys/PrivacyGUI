@@ -14,6 +14,8 @@ import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/models/firmware_update_settings.dart';
 import 'package:privacy_gui/core/jnap/models/firmware_update_status.dart';
 import 'package:privacy_gui/core/jnap/models/firmware_update_status_nodes.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_state.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
@@ -190,6 +192,19 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
       logger.i('[FIRMWARE]: error: $result, maybe reboot');
       return false;
     }
+  }
+
+  // Get records of nodes' update status and their device IDs
+  List<(LinksysDevice, FirmwareUpdateStatus)> getIDStatusRecords() {
+    return (state.nodesStatus ?? []).map((nodeStatus) {
+      final nodes = ref.read(deviceManagerProvider).nodeDevices;
+      return (
+        nodeStatus is NodesFirmwareUpdateStatus
+            ? nodes.firstWhere((node) => node.deviceID == nodeStatus.deviceUUID)
+            : ref.read(deviceManagerProvider).masterDevice,
+        nodeStatus
+      );
+    }).toList();
   }
 
   int getAvailableUpdateNumber() {

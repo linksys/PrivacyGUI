@@ -202,4 +202,48 @@ final advancedSettings = [
       args: state.extra as Map<String, dynamic>? ?? {},
     ),
   ),
+  LinksysRoute(
+    name: RouteNamed.settingsAdministration,
+    path: RoutePath.settingsAdministration,
+    config: LinksysRouteConfig(
+      column: ColumnGrid(column: 9),
+    ),
+    builder: (context, state) => AdministrationSettingsView(
+      args: state.extra as Map<String, dynamic>? ?? {},
+    ),
+  ),
+  LinksysRoute(
+    name: RouteNamed.settingsStaticRouting,
+    path: RoutePath.settingsStaticRouting,
+    config: LinksysRouteConfig(
+      column: ColumnGrid(column: 9),
+    ),
+    builder: (context, state) => StaticRoutingView(
+      args: state.extra as Map<String, dynamic>? ?? {},
+    ),
+    routes: [
+      LinksysRoute(
+        name: RouteNamed.settingsStaticRoutingList,
+        path: RoutePath.settingsStaticRoutingList,
+        config: LinksysRouteConfig(
+          column: ColumnGrid(column: 9),
+        ),
+        builder: (context, state) => StaticRoutingListView(
+          args: state.extra as Map<String, dynamic>? ?? {},
+        ),
+        routes: [
+          LinksysRoute(
+            name: RouteNamed.settingsStaticRoutingDetail,
+            path: RoutePath.settingsStaticRoutingDetail,
+            config: LinksysRouteConfig(
+              column: ColumnGrid(column: 6),
+            ),
+            builder: (context, state) => StaticRoutingDetailView(
+              args: state.extra as Map<String, dynamic>? ?? {},
+            ),
+          ),
+        ],
+      ),
+    ],
+  ),
 ];

@@ -6,7 +6,7 @@ import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/guest_wif_provider.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/guest_wifi_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/guest_wifi_state.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_view_provider.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
@@ -29,23 +29,24 @@ class _GuestWiFiSettingsViewState extends ConsumerState<GuestWiFiSettingsView> {
 
   GuestWiFiState? _preservedState;
 
-  bool _isLoading = false;
-
   @override
   void initState() {
     super.initState();
     _guestPasswordController = TextEditingController();
-    setState(() {
-      _isLoading = true;
-    });
-    ref.read(guestWifiProvider.notifier).fetch().then((state) {
-      ref.read(wifiViewProvider.notifier).setChanged(false);
-      setState(() {
-        _preservedState = state;
-        _guestPasswordController.text = state.password;
-        _isLoading = false;
-      });
-    });
+    doSomethingWithSpinner(
+      context,
+      ref.read(guestWifiProvider.notifier).fetch().then(
+        (state) {
+          ref.read(wifiViewProvider.notifier).setChanged(false);
+          setState(
+            () {
+              _preservedState = state;
+              _guestPasswordController.text = state.password;
+            },
+          );
+        },
+      ),
+    );
   }
 
   @override
@@ -60,31 +61,30 @@ class _GuestWiFiSettingsViewState extends ConsumerState<GuestWiFiSettingsView> {
     ref.listen(guestWifiProvider, (previous, next) {
       ref.read(wifiViewProvider.notifier).setChanged(next != _preservedState);
     });
-    return _isLoading
-        ? AppFullScreenSpinner(
-            text: loc(context).processing,
-          )
-        : StyledAppPageView(
-            appBarStyle: AppBarStyle.none,
-            padding: EdgeInsets.zero,
-            bottomBar: PageBottomBar(
-                isPositiveEnabled: state != _preservedState,
-                onPositiveTap: () {
-                  setState(() {
-                    _isLoading = true;
-                  });
-                  ref.read(guestWifiProvider.notifier).save().then((state) {
-                    ref.read(wifiViewProvider.notifier).setChanged(false);
-                    setState(() {
-                      _preservedState = state;
-                      _isLoading = false;
-                    });
-                    showSuccessSnackBar(context, loc(context).saved);
-                  }).onError((error, stackTrace) => showFailedSnackBar(
-                      context, loc(context).unknownErrorCode(error ?? '')));
-                }),
-            child: _guestWiFiContent(),
-          );
+    return StyledAppPageView(
+      appBarStyle: AppBarStyle.none,
+      padding: EdgeInsets.zero,
+      bottomBar: PageBottomBar(
+          isPositiveEnabled: state != _preservedState,
+          onPositiveTap: () {
+            doSomethingWithSpinner(
+              context,
+              ref.read(guestWifiProvider.notifier).save().then((state) {
+                ref.read(wifiViewProvider.notifier).setChanged(false);
+                setState(() {
+                  _preservedState = state;
+                });
+                showSuccessSnackBar(context, loc(context).saved);
+              }).onError(
+                (error, stackTrace) => showFailedSnackBar(
+                  context,
+                  loc(context).unknownErrorCode(error ?? ''),
+                ),
+              ),
+            );
+          }),
+      child: _guestWiFiContent(),
+    );
   }
 
   Widget _guestWiFiContent() {
@@ -105,7 +105,7 @@ class _GuestWiFiSettingsViewState extends ConsumerState<GuestWiFiSettingsView> {
               ),
             ),
             if (guest.isEnabled) ...[
-              const AppGap.medium(),
+              const AppGap.large4(),
               AppText.labelLarge(loc(context).settings),
               const AppGap.small2(),
               AppSettingCard(
@@ -116,7 +116,7 @@ class _GuestWiFiSettingsViewState extends ConsumerState<GuestWiFiSettingsView> {
                   _showGuestWiFiNameModal(guest.ssid);
                 },
               ),
-              const AppGap.medium(),
+              const AppGap.small2(),
               AppListCard(
                 title: AppText.bodyMedium(loc(context).routerPassword),
                 description: IntrinsicWidth(

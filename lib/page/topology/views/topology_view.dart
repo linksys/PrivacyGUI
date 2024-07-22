@@ -68,6 +68,8 @@ class _TopologyViewState extends ConsumerState<TopologyView> {
               ],
               child: AppBasicLayout(
                 content: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Flexible(
                         child: AppTreeView(

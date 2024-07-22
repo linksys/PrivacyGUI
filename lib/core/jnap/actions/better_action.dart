@@ -166,6 +166,8 @@ void _updateBetterActions(JNAPService service) {
       break;
     case JNAPService.powerTable:
       break;
+    case JNAPService.product:
+      break;
     case JNAPService.qos:
       break;
     case JNAPService.qos2:
@@ -195,6 +197,8 @@ void _updateBetterActions(JNAPService service) {
           _JNAPActionValue.setIPv6Settings2.value;
       break;
     case JNAPService.router6:
+      _betterActionMap[JNAPAction.getExpressForwardingSettings] =
+          _JNAPActionValue.getExpressForwardingSettings.value;
       break;
     case JNAPService.router7:
       _betterActionMap[JNAPAction.getWANSettings] =
@@ -225,6 +229,8 @@ void _updateBetterActions(JNAPService service) {
           _JNAPActionValue.setManagementSettings2.value;
       break;
     case JNAPService.routerManagement3:
+      break;
+    case JNAPService.routerUPnP:
       break;
     case JNAPService.setup:
       break;
@@ -432,6 +438,10 @@ void initBetterActions() {
       _JNAPActionValue.getDMZSettings.value;
   _betterActionMap[JNAPAction.setDMZSettings] =
       _JNAPActionValue.setDMZSettings.value;
+  _betterActionMap[JNAPAction.getALGSettings] =
+      _JNAPActionValue.getALGSettings.value;
+  _betterActionMap[JNAPAction.setALGSettings] =
+      _JNAPActionValue.setALGSettings.value;
   _betterActionMap[JNAPAction.getFirmwareUpdateStatus] =
       _JNAPActionValue.getFirmwareUpdateStatus.value;
   _betterActionMap[JNAPAction.getNodesFirmwareUpdateStatus] =
@@ -508,6 +518,8 @@ void initBetterActions() {
       _JNAPActionValue.getParentalControlSettings.value;
   _betterActionMap[JNAPAction.getPowerTableSettings] =
       _JNAPActionValue.getPowerTableSettings.value;
+  _betterActionMap[JNAPAction.getSoftSKUSettings] =
+      _JNAPActionValue.getSoftSKUSettings.value;
   _betterActionMap[JNAPAction.getQoSSettings] =
       _JNAPActionValue.getQoSSettings.value;
   _betterActionMap[JNAPAction.getDHCPClientLeases] =
@@ -516,6 +528,8 @@ void initBetterActions() {
       _JNAPActionValue.getIPv6Settings.value;
   _betterActionMap[JNAPAction.getLANSettings] =
       _JNAPActionValue.getLANSettings.value;
+  _betterActionMap[JNAPAction.getRoutingSettings] =
+      _JNAPActionValue.getRoutingSettings.value;
   _betterActionMap[JNAPAction.getMACAddressCloneSettings] =
       _JNAPActionValue.getMACAddressCloneSettings.value;
   _betterActionMap[JNAPAction.getWANSettings] =
@@ -530,6 +544,8 @@ void initBetterActions() {
       _JNAPActionValue.setWANSettings.value;
   _betterActionMap[JNAPAction.setLANSettings] =
       _JNAPActionValue.setLANSettings.value;
+  _betterActionMap[JNAPAction.setRoutingSettings] =
+      _JNAPActionValue.setRoutingSettings.value;
   _betterActionMap[JNAPAction.getManagementSettings] =
       _JNAPActionValue.getManagementSettings.value;
   _betterActionMap[JNAPAction.setManagementSettings] =
@@ -640,6 +656,10 @@ void initBetterActions() {
       _JNAPActionValue.getAutoConfigurationSettings.value;
   _betterActionMap[JNAPAction.setUserAcknowledgedAutoConfiguration] =
       _JNAPActionValue.setUserAcknowledgedAutoConfiguration.value;
+  _betterActionMap[JNAPAction.getUPnPSettings] =
+      _JNAPActionValue.getUPnPSettings.value;
+  _betterActionMap[JNAPAction.setUPnPSettings] =
+      _JNAPActionValue.setUPnPSettings.value;
 }
 
 void buildBetterActions(List<String> routerServices) {

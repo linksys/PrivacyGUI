@@ -53,7 +53,7 @@ class TopologyNotifier extends Notifier<TopologyState> {
       ...deviceManagerState.nodeDevices
           .where((device) => device.connections.isEmpty)
           .map(
-            (device) => _createRouterTopologyNode(device),
+            (device) => _createRouterTopologyNode(device)..tag = 'offline',
           )
           .toList(),
     ];
@@ -134,21 +134,29 @@ class TopologyNotifier extends Notifier<TopologyState> {
     bool isMaster = device.isAuthority || device.nodeType == 'Master';
     bool isOnline = device.connections.isNotEmpty;
     bool isRouter = device.isAuthority || device.nodeType != null;
-    bool isWiredConnection = device.isWiredConnection();
-    int signalStrength =
-        ref.read(deviceManagerProvider.notifier).getWirelessSignalOf(device);
+    bool isWiredConnection = !device.isWirelessConnection();
+    String model = device.modelNumber ?? '';
+    String serialNumber = device.unit.serialNumber ?? '';
+    String fwVersion = device.unit.firmwareVersion ?? '';
+    String ipAddress = device.connections.firstOrNull?.ipAddress ?? '';
+
+    int? signalStrength = device.signalDecibels;
     final data = TopologyModel(
       deviceId: deviceId,
       location: location,
       isMaster: isMaster,
       isOnline: isOnline,
       isWiredConnection: isWiredConnection,
-      signalStrength: signalStrength,
+      signalStrength: signalStrength ?? -1,
       isRouter: isRouter,
       icon: isRouter
           ? routerIconTest(device.toMap())
           : deviceIconTest(device.toMap()),
       connectedDeviceCount: device.connectedDevices.length,
+      model: model,
+      serialNumber: serialNumber,
+      fwVersion: fwVersion,
+      ipAddress: ipAddress,
     );
     return RouterTopologyNode(
       data: data,
@@ -162,16 +170,15 @@ class TopologyNotifier extends Notifier<TopologyState> {
     bool isMaster = device.isAuthority || device.nodeType == 'Master';
     bool isOnline = device.connections.isNotEmpty;
     bool isRouter = device.isAuthority || device.nodeType != null;
-    bool isWiredConnection = device.isWiredConnection();
-    int signalStrength =
-        ref.read(deviceManagerProvider.notifier).getWirelessSignalOf(device);
+    bool isWiredConnection = !device.isWirelessConnection();
+    int? signalStrength = device.signalDecibels;
     final data = TopologyModel(
       deviceId: deviceId,
       location: location,
       isMaster: isMaster,
       isOnline: isOnline,
       isWiredConnection: isWiredConnection,
-      signalStrength: signalStrength,
+      signalStrength: signalStrength ?? -1,
       isRouter: isRouter,
       icon: isRouter
           ? routerIconTest(device.toMap())

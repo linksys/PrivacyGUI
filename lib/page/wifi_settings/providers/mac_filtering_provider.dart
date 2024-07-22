@@ -16,7 +16,7 @@ class MacFilteringNotifier extends Notifier<MacFilteringState> {
   @override
   MacFilteringState build() => MacFilteringState.init();
 
-  Future fetch() async {
+  Future<MacFilteringState> fetch() async {
     final settings = await ref
         .read(routerRepositoryProvider)
         .send(
@@ -30,6 +30,7 @@ class MacFilteringNotifier extends Notifier<MacFilteringState> {
       macAddresses: settings.macAddresses,
       maxMacAddresses: settings.maxMACAddresses,
     );
+    return state;
   }
 
   Future save() async {

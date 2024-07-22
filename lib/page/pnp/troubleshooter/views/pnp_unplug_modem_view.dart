@@ -7,7 +7,6 @@ import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 
 class PnpUnplugModemView extends ConsumerStatefulWidget {
@@ -34,55 +33,54 @@ class _PnpUnplugModemViewState extends ConsumerState<PnpUnplugModemView> {
       title: loc(context).pnpUnplugModemTitle,
       scrollable: true,
       enableSafeArea: (left: true, top: false, right: true, bottom: true),
-      child: AppBasicLayout(
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AppText.bodyLarge(
-              loc(context).pnpUnplugModemDesc,
-            ),
-            Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppText.bodyLarge(
+            loc(context).pnpUnplugModemDesc,
+          ),
+          const AppGap.large3(),
+          const AppGap.small2(),
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SvgPicture(
+                  CustomTheme.of(context).images.modemPlugged,
+                  fit: BoxFit.fitWidth,
+                ),
+                const AppGap.large3(),
+                const AppGap.large5(),
+                Wrap(
                   children: [
-                    SvgPicture(
-                      CustomTheme.of(context).images.modemPlugged,
-                      fit: BoxFit.fitWidth,
-                    ),
-                    const AppGap.large3(),
-                    const AppGap.large4(),
-                    Row(
-                      children: [
-                        AppTextButton(
-                          loc(context).pnpUnplugModemTip,
-                          onTap: () {
-                            showModalBottomSheet(
-                              context: context,
-                              useRootNavigator: true,
-                              useSafeArea: true,
-                              isScrollControlled: true,
-                              showDragHandle: true,
-                              builder: (context) {
-                                return _bottomSheetContent();
-                              },
-                            );
+                    AppTextButton.noPadding(
+                      loc(context).pnpUnplugModemTip,
+                      onTap: () {
+                        showModalBottomSheet(
+                          context: context,
+                          useRootNavigator: true,
+                          useSafeArea: true,
+                          isScrollControlled: true,
+                          showDragHandle: true,
+                          builder: (context) {
+                            return _bottomSheetContent();
                           },
-                        ),
-                      ],
+                        );
+                      },
                     ),
                   ],
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
-        footer: AppFilledButton.fillWidth(
-          loc(context).next,
-          onTap: () {
-            context.pushNamed(RouteNamed.pnpModemLightsOff);
-          },
-        ),
+          ),
+          const AppGap.large3(),
+          AppFilledButton(
+            loc(context).next,
+            onTap: () {
+              context.pushNamed(RouteNamed.pnpModemLightsOff);
+            },
+          ),
+        ],
       ),
     );
   }
@@ -105,7 +103,7 @@ class _PnpUnplugModemViewState extends ConsumerState<PnpUnplugModemView> {
             loc(context).pnpUnplugModemTipDesc2,
           ),
           const AppGap.medium(),
-          const AppGap.large4(),
+          const AppGap.large5(),
           Container(
             alignment: Alignment.center,
             child: SvgPicture(

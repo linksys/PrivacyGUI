@@ -93,7 +93,6 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     newState = newState.copyWith(
       lastUpdateTime: pollingResult?.lastUpdate,
     );
-    logger.d('DeviceManagerProvider: ${newState.toJson()}');
     return newState;
   }
 
@@ -215,7 +214,13 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
                 ),
               )
               .toList();
-          return device.copyWith(connections: updatedConnections);
+          final newDevice = device.copyWith(
+            connections: updatedConnections,
+            wirelessConnectionInfo: backhaulInfo.wirelessConnectionInfo,
+            speedMbps: backhaulInfo.speedMbps,
+            connectionType: backhaulInfo.connectionType,
+          );
+          return newDevice;
         }
         return device;
       }).toList(),
@@ -243,8 +248,15 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     newState = newState.copyWith(wirelessConnections: wireleeConnectionInfo);
 
     // update wireless signal for each device
-    final devices = state.deviceList
-        .map((e) => e.copyWith(signalDecibels: getWirelessSignalOf(e, state)))
+    final devices = newState.deviceList
+        .map((e) => e.copyWith(
+              signalDecibels: e.wirelessConnectionInfo?.stationRSSI ??
+                  _getWirelessSignalOf(e, state),
+              connectedDevices: e.connectedDevices
+                  .map((e) => e.copyWith(
+                      signalDecibels: _getWirelessSignalOf(e, state)))
+                  .toList(),
+            ))
         .toList();
     newState = newState.copyWith(deviceList: devices);
     return newState;
@@ -272,9 +284,7 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     return state.radioInfos[radioID]?.settings.ssid;
   }
 
-  @Deprecated(
-      'this should be deprecated, singlalDecibels has integrated into #LinksysDevice')
-  int getWirelessSignalOf(RawDevice device,
+  int _getWirelessSignalOf(RawDevice device,
       [DeviceManagerState? currentState]) {
     final wirelessConnections = (currentState ?? state).wirelessConnections;
     final wirelessData = wirelessConnections[device.getMacAddress()];
@@ -282,13 +292,13 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     return signalDecibels ?? -1;
   }
 
-  String getBandConnectedBy(RawDevice device) {
+  String getBandConnectedBy(LinksysDevice device) {
     final wirelessConnections = state.wirelessConnections;
     final wirelessData = wirelessConnections[device.getMacAddress()];
     // If the band data is absent in (NodesWireless)NetworkConnection,
     // check the knownInterface in GetDevices
     final band = wirelessData?.band ?? _getBandFromKnownInterfacesOf(device);
-    return band ?? (device.isWiredConnection() ? 'Ethernet' : '');
+    return band ?? (!device.isWirelessConnection() ? 'Ethernet' : '');
   }
 
   String? _getBandFromKnownInterfacesOf(RawDevice device) {

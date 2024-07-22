@@ -93,7 +93,7 @@ class PersonalWiFiStep extends PnpStep {
               _check(ref);
             },
           ),
-          const AppGap.large4(),
+          const AppGap.large5(),
           Row(
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -113,7 +113,7 @@ class PersonalWiFiStep extends PnpStep {
               )
             ],
           ),
-          const AppGap.large4(),
+          const AppGap.large5(),
         ],
       );
 

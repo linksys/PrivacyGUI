@@ -2,7 +2,6 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
@@ -18,9 +17,9 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/input_field/validator_widget.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'package:privacygui_widgets/widgets/radios/radio_list.dart';
 
 enum WiFiListViewMode {
@@ -39,7 +38,7 @@ class WiFiListView extends ArgumentsConsumerStatefulView {
 class _WiFiListViewState extends ConsumerState<WiFiListView> {
   WiFiState? _preservedState;
 
-  bool _isLoading = false;
+  WiFiListViewMode _preseveredMode = WiFiListViewMode.simple;
   WiFiListViewMode _mode = WiFiListViewMode.simple;
 
   final TextEditingController _simplePasswordController =
@@ -55,26 +54,32 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
     final index = widget.args['wifiIndex'] as int? ?? 0;
     _scrollController = ScrollController(initialScrollOffset: 760.0 * index);
 
-    setState(() {
-      _isLoading = true;
-    });
-    ref.read(wifiListProvider.notifier).fetch().then((state) {
-      ref.read(wifiViewProvider.notifier).setChanged(false);
-      setState(() {
-        _mode = ref.read(wifiListProvider.notifier).isAllBandsConsistent()
-            ? WiFiListViewMode.simple
-            : WiFiListViewMode.advanced;
-        _preservedState = state;
-        _isLoading = false;
-        _simplePasswordController.text =
-            state.mainWiFi.firstOrNull?.password ?? '';
-        for (var wifi in state.mainWiFi) {
-          final controller = TextEditingController()..text = wifi.password;
-          _advancedPasswordController.putIfAbsent(
-              wifi.radioID, () => controller);
-        }
-      });
-    });
+    doSomethingWithSpinner(
+      context,
+      ref.read(wifiListProvider.notifier).fetch().then(
+        (state) {
+          ref.read(wifiViewProvider.notifier).setChanged(false);
+          setState(
+            () {
+              _preseveredMode =
+                  ref.read(wifiListProvider.notifier).isAllBandsConsistent()
+                      ? WiFiListViewMode.simple
+                      : WiFiListViewMode.advanced;
+              _mode = _preseveredMode;
+              _preservedState = state;
+              _simplePasswordController.text =
+                  state.mainWiFi.firstOrNull?.password ?? '';
+              for (var wifi in state.mainWiFi) {
+                final controller = TextEditingController()
+                  ..text = wifi.password;
+                _advancedPasswordController.putIfAbsent(
+                    wifi.radioID, () => controller);
+              }
+            },
+          );
+        },
+      ),
+    );
   }
 
   @override
@@ -93,46 +98,26 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
     ref.listen(wifiListProvider, (previous, next) {
       ref.read(wifiViewProvider.notifier).setChanged(next != _preservedState);
     });
-
-    return _isLoading
-        ? AppFullScreenSpinner(
-            text: loc(context).processing,
-          )
-        : StyledAppPageView(
-            appBarStyle: AppBarStyle.none,
-            scrollable: true,
-            controller: _scrollController,
-            padding: EdgeInsets.zero,
-            bottomBar: PageBottomBar(
-                isPositiveEnabled: _mode == WiFiListViewMode.simple
-                    ? _preservedState?.simpleWiFi != state.simpleWiFi
-                    : !const ListEquality()
-                        .equals(_preservedState?.mainWiFi, state.mainWiFi),
-                onPositiveTap: () {
-                  setState(() {
-                    _isLoading = true;
-                  });
-                  ref
-                      .read(wifiListProvider.notifier)
-                      .save(_mode)
-                      .then((_) {
-                        ref.read(wifiViewProvider.notifier).setChanged(false);
-                        setState(() {
-                          _preservedState = state;
-                        });
-                        showSuccessSnackBar(context, loc(context).saved);
-                      })
-                      .onError((error, stackTrace) => showFailedSnackBar(
-                          context, loc(context).generalError))
-                      .whenComplete(() => setState(() {
-                            _isLoading = false;
-                          }));
-                }),
-            child: switch (_mode) {
-              WiFiListViewMode.simple => _simpleWiFiView(),
-              WiFiListViewMode.advanced => _advancedWiFiView(),
-            },
-          );
+    final isPositiveEnabled = (_preseveredMode != _mode) ||
+        (_mode == WiFiListViewMode.simple
+            ? _preservedState?.simpleWiFi != state.simpleWiFi
+            : !const ListEquality()
+                .equals(_preservedState?.mainWiFi, state.mainWiFi));
+    return StyledAppPageView(
+      appBarStyle: AppBarStyle.none,
+      scrollable: true,
+      controller: _scrollController,
+      padding: EdgeInsets.zero,
+      bottomBar: PageBottomBar(
+          isPositiveEnabled: isPositiveEnabled,
+          onPositiveTap: () {
+            _showSaveConfirmModal();
+          }),
+      child: switch (_mode) {
+        WiFiListViewMode.simple => _simpleWiFiView(),
+        WiFiListViewMode.advanced => _advancedWiFiView(),
+      },
+    );
   }
 
   Widget _simpleWiFiView() {
@@ -147,7 +132,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               AppText.labelLarge(loc(context).wifi),
-              AppTextButton(
+              AppTextButton.noPadding(
                 loc(context).showAdvanced,
                 icon: LinksysIcons.settings,
                 onTap: () {
@@ -223,7 +208,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
             children: [
               AppText.labelLarge(loc(context).wifi),
               const AppGap.medium(),
-              AppTextButton(
+              AppTextButton.noPadding(
                 loc(context).showBasic,
                 icon: LinksysIcons.settings,
                 onTap: () {
@@ -246,7 +231,8 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppCard(
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 24),
+            padding: const EdgeInsets.symmetric(
+                vertical: Spacing.small2, horizontal: Spacing.large2),
             child: Column(
               children: [
                 _advancedWiFiBandCard(radio),
@@ -502,6 +488,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
             AppRadioList<WifiSecurityType>(
               initial: type,
               mainAxisSize: MainAxisSize.min,
+              itemHeight: 56,
               items: list
                   .map((e) => AppRadioListItem(
                         title: getWifiSecurityTypeTitle(context, e),
@@ -552,6 +539,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
           children: [
             AppRadioList<WifiWirelessMode>(
               initial: mode,
+              itemHeight: 56,
               mainAxisSize: MainAxisSize.min,
               items: list
                   .map((e) => AppRadioListItem(
@@ -605,6 +593,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
             children: [
               AppRadioList<int>(
                 initial: channel,
+                itemHeight: 56,
                 mainAxisSize: MainAxisSize.min,
                 items: list
                     .map((e) => AppRadioListItem(
@@ -657,6 +646,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
             children: [
               AppRadioList<WifiChannelWidth>(
                 initial: channelWidth,
+                itemHeight: 56,
                 mainAxisSize: MainAxisSize.min,
                 items: list
                     .map((e) => AppRadioListItem(
@@ -695,5 +685,117 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
       // _notifier.setAccess(result.name);
       onSelected.call(result);
     }
+  }
+
+  _showSaveConfirmModal() async {
+    final newState = ref.read(wifiListProvider);
+    final result = await showSubmitAppDialog(
+      context,
+      title: loc(context).wifiListSaveModalTitle,
+      contentBuilder: (context, setState) => SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppText.bodyMedium(loc(context).wifiListSaveModalDesc),
+            ..._mloWarning(newState),
+            const AppGap.medium(),
+            ..._buildNewSettings(newState),
+            const AppGap.medium(),
+            AppText.bodyMedium(loc(context).doYouWantToContinue),
+          ],
+        ),
+      ),
+      event: () async {
+        await ref.read(wifiListProvider.notifier).save(_mode).then((state) {
+          ref.read(wifiViewProvider.notifier).setChanged(false);
+          setState(() {
+            _preservedState = state;
+          });
+          showSuccessSnackBar(context, loc(context).saved);
+        }).onError((error, stackTrace) =>
+            showFailedSnackBar(context, loc(context).generalError));
+      },
+    );
+  }
+
+  List<Widget> _mloWarning(WiFiState state) {
+    final radios = _mode == WiFiListViewMode.simple
+        ? Map.fromIterables(
+            state.mainWiFi.map((e) => e.radioID),
+            state.mainWiFi.map((e) => e.copyWith(
+                ssid: state.simpleWiFi.ssid,
+                password: state.simpleWiFi.password)))
+        : Map.fromIterables(
+            state.mainWiFi.map((e) => e.radioID), state.mainWiFi);
+    final isMLOEnabled = ref.read(wifiAdvancedProvider).isMLOEnabled ?? false;
+    return ref
+            .read(wifiListProvider.notifier)
+            .checkingMLOSettingsConflicts(radios, isMloEnabled: isMLOEnabled)
+        ? [
+            const AppGap.small3(),
+            AppText.labelLarge(
+              loc(context).mloWarning,
+              color: Theme.of(context).colorScheme.error,
+            ),
+          ]
+        : [];
+  }
+
+  List<Widget> _buildNewSettings(WiFiState state) {
+    List<Widget> simple = state.mainWiFi
+        .map(
+          (e) => Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AppText.bodyMedium(e.radioID.value),
+              SizedBox(
+                width: double.infinity,
+                child: AppCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AppText.bodyMedium(
+                          '${loc(context).wifiName}: ${state.simpleWiFi.ssid}'),
+                      AppText.bodyMedium(
+                          '${loc(context).wifiPassword}: ${state.simpleWiFi.password}'),
+                      AppText.bodyMedium(
+                          '${loc(context).securityMode}: ${e.securityType.value}'),
+                    ],
+                  ),
+                ),
+              ),
+              const AppGap.small3(),
+            ],
+          ),
+        )
+        .toList();
+    List<Widget> advanced = state.mainWiFi
+        .map(
+          (e) => Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AppText.bodyMedium(e.radioID.value),
+              SizedBox(
+                width: double.infinity,
+                child: AppCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AppText.bodyMedium('${loc(context).wifiName}: ${e.ssid}'),
+                      AppText.bodyMedium(
+                          '${loc(context).wifiPassword}: ${e.password}'),
+                      AppText.bodyMedium(
+                          '${loc(context).securityMode}: ${e.securityType.value}'),
+                    ],
+                  ),
+                ),
+              ),
+              const AppGap.small3(),
+            ],
+          ),
+        )
+        .toList();
+    return _mode == WiFiListViewMode.simple ? simple : advanced;
   }
 }

@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/models/firmware_update_status.dart';
-import 'package:privacy_gui/core/jnap/models/firmware_update_status_nodes.dart';
-import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
-import 'package:privacy_gui/core/jnap/providers/firmware_update_state.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -14,6 +11,7 @@ import 'package:privacygui_widgets/hook/icon_hooks.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
@@ -33,8 +31,8 @@ class _FirmwareUpdateDetailViewState
 
   @override
   void initState() {
-    final state = ref.read(firmwareUpdateProvider);
-    final statusRecords = buildIDStatusRecords(state);
+    final statusRecords =
+        ref.read(firmwareUpdateProvider.notifier).getIDStatusRecords();
     candicateIDs = statusRecords.where((record) {
       return record.$2.availableUpdate != null;
     }).map((record) {
@@ -44,24 +42,12 @@ class _FirmwareUpdateDetailViewState
     super.initState();
   }
 
-  List<(LinksysDevice, FirmwareUpdateStatus)> buildIDStatusRecords(
-      FirmwareUpdateState state) {
-    return (state.nodesStatus ?? []).map((nodeStatus) {
-      final nodes = ref.read(deviceManagerProvider).nodeDevices;
-      return (
-        nodeStatus is NodesFirmwareUpdateStatus
-            ? nodes.firstWhere((node) => node.deviceID == nodeStatus.deviceUUID)
-            : ref.read(deviceManagerProvider).masterDevice,
-        nodeStatus
-      );
-    }).toList();
-  }
-
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(firmwareUpdateProvider);
     // Build records for node deivces and their firmware status
-    final statusRecords = buildIDStatusRecords(state);
+    final statusRecords =
+        ref.read(firmwareUpdateProvider.notifier).getIDStatusRecords();
     // Find any ongoing updating operations for candicates
     final ongoingList = statusRecords.where((record) {
       return record.$2.pendingOperation != null &&
@@ -83,7 +69,7 @@ class _FirmwareUpdateDetailViewState
                 const AppGap.medium(),
                 AppText.bodyLarge(loc(context).firmwareUpdateDesc2),
                 const AppGap.large2(),
-                ListView.builder(
+                ListView.separated(
                   shrinkWrap: true,
                   itemCount: statusRecords.length,
                   itemBuilder: (context, index) {
@@ -111,10 +97,12 @@ class _FirmwareUpdateDetailViewState
                       newVersion: newVersion,
                     );
                   },
+                  separatorBuilder: (BuildContext context, int index) =>
+                      const AppGap.medium(),
                 ),
                 if (isUpdateAvailable)
                   Padding(
-                    padding: const EdgeInsets.only(top: Spacing.large4),
+                    padding: const EdgeInsets.only(top: Spacing.large5),
                     child: AppFilledButton(
                       loc(context).updateAll,
                       onTap: () {
@@ -141,11 +129,11 @@ class _FirmwareUpdateDetailViewState
           ? _buildProgressIndicator(list.first)
           : GridView.builder(
               shrinkWrap: true,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                mainAxisExtent: 240,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                mainAxisExtent: ResponsiveLayout.isMobileLayout(context) ? 4.col : 3.col,
                 childAspectRatio: 1,
-                crossAxisCount: 2,
-                mainAxisSpacing: Spacing.large4,
+                crossAxisCount: ResponsiveLayout.isMobileLayout(context) ? 1 : 2,
+                mainAxisSpacing: ResponsiveLayout.columnPadding(context),
                 crossAxisSpacing: Spacing.large4,
               ),
               itemCount: list.length,
@@ -206,29 +194,41 @@ class FirmwareUpdateNodeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppCard(
-      child: Row(
-        children: [
-          image,
-          const AppGap.medium(),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AppText.labelLarge('$title ($model)'),
-              const AppGap.small3(),
-              AppText.bodyMedium(loc(context).currentVersion(currentVersion)),
-              if (newVersion != null)
-                AppText.bodyMedium(loc(context).newVersion(newVersion!))
-            ],
-          ),
-          const Spacer(),
-          if (newVersion != null)
-            AppText.bodyMedium(
-              loc(context).updateAvailable,
-              color: Theme.of(context).colorScheme.error,
-            )
-          else
-            AppText.bodyMedium(loc(context).upToDate),
-        ],
+      child: SizedBox(
+        height: 76,
+        child: Row(
+          children: [
+            image,
+            const AppGap.medium(),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppText.labelLarge('$title ($model)'),
+                const AppGap.small3(),
+                AppText.bodyMedium(loc(context).currentVersion(currentVersion)),
+                if (newVersion != null)
+                  AppText.bodyMedium(loc(context).newVersion(newVersion!))
+              ],
+            ),
+            if (newVersion != null)
+              Expanded(
+                child: AppText.bodyMedium(
+                  textAlign: TextAlign.right,
+                  maxLines: 2,
+                  loc(context).updateAvailable,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              )
+            else
+              Expanded(
+                child: AppText.bodyMedium(
+                  textAlign: TextAlign.right,
+                  loc(context).upToDate,
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/page/administration/network_admin/providers/timezone_provider.dart';
+import 'package:privacy_gui/page/network_admin/providers/timezone_provider.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_state.dart';
 
 import '../../../core/jnap/actions/better_action.dart';
@@ -43,7 +43,10 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
         cacheLevel: CacheLevel.noCache,
       );
       if (result.output['resultID'] == null) {
-        // TODO: error handling
+        state = state.copyWith(
+          step: 'error',
+          error: const JNAPError(result: 'Empty resultID'),
+        );
         return;
       }
       _streamSubscription?.cancel();
@@ -63,10 +66,13 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
               onCompleted: () async {
                 final resultId = state.result.firstOrNull?.resultID;
                 // Get health check result with resultId
-                await getHealthCheckResults(module, 1, resultId);
-                // TODO: error handling
+                final result = await getHealthCheckResults(module, 1, resultId);
                 // Set state
-                state = state.copyWith(step: 'success');
+                if (result is JNAPSuccess) {
+                  state = state.copyWith(step: 'success');
+                } else if (result is JNAPError) {
+                  state = state.copyWith(step: 'error');
+                }
               })
           .listen((result) {
         logger.d('[SpeedTest] Get Health Check Result - $result');
@@ -90,33 +96,53 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
             step: step,
           );
         }
-        // getHealthCheckResults(module, 1);
       });
     }
   }
 
-  Future<void> getHealthCheckResults(
+  Future<JNAPResult> getHealthCheckResults(
     Module module,
     int numberOfMostRecentResults,
     int? resultId,
   ) async {
     final repo = ref.read(routerRepositoryProvider);
-    final result = await repo.send(
-      JNAPAction.getHealthCheckResults,
-      data: {
-        "includeModuleResults": true,
-        "healthCheckModule": module.value,
-        "lastNumberOfResults": numberOfMostRecentResults,
-        'resultIDs': resultId != null ? [resultId] : null,
-      }..removeWhere((key, value) => value == null),
-      auth: true,
-      fetchRemote: true,
-      cacheLevel: CacheLevel.noCache,
-    );
-    final healthCheckResults = List.from(result.output['healthCheckResults'])
-        .map((e) => HealthCheckResult.fromJson(e))
-        .toList();
-    _handleHealthCheckResults(healthCheckResults);
+    late JNAPResult result;
+    try {
+      result = await repo.send(
+        JNAPAction.getHealthCheckResults,
+        data: {
+          "includeModuleResults": true,
+          "healthCheckModule": module.value,
+          "lastNumberOfResults": numberOfMostRecentResults,
+          'resultIDs': resultId != null ? [resultId] : null,
+        }..removeWhere((key, value) => value == null),
+        auth: true,
+        fetchRemote: true,
+        cacheLevel: CacheLevel.noCache,
+      );
+    } on JNAPError catch (e) {
+      // JNAP error
+      result = e;
+    } on TimeoutException catch (e) {
+      // Timeout exception
+      result = JNAPError(result: e.runtimeType.toString());
+    } catch (e) {
+      // Unknown Exception
+      result = JNAPError(
+        result: 'UNKNOWN',
+        error: e.runtimeType.toString(),
+      );
+    }
+
+    if (result is JNAPSuccess) {
+      final healthCheckResults = List.from(result.output['healthCheckResults'])
+          .map((e) => HealthCheckResult.fromJson(e))
+          .toList();
+      _handleHealthCheckResults(healthCheckResults);
+    } else if (result is JNAPError) {
+      state = state.copyWith(error: result);
+    }
+    return result;
   }
 
   _handleHealthCheckResults(List<HealthCheckResult> healthCheckResults) {

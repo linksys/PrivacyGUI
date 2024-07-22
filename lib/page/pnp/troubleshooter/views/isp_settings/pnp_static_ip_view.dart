@@ -10,7 +10,6 @@ import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
 class PnpStaticIpView extends ConsumerStatefulWidget {
   const PnpStaticIpView({
@@ -45,87 +44,90 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
     return StyledAppPageView(
       scrollable: true,
       title: loc(context).staticIPAddress,
-      child: AppBasicLayout(
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AppText.bodyLarge(
-              loc(context).pnpStaticIpDesc,
-            ),
-            const AppGap.large4(),
-            if (errorMessage != null)
-              AppText.bodyLarge(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppText.bodyLarge(
+            loc(context).pnpStaticIpDesc,
+          ),
+          const AppGap.large3(),
+          const AppGap.small2(),
+          if (errorMessage != null)
+            Padding(
+              padding: const EdgeInsets.only(
+                bottom: Spacing.large3 + Spacing.small2,
+              ),
+              child: AppText.bodyLarge(
                 errorMessage!,
                 color: Theme.of(context).colorScheme.error,
               ),
-            const AppGap.large4(),
-            AppIPFormField(
-              header: AppText.bodyLarge(
-                loc(context).ipAddress,
-              ),
-              controller: _ipController,
-              border: const OutlineInputBorder(),
-              onFocusChanged: (isFocused) {},
             ),
-            const AppGap.large2(),
-            AppIPFormField(
-              header: AppText.bodyLarge(
-                loc(context).subnetMask,
-              ),
-              controller: _subnetController,
-              border: const OutlineInputBorder(),
+          AppIPFormField(
+            header: AppText.bodyLarge(
+              loc(context).ipAddress,
             ),
-            const AppGap.large2(),
-            AppIPFormField(
-              header: AppText.bodyLarge(
-                loc(context).defaultGateway,
-              ),
-              controller: _gatewayController,
-              border: const OutlineInputBorder(),
+            controller: _ipController,
+            border: const OutlineInputBorder(),
+            onFocusChanged: (isFocused) {},
+          ),
+          const AppGap.large2(),
+          AppIPFormField(
+            header: AppText.bodyLarge(
+              loc(context).subnetMask,
             ),
-            const AppGap.large2(),
-            AppIPFormField(
-              header: AppText.bodyLarge(
-                loc(context).dns1,
-              ),
-              controller: _dns1Controller,
-              border: const OutlineInputBorder(),
+            controller: _subnetController,
+            border: const OutlineInputBorder(),
+          ),
+          const AppGap.large2(),
+          AppIPFormField(
+            header: AppText.bodyLarge(
+              loc(context).defaultGateway,
             ),
-            Visibility(
-              visible: _hasExtraDNS,
-              replacement: Padding(
-                padding: const EdgeInsets.only(
-                  top: Spacing.large4,
+            controller: _gatewayController,
+            border: const OutlineInputBorder(),
+          ),
+          const AppGap.large2(),
+          AppIPFormField(
+            header: AppText.bodyLarge(
+              loc(context).dns1,
+            ),
+            controller: _dns1Controller,
+            border: const OutlineInputBorder(),
+          ),
+          Visibility(
+            visible: _hasExtraDNS,
+            replacement: Padding(
+              padding: const EdgeInsets.only(
+                top: Spacing.large5,
+              ),
+              child: AppTextButton.noPadding(
+                loc(context).addDns,
+                onTap: () {
+                  setState(() {
+                    _hasExtraDNS = true;
+                  });
+                },
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.only(
+                top: Spacing.large2,
+              ),
+              child: AppIPFormField(
+                header: AppText.bodyLarge(
+                  loc(context).dns2Optional,
                 ),
-                child: AppTextButton.noPadding(
-                  loc(context).addDns,
-                  onTap: () {
-                    setState(() {
-                      _hasExtraDNS = true;
-                    });
-                  },
-                ),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.only(
-                  top: Spacing.large2,
-                ),
-                child: AppIPFormField(
-                  header: AppText.bodyLarge(
-                    loc(context).dns2Optional,
-                  ),
-                  controller: _dns2Controller,
-                  border: const OutlineInputBorder(),
-                ),
+                controller: _dns2Controller,
+                border: const OutlineInputBorder(),
               ),
             ),
-            const AppGap.large4(),
-          ],
-        ),
-        footer: AppFilledButton.fillWidth(
-          loc(context).next,
-          onTap: onNext,
-        ),
+          ),
+          const AppGap.large5(),
+          AppFilledButton(
+            loc(context).next,
+            onTap: onNext,
+          ),
+        ],
       ),
     );
   }

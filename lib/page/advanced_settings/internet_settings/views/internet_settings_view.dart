@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/advanced_settings/widgets/_widgets.dart';
+import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/gap/gap.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -47,17 +47,16 @@ class InternetSettingsContentView extends ArgumentsConsumerStatefulView {
 
 class _InternetSettingsContentViewState
     extends ConsumerState<InternetSettingsContentView> {
-  bool isLoading = true;
-
   @override
   void initState() {
     super.initState();
 
-    ref.read(internetSettingsProvider.notifier).fetch().then((value) {
-      setState(() {
-        isLoading = false;
-      });
-    });
+    doSomethingWithSpinner(
+      context,
+      ref.read(internetSettingsProvider.notifier).fetch().then(
+            (value) {},
+          ),
+    );
   }
 
   @override
@@ -68,62 +67,57 @@ class _InternetSettingsContentViewState
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(internetSettingsProvider);
-    return isLoading
-        ? const AppFullScreenSpinner()
-        : StyledAppPageView(
-            scrollable: true,
-            title: loc(context).internetSettings,
-            child: AppBasicLayout(
-              content: Column(
+    return StyledAppPageView(
+      scrollable: true,
+      title: loc(context).internetSettings,
+      child: AppBasicLayout(
+        content: Column(
+          children: [
+            AppCard(
+              padding: EdgeInsets.zero,
+              child: Column(
                 children: [
-                  AppCard(
-                    padding: EdgeInsets.zero,
-                    child: Column(
-                      children: [
-                        InternetSettingCard(
-                          title: loc(context).ipv4,
-                          showBorder: false,
-                          onTap: () {
-                            context
-                                .pushNamed(RouteNamed.connectionType, extra: {
-                              'viewType': InternetSettingsViewType.ipv4,
-                            });
-                          },
-                        ),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: Spacing.large2),
-                          child: Divider(),
-                        ),
-                        InternetSettingCard(
-                          title: loc(context).ipv6,
-                          showBorder: false,
-                          onTap: () {
-                            context.pushNamed(
-                              RouteNamed.connectionType,
-                              extra: {
-                                'viewType': InternetSettingsViewType.ipv6,
-                              },
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  const AppGap.medium(),
                   InternetSettingCard(
-                    title: loc(context).macAddressClone.capitalizeWords(),
-                    description:
-                        state.macClone ? loc(context).on : loc(context).off,
-                    onTap: state.ipv4Setting.ipv4ConnectionType ==
-                            WanType.bridge.type
-                        ? null
-                        : () {
-                            context.pushNamed(RouteNamed.macClone);
-                          },
+                    title: loc(context).ipv4,
+                    showBorder: false,
+                    onTap: () {
+                      context.pushNamed(RouteNamed.connectionType, extra: {
+                        'viewType': InternetSettingsViewType.ipv4,
+                      });
+                    },
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: Spacing.large2),
+                    child: Divider(),
+                  ),
+                  InternetSettingCard(
+                    title: loc(context).ipv6,
+                    showBorder: false,
+                    onTap: () {
+                      context.pushNamed(
+                        RouteNamed.connectionType,
+                        extra: {
+                          'viewType': InternetSettingsViewType.ipv6,
+                        },
+                      );
+                    },
                   ),
                 ],
               ),
             ),
-          );
+            const AppGap.small2(),
+            InternetSettingCard(
+              title: loc(context).macAddressClone.capitalizeWords(),
+              description: state.macClone ? loc(context).on : loc(context).off,
+              onTap: state.ipv4Setting.ipv4ConnectionType == WanType.bridge.type
+                  ? null
+                  : () {
+                      context.pushNamed(RouteNamed.macClone);
+                    },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

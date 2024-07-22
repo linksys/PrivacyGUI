@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/core/jnap/models/radio_info.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 
 class WiFiItem extends Equatable {
   final WifiRadioBand radioID;
@@ -147,12 +148,25 @@ class WiFiItem extends Equatable {
           availableSecurityTypes.map((x) => x.value).toList(),
       'availableWirelessModes':
           availableWirelessModes.map((x) => x.value).toList(),
-      'availableChannels': availableChannels,
+      'availableChannels':
+          availableChannels.map((key, value) => MapEntry(key.value, value)),
       'numOfDevices': numOfDevices,
     };
   }
 
   factory WiFiItem.fromMap(Map<String, dynamic> map) {
+    final availableChannels = (map['availableChannels'] as Map).map(
+      (key, value) =>
+          MapEntry(WifiChannelWidth.getByValue(key), List<int>.from(value)),
+    );
+    final availableWirelessModes = (map['availableWirelessModes'] as List)
+        .map<WifiWirelessMode>((x) => WifiWirelessMode.getByValue(x))
+        .toList();
+    final availableSecurityTypes = (map['availableSecurityTypes'] as List)
+        .map<WifiSecurityType>(
+          (x) => WifiSecurityType.getByValue(x),
+        )
+        .toList();
     return WiFiItem(
       radioID: WifiRadioBand.getByValue(map['radioID'] as String),
       ssid: map['ssid'] as String,
@@ -166,17 +180,9 @@ class WiFiItem extends Equatable {
       channel: map['channel'] as int,
       isBroadcast: map['isBroadcast'] as bool,
       isEnabled: map['isEnabled'] as bool,
-      availableSecurityTypes: List<WifiSecurityType>.from(
-        (map['availableSecurityTypes'] as List).map<WifiSecurityType>(
-          (x) => WifiSecurityType.getByValue(x),
-        ),
-      ),
-      availableWirelessModes: List<WifiWirelessMode>.from(
-        (map['availableWirelessModes'] as List)
-            .map<WifiWirelessMode>((x) => WifiWirelessMode.getByValue(x)),
-      ),
-      availableChannels: Map<WifiChannelWidth, List<int>>.from(
-          (map['availableChannels'] as Map<WifiChannelWidth, List<int>>)),
+      availableSecurityTypes: availableSecurityTypes,
+      availableWirelessModes: availableWirelessModes,
+      availableChannels: availableChannels,
       numOfDevices: map['numOfDevices'] as int,
     );
   }
@@ -234,6 +240,11 @@ enum WifiSecurityType {
     return WifiSecurityType.values.firstWhere((item) => item.value == value);
   }
 
+  bool get isWPA3Variant =>
+      this == WifiSecurityType.wpa2Or3MixedPersonal ||
+      this == WifiSecurityType.wpa3Personal ||
+      this == WifiSecurityType.wpa3Enterprise;
+
   bool get isWpaPersonalVariant =>
       this == WifiSecurityType.wpaPersonal ||
       this == WifiSecurityType.wpa2Personal ||
@@ -282,6 +293,8 @@ enum WifiWirelessMode {
   static WifiWirelessMode getByValue(String value) {
     return WifiWirelessMode.values.firstWhere((item) => item.value == value);
   }
+
+  bool get isIncludeBeMixedMode => this == axbe || this == anacaxbe;
 }
 
 enum WifiChannelWidth {

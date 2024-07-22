@@ -149,6 +149,7 @@
   "deviceName": "Device Name",
   "manufacturer": "Manufacturer",
   "lan": "LAN",
+  "lanWireless": "LAN/Wireless",
   "modelNumber": "Model number",
   "nodeName": "Node name",
   "serialNumber": "Serial number",
@@ -344,7 +345,7 @@
   "nodeSteering": "Node Steering",
   "nodeSteeringDesc": "Allow your nodes to always connect to the node with the strongest signal. If you move a node or one goes offline any connected nodes will self-heal by connecting to the strongest signal avaialable",
   "dfs": "Dynamic Frequency Selection",
-  "dfsDesc": "If this feature is on, your router may use 5GHz channels that are shared with radar systems. When a radar is detected on your operating channel, the router will search for an unoccupied DFS channel.\n\nThis featyre may cause temporary loss of WiFi connectivity\n<a>Learn more</a>",
+  "dfsDesc": "If this feature is on, your router may use 5GHz channels that are shared with radar systems. When a radar is detected on your operating channel, the router will search for an unoccupied DFS channel.\n\nThis feature may cause temporary loss of WiFi connectivity\n<a>Learn more</a>",
   "modalDFSDesc":"If your router needs to search for an unoccupied DFS channel, you may lose WiFi connectivity.\n\nSome devices do not support DFS channels. They will need to use your 2.4GHz network because they cannot detect the 5GHz network when the router is using a DFS channel.",
   "mlo": "Multi-Link Operation",
   "mloDesc": "Allow devices to use multiple bands and frequency channels simultaneously. This increases speed, reduces latency, and makes for a more reliable connection.",
@@ -578,7 +579,7 @@
   "speed": "Speed",
   "passwordAndAccess": "Password & Access",
   "hardware": "Hardware",
-  "upToDate": "Up to date",
+  "upToDate": "Up-to-date",
   "dhcpReservationDescption": "Use DHCP reservations to make a device use the same IP address",
   "selectFromMyDHCPList": "Select from my DHCP list",
   "manuallyAddReservation": "Manually add reservation",
@@ -605,7 +606,7 @@
   "goodAfternoon": "Good afternoon!",
   "goodEvening": "Good evening!",
   "troubleshoot": "Troubleshoot",
-  "newFirmwareAvailable": "Firmware update available",
+  "updateFirmware": "Update Firmware",
   "message": "Message",
   "send": "Send",
   "oopsPleaseSpecifyValidEmailAddress": "Oops, please specify a valid email address",
@@ -739,5 +740,61 @@
   "remove": "Remove",
   "faqLookingFor": "Can’t find what you’re looking for?",
   "faqVisitLinksysSupport": "Visit Linksys Support",
-  "editDevices": "Edit devices"
+  "editDevices": "Edit devices",
+  "refresh": "Refresh",
+  "wifiListSaveModalTitle": "You're updating WiFi settings",
+  "wifiListSaveModalDesc": "Changing Wi-Fi settings will disconnect all devices, including this one, from the router. Simply reconnect the devices using the new wireless settings shown below. You may want to write them down before continuing.",
+  "mloWarning": "Multi-Link Operation (MLO) requires all bands to have the same settings. MLO will not work correctly if you continue.",
+  "doYouWantToContinue": "Do you want to Continue?",
+  "advancedMLOWarning": "Your bands do not share the same settings which will prevent MLO from working. Go to the Wireless tab and change the SSID and passwords to be the same.",
+  "administrationAllowLocalManagementWirelessly": "Allow local management wirelessly",
+  "administrationUPnPAllowUsersConfigure": "Allow users to configure",
+  "administrationUPnPAllowUsersDisableInternetAccess": "Allow users to disable internet access",
+  "administrationApplicationLayerGateway": "Application Layer Gateway (SIP)",
+  "administrationExpressForwarding": "Express Forwarding",
+  "upnp": "UPnP",
+  "systemTestDateFormat": "{date}",
+  "@systemTestDateFormat": {
+    "description": "System test date format",
+    "placeholders": {
+      "date": {
+        "type": "DateTime",
+        "format": "yMd"
+      }
+    }
+  },
+  "systemTestDateTime": "{time}",
+  "@systemTestDateTime": {
+    "description": "System test time format",
+    "placeholders": {
+      "time": {
+        "type": "DateTime",
+        "format": "jms"
+      }
+    }
+  },
+  "deviceInfo": "Device Info",
+  "sku": "SKU",
+  "nDNS": "{count, plural, other{DNS 1|2|3} one{DNS 1} two{DNS 1|2}}",
+  "@nDNS": {
+    "description": "DNS label with numbers",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "1"
+      }
+    }
+  },
+  "wired": "Wired",
+  "wireless": "Wireless",
+  "setOne": "Set one",
+  "staticRouting": "Static routing",
+  "nat": "NAT",
+  "dynamicRouting": "Dynamic routing (RIP)",
+  "addStaticRoute": "Add static route",
+  "staticRoute": "Static route/s",
+  "destinationIPAddress": "Destination IP address",
+  "noStaticRoutes": "You have no static route/s",
+  "gateway": "Gateway",
+  "routeName": "Route name"
 }

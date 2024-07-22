@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
 import 'package:privacy_gui/core/jnap/models/health_check_result.dart';
 import 'package:privacy_gui/core/jnap/models/radio_info.dart';
+import 'package:privacy_gui/core/jnap/models/soft_sku_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
@@ -26,8 +27,7 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
   }
 
   DashboardManagerState createState({CoreTransactionData? pollingResult}) {
-
-    // Map<String, dynamic>? getDeviceInfoData;
+    Map<String, dynamic>? getDeviceInfoData;
     Map<String, dynamic>? getRadioInfoData;
     Map<String, dynamic>? getGuestRadioSettingsData;
     Map<String, dynamic>? getHealthCheckResultsData;
@@ -37,8 +37,8 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
 
     final result = pollingResult?.data;
     if (result != null) {
-      // getDeviceInfoData =
-      //     (result[JNAPAction.getDeviceInfo] as JNAPSuccess?)?.output;
+      getDeviceInfoData =
+          (result[JNAPAction.getDeviceInfo] as JNAPSuccess?)?.output;
       getRadioInfoData =
           (result[JNAPAction.getRadioInfo] as JNAPSuccess?)?.output;
       getGuestRadioSettingsData =
@@ -56,9 +56,10 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
     }
 
     var newState = const DashboardManagerState();
-    // if (getDeviceInfoData != null) {
-    //   newState = _getAvailableDeviceServices(newState, getDeviceInfoData);
-    // }
+    if (getDeviceInfoData != null) {
+      newState = newState.copyWith(
+          deviceInfo: NodeDeviceInfo.fromJson(getDeviceInfoData));
+    }
     if (getRadioInfoData != null) {
       newState = _getMainRadioList(newState, getRadioInfoData);
     }
@@ -87,6 +88,12 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
           lanConnections: lanPortConnections, wanConnection: wanPortConnection);
     }
 
+    final softSKUSettings = JNAPTransactionSuccessWrap.getResult(
+        JNAPAction.getSoftSKUSettings, result ?? {});
+    if (softSKUSettings != null) {
+      final settings = SoftSKUSettings.fromMap(softSKUSettings.output);
+      newState = newState.copyWith(skuModelNumber: settings.modelNumber);
+    }
     return newState;
   }
 

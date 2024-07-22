@@ -249,9 +249,11 @@ void main() async {
         await tester.pumpAndSettle();
         final speedCheckFinder = find.byKey(const ValueKey('speedCheck'));
         await tester.scrollUntilVisible(speedCheckFinder, 10,
-            scrollable: find.descendant(
-                of: find.byType(StyledAppPageView),
-                matching: find.byType(Scrollable)).last);
+            scrollable: find
+                .descendant(
+                    of: find.byType(StyledAppPageView),
+                    matching: find.byType(Scrollable))
+                .last);
         await tester.pumpAndSettle();
       });
     }, screens: responsiveDesktopScreens);
@@ -466,6 +468,54 @@ void main() async {
             CustomTheme.of(context).images.devices.routerWhw03, context);
         await precacheImage(
             CustomTheme.of(context).images.devices.routerMr7500, context);
+        await tester.pumpAndSettle();
+      });
+    }, screens: responsiveDesktopScreens);
+
+    testLocalizations(
+        'Dashboard Home View - 4-ports vertical layout with legacy speed check',
+        (tester, locale) async {
+      when(mockDashboardHomeNotifier.build()).thenReturn(
+          DashboardHomeState.fromMap(dashboardHomeStateData).copyWith(
+        isHorizontalLayout: false,
+        isHealthCheckSupported: true,
+        uploadResult: (unit: 'M', value: '505'),
+        downloadResult: (unit: 'M', value: '509'),
+        speedCheckTimestamp: 1719802401000,
+      ));
+      await tester.runAsync(() async {
+        await tester.pumpWidget(
+          testableRouteShellWidget(
+            child: const DashboardHomeView(),
+            locale: locale,
+            overrides: [
+              dashboardHomeProvider
+                  .overrideWith(() => mockDashboardHomeNotifier),
+              firmwareUpdateProvider
+                  .overrideWith(() => mockFirmwareUpdateNotifier),
+              deviceManagerProvider
+                  .overrideWith(() => mockDeviceManagerNotifier),
+              nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(DashboardHomeView));
+        await precacheImage(
+            CustomTheme.of(context).images.devices.routerMx6200, context);
+        await precacheImage(
+            CustomTheme.of(context).images.devices.routerWhw03, context);
+        await precacheImage(
+            CustomTheme.of(context).images.devices.routerMr7500, context);
+        await tester.pumpAndSettle();
+        final speedCheckFinder = find.byKey(const ValueKey('speedCheck'));
+        await tester.scrollUntilVisible(speedCheckFinder, 10,
+            scrollable: find
+                .descendant(
+                    of: find.byType(StyledAppPageView),
+                    matching: find.byType(Scrollable))
+                .last);
         await tester.pumpAndSettle();
       });
     }, screens: responsiveDesktopScreens);
@@ -695,6 +745,46 @@ void main() async {
       });
     }, screens: responsiveDesktopScreens);
 
+    testLocalizations(
+        'Dashboard Home View - 2-ports horizontal layout with legacy speed check',
+        (tester, locale) async {
+      when(mockDashboardHomeNotifier.build()).thenReturn(
+          DashboardHomeState.fromMap(dashboardHomeStateData).copyWith(
+        isHorizontalLayout: true,
+        lanPortConnections: ["None", "None"],
+        isHealthCheckSupported: true,
+        uploadResult: (unit: 'M', value: '505'),
+        downloadResult: (unit: 'M', value: '509'),
+        speedCheckTimestamp: 1719802401000,
+      ));
+      await tester.runAsync(() async {
+        await tester.pumpWidget(
+          testableRouteShellWidget(
+            child: const DashboardHomeView(),
+            locale: locale,
+            overrides: [
+              dashboardHomeProvider
+                  .overrideWith(() => mockDashboardHomeNotifier),
+              firmwareUpdateProvider
+                  .overrideWith(() => mockFirmwareUpdateNotifier),
+              deviceManagerProvider
+                  .overrideWith(() => mockDeviceManagerNotifier),
+              nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(DashboardHomeView));
+        await precacheImage(
+            CustomTheme.of(context).images.devices.routerMx6200, context);
+        await precacheImage(
+            CustomTheme.of(context).images.devices.routerWhw03, context);
+        await precacheImage(
+            CustomTheme.of(context).images.devices.routerMr7500, context);
+        await tester.pumpAndSettle();
+      });
+    }, screens: responsiveDesktopScreens);
     testLocalizations(
         'Dashboard Home View - 2-ports mobile layout fw update available',
         (tester, locale) async {

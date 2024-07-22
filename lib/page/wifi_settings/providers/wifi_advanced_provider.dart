@@ -87,11 +87,11 @@ class WifiAdvancedSettingsNotifier extends Notifier<WifiAdvancedSettingsState> {
     return commands;
   }
 
-  Future fetch() {
+  Future fetch([bool force = false]) {
     return ref
         .read(routerRepositoryProvider)
         .transaction(
-          fetchRemote: true,
+          fetchRemote: force,
           JNAPTransactionBuilder(commands: _buildGetCommends(), auth: true),
         )
         .then((successWrap) => Map.fromEntries(successWrap.data))
@@ -155,7 +155,7 @@ class WifiAdvancedSettingsNotifier extends Notifier<WifiAdvancedSettingsState> {
               ),
               auth: true),
         )
-        .then((_) => fetch());
+        .then((_) => fetch(true));
   }
 
   void setClientSteeringEnabled(bool value) {

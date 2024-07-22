@@ -14,7 +14,6 @@ import 'package:privacy_gui/page/devices/views/device_list_widget.dart';
 import 'package:privacy_gui/page/devices/views/devices_filter_widget.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/device_list_card.dart';
@@ -65,6 +64,7 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
             padding: const EdgeInsets.only(),
             title: _isEdit ? loc(context).editDevices : loc(context).devices,
             menuWidget: const DevicesFilterWidget(),
+            largeMenu: true,
             bottomBar: _isEdit
                 ? InversePageBottomBar(
                     isPositiveEnabled: _selectedList.isNotEmpty,

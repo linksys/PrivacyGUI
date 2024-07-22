@@ -9,7 +9,7 @@ import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 
 class PnpPPPOEView extends ArgumentsConsumerStatefulView {
   const PnpPPPOEView({
@@ -47,75 +47,80 @@ class _PnpPPPOEViewState extends ConsumerState<PnpPPPOEView> {
     return StyledAppPageView(
       title: loc(context).pnpPppoeTitle,
       scrollable: true,
-      child: AppBasicLayout(
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AppText.bodyLarge(
-              loc(context).pnpPppoeDesc,
-            ),
-            const AppGap.large4(),
-            if (errorMessage != null)
-              AppText.bodyLarge(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppText.bodyLarge(
+            loc(context).pnpPppoeDesc,
+          ),
+          const AppGap.large3(),
+          const AppGap.small2(),
+          if (errorMessage != null)
+            Padding(
+              padding: const EdgeInsets.only(
+                bottom: Spacing.large3 + Spacing.small2,
+              ),
+              child: AppText.bodyLarge(
                 errorMessage!,
                 color: Theme.of(context).colorScheme.error,
               ),
-            const AppGap.large4(),
-            AppTextField.outline(
-              headerText: loc(context).accountName,
-              controller: _accountNameController,
             ),
-            const AppGap.large2(),
-            AppTextField.outline(
-              secured: true,
-              headerText: loc(context).password,
-              controller: _passwordController,
+          AppTextField.outline(
+            headerText: loc(context).accountName,
+            controller: _accountNameController,
+          ),
+          const AppGap.large2(),
+          AppTextField.outline(
+            secured: true,
+            headerText: loc(context).password,
+            controller: _passwordController,
+          ),
+          Visibility(
+            visible: hasVlanID,
+            replacement: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const AppGap.large5(),
+                AppTextButton.noPadding(
+                  loc(context).pnpPppoeAddVlan,
+                  icon: LinksysIcons.add,
+                  onTap: () {
+                    setState(() {
+                      hasVlanID = true;
+                    });
+                  },
+                ),
+              ],
             ),
-            Visibility(
-              visible: hasVlanID,
-              replacement: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const AppGap.large4(),
-                  AppTextButton.noPadding(
-                    loc(context).pnpPppoeAddVlan,
-                    icon: LinksysIcons.add,
-                    onTap: () {
-                      setState(() {
-                        hasVlanID = true;
-                      });
-                    },
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const AppGap.large2(),
-                  AppTextField.outline(
-                    headerText: loc(context).vlanIdOptional,
-                    controller: _vlanController,
-                    inputType: TextInputType.number,
-                  ),
-                  const AppGap.large4(),
-                  AppTextButton.noPadding(
-                    loc(context).pnpPppoeRemoveVlan,
-                    icon: LinksysIcons.remove,
-                    onTap: () {
-                      setState(() {
-                        hasVlanID = false;
-                      });
-                    },
-                  ),
-                ],
-              ),
-            )
-          ],
-        ),
-        footer: AppFilledButton.fillWidth(
-          loc(context).next,
-          onTap: _onNext,
-        ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const AppGap.large2(),
+                AppTextField.outline(
+                  headerText: loc(context).vlanIdOptional,
+                  controller: _vlanController,
+                  inputType: TextInputType.number,
+                ),
+                const AppGap.large5(),
+                AppTextButton.noPadding(
+                  loc(context).pnpPppoeRemoveVlan,
+                  icon: LinksysIcons.remove,
+                  onTap: () {
+                    setState(() {
+                      hasVlanID = false;
+                    });
+                  },
+                ),
+              ],
+            ),
+          ),
+          const AppGap.large3(),
+          const AppGap.small2(),
+          AppFilledButton(
+            loc(context).next,
+            onTap: _onNext,
+          ),
+        ],
       ),
     );
   }

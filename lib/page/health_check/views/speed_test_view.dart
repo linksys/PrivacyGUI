@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:privacy_gui/core/jnap/models/health_check_result.dart';
+import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
@@ -76,7 +77,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
           });
         });
       }
-      if (next == 'success') {
+      if (next == 'success' || next == 'error') {
         setState(() {
           _meterValue = 0;
           _randomValue = 0;
@@ -103,8 +104,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
           : null,
       child: switch (_status) {
         'RUNNING' => ResponsiveLayout(
-            desktop: AppCard(
-              showBorder: false,
+            desktop: Container(
               margin: const EdgeInsets.fromLTRB(0, 0, 0, 40),
               child: Center(
                 child: _runningView(
@@ -119,16 +119,15 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
             ),
           ),
         'COMPLETE' => ResponsiveLayout(
-            desktop: AppCard(
-              showBorder: false,
+            desktop: Container(
               margin: const EdgeInsets.fromLTRB(0, 0, 0, 40),
-              padding: const EdgeInsets.all(40),
               child: Container(
-                alignment: Alignment.topCenter,
+                alignment: state.step != 'error' ? Alignment.topCenter : Alignment.topLeft,
                 child: _finishView(
                   state.step,
                   state.result.firstOrNull?.speedTestResult,
                   state.timestamp,
+                  state.error,
                 ),
               ),
             ),
@@ -136,6 +135,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
               state.step,
               state.result.firstOrNull?.speedTestResult,
               state.timestamp,
+              state.error,
             ),
           ),
         _ => ResponsiveLayout(
@@ -245,18 +245,19 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
       desktop: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _meterView(step, meterValue, latency),
-          const AppGap.large3(),
-          const AppGap.small2(),
           SizedBox(
-            width: 315,
+            width: 7.col,
+            child: _meterView(step, meterValue, latency),
+          ),
+          const AppGap.gutter(),
+          SizedBox(
+            width: 5.col,
             child: _infoView(step, downloadBandWidth, uploadBandWidth),
           ),
         ],
       ),
       mobile: Column(
         children: [
-          const AppGap.small2(),
           _meterView(step, meterValue, latency),
           const AppGap.medium(),
           const Spacer(),
@@ -270,7 +271,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
   Widget _meterView(String step, double value, String latency) {
     final defaultMarkers = <double>[0, 1, 5, 10, 20, 30, 50, 75, 100];
     return AnimatedMeter(
-      size: 440,
+      size: ResponsiveLayout.isMobileLayout(context) ? 4.col : 5.col,
       value: value,
       markers: defaultMarkers,
       centerBuilder: (context, value) {
@@ -411,7 +412,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
             ),
           ),
         ),
-        const AppGap.small2(),
+        const AppGap.gutter(),
         Expanded(
           child: AppCard(
             child: Column(
@@ -432,82 +433,97 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
     );
   }
 
-  Widget _finishView(String step, SpeedTestResult? result, String? timestamp) {
+  Widget _finishView(String step, SpeedTestResult? result, String? timestamp,
+      JNAPError? error) {
     final (latency, downloadBandWidth, uploadBandWidth) = _getDataText(result);
     final (resultTitle, resultDesc) = _getTestResultDesc(result);
     final date = _getTestResultDate(timestamp);
-    return ResponsiveLayout(
-      desktop: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 448,
+    return switch (step) {
+      'error' => SizedBox(
+          width: ResponsiveLayout.isMobileLayout(context)
+              ? double.infinity
+              : 7.col,
+          child: AppCard(
+            color: ResponsiveLayout.isMobileLayout(context)
+                ? Theme.of(context).colorScheme.background
+                : null,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AppCard(
-                  child: _pingView(step, latency),
-                ),
+                AppText.titleSmall(loc(context).generalError),
                 const AppGap.small2(),
-                _resultCard(downloadBandWidth, uploadBandWidth),
-                // ISP info
+                AppText.bodyMedium(error?.result ?? loc(context).unknownError),
               ],
             ),
           ),
-          const AppGap.small2(),
-          SizedBox(
-            width: 336,
-            child: AppCard(
-              color: ResponsiveLayout.isMobileLayout(context)
-                  ? Theme.of(context).colorScheme.background
-                  : null,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(LinksysIcons.bolt),
-                  const AppGap.medium(),
-                  AppText.titleSmall(resultTitle),
-                  const AppGap.small2(),
-                  AppText.bodyMedium(resultDesc),
-                  const AppGap.small2(),
-                  AppText.bodySmall(date),
-                ],
+        ),
+      _ => ResponsiveLayout(
+          desktop: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 7.col,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppCard(
+                      child: _pingView(step, latency),
+                    ),
+                    const AppGap.small2(),
+                    _resultCard(downloadBandWidth, uploadBandWidth),
+                    // ISP info
+                  ],
+                ),
               ),
-            ),
+              const AppGap.gutter(),
+              SizedBox(
+                width: 5.col,
+                child:
+                    _performanceDescriptionCard(resultTitle, resultDesc, date),
+              ),
+            ],
           ),
-        ],
-      ),
-      mobile: Column(
+          mobile: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AppCard(
+                child: _pingView(step, latency),
+              ),
+              const AppGap.small2(),
+              _resultCard(downloadBandWidth, uploadBandWidth),
+              // ISP info
+              const AppGap.small3(),
+              SizedBox(
+                width: double.infinity,
+                child:
+                    _performanceDescriptionCard(resultTitle, resultDesc, date),
+              ),
+            ],
+          ),
+        ),
+    };
+  }
+
+  Widget _performanceDescriptionCard(
+      String resultTitle, String resultDesc, String date) {
+    return AppCard(
+      color: ResponsiveLayout.isMobileLayout(context)
+          ? Theme.of(context).colorScheme.background
+          : null,
+      child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppCard(
-            child: _pingView(step, latency),
-          ),
+          const Icon(LinksysIcons.bolt),
+          const AppGap.medium(),
+          AppText.titleSmall(resultTitle),
           const AppGap.small2(),
-          _resultCard(downloadBandWidth, uploadBandWidth),
-          // ISP info
-          const AppGap.small3(),
-          SizedBox(
-            width: double.infinity,
-            child: AppCard(
-              color: Theme.of(context).colorScheme.background,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(LinksysIcons.bolt),
-                  const AppGap.medium(),
-                  AppText.titleSmall(resultTitle),
-                  const AppGap.small2(),
-                  AppText.bodyMedium(resultDesc),
-                  const AppGap.small2(),
-                  AppText.bodySmall(date),
-                ],
-              ),
-            ),
-          ),
+          AppText.bodyMedium(resultDesc),
+          const AppGap.small2(),
+          AppText.bodySmall(date),
         ],
       ),
     );

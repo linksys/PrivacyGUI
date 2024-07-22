@@ -514,7 +514,7 @@ class MockDeviceManagerNotifier extends _i2.Notifier<_i5.DeviceManagerState>
       ) as String?);
 
   @override
-  int getWirelessSignalOf(
+  int _getWirelessSignalOf(
     _i14.RawDevice? device, [
     _i5.DeviceManagerState? currentState,
   ]) =>

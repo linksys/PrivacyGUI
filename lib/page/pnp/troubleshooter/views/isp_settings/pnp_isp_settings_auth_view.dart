@@ -15,7 +15,7 @@ import 'package:privacy_gui/page/pnp/data/pnp_provider.dart';
 import 'package:privacy_gui/page/pnp/troubleshooter/providers/pnp_troubleshooter_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class PnpIspSettingsAuthView extends ArgumentsConsumerStatefulView {
@@ -185,39 +185,45 @@ class _PnpIspSettingsAuthViewState
         ? AppFullScreenSpinner(text: _spinnerText)
         : StyledAppPageView(
             title: loc(context).pnpIspSettingsAuthTitle,
-            child: AppBasicLayout(
-              content: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AppTextField.outline(
-                    secured: true,
-                    headerText: loc(context).password,
-                    controller: _passwordController,
-                  ),
-                  const AppGap.large4(),
-                  if (_inputPasswordError != null)
-                    AppText.bodyLarge(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppTextField.outline(
+                  secured: true,
+                  headerText: loc(context).password,
+                  controller: _passwordController,
+                ),
+                if (_inputPasswordError != null)
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      top: Spacing.medium,
+                    ),
+                    child: AppText.bodyLarge(
                       _inputPasswordError!,
                       color: Theme.of(context).colorScheme.error,
                     ),
-                  const AppGap.large4(),
-                  AppTextButton.noPadding(
+                  ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: Spacing.large3 + Spacing.small2,
+                  ),
+                  child: AppTextButton.noPadding(
                     loc(context).pnpRouterLoginWhereIsIt,
                     onTap: () {
                       //TODO: Where is it?
                     },
                   ),
-                ],
-              ),
-              footer: AppFilledButton.fillWidth(
-                loc(context).next,
-                onTap: () {
-                  setState(() {
-                    _isLoading = true;
-                  });
-                  _loginAndSaveNewSettings(_passwordController.text);
-                },
-              ),
+                ),
+                AppFilledButton(
+                  loc(context).next,
+                  onTap: () {
+                    setState(() {
+                      _isLoading = true;
+                    });
+                    _loginAndSaveNewSettings(_passwordController.text);
+                  },
+                ),
+              ],
             ),
           );
   }

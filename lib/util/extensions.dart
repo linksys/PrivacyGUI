@@ -37,6 +37,19 @@ extension LocaleExt on Locale {
     final localStr = toLanguageTag();
     return getLanguageData(localStr)['name'] as String;
   }
+
+  static Locale fromLanguageTag(String languageTag) {
+    final token = languageTag.split('-');
+
+    return switch (token.length) {
+      1 => Locale(token[0]),
+      2 => Locale(token[0], token[1]),
+      3 => Locale.fromSubtags(
+          languageCode: token[0], scriptCode: token[1], countryCode: token[2]),
+      _ => Locale.fromSubtags(
+          languageCode: token[0], scriptCode: token[1], countryCode: token[2]),
+    };
+  }
 }
 
 extension DateFormatTryParse on DateFormat {

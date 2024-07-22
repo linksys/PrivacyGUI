@@ -47,8 +47,9 @@ class _ThemeTileState extends ConsumerState<ThemeTile> {
             : appSettings.themeMode == ThemeMode.dark
                 ? ThemeMode.light
                 : ThemeMode.system;
-        ref.read(appSettingsProvider.notifier).state =
-            appSettings.copyWith(themeMode: nextThemeMode);
+        ref
+            .read(appSettingsProvider.notifier)
+            .update(appSettings.copyWith(themeMode: nextThemeMode));
       },
       child: _displayTheme(theme),
     );

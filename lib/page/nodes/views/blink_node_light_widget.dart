@@ -58,6 +58,7 @@ class _BlinkNodeLightWidgetState extends ConsumerState<BlinkNodeLightWidget> {
               },
             )
           : AppTextButton.noPadding(
+            key: const ValueKey('blinkNodeButton'),
               loc(context).nodeDetailBlinkNodeLightBtn,
               onTap: () {
                 _startBlink();

@@ -2,14 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/_internet_settings.dart';
 import 'package:privacy_gui/validator_rules/_validator_rules.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 
 class MACCloneView extends ArgumentsConsumerStatefulView {
   const MACCloneView({super.key, super.args});
@@ -23,7 +25,6 @@ class _MACCloneViewState extends ConsumerState<MACCloneView> {
   final InputValidator _macValidator = InputValidator([MACAddressRule()]);
   bool _isValid = false;
   bool _isEnabled = false;
-  bool _isLoading = false;
   late InternetSettingsState state;
 
   @override
@@ -45,75 +46,78 @@ class _MACCloneViewState extends ConsumerState<MACCloneView> {
 
   @override
   Widget build(BuildContext context) {
-    return _isLoading
-        ? const AppFullScreenSpinner()
-        : StyledAppPageView(
-            title: loc(context).macAddressClone,
-            bottomBar: PageBottomBar(
-              isPositiveEnabled: _isValid &&
-                  ((_isEnabled != state.macClone) ||
-                      (_valueController.text != state.macCloneAddress)),
-              onPositiveTap: () async {
-                setState(() {
-                  _isLoading = true;
-                });
-                FocusManager.instance.primaryFocus?.unfocus();
-                await ref
-                    .read(internetSettingsProvider.notifier)
-                    .setMacAddressClone(_isEnabled, _valueController.text)
-                    .whenComplete(() {
+    return StyledAppPageView(
+      title: loc(context).macAddressClone,
+      bottomBar: PageBottomBar(
+        isPositiveEnabled: _isValid &&
+            ((_isEnabled != state.macClone) ||
+                (_valueController.text != state.macCloneAddress)),
+        onPositiveTap: () {
+          FocusManager.instance.primaryFocus?.unfocus();
+          doSomethingWithSpinner(
+            context,
+            ref
+                .read(internetSettingsProvider.notifier)
+                .setMacAddressClone(_isEnabled, _valueController.text)
+                .then(
+                    (value) => showSuccessSnackBar(context, loc(context).saved))
+                .onError((error, stackTrace) =>
+                    showFailedSnackBar(context, loc(context).unknownError)),
+          );
+        },
+      ),
+      child: AppCard(
+        padding: const EdgeInsets.symmetric(
+            horizontal: Spacing.large2, vertical: Spacing.medium),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppSettingCard.noBorder(
+              padding: EdgeInsets.zero,
+              title: loc(context).macAddressClone,
+              trailing: AppSwitch(
+                value: _isEnabled,
+                onChanged: (value) {
                   setState(() {
-                    _isLoading = false;
+                    _isEnabled = value;
                   });
-                  context.pop();
-                });
-              },
-            ),
-            child: AppBasicLayout(
-              content: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AppSettingCard.noBorder(
-                    title: loc(context).macAddressClone,
-                    color: Theme.of(context).colorScheme.background,
-                    trailing: AppSwitch(
-                      value: _isEnabled,
-                      onChanged: (value) {
-                        setState(() {
-                          _isEnabled = value;
-                        });
-                      },
-                    ),
-                  ),
-                  if (_isEnabled)
-                    AppTextField.macAddress(
-                      controller: _valueController,
-                      border: const OutlineInputBorder(),
-                      onChanged: (value) {
-                        setState(() {
-                          _isValid = _macValidator.validate(value);
-                        });
-                      },
-                    ),
-                  const AppGap.large3(),
-                  if (_isEnabled)
-                    AppTextButton.noPadding(
-                      loc(context).cloneCurrentClientMac,
-                      onTap: () {
-                        ref
-                            .read(internetSettingsProvider.notifier)
-                            .getMyMACAddress()
-                            .then((value) {
-                          _valueController.text = value ?? '';
-                          setState(() {
-                            _isValid = _macValidator.validate(value ?? '');
-                          });
-                        });
-                      },
-                    ),
-                ],
+                },
               ),
             ),
-          );
+            if (_isEnabled) ...[
+              const Divider(
+                thickness: 1,
+                height: Spacing.large2 * 2 + 1,
+              ),
+              AppTextField.macAddress(
+                controller: _valueController,
+                border: const OutlineInputBorder(),
+                onChanged: (value) {
+                  setState(() {
+                    _isValid = _macValidator.validate(value);
+                  });
+                },
+              ),
+              const AppGap.large2(),
+              AppTextButton.noPadding(
+                loc(context).cloneCurrentClientMac,
+                onTap: () {
+                  ref
+                      .read(internetSettingsProvider.notifier)
+                      .getMyMACAddress()
+                      .then((value) {
+                    _valueController.text = value ?? '';
+                    setState(() {
+                      _isValid = _macValidator.validate(value ?? '');
+                    });
+                  });
+                },
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 }

@@ -39,6 +39,8 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     final connectivity = ref.read(connectivityProvider.notifier);
     connectivity.start();
     connectivity.forceUpdate().then((value) => _initAuth());
+
+    ref.read(appSettingsProvider.notifier).load();
   }
 
   @override
@@ -55,7 +57,7 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
   @override
   Widget build(BuildContext context) {
     logger.d('App:: build: $_currentRoute');
-
+    
     final appSettings = ref.watch(appSettingsProvider);
     final systemLocaleStr = Intl.getCurrentLocale();
     final systemLocale = Locale(getLanguageData(systemLocaleStr)['value']);
@@ -158,10 +160,48 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
           builders: {
             // No animations for every OS if the app running on the web
             for (final platform in TargetPlatform.values)
-              platform: const FadeUpwardsPageTransitionsBuilder(),
+              platform: const FadePageTransitionsBuilder(),
           },
         )
       : null;
+}
+
+class FadePageTransitionsBuilder extends PageTransitionsBuilder {
+  /// Constructs a page transition animation that slides the page up.
+  const FadePageTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T>? route,
+    BuildContext? context,
+    Animation<double> animation,
+    Animation<double>? secondaryAnimation,
+    Widget child,
+  ) {
+    return _FadePageTransition(routeAnimation: animation, child: child);
+  }
+}
+
+class _FadePageTransition extends StatelessWidget {
+  _FadePageTransition({
+    required Animation<double>
+        routeAnimation, // The route's linear 0.0 - 1.0 animation.
+    required this.child,
+  }) : _opacityAnimation = routeAnimation.drive(_easeInTween);
+
+  static final Animatable<double> _easeInTween =
+      CurveTween(curve: Curves.easeIn);
+
+  final Animation<double> _opacityAnimation;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _opacityAnimation,
+      child: child,
+    );
+  }
 }
 
 class NoTransitionsBuilder extends PageTransitionsBuilder {

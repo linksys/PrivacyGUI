@@ -9,7 +9,6 @@ import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/bullet_list/bullet_list.dart';
 import 'package:privacygui_widgets/widgets/bullet_list/bullet_style.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 
 class PnpModemLightsOffView extends ConsumerStatefulWidget {
@@ -21,70 +20,61 @@ class PnpModemLightsOffView extends ConsumerStatefulWidget {
 
 class _PnpLightOffViewState extends ConsumerState<PnpModemLightsOffView> {
   @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return StyledAppPageView(
       title: loc(context).pnpModemLightsOffTitle,
       scrollable: true,
       enableSafeArea: (left: true, top: false, right: true, bottom: true),
-      child: AppBasicLayout(
-        content:
-            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           AppText.bodyLarge(
             loc(context).pnpModemLightsOffDesc,
           ),
-          Expanded(
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SvgPicture(
-                    CustomTheme.of(context).images.modemDevice,
-                    fit: BoxFit.fitWidth,
-                  ),
-                  const AppGap.large3(),
-                  const AppGap.large4(),
-                  Row(
-                    children: [
-                      Flexible(
-                        child: AppTextButton(
-                          loc(context).pnpModemLightsOffTip,
-                          onTap: () {
-                            showModalBottomSheet(
-                              context: context,
-                              useRootNavigator: true,
-                              useSafeArea: true,
-                              isScrollControlled: true,
-                              showDragHandle: true,
-                              builder: (context) {
-                                return _bottomSheetContent();
-                              },
-                            );
-                          },
-                        ),
+          const AppGap.large3(),
+          const AppGap.small2(),
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SvgPicture(
+                  CustomTheme.of(context).images.modemDevice,
+                  fit: BoxFit.fitWidth,
+                ),
+                const AppGap.large3(),
+                const AppGap.large5(),
+                Row(
+                  children: [
+                    Flexible(
+                      child: AppTextButton.noPadding(
+                        loc(context).pnpModemLightsOffTip,
+                        onTap: () {
+                          showModalBottomSheet(
+                            context: context,
+                            useRootNavigator: true,
+                            useSafeArea: true,
+                            isScrollControlled: true,
+                            showDragHandle: true,
+                            builder: (context) {
+                              return _bottomSheetContent();
+                            },
+                          );
+                        },
                       ),
-                    ],
-                  ),
-                ],
-              ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-        ]),
-        footer: AppFilledButton.fillWidth(
-          loc(context).next,
-          onTap: () {
-            context.pushNamed(RouteNamed.pnpWaitingModem);
-          },
-        ),
+          const AppGap.large3(),
+          AppFilledButton(
+            loc(context).next,
+            onTap: () {
+              context.pushNamed(RouteNamed.pnpWaitingModem);
+            },
+          ),
+        ],
       ),
     );
   }

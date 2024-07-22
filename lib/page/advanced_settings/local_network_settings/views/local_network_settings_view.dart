@@ -36,19 +36,25 @@ class LocalNetworkSettingsView extends ArgumentsConsumerStatefulView {
 
 class _LocalNetworkSettingsViewState
     extends ConsumerState<LocalNetworkSettingsView> {
-  bool _isLoading = true;
-  late LocalNetworkSettingsState originalSettings;
+  LocalNetworkSettingsState? originalSettings;
 
   @override
   void initState() {
     super.initState();
-    ref.read(localNetworkSettingProvider.notifier).fetch().then((value) {
-      setState(() {
-        originalSettings =
-            ref.read(localNetworkSettingProvider.notifier).currentSettings();
-        _isLoading = false;
-      });
-    });
+    doSomethingWithSpinner(
+      context,
+      ref.read(localNetworkSettingProvider.notifier).fetch().then(
+        (value) {
+          setState(
+            () {
+              originalSettings = ref
+                  .read(localNetworkSettingProvider.notifier)
+                  .currentSettings();
+            },
+          );
+        },
+      ),
+    );
   }
 
   @override
@@ -59,17 +65,13 @@ class _LocalNetworkSettingsViewState
   @override
   Widget build(BuildContext context) {
     ref.listen(redirectionProvider, (previous, next) {
-      if (kIsWeb && next != null && originalSettings.ipAddress != next) {
+      if (kIsWeb && next != null && originalSettings?.ipAddress != next) {
         logger.d('Redirect to $next');
         assignWebLocation(next);
       }
     });
     final state = ref.watch(localNetworkSettingProvider);
-    return _isLoading
-        ? AppFullScreenSpinner(
-            text: loc(context).processing,
-          )
-        : infoView(state);
+    return infoView(state);
   }
 
   Widget infoView(LocalNetworkSettingsState state) {
@@ -99,7 +101,7 @@ class _LocalNetworkSettingsViewState
                 _showHostNameEditDialog(state.hostName);
               },
             ),
-            const AppGap.medium(),
+            const AppGap.small2(),
             InternetSettingCard(
               title: loc(context).ipAddress.capitalizeWords(),
               description: state.ipAddress,
@@ -107,7 +109,7 @@ class _LocalNetworkSettingsViewState
                 _showIpAddressEditDialog(state.ipAddress);
               },
             ),
-                        const AppGap.medium(),
+            const AppGap.small2(),
             InternetSettingCard(
               title: loc(context).subnetMask,
               description: state.subnetMask,
@@ -115,7 +117,7 @@ class _LocalNetworkSettingsViewState
                 _showSubnetMaskEditDialog(state.subnetMask);
               },
             ),
-                        const AppGap.medium(),
+            const AppGap.small2(),
             InternetSettingCard(
               title: loc(context).dhcpServer,
               description:
@@ -124,7 +126,7 @@ class _LocalNetworkSettingsViewState
                 context.pushNamed(RouteNamed.dhcpServer);
               },
             ),
-                        const AppGap.medium(),
+            const AppGap.small2(),
             InternetSettingCard(
               title: loc(context).dhcpReservations,
               padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 24),
@@ -335,25 +337,21 @@ class _LocalNetworkSettingsViewState
   }
 
   void _saveSettings() {
-    setState(() {
-      _isLoading = true;
-    });
     final state = ref.read(localNetworkSettingProvider);
-    ref.read(localNetworkSettingProvider.notifier).saveSettings(state).then(
-      (value) {
-        originalSettings = state;
-        showSuccessSnackBar(context, loc(context).changesSaved);
-      },
-    ).catchError(
-      (error, stackTrace) {
-        final err = error as JNAPError;
-        showFailedSnackBar(context, err.result);
-      },
-      test: (error) => error is JNAPError,
-    ).whenComplete(() {
-      setState(() {
-        _isLoading = false;
-      });
-    });
+    doSomethingWithSpinner(
+      context,
+      ref.read(localNetworkSettingProvider.notifier).saveSettings(state).then(
+        (value) {
+          originalSettings = state;
+          showSuccessSnackBar(context, loc(context).changesSaved);
+        },
+      ).catchError(
+        (error, stackTrace) {
+          final err = error as JNAPError;
+          showFailedSnackBar(context, err.result);
+        },
+        test: (error) => error is JNAPError,
+      ),
+    );
   }
 }

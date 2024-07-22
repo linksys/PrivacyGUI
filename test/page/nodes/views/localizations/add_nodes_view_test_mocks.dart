@@ -157,15 +157,15 @@ class MockAddNodesNotifier extends _i2.AutoDisposeNotifier<_i3.AddNodesState> wi
 
   @override
   _i5.Stream<List<_i7.RawDevice>> pollForNodesOnline(
-    List<_i8.LinksysDevice>? initDeviceList,
     List<String>? onboardedMACList,
+    {bool refreshing = false}
   ) =>
       (super.noSuchMethod(
         Invocation.method(
           #pollForNodesOnline,
           [
-            initDeviceList,
             onboardedMACList,
+            refreshing,
           ],
         ),
         returnValue: _i5.Stream<List<_i7.RawDevice>>.empty(),

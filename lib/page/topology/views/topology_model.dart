@@ -52,6 +52,14 @@ class TopologyModel extends Equatable {
   final String icon;
   final int connectedDeviceCount;
 
+  ///
+  final String model;
+  final String serialNumber;
+  final String meshHealth;
+  final String fwVersion;
+  final bool fwUpToDate;
+  final String ipAddress;
+
   const TopologyModel({
     this.deviceId = '',
     this.location = '',
@@ -62,6 +70,12 @@ class TopologyModel extends Equatable {
     this.isRouter = false,
     this.icon = 'genericDevice',
     this.connectedDeviceCount = 0,
+    this.model = '',
+    this.serialNumber = '',
+    this.meshHealth = '',
+    this.fwVersion = '',
+    this.fwUpToDate = true,
+    this.ipAddress = '',
   });
 
   TopologyModel copyWith({
@@ -74,6 +88,12 @@ class TopologyModel extends Equatable {
     bool? isRouter,
     String? icon,
     int? connectedDeviceCount,
+    String? model,
+    String? serialNumber,
+    String? meshHealth,
+    String? fwVersion,
+    bool? fwUpToDate,
+    String? ipAddress,
   }) {
     return TopologyModel(
       deviceId: deviceId ?? this.deviceId,
@@ -85,6 +105,12 @@ class TopologyModel extends Equatable {
       isRouter: isRouter ?? this.isRouter,
       icon: icon ?? this.icon,
       connectedDeviceCount: connectedDeviceCount ?? this.connectedDeviceCount,
+      model: model ?? this.model,
+      serialNumber: serialNumber ?? this.serialNumber,
+      meshHealth: meshHealth ?? this.meshHealth,
+      fwVersion: fwVersion ?? this.fwVersion,
+      fwUpToDate: fwUpToDate ?? this.fwUpToDate,
+      ipAddress: ipAddress ?? this.ipAddress,
     );
   }
 
@@ -99,6 +125,12 @@ class TopologyModel extends Equatable {
       'isRouter': isRouter,
       'icon': icon,
       'connectedDeviceCount': connectedDeviceCount,
+      'model': model,
+      'serialNumber': serialNumber,
+      'meshHealth': meshHealth,
+      'fwVersion': fwVersion,
+      'fwUpToDate': fwUpToDate,
+      'ipAddress': ipAddress,
     };
   }
 
@@ -113,6 +145,12 @@ class TopologyModel extends Equatable {
       isRouter: map['isRouter'] as bool,
       icon: map['icon'] as String,
       connectedDeviceCount: map['connectedDeviceCount'] as int,
+      model: map['model'] as String,
+      serialNumber: map['serialNumber'] as String,
+      meshHealth: map['meshHealth'] as String,
+      fwVersion: map['fwVersion'] as String,
+      fwUpToDate: map['fwUpToDate'] as bool,
+      ipAddress: map['ipAddress'] as String,
     );
   }
 
@@ -133,6 +171,15 @@ class TopologyModel extends Equatable {
       isRouter,
       icon,
       connectedDeviceCount,
+      model,
+      serialNumber,
+      meshHealth,
+      fwVersion,
+      fwUpToDate,
+      ipAddress,
     ];
   }
+
+  @override
+  bool get stringify => true;
 }

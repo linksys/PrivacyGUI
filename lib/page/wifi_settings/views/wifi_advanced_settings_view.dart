@@ -11,7 +11,6 @@ import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/panel/switch_trigger_tile.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class WifiAdvancedSettingsView extends ArgumentsConsumerStatefulView {
   const WifiAdvancedSettingsView({super.key});
@@ -23,23 +22,26 @@ class WifiAdvancedSettingsView extends ArgumentsConsumerStatefulView {
 
 class _WifiAdvancedSettingsViewState
     extends ConsumerState<WifiAdvancedSettingsView> {
-  bool _isLoading = false;
   WifiAdvancedSettingsState? _preservedState;
 
   @override
   void initState() {
     super.initState();
-    setState(() {
-      _isLoading = true;
-    });
-    ref.read(wifiAdvancedProvider.notifier).fetch().then((value) {
-      ref.read(wifiViewProvider.notifier).setChanged(false);
-      final state = ref.read(wifiAdvancedProvider);
-      setState(() {
-        _preservedState = state;
-        _isLoading = false;
-      });
-    });
+
+    doSomethingWithSpinner(
+      context,
+      ref.read(wifiAdvancedProvider.notifier).fetch().then(
+        (value) {
+          ref.read(wifiViewProvider.notifier).setChanged(false);
+          final state = ref.read(wifiAdvancedProvider);
+          setState(
+            () {
+              _preservedState = state;
+            },
+          );
+        },
+      ),
+    );
   }
 
   @override
@@ -47,29 +49,25 @@ class _WifiAdvancedSettingsViewState
     ref.listen(wifiAdvancedProvider, (previous, next) {
       ref.read(wifiViewProvider.notifier).setChanged(next != _preservedState);
     });
-    return _isLoading
-        ? AppFullScreenSpinner(
-            text: loc(context).processing,
-          )
-        : StyledAppPageView(
-            appBarStyle: AppBarStyle.none,
-            padding: EdgeInsets.zero,
-            bottomBar: PageBottomBar(
-                isPositiveEnabled:
-                    _preservedState != ref.read(wifiAdvancedProvider),
-                onPositiveTap: () {
+    return StyledAppPageView(
+      appBarStyle: AppBarStyle.none,
+      padding: EdgeInsets.zero,
+      bottomBar: PageBottomBar(
+          isPositiveEnabled: _preservedState != ref.read(wifiAdvancedProvider),
+          onPositiveTap: () {
+            doSomethingWithSpinner(
+              context,
+              ref.read(wifiAdvancedProvider.notifier).save().then(
+                (_) {
                   setState(() {
-                    _isLoading = true;
+                    ref.read(wifiViewProvider.notifier).setChanged(false);
                   });
-                  ref.read(wifiAdvancedProvider.notifier).save().then((_) {
-                    setState(() {
-                      _isLoading = false;
-                      ref.read(wifiViewProvider.notifier).setChanged(false);
-                    });
-                  });
-                }),
-            child: _buildGrid(),
-          );
+                },
+              ),
+            );
+          }),
+      child: _buildGrid(),
+    );
   }
 
   Widget _buildGrid() {
@@ -89,12 +87,12 @@ class _WifiAdvancedSettingsViewState
     return value != null
         ? [
             AppCard(
+              padding: const EdgeInsets.all(Spacing.large2),
               child: AppSwitchTriggerTile(
                 title: AppText.labelLarge(loc(context).clientSteering),
                 description:
                     AppText.bodyMedium(loc(context).clientSteeringDesc),
                 value: value,
-                padding: const EdgeInsets.all(Spacing.large3),
                 toggleInCenter: true,
                 onChanged: (value) {
                   ref
@@ -103,7 +101,7 @@ class _WifiAdvancedSettingsViewState
                 },
               ),
             ),
-            const AppGap.medium()
+            const AppGap.small2()
           ]
         : [];
   }
@@ -112,11 +110,11 @@ class _WifiAdvancedSettingsViewState
     return value != null
         ? [
             AppCard(
+              padding: const EdgeInsets.all(Spacing.large2),
               child: AppSwitchTriggerTile(
                 title: AppText.labelLarge(loc(context).nodeSteering),
                 description: AppText.bodyMedium(loc(context).nodeSteeringDesc),
                 value: value,
-                padding: const EdgeInsets.all(Spacing.large3),
                 toggleInCenter: true,
                 onChanged: (value) {
                   ref
@@ -125,7 +123,7 @@ class _WifiAdvancedSettingsViewState
                 },
               ),
             ),
-            const AppGap.medium()
+            const AppGap.small2()
           ]
         : [];
   }
@@ -134,6 +132,7 @@ class _WifiAdvancedSettingsViewState
     return value != null
         ? [
             AppCard(
+              padding: const EdgeInsets.all(Spacing.large2),
               child: AppSwitchTriggerTile(
                 title: const AppText.labelLarge('IPTV'),
                 subtitle: const AppText.labelSmall(
@@ -141,14 +140,13 @@ class _WifiAdvancedSettingsViewState
                 description: const AppText.bodySmall(
                     'IPTV subscribers should turn this feature ON to get the most out of the service. Depending on your network configuration, you might have to reconnect some devices.'),
                 value: value,
-                padding: const EdgeInsets.all(Spacing.large3),
                 toggleInCenter: true,
                 onChanged: (value) {
                   ref.read(wifiAdvancedProvider.notifier).setIptvEnabled(value);
                 },
               ),
             ),
-            const AppGap.medium()
+            const AppGap.small2()
           ]
         : [];
   }
@@ -157,6 +155,7 @@ class _WifiAdvancedSettingsViewState
     return value != null
         ? [
             AppCard(
+              padding: const EdgeInsets.all(Spacing.large2),
               child: AppSwitchTriggerTile(
                 title: AppText.labelLarge(loc(context).dfs),
                 description: AppStyledText.bold(
@@ -171,34 +170,46 @@ class _WifiAdvancedSettingsViewState
                   },
                 ),
                 value: value,
-                padding: const EdgeInsets.all(Spacing.large3),
                 toggleInCenter: true,
                 onChanged: (value) {
                   ref.read(wifiAdvancedProvider.notifier).setDFSEnabled(value);
                 },
               ),
             ),
-            const AppGap.medium()
+            const AppGap.small2()
           ]
         : [];
   }
 
   List<Widget> _buildMLO(bool? value) {
+    final wifiList = ref.read(wifiListProvider).mainWiFi;
+    bool showMLOWarning = ref
+        .read(wifiListProvider.notifier)
+        .checkingMLOSettingsConflicts(
+            Map.fromIterables(wifiList.map((e) => e.radioID), wifiList));
     return value != null
         ? [
             AppCard(
+              padding: const EdgeInsets.all(Spacing.large2),
               child: AppSwitchTriggerTile(
                 title: AppText.labelLarge(loc(context).mlo),
-                description: AppText.bodyMedium(loc(context).mloDesc),
+                description: Column(
+                  children: [
+                    AppText.bodyMedium(loc(context).mloDesc),
+                    if (showMLOWarning) ...[
+                      const AppGap.medium(),
+                      AppText.labelLarge(loc(context).mloWarning),
+                    ],
+                  ],
+                ),
                 value: value,
-                padding: const EdgeInsets.all(Spacing.large3),
                 toggleInCenter: true,
                 onChanged: (value) {
                   ref.read(wifiAdvancedProvider.notifier).setMLOEnabled(value);
                 },
               ),
             ),
-            const AppGap.medium()
+            const AppGap.small2()
           ]
         : [];
   }

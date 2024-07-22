@@ -10,6 +10,7 @@ import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/page/base_page_view.dart';
+import 'package:collection/collection.dart';
 
 import 'package:privacy_gui/localization/localization_hook.dart';
 
@@ -121,6 +122,7 @@ class StyledAppPageView extends ConsumerWidget {
   final ({bool left, bool top, bool right, bool bottom}) enableSafeArea;
   final PageBottomBar? bottomBar;
   final bool menuOnRight;
+  final bool largeMenu;
 
   const StyledAppPageView({
     super.key,
@@ -144,6 +146,7 @@ class StyledAppPageView extends ConsumerWidget {
     this.enableSafeArea = (left: true, top: true, right: true, bottom: true),
     this.bottomBar,
     this.menuOnRight = false,
+    this.largeMenu = false,
   });
 
   @override
@@ -151,7 +154,7 @@ class StyledAppPageView extends ConsumerWidget {
     final views = [
       if (!ResponsiveLayout.isMobileLayout(context) && hasMenu()) ...[
         SizedBox(
-          width: 3.col,
+          width: largeMenu ? 4.col : 3.col,
           child: AppCard(
             child: _createMenuWidget(context),
           ),
@@ -239,9 +242,18 @@ class StyledAppPageView extends ConsumerWidget {
   }
 
   List<Widget>? _buildActions(BuildContext context) {
-    return !hasMenu() || !ResponsiveLayout.isMobileLayout(context)
-        ? actions
-        : [_createMenuAction(context), ...(actions ?? [])];
+    final actionWidgets =
+        !hasMenu() || !ResponsiveLayout.isMobileLayout(context)
+            ? actions
+            : [_createMenuAction(context), ...(actions ?? [])];
+    return actionWidgets?.expandIndexed<Widget>((index, element) sync* {
+      if (index != actionWidgets.length - 1) {
+        yield element;
+        yield const AppGap.small2();
+      } else {
+        yield element;
+      }
+    }).toList();
   }
 
   Widget _bottomWidget(BuildContext context) {
@@ -325,7 +337,7 @@ class StyledAppPageView extends ConsumerWidget {
   }
 
   Widget _createMenuAction(BuildContext context) {
-    return AppIconButton(
+    return AppIconButton.noPadding(
       icon: menuIcon ?? LinksysIcons.moreHoriz,
       onTap: () {
         showModalBottomSheet(

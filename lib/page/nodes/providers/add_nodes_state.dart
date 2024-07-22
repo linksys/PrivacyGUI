@@ -14,6 +14,7 @@ class AddNodesState extends Equatable {
   final bool isLoading;
   final String? loadingMessage;
   final Object? error;
+  final List<String>? onboardedMACList;
 
   const AddNodesState({
     this.onboardingProceed,
@@ -24,6 +25,7 @@ class AddNodesState extends Equatable {
     this.isLoading = false,
     this.loadingMessage,
     this.error,
+    this.onboardedMACList,
   });
 
   @override
@@ -37,6 +39,7 @@ class AddNodesState extends Equatable {
       isLoading,
       loadingMessage,
       error,
+      onboardedMACList,
     ];
   }
 
@@ -49,6 +52,7 @@ class AddNodesState extends Equatable {
     bool? isLoading,
     String? loadingMessage,
     Object? error,
+    List<String>? onboardedMACList,
   }) {
     return AddNodesState(
       onboardingProceed: onboardingProceed ?? this.onboardingProceed,
@@ -59,6 +63,7 @@ class AddNodesState extends Equatable {
       isLoading: isLoading ?? this.isLoading,
       loadingMessage: loadingMessage ?? this.loadingMessage,
       error: error ?? this.error,
+      onboardedMACList: onboardedMACList ?? this.onboardedMACList,
     );
   }
 
@@ -71,6 +76,7 @@ class AddNodesState extends Equatable {
       'childNodes': childNodes?.map((x) => x.toMap()).toList(),
       'isLoading': isLoading,
       'loadingMessage': loadingMessage,
+      'onboardedMACList': onboardedMACList,
     }..removeWhere((key, value) => value == null);
   }
 
@@ -104,6 +110,7 @@ class AddNodesState extends Equatable {
           : null,
       isLoading: map['isLoading'],
       loadingMessage: map['loadingMessage'],
+      onboardedMACList: map['onboardedMACList'],
     );
   }
 

@@ -12,6 +12,7 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:privacygui_widgets/widgets/panel/switch_trigger_tile.dart';
 
 class DHCPServerView extends ArgumentsConsumerStatefulView {
   const DHCPServerView({
@@ -91,18 +92,17 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AppSettingCard.noBorder(
-              title: loc(context).dhcpServer.capitalizeWords(),
-              trailing: AppSwitch(
-                value: state.isDHCPEnabled,
-                onChanged: (enabled) {
-                  setState(() {
-                    state = state.copyWith(
-                      isDHCPEnabled: enabled,
-                    );
-                  });
-                },
-              ),
+            AppSwitchTriggerTile(
+              title:
+                  AppText.labelLarge(loc(context).dhcpServer.capitalizeWords()),
+              value: state.isDHCPEnabled,
+              onChanged: (enabled) {
+                setState(() {
+                  state = state.copyWith(
+                    isDHCPEnabled: enabled,
+                  );
+                });
+              },
             ),
             const AppGap.large3(),
             Visibility(

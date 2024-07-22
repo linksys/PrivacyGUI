@@ -33,7 +33,7 @@ class SpeedTestExternalView extends StatelessWidget {
             children: [
               Padding(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 0, vertical: Spacing.large4),
+                    horizontal: 0, vertical: Spacing.large5),
                 child: SizedBox(
                   width: 224,
                   height: 56,

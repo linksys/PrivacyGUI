@@ -31,8 +31,7 @@ void main() async {
           provider: provider,
           overrides: [
             authProvider.overrideWith(() => mockAuthNotifier),
-            appSettingsProvider.overrideWith(
-                (ref) => const AppSettings(themeMode: ThemeMode.system))
+            appSettingsProvider.overrideWith(() => AppSettingsNotifier())
           ],
           router: GoRouter(routes: [
             LinksysRoute(path: '/', builder: (context, state) => const Center())
@@ -61,7 +60,7 @@ void main() async {
           overrides: [
             authProvider.overrideWith(() => mockAuthNotifier),
             appSettingsProvider.overrideWith(
-                (ref) => const AppSettings(themeMode: ThemeMode.light))
+                () => MockAppSettingsNotifier(const AppSettings(themeMode: ThemeMode.light))),
           ],
           router: GoRouter(routes: [
             LinksysRoute(path: '/', builder: (context, state) => const Center())
@@ -90,7 +89,7 @@ void main() async {
           overrides: [
             authProvider.overrideWith(() => mockAuthNotifier),
             appSettingsProvider.overrideWith(
-                (ref) => const AppSettings(themeMode: ThemeMode.dark))
+                () => MockAppSettingsNotifier(const AppSettings(themeMode: ThemeMode.dark))),
           ],
           router: GoRouter(routes: [
             LinksysRoute(path: '/', builder: (context, state) => const Center())
@@ -119,7 +118,7 @@ void main() async {
           overrides: [
             authProvider.overrideWith(() => mockAuthNotifier),
             appSettingsProvider.overrideWith(
-                (ref) => const AppSettings(themeMode: ThemeMode.system))
+                () => MockAppSettingsNotifier(const AppSettings(themeMode: ThemeMode.system))),
           ],
           router: GoRouter(routes: [
             LinksysRoute(path: '/', builder: (context, state) => const Center())
@@ -148,7 +147,7 @@ void main() async {
           overrides: [
             authProvider.overrideWith(() => mockAuthNotifier),
             appSettingsProvider.overrideWith(
-                (ref) => const AppSettings(themeMode: ThemeMode.light))
+                () => MockAppSettingsNotifier(const AppSettings(themeMode: ThemeMode.light))),
           ],
           router: GoRouter(routes: [
             LinksysRoute(path: '/', builder: (context, state) => const Center())
@@ -177,7 +176,7 @@ void main() async {
           overrides: [
             authProvider.overrideWith(() => mockAuthNotifier),
             appSettingsProvider.overrideWith(
-                (ref) => const AppSettings(themeMode: ThemeMode.dark))
+                () => MockAppSettingsNotifier(const AppSettings(themeMode: ThemeMode.dark))),
           ],
           router: GoRouter(routes: [
             LinksysRoute(path: '/', builder: (context, state) => const Center())
@@ -193,4 +192,11 @@ void main() async {
       await tester.pumpAndSettle();
     },
   );
+}
+
+class MockAppSettingsNotifier extends AppSettingsNotifier {
+  final AppSettings? init;
+  MockAppSettingsNotifier(this.init) : super();
+  @override
+  AppSettings build() => init ?? const AppSettings();
 }

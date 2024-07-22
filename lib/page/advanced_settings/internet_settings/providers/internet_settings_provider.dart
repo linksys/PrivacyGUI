@@ -155,7 +155,7 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
         break;
     }
 
-    return state = InternetSettingsState.init().copyWith(
+    state = InternetSettingsState.init().copyWith(
       ipv4Setting: state.ipv4Setting.copyWith(
         ipv4ConnectionType: wanSettings?.wanType ?? '',
         supportedIPv4ConnectionType: wanStatus?.supportedWANTypes ?? [],
@@ -183,6 +183,7 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
       macClone: macAddressCloneSettings?.isMACAddressCloneEnabled ?? false,
       macCloneAddress: macAddressCloneSettings?.macAddress ?? '',
     );
+    return state;
   }
 
   Future saveIpv4(InternetSettingsState newState) async {

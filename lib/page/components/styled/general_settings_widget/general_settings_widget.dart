@@ -58,8 +58,9 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
                   onSelected: (locale) {
                     final appSettings = ref.read(appSettingsProvider);
 
-                    ref.read(appSettingsProvider.notifier).state =
-                        appSettings.copyWith(locale: locale);
+                    ref
+                        .read(appSettingsProvider.notifier)
+                        .update(appSettings.copyWith(locale: locale));
                   },
                 ),
               ),
