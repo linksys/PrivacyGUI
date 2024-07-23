@@ -77,6 +77,13 @@ class _HomeViewState extends ConsumerState<HomeView> {
           }
         },
       ),
+      const AppGap.small2(),
+      AppFilledButton.fillWidth(
+        'CA Login',
+        onTap: () {
+          context.pushNamed(RouteNamed.cloudRALogin);
+        },
+      ),
       const AppGap.small3(),
       if (!kIsWeb)
         AppFilledButton.fillWidth(

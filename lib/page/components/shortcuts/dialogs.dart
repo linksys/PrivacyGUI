@@ -27,6 +27,9 @@ Future<T?> doSomethingWithSpinner<T>(
   return task.then((value) {
     context.pop();
     return value;
+  }).onError((error, stackTrace) {
+    context.pop();
+    throw error ?? '';
   });
 }
 
@@ -54,6 +57,7 @@ Future<T?> showAppSpinnerDialog<T>(
             builder: (context, snapshot) {
               return AlertDialog(
                 icon: icon,
+                backgroundColor: Colors.transparent,
                 title: title != null
                     ? SizedBox(
                         width: width ?? kDefaultDialogWidth,
@@ -86,6 +90,7 @@ Future<T?> showSubmitAppDialog<T>(
   String? positiveLabel,
   bool Function()? checkPositiveEnabled,
   required Future<T> Function() event,
+  void Function(Object? error, StackTrace stackTrace)? onError,
 }) {
   bool isLoading = false;
   return showDialog<T?>(
@@ -128,6 +133,11 @@ Future<T?> showSubmitAppDialog<T>(
                                 isLoading = false;
                               });
                               context.pop(value);
+                            }).onError((error, stackTrace) {
+                              setState(() {
+                                isLoading = false;
+                              });
+                              onError?.call(error, stackTrace);
                             });
                           }
                         : null,
