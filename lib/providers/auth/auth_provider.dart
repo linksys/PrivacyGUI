@@ -371,6 +371,9 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     await ref
         .read(dashboardManagerProvider.notifier)
         .saveSelectedNetwork(serialNumber, networkId);
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setBool(pRAMode, true);
+
     // Update credientials
     state = AsyncValue.data(await updateCredientials(
         sessionToken: SessionToken(

@@ -150,5 +150,13 @@ final dashboardRoute = ShellRoute(
         ),
       ],
     ),
+    LinksysRoute(
+      name: RouteNamed.dashboardDiagnostic,
+      path: RoutePath.dashboardDiagnostic,
+      config: LinksysRouteConfig(
+        column: ColumnGrid(column: 12),
+      ),
+      builder: (context, state) => const SystemTestView(),
+    ),
   ],
 );

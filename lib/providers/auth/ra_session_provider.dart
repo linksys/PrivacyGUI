@@ -68,6 +68,13 @@ class RASessionNotifier extends Notifier<RASession> {
               serialNumber: state.serialNumber
             ));
   }
+
+  Future raLogout() async {
+    // need to delete session
+    final prefs = await SharedPreferences.getInstance();
+    prefs.remove(pRAMode);
+    state = const RASession(sessionId: '', token: '');
+  }
 }
 
 class RAException extends Error {}

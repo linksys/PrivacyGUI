@@ -13,7 +13,7 @@ class RoutePath {
   static const localPasswordReset = 'localPasswordReset';
   static const cloudRALogin = 'cloudRALogin';
   static const cloudRAPin = 'cloudRAPin';
-  
+
   /// dashboard
   static const dashboardHome = '/dashboardHome';
   static const dashboardMenu = '/dashboardMenu';
@@ -21,6 +21,7 @@ class RoutePath {
   static const dashboardDevices = 'dashboardDevices';
   static const dashboardSettings = 'dashboardSettings';
   static const dashboardAdvancedSettings = 'dashboardAdvancedSettings';
+  static const dashboardDiagnostic = '/dashboardDiagnostic';
 
   /// speed test
   static const dashboardSpeedTest = 'dashboardSpeedTest';
@@ -161,6 +162,7 @@ class RouteNamed {
   static const dashboardDevices = 'dashboardDevices';
   static const dashboardSettings = 'dashboardSettings';
   static const dashboardAdvancedSettings = 'dashboardAdvancedSettings';
+  static const dashboardDiagnostic = 'dashboardDiagnostic';
 
   /// speed test
   static const dashboardSpeedTest = 'dashboardSpeedTest';

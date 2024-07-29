@@ -23,6 +23,7 @@ import 'package:privacy_gui/page/support/system_test/views/ping_network_modal.da
 import 'package:privacy_gui/page/support/system_test/views/speed_test_widget.dart';
 import 'package:privacy_gui/page/support/system_test/views/traceroute_modal.dart';
 import 'package:privacy_gui/page/topology/_topology.dart';
+import 'package:privacy_gui/page/topology/views/topology_detailed_view.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
@@ -114,7 +115,7 @@ class SystemTestView extends ArgumentsConsumerStatelessView {
   }
 
   Widget _topologyView() {
-    return TopologyView();
+    return TopologyDetailedView();
   }
 
   Widget _deviceInfoCard(BuildContext context, WidgetRef ref) {

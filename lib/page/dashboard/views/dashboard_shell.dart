@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/dashboard/views/dashboard_navigation_rail.dart';
 import 'package:privacy_gui/route/route_model.dart';
@@ -16,17 +17,20 @@ import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacy_gui/util/debug_mixin.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 enum NaviType {
   home,
   menu,
   support,
+  diagnostic,
   ;
 
   String resloveLabel(BuildContext context) => switch (this) {
         NaviType.home => loc(context).home,
         NaviType.menu => loc(context).menu,
         NaviType.support => loc(context).support,
+        NaviType.diagnostic => 'diagnostic',
       };
 }
 
@@ -203,11 +207,13 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
     });
   }
 
-  _prepareNavigationItems(BuildContext context) {
+  _prepareNavigationItems(BuildContext context) async {
     //
     if (!mounted) {
       return;
     }
+    final prefs = await SharedPreferences.getInstance();
+    final raMode = prefs.getBool(pRAMode) ?? false;
     const items = [
       DashboardNaviItem(
           icon: LinksysIcons.home,
@@ -217,12 +223,19 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
           icon: LinksysIcons.menu,
           type: NaviType.menu,
           rootPath: RouteNamed.dashboardMenu),
-      DashboardNaviItem(
-          icon: LinksysIcons.help,
-          type: NaviType.support,
-          rootPath: RouteNamed.dashboardSupport),
     ];
     _dashboardNaviItems.addAll(items);
+    _dashboardNaviItems.add(
+      raMode
+          ? const DashboardNaviItem(
+              icon: LinksysIcons.troubleshoot,
+              type: NaviType.diagnostic,
+              rootPath: RouteNamed.dashboardDiagnostic)
+          : const DashboardNaviItem(
+              icon: LinksysIcons.help,
+              type: NaviType.support,
+              rootPath: RouteNamed.dashboardSupport),
+    );
   }
 
   NavigationDestination _bottomSheetIconView(DashboardNaviItem item) {
