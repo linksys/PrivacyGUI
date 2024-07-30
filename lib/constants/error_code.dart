@@ -18,8 +18,10 @@ const errorInvalidCredentials = 'invalid_credentials';
 const errorJNAPUnauthorized = '_ErrorUnauthorized';
 const errorAdminAccountLocked = 'ErrorAdminAccountLocked';
 const errorInvalidResetCode = 'ErrorInvalidResetCode';
-const errorConsecutiveInvalidResetCodeEntered = 'ErrorConsecutiveInvalidResetCodeEntered';
+const errorConsecutiveInvalidResetCodeEntered =
+    'ErrorConsecutiveInvalidResetCodeEntered';
 const errorInvalidAdminPassword = 'ErrorInvalidAdminPassword';
+const errorInvalidGateway = 'ErrorInvalidGateway';
 const errorUnexpected = '_ErrorUnexpected';
 
 // JNAP retry list

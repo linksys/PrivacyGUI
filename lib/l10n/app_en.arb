@@ -598,6 +598,7 @@
   "invalidIpAddress": "Invalid IP address",
   "hostNameCannotEmpty": "Host name can not be empty.",
   "invalidSubnetMask": "Invalid subnet mask",
+  "invalidGatewayIpAddress": "Invalid gateway IP address",
   "theNameMustNotBeEmpty": "The name must not be empty",
   "wifiShareQRScan": "Scan the QR code to join this network",
   "textMessage": "Text message",
