@@ -90,7 +90,7 @@ class _LocalRouterRecoveryViewState
                     Padding(
                       padding: const EdgeInsets.only(top: Spacing.small2),
                       child: AppText.bodyMedium(
-                        '${loc(context).localRouterRecoveryKeyErorr}\n${loc(context).localLoginRemainingAttempts(state.remainingErrorAttempts!)}',
+                        _getErrorString(state.remainingErrorAttempts!),
                         color: Theme.of(context).colorScheme.error,
                       ),
                     ),
@@ -125,5 +125,16 @@ class _LocalRouterRecoveryViewState
         );
       }
     });
+  }
+
+  String _getErrorString(int remaining) {
+    switch (remaining) {
+      case 1:
+        return '${loc(context).localRouterRecoveryKeyErorr}\n${loc(context).localRouterRecoveryKeyLastChance}';
+      case 0:
+        return '${loc(context).localRouterRecoveryKeyErorr}\n${loc(context).localRouterRecoveryKeyLocked}';
+      default:
+        return '${loc(context).localRouterRecoveryKeyErorr}\n${loc(context).localLoginRemainingAttempts(remaining)}';
+    }
   }
 }

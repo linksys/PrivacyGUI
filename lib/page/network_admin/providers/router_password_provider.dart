@@ -107,6 +107,9 @@ class RouterPasswordNotifier extends Notifier<RouterPasswordState> {
           final errorOutput = jsonDecode(error.error!) as Map<String, dynamic>;
           final remaining = errorOutput['attemptsRemaining'] as int;
           state = state.copyWith(remainingErrorAttempts: remaining);
+        } else if (error.result == errorConsecutiveInvalidResetCodeEntered) {
+          //Error results after the remaining is 0 will become "ErrorConsecutiveInvalidResetCodeEntered"
+          state = state.copyWith(remainingErrorAttempts: 0);
         }
       }
       return false;

@@ -18,6 +18,7 @@ const errorInvalidCredentials = 'invalid_credentials';
 const errorJNAPUnauthorized = '_ErrorUnauthorized';
 const errorAdminAccountLocked = 'ErrorAdminAccountLocked';
 const errorInvalidResetCode = 'ErrorInvalidResetCode';
+const errorConsecutiveInvalidResetCodeEntered = 'ErrorConsecutiveInvalidResetCodeEntered';
 const errorInvalidAdminPassword = 'ErrorInvalidAdminPassword';
 const errorUnexpected = '_ErrorUnexpected';
 
