@@ -45,6 +45,7 @@ class BuildConfig {
       const String.fromEnvironment('force', defaultValue: 'none'));
   static bool showColumnOverlay =
       const bool.fromEnvironment('overlay', defaultValue: false);
+  static const bool caLogin = bool.fromEnvironment('ca', defaultValue: false);
 
   static load() async {
     logger.d('load build configuration');

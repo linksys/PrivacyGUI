@@ -66,24 +66,25 @@ class _HomeViewState extends ConsumerState<HomeView> {
 
   Widget _footer(BuildContext context) {
     return Column(children: [
-      AppFilledButton.fillWidth(
-        getAppLocalizations(context).login,
-        key: const Key('home_view_button_login'),
-        onTap: () {
-          if (BuildConfig.forceCommandType == ForceCommand.local) {
-            context.pushNamed(RouteNamed.localLoginPassword);
-          } else {
-            context.pushNamed(RouteNamed.cloudLoginAccount);
-          }
-        },
-      ),
-      const AppGap.small2(),
-      AppFilledButton.fillWidth(
-        'CA Login',
-        onTap: () {
-          context.pushNamed(RouteNamed.cloudRALogin);
-        },
-      ),
+      if (!BuildConfig.caLogin)
+        AppFilledButton.fillWidth(
+          getAppLocalizations(context).login,
+          key: const Key('home_view_button_login'),
+          onTap: () {
+            if (BuildConfig.forceCommandType == ForceCommand.local) {
+              context.pushNamed(RouteNamed.localLoginPassword);
+            } else {
+              context.pushNamed(RouteNamed.cloudLoginAccount);
+            }
+          },
+        ),
+      if (BuildConfig.caLogin)
+        AppFilledButton.fillWidth(
+          'CA Login',
+          onTap: () {
+            context.pushNamed(RouteNamed.cloudRALogin);
+          },
+        ),
       const AppGap.small3(),
       if (!kIsWeb)
         AppFilledButton.fillWidth(

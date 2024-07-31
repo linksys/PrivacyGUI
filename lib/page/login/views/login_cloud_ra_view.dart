@@ -38,12 +38,9 @@ class _LoginCloudRAViewState extends ConsumerState<LoginCloudRAView> {
   bool? _isValidEmail;
   final _emailValidator = EmailValidator();
 
-  final TextEditingController _usernameController = TextEditingController()
-    ..text = 'austin.chang.chia.hao@gmail.com';
-  final TextEditingController _passwordController = TextEditingController()
-    ..text = 'Linksys123!';
-  final TextEditingController _serialController = TextEditingController()
-    ..text = '59A10M28D00110';
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _serialController = TextEditingController();
 
   @override
   void initState() {

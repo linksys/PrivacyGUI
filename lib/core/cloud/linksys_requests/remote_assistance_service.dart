@@ -87,6 +87,22 @@ extension RemoteAssistanceService on LinksysHttpClient {
     );
   }
 
+  Future<Response> getRASessionInfo({
+    required String token,
+    required String sessionId,
+    required String networkId,
+  }) {
+    final endPoint =
+        combineUrl(kRASessionInfo, args: {kVarRASessionId: sessionId});
+    final header = defaultHeader
+      ..[HttpHeaders.authorizationHeader] = wrapSessionToken(token)
+      ..[kHeaderNetworkId] = networkId;
+    return this.get(
+      Uri.parse(endPoint),
+      headers: header,
+    );
+  }
+
   Future<Response> pinVerify({
     required String token,
     required String sessionId,
@@ -101,6 +117,20 @@ extension RemoteAssistanceService on LinksysHttpClient {
           "remoteAssistanceSession": {
             "remoteAssistanceSessionId": sessionId,
             "pin": pin,
+          }
+        }));
+  }
+
+  Future<Response> deleteSession(
+      {required String token, required String sessionId}) {
+    final endPoint = combineUrl(kRASessions);
+    final header = defaultHeader
+      ..[HttpHeaders.authorizationHeader] = wrapSessionToken(token);
+    return this.delete(Uri.parse(endPoint),
+        headers: header,
+        body: jsonEncode({
+          "remoteAssistanceSession": {
+            "remoteAssistanceSessionId": sessionId,
           }
         }));
   }

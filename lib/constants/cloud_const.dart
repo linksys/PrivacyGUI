@@ -115,12 +115,13 @@ const kDeviceUpload =
 const kRASessions = '$kRemoteAssistanceService/rest/remoteassistance/sessions';
 const kRAAccountInfo =
     '$kRemoteAssistanceService/rest/remoteassistance/sessions/$kVarRASessionId/accountinfo';
+const kRASessionInfo =
+    '$kRemoteAssistanceService/rest/remoteassistance/sessions/$kVarRASessionId';
 const kRATemporaryRAS =
     '$kRemoteAssistanceService/rest/remoteassistance/temporaryras';
 const kRASendPin =
     '$kRemoteAssistanceService/rest/remoteassistance/sessions/sendpin';
-const kRAPin =
-    '$kRemoteAssistanceService/rest/remoteassistance/sessions/pin';
+const kRAPin = '$kRemoteAssistanceService/rest/remoteassistance/sessions/pin';
 // Create Ticket
 const kTickets = '/cloud/v1/tickets';
 const kGetTicketDetails = '/cloud/v1/tickets/$kTicketId';

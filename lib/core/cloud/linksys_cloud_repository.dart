@@ -12,6 +12,7 @@ import 'package:privacy_gui/core/cloud/linksys_requests/smart_device_service.dar
 import 'package:privacy_gui/core/cloud/model/cloud_event_action.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_event_subscription.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_linkup.dart';
+import 'package:privacy_gui/core/cloud/model/cloud_remote_assistance_info.dart';
 import 'package:privacy_gui/core/cloud/model/create_ticket.dart';
 import 'package:privacy_gui/core/http/linksys_http_client.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/authorization_service.dart';
@@ -374,6 +375,29 @@ class LinksysCloudRepository {
   }
 
   ///
+  /// {
+  ///     "remoteAssistanceSession": {
+  ///         "remoteAssistanceSessionId": "727DEBA0-FE9C-41F3-A5A8-28A84B87E930",
+  ///         "status": "PENDING",
+  ///         "expiredIn": -1757,
+  ///         "createdAt": 1722240538000,
+  ///         "statusChangedAt": 1722240574000,
+  ///         "currentTime": 1722240580739
+  ///     }
+  /// }
+  ///
+  Future<CloudRemoteAssistanceInfo> raGetSessionInfo(
+      {required String networkId, required String sessionId}) {
+    return loadSessionToken().then((token) => _httpClient
+            .getRASessionInfo(
+                token: token, networkId: networkId, sessionId: sessionId)
+            .then((response) {
+          final json = jsonDecode(response.body)['remoteAssistanceSession'];
+          return CloudRemoteAssistanceInfo.fromMap(json);
+        }));
+  }
+
+  ///
   ///{
   ///"remoteAssistanceSession": {
   ///  "remoteAssistanceSessionId": "8AD8DBC2-552D-4102-A76F-65DBA1867219",
@@ -440,7 +464,17 @@ class LinksysCloudRepository {
         .then((response) {
       final json = jsonDecode(response.body);
       final temporaryRAS = json['temporaryRAS'];
-      return (networkId: temporaryRAS['networkId'] as String, token: temporaryRAS['sessionToken'] as String);
+      return (
+        networkId: temporaryRAS['networkId'] as String,
+        token: temporaryRAS['sessionToken'] as String
+      );
     });
+  }
+
+  Future deleteSession({
+    required String sessionId,
+  }) {
+    return loadSessionToken().then((token) =>
+        _httpClient.deleteSession(sessionId: sessionId, token: token));
   }
 }

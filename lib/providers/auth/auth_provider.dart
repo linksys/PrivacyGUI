@@ -5,6 +5,7 @@ import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:privacy_gui/providers/auth/ra_session_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:privacy_gui/constants/default_country_codes.dart';
@@ -341,6 +342,16 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       await storage.delete(key: pLocalPassword);
       await storage.delete(key: pUsername);
       await storage.delete(key: pUserPassword);
+
+      // RA sessions
+      bool raMode = prefs.getBool(pRAMode) ?? false;
+      if (raMode) {
+        await ref
+            .read(raSessionProvider.notifier)
+            .raLogout()
+            .onError((error, stackTrace) => null);
+        ref.read(raSessionProvider.notifier).stopMonitorSession();
+      }
       return AuthState.empty();
     });
     ref.read(pollingProvider.notifier).stopPolling();
