@@ -52,6 +52,8 @@ class _AddRuleContentViewState
   String _protocol = 'Both';
   bool _isEnabled = false;
   List<PortRangeForwardingRule> _rules = [];
+  String? _ipError;
+  String? _portError;
 
   @override
   void initState() {
@@ -98,7 +100,7 @@ class _AddRuleContentViewState
       scrollable: true,
       title: loc(context).portRangeForwarding,
       bottomBar: PageBottomBar(
-        isPositiveEnabled: true,
+        isPositiveEnabled: _isSaveEnable(),
         isNegitiveEnabled: state.mode == RuleMode.editing ? true : null,
         negitiveLable: loc(context).delete,
         onPositiveTap: () {
@@ -121,6 +123,8 @@ class _AddRuleContentViewState
                           : loc(context).ruleAdded);
 
                   context.pop(true);
+                } else {
+                  showFailedSnackBar(context, loc(context).failedExclamation);
                 }
               },
             ),
@@ -130,6 +134,8 @@ class _AddRuleContentViewState
           _notifier.delete().then((value) {
             if (value) {
               showSimpleSnackBar(context, loc(context).ruleDeleted);
+            } else {
+              showFailedSnackBar(context, loc(context).failedExclamation);
             }
             context.pop(true);
           });
@@ -177,13 +183,18 @@ class _AddRuleContentViewState
 
     return [
       AppTextField.outline(
-          headerText: loc(context).ruleName, controller: _ruleNameController),
+        headerText: loc(context).ruleName,
+        controller: _ruleNameController,
+        onFocusChanged: _onFocusChange,
+      ),
       const AppGap.large2(),
       AppTextField.minMaxNumber(
         border: const OutlineInputBorder(),
         headerText: loc(context).startPort,
         controller: _firstExternalPortController,
         max: 65535,
+        onFocusChanged: _onPortFocusChange,
+        errorText: _portError != null ? '' : null,
       ),
       const AppGap.large2(),
       AppTextField.minMaxNumber(
@@ -191,6 +202,8 @@ class _AddRuleContentViewState
         headerText: loc(context).endPort,
         controller: _lastExternalPortController,
         max: 65535,
+        onFocusChanged: _onPortFocusChange,
+        errorText: _portError,
       ),
       const AppGap.large2(),
       AppText.labelMedium(loc(context).ipAddress),
@@ -202,6 +215,16 @@ class _AddRuleContentViewState
         octet2ReadOnly: submaskToken[1] == '255',
         octet3ReadOnly: submaskToken[2] == '255',
         octet4ReadOnly: submaskToken[3] == '255',
+        onFocusChanged: (focus) {
+          if (!focus) {
+            _ipError =
+                !_notifier.isDeviceIpValidate(_deviceIpAddressController.text)
+                    ? loc(context).invalidIpAddress
+                    : null;
+            _onFocusChange(focus);
+          }
+        },
+        errorText: _ipError,
       ),
       const AppGap.large2(),
       AppTextButton(
@@ -235,5 +258,39 @@ class _AddRuleContentViewState
         },
       ),
     ];
+  }
+
+  bool _isSaveEnable() {
+    return _ruleNameController.text.isNotEmpty &&
+        _firstExternalPortController.text.isNotEmpty &&
+        _lastExternalPortController.text.isNotEmpty &&
+        _notifier.isDeviceIpValidate(_deviceIpAddressController.text) &&
+        _portError == null;
+  }
+
+  void _onPortFocusChange(bool focus) {
+    if (!focus) {
+      if (_firstExternalPortController.text.isEmpty ||
+          _lastExternalPortController.text.isEmpty) {
+        return;
+      }
+      final firstPort = int.tryParse(_firstExternalPortController.text) ?? 0;
+      final lastPort = int.tryParse(_lastExternalPortController.text) ?? 0;
+      bool isValidPortRange = lastPort - firstPort > 0;
+      bool isRuleOverlap =
+          _notifier.isPortConflict(firstPort, lastPort, _protocol);
+      _portError = !isValidPortRange
+          ? loc(context).portRangeError
+          : isRuleOverlap
+              ? loc(context).rulesOverlapError
+              : null;
+      _onFocusChange(focus);
+    }
+  }
+
+  void _onFocusChange(bool focus) {
+    if (!focus) {
+      setState(() {});
+    }
   }
 }

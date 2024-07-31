@@ -51,6 +51,8 @@ class _AddRuleContentViewState
   String _protocol = 'Both';
   bool _isEnabled = false;
   List<SinglePortForwardingRule> _rules = [];
+  String? _ipError;
+  String? _portError;
 
   @override
   void initState() {
@@ -96,7 +98,7 @@ class _AddRuleContentViewState
     return StyledAppPageView(
       title: loc(context).singlePortForwarding,
       bottomBar: PageBottomBar(
-        isPositiveEnabled: true,
+        isPositiveEnabled: _isSaveEnable(),
         isNegitiveEnabled: state.mode == RuleMode.editing ? true : null,
         negitiveLable: loc(context).delete,
         onPositiveTap: () {
@@ -119,6 +121,8 @@ class _AddRuleContentViewState
                           : loc(context).ruleAdded);
 
                   context.pop(true);
+                } else {
+                  showFailedSnackBar(context, loc(context).failedExclamation);
                 }
               },
             ),
@@ -128,6 +132,8 @@ class _AddRuleContentViewState
           _notifier.delete().then((value) {
             if (value) {
               showSimpleSnackBar(context, loc(context).ruleDeleted);
+            } else {
+              showFailedSnackBar(context, loc(context).failedExclamation);
             }
             context.pop(true);
           });
@@ -175,9 +181,11 @@ class _AddRuleContentViewState
     final submaskToken = _notifier.subnetMask.split('.');
     return [
       AppTextField(
-          headerText: loc(context).ruleName,
-          border: const OutlineInputBorder(),
-          controller: _ruleNameController),
+        headerText: loc(context).ruleName,
+        border: const OutlineInputBorder(),
+        controller: _ruleNameController,
+        onFocusChanged: _onFocusChange,
+      ),
       const AppGap.large2(),
       AppTextField.minMaxNumber(
         headerText: loc(context).externalPort,
@@ -186,6 +194,8 @@ class _AddRuleContentViewState
         controller: _externalPortController,
         max: 65535,
         min: 0,
+        onFocusChanged: _onPortFocusChange,
+        errorText: _portError,
       ),
       const AppGap.large2(),
       AppTextField.minMaxNumber(
@@ -195,6 +205,7 @@ class _AddRuleContentViewState
         controller: _internalPortController,
         max: 65535,
         min: 0,
+        onFocusChanged: _onFocusChange,
       ),
       const AppGap.large2(),
       AppText.labelMedium(loc(context).ipAddress),
@@ -206,6 +217,16 @@ class _AddRuleContentViewState
         octet2ReadOnly: submaskToken[1] == '255',
         octet3ReadOnly: submaskToken[2] == '255',
         octet4ReadOnly: submaskToken[3] == '255',
+        onFocusChanged: (focus) {
+          if (!focus) {
+            _ipError =
+                !_notifier.isDeviceIpValidate(_deviceIpAddressController.text)
+                    ? loc(context).invalidIpAddress
+                    : null;
+            _onFocusChange(focus);
+          }
+        },
+        errorText: _ipError,
       ),
       const AppGap.large2(),
       AppTextButton(
@@ -239,5 +260,31 @@ class _AddRuleContentViewState
         },
       ),
     ];
+  }
+
+  bool _isSaveEnable() {
+    return _ruleNameController.text.isNotEmpty &&
+        _externalPortController.text.isNotEmpty &&
+        _internalPortController.text.isNotEmpty &&
+        _notifier.isDeviceIpValidate(_deviceIpAddressController.text) &&
+        _portError == null;
+  }
+
+  void _onPortFocusChange(bool focus) {
+    if (!focus) {
+      if (_externalPortController.text.isEmpty) {
+        return;
+      }
+      final externalPort = int.tryParse(_externalPortController.text) ?? 0;
+      bool isRuleOverlap = _notifier.isPortConflict(externalPort, _protocol);
+      _portError = isRuleOverlap ? loc(context).rulesOverlapError : null;
+      _onFocusChange(focus);
+    }
+  }
+
+  void _onFocusChange(bool focus) {
+    if (!focus) {
+      setState(() {});
+    }
   }
 }

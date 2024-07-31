@@ -799,5 +799,9 @@
   "destinationIPAddress": "Destination IP address",
   "noStaticRoutes": "You have no static route/s",
   "gateway": "Gateway",
-  "routeName": "Route name"
+  "routeName": "Route name",
+  "portRangeError": "The end port must be larger or equal to the start port.",
+  "ipRangeError": "The end IP address must be larger or equal to the start IP address.",
+  "dmzIpAddressIsEqualRouter": "You can't use the Router's IP, network or broadcast address.",
+  "rulesOverlapError": "The rules cannot be created because multiple rules were specified for a single port/protocol combination."
 }
