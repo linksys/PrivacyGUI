@@ -139,7 +139,8 @@ extension DateFormatUtils on Utils {
           context == null ? '${minutes}m' : loc(context).nMinutes(minutes);
       tokens.add(token);
     }
-    final token = context == null ? '${seconds}s' : loc(context).nSeconds(seconds);
+    final token =
+        context == null ? '${seconds}s' : loc(context).nSeconds(seconds);
     tokens.add(token);
 
     return tokens.join(' ');
@@ -343,31 +344,35 @@ extension NetworkUtils on Utils {
     }
 
     if (minNetworkPrefixLength < 1 || minNetworkPrefixLength > 31) {
-      throw Exception(
-          'Invalid minNetworkPrefixLength passed, must be between 1 and 31');
+      throw const FormatException(
+        'Invalid minNetworkPrefixLength passed, must be between 1 and 31',
+      );
     }
     if (maxNetworkPrefixLength < 1 || maxNetworkPrefixLength > 31) {
-      throw Exception(
-          'Invalid maxNetworkPrefixLength passed, must be between 1 and 31');
+      throw const FormatException(
+        'Invalid maxNetworkPrefixLength passed, must be between 1 and 31',
+      );
     }
     if (maxNetworkPrefixLength < minNetworkPrefixLength) {
-      throw Exception(
-          'maxNetworkPrefixLength cannot be less than minNetworkPrefixLength');
+      throw const FormatException(
+        'maxNetworkPrefixLength cannot be less than minNetworkPrefixLength',
+      );
     }
 
     var subnetMaskBits = ipToNum(subnetMask).toRadixString(2);
     var prefixLength = subnetMaskBits.indexOf('0');
-    if (prefixLength == -1) {
-      return false;
+    if (prefixLength == -1 ||
+        prefixLength < minNetworkPrefixLength ||
+        prefixLength > maxNetworkPrefixLength) {
+      throw FormatException(
+        'Invalid network prefix length, must be between $minNetworkPrefixLength and $maxNetworkPrefixLength',
+      );
     }
     final subnetMaskTestBits =
         List.filled(prefixLength, '1').join().padRight(32, '0');
-    if (subnetMaskBits != subnetMaskTestBits ||
-        prefixLength < minNetworkPrefixLength ||
-        prefixLength > maxNetworkPrefixLength) {
+    if (subnetMaskBits != subnetMaskTestBits) {
       return false;
     }
-
     return true;
   }
 
