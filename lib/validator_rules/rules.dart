@@ -116,11 +116,15 @@ class SubnetMaskRule extends ValidationRule {
 
   @override
   bool validate(String input) {
-    return NetworkUtils.isValidSubnetMask(
-      input,
-      minNetworkPrefixLength: minNetworkPrefixLength,
-      maxNetworkPrefixLength: maxNetworkPrefixLength,
-    );
+    try {
+      return NetworkUtils.isValidSubnetMask(
+        input,
+        minNetworkPrefixLength: minNetworkPrefixLength,
+        maxNetworkPrefixLength: maxNetworkPrefixLength,
+      );
+    } catch (e) {
+      return false;
+    }
   }
 }
 
