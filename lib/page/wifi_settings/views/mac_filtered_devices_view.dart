@@ -223,7 +223,7 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
         ],
       ),
       event: () async {
-        return controller.text;
+        return controller.text.toUpperCase();
       },
       checkPositiveEnabled: () => isValid,
     );
