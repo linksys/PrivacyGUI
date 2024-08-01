@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:privacy_gui/utils.dart';
 import 'package:test/test.dart';
 
@@ -719,7 +717,12 @@ void main() {
       ];
 
       for (final subnet in invalidSubnets) {
-        final isValid = NetworkUtils.isValidSubnetMask(subnet);
+        var isValid = true;
+        try {
+          isValid = NetworkUtils.isValidSubnetMask(subnet);
+        } catch (e) {
+          isValid = false;
+        }
         expect(isValid, false, reason: '$subnet should be invalid');
       }
     });
@@ -786,13 +789,13 @@ void main() {
         'isValidSubnetMask: handles invalid subnet masks outside specified range',
         () {
       expect(
-          NetworkUtils.isValidSubnetMask('255.255.255.128',
+          () => NetworkUtils.isValidSubnetMask('255.255.255.128',
               minNetworkPrefixLength: 26, maxNetworkPrefixLength: 30),
-          false);
+          throwsA(isA<FormatException>()));
       expect(
-          NetworkUtils.isValidSubnetMask('255.255.255.0',
+          () => NetworkUtils.isValidSubnetMask('255.255.255.0',
               minNetworkPrefixLength: 25, maxNetworkPrefixLength: 30),
-          false);
+          throwsA(isA<FormatException>()));
     });
 
     test('getIpPrefix: calculates correct prefix for valid IP and subnet mask',
