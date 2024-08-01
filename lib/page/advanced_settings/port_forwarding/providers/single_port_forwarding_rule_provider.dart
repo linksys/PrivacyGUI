@@ -95,6 +95,12 @@ class SinglePortForwardingRuleNotifier
         : false;
   }
 
+  bool isPortConflict(int externalPort, String protocol) {
+    return state.rules.any((rule) =>
+        rule.externalPort == externalPort &&
+        (protocol == rule.protocol || protocol == 'Both'));
+  }
+
   bool isEdit() {
     return state.mode == RuleMode.editing;
   }
