@@ -4,6 +4,7 @@ import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
+import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/guest_wifi_state.dart';
 
@@ -48,13 +49,18 @@ class GuestWifiNotifier extends Notifier<GuestWiFiState> {
         .toList();
     final newSetGuestRadioSettings = setGuestRadioSettings.copyWith(
         isGuestNetworkEnabled: state.isEnabled, radios: newRadios);
-    await ref.read(routerRepositoryProvider).send(
+    await ref
+        .read(routerRepositoryProvider)
+        .send(
           JNAPAction.setGuestRadioSettings,
           data: newSetGuestRadioSettings.toMap(),
           fetchRemote: true,
           cacheLevel: CacheLevel.noCache,
           auth: true,
-        );
+        )
+        .then((_) {
+      ref.read(pollingProvider.notifier).forcePolling();
+    });
     return await fetch(true);
   }
 
