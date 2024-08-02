@@ -36,7 +36,10 @@ class PortRangeTriggeringRuleNotifier
   Future fetch() async {
     final repo = ref.read(routerRepositoryProvider);
     final lanSettings = await repo
-        .send(JNAPAction.getLANSettings)
+        .send(
+          JNAPAction.getLANSettings,
+          auth: true,
+        )
         .then((value) => RouterLANSettings.fromMap(value.output));
     _ipAddress = lanSettings.ipAddress;
     _subnetMask =
