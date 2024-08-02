@@ -1,3 +1,4 @@
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_provider.dart';
@@ -18,10 +19,17 @@ Future<void> main() async {
   });
 
   group('InternetSettings - init', () {
-    testLocalizations('InternetSettings - mac address clone on', (tester, locale) async {
+    testLocalizations('InternetSettings - mac address clone on',
+        (tester, locale) async {
       when(mockInternetSettingsNotifier.build()).thenReturn(
-          InternetSettingsState.fromJson(internetSettingsStateData).copyWith(macClone: true));
-
+          InternetSettingsState.fromJson(internetSettingsStateData)
+              .copyWith(macClone: true));
+      when(mockInternetSettingsNotifier.fetch())
+          .thenAnswer((realInvocation) async {
+        await Future.delayed(const Duration(seconds: 1));
+        return InternetSettingsState.fromJson(internetSettingsStateData)
+            .copyWith(macClone: true);
+      });
       final widget = testableSingleRoute(
         config: LinksysRouteConfig(column: ColumnGrid(column: 9)),
         overrides: [
@@ -34,10 +42,15 @@ Future<void> main() async {
       await tester.pumpWidget(widget);
     });
 
-    testLocalizations('InternetSettings - mac address clone off', (tester, locale) async {
+    testLocalizations('InternetSettings - mac address clone off',
+        (tester, locale) async {
       when(mockInternetSettingsNotifier.build()).thenReturn(
           InternetSettingsState.fromJson(internetSettingsStateData));
-
+      when(mockInternetSettingsNotifier.fetch())
+          .thenAnswer((realInvocation) async {
+        await Future.delayed(const Duration(seconds: 1));
+        return InternetSettingsState.fromJson(internetSettingsStateData);
+      });
       final widget = testableSingleRoute(
         config: LinksysRouteConfig(column: ColumnGrid(column: 9)),
         overrides: [
