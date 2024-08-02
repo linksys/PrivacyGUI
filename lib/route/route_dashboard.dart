@@ -130,7 +130,7 @@ final dashboardRoute = ShellRoute(
       config: LinksysRouteConfig(
         column: ColumnGrid(column: 12),
       ),
-      builder: (context, state) => const DashboardSupportView(),
+      builder: (context, state) => const FaqListView(),
       routes: [
         LinksysRoute(
           name: RouteNamed.faqList,
