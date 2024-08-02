@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/bullet_list/bullet_list.dart';
 import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
 import 'package:privacygui_widgets/widgets/text/app_text.dart';
@@ -28,6 +33,9 @@ Future<T?> doSomethingWithSpinner<T>(
   return task.then((value) {
     context.pop();
     return value;
+  }).onError((error, stackTrace) {
+    context.pop();
+    throw error ?? '';
   });
 }
 
@@ -267,4 +275,38 @@ Future<bool?> showUnsavedAlert(BuildContext context,
       ),
     ],
   );
+}
+
+Future showRouterNotFoundAlert(BuildContext context, WidgetRef ref) {
+  return showSimpleAppDialog(context,
+      dismissible: false,
+      title: loc(context).routerNotFound,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppText.bodyLarge(loc(context).notConnectedToRouter),
+          const AppGap.medium(),
+          AppBulletList(children: [
+            AppText.bodySmall(loc(context).routerNotFoundDesc1),
+            AppText.bodySmall(loc(context).routerNotFoundDesc2),
+            AppText.bodySmall(loc(context).routerNotFoundDesc3),
+          ])
+        ],
+      ),
+      actions: [
+        AppFilledButton(
+          loc(context).tryAgain,
+          onTap: () {
+            ref
+                .read(dashboardManagerProvider.notifier)
+                .checkDeviceInfo(null)
+                .then((value) {
+              ref.read(pollingProvider.notifier).startPolling();
+
+              context.pop();
+            });
+          },
+        ),
+      ]);
 }

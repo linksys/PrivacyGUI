@@ -158,7 +158,7 @@
   "nodeLight": "Node light",
   "nightMode": "Night mode",
   "alertExclamation": "Alert!",
-  "menuRestartNetworkMessage": "Restart router will take some time",
+  "menuRestartNetworkMessage": "If you have more than one node, all will restart. Restarting mesh WiFi system temporarily disconnects it from the Internet. All nodes and connected devices will also be temporarily disconnected, but they will reconnect when mesh system is ready again.",
   "ok": "Ok",
   "nNodes": "{count, plural, other{Nodes ({count})} one{Node (1)}}",
   "@nNodes": {
@@ -803,5 +803,10 @@
   "portRangeError": "The end port must be larger or equal to the start port.",
   "ipRangeError": "The end IP address must be larger or equal to the start IP address.",
   "dmzIpAddressIsEqualRouter": "You can't use the Router's IP, network or broadcast address.",
-  "rulesOverlapError": "The rules cannot be created because multiple rules were specified for a single port/protocol combination."
+  "rulesOverlapError": "The rules cannot be created because multiple rules were specified for a single port/protocol combination.",
+  "routerNotFound": "Router Not Found",
+  "notConnectedToRouter": "You are not connected to your router",
+  "routerNotFoundDesc1": "If using a wireless connection, check that the wireless feature on your computer or device is turned on, and make sure the device is not too far away from the router.",
+  "routerNotFoundDesc2": "If connected with a cable, make sure the cable between your computer or device and the router is securely connected.",
+  "routerNotFoundDesc3": "If your wireless connection settings (wireless network name or password) have recently changed, reconnect the device using the new settings."
 }

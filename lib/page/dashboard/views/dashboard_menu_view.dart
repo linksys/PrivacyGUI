@@ -2,7 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
@@ -14,6 +16,7 @@ import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/bullet_list/bullet_list.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
@@ -188,23 +191,17 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
 
             final reboot = Future.sync(
                     () => ref.read(pollingProvider.notifier).stopPolling())
-                .then((_) => ref
-                    .read(topologyProvider.notifier)
-                    .reboot()
-                    .then((value) {
-                      showSuccessSnackBar(
-                          context, loc(context).successExclamation);
-                    })
-                    .onError((error, stackTrace) => showFailedSnackBar(
-                        context, loc(context).unknownErrorCode(error ?? '')))
-                    .whenComplete(() {
-                      ref.read(pollingProvider.notifier).startPolling();
-                    }));
+                .then((_) => ref.read(topologyProvider.notifier).reboot());
             doSomethingWithSpinner(context, reboot, messages: [
               '${loc(context).restarting}.',
               '${loc(context).restarting}..',
               '${loc(context).restarting}...'
-            ]);
+            ]).then((value) {
+              ref.read(pollingProvider.notifier).startPolling();
+              showSuccessSnackBar(context, loc(context).successExclamation);
+            }).catchError((error) {
+              showRouterNotFoundAlert(context, ref);
+            }, test: (error) => error is JNAPSideEffectError);
           },
         ),
         AppOutlinedButton(
