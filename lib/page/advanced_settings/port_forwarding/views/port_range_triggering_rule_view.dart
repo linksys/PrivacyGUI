@@ -110,33 +110,39 @@ class _AddRuleContentViewState
               description: _ruleNameController.text);
           doSomethingWithSpinner(
             context,
-            _notifier.save(rule).then(
-              (value) {
+            _notifier.save(rule),
+          ).then(
+            (value) {
+              if (value == true) {
                 showSuccessSnackBar(
                     context,
                     _notifier.isEdit()
                         ? loc(context).ruleUpdated
                         : loc(context).ruleAdded);
-
                 context.pop(true);
-              },
-            ).onError((error, stackTrace) {
-              if (error is JNAPError) {
-                return;
+              } else {
+                showFailedSnackBar(context, loc(context).failedExclamation);
               }
-              showFailedSnackBar(
-                  context, loc(context).unknownErrorCode(error ?? ''));
-            }),
-          );
+            },
+          ).onError((error, stackTrace) {
+            if (error is JNAPError) {
+              return;
+            }
+            showFailedSnackBar(
+                context, loc(context).unknownErrorCode(error ?? ''));
+          });
         },
         onNegitiveTap: () {
-          _notifier.delete().then((value) {
-            if (value) {
+          doSomethingWithSpinner(
+            context,
+            _notifier.delete(),
+          ).then((value) {
+            if (value == true) {
               showSimpleSnackBar(context, loc(context).ruleDeleted);
+              context.pop(true);
             } else {
               showFailedSnackBar(context, loc(context).failedExclamation);
             }
-            context.pop(true);
           });
         },
       ),

@@ -109,33 +109,37 @@ class _AddRuleContentViewState
               internalServerIPAddress: _deviceIpAddressController.text,
               internalPort: int.parse(_internalPortController.text),
               description: _ruleNameController.text);
+          final thisContext = context;
           doSomethingWithSpinner(
             context,
-            _notifier.save(rule).then(
-              (value) {
-                if (value) {
-                  showSuccessSnackBar(
-                      context,
-                      _notifier.isEdit()
-                          ? loc(context).ruleUpdated
-                          : loc(context).ruleAdded);
+            _notifier.save(rule),
+          ).then(
+            (value) {
+              if (value == true) {
+                showSuccessSnackBar(
+                    context,
+                    _notifier.isEdit()
+                        ? loc(context).ruleUpdated
+                        : loc(context).ruleAdded);
 
-                  context.pop(true);
-                } else {
-                  showFailedSnackBar(context, loc(context).failedExclamation);
-                }
-              },
-            ),
+                thisContext.pop(true);
+              } else {
+                showFailedSnackBar(context, loc(context).failedExclamation);
+              }
+            },
           );
         },
         onNegitiveTap: () {
-          _notifier.delete().then((value) {
-            if (value) {
+          doSomethingWithSpinner(
+            context,
+            _notifier.delete(),
+          ).then((value) {
+            if (value == true) {
               showSimpleSnackBar(context, loc(context).ruleDeleted);
+              context.pop(true);
             } else {
               showFailedSnackBar(context, loc(context).failedExclamation);
             }
-            context.pop(true);
           });
         },
       ),
