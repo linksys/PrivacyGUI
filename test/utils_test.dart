@@ -123,6 +123,14 @@ void main() {
       expect(actual.indexOf('Linksys123!'), -1);
     });
 
+    test('maskUsernamePasswordBodyValue', () async {
+      final actual = Utils.maskUsernamePasswordBodyValue(
+          cloudLoginWithUsernamePasswordRequest);
+      print(actual);
+      expect(actual.indexOf('hank.yu%40linksys.com'), -1);
+      expect(actual.indexOf('Linksys123%21'), -1);
+    });
+
     test(
         'maskSensitiveJsonValues: masks specified keys correctly in JSON string',
         () {
