@@ -776,108 +776,105 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
         state.ipv4Setting.behavior ?? PPPConnectionBehavior.keepAlive;
     return AppSection(
       header: AppText.titleSmall(loc(context).connectionMode),
-      child: SizedBox(
-        height: 236,
-        child: AppRadioList(
-          mainAxisSize: MainAxisSize.min,
-          itemHeight: 56,
-          initial: behavior,
-          items: [
-            AppRadioListItem(
-              title: loc(context).connectOnDemand,
-              value: PPPConnectionBehavior.connectOnDemand,
-              expandedWidget: behavior == PPPConnectionBehavior.connectOnDemand
-                  ? Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        AppText.bodyMedium(loc(context).maxIdleTime),
-                        const AppGap.medium(),
-                        Row(
-                          children: [
-                            SizedBox(
-                              width: 70,
-                              height: 56,
-                              child: AppTextField.minMaxNumber(
-                                max: 9999,
-                                min: 1,
-                                controller: _idleTimeController,
-                                border: const OutlineInputBorder(),
-                                onFocusChanged: (focused) {
-                                  if (!focused) {
-                                    setState(() {
-                                      state = state.copyWith(
-                                        ipv4Setting: state.ipv4Setting.copyWith(
-                                            behavior: PPPConnectionBehavior
-                                                .connectOnDemand,
-                                            maxIdleMinutes: int.parse(
-                                                _idleTimeController.text)),
-                                      );
-                                    });
-                                  }
-                                },
-                              ),
+      child: AppRadioList(
+        mainAxisSize: MainAxisSize.min,
+        itemHeight: 56,
+        initial: behavior,
+        items: [
+          AppRadioListItem(
+            title: loc(context).connectOnDemand,
+            value: PPPConnectionBehavior.connectOnDemand,
+            expandedWidget: behavior == PPPConnectionBehavior.connectOnDemand
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AppText.bodyMedium(loc(context).maxIdleTime),
+                      const AppGap.medium(),
+                      Row(
+                        children: [
+                          SizedBox(
+                            width: 70,
+                            height: 56,
+                            child: AppTextField.minMaxNumber(
+                              max: 9999,
+                              min: 1,
+                              controller: _idleTimeController,
+                              border: const OutlineInputBorder(),
+                              onFocusChanged: (focused) {
+                                if (!focused) {
+                                  setState(() {
+                                    state = state.copyWith(
+                                      ipv4Setting: state.ipv4Setting.copyWith(
+                                          behavior: PPPConnectionBehavior
+                                              .connectOnDemand,
+                                          maxIdleMinutes: int.parse(
+                                              _idleTimeController.text)),
+                                    );
+                                  });
+                                }
+                              },
                             ),
-                            const AppGap.medium(),
-                            AppText.bodyMedium(loc(context).minutes),
-                          ],
-                        ),
-                      ],
-                    )
-                  : null,
-            ),
-            AppRadioListItem(
-              title: loc(context).keepAlive,
-              value: PPPConnectionBehavior.keepAlive,
-              expandedWidget: behavior == PPPConnectionBehavior.keepAlive
-                  ? Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        AppText.bodyMedium(loc(context).redialPeriod),
-                        const AppGap.medium(),
-                        Row(
-                          children: [
-                            SizedBox(
-                              width: 70,
-                              height: 56,
-                              child: AppTextField.minMaxNumber(
-                                max: 180,
-                                min: 20,
-                                controller: _redialPeriodController,
-                                border: const OutlineInputBorder(),
-                                onFocusChanged: (focused) {
-                                  if (!focused) {
-                                    setState(() {
-                                      state = state.copyWith(
-                                        ipv4Setting: state.ipv4Setting.copyWith(
-                                            behavior:
-                                                PPPConnectionBehavior.keepAlive,
-                                            reconnectAfterSeconds: int.parse(
-                                                _redialPeriodController.text)),
-                                      );
-                                    });
-                                  }
-                                },
-                              ),
+                          ),
+                          const AppGap.medium(),
+                          AppText.bodyMedium(loc(context).minutes),
+                        ],
+                      ),
+                    ],
+                  )
+                : null,
+          ),
+          AppRadioListItem(
+            title: loc(context).keepAlive,
+            value: PPPConnectionBehavior.keepAlive,
+            expandedWidget: behavior == PPPConnectionBehavior.keepAlive
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AppText.bodyMedium(loc(context).redialPeriod),
+                      const AppGap.medium(),
+                      Row(
+                        children: [
+                          SizedBox(
+                            width: 70,
+                            height: 56,
+                            child: AppTextField.minMaxNumber(
+                              max: 180,
+                              min: 20,
+                              controller: _redialPeriodController,
+                              border: const OutlineInputBorder(),
+                              onFocusChanged: (focused) {
+                                if (!focused) {
+                                  setState(() {
+                                    state = state.copyWith(
+                                      ipv4Setting: state.ipv4Setting.copyWith(
+                                          behavior:
+                                              PPPConnectionBehavior.keepAlive,
+                                          reconnectAfterSeconds: int.parse(
+                                              _redialPeriodController.text)),
+                                    );
+                                  });
+                                }
+                              },
                             ),
-                            const AppGap.medium(),
-                            AppText.bodyMedium(loc(context).seconds),
-                          ],
-                        ),
-                      ],
-                    )
-                  : null,
-            ),
-          ],
-          onChanged: (index, type) {
-            setState(() {
-              if (type != null) {
-                state = state.copyWith(
-                  ipv4Setting: state.ipv4Setting.copyWith(behavior: type),
-                );
-              }
-            });
-          },
-        ),
+                          ),
+                          const AppGap.medium(),
+                          AppText.bodyMedium(loc(context).seconds),
+                        ],
+                      ),
+                    ],
+                  )
+                : null,
+          ),
+        ],
+        onChanged: (index, type) {
+          setState(() {
+            if (type != null) {
+              state = state.copyWith(
+                ipv4Setting: state.ipv4Setting.copyWith(behavior: type),
+              );
+            }
+          });
+        },
       ),
     );
   }
