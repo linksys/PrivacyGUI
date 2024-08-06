@@ -215,7 +215,7 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
           .doTransaction(transactions, fetchRemote: true)
           .then((results) async {
         _handleWebRedirection(results);
-        await fetch(fetchRemote: true);
+        
       }).catchError(
         (error) {
           final sideEffectError = error as JNAPSideEffectError;
@@ -226,7 +226,9 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
           }
         },
         test: (error) => error is JNAPSideEffectError,
-      );
+      ).whenComplete(() async {
+        await fetch(fetchRemote: true);
+      });
     } else {
       throw const JNAPError(result: 'Empty wanType', error: 'Empty wanType');
     }
