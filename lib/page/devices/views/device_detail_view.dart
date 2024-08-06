@@ -135,7 +135,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
           AppSettingCard.noBorder(
             padding: const EdgeInsets.all(Spacing.medium),
             title: loc(context).signalStrength,
-            description: _formatEmptyValue('${state.item.signalStrength} dBM'),
+            description: state.item.isWired ? null : _formatEmptyValue('${state.item.signalStrength} dBM'),
             trailing: Icon(getWifiSignalIconData(
               context,
               state.item.isWired ? null : state.item.signalStrength,

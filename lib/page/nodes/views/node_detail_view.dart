@@ -211,7 +211,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
               AppSettingCard.noBorder(
                 padding: const EdgeInsets.all(Spacing.medium),
                 title: loc(context).signalStrength,
-                description: _checkEmptyValue('${state.signalStrength} dBM'),
+                description: state.isWiredConnection ? null : _checkEmptyValue('${state.signalStrength} dBM'),
                 trailing: Icon(getWifiSignalIconData(
                   context,
                   state.isWiredConnection ? null : state.signalStrength,

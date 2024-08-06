@@ -23,7 +23,10 @@ class TimezoneNotifier extends Notifier<TimezoneState> {
     final timezoneId = result.output['timeZoneID'] ?? 'PST8';
     final supportedTimezones = List.from(result.output['supportedTimeZones'])
         .map((e) => SupportedTimezone.fromMap(e))
-        .toList();
+        .toList()
+      ..sort((t1, t2) {
+        return t1.utcOffsetMinutes.compareTo(t2.utcOffsetMinutes);
+      });
     final autoAdjustForDST = result.output['autoAdjustForDST'] ?? false;
     state = state.copyWith(
         timezoneId: timezoneId,
