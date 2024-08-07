@@ -50,12 +50,11 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
           AppText.bodyLarge(
             loc(context).pnpStaticIpDesc,
           ),
-          const AppGap.large3(),
-          const AppGap.small2(),
+          const AppGap.large4(),
           if (errorMessage != null)
             Padding(
               padding: const EdgeInsets.only(
-                bottom: Spacing.large3 + Spacing.small2,
+                bottom: Spacing.large4,
               ),
               child: AppText.bodyLarge(
                 errorMessage!,
