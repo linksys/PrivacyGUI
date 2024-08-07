@@ -116,6 +116,10 @@ class RouterRepository {
     int retries = 1,
     JNAPSideEffectOverrides? sideEffectOverrides,
   }) async {
+    cacheLevel =
+        builder.commands.any((entry) => isMatchedJNAPNoCachePolicy(entry.key))
+            ? CacheLevel.noCache
+            : CacheLevel.localCached;
     final payload = builder.commands
         .map((entry) => {
               'action': builder.overrides[entry.key] ?? entry.key.actionValue,

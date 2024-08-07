@@ -199,6 +199,9 @@ void _updateBetterActions(JNAPService service) {
     case JNAPService.router6:
       _betterActionMap[JNAPAction.getExpressForwardingSettings] =
           _JNAPActionValue.getExpressForwardingSettings.value;
+      _betterActionMap[JNAPAction.setExpressForwardingSettings] =
+          _JNAPActionValue.setExpressForwardingSettings.value;
+
       break;
     case JNAPService.router7:
       _betterActionMap[JNAPAction.getWANSettings] =

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/devices/_devices.dart';
@@ -16,20 +15,9 @@ import 'package:privacygui_widgets/widgets/card/card.dart';
 import '../../../../common/config.dart';
 import '../../../../common/test_responsive_widget.dart';
 import '../../../../common/testable_router.dart';
-import '../../../../test_data/device_list_test_state.dart';
-import '../../../../test_data/guest_wifi_test_state.dart';
-import '../../../../test_data/mac_filtering_test_state.dart';
-import '../../../../test_data/wifi_advanced_settings_test_state.dart';
-import '../../../../test_data/wifi_list_test_state.dart';
-import '../../mock_spec_mocks.dart';
-import '../../wifi_main_view_test_mocks.dart';
+import '../../../../mocks/_index.dart';
+import '../../../../test_data/_index.dart';
 
-@GenerateNiceMocks([
-  MockSpec<WifiListNotifier>(),
-  MockSpec<WifiAdvancedSettingsNotifier>(),
-  MockSpec<GuestWifiNotifier>(),
-  MockSpec<MacFilteringNotifier>(),
-])
 void main() {
   late WiFiViewNotifier mockWiFiViewNotifier;
   late WifiListNotifier mockWiFiListNotifier;
