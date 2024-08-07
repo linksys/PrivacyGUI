@@ -16,7 +16,7 @@ import '../../../../../common/test_responsive_widget.dart';
 import '../../../../../common/testable_router.dart';
 import '../../../../../test_data/device_list_test_state.dart';
 import '../../../../../test_data/dmz_settings_test_state.dart';
-import '../../../../wifi_settings/mock_spec_mocks.dart';
+import '../../../../../mocks/device_list_notifier_mock.dart';
 import '../../dmz_settings_view_test_mocks.dart';
 
 @GenerateNiceMocks([

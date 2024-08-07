@@ -87,7 +87,7 @@ class WifiAdvancedSettingsNotifier extends Notifier<WifiAdvancedSettingsState> {
     return commands;
   }
 
-  Future fetch([bool force = false]) {
+  Future<WifiAdvancedSettingsState> fetch([bool force = false]) {
     return ref
         .read(routerRepositoryProvider)
         .transaction(
@@ -137,10 +137,11 @@ class WifiAdvancedSettingsNotifier extends Notifier<WifiAdvancedSettingsState> {
         isDFSEnabled: isDFSEnabled,
         isAirtimeFairnessEnabled: isAirtimeFairnessEnabled,
       );
+      return state;
     });
   }
 
-  Future save() {
+  Future<WifiAdvancedSettingsState> save() {
     return ref
         .read(routerRepositoryProvider)
         .transaction(

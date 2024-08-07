@@ -97,7 +97,34 @@ class AdministrationSettingsNotifier
   }
 
   Future<AdministrationSettingsState> save() async {
-    return fetch(true);
+    final repo = ref.read(routerRepositoryProvider);
+    await repo.transaction(
+      JNAPTransactionBuilder(commands: [
+        MapEntry(
+          JNAPAction.setManagementSettings,
+          state.managementSettings.toMap()
+            ..remove('isManageWirelesslySupported'),
+        ),
+        MapEntry(
+          JNAPAction.setUPnPSettings,
+          {
+            'isUPnPEnabled': state.isUPnPEnabled,
+            'canUsersConfigure': state.canUsersConfigure,
+            'canUsersDisableWANAccess': state.canUsersDisableWANAccess,
+          },
+        ),
+        MapEntry(
+          JNAPAction.setALGSettings,
+          {'isSIPEnabled': state.enabledALG},
+        ),
+        MapEntry(
+          JNAPAction.setExpressForwardingSettings,
+          {'isExpressForwardingEnabled': state.enabledExpressForwarfing},
+        ),
+      ], auth: true),
+    );
+    await fetch(true);
+    return state;
   }
 
   void setManagementSettings(bool value) {

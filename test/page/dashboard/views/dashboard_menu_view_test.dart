@@ -10,7 +10,7 @@ import '../../../common/config.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
 import '../../../common/testable_widget.dart';
-import '../../../mock_notifiers/mock_auth_notifier.dart';
+import '../../../mocks/mock_auth_notifier.dart';
 
 void main() {
   late AuthNotifier mockAuthNotifier;

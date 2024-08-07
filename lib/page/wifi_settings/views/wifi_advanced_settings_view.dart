@@ -31,9 +31,8 @@ class _WifiAdvancedSettingsViewState
     doSomethingWithSpinner(
       context,
       ref.read(wifiAdvancedProvider.notifier).fetch().then(
-        (value) {
+        (state) {
           ref.read(wifiViewProvider.notifier).setChanged(false);
-          final state = ref.read(wifiAdvancedProvider);
           setState(
             () {
               _preservedState = state;
@@ -58,9 +57,10 @@ class _WifiAdvancedSettingsViewState
             doSomethingWithSpinner(
               context,
               ref.read(wifiAdvancedProvider.notifier).save().then(
-                (_) {
+                (state) {
                   setState(() {
                     ref.read(wifiViewProvider.notifier).setChanged(false);
+                    _preservedState = state;
                   });
                 },
               ),

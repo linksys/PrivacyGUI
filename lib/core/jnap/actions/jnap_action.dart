@@ -142,7 +142,8 @@ enum JNAPAction {
   renewDHCPWANLease,
   renewDHCPIPv6WANLease,
   getEthernetPortConnections,
-  getExpressForwardingSettings,  
+  getExpressForwardingSettings,
+  setExpressForwardingSettings, 
   // routerManagement
   getManagementSettings,
   setManagementSettings,
