@@ -72,6 +72,7 @@ class _GuestWiFiSettingsViewState extends ConsumerState<GuestWiFiSettingsView> {
                 ref.read(wifiViewProvider.notifier).setChanged(false);
                 setState(() {
                   _preservedState = state;
+                  _guestPasswordController.text = state.password;
                 });
                 showSuccessSnackBar(context, loc(context).saved);
               }).onError(
