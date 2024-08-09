@@ -1,6 +1,5 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
@@ -9,22 +8,18 @@ import 'package:privacy_gui/core/jnap/providers/firmware_update_state.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/custom_theme.dart';
 
 import '../../../common/config.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
+import '../../../mocks/device_manager_notifier_mocks.dart';
+import '../../../mocks/firmware_update_notifier_mocks.dart';
 import '../../../test_data/dashboard_home_test_state.dart';
 import '../../../test_data/device_manager_test_state.dart';
 import '../../../test_data/firmware_update_test_state.dart';
-import '../dashboard_home_view_test_mocks.dart';
+import '../../../mocks/dashboard_home_notifier_mocks.dart';
 
-@GenerateNiceMocks([
-  MockSpec<DashboardHomeNotifier>(),
-  MockSpec<FirmwareUpdateNotifier>(),
-  MockSpec<DeviceManagerNotifier>(),
-])
 void main() async {
   late DashboardHomeNotifier mockDashboardHomeNotifier;
   late FirmwareUpdateNotifier mockFirmwareUpdateNotifier;

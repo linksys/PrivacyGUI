@@ -11,9 +11,10 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import '../../../common/config.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
+import '../../../mocks/firmware_update_notifier_mocks.dart';
 import '../../../test_data/firmware_update_test_state.dart';
 import '../../../test_data/node_details_data.dart';
-import '../node_detail_view_test_mocks.dart';
+import '../../../mocks/node_detail_notifier_mocks.dart';
 
 void main() {
   late NodeDetailNotifier mockNodeDetailNotifier;

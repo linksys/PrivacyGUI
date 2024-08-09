@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/devices/_devices.dart';
@@ -11,11 +10,8 @@ import '../../../../common/config.dart';
 import '../../../../common/test_responsive_widget.dart';
 import '../../../../common/testable_router.dart';
 import '../../../../test_data/device_details_test_state.dart';
-import '../../device_detail_view_test_mocks.dart';
+import '../../../../mocks/external_device_detail_notifier_mocks.dart';
 
-@GenerateNiceMocks([
-  MockSpec<ExternalDeviceDetailNotifier>(),
-])
 void main() {
   late ExternalDeviceDetailNotifier mockExternalDeviceDetailNotifier;
 

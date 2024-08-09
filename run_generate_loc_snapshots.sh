@@ -12,7 +12,7 @@ if [ -z "$locales" ]; then
   locales="en"
 fi
 if [ -z "$screens" ]; then
-  screens="480,1440"
+  screens="480,1280"
 fi
 if [ -z "$overlay" ]; then
   overlay="false"

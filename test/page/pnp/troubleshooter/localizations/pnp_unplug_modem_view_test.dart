@@ -11,7 +11,7 @@ import 'package:privacy_gui/route/route_model.dart';
 import '../../../../common/test_responsive_widget.dart';
 import '../../../../common/testable_router.dart';
 import '../../../../test_data/device_info_test_data.dart';
-import '../../pnp_admin_view_test_mocks.dart' as Mock;
+import '../../../../mocks/pnp_notifier_mocks.dart' as Mock;
 import 'package:privacy_gui/page/pnp/data/pnp_state.dart';
 
 void main() async {

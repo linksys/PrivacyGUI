@@ -1,16 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/route/route_model.dart';
 
 import '../../../../../common/test_responsive_widget.dart';
 import '../../../../../common/testable_router.dart';
-import '../../single_port_forwarding_rule_view_test_mocks.dart';
+import '../../../../../mocks/single_port_forwarding_rule_notifier_mocks.dart';
 
-@GenerateNiceMocks([
-  MockSpec<SinglePortForwardingRuleNotifier>(),
-])
 void main() {
   late SinglePortForwardingRuleNotifier mockSinglePortForwardingRuleNotifier;
 

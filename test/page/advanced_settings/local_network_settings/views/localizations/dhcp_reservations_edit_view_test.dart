@@ -1,11 +1,9 @@
-import 'package:mockito/annotations.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import '../../../../../common/test_responsive_widget.dart';
 import '../../../../../common/testable_router.dart';
 import '../../../../../test_data/local_network_settings_state.dart';
 
-@GenerateNiceMocks([MockSpec<LocalNetworkSettingsNotifier>()])
 void main() {
   testLocalizations('DHCP reservations edit view test - Add DHCP reservation',
       (tester, locale) async {

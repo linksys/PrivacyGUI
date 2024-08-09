@@ -1,29 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_state.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/network_admin/_network_admin.dart';
-import 'package:privacy_gui/page/network_admin/providers/_providers.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/card/list_card.dart';
 
 import '../../../../common/config.dart';
 import '../../../../common/test_responsive_widget.dart';
 import '../../../../common/testable_router.dart';
+import '../../../../mocks/router_password_notifier_mocks.dart';
 import '../../../../test_data/firmware_update_test_state.dart';
 import '../../../../test_data/router_password_test_state.dart';
 import '../../../../test_data/timezone_test_state.dart';
-import '../../../firmware_update/firmware_update_detail_view_test_mocks.dart';
-import '../../network_admin_view_test_mocks.dart';
+import '../../../../mocks/firmware_update_notifier_mocks.dart';
+import '../../../../mocks/timezone_notifier_mocks.dart';
 
-@GenerateNiceMocks([
-  MockSpec<RouterPasswordNotifier>(),
-  MockSpec<TimezoneNotifier>(),
-])
 void main() {
   late RouterPasswordNotifier mockRouterPasswordNotifier;
   late TimezoneNotifier mockTimezoneNotifier;

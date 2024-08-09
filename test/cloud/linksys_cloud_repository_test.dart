@@ -1,19 +1,15 @@
 import 'dart:convert';
 
-import 'package:privacy_gui/core/http/linksys_http_client.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_session_model.dart';
 import 'package:privacy_gui/core/cloud/model/error_response.dart';
 import 'package:privacy_gui/core/cloud/linksys_cloud_repository.dart';
-import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:riverpod/riverpod.dart';
 import 'package:test/test.dart';
 import 'package:http/http.dart' as http;
 
-import 'linksys_cloud_repository_test_mocks.dart';
+import '../mocks/linksys_http_client_mocks.dart';
 
-@GenerateNiceMocks(
-    [MockSpec<LinksysHttpClient>(onMissingStub: OnMissingStub.returnDefault)])
 void main() {
   group('linksys cloud repository - login', () {
     test('login success with session token', () async {

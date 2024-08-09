@@ -6,7 +6,7 @@ import 'package:mockito/mockito.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
 import '../../../test_data/topology_data.dart';
-import '../topology_view_test_mocks.dart';
+import '../../../mocks/topology_notifier_mocks.dart';
 
 void main() async {
   late TopologyNotifier mockTopologyNotifier;

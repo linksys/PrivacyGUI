@@ -16,8 +16,8 @@ import '../../../../../../common/test_responsive_widget.dart';
 import '../../../../../../common/testable_router.dart';
 import '../../../../../../test_data/device_info_test_data.dart';
 import '../../../../../../test_data/internet_settings_state_data.dart';
-import '../../../../pnp_admin_view_test_mocks.dart' as Mock;
-import '../../../../pnp_isp_type_selection_view_test_mocks.dart';
+import '../../../../../../mocks/pnp_notifier_mocks.dart' as Mock;
+import '../../../../../../mocks/internet_settings_notifier_mocks.dart';
 
 void main() async {
   late Mock.MockPnpNotifier mockPnpNotifier;
