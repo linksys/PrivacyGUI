@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import '../../../../../common/test_responsive_widget.dart';
 import '../../../../../common/testable_router.dart';
 import '../../../../../test_data/local_network_settings_state.dart';
-import '../../local_network_settings_view_test_mocks.dart';
+import '../../../../../mocks/local_network_settings_notifier_mocks.dart';
 
-@GenerateNiceMocks([MockSpec<LocalNetworkSettingsNotifier>()])
 void main() {
   late MockLocalNetworkSettingsNotifier mockLocalNetworkSettingsNotifier;
 

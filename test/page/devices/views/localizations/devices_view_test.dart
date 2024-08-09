@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_state.dart';
@@ -11,17 +10,14 @@ import 'package:privacygui_widgets/icons/linksys_icons.dart';
 
 import '../../../../common/test_responsive_widget.dart';
 import '../../../../common/testable_router.dart';
+import '../../../../mocks/device_manager_notifier_mocks.dart';
 import '../../../../test_data/dashboard_manager_test_state.dart';
 import '../../../../test_data/device_filter_config_test_state.dart';
 import '../../../../test_data/device_filtered_list_test_data.dart';
 import '../../../../test_data/device_manager_test_state.dart';
-import '../../../dashboard/dashboard_home_view_test_mocks.dart';
-import '../../../login/localizations/login_local_view_test_mocks.dart';
-import '../../devices_view_test_mocks.dart';
+import '../../../../mocks/dashboard_manager_notifier_mocks.dart';
+import '../../../../mocks/device_filter_config_notifier_mocks.dart';
 
-@GenerateNiceMocks([
-  MockSpec<DeviceFilterConfigNotifier>(),
-])
 void main() {
   late DeviceFilterConfigNotifier mockDeviceFilterConfigNotifier;
   late DeviceManagerNotifier mockDeviceManagerNotifier;

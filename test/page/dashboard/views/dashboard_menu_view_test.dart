@@ -206,7 +206,7 @@ void main() {
       // check contents on the dialog
       final dialogTitleFinder = find.text('Alert!');
       final dialogMessageFinder =
-          find.text('Restart router will take some time');
+          find.text('If you have more than one node, all will restart. Restarting mesh WiFi system temporarily disconnects it from the Internet. All nodes and connected devices will also be temporarily disconnected, but they will reconnect when mesh system is ready again.');
       final dialogOkFinder = find.text('Ok');
       final dialogCancelFinder = find.text('Cancel');
       expect(dialogTitleFinder, findsOneWidget);
@@ -240,7 +240,7 @@ void main() {
       // check contents on the dialog
       final dialogTitleFinder = find.text('Alert!');
       final dialogMessageFinder =
-          find.text('Restart router will take some time');
+          find.text('If you have more than one node, all will restart. Restarting mesh WiFi system temporarily disconnects it from the Internet. All nodes and connected devices will also be temporarily disconnected, but they will reconnect when mesh system is ready again.');
       final dialogOkFinder = find.text('Ok');
       final dialogCancelFinder = find.text('Cancel');
       expect(dialogTitleFinder, findsOneWidget);

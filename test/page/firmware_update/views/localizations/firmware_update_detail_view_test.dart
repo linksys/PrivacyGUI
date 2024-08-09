@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_state.dart';
@@ -8,9 +7,8 @@ import 'package:privacy_gui/route/route_model.dart';
 import '../../../../common/test_responsive_widget.dart';
 import '../../../../common/testable_router.dart';
 import '../../../../test_data/firmware_update_test_state.dart';
-import '../../firmware_update_detail_view_test_mocks.dart';
+import '../../../../mocks/firmware_update_notifier_mocks.dart';
 
-@GenerateNiceMocks([MockSpec<FirmwareUpdateNotifier>()])
 void main() {
   late MockFirmwareUpdateNotifier mockFirmwareUpdateNotifier;
 

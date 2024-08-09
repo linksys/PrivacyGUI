@@ -8,7 +8,7 @@ import 'package:privacy_gui/route/route_model.dart';
 import '../../../../../common/test_responsive_widget.dart';
 import '../../../../../common/testable_router.dart';
 import '../../../../../test_data/internet_settings_state_data.dart';
-import '../../../../pnp/pnp_isp_type_selection_view_test_mocks.dart';
+import '../../../../../mocks/internet_settings_notifier_mocks.dart';
 
 Future<void> main() async {
   late InternetSettingsNotifier mockInternetSettingsNotifier;

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/models/device.dart';
 import 'package:privacy_gui/page/nodes/providers/add_nodes_provider.dart';
@@ -14,9 +13,8 @@ import '../../../../common/test_responsive_widget.dart';
 import '../../../../common/testable_router.dart';
 import '../../../../common/utils.dart';
 import '../../../../test_data/device_test_data.dart';
-import 'add_nodes_view_test_mocks.dart';
+import '../../../../mocks/add_nodes_notifier_mocks.dart';
 
-@GenerateNiceMocks([MockSpec<AddNodesNotifier>()])
 void main() async {
   late MockAddNodesNotifier mockAddNodesNotifier;
 

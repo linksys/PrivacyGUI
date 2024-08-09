@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/health_check/_health_check.dart';
 
 import '../../../../common/test_responsive_widget.dart';
 import '../../../../common/testable_router.dart';
 import '../../../../test_data/health_check_state_data.dart';
-import '../../speed_test_view_test_mocks.dart';
+import '../../../../mocks/health_check_provider_mocks.dart';
 
-@GenerateNiceMocks([MockSpec<HealthCheckProvider>()])
 Future<void> main() async {
   late HealthCheckProvider mockHealthCheckProvider;
 

@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_state.dart';
@@ -8,9 +7,8 @@ import 'package:privacy_gui/route/route_model.dart';
 import '../../../../../common/test_responsive_widget.dart';
 import '../../../../../common/testable_router.dart';
 import '../../../../../test_data/static_routing_state.dart';
-import '../../static_routing_view_test_mocks.dart';
+import '../../../../../mocks/static_routing_notifier_mocks.dart';
 
-@GenerateNiceMocks([MockSpec<StaticRoutingNotifier>()])
 void main() {
   late MockStaticRoutingNotifier mockStaticRoutingNotifier;
 

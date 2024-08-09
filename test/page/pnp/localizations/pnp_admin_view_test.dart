@@ -2,15 +2,13 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
-import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/pnp/data/pnp_exception.dart';
 import 'package:privacy_gui/page/pnp/data/pnp_provider.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
-import '../pnp_admin_view_test_mocks.dart' as Mock;
+import '../../../mocks/pnp_notifier_mocks.dart' as Mock;
 import 'package:privacy_gui/page/pnp/data/pnp_state.dart';
 import 'package:privacy_gui/page/pnp/pnp_admin_view.dart';
 
@@ -18,7 +16,6 @@ import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
 import '../../../test_data/device_info_test_data.dart';
 
-@GenerateNiceMocks([MockSpec<PnpNotifier>(), MockSpec<RouterRepository>()])
 void main() async {
   late Mock.MockPnpNotifier mockPnpNotifier;
 

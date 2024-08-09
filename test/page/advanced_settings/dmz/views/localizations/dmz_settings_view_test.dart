@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/models/dmz_settings.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
@@ -17,11 +16,8 @@ import '../../../../../common/testable_router.dart';
 import '../../../../../test_data/device_list_test_state.dart';
 import '../../../../../test_data/dmz_settings_test_state.dart';
 import '../../../../../mocks/device_list_notifier_mock.dart';
-import '../../dmz_settings_view_test_mocks.dart';
+import '../../../../../mocks/dmz_setting_notifier_mocks.dart';
 
-@GenerateNiceMocks([
-  MockSpec<DMZSettingNotifier>(),
-])
 void main() {
   late DMZSettingNotifier mockDMZSettingNotifier;
 

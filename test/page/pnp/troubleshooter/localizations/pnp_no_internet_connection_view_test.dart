@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/page/pnp/data/pnp_exception.dart';
@@ -12,12 +11,11 @@ import 'package:privacy_gui/route/route_model.dart';
 import '../../../../common/test_responsive_widget.dart';
 import '../../../../common/testable_router.dart';
 import '../../../../test_data/device_info_test_data.dart';
-import '../../pnp_admin_view_test_mocks.dart' as Mock;
+import '../../../../mocks/pnp_notifier_mocks.dart' as Mock;
 import 'package:privacy_gui/page/pnp/data/pnp_state.dart';
 
-import '../../pnp_no_internet_connection_view_test_mocks.dart';
+import '../../../../mocks/pnp_troubleshooter_notifier_mocks.dart';
 
-@GenerateNiceMocks([MockSpec<PnpTroubleshooterNotifier>()])
 void main() async {
   late Mock.MockPnpNotifier mockPnpNotifier;
   late MockPnpTroubleshooterNotifier mockPnpTroubleshooterNotifier;

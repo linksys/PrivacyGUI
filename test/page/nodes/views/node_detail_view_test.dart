@@ -4,17 +4,15 @@ import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_state.dart';
 import 'package:privacy_gui/page/nodes/_nodes.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 
 import '../../../common/config.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_widget.dart';
+import '../../../mocks/firmware_update_notifier_mocks.dart';
 import '../../../test_data/node_details_data.dart';
-import '../node_detail_view_test_mocks.dart';
+import '../../../mocks/node_detail_notifier_mocks.dart';
 
-@GenerateNiceMocks(
-    [MockSpec<NodeDetailNotifier>(), MockSpec<FirmwareUpdateNotifier>()])
 void main() {
   late NodeDetailNotifier mockNodeDetailNotifier;
   late FirmwareUpdateNotifier mockFirmwareUpdateNotifier;

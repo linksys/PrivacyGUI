@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/safe_browsing/providers/_providers.dart';
 import 'package:privacy_gui/page/safe_browsing/views/safe_browsing_view.dart';
@@ -9,9 +8,8 @@ import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import '../../../../common/test_responsive_widget.dart';
 import '../../../../common/testable_router.dart';
 import '../../../../test_data/safe_browsing_test_state.dart';
-import '../../safe_browsing_view_test_mocks.dart';
+import '../../../../mocks/safe_browsing_notifier_mocks.dart';
 
-@GenerateNiceMocks([MockSpec<SafeBrowsingNotifier>()])
 void main() {
   late SafeBrowsingNotifier mockSafeBrowsingNotifier;
 

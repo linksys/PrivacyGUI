@@ -8,8 +8,6 @@ import 'dart:async' as _i5;
 import 'package:flutter_riverpod/flutter_riverpod.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:privacy_gui/core/jnap/models/device.dart' as _i7;
-import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart'
-    as _i8;
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart' as _i6;
 import 'package:privacy_gui/page/nodes/providers/add_nodes_provider.dart'
     as _i4;

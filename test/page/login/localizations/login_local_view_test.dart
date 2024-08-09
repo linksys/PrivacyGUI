@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
@@ -15,11 +14,10 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
+import '../../../mocks/router_repository_mocks.dart';
 import '../../../test_data/device_info_test_data.dart';
-import 'login_local_view_test_mocks.dart';
+import '../../../mocks/dashboard_manager_notifier_mocks.dart';
 
-@GenerateNiceMocks(
-    [MockSpec<DashboardManagerNotifier>(), MockSpec<RouterRepository>()])
 void main() async {
   late DashboardManagerNotifier mockDashboardManagerNotifier;
   late MockRouterRepository mockRouterRepository;
