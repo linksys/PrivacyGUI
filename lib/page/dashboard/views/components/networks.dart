@@ -234,8 +234,14 @@ class DashboardNetworks extends ConsumerWidget {
       child: AppListCard(
         padding: const EdgeInsets.symmetric(vertical: Spacing.medium),
         title: AppText.titleMedium(node.getDeviceLocation()),
-        description: AppText.bodyMedium(
-            loc(context).nDevices(node.connectedDevices.length)),
+        description: Semantics(
+          label: 'now-text-device-location',
+          child: Semantics(
+            label: 'now-text-device-count',
+            child: AppText.bodyMedium(
+                loc(context).nDevices(node.connectedDevices.length)),
+          ),
+        ),
         leading: Image(
           image: CustomTheme.of(context).images.devices.getByName(
                 routerIconTestByModel(modelNumber: node.modelNumber ?? ''),

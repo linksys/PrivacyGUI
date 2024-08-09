@@ -30,34 +30,34 @@ class LinksysApp extends ConsumerStatefulWidget {
 class _LinksysAppState extends ConsumerState<LinksysApp>
     with WidgetsBindingObserver {
   LinksysRoute? _currentRoute;
+  late ConnectivityNotifier _connectivityNotifier;
+  late GoRouterDelegate _routerDelegate;
+
   @override
   void initState() {
     WidgetsBinding.instance.addObserver(this);
 
     super.initState();
 
-    final connectivity = ref.read(connectivityProvider.notifier);
-    connectivity.start();
-    connectivity.forceUpdate().then((value) => _initAuth());
-
+    _connectivityNotifier = ref.read(connectivityProvider.notifier);
+    _connectivityNotifier.start();
+    _connectivityNotifier.forceUpdate().then((value) => _initAuth());
+    _routerDelegate = ref.read(routerProvider).routerDelegate;
     ref.read(appSettingsProvider.notifier).load();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    ref.read(connectivityProvider.notifier).stop();
-    ref
-        .read(routerProvider)
-        .routerDelegate
-        .removeListener(_onReceiveRouteChanged);
+    _connectivityNotifier.stop();
+    _routerDelegate.removeListener(_onReceiveRouteChanged);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     logger.d('App:: build: $_currentRoute');
-    
+
     final appSettings = ref.watch(appSettingsProvider);
     final systemLocaleStr = Intl.getCurrentLocale();
     final systemLocale = Locale(getLanguageData(systemLocaleStr)['value']);
