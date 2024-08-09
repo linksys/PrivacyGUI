@@ -39,8 +39,9 @@ class CustomOutput extends LogOutput {
       // await sp.setString(pWebLog,
       //     '$content\n${Utils.maskSensitiveJsonValues(Utils.replaceHttpScheme(output.toString()))}\n');
 
-      recordLog(Utils.maskSensitiveJsonValues(
-          Utils.replaceHttpScheme(output.toString())));
+      recordLog(Utils.maskUsernamePasswordBodyValue(
+          Utils.maskSensitiveJsonValues(
+              Utils.replaceHttpScheme(output.toString()))));
     }
   }
 

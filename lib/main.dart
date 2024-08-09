@@ -38,7 +38,7 @@ void main() async {
   if (!kIsWeb) {
     HttpOverrides.global = MyHTTPOverrides();
   }
-  runApp(_app());
+  runApp(app());
 }
 
 checkFirstLaunch() {
@@ -67,7 +67,8 @@ initErrorHandler() {
 
 final container = ProviderContainer();
 
-Widget _app() {
+
+Widget app() {
   return ProviderScope(
     observers: [
       ProviderLogger(),
