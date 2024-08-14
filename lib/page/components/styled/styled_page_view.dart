@@ -372,7 +372,11 @@ class StyledAppPageView extends ConsumerWidget {
                     shape: const RoundedRectangleBorder(
                         borderRadius: BorderRadius.all(Radius.circular(100))),
                     leading: e.icon != null ? Icon(e.icon) : null,
-                    title: AppText.bodySmall(e.label),
+                    title: Semantics(
+                      excludeSemantics: true,
+                      identifier: 'now-submenu-${e.label}',
+                      child: AppText.bodySmall(e.label),
+                    ),
                     onTap: e.onTap,
                   ))
             ],
