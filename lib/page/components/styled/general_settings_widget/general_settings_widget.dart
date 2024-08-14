@@ -13,6 +13,7 @@ import 'package:privacygui_widgets/widgets/buttons/popup_button.dart';
 import 'package:privacy_gui/util/url_helper/url_helper.dart'
     if (dart.library.io) 'package:privacy_gui/util/url_helper/url_helper_mobile.dart'
     if (dart.library.html) 'package:privacy_gui/util/url_helper/url_helper_web.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 
 class GeneralSettingsWidget extends ConsumerStatefulWidget {
   const GeneralSettingsWidget({super.key});
@@ -31,9 +32,12 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
 
     return AppPopupButton(
       parent: shellNavigatorKey.currentContext,
-      button: const Icon(
-        LinksysIcons.person,
-        size: 20,
+      button: Semantics(
+        identifier: 'now-topbar-general-icon-settings',
+        child: const Icon(
+          LinksysIcons.person,
+          size: 20,
+        ),
       ),
       borderRadius: const BorderRadius.all(Radius.circular(10)),
       backgroundColor: Theme.of(context).colorScheme.background,
@@ -57,7 +61,7 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
                   },
                   onSelected: (locale) {
                     final appSettings = ref.read(appSettingsProvider);
-
+                
                     ref
                         .read(appSettingsProvider.notifier)
                         .update(appSettings.copyWith(locale: locale));
@@ -65,9 +69,12 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
                 ),
               ),
               const AppGap.medium(),
-              const Padding(
-                padding: EdgeInsets.all(8.0),
-                child: ThemeTile(),
+              Padding(
+                padding: const EdgeInsets.all(Spacing.small2),
+                child: Semantics(
+                  identifier: 'now-general-settings-theme',
+                  child: const ThemeTile(),
+                ),
               ),
               const AppGap.medium(),
               ..._displayAdditional(loginType),
@@ -75,8 +82,11 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
                   future: getVersion(full: true),
                   initialData: '-',
                   builder: (context, data) {
-                    return AppText.bodySmall(
-                      'version ${data.data}',
+                    return Semantics(
+                      identifier: 'now-general-text-version',
+                      child: AppText.bodySmall(
+                        'version ${data.data}',
+                      ),
                     );
                   }),
             ],

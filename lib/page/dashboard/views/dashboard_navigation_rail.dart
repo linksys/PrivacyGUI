@@ -32,31 +32,34 @@ class _DashboardNavigationRailState
   @override
   Widget build(BuildContext context) {
     bool isMobile = ResponsiveLayout.isMobileLayout(context);
-    return NavigationRail(
-      leading: isMobile
-          ? null
-          : Padding(
-              padding: const EdgeInsets.only(
-                  top: 8, left: 24, bottom: 60, right: 24),
-              child: InkWell(
-                child: SvgPicture(
-                  CustomTheme.of(context).images.linksysLogoBlack,
-                  width: 20,
-                  height: 20,
+    return Semantics(
+      explicitChildNodes: true,
+      child: NavigationRail(
+        leading: isMobile
+            ? null
+            : Padding(
+                padding: const EdgeInsets.only(
+                    top: 8, left: 24, bottom: 60, right: 24),
+                child: InkWell(
+                  child: SvgPicture(
+                    CustomTheme.of(context).images.linksysLogoBlack,
+                    width: 20,
+                    height: 20,
+                  ),
+                  onTap: () {
+                    showColumnOverlayNotifier.value =
+                        !showColumnOverlayNotifier.value;
+                  },
                 ),
-                onTap: () {
-                  showColumnOverlayNotifier.value =
-                      !showColumnOverlayNotifier.value;
-                },
               ),
-            ),
-      labelType: NavigationRailLabelType.all,
-      destinations: widget.items,
-      selectedIndex: widget.selected,
-      indicatorColor: Theme.of(context).colorScheme.primary,
-      // selectedIconTheme:
-      //     IconThemeData(color: Theme.of(context).colorScheme.onPrimary),
-      onDestinationSelected: widget.onItemTapped,
+        labelType: NavigationRailLabelType.all,
+        destinations: widget.items,
+        selectedIndex: widget.selected,
+        indicatorColor: Theme.of(context).colorScheme.primary,
+        // selectedIconTheme:
+        //     IconThemeData(color: Theme.of(context).colorScheme.onPrimary),
+        onDestinationSelected: widget.onItemTapped,
+      ),
     );
   }
 }

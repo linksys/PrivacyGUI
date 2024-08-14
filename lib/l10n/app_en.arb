@@ -808,5 +808,15 @@
   "notConnectedToRouter": "You are not connected to your router",
   "routerNotFoundDesc1": "If using a wireless connection, check that the wireless feature on your computer or device is turned on, and make sure the device is not too far away from the router.",
   "routerNotFoundDesc2": "If connected with a cable, make sure the cable between your computer or device and the router is securely connected.",
-  "routerNotFoundDesc3": "If your wireless connection settings (wireless network name or password) have recently changed, reconnect the device using the new settings."
+  "routerNotFoundDesc3": "If your wireless connection settings (wireless network name or password) have recently changed, reconnect the device using the new settings.",
+  "copyRight": "© {year} Linksys Holdings, Inc. and/or its affiliates. All rights reserved.",
+  "@copyRight": {
+    "description": "year",
+    "placeholders": {
+      "year": {
+        "type": "int",
+        "example": "2024"
+      }
+    }
+  }
 }

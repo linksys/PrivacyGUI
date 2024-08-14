@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/page/dashboard/views/dashboard_navigation_rail.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
@@ -227,12 +228,20 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
 
   NavigationDestination _bottomSheetIconView(DashboardNaviItem item) {
     return NavigationDestination(
-      icon: Icon(
-        item.icon,
+      icon: Semantics(
+        identifier:
+            'now-dashboard-navi-rail-${item.type.resloveLabel(context).kebab()}',
+        child: Icon(
+          item.icon,
+        ),
       ),
-      selectedIcon: Icon(
-        item.icon,
-        color: Theme.of(context).colorScheme.onPrimary,
+      selectedIcon: Semantics(
+        identifier:
+            'now-dashboard-navi-rail-selected-${item.type.resloveLabel(context).kebab()}',
+        child: Icon(
+          item.icon,
+          color: Theme.of(context).colorScheme.onPrimary,
+        ),
       ),
       label: item.type.resloveLabel(context),
     );
@@ -241,12 +250,20 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
   NavigationRailDestination _createNavigationRailDestination(
       DashboardNaviItem item) {
     return NavigationRailDestination(
-      icon: Icon(
-        item.icon,
+      icon: Semantics(
+        identifier:
+            'now-dashboard-navi-rail-${item.type.resloveLabel(context).kebab()}',
+        child: Icon(
+          item.icon,
+        ),
       ),
-      selectedIcon: Icon(
-        item.icon,
-        color: Theme.of(context).colorScheme.onPrimary,
+      selectedIcon: Semantics(
+        identifier:
+            'now-dashboard-navi-rail-selected-${item.type.resloveLabel(context).kebab()}',
+        child: Icon(
+          item.icon,
+          color: Theme.of(context).colorScheme.onPrimary,
+        ),
       ),
       label: AppText.bodySmall(
         item.type.resloveLabel(context),

@@ -175,6 +175,12 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
                           _shouldEnableLoginButton();
                         });
                       },
+                      onSubmitted: (_) {
+                        if (_passwordController.text.isEmpty) {
+                          return;
+                        }
+                        _localLogin();
+                      },
                       errorText: _errorMessage,
                     ),
                   ),
