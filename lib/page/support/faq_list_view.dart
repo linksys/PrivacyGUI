@@ -31,7 +31,7 @@ class FaqListView extends ArgumentsConsumerStatelessView {
           AppTextButton.noPadding(
             loc(context).faqVisitLinksysSupport,
             onTap: () {
-              _launchUrl('https://www.linksys.com/linksys-support');
+              _launchUrl('https://store.linksys.com/linksys-support');
             },
           ),
         ],
@@ -50,12 +50,12 @@ class FaqListView extends ArgumentsConsumerStatelessView {
                   AppTextButton(loc(context).faqListCannotAddChildNode,
                       onTap: () {
                     _launchUrl(
-                        'https://www.linksys.com/us/support-article?articleNum=333430#Q1PlaceNodes');
+                        'https://store.linksys.com/us/support-article?articleNum=333430#Q1PlaceNodes');
                   }),
                   AppTextButton(loc(context).noInternetConnectionTitle,
                       onTap: () {
                     _launchUrl(
-                        'https://www.linksys.com/us/support-article?articleNum=48464');
+                        'https://store.linksys.com/us/support-article?articleNum=48464');
                   }),
                 ],
               ),
@@ -68,20 +68,20 @@ class FaqListView extends ArgumentsConsumerStatelessView {
                 children: [
                   AppTextButton(loc(context).faqListLoseChildNode, onTap: () {
                     _launchUrl(
-                        'https://www.linksys.com/us/support-article?articleNum=333430#Q2NodeConnection');
+                        'https://store.linksys.com/us/support-article?articleNum=333430#Q2NodeConnection');
                   }),
                   AppTextButton(loc(context).faqListLoseDevices, onTap: () {
                     _launchUrl(
-                        'https://www.linksys.com/us/support-article?articleNum=333430#Q3DeviceConnection');
+                        'https://store.linksys.com/us/support-article?articleNum=333430#Q3DeviceConnection');
                   }),
                   AppTextButton(loc(context).faqListDeviceNoWiFi, onTap: () {
                     _launchUrl(
-                        'https://www.linksys.com/us/support-article?articleNum=316292');
+                        'https://store.linksys.com/us/support-article?articleNum=316292');
                   }),
                   AppTextButton(loc(context).faqListDeviceNoBestNode,
                       onTap: () {
                     _launchUrl(
-                        'https://www.linksys.com/us/support-article?articleNum=333430#Q4DeviceNode');
+                        'https://store.linksys.com/us/support-article?articleNum=333430#Q4DeviceNode');
                   }),
                 ],
               ),
@@ -94,17 +94,17 @@ class FaqListView extends ArgumentsConsumerStatelessView {
                 children: [
                   AppTextButton(loc(context).faqListMyInternetSlow, onTap: () {
                     _launchUrl(
-                        'https://www.linksys.com/us/support-article?articleNum=333431#q2');
+                        'https://store.linksys.com/us/support-article?articleNum=333431#q2');
                   }),
                   AppTextButton(loc(context).faqListSpecificDeviceSlow,
                       onTap: () {
                     _launchUrl(
-                        'https://www.linksys.com/us/support-article?articleNum=333431#q3');
+                        'https://store.linksys.com/us/support-article?articleNum=333431#q3');
                   }),
                   AppTextButton(loc(context).faqListSlowAfterAddNode,
                       onTap: () {
                     _launchUrl(
-                        'https://www.linksys.com/us/support-article?articleNum=333431#q4');
+                        'https://store.linksys.com/us/support-article?articleNum=333431#q4');
                   }),
                 ],
               ),
@@ -118,22 +118,22 @@ class FaqListView extends ArgumentsConsumerStatelessView {
                   AppTextButton(loc(context).faqListLogInByRouterPassword,
                       onTap: () {
                     _launchUrl(
-                        'https://www.linksys.com/us/support-article?articleNum=333431#q2');
+                        'https://store.linksys.com/us/support-article?articleNum=333431#q2');
                   }),
                   AppTextButton(loc(context).faqListForgotRouterPassword,
                       onTap: () {
                     _launchUrl(
-                        'https://www.linksys.com/us/support-article?articleNum=274484#q4');
+                        'https://store.linksys.com/us/support-article?articleNum=274484#q4');
                   }),
                   AppTextButton(loc(context).faqListChangeWiFiNamePassword,
                       onTap: () {
                     _launchUrl(
-                        'https://www.linksys.com/us/support-article?articleNum=203471');
+                        'https://store.linksys.com/us/support-article?articleNum=203471');
                   }),
                   AppTextButton(loc(context).faqListAccessByWebBrowser,
                       onTap: () {
                     _launchUrl(
-                        'https://www.linksys.com/us/support-article?articleNum=274484#q3');
+                        'https://store.linksys.com/us/support-article?articleNum=274484#q3');
                   }),
                 ],
               ),
@@ -146,31 +146,31 @@ class FaqListView extends ArgumentsConsumerStatelessView {
                 children: [
                   AppTextButton(loc(context).faqListWhatLightsMean, onTap: () {
                     _launchUrl(
-                        'https://www.linksys.com/us/support-article?articleNum=217443');
+                        'https://store.linksys.com/us/support-article?articleNum=217443');
                   }),
                   AppTextButton(loc(context).faqListHowToFactoryReset,
                       onTap: () {
                     _launchUrl(
-                        'https://www.linksys.com/us/support-article?articleNum=224178');
+                        'https://store.linksys.com/us/support-article?articleNum=224178');
                   }),
                   AppTextButton(loc(context).faqListNodeKeepRestarting,
                       onTap: () {
                     _launchUrl(
-                        'https://www.linksys.com/us/support-article?articleNum=333429#Restarting');
+                        'https://store.linksys.com/us/support-article?articleNum=333429#Restarting');
                   }),
                   AppTextButton(loc(context).faqListLightsNotWorking,
                       onTap: () {
                     _launchUrl(
-                        'https://www.linksys.com/us/support-article?articleNum=333429#LightNotWorking');
+                        'https://store.linksys.com/us/support-article?articleNum=333429#LightNotWorking');
                   }),
                   AppTextButton(loc(context).faqListNodeNotTurnOn, onTap: () {
                     _launchUrl(
-                        'https://www.linksys.com/us/support-article?articleNum=333429#NotTurningOn');
+                        'https://store.linksys.com/us/support-article?articleNum=333429#NotTurningOn');
                   }),
                   AppTextButton(loc(context).faqListEthernetPortNotWorking,
                       onTap: () {
                     _launchUrl(
-                        'https://www.linksys.com/us/support-article?articleNum=333429#PortsNotWorking');
+                        'https://store.linksys.com/us/support-article?articleNum=333429#PortsNotWorking');
                   }),
                 ],
               ),

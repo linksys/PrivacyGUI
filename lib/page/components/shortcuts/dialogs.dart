@@ -162,6 +162,7 @@ Future<T?> showSimpleAppDialog<T>(
     barrierDismissible: dismissible,
     builder: (context) {
       return AlertDialog(
+        semanticLabel: title,
         icon: icon,
         title: title != null
             ? SizedBox(

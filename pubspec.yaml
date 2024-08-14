@@ -69,7 +69,7 @@ dependencies:
   riverpod: ^2.5.1
   flutter_riverpod: ^2.5.1
   riverpod_annotation: ^2.0.1
-  go_router: ^14.2.3
+  go_router: ^10.2.0
   qr: ^3.0.1
   animated_list_plus: ^0.5.2
   shimmer: ^3.0.0
