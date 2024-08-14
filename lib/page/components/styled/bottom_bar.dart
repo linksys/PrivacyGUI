@@ -39,13 +39,16 @@ class _BottomBarState extends ConsumerState<BottomBar> {
                       children: [
                         Padding(
                           padding: const EdgeInsets.only(right: 8.0),
-                          child: AppText.bodySmall(
-                              '© 2024 Linksys Holdings, Inc. and/or its affiliates. All rights reserved.'),
+                          child: Semantics(
+                              identifier: 'now-bottom-text-copyright',
+                              child: AppText.bodySmall(
+                                  loc(context).copyRight(2024))),
                         ),
                         AppTextButton.noPadding(
                           loc(context).endUserLicenseAgreement,
+                          identifier: 'now-bottom-text-button-eula',
                           onTap: () {
-                            openUrl('https://www.linksys.com/EULA.html');
+                            openUrl('https://store.linksys.com/EULA.html');
                           },
                         ),
                         const Padding(
@@ -54,8 +57,9 @@ class _BottomBarState extends ConsumerState<BottomBar> {
                         ),
                         AppTextButton.noPadding(
                           loc(context).termsOfService,
+                          identifier: 'now-bottom-text-button-terms',
                           onTap: () {
-                            openUrl('https://www.linksys.com/terms.html');
+                            openUrl('https://store.linksys.com/terms.html');
                           },
                         ),
                         const Padding(
@@ -64,10 +68,11 @@ class _BottomBarState extends ConsumerState<BottomBar> {
                         ),
                         AppTextButton.noPadding(
                           loc(context).privacyAndSecurity,
+                          identifier: 'now-bottom-text-button-privacy',
                           onTap: () {
                             // TODO languages?
                             openUrl(
-                                'https://www.linksys.com/support-article?articleNum=47763');
+                                'https://store.linksys.com/support-article?articleNum=47763');
                           },
                         ),
                         const Padding(
@@ -76,9 +81,10 @@ class _BottomBarState extends ConsumerState<BottomBar> {
                         ),
                         AppTextButton.noPadding(
                           loc(context).thirdPartyLicenses,
+                          identifier: 'now-bottom-text-button-third-party',
                           onTap: () {
                             openUrl(
-                                'https://www.linksys.com/privacy-and-security.html');
+                                'https://store.linksys.com/privacy-and-security.html');
                           },
                         ),
                       ],

@@ -49,23 +49,17 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    InkWell(
-                      child: (loginType == LoginType.none ||
-                              ResponsiveLayout.isMobileLayout(context))
-                          ? SvgPicture(
-                              CustomTheme.of(context).images.linksysLogoBlack,
-                              width: 20,
-                              height: 20,
-                            )
-                          : const SizedBox(
-                              width: 20,
-                              height: 20,
-                            ),
-                      onTap: () {
-                        showColumnOverlayNotifier.value =
-                            !showColumnOverlayNotifier.value;
-                      },
-                    ),
+                    (loginType == LoginType.none ||
+                            ResponsiveLayout.isMobileLayout(context))
+                        ? SvgPicture(
+                            CustomTheme.of(context).images.linksysLogoBlack,
+                            width: 20,
+                            height: 20,
+                          )
+                        : const SizedBox(
+                            width: 20,
+                            height: 20,
+                          ),
                     Wrap(
                       children: [
                         if (loginType == LoginType.remote) _networkSelect(),

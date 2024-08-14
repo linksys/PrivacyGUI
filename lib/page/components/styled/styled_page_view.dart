@@ -11,6 +11,7 @@ import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/page/base_page_view.dart';
 import 'package:collection/collection.dart';
+import 'package:privacy_gui/core/utils/extension.dart';
 
 import 'package:privacy_gui/localization/localization_hook.dart';
 
@@ -270,26 +271,59 @@ class StyledAppPageView extends ConsumerWidget {
                   const Divider(height: 1),
                   Padding(
                     padding: const EdgeInsets.only(top: 16.0),
-                    child: Row(
-                      children: [
-                        if (ResponsiveLayout.isMobileLayout(context)) ...[
-                          if (bottomBar?.isNegitiveEnabled != null) ...[
+                    child: Semantics(
+                      identifier: 'now-page-bottom-container',
+                      child: Row(
+                        children: [
+                          if (ResponsiveLayout.isMobileLayout(context)) ...[
+                            if (bottomBar?.isNegitiveEnabled != null) ...[
+                              Expanded(
+                                child: AppOutlinedButton.fillWidth(
+                                  bottomBar?.negitiveLable ??
+                                      loc(context).cancel,
+                                  onTap: bottomBar?.isNegitiveEnabled == true
+                                      ? () {
+                                          bottomBar?.onNegitiveTap?.call();
+                                        }
+                                      : null,
+                                  color: Theme.of(context).colorScheme.outline,
+                                  identifier: 'now-page-bottom-button-negitive',
+                                ),
+                              ),
+                              const AppGap.medium(),
+                            ],
                             Expanded(
-                              child: AppOutlinedButton.fillWidth(
+                              child: AppFilledButton.fillWidth(
+                                bottomBar?.positiveLabel ?? loc(context).save,
+                                onTap: bottomBar?.isPositiveEnabled == true
+                                    ? () {
+                                        bottomBar?.onPositiveTap.call();
+                                      }
+                                    : null,
+                                color: bottomBar is InversePageBottomBar
+                                    ? Theme.of(context).colorScheme.error
+                                    : null,
+                                identifier: 'now-page-bottom-button-positive',
+                              ),
+                            ),
+                          ],
+                          if (!ResponsiveLayout.isMobileLayout(context)) ...[
+                            if (bottomBar?.isNegitiveEnabled != null) ...[
+                              AppOutlinedButton(
                                 bottomBar?.negitiveLable ?? loc(context).cancel,
+                                color: Theme.of(context).colorScheme.outline,
+                                identifier: 'now-page-bottom-button-negitice',
                                 onTap: bottomBar?.isNegitiveEnabled == true
                                     ? () {
                                         bottomBar?.onNegitiveTap?.call();
                                       }
                                     : null,
-                                color: Theme.of(context).colorScheme.outline,
                               ),
-                            ),
-                            const AppGap.medium(),
-                          ],
-                          Expanded(
-                            child: AppFilledButton.fillWidth(
+                              const AppGap.medium(),
+                            ],
+                            AppFilledButton(
                               bottomBar?.positiveLabel ?? loc(context).save,
+                              identifier: 'now-page-bottom-button-positive',
                               onTap: bottomBar?.isPositiveEnabled == true
                                   ? () {
                                       bottomBar?.onPositiveTap.call();
@@ -299,34 +333,9 @@ class StyledAppPageView extends ConsumerWidget {
                                   ? Theme.of(context).colorScheme.error
                                   : null,
                             ),
-                          ),
-                        ],
-                        if (!ResponsiveLayout.isMobileLayout(context)) ...[
-                          if (bottomBar?.isNegitiveEnabled != null) ...[
-                            AppOutlinedButton(
-                              bottomBar?.negitiveLable ?? loc(context).cancel,
-                              color: Theme.of(context).colorScheme.outline,
-                              onTap: bottomBar?.isNegitiveEnabled == true
-                                  ? () {
-                                      bottomBar?.onNegitiveTap?.call();
-                                    }
-                                  : null,
-                            ),
-                            const AppGap.medium(),
                           ],
-                          AppFilledButton(
-                            bottomBar?.positiveLabel ?? loc(context).save,
-                            onTap: bottomBar?.isPositiveEnabled == true
-                                ? () {
-                                    bottomBar?.onPositiveTap.call();
-                                  }
-                                : null,
-                            color: bottomBar is InversePageBottomBar
-                                ? Theme.of(context).colorScheme.error
-                                : null,
-                          ),
                         ],
-                      ],
+                      ),
                     ),
                   )
                 ],
@@ -354,33 +363,40 @@ class StyledAppPageView extends ConsumerWidget {
   }
 
   Widget _createMenuWidget(BuildContext context, [double? maxWidth]) {
-    return Container(
-      constraints: maxWidth != null ? BoxConstraints(maxWidth: maxWidth) : null,
-      child: menuWidget ??
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(
-                    left: 24.0, right: 24.0, top: 24.0, bottom: 0.0),
-                child: AppText.titleSmall(menu?.title ?? ''),
-              ),
-              const AppGap.medium(),
-              ...(menu?.items ?? []).map((e) => ListTile(
-                    shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(100))),
-                    leading: e.icon != null ? Icon(e.icon) : null,
-                    title: Semantics(
-                      excludeSemantics: true,
-                      identifier: 'now-submenu-${e.label}',
-                      child: AppText.bodySmall(e.label),
-                    ),
-                    onTap: e.onTap,
-                  ))
-            ],
-          ),
+    return Semantics(
+      explicitChildNodes: true,
+      identifier: 'now-page-menu-container',
+      child: Container(
+        constraints:
+            maxWidth != null ? BoxConstraints(maxWidth: maxWidth) : null,
+        child: menuWidget ??
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(
+                      left: 24.0, right: 24.0, top: 24.0, bottom: 0.0),
+                  child: Semantics(
+                      identifier: 'now-page-menu-title',
+                      child: AppText.titleSmall(menu?.title ?? '')),
+                ),
+                const AppGap.medium(),
+                ...(menu?.items ?? []).map((e) => ListTile(
+                      shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(100))),
+                      leading: e.icon != null ? Icon(e.icon) : null,
+                      title: Semantics(
+                        excludeSemantics: true,
+                        identifier: 'now-page-menu-${e.label.kebab()}',
+                        child: AppText.bodySmall(e.label),
+                      ),
+                      onTap: e.onTap,
+                    ))
+              ],
+            ),
+      ),
     );
   }
 }
