@@ -24,7 +24,9 @@ void main() async {
   SemanticsBinding.instance.ensureSemantics();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   await Storage.init();
-  await initLog();
+  if (kDebugMode) {
+    print(await getPackageInfo());
+  }
 
   checkFirstLaunch();
 

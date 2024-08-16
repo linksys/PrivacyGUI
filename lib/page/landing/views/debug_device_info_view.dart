@@ -19,7 +19,7 @@ class _DebugDeviceInfoViewState extends ConsumerState<DebugDeviceInfoView> {
   String _appInfoFromLogger = '';
 
   _DebugDeviceInfoViewState() {
-    getAppInfoLogs().then((value) {
+    getPackageInfo().then((value) {
       setState(() {
         _appInfoFromLogger = value;
       });
