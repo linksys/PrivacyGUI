@@ -44,8 +44,8 @@ class _LanguageTileState extends ConsumerState<LanguageTile> {
         widget.onTap?.call();
       },
       child: Semantics(
-          excludeSemantics: true,
           identifier: 'now-general-settings-locale',
+          label: 'locale',
           child: _displayLocale(widget.locale)),
     );
   }
@@ -71,6 +71,8 @@ class _LanguageTileState extends ConsumerState<LanguageTile> {
       duration: const Duration(milliseconds: 200),
       child: Semantics(
         identifier: 'now-locale-list',
+        label: 'locale list',
+        explicitChildNodes: true,
         child: ListView.builder(
             itemCount: localeList.length,
             itemBuilder: (context, index) {
@@ -84,6 +86,7 @@ class _LanguageTileState extends ConsumerState<LanguageTile> {
                 trailing: widget.locale == locale
                     ? Semantics(
                         identifier: 'now-locale-item-checked',
+                        label: 'checked',
                         child: const Icon(LinksysIcons.check))
                     : null,
                 onTap: () {

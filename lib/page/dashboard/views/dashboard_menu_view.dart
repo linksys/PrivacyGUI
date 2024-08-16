@@ -237,7 +237,8 @@ class AppMenuCard extends StatelessWidget {
       onTap: onTap,
       color: color,
       borderColor: borderColor,
-      excludeSemantics: true,
+      // excludeSemantics: true,
+      explicitChildNodes: false,
       identifier: 'now-menu-${title?.kebab()}',
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
