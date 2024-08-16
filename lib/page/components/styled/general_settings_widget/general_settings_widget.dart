@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/build_config.dart';
+import 'package:privacy_gui/constants/url_links.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/general_settings_widget/language_tile.dart';
 import 'package:privacy_gui/page/components/styled/general_settings_widget/theme_tile.dart';
@@ -10,9 +11,6 @@ import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/buttons/popup_button.dart';
-import 'package:privacy_gui/util/url_helper/url_helper.dart'
-    if (dart.library.io) 'package:privacy_gui/util/url_helper/url_helper_mobile.dart'
-    if (dart.library.html) 'package:privacy_gui/util/url_helper/url_helper_web.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 
 class GeneralSettingsWidget extends ConsumerStatefulWidget {
@@ -110,7 +108,8 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
           child: AppTextButton(
             loc(context).endUserLicenseAgreement,
             onTap: () {
-              openUrl('https://www.linksys.com/EULA.html');
+              gotoOfficialWebUrl(linkEULA,
+                  locale: ref.read(appSettingsProvider).locale);
             },
           ),
         ),
@@ -119,7 +118,8 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
           child: AppTextButton(
             loc(context).termsOfService,
             onTap: () {
-              openUrl('https://www.linksys.com/terms.html');
+              gotoOfficialWebUrl(linkTerms,
+                  locale: ref.read(appSettingsProvider).locale);
             },
           ),
         ),
@@ -128,8 +128,8 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
           child: AppTextButton(
             loc(context).thirdPartyLicenses,
             onTap: () {
-              openUrl(
-                  'https://www.linksys.com/support-article?articleNum=47763');
+              gotoOfficialWebUrl(linkThirdParty,
+                  locale: ref.read(appSettingsProvider).locale);
             },
           ),
         ),
@@ -138,7 +138,8 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
           child: AppTextButton(
             loc(context).privacyAndSecurity,
             onTap: () {
-              openUrl('https://www.linksys.com/privacy-and-security.html');
+              gotoOfficialWebUrl(linkPrivacy,
+                  locale: ref.read(appSettingsProvider).locale);
             },
           ),
         ),
