@@ -388,7 +388,7 @@ class StyledAppPageView extends ConsumerWidget {
                           borderRadius: BorderRadius.all(Radius.circular(100))),
                       leading: e.icon != null ? Icon(e.icon) : null,
                       title: Semantics(
-                        excludeSemantics: true,
+                        // excludeSemantics: true,
                         identifier: 'now-page-menu-${e.label.kebab()}',
                         child: AppText.bodySmall(e.label),
                       ),

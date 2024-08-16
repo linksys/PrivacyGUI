@@ -10,6 +10,7 @@ import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/expansion_card.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:privacy_gui/core/utils/extension.dart';
 
 class FaqListView extends ArgumentsConsumerStatelessView {
   const FaqListView({
@@ -30,6 +31,7 @@ class FaqListView extends ArgumentsConsumerStatelessView {
           const AppGap.medium(),
           AppTextButton.noPadding(
             loc(context).faqVisitLinksysSupport,
+            identifier: 'now-faq-link-${'faqVisitLinksysSupport'.kebab()}',
             onTap: () {
               _launchUrl('https://store.linksys.com/linksys-support');
             },
@@ -48,11 +50,15 @@ class FaqListView extends ArgumentsConsumerStatelessView {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   AppTextButton(loc(context).faqListCannotAddChildNode,
+                      identifier:
+                          'now-faq-${'faqListCannotAddChildNode'.kebab()}',
                       onTap: () {
                     _launchUrl(
                         'https://store.linksys.com/us/support-article?articleNum=333430#Q1PlaceNodes');
                   }),
                   AppTextButton(loc(context).noInternetConnectionTitle,
+                      identifier:
+                          'now-faq-${'noInternetConnectionTitle'.kebab()}',
                       onTap: () {
                     _launchUrl(
                         'https://store.linksys.com/us/support-article?articleNum=48464');
@@ -187,6 +193,7 @@ class FaqListView extends ArgumentsConsumerStatelessView {
   }) {
     return AppExpansionCard(
       title: title,
+      identifier: 'now-faq-${title.kebab()}',
       expandedIcon: LinksysIcons.add,
       collapsedIcon: LinksysIcons.remove,
       children: [

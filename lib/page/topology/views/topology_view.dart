@@ -57,6 +57,7 @@ class _TopologyViewState extends ConsumerState<TopologyView> {
                   AppTextButton.noPadding(
                     loc(context).addNodes,
                     icon: LinksysIcons.add,
+                    identifier: 'now-topology-button-add-nodes',
                     onTap: () {
                       context.pushNamed(RouteNamed.addNodes).then((result) {
                         if (result is bool && result) {

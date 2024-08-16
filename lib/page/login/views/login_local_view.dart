@@ -157,6 +157,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
           child: SizedBox(
             width: 4.col,
             child: AppCard(
+              excludeSemantics: false,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -166,22 +167,25 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
                   const AppGap.large3(),
                   SizedBox(
                     width: 289,
-                    child: AppPasswordField(
-                      border: const OutlineInputBorder(),
-                      controller: _passwordController,
-                      hintText: loc(context).routerPassword,
-                      onChanged: (value) {
-                        setState(() {
-                          _shouldEnableLoginButton();
-                        });
-                      },
-                      onSubmitted: (_) {
-                        if (_passwordController.text.isEmpty) {
-                          return;
-                        }
-                        _localLogin();
-                      },
-                      errorText: _errorMessage,
+                    child: Semantics(
+                      label: 'Router password field',
+                      child: AppPasswordField(
+                        border: const OutlineInputBorder(),
+                        controller: _passwordController,
+                        hintText: loc(context).routerPassword,
+                        onChanged: (value) {
+                          setState(() {
+                            _shouldEnableLoginButton();
+                          });
+                        },
+                        onSubmitted: (_) {
+                          if (_passwordController.text.isEmpty) {
+                            return;
+                          }
+                          _localLogin();
+                        },
+                        errorText: _errorMessage,
+                      ),
                     ),
                   ),
                   if (_passwordHint != null)

@@ -126,6 +126,7 @@ class DashboardWiFiGrid extends ConsumerWidget {
               ),
               AppIconButton.noPadding(
                   icon: LinksysIcons.share,
+                  semanticLabel: 'share',
                   onTap: () {
                     _showWiFiShareModal(context, item);
                   })
