@@ -55,8 +55,11 @@ class CustomOutput extends LogOutput {
 }
 
 Map<String, List<(int, String)>> _webLogCache = {};
-const int _maxLogSizeEachTag = 2000;
-const String _logTagRegex = r'\[(\w*)\]:(.*)';
+const _maxLogSizeOfRouteTag = 20;
+const _maxLogSizeOfGeneralTag = 2000;
+const _logTagRegex = r'\[(\w*)\]:(.*)';
+const appLogTag = 'app';
+const routeLogTag = 'routeChanged';
 
 void _recordLog(String log) async {
   // Add every log message to the 'app' log list
@@ -68,9 +71,11 @@ void _recordLog(String log) async {
   }
 }
 
-void _addLogWithTag({required String message, String tag = 'app'}) {
+void _addLogWithTag({required String message, String tag = appLogTag}) {
   final logList = _webLogCache[tag] ?? [];
-  if (logList.length + 1 > _maxLogSizeEachTag) {
+  final maxSize =
+      tag == routeLogTag ? _maxLogSizeOfRouteTag : _maxLogSizeOfGeneralTag;
+  if (logList.length + 1 > maxSize) {
     logList.removeAt(0);
   }
   logList.add((DateTime.now().millisecondsSinceEpoch, message));
@@ -90,7 +95,7 @@ void _addLogWithTag({required String message, String tag = 'app'}) {
   return (message, tag);
 }
 
-String _getWebLogByTag({String tag = 'app'}) {
+String _getWebLogByTag({String tag = appLogTag}) {
   final logList = _webLogCache[tag] ?? [];
   return logList
       .sorted((a, b) => a.$1.compareTo(b.$1))
@@ -99,10 +104,15 @@ String _getWebLogByTag({String tag = 'app'}) {
 }
 
 Future<String> outputFullWebLog(BuildContext context) async {
-  final keys = List.from(_webLogCache.keys)..remove('app');
+  final keys = List.from(_webLogCache.keys)
+    ..remove(appLogTag)
+    ..remove(routeLogTag);
+
   return '''
 ${await getPackageInfo()}
 ${getScreenInfo(context)}
+================================= View History =================================
+${_getWebLogByTag(tag: routeLogTag)}
 ============================== Custom Tag Summary ==============================
 ${keys.map((e) => '[$e]\n${_getWebLogByTag(tag: e)}').join('\n\n')}
 ================================== Full Logs ===================================

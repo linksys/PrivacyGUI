@@ -262,23 +262,23 @@ class LinksysHttpClient extends http.BaseClient
   }
 
   _logRequest(http.BaseRequest request, {int retry = 0}) {
-    logger.i('\nREQUEST---------------------------------------------------\n'
+    logger.i('\nREQUEST-------------------------------------------------------------------------\n'
         '${retry == 0 ? '' : 'RETRY: $retry\n'}'
         'URL: ${request.url}, METHOD: ${request.method}\n'
         'HEADERS: ${request.headers}\n'
         '${request is http.Request ? 'BODY: ${request.body}' : request is http.MultipartRequest ? 'Content-Length: ${request.contentLength}' : ''}\n'
-        '---------------------------------------------------REQUEST END\n');
+        '---------------------------------------------------------------------REQUEST END\n');
   }
 
   _logResponse(http.Response response, {bool ignoreResponse = false}) {
     final request = response.request;
     if (request != null) {
-      logger.i('\nRESPONSE---------------------------------------------------\n'
+      logger.i('\nRESPONSE------------------------------------------------------------------------\n'
           'URL: ${request.url}, METHOD: ${request.method}\n'
           'REQUEST HEADERS: ${request.headers}\n'
           'RESPONSE HEADERS: ${response.headers}\n'
           'RESPONSE: ${response.statusCode}, ${ignoreResponse ? '' : response.body}\n'
-          '---------------------------------------------------RESPONSE END\n');
+          '--------------------------------------------------------------------RESPONSE END\n');
     }
   }
 
