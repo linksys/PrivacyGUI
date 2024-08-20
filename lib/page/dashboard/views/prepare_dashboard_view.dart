@@ -11,6 +11,7 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
+import 'package:privacy_gui/providers/auth/ra_session_provider.dart';
 import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_provider.dart';
 import 'package:privacy_gui/constants/_constants.dart';
@@ -87,8 +88,8 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
         .read(dashboardManagerProvider.notifier)
         .checkDeviceInfo(null)
         .then<NodeDeviceInfo?>((nodeDeviceInfo) {
-              // Build/Update better actions
-    buildBetterActions(nodeDeviceInfo.services);
+      // Build/Update better actions
+      buildBetterActions(nodeDeviceInfo.services);
       return nodeDeviceInfo;
     }).onError((error, stackTrace) => null);
     if (nodeDeviceInfo != null) {
@@ -98,6 +99,11 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
 
       ref.read(pollingProvider.notifier).stopPolling();
       ref.read(pollingProvider.notifier).startPolling();
+      // RA mode
+      final raMode = prefs.getBool(pRAMode) ?? false;
+      if (raMode) {
+        ref.read(raSessionProvider.notifier).startMonitorSession();
+      }
       router.goNamed(RouteNamed.dashboardHome);
     } else {
       // TODO #LINKSYS Error handling for unable to get deviceinfo

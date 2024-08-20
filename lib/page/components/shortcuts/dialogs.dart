@@ -95,6 +95,7 @@ Future<T?> showSubmitAppDialog<T>(
   String? positiveLabel,
   bool Function()? checkPositiveEnabled,
   required Future<T> Function() event,
+  void Function(Object? error, StackTrace stackTrace)? onError,
 }) {
   bool isLoading = false;
   return showDialog<T?>(
@@ -137,6 +138,11 @@ Future<T?> showSubmitAppDialog<T>(
                                 isLoading = false;
                               });
                               context.pop(value);
+                            }).onError((error, stackTrace) {
+                              setState(() {
+                                isLoading = false;
+                              });
+                              onError?.call(error, stackTrace);
                             });
                           }
                         : null,

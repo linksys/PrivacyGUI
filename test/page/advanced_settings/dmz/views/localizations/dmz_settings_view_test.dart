@@ -140,7 +140,7 @@ void main() {
     await tester.pumpAndSettle();
   });
 
-    testLocalizations('DMZ settings view - Saved', (tester, locale) async {
+  testLocalizations('DMZ settings view - Saved', (tester, locale) async {
     final state = DMZSettingsState.fromMap(dmzSettingsTestState)
         .copyWith(settings: const DMZSettings(isDMZEnabled: true));
     when(mockDMZSettingNotifier.build()).thenReturn(state);

@@ -57,7 +57,7 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
   @override
   Widget build(BuildContext context) {
     logger.d('App:: build: $_currentRoute');
-
+    
     final appSettings = ref.watch(appSettingsProvider);
     final systemLocaleStr = Intl.getCurrentLocale();
     final systemLocale = Locale(getLanguageData(systemLocaleStr)['value']);

@@ -20,6 +20,7 @@ const pPnpConfiguredSN = "PnPLinksysSN";
 const pPnpSetup = "PnPSetup";
 
 const pAppSettings = "AppSettings";
+const pRAMode = 'AppRaMode';
 
 // secured
 const pSessionToken = 'SessionToken';

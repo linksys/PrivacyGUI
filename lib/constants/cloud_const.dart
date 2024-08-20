@@ -59,6 +59,7 @@ const kVarToken = '{token}';
 const kVarEventSubscriptionId = '{eventSubscriptionId}';
 const kVarId = '{id}';
 const kTicketId = '{ticketId}';
+const kVarRASessionId = '{remoteassistancesessionId}';
 
 // Cloud API Service
 const kAuthorizationService = '/cloud/authorization-service';
@@ -68,6 +69,7 @@ const kSmartDeviceService = '/cloud/smart-device-service';
 const kEventService = '/cloud/event-service';
 const kAssetService = '/cloud/asset-service';
 const kStorageService = '/cloud/storage-service';
+const kRemoteAssistanceService = '/cloud/remote-access-service';
 
 /// Cloud API Endpoint
 // Authorization service
@@ -109,7 +111,17 @@ const kFetchLinkup = '$kAssetService/rest/assets/linkup';
 // Storage service
 const kDeviceUpload =
     '$kStorageService/rest/deviceuploads?uploadType=MOBILE_LOG';
-
+// Remote assistance
+const kRASessions = '$kRemoteAssistanceService/rest/remoteassistance/sessions';
+const kRAAccountInfo =
+    '$kRemoteAssistanceService/rest/remoteassistance/sessions/$kVarRASessionId/accountinfo';
+const kRASessionInfo =
+    '$kRemoteAssistanceService/rest/remoteassistance/sessions/$kVarRASessionId';
+const kRATemporaryRAS =
+    '$kRemoteAssistanceService/rest/remoteassistance/temporaryras';
+const kRASendPin =
+    '$kRemoteAssistanceService/rest/remoteassistance/sessions/sendpin';
+const kRAPin = '$kRemoteAssistanceService/rest/remoteassistance/sessions/pin';
 // Create Ticket
 const kTickets = '/cloud/v1/tickets';
 const kGetTicketDetails = '/cloud/v1/tickets/$kTicketId';
@@ -129,4 +141,6 @@ const kHeaderUserAgentId = 'X-Linksys-User-Agent-Id';
 const kHeaderTimestamp = 'X-Linksys-Timestamp';
 const kHeaderLinksysToken = 'X-Linksys-Token';
 const kHeaderSerialNumber = 'X-Linksys-SN';
+const kHeaderNetworkId = 'X-Linksys-Network-Id';
+
 ///

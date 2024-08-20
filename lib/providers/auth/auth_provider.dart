@@ -1,19 +1,23 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
+
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:privacy_gui/providers/auth/ra_session_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:privacy_gui/constants/default_country_codes.dart';
 import 'package:privacy_gui/constants/error_code.dart';
 import 'package:privacy_gui/constants/jnap_const.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
+import 'package:privacy_gui/core/cloud/linksys_cloud_repository.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_session_model.dart';
 import 'package:privacy_gui/core/cloud/model/error_response.dart';
 import 'package:privacy_gui/core/cloud/model/region_code.dart';
 import 'package:privacy_gui/core/http/linksys_http_client.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
-import 'package:privacy_gui/core/cloud/linksys_cloud_repository.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
@@ -22,7 +26,6 @@ import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/providers/auth/auth_exception.dart';
 import 'package:privacy_gui/utils.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 enum LoginType { none, local, remote }
 
@@ -339,6 +342,16 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       await storage.delete(key: pLocalPassword);
       await storage.delete(key: pUsername);
       await storage.delete(key: pUserPassword);
+
+      // RA sessions
+      bool raMode = prefs.getBool(pRAMode) ?? false;
+      if (raMode) {
+        await ref
+            .read(raSessionProvider.notifier)
+            .raLogout()
+            .onError((error, stackTrace) => null);
+        ref.read(raSessionProvider.notifier).stopMonitorSession();
+      }
       return AuthState.empty();
     });
     ref.read(pollingProvider.notifier).stopPolling();
@@ -357,5 +370,26 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       regions = List.from(jsonArray.map((e) => RegionCode.fromJson(e)));
     }
     return regions;
+  }
+
+  Future raLogin(
+    String sessionToken,
+    String networkId,
+    String serialNumber,
+  ) async {
+    // update selected network id provider
+    // update network id and sn to prefs
+    await ref
+        .read(dashboardManagerProvider.notifier)
+        .saveSelectedNetwork(serialNumber, networkId);
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setBool(pRAMode, true);
+
+    // Update credientials
+    state = AsyncValue.data(await updateCredientials(
+        sessionToken: SessionToken(
+            accessToken: sessionToken,
+            tokenType: 'Bearer',
+            expiresIn: DateTime.now().millisecondsSinceEpoch)));
   }
 }
