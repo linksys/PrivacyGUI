@@ -1,13 +1,16 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../common/config.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
 
 void main() async {
-
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
   testLocalizations('Dashboard Menu View', (tester, locale) async {
     await tester.pumpWidget(
       testableRouteShellWidget(

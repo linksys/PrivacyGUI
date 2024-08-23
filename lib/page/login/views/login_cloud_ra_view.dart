@@ -117,7 +117,6 @@ class _LoginCloudRAViewState extends ConsumerState<LoginCloudRAView> {
                       border: const OutlineInputBorder(),
                       controller: _passwordController,
                       hintText: getAppLocalizations(context).password,
-                      errorText: generalErrorCodeHandler(context, _error),
                       onChanged: (value) {
                         setState(() {
                           _error = '';

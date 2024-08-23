@@ -6,6 +6,7 @@ import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/dashboard/views/components/remote_assistance_widget.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
@@ -39,6 +40,15 @@ class FaqListView extends ArgumentsConsumerStatelessView {
                   locale: ref.read(appSettingsProvider).locale);
             },
           ),
+          const AppGap.large2(),
+          RemoteAssistanceWidget(
+              child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: AppText.labelMedium(
+              'Remote Assistance (PoC)',
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ))
         ],
       ),
       menuOnRight: true,

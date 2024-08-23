@@ -135,6 +135,11 @@ class RASessionNotifier extends Notifier<RASession> {
       }
     } while (expireIn < 0);
   }
+
+  Future<bool> isRAMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(pRAMode) ?? false;
+  }
 }
 
 class RAException extends Error {}

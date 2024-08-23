@@ -208,13 +208,24 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
     });
   }
 
-  _prepareNavigationItems(BuildContext context) async {
+  _prepareNavigationItems(BuildContext context) {
     //
     if (!mounted) {
       return;
     }
-    final prefs = await SharedPreferences.getInstance();
-    final raMode = prefs.getBool(pRAMode) ?? false;
+    SharedPreferences.getInstance().then((prefs) {
+      final raMode = prefs.getBool(pRAMode) ?? false;
+      // if (raMode) {
+        setState(() {
+          _dashboardNaviItems
+              .removeWhere((element) => element.type == NaviType.support);
+          _dashboardNaviItems.add(const DashboardNaviItem(
+              icon: LinksysIcons.troubleshoot,
+              type: NaviType.diagnostic,
+              rootPath: RouteNamed.dashboardDiagnostic));
+        });
+      // }
+    });
     const items = [
       DashboardNaviItem(
           icon: LinksysIcons.home,
@@ -224,19 +235,12 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
           icon: LinksysIcons.menu,
           type: NaviType.menu,
           rootPath: RouteNamed.dashboardMenu),
+      DashboardNaviItem(
+          icon: LinksysIcons.help,
+          type: NaviType.support,
+          rootPath: RouteNamed.dashboardSupport),
     ];
     _dashboardNaviItems.addAll(items);
-    _dashboardNaviItems.add(
-      raMode
-          ? const DashboardNaviItem(
-              icon: LinksysIcons.troubleshoot,
-              type: NaviType.diagnostic,
-              rootPath: RouteNamed.dashboardDiagnostic)
-          : const DashboardNaviItem(
-              icon: LinksysIcons.help,
-              type: NaviType.support,
-              rootPath: RouteNamed.dashboardSupport),
-    );
   }
 
   NavigationDestination _bottomSheetIconView(DashboardNaviItem item) {

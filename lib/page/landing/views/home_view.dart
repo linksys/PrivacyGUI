@@ -70,7 +70,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
         AppFilledButton.fillWidth(
           getAppLocalizations(context).login,
           identifier: 'now-home-button-login',
-        key: const Key('home_view_button_login'),
+          key: const Key('home_view_button_login'),
           onTap: () {
             if (BuildConfig.forceCommandType == ForceCommand.local) {
               context.pushNamed(RouteNamed.localLoginPassword);
@@ -79,12 +79,15 @@ class _HomeViewState extends ConsumerState<HomeView> {
             }
           },
         ),
-      if (BuildConfig.caLogin)
-        AppFilledButton.fillWidth(
-          'CA Login',
-          onTap: () {
-            context.pushNamed(RouteNamed.cloudRALogin);
-          },
+      // if (BuildConfig.caLogin)
+        Padding(
+          padding: EdgeInsets.symmetric(vertical: 16),
+          child: AppFilledButton.fillWidth(
+            'CA Login',
+            onTap: () {
+              context.pushNamed(RouteNamed.cloudRALogin);
+            },
+          ),
         ),
       const AppGap.small3(),
       if (!kIsWeb)
