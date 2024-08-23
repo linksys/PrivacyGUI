@@ -5,6 +5,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/util/semantic.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
@@ -32,6 +33,8 @@ class PortForwardingContentView extends ArgumentsConsumerStatefulView {
 
 class _PortForwardingContentViewState
     extends ConsumerState<PortForwardingContentView> {
+  final String _tag = 'port-forwarding';
+
   @override
   void initState() {
     super.initState();
@@ -51,8 +54,16 @@ class _PortForwardingContentViewState
           children: [
             AppListCard(
               padding: const EdgeInsets.all(Spacing.large2),
-              title: AppText.labelLarge(loc(context).singlePortForwarding),
-              trailing: const Icon(LinksysIcons.chevronRight),
+              title: AppText.labelLarge(
+                loc(context).singlePortForwarding,
+                identifier: semanticIdentifier(
+                    tag: _tag, description: 'singlePortForwarding'),
+              ),
+              trailing: Semantics(
+                  identifier: semanticIdentifier(
+                      tag: _tag, description: 'singlePortForwarding-icon'),
+                  label: '${loc(context).singlePortForwarding} icon',
+                  child: const Icon(LinksysIcons.chevronRight)),
               onTap: () {
                 context.pushNamed(RouteNamed.singlePortForwardingList);
               },
@@ -60,8 +71,16 @@ class _PortForwardingContentViewState
             const AppGap.small2(),
             AppListCard(
               padding: const EdgeInsets.all(Spacing.large2),
-              title: AppText.labelLarge(loc(context).portRangeForwarding),
-              trailing: const Icon(LinksysIcons.chevronRight),
+              title: AppText.labelLarge(
+                loc(context).portRangeForwarding,
+                identifier: semanticIdentifier(
+                    tag: _tag, description: 'portRangeForwarding'),
+              ),
+              trailing: Semantics(
+                  identifier: semanticIdentifier(
+                      tag: _tag, description: 'portRangeForwarding-icon'),
+                  label: '${loc(context).portRangeForwarding} icon',
+                  child: const Icon(LinksysIcons.chevronRight)),
               onTap: () {
                 context.pushNamed(RouteNamed.portRangeForwardingList);
               },
@@ -69,8 +88,16 @@ class _PortForwardingContentViewState
             const AppGap.small2(),
             AppListCard(
               padding: const EdgeInsets.all(Spacing.large2),
-              title: AppText.labelLarge(loc(context).portRangeTriggering),
-              trailing: const Icon(LinksysIcons.chevronRight),
+              title: AppText.labelLarge(
+                loc(context).portRangeTriggering,
+                identifier: semanticIdentifier(
+                    tag: _tag, description: 'portRangeTriggering'),
+              ),
+              trailing: Semantics(
+                  identifier: semanticIdentifier(
+                      tag: _tag, description: 'portRangeTriggering-icon'),
+                  label: '${loc(context).portRangeTriggering} icon',
+                  child: const Icon(LinksysIcons.chevronRight)),
               onTap: () {
                 context.pushNamed(RouteNamed.portRangeTriggeringList);
               },

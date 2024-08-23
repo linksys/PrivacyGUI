@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/advanced_settings/widgets/_widgets.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/util/semantic.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/gap/gap.dart';
@@ -47,6 +48,8 @@ class InternetSettingsContentView extends ArgumentsConsumerStatefulView {
 
 class _InternetSettingsContentViewState
     extends ConsumerState<InternetSettingsContentView> {
+  final String _tag = 'internet-settings';
+
   @override
   void initState() {
     super.initState();
@@ -79,6 +82,9 @@ class _InternetSettingsContentViewState
                 children: [
                   InternetSettingCard(
                     title: loc(context).ipv4,
+                    identifier:
+                        semanticIdentifier(tag: _tag, description: 'ipv4'),
+                    semanticLabel: loc(context).ipv4,
                     showBorder: false,
                     onTap: () {
                       context.pushNamed(RouteNamed.connectionType, extra: {
@@ -92,6 +98,9 @@ class _InternetSettingsContentViewState
                   ),
                   InternetSettingCard(
                     title: loc(context).ipv6,
+                    identifier:
+                        semanticIdentifier(tag: _tag, description: 'ipv6'),
+                    semanticLabel: loc(context).ipv6,
                     showBorder: false,
                     onTap: () {
                       context.pushNamed(
@@ -108,6 +117,9 @@ class _InternetSettingsContentViewState
             const AppGap.small2(),
             InternetSettingCard(
               title: loc(context).macAddressClone.capitalizeWords(),
+              identifier:
+                  semanticIdentifier(tag: _tag, description: 'macAddressClone'),
+              semanticLabel: loc(context).macAddressClone,
               description: state.macClone ? loc(context).on : loc(context).off,
               onTap: state.ipv4Setting.ipv4ConnectionType == WanType.bridge.type
                   ? null

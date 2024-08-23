@@ -7,9 +7,18 @@ import 'package:privacygui_widgets/widgets/text/app_text.dart';
 
 class AddRuleCard extends StatelessWidget {
   final VoidCallback? onTap;
+  final bool explicitChildNodes;
+  final bool excludeSemantics;
+  final String? identifier;
+  final String? semanticLabel;
+
   const AddRuleCard({
     super.key,
     this.onTap,
+    this.explicitChildNodes = false,
+    this.excludeSemantics = false,
+    this.identifier,
+    this.semanticLabel,
   });
 
   @override
@@ -18,9 +27,17 @@ class AddRuleCard extends StatelessWidget {
       padding: const EdgeInsets.all(Spacing.large2),
       title: AppText.labelLarge(
         loc(context).addRule,
+        identifier: identifier,
       ),
-      trailing: const Icon(LinksysIcons.add),
+      trailing: Semantics(
+          identifier: identifier != null ? '$identifier-add-icon' : null,
+          label: semanticLabel != null ? '$semanticLabel add icon' : null,
+          child: const Icon(LinksysIcons.add)),
       onTap: onTap,
+      explicitChildNodes: explicitChildNodes,
+      excludeSemantics: excludeSemantics,
+      identifier: identifier,
+      semanticLabel: semanticLabel,
     );
   }
 }

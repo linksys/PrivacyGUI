@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/util/semantic.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
@@ -21,6 +22,8 @@ class DashboardAdvancedSettingsView extends ConsumerStatefulWidget {
 class _DashboardAdvancedSettingsViewState
     extends ConsumerState<DashboardAdvancedSettingsView> {
   List<AppSectionItemData> advancedSettings = [];
+  final String _tag = 'advanced-settings';
+
   @override
   void initState() {
     super.initState();
@@ -39,6 +42,7 @@ class _DashboardAdvancedSettingsViewState
         itemBuilder: (context, index) {
           return AppSettingCard(
             title: advancedSettings[index].title,
+            identifier: semanticIdentifier(tag: _tag, description: advancedSettings[index].title),
             trailing: const Icon(LinksysIcons.chevronRight),
             onTap: advancedSettings[index].onTap,
           );

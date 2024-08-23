@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +9,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/pnp/troubleshooter/providers/pnp_troubleshooter_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/util/semantic.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
@@ -16,6 +18,8 @@ import 'package:privacygui_widgets/widgets/card/list_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 
 class DashboardHomeTitle extends ConsumerWidget {
+  final String _tag = 'dashboard-home-title';
+
   const DashboardHomeTitle({super.key});
 
   @override
@@ -42,10 +46,14 @@ class DashboardHomeTitle extends ConsumerWidget {
               child: AnimatedOpacity(
                 opacity: isFirstPolling ? 1.0 : 0.0,
                 duration: const Duration(milliseconds: 300),
-                child: const SizedBox(
+                child: SizedBox(
                   width: 16,
                   height: 16,
-                  child: CircularProgressIndicator(),
+                  child: Semantics(
+                      identifier:
+                          semanticIdentifier(tag: _tag, description: 'spinner'),
+                      label: 'spinner',
+                      child: const CircularProgressIndicator()),
                 ),
               ),
             ),
@@ -57,28 +65,47 @@ class DashboardHomeTitle extends ConsumerWidget {
                 children: [
                   Row(
                     children: [
-                      Icon(
-                        Icons.circle,
-                        color: isOnline
-                            ? Theme.of(context).colorSchemeExt.green
-                            : Theme.of(context).colorScheme.surfaceVariant,
+                      Semantics(
+                        identifier: semanticIdentifier(
+                            tag: _tag, description: 'online-icon'),
+                        label: 'online icon',
+                        child: Icon(
+                          Icons.circle,
+                          color: isOnline
+                              ? Theme.of(context).colorSchemeExt.green
+                              : Theme.of(context).colorScheme.surfaceVariant,
+                        ),
                       ),
                       const AppGap.large2(),
                       AppText.titleLarge(
                         isOnline
                             ? loc(context).internetOnline
                             : loc(context).internetOffline,
+                        identifier: semanticIdentifier(
+                          tag: _tag,
+                          description:
+                              isOnline ? 'internetOnline' : 'internetOffline',
+                        ),
                       ),
                     ],
                   ),
                   if (!ResponsiveLayout.isMobileLayout(context) && isOnline)
                     Row(
                       children: [
-                        Icon(LinksysIcons.uptime,
-                            color: Theme.of(context).colorScheme.onSurface),
+                        Semantics(
+                          identifier: semanticIdentifier(
+                              tag: _tag, description: 'uptime-icon'),
+                          label: 'uptime icon',
+                          child: Icon(LinksysIcons.uptime,
+                              color: Theme.of(context).colorScheme.onSurface),
+                        ),
                         const AppGap.medium(),
-                        AppText.bodyMedium('${loc(context).uptime}: $uptime',
-                            color: Theme.of(context).colorScheme.onSurface),
+                        AppText.bodyMedium(
+                          '${loc(context).uptime}: $uptime',
+                          color: Theme.of(context).colorScheme.onSurface,
+                          identifier: semanticIdentifier(
+                              tag: _tag, description: 'uptime'),
+                        ),
                       ],
                     ),
                 ],
@@ -90,11 +117,20 @@ class DashboardHomeTitle extends ConsumerWidget {
           const AppGap.medium(),
           Row(
             children: [
-              Icon(LinksysIcons.uptime,
-                  color: Theme.of(context).colorScheme.onSurface),
+              Semantics(
+                identifier:
+                    semanticIdentifier(tag: _tag, description: 'uptime-icon'),
+                label: 'uptime icon',
+                child: Icon(LinksysIcons.uptime,
+                    color: Theme.of(context).colorScheme.onSurface),
+              ),
               const AppGap.medium(),
-              AppText.bodyMedium('${loc(context).uptime}: $uptime',
-                  color: Theme.of(context).colorScheme.onSurface),
+              AppText.bodyMedium(
+                '${loc(context).uptime}: $uptime',
+                color: Theme.of(context).colorScheme.onSurface,
+                identifier:
+                    semanticIdentifier(tag: _tag, description: 'uptime'),
+              ),
             ],
           ),
         ],
@@ -110,8 +146,16 @@ class DashboardHomeTitle extends ConsumerWidget {
         bottom: 16.0,
       ),
       child: AppListCard(
-        title: AppText.labelLarge(loc(context).troubleshoot),
-        trailing: const Icon(LinksysIcons.chevronRight),
+        title: AppText.labelLarge(
+          loc(context).troubleshoot,
+          identifier:
+              semanticIdentifier(tag: _tag, description: 'troubleshoot'),
+        ),
+        trailing: Semantics(
+            identifier:
+                semanticIdentifier(tag: _tag, description: 'troubleshoot'),
+            label: '${loc(context).troubleshoot} icon',
+            child: const Icon(LinksysIcons.chevronRight)),
         onTap: () {
           ref
               .read(pnpTroubleshooterProvider.notifier)

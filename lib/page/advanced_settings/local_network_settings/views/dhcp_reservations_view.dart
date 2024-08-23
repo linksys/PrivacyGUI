@@ -10,6 +10,7 @@ import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/devices/providers/device_list_state.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/util/semantic.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
@@ -38,6 +39,8 @@ class DHCPReservationsContentView extends ArgumentsConsumerStatefulView {
 
 class _DHCPReservationsContentViewState
     extends ConsumerState<DHCPReservationsContentView> {
+  final String _tag = 'dhcp-reservations';
+
   @override
   void initState() {
     super.initState();
@@ -59,11 +62,22 @@ class _DHCPReservationsContentViewState
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AppText.bodyLarge(loc(context).dhcpReservationDescption),
+            AppText.bodyLarge(
+              loc(context).dhcpReservationDescption,
+              identifier: semanticIdentifier(
+                  tag: _tag, description: 'dhcpReservationDescption'),
+            ),
             const AppGap.large2(),
             AppSettingCard(
               title: loc(context).selectFromMyDHCPList,
-              trailing: const Icon(LinksysIcons.add),
+              identifier: semanticIdentifier(
+                  tag: _tag, description: 'selectFromMyDHCPList'),
+              semanticLabel: loc(context).selectFromMyDHCPList,
+              trailing: Semantics(
+                  identifier: semanticIdentifier(
+                      tag: _tag, description: 'selectFromMyDHCPList'),
+                  label: 'add icon',
+                  child: const Icon(LinksysIcons.add)),
               onTap: () async {
                 final result = await context.pushNamed<List<DeviceListItem>?>(
                     RouteNamed.devicePicker,
@@ -89,7 +103,14 @@ class _DHCPReservationsContentViewState
             const AppGap.small2(),
             AppSettingCard(
               title: loc(context).manuallyAddReservation,
-              trailing: const Icon(LinksysIcons.add),
+              identifier: semanticIdentifier(
+                  tag: _tag, description: 'manuallyAddReservation'),
+              semanticLabel: loc(context).manuallyAddReservation,
+              trailing: Semantics(
+                  identifier: semanticIdentifier(
+                      tag: _tag, description: 'manuallyAddReservation'),
+                  label: 'manually add icon',
+                  child: const Icon(LinksysIcons.add)),
               onTap: () async {
                 final result = await context.pushNamed<DHCPReservation?>(
                     RouteNamed.dhcpReservationEdit,
@@ -115,7 +136,10 @@ class _DHCPReservationsContentViewState
             ),
             const AppGap.large3(),
             AppText.labelLarge(
-                loc(context).reservedAddresses.capitalizeWords()),
+              loc(context).reservedAddresses.capitalizeWords(),
+              identifier: semanticIdentifier(
+                  tag: _tag, description: 'reservedAddresses'),
+            ),
             const AppGap.medium(),
             ...reservedAddresses(dhcpReservedList),
           ],
@@ -131,7 +155,11 @@ class _DHCPReservationsContentViewState
           child: SizedBox(
             height: 180,
             child: Center(
-              child: AppText.bodyMedium(loc(context).youHaveNoDHCPReservations),
+              child: AppText.bodyMedium(
+                loc(context).youHaveNoDHCPReservations,
+                identifier: semanticIdentifier(
+                    tag: _tag, description: 'youHaveNoDHCPReservations'),
+              ),
             ),
           ),
         ),
@@ -145,10 +173,20 @@ class _DHCPReservationsContentViewState
             itemBuilder: (context, index) {
               final item = reserved[index];
               return AppListCard(
-                title: AppText.labelMedium(item.description),
+                title: AppText.labelMedium(
+                  item.description,
+                  identifier: semanticIdentifier(
+                      tag: _tag, description: item.description),
+                ),
                 description: AppText.bodyMedium(
-                    "IP: ${item.ipAddress}\nMAC: ${item.macAddress}"),
+                  "IP: ${item.ipAddress}\nMAC: ${item.macAddress}",
+                  identifier: semanticIdentifier(
+                      tag: _tag, description: '${item.description}-ip-mac'),
+                ),
                 trailing: AppIconButton(
+                  identifier: semanticIdentifier(
+                      tag: _tag, description: '${item.description}-edit'),
+                  semanticLabel: '${item.description} edit icon',
                   icon: LinksysIcons.edit,
                   onTap: () {
                     goDHCPReservationEdit(item, index);

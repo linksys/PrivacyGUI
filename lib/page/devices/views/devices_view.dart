@@ -13,6 +13,7 @@ import 'package:privacy_gui/page/devices/extensions/icon_device_category_ext.dar
 import 'package:privacy_gui/page/devices/views/device_list_widget.dart';
 import 'package:privacy_gui/page/devices/views/devices_filter_widget.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/util/semantic.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -36,6 +37,7 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
   bool _isEdit = false;
   bool _isLoading = false;
   List<String> _selectedList = [];
+  final String _tag = 'dashboard-device';
 
   @override
   void initState() {
@@ -76,6 +78,17 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
             actions: _isEdit
                 ? [
                     AppTextButton(
+                      identifier: semanticIdentifier(
+                        tag: _tag,
+                        description:
+                            filteredDeviceList.length == _selectedList.length
+                                ? 'clearAll'
+                                : 'selectAll',
+                      ),
+                      semanticLabel:
+                          filteredDeviceList.length == _selectedList.length
+                              ? 'clear All'
+                              : 'select All',
                       filteredDeviceList.length == _selectedList.length
                           ? loc(context).clearAll
                           : loc(context).selectAll,
@@ -100,6 +113,9 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
                 : !isOnlineFilter
                     ? [
                         AppIconButton(
+                          identifier: semanticIdentifier(
+                              tag: _tag, description: 'edit'),
+                          semanticLabel: 'edit',
                           icon: LinksysIcons.edit,
                           onTap: () {
                             setState(() {
@@ -130,7 +146,12 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          AppText.labelLarge(loc(context).nDevices(count)),
+                          AppText.labelLarge(
+                            loc(context).nDevices(count),
+                            identifier: semanticIdentifier(
+                                tag: _tag, description: 'device-count'),
+                            semanticLabel: 'device count',
+                          ),
                           // if (!isOnlineFilter)
                           //   _buildEditWidget(filteredDeviceList),
                         ],
@@ -211,6 +232,8 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: Spacing.zero),
       child: AppDeviceListCard(
+        identifier: semanticIdentifier(tag: _tag, description: 'device-list'),
+        semanticLabel: 'device list',
         isSelected: _selectedList.contains(item.deviceId),
         title: '${item.name} [${item.signalStrength}]',
         description: ResponsiveLayout.isMobileLayout(context) || !item.isOnline
@@ -250,15 +273,26 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
       context: context,
       builder: (context) => AlertDialog(
         title: AppText.bodyLarge(
-            loc(context).nDevicesDeleteDevicesTitle(_selectedList.length)),
-        content: AppText.bodyLarge(loc(context)
-            .nDevicesDeleteDevicesDescription(_selectedList.length)),
+          loc(context).nDevicesDeleteDevicesTitle(_selectedList.length),
+          identifier: semanticIdentifier(
+              tag: _tag, description: 'nDevicesDeleteDevicesTitle'),
+        ),
+        content: AppText.bodyLarge(
+          loc(context).nDevicesDeleteDevicesDescription(_selectedList.length),
+          identifier: semanticIdentifier(
+              tag: _tag, description: 'nDevicesDeleteDevicesDescription'),
+        ),
         actions: [
-          AppTextButton(loc(context).cancel, onTap: () {
-            context.pop();
-          }),
+          AppTextButton(
+            loc(context).cancel,
+            identifier: semanticIdentifier(tag: _tag, description: 'cancel'),
+            onTap: () {
+              context.pop();
+            },
+          ),
           AppTextButton(
             loc(context).delete,
+            identifier: semanticIdentifier(tag: _tag, description: 'delete'),
             color: Theme.of(context).colorScheme.error,
             onTap: () {
               _removeDevices();

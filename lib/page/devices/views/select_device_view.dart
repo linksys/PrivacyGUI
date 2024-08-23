@@ -2,6 +2,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/util/semantic.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
@@ -53,6 +54,7 @@ class _SelectDeviceViewState extends ConsumerState<SelectDeviceView> {
   late final DisplaySubType _subType;
   late final SelectMode _selectMode;
   late final bool _onlineOnly;
+  final String _tag = 'select-device';
 
   final List<DeviceListItem> selected = [];
   @override
@@ -122,19 +124,29 @@ class _SelectDeviceViewState extends ConsumerState<SelectDeviceView> {
                         ? 1
                         : 0.3,
                 child: AppListCard(
+                  identifier:
+                      semanticIdentifier(tag: _tag, description: 'device'),
+                  semanticLabel: 'device',
                   color: selected.any((element) => element == item)
                       ? Theme.of(context).colorScheme.primaryContainer
                       : null,
                   borderColor: selected.any((element) => element == item)
                       ? Theme.of(context).colorScheme.primary
                       : null,
-                  title: AppText.labelMedium(item.name),
+                  title: AppText.labelMedium(
+                    item.name,
+                    identifier: semanticIdentifier(
+                        tag: _tag, description: 'device-${item.name}'),
+                  ),
                   leading: _selectMode == SelectMode.multiple
                       ? Opacity(
                           opacity: selectable ? 1 : 0.3,
                           child: AbsorbPointer(
                             absorbing: !selectable,
                             child: AppCheckbox(
+                              identifier: semanticIdentifier(
+                                  tag: _tag, description: 'device'),
+                              semanticLabel: 'device',
                               value: selected.any((element) => element == item),
                               onChanged: (value) {
                                 onChecked(item);
@@ -143,8 +155,13 @@ class _SelectDeviceViewState extends ConsumerState<SelectDeviceView> {
                           ),
                         )
                       : null,
-                  description:
-                      selectable ? AppText.bodyMedium(value ?? '') : null,
+                  description: selectable
+                      ? AppText.bodyMedium(
+                          value ?? '',
+                          identifier: semanticIdentifier(
+                              tag: _tag, description: 'device-description'),
+                        )
+                      : null,
                   onTap: _selectMode == SelectMode.multiple
                       ? selectable
                           ? () {

@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
+import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/util/semantic.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/bullet_list/bullet_list.dart';
-import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
-import 'package:privacygui_widgets/widgets/text/app_text.dart';
 
 const kDefaultDialogWidth = 328.0;
+
+String _dialogSemanticIdentifier({required String description}) {
+  return semanticIdentifier(
+    tag: 'dialog',
+    description: description,
+  );
+}
 
 Future<T?> doSomethingWithSpinner<T>(
   BuildContext context,
@@ -66,7 +72,9 @@ Future<T?> showAppSpinnerDialog<T>(
                 title: title != null
                     ? SizedBox(
                         width: width ?? kDefaultDialogWidth,
-                        child: AppText.titleLarge(title))
+                        child: AppText.titleLarge(title,
+                            identifier: _dialogSemanticIdentifier(
+                                description: 'title')))
                     : null,
                 content: SizedBox(
                     width: width ?? kDefaultDialogWidth,
@@ -74,7 +82,10 @@ Future<T?> showAppSpinnerDialog<T>(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         loadingWidget ?? const AppSpinner(),
-                        if (snapshot.hasData) AppText.labelLarge(snapshot.data!)
+                        if (snapshot.hasData)
+                          AppText.labelLarge(snapshot.data!,
+                              identifier: _dialogSemanticIdentifier(
+                                  description: 'content'))
                       ],
                     )),
               );
@@ -107,7 +118,9 @@ Future<T?> showSubmitAppDialog<T>(
           title: title != null
               ? SizedBox(
                   width: width ?? kDefaultDialogWidth,
-                  child: AppText.titleLarge(title))
+                  child: AppText.titleLarge(title,
+                      identifier:
+                          _dialogSemanticIdentifier(description: 'title')))
               : null,
           content: SizedBox(
               width: width ?? kDefaultDialogWidth,
@@ -120,6 +133,8 @@ Future<T?> showSubmitAppDialog<T>(
               : [
                   AppTextButton(
                     negitiveLabel ?? loc(context).cancel,
+                    identifier:
+                        _dialogSemanticIdentifier(description: 'negitive'),
                     color: Theme.of(context).colorScheme.onSurface,
                     onTap: () {
                       context.pop();
@@ -127,6 +142,8 @@ Future<T?> showSubmitAppDialog<T>(
                   ),
                   AppTextButton(
                     positiveLabel ?? loc(context).save,
+                    identifier:
+                        _dialogSemanticIdentifier(description: 'positive'),
                     onTap: checkPositiveEnabled?.call() ?? true
                         ? () {
                             setState(() {
@@ -161,16 +178,22 @@ Future<T?> showSimpleAppDialog<T>(
     context: context,
     barrierDismissible: dismissible,
     builder: (context) {
-      return AlertDialog(
-        semanticLabel: title,
-        icon: icon,
-        title: title != null
-            ? SizedBox(
-                width: width ?? kDefaultDialogWidth,
-                child: AppText.titleLarge(title))
-            : null,
-        content: SizedBox(width: width ?? kDefaultDialogWidth, child: content),
-        actions: actions,
+      return Semantics(
+        identifier: _dialogSemanticIdentifier(description: 'dialog'),
+        label: 'dialog',
+        child: AlertDialog(
+          icon: icon,
+          title: title != null
+              ? SizedBox(
+                  width: width ?? kDefaultDialogWidth,
+                  child: AppText.titleLarge(title,
+                      identifier:
+                          _dialogSemanticIdentifier(description: 'title')))
+              : null,
+          content:
+              SizedBox(width: width ?? kDefaultDialogWidth, child: content),
+          actions: actions,
+        ),
       );
     },
   );
@@ -195,6 +218,7 @@ Future<T?> showSimpleAppOkDialog<T>(
     actions: [
       AppTextButton(
         okLabel ?? loc(context).ok,
+        identifier: _dialogSemanticIdentifier(description: 'ok'),
         onTap: () {
           context.pop();
         },
@@ -216,7 +240,10 @@ Future<T?> showMessageAppDialog<T>(
     context,
     dismissible: dismissible,
     title: title,
-    content: AppText.bodyMedium(message),
+    content: AppText.bodyMedium(
+      message,
+      identifier: _dialogSemanticIdentifier(description: 'content'),
+    ),
     actions: actions,
   );
 }
@@ -240,6 +267,7 @@ Future<T?> showMessageAppOkDialog<T>(
     actions: [
       AppTextButton(
         okLabel ?? loc(context).ok,
+        identifier: _dialogSemanticIdentifier(description: 'ok'),
         onTap: () {
           context.pop();
         },
@@ -250,7 +278,11 @@ Future<T?> showMessageAppOkDialog<T>(
 
 Future<T?> showSpinnerDialog<T>(BuildContext context) {
   return showSimpleAppDialog<T?>(context,
-      dismissible: false, content: const AppSpinner());
+      dismissible: false,
+      content: Semantics(
+          identifier: _dialogSemanticIdentifier(description: 'spinner'),
+          label: 'dialog spinner',
+          child: const AppSpinner()));
 }
 
 Future<bool?> showUnsavedAlert(BuildContext context,
@@ -262,6 +294,7 @@ Future<bool?> showUnsavedAlert(BuildContext context,
     actions: [
       AppTextButton(
         loc(context).goBack,
+        identifier: _dialogSemanticIdentifier(description: 'goBack'),
         color: Theme.of(context).colorScheme.onSurface,
         onTap: () {
           context.pop();
@@ -269,6 +302,7 @@ Future<bool?> showUnsavedAlert(BuildContext context,
       ),
       AppTextButton(
         loc(context).discardChanges,
+        identifier: _dialogSemanticIdentifier(description: 'discardChanges'),
         color: Theme.of(context).colorScheme.error,
         onTap: () {
           context.pop(true);
@@ -286,18 +320,35 @@ Future showRouterNotFoundAlert(BuildContext context, WidgetRef ref) {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppText.bodyLarge(loc(context).notConnectedToRouter),
+          AppText.bodyLarge(
+            loc(context).notConnectedToRouter,
+            identifier:
+                _dialogSemanticIdentifier(description: 'notConnectedToRouter'),
+          ),
           const AppGap.medium(),
           AppBulletList(children: [
-            AppText.bodySmall(loc(context).routerNotFoundDesc1),
-            AppText.bodySmall(loc(context).routerNotFoundDesc2),
-            AppText.bodySmall(loc(context).routerNotFoundDesc3),
+            AppText.bodySmall(
+              loc(context).routerNotFoundDesc1,
+              identifier:
+                  _dialogSemanticIdentifier(description: 'routerNotFoundDesc1'),
+            ),
+            AppText.bodySmall(
+              loc(context).routerNotFoundDesc2,
+              identifier:
+                  _dialogSemanticIdentifier(description: 'routerNotFoundDesc2'),
+            ),
+            AppText.bodySmall(
+              loc(context).routerNotFoundDesc3,
+              identifier:
+                  _dialogSemanticIdentifier(description: 'routerNotFoundDesc3'),
+            ),
           ])
         ],
       ),
       actions: [
         AppFilledButton(
           loc(context).tryAgain,
+          identifier: _dialogSemanticIdentifier(description: 'tryAgain'),
           onTap: () {
             ref
                 .read(dashboardManagerProvider.notifier)

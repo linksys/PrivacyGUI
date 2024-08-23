@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/util/semantic.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
@@ -39,6 +40,8 @@ showSimpleSnackBar(
           child: AppText.labelMedium(
             message,
             color: Theme.of(context).colorScheme.onInverseSurface,
+            identifier:
+                semanticIdentifier(tag: 'snackbar', description: 'message'),
           ),
         ),
       ],
@@ -60,7 +63,12 @@ showSnackBar(BuildContext context,
               left: ResponsiveLayout.getContentWidth(context) * 0.6,
               right: Spacing.large2,
               bottom: Spacing.large2),
-      content: content,
+      content: Semantics(
+        identifier:
+            semanticIdentifier(tag: 'snackbar', description: 'snack-bar'),
+        label: 'snack bar',
+        child: content,
+      ),
       backgroundColor: background,
       elevation: 0,
     ),

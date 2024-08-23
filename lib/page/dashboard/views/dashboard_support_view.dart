@@ -6,6 +6,7 @@ import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/util/semantic.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -13,6 +14,8 @@ import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 
 class DashboardSupportView extends ArgumentsConsumerStatelessView {
+  final String _tag = 'dashboard-support';
+
   const DashboardSupportView({
     Key? key,
     super.args,
@@ -44,6 +47,8 @@ class DashboardSupportView extends ArgumentsConsumerStatelessView {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SupportOptionCard(
+            identifier: semanticIdentifier(tag: _tag, description: 'faq'),
+            semanticLabel: 'faq',
             icon: const Icon(LinksysIcons.faq),
             title: loc(context).dashboardSupportFAQTitle,
             description: loc(context).dashboardSupportFAQDesc,
@@ -62,6 +67,8 @@ class DashboardSupportView extends ArgumentsConsumerStatelessView {
           // ),
           const AppGap.small2(),
           SupportOptionCard(
+            identifier: semanticIdentifier(tag: _tag, description: 'call'),
+            semanticLabel: 'call',
             icon: const Icon(LinksysIcons.call),
             title: loc(context).dashboardSupportCallSupportTitle,
             description: loc(context).dashboardSupportCallSupportDesc,
@@ -78,12 +85,20 @@ class SupportOptionCard extends StatelessWidget {
   final String title;
   final String description;
   final VoidCallback? tapAction;
+  final bool excludeSemantics;
+  final bool explicitChildNodes;
+  final String? identifier;
+  final String? semanticLabel;
 
   const SupportOptionCard({
     required this.icon,
     required this.title,
     required this.description,
     this.tapAction,
+    this.excludeSemantics = false,
+    this.explicitChildNodes = true,
+    this.identifier,
+    this.semanticLabel,
     super.key,
   });
 
@@ -92,16 +107,31 @@ class SupportOptionCard extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       child: AppCard(
+        identifier: identifier,
+        semanticLabel: semanticLabel,
         onTap: tapAction,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            icon,
+            Semantics(
+                identifier: identifier != null ? '$identifier-icon' : null,
+                label: semanticLabel != null ? '$semanticLabel icon' : null,
+                child: icon),
             const AppGap.small2(),
-            AppText.titleSmall(title),
+            AppText.titleSmall(
+              title,
+              identifier: identifier != null ? '$identifier-title' : null,
+              semanticLabel:
+                  semanticLabel != null ? '$semanticLabel title' : null,
+            ),
             const AppGap.small2(),
-            AppText.bodyMedium(description),
+            AppText.bodyMedium(
+              description,
+              identifier: identifier != null ? '$identifier-description' : null,
+              semanticLabel:
+                  semanticLabel != null ? '$semanticLabel description' : null,
+            ),
           ],
         ),
       ),

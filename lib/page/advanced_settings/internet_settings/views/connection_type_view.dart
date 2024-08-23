@@ -16,6 +16,7 @@ import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/providers/redirection/redirection_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/util/semantic.dart';
 import 'package:privacy_gui/util/url_helper/url_helper.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacy_gui/validator_rules/_validator_rules.dart';
@@ -77,6 +78,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
   String loadingTitle = '';
   static const inputPadding = EdgeInsets.symmetric(
       horizontal: Spacing.small1, vertical: Spacing.medium);
+  final String _tag = 'connection-type';
 
   @override
   void initState() {
@@ -260,6 +262,9 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       actions: [
         AppTextButton.noPadding(
           isEditing ? loc(context).cancel : loc(context).edit,
+          identifier: semanticIdentifier(
+              tag: _tag, description: isEditing ? 'cancel' : 'edit'),
+          semanticLabel: isEditing ? 'cancel' : 'edit',
           icon: isEditing ? LinksysIcons.close : LinksysIcons.edit,
           onTap: isEditing
               ? () {
@@ -284,6 +289,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
             if (viewType == InternetSettingsViewType.ipv4 &&
                 wanType != WanType.bridge)
               AppSettingCard(
+                identifier: semanticIdentifier(tag: _tag, description: 'mtu'),
                 key: const Key('mtu'),
                 title: loc(context).mtu,
                 description: state.ipv4Setting.mtu == 0
@@ -334,6 +340,9 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         InternetSettingCard(
+          identifier: semanticIdentifier(
+              tag: _tag, description: 'edit-connection-type'),
+          semanticLabel: loc(context).connectionType,
           title: loc(context).connectionType,
           description: viewType == InternetSettingsViewType.ipv4
               ? state.ipv4Setting.ipv4ConnectionType
@@ -404,7 +413,9 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
           AppStyledText.bold(
               '${loc(context).toLogInLocallyWhileInBridgeMode}http://${ref.read(internetSettingsProvider.notifier).hostname}.local',
               defaultTextStyle: Theme.of(context).textTheme.bodyLarge!,
-              tags: const ['b'])
+              tags: const ['b'],
+              identifier: semanticIdentifier(
+                  tag: _tag, description: 'bridge-mode-loal-url'))
         ],
       _ => [],
     };
@@ -417,6 +428,9 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
         padding: inputPadding,
         child: AppTextField(
           key: const Key('pppoeUsername'),
+          identifier:
+              semanticIdentifier(tag: _tag, description: 'pppoeUsername'),
+          semanticLabel: loc(context).username,
           headerText: loc(context).username,
           hintText: loc(context).username,
           controller: _pppoeUsernameController,
@@ -437,6 +451,8 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
         padding: inputPadding,
         child: AppPasswordField(
           key: const Key('pppoePassword'),
+          identifier: semanticIdentifier(tag: _tag, description: 'password'),
+          semanticLabel: loc(context).password,
           headerText: loc(context).password,
           hintText: loc(context).password,
           controller: _pppoePasswordController,
@@ -458,6 +474,9 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
         child: AppTextField.minMaxNumber(
           min: 5,
           max: 4094,
+          identifier:
+              semanticIdentifier(tag: _tag, description: 'vlanIdOptional'),
+          semanticLabel: loc(context).vlanIdOptional,
           headerText: loc(context).vlanIdOptional,
           hintText: loc(context).vlanIdOptional,
           controller: _pppoeVLANIDController,
@@ -477,6 +496,9 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       Padding(
         padding: inputPadding,
         child: AppTextField(
+          identifier:
+              semanticIdentifier(tag: _tag, description: 'serviceNameOptional'),
+          semanticLabel: loc(context).serviceNameOptional,
           headerText: loc(context).serviceNameOptional,
           hintText: loc(context).serviceNameOptional,
           controller: _pppoeServiceNameController,
@@ -505,8 +527,13 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       Padding(
         padding: inputPadding,
         child: AppIPFormField(
+          identifier:
+              semanticIdentifier(tag: _tag, description: 'internetIpv4Address'),
+          semanticLabel: loc(context).internetIpv4Address,
           header: AppText.bodySmall(
             loc(context).internetIpv4Address,
+            identifier: semanticIdentifier(
+                tag: _tag, description: 'internetIpv4Address'),
           ),
           controller: _staticIpAddressController,
           border: const OutlineInputBorder(),
@@ -526,8 +553,12 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
         padding: inputPadding,
         child: AppIPFormField(
           key: const Key('staticSubnet'),
+          identifier: semanticIdentifier(tag: _tag, description: 'subnetMask'),
+          semanticLabel: loc(context).subnetMask,
           header: AppText.bodySmall(
             loc(context).subnetMask.capitalizeWords(),
+            identifier:
+                semanticIdentifier(tag: _tag, description: 'subnetMask'),
           ),
           controller: _staticSubnetController,
           border: const OutlineInputBorder(),
@@ -553,8 +584,13 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       Padding(
         padding: inputPadding,
         child: AppIPFormField(
+          identifier:
+              semanticIdentifier(tag: _tag, description: 'defaultGateway'),
+          semanticLabel: loc(context).defaultGateway,
           header: AppText.bodySmall(
             loc(context).defaultGateway,
+            identifier:
+                semanticIdentifier(tag: _tag, description: 'defaultGateway'),
           ),
           controller: _staticGatewayController,
           border: const OutlineInputBorder(),
@@ -573,8 +609,11 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       Padding(
         padding: inputPadding,
         child: AppIPFormField(
+          identifier: semanticIdentifier(tag: _tag, description: 'dns1'),
+          semanticLabel: loc(context).dns1,
           header: AppText.bodySmall(
             loc(context).dns1,
+            identifier: semanticIdentifier(tag: _tag, description: 'dns1'),
           ),
           controller: _staticDns1Controller,
           border: const OutlineInputBorder(),
@@ -593,8 +632,13 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       Padding(
         padding: inputPadding,
         child: AppIPFormField(
+          identifier:
+              semanticIdentifier(tag: _tag, description: 'dns2Optional'),
+          semanticLabel: loc(context).dns2Optional,
           header: AppText.bodySmall(
             loc(context).dns2Optional,
+            identifier:
+                semanticIdentifier(tag: _tag, description: 'dns2Optional'),
           ),
           controller: _staticDns2Controller,
           border: const OutlineInputBorder(),
@@ -613,8 +657,13 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       Padding(
         padding: inputPadding,
         child: AppIPFormField(
+          identifier:
+              semanticIdentifier(tag: _tag, description: 'dns3Optional'),
+          semanticLabel: loc(context).dns3Optional,
           header: AppText.bodySmall(
             loc(context).dns3Optional,
+            identifier:
+                semanticIdentifier(tag: _tag, description: 'dns3Optional'),
           ),
           controller: _staticDns3Controller,
           border: const OutlineInputBorder(),
@@ -640,6 +689,8 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       Padding(
         padding: inputPadding,
         child: AppTextField(
+          identifier: semanticIdentifier(tag: _tag, description: 'username'),
+          semanticLabel: loc(context).username,
           headerText: loc(context).username,
           hintText: loc(context).username,
           controller: _pptpUsernameController,
@@ -659,6 +710,8 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       Padding(
         padding: inputPadding,
         child: AppPasswordField(
+          identifier: semanticIdentifier(tag: _tag, description: 'password'),
+          semanticLabel: loc(context).password,
           headerText: loc(context).password,
           hintText: loc(context).password,
           controller: _pptpPasswordController,
@@ -678,8 +731,13 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       Padding(
         padding: inputPadding,
         child: AppIPFormField(
+          identifier:
+              semanticIdentifier(tag: _tag, description: 'serverIpv4Address'),
+          semanticLabel: loc(context).serverIpv4Address,
           header: AppText.bodySmall(
             loc(context).serverIpv4Address,
+            identifier:
+                semanticIdentifier(tag: _tag, description: 'serverIpv4Address'),
           ),
           controller: _pptpServerIpController,
           border: const OutlineInputBorder(),
@@ -710,6 +768,8 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       Padding(
         padding: inputPadding,
         child: AppTextField(
+          identifier: semanticIdentifier(tag: _tag, description: 'username'),
+          semanticLabel: loc(context).username,
           headerText: loc(context).username,
           hintText: loc(context).username,
           controller: _l2tpUsernameController,
@@ -729,6 +789,8 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       Padding(
         padding: inputPadding,
         child: AppPasswordField(
+          identifier: semanticIdentifier(tag: _tag, description: 'password'),
+          semanticLabel: loc(context).password,
           headerText: loc(context).password,
           hintText: loc(context).password,
           controller: _l2tpPasswordController,
@@ -748,8 +810,13 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       Padding(
         padding: inputPadding,
         child: AppIPFormField(
+          identifier:
+              semanticIdentifier(tag: _tag, description: 'serverIpv4Address'),
+          semanticLabel: loc(context).serverIpv4Address,
           header: AppText.bodySmall(
             loc(context).serverIpv4Address,
+            identifier:
+                semanticIdentifier(tag: _tag, description: 'serverIpv4Address'),
           ),
           controller: _l2tpServerIpController,
           border: const OutlineInputBorder(),
@@ -782,13 +849,20 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
         initial: behavior,
         items: [
           AppRadioListItem(
+            identifier:
+                semanticIdentifier(tag: _tag, description: 'connectOnDemand'),
+            semanticLabel: loc(context).connectOnDemand,
             title: loc(context).connectOnDemand,
             value: PPPConnectionBehavior.connectOnDemand,
             expandedWidget: behavior == PPPConnectionBehavior.connectOnDemand
                 ? Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      AppText.bodyMedium(loc(context).maxIdleTime),
+                      AppText.bodyMedium(
+                        loc(context).maxIdleTime,
+                        identifier: semanticIdentifier(
+                            tag: _tag, description: 'connectOnDemand'),
+                      ),
                       const AppGap.medium(),
                       Row(
                         children: [
@@ -798,6 +872,9 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
                             child: AppTextField.minMaxNumber(
                               max: 9999,
                               min: 1,
+                              identifier: semanticIdentifier(
+                                  tag: _tag, description: 'connectOnDemand'),
+                              semanticLabel: loc(context).connectOnDemand,
                               controller: _idleTimeController,
                               border: const OutlineInputBorder(),
                               onFocusChanged: (focused) {
@@ -824,13 +901,19 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
                 : null,
           ),
           AppRadioListItem(
+            identifier: semanticIdentifier(tag: _tag, description: 'keepAlive'),
+            semanticLabel: loc(context).keepAlive,
             title: loc(context).keepAlive,
             value: PPPConnectionBehavior.keepAlive,
             expandedWidget: behavior == PPPConnectionBehavior.keepAlive
                 ? Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      AppText.bodyMedium(loc(context).redialPeriod),
+                      AppText.bodyMedium(
+                        loc(context).redialPeriod,
+                        identifier: semanticIdentifier(
+                            tag: _tag, description: 'redialPeriod'),
+                      ),
                       const AppGap.medium(),
                       Row(
                         children: [
@@ -840,6 +923,9 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
                             child: AppTextField.minMaxNumber(
                               max: 180,
                               min: 20,
+                              identifier: semanticIdentifier(
+                                  tag: _tag, description: 'redialPeriod'),
+                              semanticLabel: loc(context).redialPeriod,
                               controller: _redialPeriodController,
                               border: const OutlineInputBorder(),
                               onFocusChanged: (focused) {
@@ -882,7 +968,10 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
   Widget _pptpIpAddressMode() {
     final useStaticSettings = state.ipv4Setting.useStaticSettings ?? false;
     return AppSection(
-      header: AppText.titleSmall(loc(context).ipAddress.capitalizeWords()),
+      header: AppText.titleSmall(
+        loc(context).ipAddress.capitalizeWords(),
+        identifier: semanticIdentifier(tag: _tag, description: 'ipAddress'),
+      ),
       child: SizedBox(
         // height: 100,
         child: AppRadioList(
@@ -893,10 +982,16 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
           items: [
             AppRadioListItem(
               title: loc(context).obtainIPv4AddressAutomatically,
+              identifier: semanticIdentifier(
+                  tag: _tag, description: 'obtainIPv4AddressAutomatically'),
+              semanticLabel: loc(context).obtainIPv4AddressAutomatically,
               value: PPTPIpAddressMode.dhcp,
             ),
             AppRadioListItem(
               title: loc(context).specifyIPv4Address,
+              identifier: semanticIdentifier(
+                  tag: _tag, description: 'specifyIPv4Address'),
+              semanticLabel: loc(context).specifyIPv4Address,
               value: PPTPIpAddressMode.specify,
             ),
           ],
@@ -935,6 +1030,8 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       const AppGap.large2(),
       AppSettingCard.noBorder(
         title: loc(context).ipv6Automatic,
+        identifier: semanticIdentifier(tag: _tag, description: 'ipv6Automatic'),
+        semanticLabel: loc(context).ipv6Automatic,
         color: Theme.of(context).colorScheme.background,
         trailing: AppSwitch(
           value: state.ipv6Setting.isIPv6AutomaticEnabled,
@@ -950,6 +1047,8 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       ),
       AppSettingCard.noBorder(
         title: loc(context).duid,
+        identifier: semanticIdentifier(tag: _tag, description: 'duid'),
+        semanticLabel: loc(context).duid,
         description: state.ipv6Setting.duid,
         color: Theme.of(context).colorScheme.background,
       ),
@@ -962,6 +1061,8 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       children: [
         AppSettingCard.noBorder(
           title: loc(context).sixrdTunnel,
+          identifier: semanticIdentifier(tag: _tag, description: 'sixrdTunnel'),
+          semanticLabel: loc(context).sixrdTunnel,
           color: Theme.of(context).colorScheme.background,
           trailing: AppDropdownMenu<IPv6rdTunnelMode>(
             items: const [
@@ -994,6 +1095,8 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
           padding: inputPadding,
           child: AppTextField(
             headerText: loc(context).prefix,
+            identifier: semanticIdentifier(tag: _tag, description: 'prefix'),
+            semanticLabel: loc(context).prefix,
             hintText: '',
             controller: _ipv6PrefixController,
             border: const OutlineInputBorder(),
@@ -1013,6 +1116,9 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
           padding: inputPadding,
           child: AppTextField.minMaxNumber(
             headerText: loc(context).prefixLength,
+            identifier:
+                semanticIdentifier(tag: _tag, description: 'prefixLength'),
+            semanticLabel: loc(context).prefixLength,
             hintText: '',
             max: 64,
             controller: _ipv6PrefixLengthController,
@@ -1033,8 +1139,13 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
         Padding(
           padding: inputPadding,
           child: AppIPFormField(
+            identifier:
+                semanticIdentifier(tag: _tag, description: 'borderRelay'),
+            semanticLabel: loc(context).borderRelay,
             header: AppText.bodySmall(
               loc(context).borderRelay,
+              identifier:
+                  semanticIdentifier(tag: _tag, description: 'borderRelay'),
             ),
             controller: _ipv6BorderRelayController,
             border: const OutlineInputBorder(),
@@ -1054,6 +1165,9 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
           padding: inputPadding,
           child: AppTextField.minMaxNumber(
             key: const Key('borderRelayLength'),
+            identifier:
+                semanticIdentifier(tag: _tag, description: 'borderRelayLength'),
+            semanticLabel: loc(context).borderRelayLength,
             headerText: loc(context).borderRelayLength,
             hintText: '',
             max: 32,
@@ -1085,6 +1199,9 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
         children: [
           AppSettingCard.noBorder(
             title: loc(context).connectionType,
+            identifier:
+                semanticIdentifier(tag: _tag, description: 'connectionType'),
+            semanticLabel: loc(context).connectionType,
             description: viewType == InternetSettingsViewType.ipv4
                 ? state.ipv4Setting.ipv4ConnectionType
                 : state.ipv6Setting.ipv6ConnectionType,
@@ -1117,11 +1234,16 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
     return [
       AppSettingCard.noBorder(
         title: loc(context).username,
+        identifier: semanticIdentifier(tag: _tag, description: 'username'),
+        semanticLabel: loc(context).username,
         description: state.ipv4Setting.username ?? '',
         color: Theme.of(context).colorScheme.background,
       ),
       AppSettingCard.noBorder(
         title: loc(context).vlanIdOptional,
+        identifier:
+            semanticIdentifier(tag: _tag, description: 'vlanIdOptional'),
+        semanticLabel: loc(context).vlanIdOptional,
         description: (state.ipv4Setting.wanTaggingSettingsEnable ?? false)
             ? state.ipv4Setting.vlanId != null
                 ? state.ipv4Setting.vlanId.toString()
@@ -1130,6 +1252,9 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
         color: Theme.of(context).colorScheme.background,
       ),
       AppSettingCard.noBorder(
+        identifier:
+            semanticIdentifier(tag: _tag, description: 'serviceNameOptional'),
+        semanticLabel: loc(context).serviceNameOptional,
         title: loc(context).serviceNameOptional,
         description: state.ipv4Setting.serviceName ?? '',
         color: Theme.of(context).colorScheme.background,
@@ -1141,32 +1266,46 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
     return [
       AppSettingCard.noBorder(
         title: loc(context).internetIpv4Address,
+        identifier:
+            semanticIdentifier(tag: _tag, description: 'internetIpv4Address'),
+        semanticLabel: loc(context).internetIpv4Address,
         description: state.ipv4Setting.staticIpAddress ?? '',
         color: Theme.of(context).colorScheme.background,
       ),
       AppSettingCard.noBorder(
         title: loc(context).subnetMask.capitalizeWords(),
+        identifier: semanticIdentifier(tag: _tag, description: 'subnetMask'),
+        semanticLabel: loc(context).subnetMask,
         description: NetworkUtils.prefixLengthToSubnetMask(
             state.ipv4Setting.networkPrefixLength ?? 24),
         color: Theme.of(context).colorScheme.background,
       ),
       AppSettingCard.noBorder(
         title: loc(context).defaultGateway,
+        identifier:
+            semanticIdentifier(tag: _tag, description: 'defaultGateway'),
+        semanticLabel: loc(context).defaultGateway,
         description: state.ipv4Setting.staticGateway ?? '',
         color: Theme.of(context).colorScheme.background,
       ),
       AppSettingCard.noBorder(
         title: loc(context).dns1,
+        identifier: semanticIdentifier(tag: _tag, description: 'dns1'),
+        semanticLabel: loc(context).dns1,
         description: state.ipv4Setting.staticDns1 ?? '',
         color: Theme.of(context).colorScheme.background,
       ),
       AppSettingCard.noBorder(
         title: loc(context).dns2Optional,
+        identifier: semanticIdentifier(tag: _tag, description: 'dns2Optional'),
+        semanticLabel: loc(context).dns2Optional,
         description: state.ipv4Setting.staticDns2 ?? '',
         color: Theme.of(context).colorScheme.background,
       ),
       AppSettingCard.noBorder(
         title: loc(context).dns3Optional,
+        identifier: semanticIdentifier(tag: _tag, description: 'dns3Optional'),
+        semanticLabel: loc(context).dns3Optional,
         description: state.ipv4Setting.staticDns3 ?? '',
         color: Theme.of(context).colorScheme.background,
       ),
@@ -1178,11 +1317,16 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
     return [
       AppSettingCard.noBorder(
         title: loc(context).username,
+        identifier: semanticIdentifier(tag: _tag, description: 'username'),
+        semanticLabel: loc(context).username,
         description: state.ipv4Setting.username ?? '',
         color: Theme.of(context).colorScheme.background,
       ),
       AppSettingCard.noBorder(
         title: loc(context).serverIpv4Address,
+        identifier:
+            semanticIdentifier(tag: _tag, description: 'serverIpv4Address'),
+        semanticLabel: loc(context).serverIpv4Address,
         description: state.ipv4Setting.serverIp ?? '',
         color: Theme.of(context).colorScheme.background,
       ),
@@ -1194,11 +1338,16 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
     return [
       AppSettingCard.noBorder(
         title: loc(context).username,
+        identifier: semanticIdentifier(tag: _tag, description: 'username'),
+        semanticLabel: loc(context).username,
         description: state.ipv4Setting.username ?? '',
         color: Theme.of(context).colorScheme.background,
       ),
       AppSettingCard.noBorder(
         title: loc(context).serverIpv4Address,
+        identifier:
+            semanticIdentifier(tag: _tag, description: 'serverIpv4Address'),
+        semanticLabel: loc(context).serverIpv4Address,
         description: state.ipv4Setting.serverIp ?? '',
         color: Theme.of(context).colorScheme.background,
       ),
@@ -1216,10 +1365,14 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
               loc(context).toLogInLocallyWhileInBridgeMode,
               defaultTextStyle: Theme.of(context).textTheme.bodyLarge!,
               tags: const ['b'],
+              identifier: semanticIdentifier(
+                  tag: _tag, description: 'toLogInLocallyWhileInBridgeMode'),
             ),
             const AppGap.small2(),
             AppTextButton.noPadding(
               state.ipv4Setting.redirection ?? '',
+              identifier:
+                  semanticIdentifier(tag: _tag, description: 'redirection'),
               icon: Icons.open_in_new,
               onTap: () {
                 openUrl(state.ipv4Setting.redirection ?? '');
@@ -1253,6 +1406,8 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
     return [
       AppSettingCard.noBorder(
         title: loc(context).ipv6Automatic,
+        identifier: semanticIdentifier(tag: _tag, description: 'ipv6Automatic'),
+        semanticLabel: loc(context).ipv6Automatic,
         description: state.ipv6Setting.isIPv6AutomaticEnabled
             ? loc(context).enabled
             : loc(context).disabled,
@@ -1260,11 +1415,15 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       ),
       AppSettingCard.noBorder(
         title: loc(context).duid,
+        identifier: semanticIdentifier(tag: _tag, description: 'duid'),
+        semanticLabel: loc(context).duid,
         description: state.ipv6Setting.duid,
         color: Theme.of(context).colorScheme.background,
       ),
       AppSettingCard.noBorder(
         title: loc(context).sixrdTunnel,
+        identifier: semanticIdentifier(tag: _tag, description: 'sixrdTunnel'),
+        semanticLabel: loc(context).sixrdTunnel,
         description: getIpv6rdTunnelModeLoc(ipv6rdTunnelMode),
         color: Theme.of(context).colorScheme.background,
       ),
@@ -1284,11 +1443,21 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
         context: context,
         builder: (context) {
           return AlertDialog(
-            title: AppText.titleLarge(loc(context).restartWifiAlertTitle),
-            content: AppText.bodyMedium(loc(context).restartWifiAlertDesc),
+            title: AppText.titleLarge(
+              loc(context).restartWifiAlertTitle,
+              identifier: semanticIdentifier(
+                  tag: _tag, description: 'restartWifiAlertTitle'),
+            ),
+            content: AppText.bodyMedium(
+              loc(context).restartWifiAlertDesc,
+              identifier: semanticIdentifier(
+                  tag: _tag, description: 'restartWifiAlertDesc'),
+            ),
             actions: [
               AppTextButton(
                 loc(context).cancel,
+                identifier:
+                    semanticIdentifier(tag: _tag, description: 'cancel'),
                 color: Theme.of(context).colorScheme.onSurface,
                 onTap: () {
                   context.pop();
@@ -1296,6 +1465,8 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
               ),
               AppTextButton(
                 loc(context).restart,
+                identifier:
+                    semanticIdentifier(tag: _tag, description: 'restart'),
                 onTap: () {
                   context.pop();
                   _onRestartButtonTap();

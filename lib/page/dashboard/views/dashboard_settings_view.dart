@@ -21,6 +21,7 @@ class DashboardSettingsView extends ConsumerStatefulWidget {
       _DashboardSettingsViewState();
 }
 
+/// NOTE: Unused page
 class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
   bool _pushEnabled = false;
 

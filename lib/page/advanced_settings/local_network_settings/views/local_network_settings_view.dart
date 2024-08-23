@@ -15,11 +15,11 @@ import 'package:privacy_gui/page/advanced_settings/local_network_settings/provid
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_state.dart';
 import 'package:privacy_gui/providers/redirection/redirection_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/util/semantic.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'package:privacy_gui/core/jnap/providers/assign_ip/base_assign_ip.dart'
     if (dart.library.html) 'package:privacy_gui/core/jnap/providers/assign_ip/web_assign_ip.dart';
 
@@ -37,6 +37,7 @@ class LocalNetworkSettingsView extends ArgumentsConsumerStatefulView {
 class _LocalNetworkSettingsViewState
     extends ConsumerState<LocalNetworkSettingsView> {
   LocalNetworkSettingsState? originalSettings;
+  final String _tag = 'local-network-settings';
 
   @override
   void initState() {
@@ -105,6 +106,9 @@ class _LocalNetworkSettingsViewState
             InternetSettingCard(
               title: loc(context).ipAddress.capitalizeWords(),
               description: state.ipAddress,
+              identifier:
+                  semanticIdentifier(tag: _tag, description: 'ipAddress'),
+              semanticLabel: loc(context).ipAddress,
               onTap: () {
                 _showIpAddressEditDialog(state.ipAddress);
               },
@@ -113,6 +117,9 @@ class _LocalNetworkSettingsViewState
             InternetSettingCard(
               title: loc(context).subnetMask,
               description: state.subnetMask,
+              identifier:
+                  semanticIdentifier(tag: _tag, description: 'subnetMask'),
+              semanticLabel: loc(context).subnetMask,
               onTap: () {
                 _showSubnetMaskEditDialog(state.subnetMask);
               },
@@ -122,6 +129,9 @@ class _LocalNetworkSettingsViewState
               title: loc(context).dhcpServer,
               description:
                   state.isDHCPEnabled ? loc(context).on : loc(context).off,
+              identifier:
+                  semanticIdentifier(tag: _tag, description: 'dhcpServer'),
+              semanticLabel: loc(context).dhcpServer,
               onTap: () {
                 context.pushNamed(RouteNamed.dhcpServer);
               },
@@ -129,6 +139,9 @@ class _LocalNetworkSettingsViewState
             const AppGap.small2(),
             InternetSettingCard(
               title: loc(context).dhcpReservations,
+              identifier: semanticIdentifier(
+                  tag: _tag, description: 'dhcpReservations'),
+              semanticLabel: loc(context).dhcpReservations,
               padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 24),
               trailing: Row(
                 children: [
@@ -162,6 +175,8 @@ class _LocalNetworkSettingsViewState
       contentBuilder: (context, setState) {
         return AppTextField(
           headerText: loc(context).hostName.capitalizeWords(),
+          identifier: semanticIdentifier(tag: _tag, description: 'hostName'),
+          semanticLabel: loc(context).hostName,
           controller: textController,
           errorText: errorDesc,
           border: const OutlineInputBorder(),
@@ -207,6 +222,9 @@ class _LocalNetworkSettingsViewState
           mainAxisSize: MainAxisSize.min,
           children: [
             AppIPFormField(
+              identifier:
+                  semanticIdentifier(tag: _tag, description: 'ipAddress'),
+              semanticLabel: loc(context).ipAddress,
               controller: textController,
               errorText: errorDesc,
               border: const OutlineInputBorder(),
@@ -279,6 +297,9 @@ class _LocalNetworkSettingsViewState
           mainAxisSize: MainAxisSize.min,
           children: [
             AppIPFormField(
+              identifier:
+                  semanticIdentifier(tag: _tag, description: 'ipAddress'),
+              semanticLabel: loc(context).ipAddress,
               octet1ReadOnly: true,
               octet2ReadOnly: true,
               controller: textController,

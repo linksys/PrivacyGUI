@@ -8,6 +8,7 @@ import 'package:privacy_gui/page/advanced_settings/static_routing/providers/stat
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/util/semantic.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -28,6 +29,8 @@ class StaticRoutingListView extends ArgumentsConsumerStatefulView {
 }
 
 class _StaticRoutingListViewState extends ConsumerState<StaticRoutingListView> {
+  final String _tag = 'static-routing-list';
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(staticRoutingProvider);
@@ -42,8 +45,17 @@ class _StaticRoutingListViewState extends ConsumerState<StaticRoutingListView> {
             padding: const EdgeInsets.all(Spacing.large2),
             title: AppText.labelLarge(
               loc(context).addStaticRoute,
+              identifier:
+                  semanticIdentifier(tag: _tag, description: 'addStaticRoute'),
             ),
-            trailing: const Icon(LinksysIcons.add),
+            identifier:
+                semanticIdentifier(tag: _tag, description: 'addStaticRoute'),
+            semanticLabel: loc(context).addStaticRoute,
+            trailing: Semantics(
+                identifier: semanticIdentifier(
+                    tag: _tag, description: 'addStaticRoute-icon'),
+                label: '${loc(context).addStaticRoute} icon',
+                child: const Icon(LinksysIcons.add)),
             onTap: () {
               context.pushNamed(RouteNamed.settingsStaticRoutingDetail);
             },
@@ -52,7 +64,11 @@ class _StaticRoutingListViewState extends ConsumerState<StaticRoutingListView> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              AppText.labelLarge(loc(context).staticRoute),
+              AppText.labelLarge(
+                loc(context).staticRoute,
+                identifier:
+                    semanticIdentifier(tag: _tag, description: 'staticRoute'),
+              ),
               const AppGap.medium(),
               if (state.setting.entries.isNotEmpty)
                 ...state.setting.entries.map(
@@ -63,7 +79,11 @@ class _StaticRoutingListViewState extends ConsumerState<StaticRoutingListView> {
                   child: SizedBox(
                     height: 180,
                     child: Center(
-                      child: AppText.bodyLarge(loc(context).noStaticRoutes),
+                      child: AppText.bodyLarge(
+                        loc(context).noStaticRoutes,
+                        identifier: semanticIdentifier(
+                            tag: _tag, description: 'noStaticRoutes'),
+                      ),
                     ),
                   ),
                 ),
@@ -104,12 +124,21 @@ class _StaticRoutingListViewState extends ConsumerState<StaticRoutingListView> {
     return Row(
       mainAxisSize: MainAxisSize.max,
       children: [
-        AppText.bodyLarge(setting.settings.interface),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: Spacing.medium),
-          child: Icon(LinksysIcons.ethernet),
+        AppText.bodyLarge(
+          setting.settings.interface,
+          identifier: semanticIdentifier(tag: _tag, description: 'interface'),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: Spacing.medium),
+          child: Semantics(
+              identifier:
+                  semanticIdentifier(tag: _tag, description: 'ethernet-icon'),
+              label: 'ethernet icon',
+              child: const Icon(LinksysIcons.ethernet)),
         ),
         AppIconButton.noPadding(
+          identifier: semanticIdentifier(tag: _tag, description: 'edit'),
+          semanticLabel: 'edit',
           icon: LinksysIcons.edit,
           onTap: () {
             context.pushNamed(
@@ -129,28 +158,58 @@ class _StaticRoutingListViewState extends ConsumerState<StaticRoutingListView> {
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppText.labelLarge(setting.name),
-        AppText.bodyMedium(getInterfaceTitle(setting.settings.interface)),
+        AppText.labelLarge(
+          setting.name,
+          identifier: semanticIdentifier(tag: _tag, description: 'name'),
+        ),
+        AppText.bodyMedium(
+          getInterfaceTitle(setting.settings.interface),
+          identifier: semanticIdentifier(tag: _tag, description: 'interface'),
+        ),
         Wrap(
           spacing: Spacing.small3,
           children: [
-            AppText.labelLarge(loc(context).destinationIPAddress),
-            AppText.bodyMedium(setting.settings.destinationLAN),
+            AppText.labelLarge(
+              loc(context).destinationIPAddress,
+              identifier: semanticIdentifier(
+                  tag: _tag, description: 'destinationIPAddress'),
+            ),
+            AppText.bodyMedium(
+              setting.settings.destinationLAN,
+              identifier:
+                  semanticIdentifier(tag: _tag, description: 'destination-lan'),
+            ),
           ],
         ),
         Wrap(
           spacing: Spacing.small3,
           children: [
-            AppText.labelLarge(loc(context).subnetMask),
-            AppText.bodyMedium(NetworkUtils.prefixLengthToSubnetMask(
-                setting.settings.networkPrefixLength)),
+            AppText.labelLarge(
+              loc(context).subnetMask,
+              identifier: semanticIdentifier(
+                  tag: _tag, description: 'subnetMask'),
+            ),
+            AppText.bodyMedium(
+              NetworkUtils.prefixLengthToSubnetMask(
+                  setting.settings.networkPrefixLength),
+              identifier: semanticIdentifier(
+                  tag: _tag, description: 'subnetMask-value'),
+            ),
           ],
         ),
         Wrap(
           spacing: Spacing.small3,
           children: [
-            AppText.labelLarge(loc(context).gateway),
-            AppText.bodyMedium(setting.settings.gateway ?? ''),
+            AppText.labelLarge(
+              loc(context).gateway,
+              identifier: semanticIdentifier(
+                  tag: _tag, description: 'gateway'),
+            ),
+            AppText.bodyMedium(
+              setting.settings.gateway ?? '',
+              identifier: semanticIdentifier(
+                  tag: _tag, description: 'gateway-value'),
+            ),
           ],
         ),
       ],

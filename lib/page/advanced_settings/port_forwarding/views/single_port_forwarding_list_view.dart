@@ -9,6 +9,7 @@ import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/util/semantic.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
@@ -35,6 +36,7 @@ class SinglePortForwardingListContentView
 class _SinglePortForwardingContentViewState
     extends ConsumerState<SinglePortForwardingListContentView> {
   late final SinglePortForwardingListNotifier _notifier;
+  final String _tag = 'single-port-forwarding';
 
   @override
   void initState() {
@@ -63,10 +65,17 @@ class _SinglePortForwardingContentViewState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const AppGap.large2(),
-            AppText.bodyLarge(loc(context).singlePortForwardingDescription),
+            AppText.bodyLarge(
+              loc(context).singlePortForwardingDescription,
+              identifier: semanticIdentifier(
+                  tag: _tag, description: 'singlePortForwardingDescription'),
+            ),
             if (!_notifier.isExceedMax()) ...[
               const AppGap.large2(),
               AddRuleCard(
+                identifier: semanticIdentifier(
+                    tag: _tag, description: 'singlePortForwardingRule'),
+                semanticLabel: '${loc(context).forwardedRange} add',
                 onTap: () {
                   context.pushNamed<bool?>(RouteNamed.singlePortForwardingRule,
                       extra: {'rules': state.rules}).then((value) {
@@ -81,13 +90,20 @@ class _SinglePortForwardingContentViewState
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AppText.labelLarge(loc(context).rules),
+                AppText.labelLarge(
+                  loc(context).rules,
+                  identifier: semanticIdentifier(
+                      tag: _tag, description: 'rules'),
+                ),
                 const AppGap.medium(),
                 if (state.rules.isNotEmpty)
                   ...state.rules
                       .map(
                     (e) => RuleItemCard(
                       title: e.description,
+                      identifier: semanticIdentifier(
+                          tag: _tag, description: e.description),
+                      semanticLabel: 'edit ${e.description}',
                       isEnabled: e.isEnabled,
                       onTap: () {
                         context.pushNamed<bool?>(

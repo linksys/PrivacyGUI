@@ -7,12 +7,12 @@ import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
 import 'package:privacy_gui/page/dashboard/views/components/shimmer.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/util/semantic.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
@@ -21,6 +21,8 @@ import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 
 class DashboardHomePortAndSpeed extends ConsumerWidget {
+  final String _tag = 'dashboard-port-speed';
+
   const DashboardHomePortAndSpeed({super.key});
 
   @override
@@ -208,7 +210,12 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
             padding: const EdgeInsets.all(48.0),
             child: Column(
               children: [
-                AppText.bodySmall(dateTimeStr),
+                AppText.bodySmall(
+                  dateTimeStr,
+                  identifier:
+                      semanticIdentifier(tag: _tag, description: 'date'),
+                  semanticLabel: 'date',
+                ),
                 const AppGap.large2(),
                 ResponsiveLayout(
                     desktop: horizontalLayout
@@ -294,6 +301,8 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
   Widget _speedTestButton(BuildContext context) {
     return AppTextButton.noPadding(
       loc(context).speedTest,
+      identifier: semanticIdentifier(tag: _tag, description: 'speedTest'),
+      semanticLabel: loc(context).speedTest,
       icon: LinksysIcons.networkCheck,
       onTap: () {
         context.pushNamed(RouteNamed.dashboardSpeedTest);
@@ -308,15 +317,23 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
       alignment: alignment,
       crossAxisAlignment: WrapCrossAlignment.end,
       children: [
-        Icon(
-          LinksysIcons.arrowDownward,
-          color: Theme.of(context).colorScheme.primary,
+        Semantics(
+          identifier:
+              semanticIdentifier(tag: _tag, description: 'arrowDownward'),
+          label: 'arrow Downward',
+          child: Icon(
+            LinksysIcons.arrowDownward,
+            color: Theme.of(context).colorScheme.primary,
+          ),
         ),
         AppText.titleLarge(
           value,
           color: isLegacy
               ? Theme.of(context).colorScheme.outline
               : Theme.of(context).colorScheme.onSurface,
+          identifier:
+              semanticIdentifier(tag: _tag, description: 'download-value'),
+          semanticLabel: 'download value',
         ),
         if (unit != null)
           AppText.bodySmall(
@@ -324,6 +341,9 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
             color: isLegacy
                 ? Theme.of(context).colorScheme.outline
                 : Theme.of(context).colorScheme.onSurface,
+            identifier:
+                semanticIdentifier(tag: _tag, description: 'download-unit'),
+            semanticLabel: 'download unit',
           )
       ],
     );
@@ -336,15 +356,22 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
       alignment: alignment,
       crossAxisAlignment: WrapCrossAlignment.end,
       children: [
-        Icon(
-          LinksysIcons.arrowUpward,
-          color: Theme.of(context).colorScheme.primary,
+        Semantics(
+          identifier: semanticIdentifier(tag: _tag, description: 'arrowUpward'),
+          label: 'arrow Upward',
+          child: Icon(
+            LinksysIcons.arrowUpward,
+            color: Theme.of(context).colorScheme.primary,
+          ),
         ),
         AppText.titleLarge(
           value,
           color: isLegacy
               ? Theme.of(context).colorScheme.outline
               : Theme.of(context).colorScheme.onSurface,
+          identifier:
+              semanticIdentifier(tag: _tag, description: 'upload-value'),
+          semanticLabel: 'upload value',
         ),
         if (unit != null)
           AppText.bodySmall(
@@ -352,6 +379,9 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
             color: isLegacy
                 ? Theme.of(context).colorScheme.outline
                 : Theme.of(context).colorScheme.onSurface,
+            identifier:
+                semanticIdentifier(tag: _tag, description: 'upload-unit'),
+            semanticLabel: 'upload unit',
           )
       ],
     );
@@ -361,16 +391,25 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
       BuildContext context, String? connection, String label, bool isWan) {
     final isMobile = ResponsiveLayout.isMobileLayout(context);
     final portLabel = [
-      Icon(
-        connection == null
-            ? LinksysIcons.circle
-            : LinksysIcons.checkCircleFilled,
-        color: connection == null
-            ? Theme.of(context).colorScheme.surfaceVariant
-            : Theme.of(context).colorSchemeExt.green,
+      Semantics(
+        identifier:
+            semanticIdentifier(tag: _tag, description: 'port-label-icon'),
+        label: 'port label icon',
+        child: Icon(
+          connection == null
+              ? LinksysIcons.circle
+              : LinksysIcons.checkCircleFilled,
+          color: connection == null
+              ? Theme.of(context).colorScheme.surfaceVariant
+              : Theme.of(context).colorSchemeExt.green,
+        ),
       ),
       const AppGap.small2(),
-      AppText.labelMedium(label),
+      AppText.labelMedium(
+        label,
+        identifier: semanticIdentifier(tag: _tag, description: 'port-label'),
+        semanticLabel: 'port label',
+      ),
     ];
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
@@ -394,6 +433,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
         Padding(
           padding: const EdgeInsets.all(Spacing.small2),
           child: SvgPicture(
+            semanticsLabel: 'port image',
             connection == null
                 ? CustomTheme.of(context).images.imgPortOff
                 : CustomTheme.of(context).images.imgPortOn,
@@ -401,8 +441,19 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
             height: 40,
           ),
         ),
-        if (connection != null) AppText.bodySmall(connection),
-        if (isWan) AppText.labelMedium(loc(context).internet),
+        if (connection != null)
+          AppText.bodySmall(
+            connection,
+            identifier:
+                semanticIdentifier(tag: _tag, description: 'port-connection'),
+            semanticLabel: 'port connection',
+          ),
+        if (isWan)
+          AppText.labelMedium(
+            loc(context).internet,
+            identifier:
+                semanticIdentifier(tag: _tag, description: 'port-internet'),
+          ),
         Container(
           constraints: const BoxConstraints(maxWidth: 60),
           width: 60,

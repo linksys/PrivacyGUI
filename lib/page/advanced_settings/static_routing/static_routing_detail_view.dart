@@ -11,6 +11,7 @@ import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacy_gui/util/semantic.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/widgets/dropdown/dropdown_menu.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -39,6 +40,7 @@ class _StaticRoutingDetailViewState
   String? _destinationIpError;
   String? _subnetMaskError;
   String? _gatewayIpError;
+  final String _tag = 'static-routing-detail';
 
   @override
   void initState() {
@@ -85,6 +87,8 @@ class _StaticRoutingDetailViewState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppTextField.outline(
+            identifier: semanticIdentifier(tag: _tag, description: 'routeName'),
+            semanticLabel: loc(context).routeName,
             hintText: loc(context).routeName,
             controller: _routeNameController,
             onChanged: (text) {
@@ -107,7 +111,12 @@ class _StaticRoutingDetailViewState
           AppIPFormField(
             header: AppText.bodyLarge(
               loc(context).destinationIPAddress,
+              identifier: semanticIdentifier(
+                  tag: _tag, description: 'destinationIPAddress'),
             ),
+            identifier: semanticIdentifier(
+                tag: _tag, description: 'destinationIPAddress'),
+            semanticLabel: loc(context).destinationIPAddress,
             controller: _destinationIpController,
             border: const OutlineInputBorder(),
             onChanged: (text) {
@@ -130,13 +139,20 @@ class _StaticRoutingDetailViewState
               child: AppText.bodyMedium(
                 _destinationIpError!,
                 color: Theme.of(context).colorScheme.error,
+                identifier: semanticIdentifier(
+                    tag: _tag, description: 'destinationIpError'),
               ),
             ),
           const AppGap.large2(),
           AppIPFormField(
             header: AppText.bodyLarge(
               loc(context).subnetMask,
+              identifier:
+                  semanticIdentifier(tag: _tag, description: 'subnetMask'),
             ),
+            identifier:
+                semanticIdentifier(tag: _tag, description: 'subnetMask'),
+            semanticLabel: loc(context).subnetMask,
             controller: _subnetController,
             border: const OutlineInputBorder(),
             onChanged: (text) {
@@ -165,13 +181,18 @@ class _StaticRoutingDetailViewState
               child: AppText.bodyMedium(
                 _subnetMaskError!,
                 color: Theme.of(context).colorScheme.error,
+                identifier: semanticIdentifier(
+                    tag: _tag, description: 'subnetMaskError'),
               ),
             ),
           const AppGap.large2(),
           AppIPFormField(
             header: AppText.bodyLarge(
               loc(context).gateway,
+              identifier: semanticIdentifier(tag: _tag, description: 'gateway'),
             ),
+            identifier: semanticIdentifier(tag: _tag, description: 'gateway'),
+            semanticLabel: loc(context).gateway,
             controller: _gatewayController,
             border: const OutlineInputBorder(),
             onChanged: (text) {
@@ -194,6 +215,8 @@ class _StaticRoutingDetailViewState
               child: AppText.bodyMedium(
                 _gatewayIpError!,
                 color: Theme.of(context).colorScheme.error,
+                identifier: semanticIdentifier(
+                    tag: _tag, description: 'gatewayIpError'),
               ),
             ),
         ],
@@ -251,7 +274,7 @@ class _StaticRoutingDetailViewState
           .read(staticRoutingProvider.notifier)
           .saveRoutingSettingList(settingList)
           .then((value) {
-            // Succeeded, update the list to the state
+        // Succeeded, update the list to the state
         ref.read(staticRoutingProvider).setting.copyWith(entries: settingList);
         showSuccessSnackBar(context, loc(context).saved);
         context.pop();

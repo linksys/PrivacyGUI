@@ -8,8 +8,8 @@ import 'package:privacy_gui/page/advanced_settings/local_network_settings/provid
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacy_gui/util/semantic.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/panel/switch_trigger_tile.dart';
@@ -34,6 +34,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
   final _dns3Controller = TextEditingController();
   final _winsController = TextEditingController();
   final Map<String, String> errors = {};
+  final String _tag = 'dhcp-server';
 
   @override
   void initState() {
@@ -93,8 +94,14 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             AppSwitchTriggerTile(
-              title:
-                  AppText.labelLarge(loc(context).dhcpServer.capitalizeWords()),
+              title: AppText.labelLarge(
+                loc(context).dhcpServer.capitalizeWords(),
+                identifier:
+                    semanticIdentifier(tag: _tag, description: 'dhcpServer'),
+              ),
+              identifier:
+                  semanticIdentifier(tag: _tag, description: 'dhcpServer'),
+              semanticLabel: loc(context).dhcpServer,
               value: state.isDHCPEnabled,
               onChanged: (enabled) {
                 setState(() {
@@ -136,6 +143,9 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
           header: AppText.bodySmall(
             loc(context).startIpAddress,
           ),
+          identifier:
+              semanticIdentifier(tag: _tag, description: 'startIpAddress'),
+          semanticLabel: loc(context).startIpAddress,
           controller: _startIpAddressController,
           border: const OutlineInputBorder(),
           errorText: errors['StartIpAddress'],
@@ -167,6 +177,9 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
         AppTextField.minMaxNumber(
           headerText: loc(context).maximumNumberOfUsers,
           descriptionText: '1 ${loc(context).to} ${state.maxUserLimit}',
+          identifier: semanticIdentifier(
+              tag: _tag, description: 'maximumNumberOfUsers'),
+          semanticLabel: loc(context).maximumNumberOfUsers,
           max: state.maxUserLimit,
           controller: _maxUserAllowedController,
           border: const OutlineInputBorder(),
@@ -193,6 +206,9 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
         const AppGap.large3(),
         AppTextField.minMaxNumber(
           headerText: loc(context).clientLeaseTime,
+          identifier:
+              semanticIdentifier(tag: _tag, description: 'clientLeaseTime'),
+          semanticLabel: loc(context).clientLeaseTime,
           min: state.minAllowDHCPLeaseMinutes,
           max: state.maxAllowDHCPLeaseMinutes,
           controller: _clientLeaseTimeController,
@@ -226,15 +242,28 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppText.bodySmall(loc(context).ipAddressRange),
+        AppText.bodySmall(loc(context).ipAddressRange, identifier:
+                  semanticIdentifier(tag: _tag, description: 'ipAddressRange'),),
         const AppGap.small3(),
         Row(
           children: [
-            AppText.labelLarge(state.firstIPAddress),
+            AppText.labelLarge(
+              state.firstIPAddress,
+              identifier:
+                  semanticIdentifier(tag: _tag, description: 'firstIPAddress'),
+            ),
             const AppGap.medium(),
-            AppText.bodyMedium(loc(context).to),
+            AppText.bodyMedium(
+              loc(context).to,
+              identifier:
+                  semanticIdentifier(tag: _tag, description: 'to'),
+            ),
             const AppGap.medium(),
-            AppText.labelLarge(state.lastIPAddress),
+            AppText.labelLarge(
+              state.lastIPAddress,
+              identifier:
+                  semanticIdentifier(tag: _tag, description: 'lastIPAddress'),
+            ),
           ],
         ),
       ],
@@ -248,7 +277,11 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
         AppIPFormField(
           header: AppText.bodySmall(
             loc(context).staticDns1,
+            identifier:
+                semanticIdentifier(tag: _tag, description: 'staticDns1'),
           ),
+          identifier: semanticIdentifier(tag: _tag, description: 'staticDns1'),
+          semanticLabel: loc(context).staticDns1,
           controller: _dns1Controller,
           border: const OutlineInputBorder(),
           onFocusChanged: (focused) {
@@ -274,7 +307,10 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
         AppIPFormField(
           header: AppText.bodySmall(
             loc(context).staticDns2,
+            identifier: semanticIdentifier(tag: _tag, description: 'staticDns2'),
           ),
+          identifier: semanticIdentifier(tag: _tag, description: 'staticDns2'),
+          semanticLabel: loc(context).staticDns2,
           controller: _dns2Controller,
           border: const OutlineInputBorder(),
           onFocusChanged: (focused) {
@@ -300,7 +336,10 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
         AppIPFormField(
           header: AppText.bodySmall(
             loc(context).staticDns3,
+            identifier: semanticIdentifier(tag: _tag, description: 'staticDns3'),
           ),
+          identifier: semanticIdentifier(tag: _tag, description: 'staticDns3'),
+          semanticLabel: loc(context).staticDns3,
           controller: _dns3Controller,
           border: const OutlineInputBorder(),
           onFocusChanged: (focused) {
@@ -326,7 +365,10 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
         AppIPFormField(
           header: AppText.bodySmall(
             loc(context).wins,
+            identifier: semanticIdentifier(tag: _tag, description: 'wins'),
           ),
+          identifier: semanticIdentifier(tag: _tag, description: 'wins'),
+          semanticLabel: loc(context).wins,
           controller: _winsController,
           border: const OutlineInputBorder(),
           onFocusChanged: (focused) {

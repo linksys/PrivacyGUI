@@ -6,6 +6,7 @@ import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/advanced_settings/firewall/providers/ipv6_port_service_list_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/util/semantic.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
@@ -22,6 +23,7 @@ class Ipv6PortServiceListView extends ArgumentsConsumerStatefulView {
 class _Ipv6PortServiceListViewState
     extends ConsumerState<Ipv6PortServiceListView> {
   late final Ipv6PortServiceListNotifier _notifier;
+  final String _tag = 'ipv6-port-service-list';
 
   @override
   void initState() {
@@ -46,7 +48,11 @@ class _Ipv6PortServiceListViewState
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AppText.bodyLarge(loc(context).ipv6PortServices),
+            AppText.bodyLarge(
+              loc(context).ipv6PortServices,
+              identifier: semanticIdentifier(
+                  tag: _tag, description: 'ipv6PortServices'),
+            ),
             if (!_notifier.isExceedMax()) ...[
               const AppGap.large2(),
               AddRuleCard(
@@ -64,13 +70,20 @@ class _Ipv6PortServiceListViewState
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AppText.labelLarge(loc(context).rules),
+                AppText.labelLarge(
+                  loc(context).rules,
+                  identifier:
+                      semanticIdentifier(tag: _tag, description: 'rules'),
+                ),
                 const AppGap.medium(),
                 if (state.rules.isNotEmpty)
                   ...state.rules
                       .map(
                     (e) => RuleItemCard(
                       title: e.description,
+                      identifier: semanticIdentifier(
+                          tag: _tag, description: e.description),
+                      semanticLabel: e.description,
                       isEnabled: e.isEnabled,
                       onTap: () {
                         context.pushNamed<bool?>(RouteNamed.ipv6PortServiceRule,

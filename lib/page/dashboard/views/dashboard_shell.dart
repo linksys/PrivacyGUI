@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/page/dashboard/views/dashboard_navigation_rail.dart';
 import 'package:privacy_gui/route/route_model.dart';
+import 'package:privacy_gui/util/semantic.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
@@ -48,6 +48,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
     with DebugObserver {
   int _selectedIndex = 0;
   final List<DashboardNaviItem> _dashboardNaviItems = [];
+  final String _tag = 'dashboard-shell';
 
   @override
   void initState() {
@@ -229,15 +230,20 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
   NavigationDestination _bottomSheetIconView(DashboardNaviItem item) {
     return NavigationDestination(
       icon: Semantics(
-        identifier:
-            'now-dashboard-navi-rail-${item.type.resloveLabel(context).kebab()}',
+        identifier: semanticIdentifier(
+            tag: _tag,
+            description: 'navi-rail-${item.type.resloveLabel(context)}'),
+        label: 'navigation rail ${item.type.resloveLabel(context)}',
         child: Icon(
           item.icon,
         ),
       ),
       selectedIcon: Semantics(
-        identifier:
-            'now-dashboard-navi-rail-selected-${item.type.resloveLabel(context).kebab()}',
+        identifier: semanticIdentifier(
+            tag: _tag,
+            description:
+                'navi-rail-selected-${item.type.resloveLabel(context)}'),
+        label: 'navigation rail selected ${item.type.resloveLabel(context)}',
         child: Icon(
           item.icon,
           color: Theme.of(context).colorScheme.onPrimary,
@@ -251,15 +257,20 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
       DashboardNaviItem item) {
     return NavigationRailDestination(
       icon: Semantics(
-        identifier:
-            'now-dashboard-navi-rail-${item.type.resloveLabel(context).kebab()}',
+        identifier: semanticIdentifier(
+            tag: _tag,
+            description: 'navi-rail-${item.type.resloveLabel(context)}'),
+        label: 'navigation rail ${item.type.resloveLabel(context)}',
         child: Icon(
           item.icon,
         ),
       ),
       selectedIcon: Semantics(
-        identifier:
-            'now-dashboard-navi-rail-selected-${item.type.resloveLabel(context).kebab()}',
+        identifier: semanticIdentifier(
+            tag: _tag,
+            description:
+                'navi-rail-selected-${item.type.resloveLabel(context)}'),
+        label: 'navigation rail selected ${item.type.resloveLabel(context)}',
         child: Icon(
           item.icon,
           color: Theme.of(context).colorScheme.onPrimary,

@@ -10,6 +10,10 @@ class InternetSettingCard extends StatelessWidget {
   final EdgeInsets? padding;
   final VoidCallback? onTap;
   final EdgeInsets? margin;
+  final bool? explicitChildNodes;
+  final bool? excludeSemantics;
+  final String? identifier;
+  final String? semanticLabel;
 
   const InternetSettingCard({
     Key? key,
@@ -20,6 +24,10 @@ class InternetSettingCard extends StatelessWidget {
     this.padding,
     this.onTap,
     this.margin,
+    this.explicitChildNodes,
+    this.excludeSemantics,
+    this.identifier,
+    this.semanticLabel,
   }) : super(key: key);
 
   @override
@@ -29,9 +37,16 @@ class InternetSettingCard extends StatelessWidget {
       description: description,
       showBorder: showBorder,
       padding: padding,
-      trailing: trailing ?? const Icon(LinksysIcons.chevronRight),
+      trailing: Semantics(
+          identifier: '$identifier-trailing',
+          label: '$semanticLabel trailing',
+          child: trailing ?? const Icon(LinksysIcons.chevronRight)),
       onTap: onTap,
       margin: margin,
+      explicitChildNodes: explicitChildNodes,
+      excludeSemantics: excludeSemantics,
+      identifier: identifier,
+      semanticLabel: semanticLabel,
     );
   }
 }

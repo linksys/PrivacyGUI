@@ -1,6 +1,4 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
@@ -17,6 +15,7 @@ import 'package:privacy_gui/page/dashboard/views/components/shimmer.dart';
 import 'package:privacy_gui/page/nodes/providers/node_detail_id_provider.dart';
 import 'package:privacy_gui/page/topology/providers/_providers.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/util/semantic.dart';
 import 'package:privacygui_widgets/hook/icon_hooks.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
@@ -27,6 +26,8 @@ import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 
 class DashboardNetworks extends ConsumerWidget {
+  final String _tag = 'dashboard-networks';
+
   const DashboardNetworks({super.key});
 
   @override
@@ -76,7 +77,10 @@ class DashboardNetworks extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppText.titleSmall(loc(context).myNetwork),
+        AppText.titleSmall(
+          loc(context).myNetwork,
+          identifier: semanticIdentifier(tag: _tag, description: 'myNetwork'),
+        ),
         if (isOnline) ...[
           const AppGap.medium(),
           _firmwareStatusWidget(context, newFirmware),
@@ -114,7 +118,11 @@ class DashboardNetworks extends ConsumerWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AppText.titleSmall(loc(context).myNetwork),
+            AppText.titleSmall(
+              loc(context).myNetwork,
+              identifier:
+                  semanticIdentifier(tag: _tag, description: 'myNetwork'),
+            ),
             if (isOnline) _firmwareStatusWidget(context, newFirmware),
           ],
         ),
@@ -153,7 +161,11 @@ class DashboardNetworks extends ConsumerWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AppText.titleSmall(loc(context).myNetwork),
+            AppText.titleSmall(
+              loc(context).myNetwork,
+              identifier:
+                  semanticIdentifier(tag: _tag, description: 'myNetwork'),
+            ),
             if (isOnline) _firmwareStatusWidget(context, newFirmware),
           ],
         ),
@@ -200,16 +212,28 @@ class DashboardNetworks extends ConsumerWidget {
               ? AppText.labelMedium(
                   loc(context).updateFirmware,
                   color: Theme.of(context).colorScheme.primary,
+                  identifier: semanticIdentifier(
+                      tag: _tag, description: 'updateFirmware'),
                 )
               : _firmwareUpdateToDateWidget(context),
           newFirmware
-              ? Icon(
-                  LinksysIcons.cloudDownload,
-                  color: Theme.of(context).colorScheme.primary,
+              ? Semantics(
+                  identifier: semanticIdentifier(
+                      tag: _tag, description: 'updateFirmware-icon'),
+                  label: 'download icon',
+                  child: Icon(
+                    LinksysIcons.cloudDownload,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                 )
-              : Icon(
-                  LinksysIcons.check,
-                  color: Theme.of(context).colorSchemeExt.green,
+              : Semantics(
+                  identifier: semanticIdentifier(
+                      tag: _tag, description: 'updateFirmware-icon'),
+                  label: 'check icon',
+                  child: Icon(
+                    LinksysIcons.check,
+                    color: Theme.of(context).colorSchemeExt.green,
+                  ),
                 )
         ],
       ),
@@ -218,6 +242,8 @@ class DashboardNetworks extends ConsumerWidget {
 
   Widget _firmwareUpdateToDateWidget(BuildContext context) {
     return AppStyledText(loc(context).dashboardFirmwareUpdateToDate,
+        identifier: semanticIdentifier(
+            tag: _tag, description: 'dashboardFirmwareUpdateToDate'),
         styleTags: {
           'span': Theme.of(context)
               .textTheme
@@ -232,35 +258,52 @@ class DashboardNetworks extends ConsumerWidget {
     return Opacity(
       opacity: node.isOnline() ? 1 : 0.6,
       child: AppListCard(
+        identifier: semanticIdentifier(tag: _tag, description: 'node-card'),
+        semanticLabel: 'node card',
         padding: const EdgeInsets.symmetric(vertical: Spacing.medium),
-        title: AppText.titleMedium(node.getDeviceLocation()),
-        description: Semantics(
-          label: 'now-text-device-location',
-          child: Semantics(
-            label: 'now-text-device-count',
-            child: AppText.bodyMedium(
-                loc(context).nDevices(node.connectedDevices.length)),
-          ),
+        title: AppText.titleMedium(
+          node.getDeviceLocation(),
+          identifier:
+              semanticIdentifier(tag: _tag, description: 'device-location'),
         ),
-        leading: Image(
-          image: CustomTheme.of(context).images.devices.getByName(
-                routerIconTestByModel(modelNumber: node.modelNumber ?? ''),
-              ),
-          width: 40,
-          height: 40,
+        description: AppText.bodyMedium(
+          loc(context).nDevices(node.connectedDevices.length),
+          identifier:
+              semanticIdentifier(tag: _tag, description: 'device-count'),
+          semanticLabel: 'device count',
+        ),
+        leading: Semantics(
+          identifier:
+              semanticIdentifier(tag: _tag, description: 'device-image'),
+          label: 'device image',
+          child: Image(
+            image: CustomTheme.of(context).images.devices.getByName(
+                  routerIconTestByModel(modelNumber: node.modelNumber ?? ''),
+                ),
+            width: 40,
+            height: 40,
+          ),
         ),
         trailing: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Icon(node.isOnline()
-                ? node.isAuthority | !node.isWirelessConnection()
-                    ? LinksysIcons.ethernet
-                    : getWifiSignalIconData(context, node.signalDecibels)
-                : LinksysIcons.signalWifiNone),
+            Semantics(
+              identifier: semanticIdentifier(
+                  tag: _tag, description: 'device-signal-icon'),
+              label: 'device signal icon',
+              child: Icon(node.isOnline()
+                  ? node.isAuthority | !node.isWirelessConnection()
+                      ? LinksysIcons.ethernet
+                      : getWifiSignalIconData(context, node.signalDecibels)
+                  : LinksysIcons.signalWifiNone),
+            ),
             if (!node.isAuthority &&
                 node.isWirelessConnection() &&
                 node.isOnline())
-              AppText.bodySmall('${node.signalDecibels} dBM'),
+              AppText.bodySmall(
+                '${node.signalDecibels} dBM',
+                identifier: semanticIdentifier(tag: _tag, description: 'dbm'),
+              ),
             if (!node.isOnline()) AppText.bodySmall(loc(context).offline)
           ],
         ),
@@ -283,10 +326,15 @@ class DashboardNetworks extends ConsumerWidget {
       text: state.nodes.length == 1 ? loc(context).node : loc(context).nodes,
       count: state.nodes.length,
       sub: state.isAnyNodesOffline
-          ? Icon(
-              LinksysIcons.infoCircle,
-              size: 24,
-              color: Theme.of(context).colorScheme.error,
+          ? Semantics(
+              identifier: semanticIdentifier(
+                  tag: _tag, description: 'nodes-info-error-icon'),
+              label: 'nodes info error icon',
+              child: Icon(
+                LinksysIcons.infoCircle,
+                size: 24,
+                color: Theme.of(context).colorScheme.error,
+              ),
             )
           : null,
       onTap: () {
@@ -330,14 +378,29 @@ class DashboardNetworks extends ConsumerWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AppText.titleSmall('$count'),
+                AppText.titleSmall(
+                  '$count',
+                  identifier: semanticIdentifier(
+                      tag: _tag, description: 'info-tile-count'),
+                  semanticLabel: 'info tile count',
+                ),
                 const AppGap.medium(),
-                AppText.titleSmall(text),
+                AppText.titleSmall(
+                  text,
+                  identifier: semanticIdentifier(
+                      tag: _tag, description: 'info-tile-text'),
+                  semanticLabel: 'info tile text',
+                ),
               ],
             ),
-            Icon(
-              iconData,
-              size: 20,
+            Semantics(
+              identifier:
+                  semanticIdentifier(tag: _tag, description: 'nodes-info-icon'),
+              label: 'nodes info icon',
+              child: Icon(
+                iconData,
+                size: 20,
+              ),
             ),
             if (sub != null) sub,
           ],

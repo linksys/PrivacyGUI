@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
@@ -11,6 +12,7 @@ import 'package:privacy_gui/page/dashboard/views/components/shimmer.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/guest_wifi_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/util/semantic.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
@@ -18,6 +20,8 @@ import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 
 class DashboardWiFiGrid extends ConsumerWidget {
+  final String _tag = 'dashboard-wifi-grid';
+
   const DashboardWiFiGrid({super.key});
 
   @override
@@ -80,8 +84,14 @@ class DashboardWiFiGrid extends ConsumerWidget {
                     : item.radios
                         .map((e) => e.replaceAll('RADIO_', ''))
                         .join('/'),
+                identifier: semanticIdentifier(
+                    tag: _tag, description: 'wifi-card-title'),
+                semanticLabel: 'wifi card title',
               ),
               AppSwitch(
+                identifier:
+                    semanticIdentifier(tag: _tag, description: 'wifi-card'),
+                semanticLabel: 'wifi card',
                 value: item.isEnabled,
                 onChanged: (value) async {
                   if (item.isGuest) {
@@ -110,23 +120,37 @@ class DashboardWiFiGrid extends ConsumerWidget {
             ],
           ),
           const AppGap.medium(),
-          AppText.titleMedium(item.ssid),
+          AppText.titleMedium(
+            item.ssid,
+            identifier:
+                semanticIdentifier(tag: _tag, description: 'wifi-card-ssid'),
+            semanticLabel: 'wifi card ssid',
+          ),
           const AppGap.medium(),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(
                 children: [
-                  const Icon(LinksysIcons.devices),
+                  Semantics(
+                      identifier: semanticIdentifier(
+                          tag: _tag, description: 'wifi-card-device-icon'),
+                      label: 'wifi card device icon',
+                      child: const Icon(LinksysIcons.devices)),
                   const AppGap.medium(),
                   AppText.labelLarge(
                     loc(context).nDevices(item.numOfConnectedDevices),
+                    identifier: semanticIdentifier(
+                        tag: _tag, description: 'wifi-card-devices'),
+                    semanticLabel: 'wifi card device',
                   ),
                 ],
               ),
               AppIconButton.noPadding(
                   icon: LinksysIcons.share,
-                  semanticLabel: 'share',
+                  identifier: semanticIdentifier(
+                      tag: _tag, description: 'wifi-card-share'),
+                  semanticLabel: 'wifi card share',
                   onTap: () {
                     _showWiFiShareModal(context, item);
                   })

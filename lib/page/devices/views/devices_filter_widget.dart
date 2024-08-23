@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/devices/_devices.dart';
 import 'package:privacy_gui/util/extensions.dart';
+import 'package:privacy_gui/util/semantic.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -21,6 +22,8 @@ class DevicesFilterWidget extends ConsumerStatefulWidget {
 }
 
 class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
+  final String _tag = 'device-filter-widget';
+
   @override
   void initState() {
     super.initState();
@@ -57,10 +60,17 @@ class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const AppGap.small2(),
-              AppText.titleSmall(loc(context).filters),
+              AppText.titleSmall(
+                loc(context).filters,
+                identifier:
+                    semanticIdentifier(tag: _tag, description: 'filters'),
+              ),
               const AppGap.medium(),
               FilteredChipsWidget<(String, bool)>(
                   title: loc(context).byConnection,
+                  identifier: semanticIdentifier(
+                      tag: _tag, description: 'Filtered-by-connection'),
+                  semanticLabel: 'filtered by connection',
                   dataList: [
                     (loc(context).online, true),
                     (loc(context).offline, false)
@@ -79,6 +89,9 @@ class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
                   }),
               FilteredChipsWidget<LinksysDevice>(
                   title: loc(context).byNode,
+                  identifier: semanticIdentifier(
+                      tag: _tag, description: 'Filtered-by-node'),
+                  semanticLabel: 'filtered by node',
                   dataList: nodes,
                   chipName: (data) => data?.getDeviceLocation() ?? '',
                   checkIsSelected: (data) => selectConnection
@@ -113,6 +126,9 @@ class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
               //     }),
               FilteredChipsWidget<String>(
                   title: loc(context).byRadio,
+                  identifier: semanticIdentifier(
+                      tag: _tag, description: 'Filtered-by-radio'),
+                  semanticLabel: 'filtered by radio',
                   dataList: radios,
                   chipName: (data) =>
                       data == 'Ethernet' ? loc(context).ethernet : (data ?? ''),
@@ -138,6 +154,9 @@ class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
               const AppGap.medium(),
               AppTextButton.noPadding(
                 loc(context).resetFilters,
+                identifier:
+                    semanticIdentifier(tag: _tag, description: 'resetFilters'),
+                semanticLabel: 'reset filters',
                 icon: LinksysIcons.restartAlt,
                 onTap: () {
                   ref.read(deviceFilterConfigProvider.notifier).initFilter();
@@ -157,6 +176,10 @@ class FilteredChipsWidget<T> extends ConsumerStatefulWidget {
   final String Function(T? data) chipName;
   final bool Function(T? data) checkIsSelected;
   final void Function(T? data, bool isSelected)? onSelected;
+  final bool? explicitChildNodes;
+  final bool? excludeSemantics;
+  final String? identifier;
+  final String? semanticLabel;
 
   const FilteredChipsWidget({
     super.key,
@@ -165,6 +188,10 @@ class FilteredChipsWidget<T> extends ConsumerStatefulWidget {
     required this.chipName,
     required this.checkIsSelected,
     this.onSelected,
+    this.explicitChildNodes,
+    this.excludeSemantics,
+    this.identifier,
+    this.semanticLabel,
   });
 
   @override
@@ -177,6 +204,8 @@ class _FilteredChipsWidgetState<T>
   @override
   Widget build(BuildContext context) {
     return AppSection.withLabel(
+        identifier: widget.identifier,
+        semanticLabel: widget.semanticLabel,
         title: widget.title,
         content: Wrap(
           alignment: WrapAlignment.start,
@@ -187,6 +216,7 @@ class _FilteredChipsWidgetState<T>
                   label: AppText.bodySmall(
                     widget.chipName(e),
                     overflow: TextOverflow.ellipsis,
+                    identifier: widget.identifier,
                   ),
                   onSelected: widget.onSelected != null
                       ? (value) {

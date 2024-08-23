@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/page/devices/extensions/icon_device_category_ext.dart';
 import 'package:privacy_gui/page/devices/providers/device_list_state.dart';
+import 'package:privacy_gui/util/semantic.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/card/device_list_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
@@ -32,6 +33,8 @@ class DeviceListWidget extends ConsumerStatefulWidget {
 }
 
 class _DeviceListWidgetState extends ConsumerState<DeviceListWidget> {
+  final String _tag = 'device-list-widget';
+
   @override
   Widget build(BuildContext context) {
     return ListView.separated(
@@ -57,6 +60,8 @@ class _DeviceListWidgetState extends ConsumerState<DeviceListWidget> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: Spacing.zero),
       child: AppDeviceListCard(
+        identifier: semanticIdentifier(tag: _tag, description: 'device-list'),
+        semanticLabel: 'device list',
         color: (widget.isItemSelected?.call(item) ?? false)
             ? Theme.of(context).colorScheme.primaryContainer
             : null,

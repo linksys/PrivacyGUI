@@ -6,6 +6,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacy_gui/util/semantic.dart';
 import 'package:privacy_gui/validator_rules/input_validators.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:privacygui_widgets/widgets/gap/gap.dart';
@@ -33,6 +34,7 @@ class _DHCPReservationsEditViewState
   bool enableSave = false;
   bool isMacValid = false;
   final InputValidator _macValidator = InputValidator([MACAddressRule()]);
+  final String _tag = 'dhcp-reservations-edit';
 
   @override
   void initState() {
@@ -70,6 +72,9 @@ class _DHCPReservationsEditViewState
           children: [
             AppTextField(
               headerText: loc(context).deviceName,
+              identifier:
+                  semanticIdentifier(tag: _tag, description: 'deviceName'),
+              semanticLabel: loc(context).deviceName,
               controller: _deviceNameController,
               border: const OutlineInputBorder(),
               onChanged: (value) {
@@ -81,6 +86,9 @@ class _DHCPReservationsEditViewState
             const AppGap.large3(),
             AppIPFormField(
               header: AppText.bodySmall(loc(context).assignIpAddress),
+              identifier:
+                  semanticIdentifier(tag: _tag, description: 'assignIpAddress'),
+              semanticLabel: loc(context).assignIpAddress,
               controller: _ipController,
               border: const OutlineInputBorder(),
               onChanged: (value) {
@@ -92,6 +100,9 @@ class _DHCPReservationsEditViewState
             const AppGap.large3(),
             AppTextField.macAddress(
               headerText: loc(context).macAddress,
+              identifier:
+                  semanticIdentifier(tag: _tag, description: 'macAddress'),
+              semanticLabel: loc(context).macAddress,
               controller: _macController,
               border: const OutlineInputBorder(),
               onChanged: (value) {
@@ -161,10 +172,15 @@ class _DHCPReservationsEditViewState
     showSimpleAppDialog(
       context,
       title: loc(context).deleteReservation,
-      content: AppText.bodyMedium(loc(context).thisActionCannotBeUndone),
+      content: AppText.bodyMedium(
+        loc(context).thisActionCannotBeUndone,
+        identifier: semanticIdentifier(
+            tag: _tag, description: 'thisActionCannotBeUndone'),
+      ),
       actions: [
         AppTextButton(
           loc(context).cancel,
+          identifier: semanticIdentifier(tag: _tag, description: 'cancel'),
           color: Theme.of(context).colorScheme.onSurface,
           onTap: () {
             context.pop();
@@ -172,6 +188,7 @@ class _DHCPReservationsEditViewState
         ),
         AppTextButton(
           loc(context).delete,
+          identifier: semanticIdentifier(tag: _tag, description: 'delete'),
           color: Theme.of(context).colorScheme.error,
           onTap: () {
             context.pop();

@@ -12,6 +12,7 @@ import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/devices/_devices.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/util/semantic.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -53,6 +54,7 @@ class _AddRuleContentViewState
   List<SinglePortForwardingRule> _rules = [];
   String? _ipError;
   String? _portError;
+  final String _tag = 'single-port-forwarding-rule';
 
   @override
   void initState() {
@@ -166,8 +168,13 @@ class _AddRuleContentViewState
   List<Widget> _buildEditContents(SinglePortForwardingRuleState state) {
     return [
       AppListCard(
-        title: AppText.labelLarge(loc(context).ruleEnabled),
+        title: AppText.labelLarge(
+          loc(context).ruleEnabled,
+          identifier: semanticIdentifier(tag: _tag, description: 'ruleEnabled'),
+        ),
         trailing: AppSwitch(
+          identifier: semanticIdentifier(tag: _tag, description: 'ruleEnabled'),
+          semanticLabel: loc(context).ruleEnabled,
           value: _isEnabled,
           onChanged: (value) {
             setState(() {
@@ -186,6 +193,8 @@ class _AddRuleContentViewState
     return [
       AppTextField(
         headerText: loc(context).ruleName,
+        identifier: semanticIdentifier(tag: _tag, description: 'ruleName'),
+        semanticLabel: loc(context).ruleName,
         border: const OutlineInputBorder(),
         controller: _ruleNameController,
         onFocusChanged: _onFocusChange,
@@ -193,6 +202,8 @@ class _AddRuleContentViewState
       const AppGap.large2(),
       AppTextField.minMaxNumber(
         headerText: loc(context).externalPort,
+        identifier: semanticIdentifier(tag: _tag, description: 'externalPort'),
+        semanticLabel: loc(context).externalPort,
         inputType: TextInputType.number,
         border: const OutlineInputBorder(),
         controller: _externalPortController,
@@ -204,6 +215,8 @@ class _AddRuleContentViewState
       const AppGap.large2(),
       AppTextField.minMaxNumber(
         headerText: loc(context).internalPort,
+        identifier: semanticIdentifier(tag: _tag, description: 'internalPort'),
+        semanticLabel: loc(context).internalPort,
         inputType: TextInputType.number,
         border: const OutlineInputBorder(),
         controller: _internalPortController,
@@ -212,9 +225,14 @@ class _AddRuleContentViewState
         onFocusChanged: _onFocusChange,
       ),
       const AppGap.large2(),
-      AppText.labelMedium(loc(context).ipAddress),
+      AppText.labelMedium(
+        loc(context).ipAddress,
+        identifier: semanticIdentifier(tag: _tag, description: 'ipAddress'),
+      ),
       const AppGap.medium(),
       AppIPFormField(
+        identifier: semanticIdentifier(tag: _tag, description: 'ipAddress'),
+        semanticLabel: loc(context).ipAddress,
         controller: _deviceIpAddressController,
         border: const OutlineInputBorder(),
         octet1ReadOnly: submaskToken[0] == '255',
@@ -235,6 +253,7 @@ class _AddRuleContentViewState
       const AppGap.large2(),
       AppTextButton(
         loc(context).selectDevices,
+        identifier: semanticIdentifier(tag: _tag, description: 'selectDevices'),
         onTap: () async {
           final result = await context.pushNamed<List<DeviceListItem>?>(
               RouteNamed.devicePicker,
@@ -248,9 +267,21 @@ class _AddRuleContentViewState
       ),
       const AppGap.large2(),
       AppListCard(
-        title: AppText.labelLarge(loc(context).protocol),
-        description: AppText.bodyLarge(getProtocolTitle(context, _protocol)),
-        trailing: const Icon(LinksysIcons.edit),
+        identifier: semanticIdentifier(tag: _tag, description: 'protocol'),
+        semanticLabel: loc(context).protocol,
+        title: AppText.labelLarge(
+          loc(context).protocol,
+          identifier: semanticIdentifier(tag: _tag, description: 'protocol'),
+        ),
+        description: AppText.bodyLarge(
+          getProtocolTitle(context, _protocol),
+          identifier: semanticIdentifier(
+              tag: _tag, description: 'protocol-description'),
+        ),
+        trailing: Semantics(
+            identifier: semanticIdentifier(tag: _tag, description: 'protocol-edit-icon'),
+            label: '${loc(context).protocol} edit icon',
+            child: const Icon(LinksysIcons.edit)),
         onTap: () async {
           String? protocol = await showSelectProtocolModal(
             context,

@@ -14,6 +14,7 @@ import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/devices/_devices.dart';
 import 'package:privacy_gui/page/devices/extensions/icon_device_category_ext.dart';
+import 'package:privacy_gui/util/semantic.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
@@ -40,6 +41,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
   late int _iconIndex;
   String? _errorMessage;
   bool _isLoading = false;
+  final String _tag = 'device-detail';
 
   @override
   void dispose() {
@@ -122,24 +124,37 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
           AppSettingCard.noBorder(
             padding: const EdgeInsets.all(Spacing.medium),
             title: state.item.name,
+            identifier: semanticIdentifier(tag: _tag, description: 'name'),
             trailing: AppIconButton(
+              identifier: semanticIdentifier(tag: _tag, description: 'edit'),
+              semanticLabel: 'edit',
               icon: LinksysIcons.edit,
               onTap: _showEditingDialog,
             ),
           ),
           AppSettingCard.noBorder(
+            identifier: semanticIdentifier(tag: _tag, description: 'connectTo'),
             padding: const EdgeInsets.all(Spacing.medium),
             title: loc(context).connectTo,
             description: state.item.upstreamDevice,
           ),
           AppSettingCard.noBorder(
+            identifier:
+                semanticIdentifier(tag: _tag, description: 'signalStrength'),
             padding: const EdgeInsets.all(Spacing.medium),
             title: loc(context).signalStrength,
-            description: state.item.isWired ? null : _formatEmptyValue('${state.item.signalStrength} dBM'),
-            trailing: Icon(getWifiSignalIconData(
-              context,
-              state.item.isWired ? null : state.item.signalStrength,
-            )),
+            description: state.item.isWired
+                ? null
+                : _formatEmptyValue('${state.item.signalStrength} dBM'),
+            trailing: Semantics(
+              identifier: semanticIdentifier(
+                  tag: _tag, description: 'signalStrength-icon'),
+              label: 'signal strength icon',
+              child: Icon(getWifiSignalIconData(
+                context,
+                state.item.isWired ? null : state.item.signalStrength,
+              )),
+            ),
           ),
         ],
       ),
@@ -151,6 +166,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
       children: [
         if (!state.item.isWired)
           AppSettingCard(
+            identifier: semanticIdentifier(tag: _tag, description: 'wifi'),
             padding: const EdgeInsets.symmetric(
               horizontal: Spacing.large2,
               vertical: Spacing.medium,
@@ -161,6 +177,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
           ),
         const AppGap.small2(),
         AppSettingCard(
+          identifier: semanticIdentifier(tag: _tag, description: 'ipAddress'),
           padding: const EdgeInsets.symmetric(
               horizontal: Spacing.large2, vertical: Spacing.medium),
           title: loc(context).ipAddress,
@@ -174,6 +191,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
         ),
         const AppGap.small2(),
         AppSettingCard(
+          identifier: semanticIdentifier(tag: _tag, description: 'macAddress'),
           padding: const EdgeInsets.symmetric(
             horizontal: Spacing.large2,
             vertical: Spacing.medium,
@@ -183,6 +201,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
         ),
         const AppGap.small2(),
         AppSettingCard(
+          identifier: semanticIdentifier(tag: _tag, description: 'ipv6Address'),
           padding: const EdgeInsets.symmetric(
             horizontal: Spacing.large2,
             vertical: Spacing.medium,
@@ -192,6 +211,8 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
         ),
         const AppGap.small2(),
         AppSettingCard(
+          identifier:
+              semanticIdentifier(tag: _tag, description: 'manufacturer'),
           padding: const EdgeInsets.symmetric(
               horizontal: Spacing.large2, vertical: Spacing.medium),
           title: loc(context).manufacturer,
@@ -199,6 +220,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
         ),
         const AppGap.small2(),
         AppSettingCard(
+          identifier: semanticIdentifier(tag: _tag, description: 'device'),
           padding: const EdgeInsets.symmetric(
               horizontal: Spacing.large2, vertical: Spacing.medium),
           title: loc(context).device,
@@ -215,6 +237,8 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
         // mainAxisSize: MainAxisSize.min,
         children: [
           AppSettingCard(
+            identifier:
+                semanticIdentifier(tag: _tag, description: 'manufacturer'),
             showBorder: false,
             padding: const EdgeInsets.fromLTRB(
               Spacing.small2,
@@ -230,6 +254,8 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
             thickness: 1,
           ),
           AppSettingCard(
+            identifier:
+                semanticIdentifier(tag: _tag, description: 'device-model'),
             showBorder: false,
             padding: const EdgeInsets.fromLTRB(
               Spacing.small2,
@@ -258,12 +284,17 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
           builder: (sfbContext, sfbSetState) {
             return AlertDialog(
               title: AppText.titleLarge(
-                  loc(sfbContext).deviceDetailEditDialogTitle),
+                loc(sfbContext).deviceDetailEditDialogTitle,
+                identifier: semanticIdentifier(
+                    tag: _tag, description: 'deviceDetailEditDialogTitle'),
+              ),
               actions: _isLoading
                   ? null
                   : [
                       AppTextButton(
                         loc(sfbContext).cancel,
+                        identifier: semanticIdentifier(
+                            tag: _tag, description: 'cancel'),
                         color: Theme.of(sfbContext).colorScheme.onSurface,
                         onTap: () {
                           _errorMessage = null;
@@ -272,6 +303,8 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
                       ),
                       AppTextButton(
                         loc(sfbContext).save,
+                        identifier:
+                            semanticIdentifier(tag: _tag, description: 'save'),
                         onTap: () {
                           _saveDevice(sfbContext, sfbSetState);
                         },
@@ -301,6 +334,9 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
         children: [
           const AppGap.large2(),
           AppTextField.outline(
+            identifier:
+                semanticIdentifier(tag: _tag, description: 'deviceName'),
+            semanticLabel: 'deviceName',
             controller: _deviceNameController,
             headerText: loc(context).deviceName,
             errorText: _errorMessage,
@@ -311,7 +347,11 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
             },
           ),
           const AppGap.large3(),
-          AppText.labelLarge(loc(context).selectIcon),
+          AppText.labelLarge(
+            loc(context).selectIcon,
+            identifier:
+                semanticIdentifier(tag: _tag, description: 'selectIcon'),
+          ),
           const AppGap.large3(),
           GridView.builder(
             shrinkWrap: true,
@@ -326,13 +366,18 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
                     _iconIndex = index;
                   });
                 },
-                child: Icon(
-                  IconDeviceCategoryExt.resolveByName(
-                    IconDeviceCategory.values[index].name,
+                child: Semantics(
+                  identifier:
+                      semanticIdentifier(tag: _tag, description: 'icon-$index'),
+                  label: 'icon $index',
+                  child: Icon(
+                    IconDeviceCategoryExt.resolveByName(
+                      IconDeviceCategory.values[index].name,
+                    ),
+                    color: index == _iconIndex
+                        ? Theme.of(context).colorScheme.primary
+                        : null,
                   ),
-                  color: index == _iconIndex
-                      ? Theme.of(context).colorScheme.primary
-                      : null,
                 ),
               );
             }),
@@ -435,6 +480,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
       actions: [
         AppTextButton(
           loc(context).cancel,
+          identifier: semanticIdentifier(tag: _tag, description: 'cancel'),
           color: Theme.of(context).colorScheme.onSurface,
           onTap: () {
             context.pop(false);
@@ -442,6 +488,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
         ),
         AppTextButton(
           loc(context).delete,
+          identifier: semanticIdentifier(tag: _tag, description: 'delete'),
           color: Theme.of(context).colorScheme.error,
           onTap: () {
             context.pop(true);

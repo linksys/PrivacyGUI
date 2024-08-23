@@ -5,6 +5,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
+import 'package:privacy_gui/util/semantic.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/radios/radio_list.dart';
@@ -21,6 +22,7 @@ class _MTUPickerViewState extends ConsumerState<MTUPickerView> {
   late final List<String> _items = ['Auto', 'Manual'];
   String _selected = '';
   String _wanType = '';
+  final String _tag = 'mtu-picker';
 
   @override
   void initState() {
@@ -60,10 +62,16 @@ class _MTUPickerViewState extends ConsumerState<MTUPickerView> {
               items: [
                 AppRadioListItem(
                   title: loc(context).auto,
+                  identifier:
+                      semanticIdentifier(tag: _tag, description: 'auto'),
+                  semanticLabel: loc(context).auto,
                   value: _items[0],
                 ),
                 AppRadioListItem(
                   title: loc(context).manual,
+                  identifier:
+                      semanticIdentifier(tag: _tag, description: 'manual'),
+                  semanticLabel: loc(context).manual,
                   value: _items[1],
                 ),
               ],
@@ -85,6 +93,8 @@ class _MTUPickerViewState extends ConsumerState<MTUPickerView> {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         child: AppTextField.minMaxNumber(
+          identifier: semanticIdentifier(tag: _tag, description: 'size'),
+          semanticLabel: loc(context).size,
           controller: _valueController,
           border: const OutlineInputBorder(),
           headerText: loc(context).size,

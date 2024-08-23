@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/models/dmz_settings.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/dmz/providers/dmz_settings_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/dmz/providers/dmz_settings_state.dart';
@@ -12,6 +11,7 @@ import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/devices/providers/device_list_state.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/util/semantic.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacy_gui/validator_rules/_validator_rules.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -37,6 +37,7 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
   late TextEditingController _destinationMACController;
   String? _sourceError;
   String? _destinationError;
+  final String _tag = 'dmz-setting';
 
   @override
   void initState() {
@@ -114,9 +115,13 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
             AppInfoCard(
               title: loc(context).dmz,
               description: loc(context).dmzDescription,
+              identifier: semanticIdentifier(tag: _tag, description: 'dmz'),
+              semanticLabel: loc(context).dmz,
               trailing: Padding(
                 padding: const EdgeInsets.only(left: Spacing.medium),
                 child: AppSwitch(
+                  identifier: semanticIdentifier(tag: _tag, description: 'dmz'),
+                  semanticLabel: loc(context).dmz,
                   value: state.settings.isDMZEnabled,
                   onChanged: (value) {
                     ref.read(dmzSettingsProvider.notifier).setSettings(
@@ -145,14 +150,24 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
     return AppListCard(
         showBorder: false,
         padding: EdgeInsets.zero,
-        title: AppText.labelLarge(loc(context).dmzSourceIPAddress),
+        title: AppText.labelLarge(
+          loc(context).dmzSourceIPAddress,
+          identifier:
+              semanticIdentifier(tag: _tag, description: 'dmzSourceIPAddress'),
+        ),
         description: AppRadioList(
           initial: state.sourceType,
           itemHeight: 56,
           items: [
             AppRadioListItem(
-                title: loc(context).automatic, value: DMZSourceType.auto),
+              identifier:
+                  semanticIdentifier(tag: _tag, description: 'automatic'),
+              title: loc(context).automatic,
+              value: DMZSourceType.auto,
+            ),
             AppRadioListItem(
+                identifier: semanticIdentifier(
+                    tag: _tag, description: 'specifiedRange'),
                 title: loc(context).specifiedRange,
                 expandedWidget: state.sourceType == DMZSourceType.range
                     ? Container(
@@ -161,6 +176,9 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             AppIPFormField(
+                              identifier: semanticIdentifier(
+                                  tag: _tag, description: 'specifiedRangeFrom'),
+                              semanticLabel: 'specified range from',
                               border: const OutlineInputBorder(),
                               controller: _sourceFirstIPController,
                               onChanged: (value) {
@@ -193,9 +211,16 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                             Padding(
                               padding: const EdgeInsets.all(Spacing.small2),
                               child: Center(
-                                  child: AppText.bodyMedium(loc(context).to)),
+                                  child: AppText.bodyMedium(
+                                loc(context).to,
+                                identifier: semanticIdentifier(
+                                    tag: _tag, description: 'to'),
+                              )),
                             ),
                             AppIPFormField(
+                              identifier: semanticIdentifier(
+                                  tag: _tag, description: 'specifiedRangeTo'),
+                              semanticLabel: 'specified range to',
                               border: const OutlineInputBorder(),
                               controller: _sourceLastIPController,
                               onChanged: (value) {
@@ -264,11 +289,16 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
             itemHeight: 56,
             items: [
               AppRadioListItem(
+                  identifier:
+                      semanticIdentifier(tag: _tag, description: 'ipAddress'),
                   title: loc(context).ipAddress,
                   expandedWidget: state.destinationType == DMZDestinationType.ip
                       ? Container(
                           constraints: const BoxConstraints(maxWidth: 429),
                           child: AppIPFormField(
+                            identifier: semanticIdentifier(
+                                tag: _tag, description: 'ipAddress'),
+                            semanticLabel: 'ip address',
                             border: const OutlineInputBorder(),
                             controller: _destinationIPController,
                             octet1ReadOnly: subnetMask[0] == '255',
@@ -292,12 +322,17 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                       : null,
                   value: DMZDestinationType.ip),
               AppRadioListItem(
+                  identifier:
+                      semanticIdentifier(tag: _tag, description: 'macAddress'),
                   title: loc(context).macAddress,
                   expandedWidget: state.destinationType ==
                           DMZDestinationType.mac
                       ? Container(
                           constraints: const BoxConstraints(maxWidth: 429),
                           child: AppTextField.macAddress(
+                            identifier: semanticIdentifier(
+                                tag: _tag, description: 'macAddress'),
+                            semanticLabel: 'mac address',
                             border: const OutlineInputBorder(),
                             controller: _destinationMACController,
                             onChanged: (value) {
@@ -346,6 +381,8 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
           const AppGap.medium(),
           AppTextButton(
             loc(context).dmzViewDHCP,
+            identifier:
+                semanticIdentifier(tag: _tag, description: 'dmzViewDHCP'),
             onTap: () async {
               final result = await context.pushNamed<List<DeviceListItem>?>(
                   RouteNamed.devicePicker,

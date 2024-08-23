@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/_internet_settings.dart';
+import 'package:privacy_gui/util/semantic.dart';
 import 'package:privacy_gui/validator_rules/_validator_rules.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
@@ -26,6 +26,7 @@ class _MACCloneViewState extends ConsumerState<MACCloneView> {
   bool _isValid = false;
   bool _isEnabled = false;
   late InternetSettingsState state;
+  final String _tag = 'mac-clone';
 
   @override
   void initState() {
@@ -74,9 +75,15 @@ class _MACCloneViewState extends ConsumerState<MACCloneView> {
           mainAxisSize: MainAxisSize.min,
           children: [
             AppSettingCard.noBorder(
+              identifier:
+                  semanticIdentifier(tag: _tag, description: 'macAddressClone'),
+              semanticLabel: loc(context).macAddressClone,
               padding: EdgeInsets.zero,
               title: loc(context).macAddressClone,
               trailing: AppSwitch(
+                identifier: semanticIdentifier(
+                    tag: _tag, description: 'macAddressClone'),
+                semanticLabel: loc(context).macAddressClone,
                 value: _isEnabled,
                 onChanged: (value) {
                   setState(() {
@@ -91,6 +98,9 @@ class _MACCloneViewState extends ConsumerState<MACCloneView> {
                 height: Spacing.large2 * 2 + 1,
               ),
               AppTextField.macAddress(
+                identifier:
+                    semanticIdentifier(tag: _tag, description: 'macAddress'),
+                semanticLabel: loc(context).macAddress,
                 controller: _valueController,
                 border: const OutlineInputBorder(),
                 onChanged: (value) {
@@ -102,6 +112,8 @@ class _MACCloneViewState extends ConsumerState<MACCloneView> {
               const AppGap.large2(),
               AppTextButton.noPadding(
                 loc(context).cloneCurrentClientMac,
+                identifier: semanticIdentifier(
+                    tag: _tag, description: 'cloneCurrentClientMac'),
                 onTap: () {
                   ref
                       .read(internetSettingsProvider.notifier)

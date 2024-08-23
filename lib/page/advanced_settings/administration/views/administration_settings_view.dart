@@ -6,6 +6,7 @@ import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacy_gui/util/semantic.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
@@ -22,6 +23,7 @@ class AdministrationSettingsView extends ArgumentsConsumerStatefulView {
 class _AdministrationSettingsViewState
     extends ConsumerState<AdministrationSettingsView> {
   AdministrationSettingsState? _preservedState;
+  final String _tag = 'administration';
 
   @override
   void initState() {
@@ -68,8 +70,20 @@ class _AdministrationSettingsViewState
             if (state.managementSettings.isManageWirelesslySupported) ...[
               AppCard(
                 child: AppSwitchTriggerTile(
-                  title: AppText.labelLarge(loc(context)
-                      .administrationAllowLocalManagementWirelessly),
+                  identifier: semanticIdentifier(
+                      tag: _tag,
+                      description:
+                          'administrationAllowLocalManagementWirelessly'),
+                  semanticLabel:
+                      loc(context).administrationAllowLocalManagementWirelessly,
+                  title: AppText.labelLarge(
+                    loc(context).administrationAllowLocalManagementWirelessly,
+                    identifier: semanticIdentifier(
+                      tag: _tag,
+                      description:
+                          'administrationAllowLocalManagementWirelessly',
+                    ),
+                  ),
                   value: state.managementSettings.canManageWirelessly ?? false,
                   onChanged: (value) {
                     ref
@@ -85,7 +99,16 @@ class _AdministrationSettingsViewState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   AppSwitchTriggerTile(
-                    title: AppText.labelLarge(loc(context).upnp),
+                    identifier:
+                        semanticIdentifier(tag: _tag, description: 'upnp'),
+                    semanticLabel: loc(context).upnp,
+                    title: AppText.labelLarge(
+                      loc(context).upnp,
+                      identifier: semanticIdentifier(
+                        tag: _tag,
+                        description: 'upnp',
+                      ),
+                    ),
                     value: state.isUPnPEnabled,
                     onChanged: (value) {
                       ref
@@ -95,6 +118,11 @@ class _AdministrationSettingsViewState
                   ),
                   const Divider(),
                   AppCheckbox(
+                    identifier: semanticIdentifier(
+                        tag: _tag,
+                        description: 'administrationUPnPAllowUsersConfigure'),
+                    semanticLabel:
+                        loc(context).administrationUPnPAllowUsersConfigure,
                     value: state.canUsersConfigure,
                     text: loc(context).administrationUPnPAllowUsersConfigure,
                     onChanged: (value) {
@@ -108,6 +136,12 @@ class _AdministrationSettingsViewState
                   ),
                   const AppGap.small2(),
                   AppCheckbox(
+                    identifier: semanticIdentifier(
+                        tag: _tag,
+                        description:
+                            'administrationUPnPAllowUsersDisableInternetAccess'),
+                    semanticLabel: loc(context)
+                        .administrationUPnPAllowUsersDisableInternetAccess,
                     value: state.canUsersDisableWANAccess,
                     text: loc(context)
                         .administrationUPnPAllowUsersDisableInternetAccess,
@@ -126,8 +160,17 @@ class _AdministrationSettingsViewState
             const AppGap.small2(),
             AppCard(
               child: AppSwitchTriggerTile(
+                identifier: semanticIdentifier(
+                    tag: _tag,
+                    description: 'administrationApplicationLayerGateway'),
+                semanticLabel:
+                    loc(context).administrationApplicationLayerGateway,
                 title: AppText.labelLarge(
-                    loc(context).administrationApplicationLayerGateway),
+                  loc(context).administrationApplicationLayerGateway,
+                  identifier: semanticIdentifier(
+                      tag: _tag,
+                      description: 'administrationApplicationLayerGateway'),
+                ),
                 value: state.enabledALG,
                 onChanged: (value) {
                   ref
@@ -139,8 +182,15 @@ class _AdministrationSettingsViewState
             const AppGap.small2(),
             AppCard(
               child: AppSwitchTriggerTile(
+                identifier: semanticIdentifier(
+                    tag: _tag, description: 'administrationExpressForwarding'),
+                semanticLabel: loc(context).administrationExpressForwarding,
                 title: AppText.labelLarge(
-                    loc(context).administrationExpressForwarding),
+                  loc(context).administrationExpressForwarding,
+                  identifier: semanticIdentifier(
+                      tag: _tag,
+                      description: 'administrationExpressForwarding'),
+                ),
                 value: state.enabledExpressForwarfing,
                 onChanged: (value) {
                   ref

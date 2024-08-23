@@ -12,6 +12,7 @@ import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/devices/_devices.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/util/semantic.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
@@ -50,6 +51,7 @@ class _AddRuleContentViewState
   String _protocol = 'Both';
   bool _isEnabled = false;
   List<IPv6FirewallRule> _rules = [];
+  final String _tag = 'ipv6-port-service-rule';
 
   @override
   void initState() {
@@ -163,8 +165,13 @@ class _AddRuleContentViewState
   List<Widget> _buildEditContents(Ipv6PortServiceRuleState state) {
     return [
       AppListCard(
-        title: AppText.labelLarge(loc(context).ruleEnabled),
+        title: AppText.labelLarge(
+          loc(context).ruleEnabled,
+          identifier: semanticIdentifier(tag: _tag, description: 'ruleEnabled'),
+        ),
         trailing: AppSwitch(
+          identifier: semanticIdentifier(tag: _tag, description: 'ruleEnabled'),
+          semanticLabel: loc(context).ruleEnabled,
           value: _isEnabled,
           onChanged: (value) {
             setState(() {
@@ -186,6 +193,8 @@ class _AddRuleContentViewState
       ),
       const AppGap.large2(),
       AppTextField.minMaxNumber(
+        identifier: semanticIdentifier(tag: _tag, description: 'startPort'),
+        semanticLabel: loc(context).startPort,
         border: const OutlineInputBorder(),
         headerText: loc(context).startPort,
         controller: _firstExternalPortController,
@@ -193,21 +202,29 @@ class _AddRuleContentViewState
       ),
       const AppGap.large2(),
       AppTextField.minMaxNumber(
+        identifier: semanticIdentifier(tag: _tag, description: 'endPort'),
+        semanticLabel: loc(context).endPort,
         border: const OutlineInputBorder(),
         headerText: loc(context).endPort,
         controller: _lastExternalPortController,
         max: 65535,
       ),
       const AppGap.large2(),
-      AppText.labelMedium(loc(context).ipAddress),
+      AppText.labelMedium(
+        loc(context).ipAddress,
+        identifier: semanticIdentifier(tag: _tag, description: 'ipAddress'),
+      ),
       const AppGap.medium(),
       AppIPv6FormField(
+        identifier: semanticIdentifier(tag: _tag, description: 'ipAddress'),
+        semanticLabel: loc(context).ipAddress,
         controller: _ipAddressController,
         border: const OutlineInputBorder(),
       ),
       const AppGap.large2(),
       AppTextButton(
         loc(context).selectDevices,
+        identifier: semanticIdentifier(tag: _tag, description: 'selectDevices'),
         onTap: () async {
           final result = await context.pushNamed<List<DeviceListItem>?>(
               RouteNamed.devicePicker,
@@ -221,9 +238,20 @@ class _AddRuleContentViewState
       ),
       const AppGap.large2(),
       AppListCard(
-        title: AppText.labelLarge(loc(context).protocol),
-        description: AppText.bodyLarge(getProtocolTitle(context, _protocol)),
-        trailing: const Icon(LinksysIcons.edit),
+        title: AppText.labelLarge(
+          loc(context).protocol,
+          identifier: semanticIdentifier(tag: _tag, description: 'protocol'),
+        ),
+        description: AppText.bodyLarge(
+          getProtocolTitle(context, _protocol),
+          identifier: semanticIdentifier(
+              tag: _tag, description: 'protocol-description'),
+        ),
+        trailing: Semantics(
+            identifier: semanticIdentifier(
+                tag: _tag, description: 'protocol-edit-icon'),
+            label: '${loc(context).ipAddress} edit icon',
+            child: const Icon(LinksysIcons.edit)),
         onTap: () async {
           String? protocol = await showSelectProtocolModal(
             context,

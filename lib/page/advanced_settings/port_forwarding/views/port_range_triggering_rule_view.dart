@@ -10,6 +10,7 @@ import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacy_gui/util/semantic.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
@@ -52,6 +53,7 @@ class _AddRuleContentViewState
   List<PortRangeTriggeringRule> _rules = [];
   String? _triggeredPortError;
   String? _forwardedPortError;
+  final String _tag = 'port-range-triggering-rule';
 
   @override
   void initState() {
@@ -168,8 +170,13 @@ class _AddRuleContentViewState
   List<Widget> _buildEditContents(PortRangeTriggeringRuleState state) {
     return [
       AppListCard(
-        title: AppText.labelLarge(loc(context).ruleEnabled),
+        title: AppText.labelLarge(
+          loc(context).ruleEnabled,
+          identifier: semanticIdentifier(tag: _tag, description: 'ruleEnabled'),
+        ),
         trailing: AppSwitch(
+          identifier: semanticIdentifier(tag: _tag, description: 'ruleEnabled'),
+          semanticLabel: loc(context).ruleEnabled,
           value: _isEnabled,
           onChanged: (value) {
             setState(() {
@@ -187,12 +194,17 @@ class _AddRuleContentViewState
     return [
       AppTextField.outline(
         headerText: loc(context).ruleName,
+        identifier: semanticIdentifier(tag: _tag, description: 'ruleName'),
+        semanticLabel: loc(context).ruleName,
         controller: _ruleNameController,
         onFocusChanged: _onFocusChange,
       ),
       const AppGap.large2(),
       AppSection.withLabel(
         title: loc(context).triggeredRange,
+        identifier:
+            semanticIdentifier(tag: _tag, description: 'triggeredRange'),
+        semanticLabel: loc(context).triggeredRange,
         content: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -200,6 +212,9 @@ class _AddRuleContentViewState
             AppTextField.minMaxNumber(
               border: const OutlineInputBorder(),
               headerText: loc(context).startPort,
+              identifier:
+                  semanticIdentifier(tag: _tag, description: 'startPort'),
+              semanticLabel: loc(context).startPort,
               inputType: TextInputType.number,
               controller: _firstTriggerPortController,
               max: 65535,
@@ -210,6 +225,8 @@ class _AddRuleContentViewState
             AppTextField.minMaxNumber(
               border: const OutlineInputBorder(),
               headerText: loc(context).endPort,
+              identifier: semanticIdentifier(tag: _tag, description: 'endPort'),
+              semanticLabel: loc(context).endPort,
               inputType: TextInputType.number,
               controller: _lastTriggerPortController,
               max: 65535,
@@ -222,6 +239,9 @@ class _AddRuleContentViewState
       ),
       AppSection.withLabel(
         title: loc(context).forwardedRange,
+        identifier:
+            semanticIdentifier(tag: _tag, description: 'forwardedRange'),
+        semanticLabel: loc(context).forwardedRange,
         content: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -229,6 +249,9 @@ class _AddRuleContentViewState
             AppTextField.minMaxNumber(
               border: const OutlineInputBorder(),
               headerText: loc(context).startPort,
+              identifier:
+                  semanticIdentifier(tag: _tag, description: 'startPort'),
+              semanticLabel: loc(context).startPort,
               inputType: TextInputType.number,
               controller: _firstForwardedPortController,
               max: 65535,
@@ -239,6 +262,9 @@ class _AddRuleContentViewState
             AppTextField.minMaxNumber(
               border: const OutlineInputBorder(),
               headerText: loc(context).endPort,
+              identifier:
+                  semanticIdentifier(tag: _tag, description: 'endPort'),
+              semanticLabel: loc(context).endPort,
               inputType: TextInputType.number,
               controller: _lastForwardedPortController,
               max: 65535,

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacy_gui/util/semantic.dart';
 import 'package:privacy_gui/util/string_mapping.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
@@ -23,6 +24,7 @@ class _ConnectionTypeSelectionViewState
   late final List<String> _supportedList;
   late final List<String> _disabled;
   String _selected = '';
+  final String _tag = 'connection-type-selection';
 
   @override
   void initState() {
@@ -46,11 +48,19 @@ class _ConnectionTypeSelectionViewState
               return Opacity(
                 opacity: _disabled.contains(connectionType.type) ? 0.5 : 1.0,
                 child: AppSettingCard(
+                  identifier: semanticIdentifier(
+                      tag: _tag, description: connectionType.title),
+                  semanticLabel: connectionType.title,
                   title: connectionType.title,
                   //   description: connectionType.description,
-                  trailing: Icon(connectionType.type == _selected
-                      ? LinksysIcons.check
-                      : LinksysIcons.chevronRight),
+                  trailing: Semantics(
+                    identifier: semanticIdentifier(
+                        tag: _tag, description: '${connectionType.title}-icon'),
+                    label: '${connectionType.title} icon',
+                    child: Icon(connectionType.type == _selected
+                        ? LinksysIcons.check
+                        : LinksysIcons.chevronRight),
+                  ),
                   onTap: _disabled.contains(connectionType.type)
                       ? null
                       : () {

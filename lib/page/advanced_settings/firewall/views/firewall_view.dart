@@ -9,6 +9,7 @@ import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/util/semantic.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
@@ -25,6 +26,7 @@ class FirewallView extends ArgumentsConsumerStatefulView {
 
 class _FirewallViewState extends ConsumerState<FirewallView> {
   FirewallState? _preservedState;
+  final String _tag = 'firewall';
 
   @override
   void initState() {
@@ -70,6 +72,9 @@ class _FirewallViewState extends ConsumerState<FirewallView> {
               child: AppSwitchTriggerTile(
                 title:
                     AppText.labelLarge(loc(context).ipv4SPIFirewallProtection),
+                identifier: semanticIdentifier(
+                    tag: _tag, description: 'ipv4SPIFirewallProtection'),
+                semanticLabel: loc(context).ipv4SPIFirewallProtection,
                 value: state.settings.isIPv4FirewallEnabled,
                 onChanged: (value) {
                   ref.read(firewallProvider.notifier).setSettings(
@@ -80,8 +85,14 @@ class _FirewallViewState extends ConsumerState<FirewallView> {
             const AppGap.small2(),
             AppCard(
               child: AppSwitchTriggerTile(
-                title:
-                    AppText.labelLarge(loc(context).ipv6SPIFirewallProtection),
+                title: AppText.labelLarge(
+                  loc(context).ipv6SPIFirewallProtection,
+                  identifier: semanticIdentifier(
+                      tag: _tag, description: 'ipv6SPIFirewallProtection'),
+                ),
+                identifier: semanticIdentifier(
+                    tag: _tag, description: 'ipv6SPIFirewallProtection'),
+                semanticLabel: loc(context).ipv6SPIFirewallProtection,
                 value: state.settings.isIPv6FirewallEnabled,
                 onChanged: (value) {
                   ref.read(firewallProvider.notifier).setSettings(
@@ -90,11 +101,22 @@ class _FirewallViewState extends ConsumerState<FirewallView> {
               ),
             ),
             const AppGap.large4(),
-            AppText.labelLarge(loc(context).vpnPassthrough),
+            AppText.labelLarge(
+              loc(context).vpnPassthrough,
+              identifier:
+                  semanticIdentifier(tag: _tag, description: 'vpnPassthrough'),
+            ),
             const AppGap.medium(),
             AppCard(
               child: AppSwitchTriggerTile(
-                title: AppText.labelLarge(loc(context).ipsecPassthrough),
+                title: AppText.labelLarge(
+                  loc(context).ipsecPassthrough,
+                  identifier: semanticIdentifier(
+                      tag: _tag, description: 'ipsecPassthrough'),
+                ),
+                identifier: semanticIdentifier(
+                    tag: _tag, description: 'ipsecPassthrough'),
+                semanticLabel: loc(context).ipsecPassthrough,
                 value: !state.settings.blockIPSec,
                 onChanged: (value) {
                   ref
@@ -106,7 +128,14 @@ class _FirewallViewState extends ConsumerState<FirewallView> {
             const AppGap.small2(),
             AppCard(
               child: AppSwitchTriggerTile(
-                title: AppText.labelLarge(loc(context).pptpPassthrough),
+                title: AppText.labelLarge(
+                  loc(context).pptpPassthrough,
+                  identifier: semanticIdentifier(
+                      tag: _tag, description: 'pptpPassthrough'),
+                ),
+                identifier: semanticIdentifier(
+                    tag: _tag, description: 'pptpPassthrough'),
+                semanticLabel: loc(context).pptpPassthrough,
                 value: !state.settings.blockPPTP,
                 onChanged: (value) {
                   ref
@@ -118,7 +147,14 @@ class _FirewallViewState extends ConsumerState<FirewallView> {
             const AppGap.small2(),
             AppCard(
               child: AppSwitchTriggerTile(
-                title: AppText.labelLarge(loc(context).l2tpPassthrough),
+                title: AppText.labelLarge(
+                  loc(context).l2tpPassthrough,
+                  identifier: semanticIdentifier(
+                      tag: _tag, description: 'l2tpPassthrough'),
+                ),
+                identifier: semanticIdentifier(
+                    tag: _tag, description: 'l2tpPassthrough'),
+                semanticLabel: loc(context).l2tpPassthrough,
                 value: !state.settings.blockL2TP,
                 onChanged: (value) {
                   ref
@@ -128,11 +164,22 @@ class _FirewallViewState extends ConsumerState<FirewallView> {
               ),
             ),
             const AppGap.large4(),
-            AppText.labelLarge(loc(context).internetFilters),
+            AppText.labelLarge(
+              loc(context).internetFilters,
+              identifier:
+                  semanticIdentifier(tag: _tag, description: 'internetFilters'),
+            ),
             const AppGap.medium(),
             AppCard(
               child: AppSwitchTriggerTile(
-                title: AppText.labelLarge(loc(context).filterAnonymous),
+                title: AppText.labelLarge(
+                  loc(context).filterAnonymous,
+                  identifier: semanticIdentifier(
+                      tag: _tag, description: 'filterAnonymous'),
+                ),
+                identifier: semanticIdentifier(
+                    tag: _tag, description: 'filterAnonymous'),
+                semanticLabel: loc(context).filterAnonymous,
                 value: state.settings.blockAnonymousRequests,
                 onChanged: (value) {
                   ref.read(firewallProvider.notifier).setSettings(
@@ -143,7 +190,14 @@ class _FirewallViewState extends ConsumerState<FirewallView> {
             const AppGap.small2(),
             AppCard(
               child: AppSwitchTriggerTile(
-                title: AppText.labelLarge(loc(context).filterMulticast),
+                title: AppText.labelLarge(
+                  loc(context).filterMulticast,
+                  identifier: semanticIdentifier(
+                      tag: _tag, description: 'filterMulticast'),
+                ),
+                identifier: semanticIdentifier(
+                    tag: _tag, description: 'filterMulticast'),
+                semanticLabel: loc(context).filterMulticast,
                 value: state.settings.blockMulticast,
                 onChanged: (value) {
                   ref.read(firewallProvider.notifier).setSettings(
@@ -155,7 +209,13 @@ class _FirewallViewState extends ConsumerState<FirewallView> {
             AppCard(
               child: AppSwitchTriggerTile(
                 title: AppText.labelLarge(
-                    loc(context).filterInternetNATRedirection),
+                  loc(context).filterInternetNATRedirection,
+                  identifier: semanticIdentifier(
+                      tag: _tag, description: 'filterInternetNATRedirection'),
+                ),
+                identifier: semanticIdentifier(
+                    tag: _tag, description: 'filterInternetNATRedirection'),
+                semanticLabel: loc(context).filterInternetNATRedirection,
                 value: state.settings.blockNATRedirection,
                 onChanged: (value) {
                   ref.read(firewallProvider.notifier).setSettings(
@@ -166,7 +226,14 @@ class _FirewallViewState extends ConsumerState<FirewallView> {
             const AppGap.small2(),
             AppCard(
               child: AppSwitchTriggerTile(
-                title: AppText.labelLarge(loc(context).filterIdent),
+                title: AppText.labelLarge(
+                  loc(context).filterIdent,
+                  identifier:
+                      semanticIdentifier(tag: _tag, description: 'filterIdent'),
+                ),
+                identifier:
+                    semanticIdentifier(tag: _tag, description: 'filterIdent'),
+                semanticLabel: loc(context).filterIdent,
                 value: state.settings.blockIDENT,
                 onChanged: (value) {
                   ref
@@ -177,8 +244,16 @@ class _FirewallViewState extends ConsumerState<FirewallView> {
             ),
             const AppGap.large4(),
             AppListCard(
-              title: AppText.labelLarge(loc(context).ipv6PortServices),
-              trailing: const Icon(LinksysIcons.chevronRight),
+              title: AppText.labelLarge(
+                loc(context).ipv6PortServices,
+                identifier: semanticIdentifier(
+                    tag: _tag, description: 'ipv6PortServices'),
+              ),
+              trailing: Semantics(
+                  identifier: semanticIdentifier(
+                      tag: _tag, description: 'ipv6PortServices-icon'),
+                  label: 'ipv6 port services icon',
+                  child: const Icon(LinksysIcons.chevronRight)),
               onTap: () {
                 context.pushNamed(RouteNamed.ipv6PortServiceList);
               },
