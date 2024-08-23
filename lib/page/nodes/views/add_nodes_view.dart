@@ -53,11 +53,7 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(addNodesProvider);
-    if (state.error != null) {
-      // error handling
-      logger.e(state.error);
-      return _resultView(state);
-    } else if (state.isLoading) {
+    if (state.isLoading) {
       final message = _getLoadingMessages(state.loadingMessage ?? '');
       return AppFullScreenSpinner(
         title: message.$1,
@@ -103,6 +99,7 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
               AppTextButton.noPadding(
                 loc(context).refresh,
                 onTap: () {
+                  logger.d('[AddNodes]: Start to refresh the children list');
                   ref.read(addNodesProvider.notifier).startRefresh();
                 },
               ),
@@ -143,6 +140,7 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
           AppTextButton.noPadding(
             loc(context).tryAgain,
             onTap: () {
+              logger.d('[AddNodes]: Retry to search for more nodes');
               ref.read(addNodesProvider.notifier).startAutoOnboarding();
             },
           ),
@@ -193,6 +191,7 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
           AppFilledButton(
             loc(context).next,
             onTap: () {
+              logger.d('[AddNodes]: Start to search for more nodes');
               ref.read(addNodesProvider.notifier).startAutoOnboarding();
             },
           )

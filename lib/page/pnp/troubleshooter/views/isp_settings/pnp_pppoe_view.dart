@@ -126,7 +126,7 @@ class _PnpPPPOEViewState extends ConsumerState<PnpPPPOEView> {
   }
 
   void _onNext() {
-    logger.i('[PNP Troubleshooter]: Set the router into PPPOE mode');
+    logger.i('[PnP Troubleshooter]: Set the router into PPPOE mode');
     var newState = ref.read(internetSettingsProvider).copyWith();
     newState = newState.copyWith(
       ipv4Setting: newState.ipv4Setting.copyWith(

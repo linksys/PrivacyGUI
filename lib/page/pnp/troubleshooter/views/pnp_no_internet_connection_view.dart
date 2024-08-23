@@ -150,7 +150,7 @@ class _PnpNoInternetConnectionState
             AppFilledButton(
               loc(context).tryAgain,
               onTap: () {
-                logger.d('[PNP Troubleshooter]: Try again internet connection');
+                logger.d('[PnP Troubleshooter]: Try again internet connection');
                 context.goNamed(RouteNamed.pnp);
               },
             )

@@ -94,7 +94,7 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
               loc(context).pnpWaitingModemPluggedIn,
               onTap: () {
                 logger.i(
-                    '[PNP Troubleshooter]: Waiting for the modem to start up after plugging it back');
+                    '[PnP Troubleshooter]: Waiting for the modem to start up after plugging it back');
                 setState(() {
                   _isPlugged = true;
                 });
@@ -110,11 +110,11 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
                       .checkInternetConnection()
                       .then((value) {
                     logger.i(
-                        '[PNP Troubleshooter]: Internet connection is OK after resetting the modem');
+                        '[PnP Troubleshooter]: Internet connection is OK after resetting the modem');
                     context.goNamed(RouteNamed.pnp);
                   }).catchError((error, stackTrace) {
                     logger.e(
-                        '[PNP Troubleshooter]: Internet connection still fails after resetting the modem');
+                        '[PnP Troubleshooter]: Internet connection still fails after resetting the modem');
                     context.goNamed(RouteNamed.pnpNoInternetConnection);
                   }, test: (error) {
                     return error is ExceptionNoInternetConnection;

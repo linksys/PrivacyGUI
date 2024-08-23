@@ -59,7 +59,7 @@ const _maxLogSizeOfRouteTag = 20;
 const _maxLogSizeOfGeneralTag = 2000;
 const _logTagRegex = r'\[(\w*)\]:(.*)';
 const appLogTag = 'app';
-const routeLogTag = 'routeChanged';
+const routeLogTag = 'RouteChanged';
 
 void _recordLog(String log) async {
   // Add every log message to the 'app' log list

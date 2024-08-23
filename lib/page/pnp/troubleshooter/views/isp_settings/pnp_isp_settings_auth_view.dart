@@ -45,18 +45,18 @@ class _PnpIspSettingsAuthViewState
     final isLoggedIn = ref.read(routerRepositoryProvider).isLoggedIn();
     final attachedPassword = ref.read(pnpProvider).attachedPassword;
     if (isLoggedIn) {
-      logger.i('[PNP Troubleshooter]: Now is already logged in');
+      logger.i('[PnP Troubleshooter]: Now is already logged in');
       // Credencials already exist, now save the settings
       _saveNewSettings();
     } else if (!isLoggedIn &&
         attachedPassword != null &&
         attachedPassword.isNotEmpty) {
       logger.i(
-          '[PNP Troubleshooter]: Not logged in yet but has credential attached');
+          '[PnP Troubleshooter]: Not logged in yet but has credential attached');
       // Use the attached password to log in
       _loginAndSaveNewSettings(attachedPassword);
     } else {
-      logger.i('[PNP Troubleshooter]: No credential at all, need manual input');
+      logger.i('[PnP Troubleshooter]: No credential at all, need manual input');
       // Not logged in and no attached password
       _isLoading = false;
     }
@@ -77,11 +77,11 @@ class _PnpIspSettingsAuthViewState
         .read(pnpProvider.notifier)
         .checkAdminPassword(password)
         .then((value) {
-      logger.i('[PNP Troubleshooter]: Login succeeded');
+      logger.i('[PnP Troubleshooter]: Login succeeded');
       // Login succeeded
       _saveNewSettings();
     }).catchError((error) {
-      logger.e('[PNP Troubleshooter]: Login failed - Invalid admin password!');
+      logger.e('[PnP Troubleshooter]: Login failed - Invalid admin password!');
       // Login failed, show password input form with an error
       setState(() {
         _inputPasswordError = loc(context).errorIncorrectPassword;
@@ -105,7 +105,7 @@ class _PnpIspSettingsAuthViewState
       setState(() {
         _spinnerText = 'Checking the router configuration...';
       });
-      logger.i('[PNP Troubleshooter]: The new settings is saved successfully');
+      logger.i('[PnP Troubleshooter]: The new settings is saved successfully');
       // Saving successfully, check if the new settings valid
       subscription?.cancel();
       subscription = ref
@@ -115,12 +115,12 @@ class _PnpIspSettingsAuthViewState
             onCompleted: () {
               if (settingError != null) {
                 logger.e(
-                    '[PNP Troubleshooter]: Failed to use the new router configuration');
+                    '[PnP Troubleshooter]: Failed to use the new router configuration');
                 // New setting check failed
                 context.pop(settingError);
               } else {
                 logger.i(
-                    '[PNP Troubleshooter]: The new router configuration is fine to work now');
+                    '[PnP Troubleshooter]: The new router configuration is fine to work now');
                 // New setting check passed, then check real internet connection
                 setState(() {
                   _spinnerText = loc(context).launchCheckInternet;
@@ -130,12 +130,12 @@ class _PnpIspSettingsAuthViewState
                     .checkInternetConnection()
                     .then((value) {
                   logger.i(
-                      '[PNP Troubleshooter]: Check internet connection with new settings - OK');
+                      '[PnP Troubleshooter]: Check internet connection with new settings - OK');
                   // Internet connection is OK
                   context.goNamed(RouteNamed.pnp);
                 }).catchError((error) {
                   logger.e(
-                      '[PNP Troubleshooter]: Check internet connection with new settings - Failed');
+                      '[PnP Troubleshooter]: Check internet connection with new settings - Failed');
                   // Internet connection is Not OK
                   context.pop(_getErrorMessage(wanType));
                 }, test: (error) => error is ExceptionNoInternetConnection);
@@ -145,7 +145,7 @@ class _PnpIspSettingsAuthViewState
           )
           .listen((isValid) {
         logger.i(
-          '[PNP Troubleshooter]: Check the new setting configuration - ${isValid ? 'Passed' : 'Not passed'}',
+          '[PnP Troubleshooter]: Check the new setting configuration - ${isValid ? 'Passed' : 'Not passed'}',
         );
         if (isValid) {
           // The new setting is working now
@@ -160,7 +160,7 @@ class _PnpIspSettingsAuthViewState
     }).catchError(
       (error) {
         logger.e(
-            '[PNP Troubleshooter]: Failed to save the new settings - $error');
+            '[PnP Troubleshooter]: Failed to save the new settings - $error');
         // Saving new settings failed
         context.pop('Failed to save the new settings');
       },

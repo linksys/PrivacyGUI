@@ -49,7 +49,8 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
     final pnp = ref.read(pnpProvider.notifier);
     // check path include local password
     _password = widget.args['p'] as String?;
-
+    logger.i(
+        '[PnP]: Start PNP setup ${_password != null ? 'with' : 'without'} admin password');
     // verify admin password is valid
     pnp
         .fetchDeviceInfo()
@@ -62,7 +63,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
         })
         .then((_) => pnp.checkInternetConnection())
         .then((_) {
-          logger.i('[PnP]: Internet connection - OK');
+          logger.i('[PnP]: Check the Internet connection - OK');
           setState(() {
             _internetConnected = true;
           });
@@ -74,13 +75,16 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
           }
         })
         .then((_) => pnp.checkRouterConfigured())
-        .then((_) => adminPasswordFlow(_password))
         .then((_) {
-          logger.i('[PnP]: Logged in with admin password successfully');
+          logger.i('[PnP]: The router has already configured');
+          _examineAdminPassword(_password);
+        })
+        .then((_) {
+          logger.i('[PnP]: Logged in successfully, go to Setup page');
           context.goNamed(RouteNamed.pnpConfig);
         })
         .catchError((error, stackTrace) {
-          logger.e('[PnP]: Invalid given admin password!');
+          logger.e('[PnP]: The given admin password is invalid');
           setState(() {
             _internetChecked = true;
             _inputError = '';
@@ -89,7 +93,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
         }, test: (error) => error is ExceptionInvalidAdminPassword)
         .catchError((error, stackTrace) {
           logger.e(
-              '[PNP Troubleshooter]: Internet connection failed - initiate troubleshooter ${(_password != null) ? 'with' : 'without'} credential');
+              '[PnP Troubleshooter]: Internet connection failed - initiate the troubleshooter');
           if (_password != null) {
             pnp.fetchData().then((value) {
               final ssid = pnp.getDefaultWiFiNameAndPassphrase().name;
@@ -99,7 +103,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
               );
             }).onError((error, stackTrace) {
               logger.e(
-                  '[PNP Troubleshooter]: fetch data failed (Getting SSID): $error');
+                  '[PnP Troubleshooter]: Fetch data failed (Getting SSID): $error');
               context.goNamed(RouteNamed.pnpNoInternetConnection);
             });
           } else {
@@ -107,6 +111,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
           }
         }, test: (error) => error is ExceptionNoInternetConnection)
         .catchError((error, stackTrace) {
+          logger.e('[PnP]: The router is unconfigured');
           setState(() {
             _internetChecked = true;
             _isFactoryReset = true;
@@ -114,10 +119,12 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
           });
         }, test: (error) => error is ExceptionRouterUnconfigured)
         .catchError((error, stackTrace) {
-          context.goNamed((error as ExceptionInterruptAndExit).route);
+          final route = (error as ExceptionInterruptAndExit).route;
+          logger.e('[PnP]: Interrupted and go to: $route');
+          context.goNamed(route);
         }, test: (error) => error is ExceptionInterruptAndExit)
         .onError((error, stackTrace) {
-          logger.e('[PnP] Uncaught Error',
+          logger.e('[PnP]: Uncaught Error',
               error: error, stackTrace: stackTrace);
           context.goNamed(RouteNamed.pnpNoInternetConnection);
         });
@@ -163,7 +170,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
           );
   }
 
-  Widget _factoryResetView() {
+  Widget _unconfiguredView() {
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -175,9 +182,13 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
         AppFilledButton(
           loc(context).textContinue,
           onTap: () {
-            adminPasswordFlow(_password).then((_) {
+            _examineAdminPassword(_password).then((_) {
+              logger.i('[PnP]: Logged in successfully, go to Setup page');
               context.goNamed(RouteNamed.pnpConfig);
             }).onError((error, stackTrace) {
+              logger.e(
+                '[PnP]: ${_password == null ? 'There is no admin password, bring up the input view' : 'The given password is invalid'}',
+              );
               setState(() {
                 _isFactoryReset = false;
               });
@@ -236,9 +247,11 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
                   setState(() {
                     _processing = true;
                   });
-                  adminPasswordFlow(_textEditController.text).then((_) {
+                  _examineAdminPassword(_textEditController.text).then((_) {
+                    logger.i('[PnP]: Logged in successfully, go to Setup page');
                     context.goNamed(RouteNamed.pnpConfig);
                   }).onError((error, stackTrace) {
+                    logger.e('[PnP]: The input admin password is invalid');
                     setState(() {
                       _error = error;
                     });
@@ -281,7 +294,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
               AnimatedContainer(
                 duration: const Duration(seconds: 1),
                 child: _isFactoryReset
-                    ? _factoryResetView()
+                    ? _unconfiguredView()
                     : _routerPasswordView(),
               )
             ],
@@ -307,8 +320,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
     ];
   }
 
-  Future adminPasswordFlow(String? password) {
-    logger.d('admin password flow: $password');
+  Future _examineAdminPassword(String? password) {
     return ref.read(pnpProvider.notifier).checkAdminPassword(password);
   }
 

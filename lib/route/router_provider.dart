@@ -52,7 +52,6 @@ import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_logger.dart';
-import '../page/advanced_settings/local_network_settings/_local_network_settings.dart';
 import 'constants.dart';
 
 part 'route_home.dart';
@@ -146,7 +145,7 @@ class RouterNotifier extends ChangeNotifier {
     } else {
       shouldGoPnp = false;
     }
-    logger.d('go pnp? $shouldGoPnp, state uri: <${state.uri}>');
+
     if (shouldGoPnp) {
       return _goPnp(state.uri.query);
     } else {
@@ -164,14 +163,14 @@ class RouterNotifier extends ChangeNotifier {
         managedNetworkId == null &&
         state.matchedLocation != RoutePath.selectNetwork) {
       FlutterNativeSplash.remove();
-
-      logger.d('empty network');
+      logger.d('[Route]: Remote: there is no managed network ID');
       return RoutePath.prepareDashboard;
     }
 
-    // if have no login type and navigate inot dashboard, then back to home
+    // if have no login type and navigate into dashboard, then back to home
     if ((loginType == null || loginType == LoginType.none) &&
         state.matchedLocation.startsWith('/dashboard')) {
+      logger.d('[Route]: No login type but intend to dashboard, lead to Home');
       return _home();
     }
 
@@ -181,13 +180,14 @@ class RouterNotifier extends ChangeNotifier {
   FutureOr<String?> _goPnp(String? query) {
     FlutterNativeSplash.remove();
     final path = '${RoutePath.pnp}?${query ?? ''}';
-    logger.d('pnp uri : $path');
+    logger.i('[Route]: Go to PnP, URI=$path');
     return path;
   }
 
   Future<String?> _authCheck() {
     return _ref.read(authProvider.notifier).init().then((state) {
-      logger.d('init auth finish');
+      logger.i(
+          '[Route]: Check credentials done: Login type = ${state?.loginType}');
       FlutterNativeSplash.remove();
       return switch (state?.loginType ?? LoginType.none) {
         LoginType.remote => RoutePath.prepareDashboard,
