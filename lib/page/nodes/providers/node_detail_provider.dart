@@ -148,11 +148,11 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
     );
   }
 
-  Future<void> toggleBlinkNode() async {
+  Future<void> toggleBlinkNode([bool stopOnly = false]) async {
     final prefs = await SharedPreferences.getInstance();
     final blinkDevice = prefs.get(blinkingDeviceId);
     final deviceId = ref.read(nodeDetailIdProvider);
-    if (blinkDevice == null) {
+    if (!stopOnly && blinkDevice == null) {
       state = state.copyWith(blinkingStatus: BlinkingStatus.blinking);
       startBlinkNodeLED(deviceId).then((response) {
         prefs.setString(blinkingDeviceId, deviceId);
