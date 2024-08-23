@@ -1,4 +1,3 @@
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_provider.dart';
