@@ -60,15 +60,14 @@ class YourNetworkStep extends PnpStep {
           Column(
             children: [
               ...state.childNodes
-                      .map((e) => AppNodeListCard(
-                          leading: CustomTheme.of(context)
-                              .images
-                              .devices
-                              .getByName(routerIconTest(e.toMap())),
-                          title: e.getDeviceLocation(),
-                          trailing: null))
-                      .toList() ??
-                  []
+                  .map((e) => AppNodeListCard(
+                      leading: CustomTheme.of(context)
+                          .images
+                          .devices
+                          .getByName(routerIconTest(e.toMap())),
+                      title: e.getDeviceLocation(),
+                      trailing: null))
+                  .toList()
             ],
           ),
           const AppGap.medium(),
@@ -76,8 +75,7 @@ class YourNetworkStep extends PnpStep {
             loc(context).addNodes,
             icon: LinksysIcons.add,
             onTap: () async {
-              final result =
-                  await context.pushNamed<bool?>(RouteNamed.addNodes, extra: {
+              await context.pushNamed<bool?>(RouteNamed.addNodes, extra: {
                 'callback': () {
                   saveChanges?.call();
                 }

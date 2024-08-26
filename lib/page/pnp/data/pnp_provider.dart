@@ -63,7 +63,7 @@ abstract class BasePnpNotifier extends Notifier<PnpState> {
     stepStateData[index] = target.copyWith(
         data: Map.fromEntries(target.data.entries)..addAll(data));
     state = state.copyWith(stepStateList: stepStateData);
-    logger.d('[PnP] set step <$index> data - ${state.stepStateList[index]}');
+    logger.d('[PnP]: Set step <$index> data - ${state.stepStateList[index]}');
   }
 
   void setStepError(int index, {Object? error}) {
@@ -244,7 +244,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
     final isSupportedSetup11 =
         isServiceSupport(JNAPService.setup11, state.deviceInfo?.services);
     if (!isSupportedSetup11) {
-      logger.d('[pnp]: pnp check? NOT supported!');
+      logger.i('[PnP]: The router does NOT support PNP!');
       return false;
     }
     final repo = ref.read(routerRepositoryProvider);
@@ -259,7 +259,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
             !data.output['userAcknowledgedAutoConfiguration'])
         .onError((error, stackTrace) =>
             false); // error handling - set false to prevent go into pnp
-    logger.d('[pnp]: pnp check? $result');
+    logger.d('[PnP]: PnP check result: $result');
     return result;
   }
 
@@ -293,7 +293,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
               ?.output['isAdminPasswordSetByUser'] ??
           true;
       logger.d(
-          '[pnp]: is Router configured? $isAdminPasswordDefault, $isAdminPasswordSetByUser');
+          '[PnP]: Admin changed? isAdminPasswordDefault=$isAdminPasswordDefault, isAdminPasswordSetByUser=$isAdminPasswordSetByUser');
       return !isAdminPasswordDefault || isAdminPasswordSetByUser;
     }).onError((error, stackTrace) =>
             true); // error handling - set configured to prevent go to pnp
@@ -463,7 +463,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
         )
         .catchError((error) {
           // Connection error,
-          logger.d('[pnp] Connection changed need to reconnect to the router');
+          logger.d('[PnP]: Connection changed. Need to reconnect to the WiFi');
           throw ExceptionNeedToReconnect();
         },
             test: (error) =>
