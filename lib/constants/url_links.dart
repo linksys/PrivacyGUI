@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/util/url_helper/url_helper.dart'
     if (dart.library.io) 'package:privacy_gui/util/url_helper/url_helper_mobile.dart'
     if (dart.library.html) 'package:privacy_gui/util/url_helper/url_helper_web.dart';
@@ -55,6 +56,13 @@ const linkHardwareEthernetPortNotWorking =
     '$officialWebHost/support-article?articleNum=48905#PortsNotWorking';
 
 const officialWebConutryMapping = {
+  'ar': 'sa',
+  'da': 'dk',
+  'de': 'de',
+  'el': 'gr',
+  'en': 'us',
+  'es': 'es',
+  'fi': 'fi',
   'fr': 'fr',
   'id': 'id',
   'it': 'it',
@@ -62,7 +70,7 @@ const officialWebConutryMapping = {
   'ko': 'kr',
   'nb': 'no',
   'nl': 'nl',
-  'pl': 'pt',
+  'pl': 'pl',
   'pt': 'br',
   'ru': 'ru',
   'sv': 'se',
@@ -73,11 +81,14 @@ const officialWebConutryMapping = {
 };
 
 void gotoOfficialWebUrl(String url, {Locale? locale}) {
+  late final String websiteUrl;
   if (url.startsWith(officialWebHost) && locale != null) {
     final path = url.substring(officialWebHost.length);
-    openUrl(
-        '$officialWebHost/${locale.countryCode ?? officialWebConutryMapping[locale.languageCode]}$path');
+    websiteUrl =
+        '$officialWebHost/${locale.countryCode ?? officialWebConutryMapping[locale.languageCode]}$path';
   } else {
-    openUrl(url);
+    websiteUrl = url;
   }
+  logger.i('open web url: $websiteUrl');
+  openUrl(websiteUrl);
 }
