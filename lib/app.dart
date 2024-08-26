@@ -140,12 +140,11 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
               .routerDelegate.currentConfiguration.isNotEmpty
           ? router.routerDelegate.currentConfiguration.last.route as GoRoute?
           : null;
-      logger.d('Router Delegate Changed! ${page?.name},');
+      logger.d('[$routeLogTag]:<${page?.name}>');
       if (page is LinksysRoute) {
         setState(() {
           _currentRoute = page;
         });
-        logger.d('Router Delegate Changed! $_currentRoute');
       } else if (_currentRoute != null) {
         // setState(() {
         //   _currentRoute = null;

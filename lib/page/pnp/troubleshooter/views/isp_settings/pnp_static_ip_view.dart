@@ -132,7 +132,7 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
   }
 
   void onNext() {
-    logger.i('[PNP Troubleshooter]: Set the router into Static IP mode');
+    logger.i('[PnP Troubleshooter]: Set the router into Static IP mode');
     var newState = ref.read(internetSettingsProvider).copyWith();
     newState = newState.copyWith(
       ipv4Setting: newState.ipv4Setting.copyWith(

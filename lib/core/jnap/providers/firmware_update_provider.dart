@@ -131,7 +131,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
   }
 
   Future updateFirmware() async {
-    logger.i('[FIRMWARE]: update firmware START!');
+    logger.i('[FIRMWARE]: Update firmware: Start');
     final benchmark = BenchMarkLogger(name: 'FirmwareUpdate');
     benchmark.start();
     state = state.copyWith(isUpdating: true);
@@ -152,7 +152,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
       stopCondition: (result) =>
           _checkFirmwareUpdateComplete(result, state.nodesStatus ?? []),
       onCompleted: () {
-        logger.i('[FIRMWARE]: update firmware COMPLETED!');
+        logger.i('[FIRMWARE]: Update firmware: Done!');
         final polling = ref.read(pollingProvider.notifier);
         polling
             .forcePolling()
@@ -185,11 +185,11 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
       final isSatisfied =
           !statusList.any((status) => status.pendingOperation != null);
       final isDataConsitent = _isRecordConsistent(statusList, records);
-      logger.i(
-          '[FIRMWARE]: check if updates are all finished: $statusList, $isSatisfied, $isDataConsitent');
-      return isSatisfied && isDataConsitent;
+      final isDone = isSatisfied && isDataConsitent;
+      logger.i('[FIRMWARE]: Check if all updates are finished: $isDone');
+      return isDone;
     } else {
-      logger.i('[FIRMWARE]: error: $result, maybe reboot');
+      logger.e('[FIRMWARE]: Error: $result - Maybe rebooting');
       return false;
     }
   }
@@ -261,7 +261,6 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
             onCompleted: onCompleted,
             auth: true)
         .map((result) {
-      logger.i('[FIRMWARE]: check firmware update status: $result');
       if (result is! JNAPSuccess) {
         throw result;
       }
@@ -304,7 +303,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
             response.statusCode == 200 &&
             jsonDecode(response.body)['result'] == 'OK')
         .onError((error, stackTrace) {
-          logger.d('Manual Firmware update error: $error');
+          logger.e('[FIRMWARE]: Manual firmware update: Error: $error');
           return false;
         });
   }

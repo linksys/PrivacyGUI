@@ -67,7 +67,7 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
   }
 
   void _saveToDHCP() {
-    logger.i('[PNP Troubleshooter]: Set the router into DHCP mode');
+    logger.i('[PnP Troubleshooter]: Set the router into DHCP mode');
     var newState = ref.read(internetSettingsProvider).copyWith();
     newState = newState.copyWith(
       ipv4Setting: newState.ipv4Setting.copyWith(
