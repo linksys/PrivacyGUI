@@ -85,7 +85,7 @@ void gotoOfficialWebUrl(String url, {Locale? locale}) {
   if (url.startsWith(officialWebHost) && locale != null) {
     final path = url.substring(officialWebHost.length);
     websiteUrl =
-        '$officialWebHost/${locale.countryCode ?? officialWebConutryMapping[locale.languageCode]}$path';
+        '$officialWebHost/${locale.countryCode?.toLowerCase() ?? officialWebConutryMapping[locale.languageCode]?.toLowerCase()}$path';
   } else {
     websiteUrl = url;
   }
