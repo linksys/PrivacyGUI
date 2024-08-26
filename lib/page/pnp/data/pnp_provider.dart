@@ -301,11 +301,13 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
 
   @override
   Future fetchData() {
+    bool isSupportNodeLight = isServiceSupport(JNAPService.routerLEDs4, state.deviceInfo?.services);
     final transaction = JNAPTransactionBuilder(
       commands: [
         const MapEntry(JNAPAction.getSimpleWiFiSettings, {}),
         const MapEntry(JNAPAction.getGuestRadioSettings, {}),
-        const MapEntry(JNAPAction.getLedNightModeSetting, {}),
+        if (isSupportNodeLight)
+          const MapEntry(JNAPAction.getLedNightModeSetting, {}),
         const MapEntry(JNAPAction.getAutoConfigurationSettings, {}),
         const MapEntry(JNAPAction.getBluetoothAutoOnboardingSettings, {}),
         const MapEntry(JNAPAction.getRadioInfo, {}),

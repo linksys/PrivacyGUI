@@ -1,6 +1,4 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
@@ -298,10 +296,10 @@ class DashboardNetworks extends ConsumerWidget {
 
   Widget _devicesInfoTile(
       BuildContext context, WidgetRef ref, DashboardHomeState state) {
-    final count = state.wifis.fold(
+    final count = state.nodes.fold(
         0,
         (previousValue, element) =>
-            previousValue += element.numOfConnectedDevices);
+            previousValue += element.connectedDevices.length);
     return _infoTile(
       text: count == 1 ? loc(context).device : loc(context).devices,
       count: count,
