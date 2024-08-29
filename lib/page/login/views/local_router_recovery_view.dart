@@ -65,6 +65,7 @@ class _LocalRouterRecoveryViewState
                   const AppGap.large3(),
                   Semantics(
                     label: 'pin code text field',
+                    textField: true,
                     child: PinCodeTextField(
                       errorTextSpace: 0,
                       onChanged: (String value) {
