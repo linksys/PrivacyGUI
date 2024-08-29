@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/select_network/_select_network.dart';
@@ -47,6 +48,7 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
       onBackTap: ref.read(selectedNetworkIdProvider) != null
           ? null
           : () {
+            logger.i('[Auth]: Force to log out because the user does not select a network');
               ref.read(authProvider.notifier).logout();
             },
       child: AppBasicLayout(

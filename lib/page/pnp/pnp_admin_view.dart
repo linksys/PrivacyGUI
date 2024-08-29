@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -77,10 +78,10 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
         .then((_) => pnp.checkRouterConfigured())
         .then((_) {
           logger.i('[PnP]: The router has already configured');
-          _examineAdminPassword(_password);
+          return _examineAdminPassword(_password);
         })
         .then((_) {
-          logger.i('[PnP]: Logged in successfully, go to Setup page');
+          logger.i('[PnP]: Auto-login successfully, go to Setup page');
           context.goNamed(RouteNamed.pnpConfig);
         })
         .catchError((error, stackTrace) {
@@ -116,6 +117,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
             _internetChecked = true;
             _isFactoryReset = true;
             _inputError = '';
+            _password = defaultAdminPassword;
           });
         }, test: (error) => error is ExceptionRouterUnconfigured)
         .catchError((error, stackTrace) {
@@ -184,7 +186,8 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
           loc(context).textContinue,
           onTap: () {
             _examineAdminPassword(_password).then((_) {
-              logger.i('[PnP]: Logged in successfully, go to Setup page');
+              logger.i(
+                  '[PnP]: Logged in successfully by given password, go to Setup page');
               context.goNamed(RouteNamed.pnpConfig);
             }).onError((error, stackTrace) {
               logger.e(
@@ -249,7 +252,8 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
                     _processing = true;
                   });
                   _examineAdminPassword(_textEditController.text).then((_) {
-                    logger.i('[PnP]: Logged in successfully, go to Setup page');
+                    logger.i(
+                        '[PnP]: Logged in successfully by tapping Login, go to Setup page');
                     context.goNamed(RouteNamed.pnpConfig);
                   }).onError((error, stackTrace) {
                     logger.e('[PnP]: The input admin password is invalid');

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/constants/url_links.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/general_settings_widget/language_tile.dart';
 import 'package:privacy_gui/page/components/styled/general_settings_widget/theme_tile.dart';
@@ -152,6 +153,7 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
           child: AppTextButton(
             loc(context).logout,
             onTap: () {
+              logger.i('[Auth]: The user manually logs out');
               ref.read(authProvider.notifier).logout();
             },
           ),

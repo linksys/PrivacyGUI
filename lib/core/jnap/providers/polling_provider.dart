@@ -74,14 +74,17 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     state = const AsyncValue.loading();
     final fetchFuture = repository
         .transaction(
-            JNAPTransactionBuilder(commands: _coreTransactions, auth: true),
-            fetchRemote: force)
+          JNAPTransactionBuilder(commands: _coreTransactions, auth: true),
+          fetchRemote: force,
+        )
         .then((successWrap) => successWrap.data)
         .then((data) => CoreTransactionData(
-            lastUpdate: DateTime.now().millisecondsSinceEpoch,
-            data: Map.fromEntries(data)))
+              lastUpdate: DateTime.now().millisecondsSinceEpoch,
+              data: Map.fromEntries(data),
+            ))
         .onError((error, stackTrace) {
-      logger.d('[Polling] Error: $error, $stackTrace');
+      logger.e('Polling error: $error, $stackTrace');
+      logger.f('[Auth]: Force to log out because of failed polling');
       ref.read(authProvider.notifier).logout();
 
       throw error ?? '';

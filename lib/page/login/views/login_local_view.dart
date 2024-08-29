@@ -180,7 +180,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
                         if (_passwordController.text.isEmpty) {
                           return;
                         }
-                        _localLogin();
+                        _doLogin();
                       },
                       errorText: _errorMessage,
                     ),
@@ -217,7 +217,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
                     loc(context).login,
                     onTap: _shouldEnableLoginButton()
                         ? () {
-                            _localLogin();
+                            _doLogin();
                           }
                         : null,
                   ),
@@ -238,7 +238,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
     auth.getPasswordHint();
   }
 
-  _localLogin() {
+  _doLogin() {
     isCountdownJustFinished = false;
     auth.localLogin(_passwordController.text);
   }
