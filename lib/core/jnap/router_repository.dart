@@ -1,12 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:privacy_gui/core/cache/utility.dart';
-import 'package:privacy_gui/core/jnap/command/http/jnap_retry_options.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
@@ -48,6 +46,8 @@ class CommandWrap {
   final bool needAuth;
   Map<String, dynamic> data;
 }
+
+const defaultAdminPassword = 'admin';
 
 final routerRepositoryProvider = Provider((ref) {
   return RouterRepository(ref);
@@ -364,7 +364,7 @@ class RouterRepository {
             cloudLogin ? HttpHeaders.authorizationHeader : kJNAPAuthorization;
         final authValue = cloudLogin
             ? 'LinksysUserAuth session_token=$cloudToken'
-            : 'Basic ${Utils.stringBase64Encode('admin:${loginType == LoginType.none ? 'admin' : await getLocalPassword()}')}';
+            : 'Basic ${Utils.stringBase64Encode('admin:${loginType == LoginType.none ? defaultAdminPassword : await getLocalPassword()}')}';
         header = {
           authKey: authValue,
           if (cloudLogin) kJNAPNetworkId: _getNetworkId(),
@@ -382,7 +382,7 @@ class RouterRepository {
         final authKey = cloudLogin ? kJNAPSession : kJNAPAuthorization;
         final authValue = cloudLogin
             ? await getCloudToken()
-            : 'Basic ${Utils.stringBase64Encode('admin:${loginType == LoginType.none ? 'admin' : await getLocalPassword()}')}';
+            : 'Basic ${Utils.stringBase64Encode('admin:${loginType == LoginType.none ? defaultAdminPassword : await getLocalPassword()}')}';
         header = {
           authKey: (needAuth | isCloudLogin()) ? authValue : '',
         };

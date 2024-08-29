@@ -1,4 +1,3 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
@@ -101,7 +100,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
 
   AuthNotifier() : super() {
     LinksysHttpClient.onError = (error) async {
-      logger.d('Http Response Error: $error');
+      logger.e('Http Response Error: $error');
       if (error is ErrorResponse) {
         if (error.code == 'INVALID_SESSION_TOKEN') {
           final sessionToken =
@@ -109,6 +108,8 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
           final invalidToken = error.errorMessage?.split(':')[1].trim() ?? '';
           if (sessionToken == null ||
               sessionToken.accessToken == invalidToken) {
+            logger.f(
+                '[Auth]: Force to log out: ${sessionToken == null ? 'Session token is Null' : 'Invalid session token'}');
             logout();
           }
         }
@@ -117,6 +118,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
           final sessionToken =
               await checkSessionToken().onError(handleSessionTokenError);
           if (sessionToken == null) {
+            logger.f('[Auth]: Force to log out: Credential is Null in JNAP');
             logout();
           }
         }
@@ -129,39 +131,32 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
 
   Future<AuthState?> init() async {
     if (_isInit) {
-      logger.d('auth provider has been inited');
+      logger.d('[Auth]: auth provider has already been initialized');
       return state.value;
     }
     _isInit = true;
 
     state = const AsyncValue.loading();
     // check session token exist and is session token expored
-
     state = await AsyncValue.guard(() async {
       var loginType = LoginType.none;
-
       // Refresh token handle
       final sessionToken =
           await checkSessionToken().onError(handleSessionTokenError);
-
-      logger.d('check local password...');
       const storage = FlutterSecureStorage();
-
-      // check local password
+      // local password
       final localPassword = await storage.read(key: pLocalPassword);
-
-      logger.d('check cloud credientials...');
-      // check cloud username and password
+      // cloud username and password
       final username = await storage.read(key: pUsername);
       final password = await storage.read(key: pUserPassword);
 
-      logger.d('check login type...');
       if (sessionToken != null) {
         loginType = LoginType.remote;
       } else if (localPassword != null) {
         loginType = LoginType.local;
       }
-
+      logger.d(
+          '[Auth]: Existence: cloud user name: ${username != null}, cloud pwd: ${password != null}, admin password: ${localPassword != null}. Login type = $loginType');
       return AuthState(
         username: username ?? '',
         loginType: loginType,
@@ -174,7 +169,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   }
 
   Future<SessionToken?> checkSessionToken() async {
-    logger.d('check cloud session expiration...');
+    logger.d('[Auth]: Check expiration time for the cloud session token (if it exists)');
     const storage = FlutterSecureStorage();
     final ts = await storage.read(key: pSessionTokenTs);
     final json = await storage.read(key: pSessionToken);
@@ -183,8 +178,10 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     }
     final session = SessionToken.fromJson(jsonDecode(json));
     final expireTs = int.parse(ts) + session.expiresIn * 1000;
-    logger.d('sessionTs: $ts, expireTs: $expireTs');
-    if (expireTs - DateTime.now().millisecondsSinceEpoch < 0) {
+    final isExpired = expireTs - DateTime.now().millisecondsSinceEpoch < 0;
+    logger.d(
+        '[Auth]: Token session Ts: $ts, expire Ts: $expireTs. Expired: $isExpired');
+    if (isExpired) {
       final refreshToken = session.refreshToken;
       throw refreshToken == null
           ? SessionTokenExpiredException()
@@ -197,10 +194,11 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   Future<SessionToken?> handleSessionTokenError(
       Object error, StackTrace trace) {
     if (error is NeedToRefreshTokenException) {
-      logger.d('refresh token...');
+      logger.e('[Auth]: Start to refresh session token');
       return refreshToken(error.refreshToken);
     } else {
       // not handling at this moment
+      logger.e('[Auth]: Unhandled session token error: $error');
       return Future.value(null);
     }
   }
@@ -208,7 +206,8 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   Future<SessionToken?> refreshToken(String refreshToken) {
     final cloud = ref.read(cloudRepositoryProvider);
     return cloud.refreshToken(refreshToken).then((value) async {
-      await updateCredientials(sessionToken: value);
+      logger.e('[Auth]: Session token refreshed successfully');
+      await updateCloudCredientials(sessionToken: value);
       return value;
     });
   }
@@ -223,17 +222,17 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       final cloud = ref.read(cloudRepositoryProvider);
       final newToken = sessionToken ??
           await cloud.login(username: username, password: password);
-
-      return await updateCredientials(
+      // Save the new cloud credentials
+      return await updateCloudCredientials(
         sessionToken: newToken,
         username: username,
         password: password,
       );
     });
-    logger.d('after cloud login: $state');
+    logger.d('[Auth]: Cloud login done: Auth state = $state');
   }
 
-  Future<AuthState> updateCredientials({
+  Future<AuthState> updateCloudCredientials({
     SessionToken? sessionToken,
     String? username,
     String? password,
@@ -258,7 +257,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         value: password,
       );
     }
-
+    // Update the auth state
     return (state.value ?? AuthState.empty()).copyWith(
       sessionToken: sessionToken,
       username: username,
@@ -271,8 +270,11 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   /// if guardError is true, error will not throw out, instead put into state as error state
   /// else error will throw out.
   ///
-  Future localLogin(String password,
-      {bool pnp = false, bool guardError = true}) async {
+  Future localLogin(
+    String password, {
+    bool pnp = false,
+    bool guardError = true,
+  }) async {
     final previousState = state.value ?? AuthState.empty();
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
@@ -290,7 +292,9 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         },
         cacheLevel: CacheLevel.noCache,
       );
+      // Check the login result
       if (response.result == jnapResultOk) {
+        // Save the new local credentials
         const storage = FlutterSecureStorage();
         await storage.write(key: pLocalPassword, value: password);
         return previousState.copyWith(
@@ -301,6 +305,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         throw response;
       }
     }, (error) => guardError);
+    logger.d('[Auth]: Local login done: Auth state = $state');
   }
 
   Future<void> getPasswordHint() async {
@@ -317,12 +322,6 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         );
       });
     }
-  }
-
-  // TODO
-  Future<void> createAdminPassword(String password, String hint) async {
-    // final repo = ref.read(routerRepositoryProvider);
-    // await repo.createAdminPassword('admin', hint);
   }
 
   Future logout() async {
