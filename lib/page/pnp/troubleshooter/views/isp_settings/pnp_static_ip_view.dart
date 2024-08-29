@@ -62,6 +62,7 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
               ),
             ),
           AppIPFormField(
+            semanticLabel: 'ip Address',
             header: AppText.bodyLarge(
               loc(context).ipAddress,
             ),
@@ -71,6 +72,7 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
           ),
           const AppGap.large2(),
           AppIPFormField(
+            semanticLabel: 'subnet Mask',
             header: AppText.bodyLarge(
               loc(context).subnetMask,
             ),
@@ -79,6 +81,7 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
           ),
           const AppGap.large2(),
           AppIPFormField(
+            semanticLabel: 'default Gateway',
             header: AppText.bodyLarge(
               loc(context).defaultGateway,
             ),
@@ -87,6 +90,7 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
           ),
           const AppGap.large2(),
           AppIPFormField(
+            semanticLabel: 'dns 1',
             header: AppText.bodyLarge(
               loc(context).dns1,
             ),
@@ -113,6 +117,7 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
                 top: Spacing.large2,
               ),
               child: AppIPFormField(
+                semanticLabel: 'dns 2 Optional',
                 header: AppText.bodyLarge(
                   loc(context).dns2Optional,
                 ),

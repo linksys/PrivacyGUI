@@ -117,7 +117,10 @@ class DashboardWiFiGrid extends ConsumerWidget {
             children: [
               Row(
                 children: [
-                  const Icon(LinksysIcons.devices),
+                  const Icon(
+                    LinksysIcons.devices,
+                    semanticLabel: 'devices',
+                  ),
                   const AppGap.medium(),
                   AppText.labelLarge(
                     loc(context).nDevices(item.numOfConnectedDevices),

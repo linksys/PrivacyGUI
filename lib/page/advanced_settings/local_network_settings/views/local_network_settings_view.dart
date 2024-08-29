@@ -19,7 +19,6 @@ import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'package:privacy_gui/core/jnap/providers/assign_ip/base_assign_ip.dart'
     if (dart.library.html) 'package:privacy_gui/core/jnap/providers/assign_ip/web_assign_ip.dart';
 
@@ -207,6 +206,7 @@ class _LocalNetworkSettingsViewState
           mainAxisSize: MainAxisSize.min,
           children: [
             AppIPFormField(
+              semanticLabel: 'ip address',
               controller: textController,
               errorText: errorDesc,
               border: const OutlineInputBorder(),
@@ -279,6 +279,7 @@ class _LocalNetworkSettingsViewState
           mainAxisSize: MainAxisSize.min,
           children: [
             AppIPFormField(
+              semanticLabel: 'ip address',
               octet1ReadOnly: true,
               octet2ReadOnly: true,
               controller: textController,

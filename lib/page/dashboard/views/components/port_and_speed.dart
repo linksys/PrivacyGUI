@@ -1,13 +1,10 @@
 import 'package:collection/collection.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
@@ -310,6 +307,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
       children: [
         Icon(
           LinksysIcons.arrowDownward,
+          semanticLabel: 'arrow Downward',
           color: Theme.of(context).colorScheme.primary,
         ),
         AppText.titleLarge(
@@ -338,6 +336,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
       children: [
         Icon(
           LinksysIcons.arrowUpward,
+          semanticLabel: 'arrow upward',
           color: Theme.of(context).colorScheme.primary,
         ),
         AppText.titleLarge(
@@ -368,6 +367,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
         color: connection == null
             ? Theme.of(context).colorScheme.surfaceVariant
             : Theme.of(context).colorSchemeExt.green,
+        semanticLabel: 'port icon',
       ),
       const AppGap.small2(),
       AppText.labelMedium(label),
@@ -397,6 +397,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
             connection == null
                 ? CustomTheme.of(context).images.imgPortOff
                 : CustomTheme.of(context).images.imgPortOn,
+            semanticsLabel: 'port status image',
             width: 40,
             height: 40,
           ),

@@ -73,6 +73,7 @@ class _SafeBrowsingViewState extends ConsumerState<SafeBrowsingView> {
                     _getTextFormSafeBrowsingType(currentSafeBrowsingType),
                 trailing: AppIconButton(
                   icon: LinksysIcons.edit,
+                  semanticLabel: 'edit',
                   onTap: enableSafeBrowsing
                       ? () {
                           _showProviderSelector(state.hasFortinet);

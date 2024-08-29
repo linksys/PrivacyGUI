@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
@@ -45,7 +44,9 @@ class DashboardHomeTitle extends ConsumerWidget {
                 child: const SizedBox(
                   width: 16,
                   height: 16,
-                  child: CircularProgressIndicator(),
+                  child: CircularProgressIndicator(
+                    semanticsLabel: 'home title spinner',
+                  ),
                 ),
               ),
             ),
@@ -59,6 +60,7 @@ class DashboardHomeTitle extends ConsumerWidget {
                     children: [
                       Icon(
                         Icons.circle,
+                        semanticLabel: 'online status',
                         color: isOnline
                             ? Theme.of(context).colorSchemeExt.green
                             : Theme.of(context).colorScheme.surfaceVariant,
@@ -75,6 +77,7 @@ class DashboardHomeTitle extends ConsumerWidget {
                     Row(
                       children: [
                         Icon(LinksysIcons.uptime,
+                            semanticLabel: 'uptime',
                             color: Theme.of(context).colorScheme.onSurface),
                         const AppGap.medium(),
                         AppText.bodyMedium('${loc(context).uptime}: $uptime',
@@ -91,6 +94,7 @@ class DashboardHomeTitle extends ConsumerWidget {
           Row(
             children: [
               Icon(LinksysIcons.uptime,
+                  semanticLabel: 'uptime',
                   color: Theme.of(context).colorScheme.onSurface),
               const AppGap.medium(),
               AppText.bodyMedium('${loc(context).uptime}: $uptime',

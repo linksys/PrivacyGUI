@@ -87,6 +87,7 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
                           isDense: true, contentPadding: EdgeInsets.zero)),
                   child: IntrinsicWidth(
                       child: AppPasswordField(
+                    semanticLabel: 'admin Password',
                     readOnly: true,
                     border: InputBorder.none,
                     controller: _passwordController
@@ -94,7 +95,10 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
                     suffixIconConstraints: const BoxConstraints(),
                   )),
                 ),
-                trailing: const Icon(LinksysIcons.edit),
+                trailing: const Icon(
+                  LinksysIcons.edit,
+                  semanticLabel: 'edit',
+                ),
                 onTap: () {
                   _showRouterPasswordModal(routerPasswordState.hint);
                 },

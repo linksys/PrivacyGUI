@@ -32,14 +32,17 @@ class LightInfoTile extends StatelessWidget {
   }
 
   Widget _createLightCircle(BuildContext context, Color color) {
-    return Container(
-      width: 36,
-      height: 36,
-      decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-          border: Border.all(
-              width: 3, color: Theme.of(context).colorScheme.outline)),
+    return Semantics(
+      label: 'light circle',
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+            border: Border.all(
+                width: 3, color: Theme.of(context).colorScheme.outline)),
+      ),
     );
   }
 }

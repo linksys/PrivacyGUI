@@ -8,6 +8,8 @@ import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/nodes/_nodes.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
+// TODO: Unused page
+
 class NodeSwitchLightView extends ArgumentsConsumerStatefulView {
   const NodeSwitchLightView({super.key, super.args});
 

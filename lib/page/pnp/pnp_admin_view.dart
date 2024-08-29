@@ -150,6 +150,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
               children: [
                 Icon(
                   LinksysIcons.globe,
+                  semanticLabel: 'globe',
                   color: Theme.of(context).colorScheme.primary,
                   size: 48,
                 ),
@@ -162,7 +163,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const AppSpinner(),
+                const AppSpinner(semanticLabel: 'Check Internet spinner',),
                 const AppGap.medium(),
                 AppText.titleMedium(loc(context).launchCheckInternet),
               ],

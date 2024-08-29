@@ -818,5 +818,6 @@
         "example": "2024"
       }
     }
-  }
+  },
+  "loading": "Loading"
 }

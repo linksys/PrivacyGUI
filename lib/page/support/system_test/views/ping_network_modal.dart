@@ -35,6 +35,7 @@ class _PingNetworkModalState extends ConsumerState<PingNetworkModal> {
               AppText.bodySmall('DNS IP address'),
               const AppGap.small2(),
               AppIPFormField(
+                semanticLabel: 'dns ip address',
                 border: const OutlineInputBorder(),
                 controller: _controller,
               ),

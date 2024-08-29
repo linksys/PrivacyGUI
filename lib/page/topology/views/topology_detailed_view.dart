@@ -111,9 +111,11 @@ class _TopologyViewState extends ConsumerState<TopologyDetailedView> {
               node.data.isWiredConnection
                   ? getWifiSignalIconData(context, null)
                   : getWifiSignalIconData(context, node.data.signalStrength),
+              semanticLabel: 'signal Strength icon',
             )
           : const Icon(
               LinksysIcons.signalWifiNone,
+              semanticLabel: 'signal Strength icon',
             ),
       background: node.data.isOnline
           ? Theme.of(context).colorScheme.surface
@@ -374,7 +376,10 @@ class _TopologyViewState extends ConsumerState<TopologyDetailedView> {
               children: [
                 AppText.bodyMedium(loc(context).modalMoveChildNodesDesc),
                 const AppGap.large2(),
-                SvgPicture(CustomTheme.of(context).images.imgMoveNodes),
+                SvgPicture(
+                  CustomTheme.of(context).images.imgMoveNodes,
+                  semanticsLabel: 'move nodes image',
+                ),
               ],
             ),
           );

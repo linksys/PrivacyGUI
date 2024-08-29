@@ -202,6 +202,7 @@ class _AddRuleContentViewState
       AppText.labelMedium(loc(context).ipAddress),
       const AppGap.medium(),
       AppIPv6FormField(
+        semanticLabel: 'ip address',
         controller: _ipAddressController,
         border: const OutlineInputBorder(),
       ),

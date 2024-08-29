@@ -152,7 +152,10 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
                   title: loc(context).wifiName,
                   description: mainRadio.ssid,
-                  trailing: const Icon(LinksysIcons.edit),
+                  trailing: const Icon(
+                    LinksysIcons.edit,
+                    semanticLabel: 'edit',
+                  ),
                   onTap: () {
                     _showWiFiNameModal(mainRadio.ssid, (value) {
                       ref
@@ -173,6 +176,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
                                   isDense: true,
                                   contentPadding: EdgeInsets.zero)),
                           child: AppPasswordField(
+                            semanticLabel: 'wifi password',
                             readOnly: true,
                             border: InputBorder.none,
                             controller: _simplePasswordController,
@@ -278,7 +282,10 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
         title: loc(context).wifiName,
         description: radio.ssid,
         padding: const EdgeInsets.symmetric(vertical: 8.0),
-        trailing: const Icon(LinksysIcons.edit),
+        trailing: const Icon(
+          LinksysIcons.edit,
+          semanticLabel: 'edit',
+        ),
         onTap: () {
           _showWiFiNameModal(radio.ssid, (value) {
             ref
@@ -298,6 +305,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
                     inputDecorationTheme: const InputDecorationTheme(
                         isDense: true, contentPadding: EdgeInsets.zero)),
                 child: AppPasswordField(
+                  semanticLabel: 'wifi password',
                   readOnly: true,
                   border: InputBorder.none,
                   controller: _advancedPasswordController[radio.radioID],
@@ -319,7 +327,10 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
         title: loc(context).securityMode,
         description: getWifiSecurityTypeTitle(context, radio.securityType),
         padding: const EdgeInsets.symmetric(vertical: 8.0),
-        trailing: const Icon(LinksysIcons.edit),
+        trailing: const Icon(
+          LinksysIcons.edit,
+          semanticLabel: 'edit',
+        ),
         onTap: () {
           _showSecurityModeModal(
               radio.securityType, radio.availableSecurityTypes, (value) {
@@ -339,7 +350,10 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
           radio.defaultMixedMode,
         ),
         padding: const EdgeInsets.symmetric(vertical: 8.0),
-        trailing: const Icon(LinksysIcons.edit),
+        trailing: const Icon(
+          LinksysIcons.edit,
+          semanticLabel: 'edit',
+        ),
         onTap: () {
           _showWirelessWiFiModeModal(radio.wirelessMode, radio.defaultMixedMode,
               radio.availableWirelessModes, (value) {});
@@ -367,7 +381,10 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
           radio.channelWidth,
         ),
         padding: const EdgeInsets.symmetric(vertical: 8.0),
-        trailing: const Icon(LinksysIcons.edit),
+        trailing: const Icon(
+          LinksysIcons.edit,
+          semanticLabel: 'edit',
+        ),
         onTap: () {
           _showChannelWidthModal(
             radio.channelWidth,
@@ -388,7 +405,10 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
           radio.radioID,
         ),
         padding: const EdgeInsets.symmetric(vertical: 8.0),
-        trailing: const Icon(LinksysIcons.edit),
+        trailing: const Icon(
+          LinksysIcons.edit,
+          semanticLabel: 'edit',
+        ),
         onTap: () {
           _showChannelModal(
               radio.channel,
@@ -415,6 +435,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
         mainAxisSize: MainAxisSize.min,
         children: [
           AppTextField(
+            semanticLabel: 'wifi name',
             controller: controller,
             border: const OutlineInputBorder(),
             onChanged: (value) {
@@ -447,6 +468,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
         mainAxisSize: MainAxisSize.min,
         children: [
           AppPasswordField.withValidator(
+            semanticLabel: 'wifi password',
             autofocus: true,
             controller: controller,
             border: const OutlineInputBorder(),

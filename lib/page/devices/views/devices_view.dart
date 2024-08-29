@@ -101,6 +101,7 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
                     ? [
                         AppIconButton(
                           icon: LinksysIcons.edit,
+                          semanticLabel: 'edit',
                           onTap: () {
                             setState(() {
                               _isEdit = !_isEdit;

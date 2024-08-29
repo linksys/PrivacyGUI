@@ -166,6 +166,7 @@ class _FirmwareUpdateDetailViewState
           width: 240,
           height: 240,
           child: CircularProgressIndicator(
+            semanticsLabel: '$operationType spinner',
             value: progressPercent / 100,
             color: Theme.of(context).colorScheme.primary,
             strokeWidth: 8,

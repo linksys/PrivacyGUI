@@ -69,7 +69,9 @@ class _FirmwareUpdateProcessViewState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Center(child: AppSpinner()),
+        const Center(
+            child:
+                AppSpinner(semanticLabel: 'Firmware Update Process spinner')),
         const AppGap.large3(),
         if (percent != null) ...[
           AppText.labelLarge(

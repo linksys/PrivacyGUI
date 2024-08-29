@@ -126,12 +126,16 @@ class _GuestWiFiSettingsViewState extends ConsumerState<GuestWiFiSettingsView> {
                                 isDense: true,
                                 contentPadding: EdgeInsets.zero)),
                         child: AppPasswordField(
+                          semanticLabel: 'router password',
                           readOnly: true,
                           border: InputBorder.none,
                           controller: _guestPasswordController,
                           suffixIconConstraints: const BoxConstraints(),
                         ))),
-                trailing: const Icon(LinksysIcons.edit),
+                trailing: const Icon(
+                  LinksysIcons.edit,
+                  semanticLabel: 'edit',
+                ),
                 onTap: () {
                   _showGuestWifiPasswordModal(guest.password);
                 },
@@ -152,6 +156,7 @@ class _GuestWiFiSettingsViewState extends ConsumerState<GuestWiFiSettingsView> {
         mainAxisSize: MainAxisSize.min,
         children: [
           AppTextField(
+            semanticLabel: 'guest wifi name',
             controller: controller,
             border: const OutlineInputBorder(),
             onChanged: (value) {
@@ -182,6 +187,7 @@ class _GuestWiFiSettingsViewState extends ConsumerState<GuestWiFiSettingsView> {
         mainAxisSize: MainAxisSize.min,
         children: [
           AppTextField(
+            semanticLabel: 'guest wifi password',
             controller: controller,
             border: const OutlineInputBorder(),
             onChanged: (value) {

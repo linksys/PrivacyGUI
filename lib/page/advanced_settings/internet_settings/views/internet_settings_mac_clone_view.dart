@@ -91,6 +91,7 @@ class _MACCloneViewState extends ConsumerState<MACCloneView> {
                 height: Spacing.large2 * 2 + 1,
               ),
               AppTextField.macAddress(
+                semanticLabel: 'mac address',
                 controller: _valueController,
                 border: const OutlineInputBorder(),
                 onChanged: (value) {

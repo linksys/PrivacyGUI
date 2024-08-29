@@ -203,10 +203,12 @@ class DashboardNetworks extends ConsumerWidget {
           newFirmware
               ? Icon(
                   LinksysIcons.cloudDownload,
+                  semanticLabel: 'cloud Download',
                   color: Theme.of(context).colorScheme.primary,
                 )
               : Icon(
                   LinksysIcons.check,
+                  semanticLabel: 'check',
                   color: Theme.of(context).colorSchemeExt.green,
                 )
         ],
@@ -232,15 +234,10 @@ class DashboardNetworks extends ConsumerWidget {
       child: AppListCard(
         padding: const EdgeInsets.symmetric(vertical: Spacing.medium),
         title: AppText.titleMedium(node.getDeviceLocation()),
-        description: Semantics(
-          label: 'now-text-device-location',
-          child: Semantics(
-            label: 'now-text-device-count',
-            child: AppText.bodyMedium(
-                loc(context).nDevices(node.connectedDevices.length)),
-          ),
-        ),
+        description: AppText.bodyMedium(
+            loc(context).nDevices(node.connectedDevices.length)),
         leading: Image(
+          semanticLabel: 'model image',
           image: CustomTheme.of(context).images.devices.getByName(
                 routerIconTestByModel(modelNumber: node.modelNumber ?? ''),
               ),
@@ -250,11 +247,14 @@ class DashboardNetworks extends ConsumerWidget {
         trailing: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Icon(node.isOnline()
-                ? node.isAuthority | !node.isWirelessConnection()
-                    ? LinksysIcons.ethernet
-                    : getWifiSignalIconData(context, node.signalDecibels)
-                : LinksysIcons.signalWifiNone),
+            Icon(
+              node.isOnline()
+                  ? node.isAuthority | !node.isWirelessConnection()
+                      ? LinksysIcons.ethernet
+                      : getWifiSignalIconData(context, node.signalDecibels)
+                  : LinksysIcons.signalWifiNone,
+              semanticLabel: 'connection',
+            ),
             if (!node.isAuthority &&
                 node.isWirelessConnection() &&
                 node.isOnline())
@@ -283,6 +283,7 @@ class DashboardNetworks extends ConsumerWidget {
       sub: state.isAnyNodesOffline
           ? Icon(
               LinksysIcons.infoCircle,
+              semanticLabel: 'info',
               size: 24,
               color: Theme.of(context).colorScheme.error,
             )
@@ -335,6 +336,7 @@ class DashboardNetworks extends ConsumerWidget {
             ),
             Icon(
               iconData,
+              semanticLabel: 'info icon',
               size: 20,
             ),
             if (sub != null) sub,

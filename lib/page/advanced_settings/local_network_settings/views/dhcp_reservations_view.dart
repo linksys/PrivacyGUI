@@ -63,7 +63,7 @@ class _DHCPReservationsContentViewState
             const AppGap.large2(),
             AppSettingCard(
               title: loc(context).selectFromMyDHCPList,
-              trailing: const Icon(LinksysIcons.add),
+              trailing: const Icon(LinksysIcons.add, semanticLabel: 'add',),
               onTap: () async {
                 final result = await context.pushNamed<List<DeviceListItem>?>(
                     RouteNamed.devicePicker,
@@ -89,7 +89,7 @@ class _DHCPReservationsContentViewState
             const AppGap.small2(),
             AppSettingCard(
               title: loc(context).manuallyAddReservation,
-              trailing: const Icon(LinksysIcons.add),
+              trailing: const Icon(LinksysIcons.add, semanticLabel: 'add',),
               onTap: () async {
                 final result = await context.pushNamed<DHCPReservation?>(
                     RouteNamed.dhcpReservationEdit,
@@ -150,6 +150,7 @@ class _DHCPReservationsContentViewState
                     "IP: ${item.ipAddress}\nMAC: ${item.macAddress}"),
                 trailing: AppIconButton(
                   icon: LinksysIcons.edit,
+                  semanticLabel: 'edit',
                   onTap: () {
                     goDHCPReservationEdit(item, index);
                   },
