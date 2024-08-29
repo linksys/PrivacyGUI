@@ -145,6 +145,7 @@ class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
           padding: const EdgeInsets.only(bottom: 40),
           child: Image(
             image: CustomTheme.of(context).images.speedtestPowered,
+            semanticLabel: 'speedtest Powered image',
             fit: BoxFit.fitWidth,
           ),
         ),
@@ -228,7 +229,10 @@ class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
               Wrap(
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  const Icon(LinksysIcons.download),
+                  const Icon(
+                    LinksysIcons.download,
+                    semanticLabel: 'download icon',
+                  ),
                   downloadBandWidthView,
                 ],
               ),
@@ -247,7 +251,10 @@ class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
               Wrap(
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  const Icon(LinksysIcons.upload),
+                  const Icon(
+                    LinksysIcons.upload,
+                    semanticLabel: 'upload icon',
+                  ),
                   uploadBandWidthView,
                 ],
               ),

@@ -106,6 +106,7 @@ class CallSupportMoreRegionView extends ArgumentsConsumerStatelessView {
                 children: [
                   Icon(
                     LinksysIcons.contact,
+                    semanticLabel: 'contact icon',
                     size: 24,
                     color: Theme.of(context).colorScheme.primary,
                   ),

@@ -116,6 +116,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
             height: 120,
             child: Icon(
               IconDeviceCategoryExt.resolveByName(state.item.icon),
+              semanticLabel: state.item.icon,
               size: 40,
             ),
           ),
@@ -135,11 +136,16 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
           AppSettingCard.noBorder(
             padding: const EdgeInsets.all(Spacing.medium),
             title: loc(context).signalStrength,
-            description: state.item.isWired ? null : _formatEmptyValue('${state.item.signalStrength} dBM'),
-            trailing: Icon(getWifiSignalIconData(
-              context,
-              state.item.isWired ? null : state.item.signalStrength,
-            )),
+            description: state.item.isWired
+                ? null
+                : _formatEmptyValue('${state.item.signalStrength} dBM'),
+            trailing: Icon(
+              getWifiSignalIconData(
+                context,
+                state.item.isWired ? null : state.item.signalStrength,
+              ),
+              semanticLabel: 'wifi signal icon',
+            ),
           ),
         ],
       ),
@@ -167,6 +173,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
           description: _formatEmptyValue(state.item.ipv4Address),
           trailing: AppLoadableWidget.textButton(
             title: loc(context).reserveDHCP,
+            semanticsLabel: 'reserve DHCP',
             onTap: () async {
               await handleReserveDhcp(state.item);
             },
@@ -330,6 +337,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
                   IconDeviceCategoryExt.resolveByName(
                     IconDeviceCategory.values[index].name,
                   ),
+                  semanticLabel: IconDeviceCategory.values[index].name,
                   color: index == _iconIndex
                       ? Theme.of(context).colorScheme.primary
                       : null,

@@ -100,6 +100,7 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
             const AppGap.large3(),
             AppPinCodeInput(
               key: const Key('otp_input_view_input_field_code'),
+              semanticLabel: 'pin code input field',
               onChanged: (String value) {
                 setState(() {
                   _errorCode = '';

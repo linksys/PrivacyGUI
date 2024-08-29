@@ -10,6 +10,8 @@ import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
+// TODO: Unused page
+
 class NodeLightGuideView extends ConsumerWidget {
   const NodeLightGuideView({super.key});
 

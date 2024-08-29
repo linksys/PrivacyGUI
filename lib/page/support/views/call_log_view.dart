@@ -57,6 +57,7 @@ class _CallLogViewState extends ConsumerState<CallLogView> {
       children: [
         const Icon(
           LinksysIcons.phoneDisabled,
+          semanticLabel: 'phone disable',
           size: 66,
         ),
         const AppGap.large3(),

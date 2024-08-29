@@ -60,6 +60,7 @@ class _PnpNoInternetConnectionState
           children: [
             const Icon(
               LinksysIcons.publicOff,
+              semanticLabel: 'public Off icon',
               size: 48,
             ),
             const AppGap.large3(),

@@ -161,6 +161,7 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             AppIPFormField(
+                              semanticLabel: 'specified range ip address start',
                               border: const OutlineInputBorder(),
                               controller: _sourceFirstIPController,
                               onChanged: (value) {
@@ -196,6 +197,7 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                                   child: AppText.bodyMedium(loc(context).to)),
                             ),
                             AppIPFormField(
+                              semanticLabel: 'specified range ip address end',
                               border: const OutlineInputBorder(),
                               controller: _sourceLastIPController,
                               onChanged: (value) {
@@ -269,6 +271,7 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                       ? Container(
                           constraints: const BoxConstraints(maxWidth: 429),
                           child: AppIPFormField(
+                            semanticLabel: 'destination ip address',
                             border: const OutlineInputBorder(),
                             controller: _destinationIPController,
                             octet1ReadOnly: subnetMask[0] == '255',

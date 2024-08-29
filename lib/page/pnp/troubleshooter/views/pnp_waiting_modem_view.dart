@@ -85,6 +85,8 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
                 _isPlugged
                     ? CustomTheme.of(context).images.modemWaiting
                     : CustomTheme.of(context).images.modemPlugged,
+                semanticsLabel:
+                    _isPlugged ? 'modem Waiting image' : 'modem Plugged image',
                 fit: BoxFit.fitWidth,
               ),
             ),
@@ -135,6 +137,7 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
         children: [
           Positioned.fill(
             child: AppProgressBar(
+              semanticLabel: 'timer',
               style: AppProgressBarStyle.circular,
               duration: Duration(seconds: _maxTime),
               stroke: 1.0,

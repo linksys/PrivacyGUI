@@ -212,6 +212,7 @@ class _AddRuleContentViewState
       AppText.labelMedium(loc(context).ipAddress),
       const AppGap.medium(),
       AppIPFormField(
+        semanticLabel: 'ip address',
         controller: _deviceIpAddressController,
         border: const OutlineInputBorder(),
         octet1ReadOnly: submaskToken[0] == '255',
@@ -247,7 +248,7 @@ class _AddRuleContentViewState
       AppListCard(
         title: AppText.labelLarge(loc(context).protocol),
         description: AppText.bodyLarge(getProtocolTitle(context, _protocol)),
-        trailing: const Icon(LinksysIcons.edit),
+        trailing: const Icon(LinksysIcons.edit, semanticLabel: 'edit',),
         onTap: () async {
           String? protocol = await showSelectProtocolModal(
             context,

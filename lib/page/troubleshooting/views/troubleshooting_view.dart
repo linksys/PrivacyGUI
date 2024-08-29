@@ -60,6 +60,7 @@ class _TroubleshootingViewState extends ConsumerState<TroubleshootingView> {
             actions: [
               AppIconButton.noPadding(
                 icon: LinksysIcons.refresh,
+                semanticLabel: 'refresh',
                 onTap: () {
                   ref.read(troubleshootingProvider.notifier).fetch(force: true);
                 },
@@ -224,6 +225,7 @@ class _TroubleshootingViewState extends ConsumerState<TroubleshootingView> {
               alignment: Alignment.centerRight,
               child: AppIconButton.noPadding(
                 icon: LinksysIcons.close,
+                semanticLabel: 'close',
                 onTap: () {
                   context.pop();
                 },

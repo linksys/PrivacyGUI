@@ -5,9 +5,11 @@ class CountdownTimerProgressBar extends ConsumerStatefulWidget {
   const CountdownTimerProgressBar({
     Key? key,
     required this.duration,
+    this.semanticLabel,
   }) : super(key: key);
 
   final int duration;
+  final String? semanticLabel;
 
   @override
   ConsumerState<CountdownTimerProgressBar> createState() =>
@@ -61,6 +63,7 @@ class _CountdownTimerProgressBarState
             color: Theme.of(context).colorScheme.onPrimaryContainer,
             value: progress,
             strokeWidth: 8,
+            semanticsLabel: widget.semanticLabel,
           ),
         ),
         AnimatedBuilder(

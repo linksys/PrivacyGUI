@@ -103,6 +103,7 @@ class _TimezoneContentViewState extends ConsumerState<TimezoneView> {
                                       LinksysIcons.check,
                                       color:
                                           Theme.of(context).colorScheme.primary,
+                                      semanticLabel: 'check icon',
                                     )
                                   : null,
                               onTap: () {

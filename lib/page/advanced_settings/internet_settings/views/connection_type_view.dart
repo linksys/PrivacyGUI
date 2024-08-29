@@ -505,6 +505,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       Padding(
         padding: inputPadding,
         child: AppIPFormField(
+          semanticLabel: 'ip address',
           header: AppText.bodySmall(
             loc(context).internetIpv4Address,
           ),
@@ -526,6 +527,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
         padding: inputPadding,
         child: AppIPFormField(
           key: const Key('staticSubnet'),
+          semanticLabel: 'subnet mask',
           header: AppText.bodySmall(
             loc(context).subnetMask.capitalizeWords(),
           ),
@@ -553,6 +555,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       Padding(
         padding: inputPadding,
         child: AppIPFormField(
+          semanticLabel: 'default gateway',
           header: AppText.bodySmall(
             loc(context).defaultGateway,
           ),
@@ -573,6 +576,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       Padding(
         padding: inputPadding,
         child: AppIPFormField(
+          semanticLabel: 'dns 1',
           header: AppText.bodySmall(
             loc(context).dns1,
           ),
@@ -593,6 +597,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       Padding(
         padding: inputPadding,
         child: AppIPFormField(
+          semanticLabel: 'dns 2 optional',
           header: AppText.bodySmall(
             loc(context).dns2Optional,
           ),
@@ -613,6 +618,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       Padding(
         padding: inputPadding,
         child: AppIPFormField(
+          semanticLabel: 'dns 3 optional',
           header: AppText.bodySmall(
             loc(context).dns3Optional,
           ),
@@ -748,6 +754,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       Padding(
         padding: inputPadding,
         child: AppIPFormField(
+          semanticLabel: 'ip address',
           header: AppText.bodySmall(
             loc(context).serverIpv4Address,
           ),
@@ -796,6 +803,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
                             width: 70,
                             height: 56,
                             child: AppTextField.minMaxNumber(
+                              semanticLabel: 'max idle time',
                               max: 9999,
                               min: 1,
                               controller: _idleTimeController,
@@ -838,6 +846,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
                             width: 70,
                             height: 56,
                             child: AppTextField.minMaxNumber(
+                              semanticLabel: 'redial period',
                               max: 180,
                               min: 20,
                               controller: _redialPeriodController,
@@ -1033,6 +1042,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
         Padding(
           padding: inputPadding,
           child: AppIPFormField(
+            semanticLabel: 'border relay',
             header: AppText.bodySmall(
               loc(context).borderRelay,
             ),

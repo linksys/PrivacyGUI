@@ -170,6 +170,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
               const AppGap.medium(),
               const Icon(
                 LinksysIcons.checkCircle,
+                semanticLabel: 'check icon',
               ),
             ],
           ),
@@ -195,6 +196,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
             children: [
               Icon(
                 LinksysIcons.wifi,
+                semanticLabel: 'wifi icon',
                 color: Theme.of(context).colorScheme.primary,
                 size: 48,
               ),
@@ -234,6 +236,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
             children: [
               Icon(
                 LinksysIcons.wifi,
+                semanticLabel: 'wifi icon',
                 color: Theme.of(context).colorScheme.primary,
                 size: 48,
               ),

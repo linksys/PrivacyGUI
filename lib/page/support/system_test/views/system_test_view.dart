@@ -1,11 +1,6 @@
-import 'dart:math';
-
 import 'package:collection/collection.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:privacy_gui/core/jnap/models/health_check_result.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
@@ -17,7 +12,6 @@ import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/dashboard/views/components/shimmer.dart';
-import 'package:privacy_gui/page/health_check/_health_check.dart';
 import 'package:privacy_gui/page/support/system_test/providers/system_connectivity_provider.dart';
 import 'package:privacy_gui/page/support/system_test/views/ping_network_modal.dart';
 import 'package:privacy_gui/page/support/system_test/views/speed_test_widget.dart';
@@ -28,7 +22,6 @@ import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/container/animated_meter.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 
@@ -114,7 +107,7 @@ class SystemTestView extends ArgumentsConsumerStatelessView {
   }
 
   Widget _topologyView() {
-    return TopologyView();
+    return const TopologyView();
   }
 
   Widget _deviceInfoCard(BuildContext context, WidgetRef ref) {
@@ -137,7 +130,10 @@ class SystemTestView extends ArgumentsConsumerStatelessView {
                   Wrap(
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      const Icon(LinksysIcons.calendar),
+                      const Icon(
+                        LinksysIcons.calendar,
+                        semanticLabel: 'calendar',
+                      ),
                       AppText.bodySmall(
                           '${loc(context).systemTestDateFormat(DateTime.now())}|${loc(context).systemTestDateTime(DateTime.now())}'),
                     ],
@@ -146,7 +142,10 @@ class SystemTestView extends ArgumentsConsumerStatelessView {
                   Wrap(
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      const Icon(LinksysIcons.uptime),
+                      const Icon(
+                        LinksysIcons.uptime,
+                        semanticLabel: 'uptime',
+                      ),
                       AppText.bodySmall('${loc(context).uptime}: $uptime'),
                     ],
                   ),
@@ -232,7 +231,10 @@ class SystemTestView extends ArgumentsConsumerStatelessView {
               child: AppCard(
                 child: Column(
                   children: [
-                    Icon(LinksysIcons.restartAlt),
+                    Icon(
+                      LinksysIcons.restartAlt,
+                      semanticLabel: 'reset router',
+                    ),
                     AppText.labelMedium('Reset Router')
                   ],
                 ),
@@ -245,7 +247,10 @@ class SystemTestView extends ArgumentsConsumerStatelessView {
               child: AppCard(
                 child: Column(
                   children: [
-                    Icon(LinksysIcons.restartAlt),
+                    Icon(
+                      LinksysIcons.restartAlt,
+                      semanticLabel: 'factory reset',
+                    ),
                     AppText.labelMedium('Factory Reset')
                   ],
                 ),
@@ -319,6 +324,7 @@ class SystemTestView extends ArgumentsConsumerStatelessView {
         color: connection == null
             ? Theme.of(context).colorScheme.surfaceVariant
             : Theme.of(context).colorSchemeExt.green,
+        semanticLabel: connection == null ? 'circle' : 'checked circle',
       ),
       const AppGap.small2(),
       AppText.labelMedium(label),
@@ -348,6 +354,8 @@ class SystemTestView extends ArgumentsConsumerStatelessView {
             connection == null
                 ? CustomTheme.of(context).images.imgPortOff
                 : CustomTheme.of(context).images.imgPortOn,
+            semanticsLabel:
+                connection == null ? 'port off image' : 'port on image',
             width: 40,
             height: 40,
           ),
@@ -393,6 +401,7 @@ class SystemTestView extends ArgumentsConsumerStatelessView {
             'Connectivity',
             AppIconButton.noPadding(
               icon: LinksysIcons.refresh,
+              semanticLabel: 'refresh',
               onTap: () {},
             ),
           ),
@@ -520,6 +529,7 @@ class SystemTestView extends ArgumentsConsumerStatelessView {
                     children: [
                       Icon(
                         LinksysIcons.checkCircleFilled,
+                        semanticLabel: 'ping',
                       ),
                       AppText.labelMedium('Ping')
                     ],
@@ -536,6 +546,7 @@ class SystemTestView extends ArgumentsConsumerStatelessView {
                     children: [
                       Icon(
                         LinksysIcons.checkCircleFilled,
+                        semanticLabel: 'Traceroute',
                       ),
                       AppText.labelMedium('Traceroute')
                     ],
@@ -555,7 +566,7 @@ class SystemTestView extends ArgumentsConsumerStatelessView {
       children: [
         _headerWidget('Speed Test'),
         const AppGap.large2(),
-        SpeedTestWidget()
+        const SpeedTestWidget()
       ],
     );
   }
@@ -563,6 +574,7 @@ class SystemTestView extends ArgumentsConsumerStatelessView {
   Widget _greenCircle(BuildContext context, [bool isActive = true]) {
     return Icon(
       LinksysIcons.circle,
+      semanticLabel: 'color circle',
       color: isActive
           ? Theme.of(context).colorSchemeExt.green
           : Theme.of(context).colorScheme.surfaceVariant,
@@ -584,7 +596,7 @@ class SystemTestView extends ArgumentsConsumerStatelessView {
       context,
       dismissible: false,
       title: 'Ping Network',
-      content: PingNetworkModal(),
+      content: const PingNetworkModal(),
     );
   }
 
@@ -593,7 +605,7 @@ class SystemTestView extends ArgumentsConsumerStatelessView {
       context,
       dismissible: false,
       title: 'Traceroute',
-      content: TracerouteModal(),
+      content: const TracerouteModal(),
     );
   }
 }

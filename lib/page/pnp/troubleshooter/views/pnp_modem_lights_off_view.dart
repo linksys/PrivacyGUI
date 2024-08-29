@@ -39,6 +39,7 @@ class _PnpLightOffViewState extends ConsumerState<PnpModemLightsOffView> {
               children: [
                 SvgPicture(
                   CustomTheme.of(context).images.modemDevice,
+                  semanticsLabel: 'modem Device image',
                   fit: BoxFit.fitWidth,
                 ),
                 const AppGap.large3(),

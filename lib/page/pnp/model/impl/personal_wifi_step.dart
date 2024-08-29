@@ -1,6 +1,4 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -106,6 +104,7 @@ class PersonalWiFiStep extends PnpStep {
               ),
               AppIconButton.noPadding(
                 icon: LinksysIcons.infoCircle,
+                semanticLabel: 'info',
                 color: Theme.of(context).colorScheme.primary,
                 onTap: () {
                   _showDefaultsInfoModal(context);

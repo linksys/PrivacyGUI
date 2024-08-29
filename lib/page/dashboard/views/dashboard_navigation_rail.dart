@@ -43,6 +43,7 @@ class _DashboardNavigationRailState
                 child: InkWell(
                   child: SvgPicture(
                     CustomTheme.of(context).images.linksysLogoBlack,
+                    semanticsLabel: 'logo',
                     width: 20,
                     height: 20,
                   ),

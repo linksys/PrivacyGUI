@@ -105,6 +105,7 @@ class _StaticRoutingDetailViewState
           ),
           const AppGap.large2(),
           AppIPFormField(
+            semanticLabel: 'destination IP Address',
             header: AppText.bodyLarge(
               loc(context).destinationIPAddress,
             ),
@@ -134,6 +135,7 @@ class _StaticRoutingDetailViewState
             ),
           const AppGap.large2(),
           AppIPFormField(
+            semanticLabel: 'subnet Mask',
             header: AppText.bodyLarge(
               loc(context).subnetMask,
             ),
@@ -169,6 +171,7 @@ class _StaticRoutingDetailViewState
             ),
           const AppGap.large2(),
           AppIPFormField(
+            semanticLabel: 'gateway',
             header: AppText.bodyLarge(
               loc(context).gateway,
             ),

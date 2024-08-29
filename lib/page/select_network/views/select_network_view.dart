@@ -95,12 +95,15 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
       return const SizedBox(
         width: 16,
         height: 16,
-        child: CircularProgressIndicator(),
+        child: CircularProgressIndicator(
+          semanticsLabel: 'spinner',
+        ),
       );
     } else {
       return AppIconButton(
         padding: const EdgeInsets.all(0),
         icon: LinksysIcons.refresh,
+        semanticLabel: 'refresh',
         onTap: () {
           ref.read(selectNetworkProvider.notifier).refreshCloudNetworks();
         },
@@ -164,6 +167,7 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
                         hardwareVersion: network.network.routerHardwareVersion,
                       ),
                     ),
+                semanticLabel: 'router image',
                 width: 60,
                 height: 60,
               ),

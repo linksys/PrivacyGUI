@@ -49,6 +49,7 @@ class OptionCard extends ConsumerWidget {
             const AppGap.large3(),
             Image.asset(
               'assets/images/arrow_point_to_right.png',
+              semanticLabel: 'arrow',
               width: 10,
               height: 10,
               color: Colors.white,

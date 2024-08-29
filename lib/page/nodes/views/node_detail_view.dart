@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/models/firmware_update_status_nodes.dart';
@@ -171,6 +170,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
               padding: const EdgeInsets.symmetric(vertical: Spacing.large2),
               child: Center(
                 child: Image(
+                  semanticLabel: 'device image',
                   height: 120,
                   image: CustomTheme.of(context).images.devices.getByName(
                         routerIconTestByModel(modelNumber: state.modelNumber),
@@ -193,6 +193,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
                   ),
                   AppIconButton(
                     icon: LinksysIcons.edit,
+                    semanticLabel: 'edit',
                     onTap: () {
                       _showEditNodeNameDialog(state);
                     },
@@ -211,11 +212,16 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
               AppSettingCard.noBorder(
                 padding: const EdgeInsets.all(Spacing.medium),
                 title: loc(context).signalStrength,
-                description: state.isWiredConnection ? null : _checkEmptyValue('${state.signalStrength} dBM'),
-                trailing: Icon(getWifiSignalIconData(
-                  context,
-                  state.isWiredConnection ? null : state.signalStrength,
-                )),
+                description: state.isWiredConnection
+                    ? null
+                    : _checkEmptyValue('${state.signalStrength} dBM'),
+                trailing: Icon(
+                  getWifiSignalIconData(
+                    context,
+                    state.isWiredConnection ? null : state.signalStrength,
+                  ),
+                  semanticLabel: 'signal strength icon',
+                ),
               ),
           ],
         ),

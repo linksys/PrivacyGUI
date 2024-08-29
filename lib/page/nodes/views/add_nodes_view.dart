@@ -174,7 +174,10 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
               defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
               tags: const ['b']),
           const AppGap.large2(),
-          SvgPicture(CustomTheme.of(context).images.imgAddNodes),
+          SvgPicture(
+            CustomTheme.of(context).images.imgAddNodes,
+            semanticsLabel: 'add nodes image',
+          ),
           LightInfoTile(
               color: ledBlue,
               content: AppStyledText.bold(loc(context).addNodesSolidBlueDesc,

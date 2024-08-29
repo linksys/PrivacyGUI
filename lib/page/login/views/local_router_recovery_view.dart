@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -62,28 +63,31 @@ class _LocalRouterRecoveryViewState
                   AppText.bodyMedium(
                       loc(context).localRouterRecoveryDescription),
                   const AppGap.large3(),
-                  PinCodeTextField(
-                    errorTextSpace: 0,
-                    onChanged: (String value) {
-                      setState(() {
-                        userInputCode = value;
-                      });
-                    },
-                    length: 5,
-                    appContext: context,
-                    controller: _otpController,
-                    keyboardType: TextInputType.number,
-                    autoDismissKeyboard: true,
-                    pinTheme: PinTheme(
-                      shape: PinCodeFieldShape.box,
-                      borderRadius:
-                          CustomTheme.of(context).radius.asBorderRadius().small,
-                      borderWidth: 1,
-                      fieldHeight: 56,
-                      fieldWidth: 40,
-                      activeColor: Theme.of(context).colorScheme.outline,
-                      selectedColor: Theme.of(context).colorScheme.outline,
-                      inactiveColor: Theme.of(context).colorScheme.outline,
+                  Semantics(
+                    label: 'pin code text field',
+                    child: PinCodeTextField(
+                      errorTextSpace: 0,
+                      onChanged: (String value) {
+                        setState(() {
+                          userInputCode = value;
+                        });
+                      },
+                      length: 5,
+                      appContext: context,
+                      controller: _otpController,
+                      keyboardType: TextInputType.number,
+                      autoDismissKeyboard: true,
+                      pinTheme: PinTheme(
+                        shape: PinCodeFieldShape.box,
+                        borderRadius:
+                            CustomTheme.of(context).radius.asBorderRadius().small,
+                        borderWidth: 1,
+                        fieldHeight: 56,
+                        fieldWidth: 40,
+                        activeColor: Theme.of(context).colorScheme.outline,
+                        selectedColor: Theme.of(context).colorScheme.outline,
+                        inactiveColor: Theme.of(context).colorScheme.outline,
+                      ),
                     ),
                   ),
                   if (state.remainingErrorAttempts != null)

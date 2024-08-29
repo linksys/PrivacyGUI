@@ -228,20 +228,14 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
 
   NavigationDestination _bottomSheetIconView(DashboardNaviItem item) {
     return NavigationDestination(
-      icon: Semantics(
-        identifier:
-            'now-dashboard-navi-rail-${item.type.resloveLabel(context).kebab()}',
-        child: Icon(
-          item.icon,
-        ),
+      icon: Icon(
+        item.icon,
+        semanticLabel: item.type.resloveLabel(context),
       ),
-      selectedIcon: Semantics(
-        identifier:
-            'now-dashboard-navi-rail-selected-${item.type.resloveLabel(context).kebab()}',
-        child: Icon(
-          item.icon,
-          color: Theme.of(context).colorScheme.onPrimary,
-        ),
+      selectedIcon: Icon(
+        item.icon,
+        semanticLabel: 'selected ${item.type.resloveLabel(context)}',
+        color: Theme.of(context).colorScheme.onPrimary,
       ),
       label: item.type.resloveLabel(context),
     );
@@ -250,20 +244,14 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
   NavigationRailDestination _createNavigationRailDestination(
       DashboardNaviItem item) {
     return NavigationRailDestination(
-      icon: Semantics(
-        identifier:
-            'now-dashboard-navi-rail-${item.type.resloveLabel(context).kebab()}',
-        child: Icon(
-          item.icon,
-        ),
+      icon: Icon(
+        item.icon,
+        semanticLabel: item.type.resloveLabel(context),
       ),
-      selectedIcon: Semantics(
-        identifier:
-            'now-dashboard-navi-rail-selected-${item.type.resloveLabel(context).kebab()}',
-        child: Icon(
-          item.icon,
-          color: Theme.of(context).colorScheme.onPrimary,
-        ),
+      selectedIcon: Icon(
+        item.icon,
+        semanticLabel: 'selected ${item.type.resloveLabel(context)}',
+        color: Theme.of(context).colorScheme.onPrimary,
       ),
       label: AppText.bodySmall(
         item.type.resloveLabel(context),

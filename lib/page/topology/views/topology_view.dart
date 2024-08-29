@@ -57,7 +57,6 @@ class _TopologyViewState extends ConsumerState<TopologyView> {
                   AppTextButton.noPadding(
                     loc(context).addNodes,
                     icon: LinksysIcons.add,
-                    identifier: 'now-topology-button-add-nodes',
                     onTap: () {
                       context.pushNamed(RouteNamed.addNodes).then((result) {
                         if (result is bool && result) {
@@ -114,6 +113,7 @@ class _TopologyViewState extends ConsumerState<TopologyView> {
               node.data.isWiredConnection
                   ? getWifiSignalIconData(context, null)
                   : getWifiSignalIconData(context, node.data.signalStrength),
+              semanticLabel: 'signal Strength',
             )
           : null,
       background: node.data.isOnline
@@ -138,6 +138,7 @@ class _TopologyViewState extends ConsumerState<TopologyView> {
               node.data.isWiredConnection
                   ? getWifiSignalIconData(context, null)
                   : getWifiSignalIconData(context, node.data.signalStrength),
+              semanticLabel: 'signal Strength',
             )
           : null,
       background: node.data.isOnline
@@ -367,7 +368,10 @@ class _TopologyViewState extends ConsumerState<TopologyView> {
               children: [
                 AppText.bodyMedium(loc(context).modalMoveChildNodesDesc),
                 const AppGap.large2(),
-                SvgPicture(CustomTheme.of(context).images.imgMoveNodes),
+                SvgPicture(
+                  CustomTheme.of(context).images.imgMoveNodes,
+                  semanticsLabel: 'move nodes image',
+                ),
               ],
             ),
           );

@@ -167,25 +167,22 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
                   const AppGap.large3(),
                   SizedBox(
                     width: 289,
-                    child: Semantics(
-                      label: 'Router password field',
-                      child: AppPasswordField(
-                        border: const OutlineInputBorder(),
-                        controller: _passwordController,
-                        hintText: loc(context).routerPassword,
-                        onChanged: (value) {
-                          setState(() {
-                            _shouldEnableLoginButton();
-                          });
-                        },
-                        onSubmitted: (_) {
-                          if (_passwordController.text.isEmpty) {
-                            return;
-                          }
-                          _localLogin();
-                        },
-                        errorText: _errorMessage,
-                      ),
+                    child: AppPasswordField(
+                      border: const OutlineInputBorder(),
+                      controller: _passwordController,
+                      hintText: loc(context).routerPassword,
+                      onChanged: (value) {
+                        setState(() {
+                          _shouldEnableLoginButton();
+                        });
+                      },
+                      onSubmitted: (_) {
+                        if (_passwordController.text.isEmpty) {
+                          return;
+                        }
+                        _localLogin();
+                      },
+                      errorText: _errorMessage,
                     ),
                   ),
                   if (_passwordHint != null)

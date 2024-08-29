@@ -47,6 +47,7 @@ class _PnpUnplugModemViewState extends ConsumerState<PnpUnplugModemView> {
               children: [
                 SvgPicture(
                   CustomTheme.of(context).images.modemPlugged,
+                  semanticsLabel: 'modem Plugged image',
                   fit: BoxFit.fitWidth,
                 ),
                 const AppGap.large3(),
@@ -108,6 +109,7 @@ class _PnpUnplugModemViewState extends ConsumerState<PnpUnplugModemView> {
             alignment: Alignment.center,
             child: SvgPicture(
               CustomTheme.of(context).images.modemIdentifying,
+              semanticsLabel: 'modem Identifying image',
               fit: BoxFit.fitWidth,
             ),
           ),

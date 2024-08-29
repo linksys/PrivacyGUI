@@ -211,6 +211,7 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
         mainAxisSize: MainAxisSize.min,
         children: [
           AppTextField.macAddress(
+            semanticLabel: 'mac address',
             border: const OutlineInputBorder(),
             controller: controller,
             onChanged: (text) {

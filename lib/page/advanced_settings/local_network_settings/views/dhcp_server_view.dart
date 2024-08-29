@@ -9,7 +9,6 @@ import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/panel/switch_trigger_tile.dart';
@@ -133,6 +132,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppIPFormField(
+          semanticLabel: 'start Ip Address',
           header: AppText.bodySmall(
             loc(context).startIpAddress,
           ),
@@ -246,6 +246,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppIPFormField(
+          semanticLabel: 'static Dns 1',
           header: AppText.bodySmall(
             loc(context).staticDns1,
           ),
@@ -272,6 +273,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
         ),
         const AppGap.medium(),
         AppIPFormField(
+          semanticLabel: 'static Dns 2',
           header: AppText.bodySmall(
             loc(context).staticDns2,
           ),
@@ -298,6 +300,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
         ),
         const AppGap.medium(),
         AppIPFormField(
+          semanticLabel: 'static Dns 3',
           header: AppText.bodySmall(
             loc(context).staticDns3,
           ),
@@ -324,6 +327,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
         ),
         const AppGap.medium(),
         AppIPFormField(
+          semanticLabel: 'wins',
           header: AppText.bodySmall(
             loc(context).wins,
           ),

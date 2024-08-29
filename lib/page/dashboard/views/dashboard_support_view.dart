@@ -44,7 +44,10 @@ class DashboardSupportView extends ArgumentsConsumerStatelessView {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SupportOptionCard(
-            icon: const Icon(LinksysIcons.faq),
+            icon: const Icon(
+              LinksysIcons.faq,
+              semanticLabel: 'faq',
+            ),
             title: loc(context).dashboardSupportFAQTitle,
             description: loc(context).dashboardSupportFAQDesc,
             tapAction: () {
