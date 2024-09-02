@@ -1,4 +1,7 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
@@ -14,7 +17,9 @@ import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
 import 'package:privacy_gui/page/dashboard/views/components/shimmer.dart';
 import 'package:privacy_gui/page/nodes/providers/node_detail_id_provider.dart';
 import 'package:privacy_gui/page/topology/providers/_providers.dart';
+import 'package:privacy_gui/page/topology/views/topology_model.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/hook/icon_hooks.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
@@ -23,15 +28,50 @@ import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/topology/tree_item.dart';
 
-class DashboardNetworks extends ConsumerWidget {
+class DashboardNetworks extends ConsumerStatefulWidget {
   const DashboardNetworks({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DashboardNetworks> createState() => _DashboardNetworksState();
+}
+
+class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
+  late final TreeController<RouterTreeNode> treeController;
+
+  @override
+  void initState() {
+    super.initState();
+    treeController = TreeController<RouterTreeNode>(
+      // Provide the root nodes that will be used as a starting point when
+      // traversing your hierarchical data.
+      roots: [
+        OnlineTopologyNode(
+            data: const TopologyModel(isOnline: true, location: 'Internet'),
+            children: [])
+      ],
+      childrenProvider: (RouterTreeNode node) => node.children,
+    );
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    treeController.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final uptimeInt =
+        ref.watch(dashboardHomeProvider.select((value) => value.uptime ?? 0));
+    final uptime =
+        DateFormatUtils.formatDuration(Duration(seconds: uptimeInt), context);
     final state = ref.watch(dashboardHomeProvider);
     final isLoading = ref.watch(deviceManagerProvider).deviceList.isEmpty;
-
+    final topologyState = ref.watch(topologyProvider);
+    treeController.roots = topologyState.onlineRoot.children;
+    treeController.expandAll();
     return Container(
       constraints: const BoxConstraints(minHeight: 200),
       child: ShimmerContainer(
@@ -47,18 +87,58 @@ class DashboardNetworks extends ConsumerWidget {
                 mobile: _mobile(context, ref),
               ),
               const AppGap.large2(),
-              // ...state.nodes.mapIndexed((index, e) => _nodeCard(context, ref, e)),
               SizedBox(
-                height: state.nodes.length * 88,
-                child: ListView.separated(
-                    physics: const NeverScrollableScrollPhysics(),
-                    shrinkWrap: true,
-                    itemBuilder: (context, index) {
-                      return _nodeCard(context, ref, state.nodes[index]);
+                  height: state.nodes.length * 88,
+                  child: TreeView<RouterTreeNode>(
+                    treeController: treeController,
+                    nodeBuilder: (BuildContext context,
+                        TreeEntry<RouterTreeNode> entry) {
+                      return TreeIndentation(
+                        entry: entry,
+                        guide: IndentGuide.connectingLines(
+                            color: Theme.of(context).colorScheme.onBackground,
+                            indent: 24,
+                            thickness: 1,
+                            strokeJoin: StrokeJoin.miter),
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(0, 16, 8, 0),
+                          child: AppTreeNodeItem(
+                            name: entry.node.data.location,
+                            image: CustomTheme.of(context)
+                                .images
+                                .devices
+                                .getByName(entry.node.data.icon),
+                            status: entry.node.data.isOnline
+                                ? loc(context).nDevices(
+                                    entry.node.data.connectedDeviceCount)
+                                : loc(context).offline,
+                            thirdLine: entry.node.data.isMaster
+                                ? '${loc(context).uptime}: $uptime'
+                                : null,
+                            tail: entry.node.data.isOnline
+                                ? Icon(
+                                    entry.node.data.isWiredConnection
+                                        ? WiFiUtils.getWifiSignalIconData(context, null)
+                                        : WiFiUtils.getWifiSignalIconData(context,
+                                            entry.node.data.signalStrength),
+                                  )
+                                : null,
+                            background: entry.node.data.isOnline
+                                ? Theme.of(context).colorScheme.surface
+                                : Theme.of(context).colorScheme.surfaceVariant,
+                            onTap: () {
+                              ref.read(nodeDetailIdProvider.notifier).state =
+                                  entry.node.data.deviceId;
+                              if (entry.node.data.isOnline) {
+                                // Update the current target Id for node state
+                                context.pushNamed(RouteNamed.nodeDetails);
+                              }
+                            },
+                          ),
+                        ),
+                      );
                     },
-                    separatorBuilder: (context, index) => const Divider(),
-                    itemCount: state.nodes.length),
-              )
+                  ))
             ],
           ),
         ),
@@ -228,51 +308,7 @@ class DashboardNetworks extends ConsumerWidget {
         callbackTags: const {});
   }
 
-  Widget _nodeCard(BuildContext context, WidgetRef ref, LinksysDevice node) {
-    return Opacity(
-      opacity: node.isOnline() ? 1 : 0.6,
-      child: AppListCard(
-        padding: const EdgeInsets.symmetric(vertical: Spacing.medium),
-        title: AppText.titleMedium(node.getDeviceLocation()),
-        description: AppText.bodyMedium(
-            loc(context).nDevices(node.connectedDevices.length)),
-        leading: Image(
-          semanticLabel: 'model image',
-          image: CustomTheme.of(context).images.devices.getByName(
-                routerIconTestByModel(modelNumber: node.modelNumber ?? ''),
-              ),
-          width: 40,
-          height: 40,
-        ),
-        trailing: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Icon(
-              node.isOnline()
-                  ? node.isAuthority | !node.isWirelessConnection()
-                      ? LinksysIcons.ethernet
-                      : getWifiSignalIconData(context, node.signalDecibels)
-                  : LinksysIcons.signalWifiNone,
-              semanticLabel: 'connection',
-            ),
-            if (!node.isAuthority &&
-                node.isWirelessConnection() &&
-                node.isOnline())
-              AppText.bodySmall('${node.signalDecibels} dBM'),
-            if (!node.isOnline()) AppText.bodySmall(loc(context).offline)
-          ],
-        ),
-        showBorder: false,
-        onTap: () {
-          ref.read(nodeDetailIdProvider.notifier).state = node.deviceID;
-          if (node.isOnline()) {
-            // Update the current target Id for node state
-            context.pushNamed(RouteNamed.nodeDetails);
-          }
-        },
-      ),
-    );
-  }
+  
 
   Widget _nodesInfoTile(
       BuildContext context, WidgetRef ref, DashboardHomeState state) {
@@ -290,7 +326,7 @@ class DashboardNetworks extends ConsumerWidget {
           : null,
       onTap: () {
         ref.read(topologySelectedIdProvider.notifier).state = '';
-        context.pushNamed(RouteNamed.settingsNodes);
+        context.pushNamed(RouteNamed.menuInstantTopology);
       },
     );
   }
@@ -306,7 +342,7 @@ class DashboardNetworks extends ConsumerWidget {
       count: count,
       iconData: LinksysIcons.devices,
       onTap: () {
-        context.goNamed(RouteNamed.dashboardDevices);
+        context.goNamed(RouteNamed.menuInstantDevices);
       },
     );
   }

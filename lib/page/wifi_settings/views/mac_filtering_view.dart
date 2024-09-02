@@ -62,6 +62,7 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView> {
       scrollable: true,
       appBarStyle: AppBarStyle.none,
       padding: EdgeInsets.zero,
+      useMainPadding: false,
       title: loc(context).macFiltering,
       bottomBar: PageBottomBar(
           isPositiveEnabled: _preservedState != state,

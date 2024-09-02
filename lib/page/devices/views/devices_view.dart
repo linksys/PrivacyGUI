@@ -13,6 +13,7 @@ import 'package:privacy_gui/page/devices/extensions/icon_device_category_ext.dar
 import 'package:privacy_gui/page/devices/views/device_list_widget.dart';
 import 'package:privacy_gui/page/devices/views/devices_filter_widget.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -220,7 +221,7 @@ class _DashboardDevicesState extends ConsumerState<DashboardDevices> {
         band: ResponsiveLayout.isMobileLayout(context) ? null : item.band,
         leading: IconDeviceCategoryExt.resolveByName(item.icon),
         trailing: item.isOnline
-            ? getWifiSignalIconData(
+            ? WiFiUtils.getWifiSignalIconData(
                 context, item.isWired ? null : item.signalStrength)
             : null,
         onSelected: _isEdit

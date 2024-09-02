@@ -10,6 +10,7 @@ import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/theme/material/color_tonal_palettes.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/buttons/popup_button.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
@@ -34,10 +35,11 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
       button: Semantics(
         identifier: 'now-topbar-icon-general-settings',
         label: 'general settings',
-        child: const Icon(
-          LinksysIcons.person,
-          size: 20,
-        ),
+        child: Icon(LinksysIcons.person,
+            size: 20,
+            color: Color(
+              neutralTonal.get(100),
+            )),
       ),
       borderRadius: const BorderRadius.all(Radius.circular(10)),
       backgroundColor: Theme.of(context).colorScheme.background,

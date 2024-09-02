@@ -16,9 +16,16 @@ class RoutePath {
   static const dashboardHome = '/dashboardHome';
   static const dashboardMenu = '/dashboardMenu';
   static const dashboardSupport = '/dashboardSupport';
-  static const dashboardDevices = 'dashboardDevices';
-  static const dashboardSettings = 'dashboardSettings';
-  static const dashboardAdvancedSettings = 'dashboardAdvancedSettings';
+
+  /// menu
+  static const menuInstantVerify = 'menuInstantVerify';
+  static const menuInstantDevices = 'menuInstantDevices';
+  static const menuIncredibleWiFi = 'menuIncredibleWiFi';
+  static const menuInstantTopology = 'menuInstantTopology';
+  static const menuInstantAdmin = 'menuInstantAdmin';
+  static const menuInstantSafety = 'menuInstantSafety';
+  static const menuInstantPrivacy = 'menuInstantPrivacy';
+  static const menuAdvancedSettings = 'dashboardAdvancedSettings';
 
   /// speed test
   static const dashboardSpeedTest = 'dashboardSpeedTest';
@@ -27,13 +34,9 @@ class RoutePath {
 
   /// settings
   static const settingsNotification = 'notificationSettings';
-  static const settingsWifi = 'wifiSettings';
-  static const settingsNodes = 'nodes';
-  static const settingsNetworkAdmin = 'routerAdmin';
   static const settingsTimeZone = 'timeZone';
   static const settingsInternet = 'internetSettings';
   static const settingsLocalNetwork = 'localNetworkSettings';
-  static const settingsMacFiltering = 'macFilteringSettings';
   static const settingsPort = 'portSettings';
   static const settingsFirewall = 'firewall';
   static const settingsDMZ = 'dmz';
@@ -154,9 +157,15 @@ class RouteNamed {
   static const dashboardMenu = 'dashboardMenu';
   static const dashboardHome = 'dashboardHome';
   static const dashboardSupport = 'dashboardSupport';
-  static const dashboardDevices = 'dashboardDevices';
-  static const dashboardSettings = 'dashboardSettings';
-  static const dashboardAdvancedSettings = 'dashboardAdvancedSettings';
+
+  static const menuInstantVerify = 'menuInstantVerify';
+  static const menuInstantDevices = 'menuInstantDevices';
+  static const menuIncredibleWiFi = 'menuIncredibleWiFi';
+  static const menuInstantTopology = 'menuInstantTopology';
+  static const menuInstantAdmin = 'menuInstantAdmin';
+  static const menuInstantSafety = 'menuInstantSafety';
+  static const menuInstantPrivacy = 'menuInstantPrivacy';
+  static const menuAdvancedSettings = 'menuAdvancedSettings';
 
   /// speed test
   static const dashboardSpeedTest = 'dashboardSpeedTest';
@@ -165,13 +174,9 @@ class RouteNamed {
 
   /// settings
   static const settingsNotification = 'notificationSettings';
-  static const settingsWifi = 'wifiSettings';
-  static const settingsNodes = 'nodes';
-  static const settingsNetworkAdmin = 'networkAdmin';
   static const settingsTimeZone = 'timeZone';
   static const settingsInternet = 'internetSettings';
   static const settingsLocalNetwork = 'localNetworkSettings';
-  static const settingsMacFiltering = 'macFilteringSettings';
   static const settingsPort = 'portSettings';
   static const settingsFirewall = 'firewall';
   static const settingsDMZ = 'dmz';
@@ -248,9 +253,6 @@ class RouteNamed {
   static const pnpIspTypeSelection = 'pnpIspTypeSelection';
   static const pnpStaticIp = 'pnpStaticIp';
   static const pnpIspSettingsAuth = 'pnpIspSettingsAuth';
-
-  /// Safe Browsing
-  static const safeBrowsing = 'safeBrowsing';
 
   /// Troubleshooting
   static const troubleshooting = 'troubleshooting';

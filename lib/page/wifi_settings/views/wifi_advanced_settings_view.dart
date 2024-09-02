@@ -51,6 +51,7 @@ class _WifiAdvancedSettingsViewState
     return StyledAppPageView(
       appBarStyle: AppBarStyle.none,
       padding: EdgeInsets.zero,
+      useMainPadding: false,
       bottomBar: PageBottomBar(
           isPositiveEnabled: _preservedState != ref.read(wifiAdvancedProvider),
           onPositiveTap: () {

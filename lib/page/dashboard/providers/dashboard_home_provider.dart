@@ -35,8 +35,9 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
     final wifiList = dashboardManagerState.mainRadios
         .groupFoldBy<String, List<RouterRadio>>(
             (element) =>
-                element.settings.ssid +
-                (element.settings.wpaPersonalSettings?.passphrase ?? ''),
+                // element.settings.ssid +
+                // (element.settings.wpaPersonalSettings?.passphrase ?? ''),
+                element.band,
             (previous, element) => [...(previous ?? []), element])
         .entries
         .map((e) => DashboardWiFiItem.fromMainRadios(

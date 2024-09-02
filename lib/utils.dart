@@ -6,11 +6,14 @@ import 'dart:math';
 import 'package:collection/collection.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
+import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/util/uuid.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:share_plus/share_plus.dart';
 import 'core/utils/logger.dart';
 import 'core/utils/storage.dart';
@@ -535,5 +538,49 @@ extension NetworkUtils on Utils {
     }
 
     return maxUserLimit - startingIPAddress - 1;
+  }
+}
+
+extension WiFiUtils on Utils {
+  static IconData getWifiSignalIconData(
+      BuildContext context, int? signalStrength) {
+    switch (getWifiSignalLevel(signalStrength)) {
+      case NodeSignalLevel.excellent:
+        return LinksysIcons.signalWifi4Bar;
+      case NodeSignalLevel.good:
+        return LinksysIcons.networkWifi3Bar;
+      case NodeSignalLevel.fair:
+        return LinksysIcons.networkWifi2Bar;
+      case NodeSignalLevel.poor:
+        return LinksysIcons.networkWifi1Bar;
+      case NodeSignalLevel.none:
+        return LinksysIcons.signalWifi0Bar;
+// Default
+      case NodeSignalLevel.wired:
+        return LinksysIcons.ethernet;
+    }
+  }
+}
+
+extension NodeSignalLevelExt on NodeSignalLevel {
+  String resolveLabel(BuildContext context) {
+    return switch (this) {
+      NodeSignalLevel.excellent => loc(context).excellent,
+      NodeSignalLevel.poor => loc(context).poor,
+      NodeSignalLevel.good => loc(context).good,
+      NodeSignalLevel.fair => loc(context).fair,
+      NodeSignalLevel.wired => loc(context).wired,
+      NodeSignalLevel.none => '',
+    };
+  }
+  Color resolveColor(BuildContext context) {
+    return switch (this) {
+      NodeSignalLevel.excellent => Colors.green,
+      NodeSignalLevel.poor => Colors.green,
+      NodeSignalLevel.good => Colors.yellow,
+      NodeSignalLevel.fair => Colors.red,
+      NodeSignalLevel.wired => Colors.green,
+      NodeSignalLevel.none => Colors.black,
+    };
   }
 }
