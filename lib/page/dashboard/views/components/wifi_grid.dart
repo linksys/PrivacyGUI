@@ -28,8 +28,8 @@ class DashboardWiFiGrid extends ConsumerWidget {
         ref.watch(dashboardHomeProvider.select((value) => value.wifis));
     final isLoading = ref.watch(deviceManagerProvider).deviceList.isEmpty;
 
-    final crossAxisCount =
-        (ResponsiveLayout.isMobileLayout(context) || !isHorizontal) ? 1 : 2;
+    final crossAxisCount = 2;
+    // (ResponsiveLayout.isMobileLayout(context) || !isHorizontal) ? 1 : 2;
     final mainSpacing = ResponsiveLayout.columnPadding(context);
     const itemHeight = 176.0;
     final mainAxisCount = (items.length / crossAxisCount);
@@ -37,11 +37,12 @@ class DashboardWiFiGrid extends ConsumerWidget {
       height: isLoading
           ? itemHeight * 2 + mainSpacing * 1
           : mainAxisCount * itemHeight +
-              ((mainAxisCount == 0 ? 1 : mainAxisCount) - 1) * mainSpacing,
+              ((mainAxisCount == 0 ? 1 : mainAxisCount) - 1) * mainSpacing +
+              100,
       child: GridView.builder(
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: crossAxisCount,
-          mainAxisSpacing: mainSpacing,
+          mainAxisSpacing: Spacing.medium,
           crossAxisSpacing: mainSpacing,
           // childAspectRatio: (3 / 2),
           mainAxisExtent: itemHeight,
@@ -110,7 +111,11 @@ class DashboardWiFiGrid extends ConsumerWidget {
             ],
           ),
           const AppGap.medium(),
-          AppText.titleMedium(item.ssid),
+          AppText.titleMedium(
+            item.ssid,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
           const AppGap.medium(),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -138,7 +143,7 @@ class DashboardWiFiGrid extends ConsumerWidget {
         ],
       ),
       onTap: () {
-        context.pushNamed(RouteNamed.settingsWifi,
+        context.pushNamed(RouteNamed.menuIncredibleWiFi,
             extra: {'wifiIndex': index, 'guest': item.isGuest});
       },
     );

@@ -113,6 +113,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
           onPositiveTap: () {
             _showSaveConfirmModal();
           }),
+      useMainPadding: false,
       child: switch (_mode) {
         WiFiListViewMode.simple => _simpleWiFiView(),
         WiFiListViewMode.advanced => _advancedWiFiView(),

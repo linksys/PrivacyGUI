@@ -1,12 +1,15 @@
+
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:privacygui_widgets/widgets/container/responsive_column_layout.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/page/base_page_view.dart';
@@ -124,6 +127,8 @@ class StyledAppPageView extends ConsumerWidget {
   final PageBottomBar? bottomBar;
   final bool menuOnRight;
   final bool largeMenu;
+  final Widget? topbar;
+  final bool useMainPadding;
 
   const StyledAppPageView({
     super.key,
@@ -148,10 +153,50 @@ class StyledAppPageView extends ConsumerWidget {
     this.bottomBar,
     this.menuOnRight = false,
     this.largeMenu = false,
+    this.topbar,
+    this.useMainPadding = true,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final pageRoute = GoRouter.of(context)
+        .routerDelegate
+        .currentConfiguration
+        .routes
+        .last as LinksysRoute?;
+    final config = pageRoute?.config;
+    return useMainPadding
+        ? AppResponsiveColumnLayout(
+            column: config?.column?.column,
+            centered: config?.column?.centered ?? false,
+            isShowNaviRail: LinksysRoute.isShowNaviRail(context, config),
+            // topWidget: const TopBar(),
+            builder: () => buildMainContent(context, ref),
+            // showColumnOverlay: showColumnOverlay,
+          )
+        : buildMainContent(context, ref);
+    // return buildMainContent(context, ref);
+  }
+
+  Widget buildPageView(BuildContext context, WidgetRef ref) {
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints viewportConstraints) {
+        return SingleChildScrollView(
+          controller: controller,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: viewportConstraints.maxHeight,
+            ),
+            child: IntrinsicHeight(
+              child: buildMainContent(context, ref),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget buildMainContent(BuildContext context, WidgetRef ref) {
     final views = [
       if (!ResponsiveLayout.isMobileLayout(context) && hasMenu()) ...[
         SizedBox(

@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
+import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
+import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dart';
+import 'package:privacy_gui/page/components/styled/top_bar.dart';
 import 'package:privacy_gui/page/dashboard/views/dashboard_navigation_rail.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
@@ -17,19 +20,6 @@ import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacy_gui/util/debug_mixin.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
-
-enum NaviType {
-  home,
-  menu,
-  support,
-  ;
-
-  String resloveLabel(BuildContext context) => switch (this) {
-        NaviType.home => loc(context).home,
-        NaviType.menu => loc(context).menu,
-        NaviType.support => loc(context).support,
-      };
-}
 
 class DashboardShell extends ArgumentsConsumerStatefulView {
   const DashboardShell({
@@ -74,25 +64,52 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
 
     final showNavi = LinksysRoute.isShowNaviRail(context, pageRoute?.config);
 
-    return StyledAppPageView(
-        backState: StyledBackState.none,
-        appBarStyle: AppBarStyle.none,
-        handleNoConnection: true,
-        handleBanner: true,
-        padding: const EdgeInsets.only(),
-        bottomNavigationBar:
-            ResponsiveLayout.isMobileLayout(context) && showNavi
-                ? NavigationBar(
-                    selectedIndex: _selectedIndex,
-                    destinations: _dashboardNaviItems
-                        .map((e) => _bottomSheetIconView(e))
-                        .toList(),
-                    onDestinationSelected: _onItemTapped,
-                    indicatorColor: Theme.of(context).colorScheme.primary,
-                    elevation: 0,
-                  )
-                : null,
-        child: _buildLayout());
+    return Scaffold(
+      // appBar: PreferredSize(
+      //     preferredSize: Size(0, 80),
+      //     child: TopBar(
+      //       onMenuClick:
+      //           ResponsiveLayout.isMobileLayout(context) ? null : _onItemTapped,
+      //     )),
+      body: _buildLayout(),
+      bottomNavigationBar: MenuHolder(
+        builder: (context, controller) {
+          return controller.displayType == MenuDisplay.bottom
+              ? NavigationBar(
+                  selectedIndex: controller.items.indexOf(controller.selected),
+                  destinations: _dashboardNaviItems
+                      .map((e) => _bottomSheetIconView(e))
+                      .toList(),
+                  onDestinationSelected: (index) {
+                    final selected = controller.items[index];
+                    controller.select(selected);
+                  },
+                  indicatorColor: Theme.of(context).colorScheme.primary,
+                  elevation: 0,
+                )
+              : const SizedBox();
+        },
+      ),
+    );
+    // return StyledAppPageView(
+    //     backState: StyledBackState.none,
+    //     appBarStyle: AppBarStyle.none,
+    //     handleNoConnection: true,
+    //     handleBanner: true,
+    //     padding: const EdgeInsets.only(),
+    //     bottomNavigationBar:
+    //         ResponsiveLayout.isMobileLayout(context) && showNavi
+    //             ? NavigationBar(
+    //                 selectedIndex: _selectedIndex,
+    //                 destinations: _dashboardNaviItems
+    //                     .map((e) => _bottomSheetIconView(e))
+    //                     .toList(),
+    //                 onDestinationSelected: _onItemTapped,
+    //                 indicatorColor: Theme.of(context).colorScheme.primary,
+    //                 elevation: 0,
+    //               )
+    //             : null,
+    //     child: _buildLayout());
   }
 
   Widget _buildLayout() {
@@ -107,6 +124,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
         .last as LinksysRoute?;
 
     final showNavi = LinksysRoute.isShowNaviRail(context, pageRoute?.config);
+    return widget.child;
     return ResponsiveLayout.isOverLargeLayout(context)
         ? Stack(
             children: [

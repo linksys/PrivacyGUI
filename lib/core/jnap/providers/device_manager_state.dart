@@ -295,21 +295,6 @@ class DeviceManagerState extends Equatable {
   }
 }
 
-enum NodeSignalLevel {
-  wired(displayTitle: 'Wired'),
-  none(displayTitle: 'No signal'),
-  weak(displayTitle: 'Weak'),
-  good(displayTitle: 'Good'),
-  fair(displayTitle: 'Fair'),
-  excellent(displayTitle: 'Excellent');
-
-  const NodeSignalLevel({
-    required this.displayTitle,
-  });
-
-  final String displayTitle;
-}
-
 enum WifiConnectionType {
   main('main'),
   guest('guest');

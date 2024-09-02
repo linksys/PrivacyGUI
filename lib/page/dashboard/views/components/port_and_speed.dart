@@ -2,14 +2,12 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
 import 'package:privacy_gui/page/dashboard/views/components/shimmer.dart';
-import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
@@ -198,103 +196,119 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
     final dateTimeStr = dateTime == null
         ? ''
         : loc(context).speedCheckLatestTime(dateTime, dateTime);
-    return state.isHealthCheckSupported
-        ? Container(
-            key: const ValueKey('speedCheck'),
-            color: Theme.of(context).colorSchemeExt.surfaceContainerLow,
-            padding: const EdgeInsets.all(48.0),
-            child: Column(
-              children: [
-                AppText.bodySmall(dateTimeStr),
-                const AppGap.large2(),
-                ResponsiveLayout(
-                    desktop: horizontalLayout
-                        ? Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Opacity(
-                                  opacity: isLegacy ? 0.6 : 1,
-                                  child: _downloadSpeedResult(
-                                      context,
-                                      state.downloadResult?.value ?? '--',
-                                      state.downloadResult?.unit,
-                                      isLegacy),
-                                ),
-                              ),
-                              Expanded(
-                                child: Opacity(
-                                  opacity: isLegacy ? 0.6 : 1,
-                                  child: _uploadSpeedResult(
-                                      context,
-                                      state.uploadResult?.value ?? '--',
-                                      state.uploadResult?.unit,
-                                      isLegacy),
-                                ),
-                              ),
-                              Expanded(
-                                child: _speedTestButton(context),
-                              )
-                            ],
-                          )
-                        : Column(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            children: [
-                                _downloadSpeedResult(
-                                    context,
-                                    state.downloadResult?.value ?? '--',
-                                    state.downloadResult?.unit,
-                                    isLegacy),
-                                const AppGap.large2(),
-                                _uploadSpeedResult(
-                                    context,
-                                    state.uploadResult?.value ?? '--',
-                                    state.uploadResult?.unit,
-                                    isLegacy),
-                                const AppGap.large2(),
-                                _speedTestButton(context),
-                              ]),
-                    mobile: Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
+    return Opacity(
+      opacity: state.isHealthCheckSupported ? 1 : .5,
+      child: AbsorbPointer(
+        absorbing: !state.isHealthCheckSupported,
+        child: Container(
+          key: const ValueKey('speedCheck'),
+          color: Theme.of(context).colorSchemeExt.surfaceContainerLow,
+          padding: const EdgeInsets.symmetric(
+              vertical: Spacing.large2, horizontal: Spacing.large4),
+          child: Column(
+            crossAxisAlignment: horizontalLayout
+                ? CrossAxisAlignment.start
+                : CrossAxisAlignment.center,
+            children: [
+              AppText.bodySmall(dateTimeStr),
+              const AppGap.small2(),
+              ResponsiveLayout(
+                  desktop: horizontalLayout
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Opacity(
+                                opacity: isLegacy ? 0.6 : 1,
                                 child: _downloadSpeedResult(
                                     context,
                                     state.downloadResult?.value ?? '--',
                                     state.downloadResult?.unit,
-                                    isLegacy,
-                                    WrapAlignment.center),
+                                    isLegacy),
                               ),
-                              const AppGap.large2(),
-                              Expanded(
+                            ),
+                            Expanded(
+                              child: Opacity(
+                                opacity: isLegacy ? 0.6 : 1,
                                 child: _uploadSpeedResult(
                                     context,
                                     state.uploadResult?.value ?? '--',
                                     state.uploadResult?.unit,
-                                    isLegacy,
-                                    WrapAlignment.center),
+                                    isLegacy),
                               ),
-                            ],
-                          ),
-                          const AppGap.large2(),
-                          _speedTestButton(context),
-                        ]))
-              ],
-            ),
-          )
-        : const Center();
+                            ),
+                            Expanded(
+                              child: _speedTestButton(context),
+                            )
+                          ],
+                        )
+                      : Column(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                              _downloadSpeedResult(
+                                  context,
+                                  state.downloadResult?.value ?? '--',
+                                  state.downloadResult?.unit,
+                                  isLegacy),
+                              const AppGap.large2(),
+                              _uploadSpeedResult(
+                                  context,
+                                  state.uploadResult?.value ?? '--',
+                                  state.uploadResult?.unit,
+                                  isLegacy),
+                              const AppGap.large2(),
+                              _speedTestButton(context),
+                            ]),
+                  mobile: Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: _downloadSpeedResult(
+                                  context,
+                                  state.downloadResult?.value ?? '--',
+                                  state.downloadResult?.unit,
+                                  isLegacy,
+                                  WrapAlignment.center),
+                            ),
+                            const AppGap.large2(),
+                            Expanded(
+                              child: _uploadSpeedResult(
+                                  context,
+                                  state.uploadResult?.value ?? '--',
+                                  state.uploadResult?.unit,
+                                  isLegacy,
+                                  WrapAlignment.center),
+                            ),
+                          ],
+                        ),
+                        const AppGap.large2(),
+                        _speedTestButton(context),
+                      ]))
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _speedTestButton(BuildContext context) {
-    return AppTextButton.noPadding(
-      loc(context).speedTest,
-      icon: LinksysIcons.networkCheck,
-      onTap: () {
-        context.pushNamed(RouteNamed.dashboardSpeedTest);
-      },
+    // return AppTextButton.noPadding(
+    //   loc(context).speedTest,
+    //   icon: LinksysIcons.networkCheck,
+    //   onTap: () {
+    //     context.pushNamed(RouteNamed.dashboardSpeedTest);
+    //   },
+    // );
+    return InkResponse(
+      onTap: () {},
+      child: SvgPicture(
+        CustomTheme.of(context).images.btnCheckSpeeds,
+        width: 64,
+        height: 64,
+      ),
     );
   }
 

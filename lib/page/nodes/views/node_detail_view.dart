@@ -18,6 +18,7 @@ import 'package:privacy_gui/page/devices/_devices.dart';
 import 'package:privacy_gui/page/nodes/_nodes.dart';
 import 'package:privacy_gui/page/nodes/views/connected_device_widget.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/hook/icon_hooks.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
@@ -216,7 +217,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
                     ? null
                     : _checkEmptyValue('${state.signalStrength} dBM'),
                 trailing: Icon(
-                  getWifiSignalIconData(
+                  WiFiUtils.getWifiSignalIconData(
                     context,
                     state.isWiredConnection ? null : state.signalStrength,
                   ),

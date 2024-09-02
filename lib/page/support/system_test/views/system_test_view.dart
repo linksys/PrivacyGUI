@@ -49,7 +49,6 @@ class SystemTestView extends ArgumentsConsumerStatelessView {
             _topologyView(),
           ];
     return StyledAppTabPageView(
-      backState: StyledBackState.none,
       title: 'System Test',
       actions: [
         AppTextButton(

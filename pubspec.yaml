@@ -51,7 +51,7 @@ dependencies:
   share_plus: ^7.1.0
   package_info_plus: ^4.1.0
   phone_numbers_parser: ^8.3.0
-  uuid: ^3.0.6
+  uuid: ^4.4.2
   flutter_inappwebview: ^5.7.0
   shared_preferences: ^2.0.15
   qr_flutter: ^4.0.0
@@ -75,6 +75,7 @@ dependencies:
   shimmer: ^3.0.0
   http_parser: ^4.0.2
   meta: ^1.11.0
+  flutter_fancy_tree_view: ^1.6.0
 
 dev_dependencies:
   flutter_test:

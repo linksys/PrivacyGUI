@@ -12,6 +12,7 @@ import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/nodes/providers/node_detail_id_provider.dart';
 import 'package:privacy_gui/page/topology/_topology.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/hook/icon_hooks.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
@@ -111,9 +112,10 @@ class _TopologyViewState extends ConsumerState<TopologyView> {
       tail: node.data.isOnline
           ? Icon(
               node.data.isWiredConnection
-                  ? getWifiSignalIconData(context, null)
-                  : getWifiSignalIconData(context, node.data.signalStrength),
-              semanticLabel: 'signal Strength',
+                  ? WiFiUtils.getWifiSignalIconData(context, null)
+                  : WiFiUtils.getWifiSignalIconData(
+                      context, node.data.signalStrength),
+              semanticLabel: 'signal strength icon',
             )
           : null,
       background: node.data.isOnline
@@ -136,9 +138,9 @@ class _TopologyViewState extends ConsumerState<TopologyView> {
       tail: node.data.isOnline
           ? Icon(
               node.data.isWiredConnection
-                  ? getWifiSignalIconData(context, null)
-                  : getWifiSignalIconData(context, node.data.signalStrength),
-              semanticLabel: 'signal Strength',
+                  ? WiFiUtils.getWifiSignalIconData(context, null)
+                  : WiFiUtils.getWifiSignalIconData(context, node.data.signalStrength),
+              semanticLabel: 'signal strength icon',
             )
           : null,
       background: node.data.isOnline
@@ -338,7 +340,7 @@ class _TopologyViewState extends ConsumerState<TopologyView> {
         .deleteDevices(deviceIds: [targetId]).then((value) {
       setState(() {
         _isLoading = false;
-        context.goNamed(RouteNamed.settingsNodes);
+        context.goNamed(RouteNamed.menuInstantTopology);
       });
     }).onError((error, stackTrace) {
       logger.e(error.toString());

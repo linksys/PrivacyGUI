@@ -1,21 +1,29 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
+import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dart';
+import 'package:privacy_gui/page/components/styled/menus/widgets/top_navigation_menu.dart';
+import 'package:privacygui_widgets/theme/material/color_tonal_palettes.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
+
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/general_settings_widget/general_settings_widget.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/select_network/_select_network.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/util/debug_mixin.dart';
 import 'package:privacy_gui/utils.dart';
-import 'package:privacygui_widgets/theme/custom_theme.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 
 class TopBar extends ConsumerStatefulWidget {
-  const TopBar({super.key});
+  final void Function(int)? onMenuClick;
+  const TopBar({
+    super.key,
+    this.onMenuClick,
+  });
 
   @override
   ConsumerState<ConsumerStatefulWidget> createState() => _TopBarState();
@@ -37,7 +45,7 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
           }
         },
         child: Container(
-          color: Theme.of(context).colorScheme.background,
+          color: Color(neutralTonal.get(6)),
           height: 56,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
@@ -49,17 +57,21 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    (loginType == LoginType.none ||
-                            ResponsiveLayout.isMobileLayout(context))
-                        ? SvgPicture(
-                            CustomTheme.of(context).images.linksysLogoBlack,
-                            width: 20,
-                            height: 20,
-                          )
-                        : const SizedBox(
-                            width: 20,
-                            height: 20,
-                          ),
+                    AppText.titleLarge(loc(context).appTitle,
+                        color: Color(neutralTonal.get(100))),
+                    MenuHolder(
+                      builder: (context, controller) {
+                        return controller.displayType == MenuDisplay.top
+                            ? NavigationMenu(
+                                items: controller.items,
+                                selected: controller.selected,
+                                onItemClick: (index) {
+                                  controller.select(controller.items[index]);
+                                },
+                              )
+                            : const Center();
+                      },
+                    ),
                     Wrap(
                       children: [
                         if (loginType == LoginType.remote) _networkSelect(),
@@ -108,6 +120,9 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
           AppText.labelMedium(
             dashboardHomeState.mainSSID,
             overflow: TextOverflow.fade,
+            color: Color(
+              neutralTonal.get(100),
+            ),
           ),
         ],
       ),

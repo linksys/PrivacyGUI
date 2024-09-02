@@ -14,6 +14,7 @@ import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/devices/_devices.dart';
 import 'package:privacy_gui/page/devices/extensions/icon_device_category_ext.dart';
+import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
@@ -140,7 +141,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
                 ? null
                 : _formatEmptyValue('${state.item.signalStrength} dBM'),
             trailing: Icon(
-              getWifiSignalIconData(
+              WiFiUtils.getWifiSignalIconData(
                 context,
                 state.item.isWired ? null : state.item.signalStrength,
               ),

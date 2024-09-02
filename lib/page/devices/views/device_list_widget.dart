@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/page/devices/extensions/icon_device_category_ext.dart';
 import 'package:privacy_gui/page/devices/providers/device_list_state.dart';
+import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/card/device_list_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
@@ -77,7 +78,7 @@ class _DeviceListWidgetState extends ConsumerState<DeviceListWidget> {
                     : item.band,
         leading: IconDeviceCategoryExt.resolveByName(item.icon),
         trailing: item.isOnline
-            ? getWifiSignalIconData(
+            ? WiFiUtils.getWifiSignalIconData(
                 context, item.isWired ? null : item.signalStrength)
             : null,
         onSelected: widget.isEdit

@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/page/devices/extensions/icon_device_category_ext.dart';
+import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/card/device_list_card.dart';
@@ -68,7 +69,7 @@ class _DeviceListWidgetState extends ConsumerState<ConnectedDeviceListWidget> {
             widget.onItemClick?.call(item);
           }
         },
-        trailing: getWifiSignalIconData(
+        trailing: WiFiUtils.getWifiSignalIconData(
             context, !item.isWirelessConnection() ? null : item.signalDecibels),
       ),
     );

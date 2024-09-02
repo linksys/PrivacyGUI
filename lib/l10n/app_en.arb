@@ -102,7 +102,6 @@
   "restartNetwork": "Restart Network",
   "menuSetupANewProduct": "Setup a New Product",
   "account": "Account",
-  "menuRouterAndNodes": "Router and nodes",
   "speedTest": "Speed Test",
   "safeBrowsing": "Safe Browsing",
   "familyTime": "Family Time",
@@ -360,12 +359,6 @@
   "routerPasswordRuleLowerUpper": "Upper and lowercase letters",
   "routerPasswordRuleOneNumber": "1 number",
   "routerPasswordRuleSpecialChar": "1 special character",
-  "menuWifiDesc": "Change WiFi name and password",
-  "menuAdminDesc": "Router password, Time zone, Warranty",
-  "menuRouterAndNodesDesc": "Node name and light settings",
-  "menuSpeedTestDesc": "Test your upload and download speeds",
-  "menuSafeBrowsingDesc": "Block inappropriate web content",
-  "menuNetworkAdminDesc": "Router password, Firmware updates, Timezone, Warranty",
   "localNetwork": "Local Network",
   "advancedRouting": "Advanced Routing",
   "firewall": "Firewall",
@@ -819,5 +812,49 @@
       }
     }
   },
-  "loading": "Loading"
+  "loading": "Loading",
+  "formalDateTime": "{time} {date}",
+  "@formalDateTime": {
+    "description": "date and time",
+    "placeholders": {
+      "time": {
+        "type": "DateTime",
+        "format": "jm"
+      },
+      "date": {
+        "type": "DateTime",
+        "format": "yMMMd"
+      }
+    }
+  },
+  "checkSpeeds": "Check Speeds",
+  "instantPrivacy": "Instant-Privacy",
+  "instantPrivacyDesc": "Lock your network",
+  "instantVerify": "Instant-Verify",
+  "instantVerifyDesc": "Designed for certified Network technician",
+  "instantDevices": "Instant-Devices",
+  "instantDevicesDesc": "Manage connected devices",
+  "instantSafety": "Instant-Safety",
+  "instantSafetyDesc": "Block inappropriate web content",
+  "instantTopology": "Instant-Topoloay",
+  "instantTopologyDesc": "Node name and light settings",
+  "instantAdmin": "Instant-Admin",
+  "instantAdminDesc": "Router password, Firmware updates, Time zone, Warranty",
+  "incredibleWiFi": "Incredible-WiFi",
+  "incredibleWiFiDesc": "Change WiFi name and password",
+  "serialNo": "Serial#",
+  "fwVersion": "FW Version",
+  "connection": "Connection",
+  "meshHealth": "Mesh Health",
+  "updated": "Updated",
+  "available": "Available",
+  "blinkDeviceLight": "Blink Device Light",
+  "rebootUnit": "Reboot Unit",
+  "instantPair": "Instant Pair",
+  "resetToFactoryDefault": "Reset to Factory Default",
+  "instantAction": "Inatant-Actions",
+  "excellent": "Excellent",
+  "good": "Good",
+  "fair": "Fair",
+  "poor": "Poor"
 }

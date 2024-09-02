@@ -37,7 +37,9 @@ class TopologyNotifier extends Notifier<TopologyState> {
     //     : _buildRouterTopology(deviceManagerState);
     return OnlineTopologyNode(
         data: const TopologyModel(isOnline: true, location: 'Internet'),
-        children: [_buildRouterTopology(deviceManagerState, selectId)]);
+        children: deviceManagerState.deviceList.isEmpty
+            ? []
+            : [_buildRouterTopology(deviceManagerState, selectId)]);
   }
 
   RouterTreeNode _buildOfflineRootNode(DeviceManagerState deviceManagerState) {

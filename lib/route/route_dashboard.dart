@@ -19,23 +19,7 @@ final dashboardRoute = ShellRoute(
             path: RoutePath.linkup,
             builder: (context, state) => LinkupView(),
           ),
-          LinksysRoute(
-            name: RouteNamed.safeBrowsing,
-            path: RoutePath.safeBrowsing,
-            config: LinksysRouteConfig(
-              column: ColumnGrid(column: 9),
-            ),
-            builder: (context, state) => const SafeBrowsingView(),
-          ),
-          LinksysRoute(
-            name: RouteNamed.dashboardAdvancedSettings,
-            path: RoutePath.dashboardAdvancedSettings,
-            config: LinksysRouteConfig(
-              column: ColumnGrid(column: 9),
-            ),
-            builder: (context, state) => const DashboardAdvancedSettingsView(),
-            routes: advancedSettings,
-          ),
+          ...menus,
         ]),
     LinksysRoute(
       name: RouteNamed.dashboardHome,
@@ -47,32 +31,7 @@ final dashboardRoute = ShellRoute(
           path: RoutePath.wifiShare,
           builder: (context, state) => WiFiShareTabView(),
         ),
-        LinksysRoute(
-          name: RouteNamed.dashboardDevices,
-          path: RoutePath.dashboardDevices,
-          config: LinksysRouteConfig(
-            column: ColumnGrid(column: 12),
-          ),
-          builder: (context, state) => DashboardDevices(),
-          routes: [
-            LinksysRoute(
-              name: RouteNamed.deviceDetails,
-              path: RoutePath.deviceDetails,
-              config: LinksysRouteConfig(
-                column: ColumnGrid(column: 12),
-              ),
-              builder: (context, state) => DeviceDetailView(),
-            ),
-          ],
-        ),
-        LinksysRoute(
-            name: RouteNamed.dashboardSettings,
-            path: RoutePath.dashboardSettings,
-            config: LinksysRouteConfig(
-              column: ColumnGrid(column: 9),
-            ),
-            builder: (context, state) => DashboardSettingsView(),
-            routes: settings),
+        
         LinksysRoute(
           name: RouteNamed.speedTestSelection,
           path: RoutePath.speedTestSelection,
