@@ -23,6 +23,8 @@ import 'package:privacy_gui/page/landing/_landing.dart';
 import 'package:privacy_gui/page/linkup/views/linkup_view.dart';
 import 'package:privacy_gui/page/login/views/_views.dart';
 import 'package:privacy_gui/page/login/views/local_reset_router_password_view.dart';
+import 'package:privacy_gui/page/login/views/login_cloud_ra_pin_view.dart';
+import 'package:privacy_gui/page/login/views/login_cloud_ra_view.dart';
 import 'package:privacy_gui/page/network_admin/_network_admin.dart';
 import 'package:privacy_gui/page/nodes/_nodes.dart';
 import 'package:privacy_gui/page/nodes/views/add_nodes_view.dart';

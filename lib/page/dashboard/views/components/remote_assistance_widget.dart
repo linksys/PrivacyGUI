@@ -1,102 +1,37 @@
-import 'dart:async';
-
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_remote_assistance_info.dart';
-import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/styled/consts.dart';
-import 'package:privacy_gui/page/components/views/arguments_view.dart';
-import 'package:flutter/material.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/providers/auth/ra_session_provider.dart';
-import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/bullet_list/bullet_list.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class DashboardSupportView extends ArgumentsBaseConsumerStatefulView {
-  const DashboardSupportView({super.key, super.args});
+class RemoteAssistanceWidget extends ConsumerStatefulWidget {
+  final Widget child;
+  const RemoteAssistanceWidget({
+    super.key,
+    required this.child,
+  });
 
   @override
-  ConsumerState<DashboardSupportView> createState() =>
-      _DashboardSupportViewState();
+  ConsumerState<RemoteAssistanceWidget> createState() =>
+      _RemoteAssistanceWidgetState();
 }
 
-class _DashboardSupportViewState extends ConsumerState<DashboardSupportView> {
-
+class _RemoteAssistanceWidgetState
+    extends ConsumerState<RemoteAssistanceWidget> {
   @override
   Widget build(BuildContext context) {
-    return StyledAppPageView(
-      backState: StyledBackState.none,
-      title: loc(context).support,
-      enableSafeArea: (left: true, top: false, right: true, bottom: true),
-      child: LayoutBuilder(builder: (context, constraints) {
-        return ResponsiveLayout(
-            desktop: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  width: 6.col,
-                  child: supportCards(context, ref),
-                ),
-              ],
-            ),
-            mobile: supportCards(context, ref));
-      }),
+    return InkWell(
+      onTap: _doRemoteAssistance,
+      child: widget.child,
     );
   }
-
-  Widget supportCards(BuildContext context, WidgetRef ref) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SupportOptionCard(
-            icon: const Icon(
-              LinksysIcons.faq,
-              semanticLabel: 'faq',
-            ),
-            title: loc(context).dashboardSupportFAQTitle,
-            description: loc(context).dashboardSupportFAQDesc,
-            tapAction: () {
-              context.pushNamed(RouteNamed.faqList);
-            },
-          ),
-          // const AppGap.small2(),
-          // SupportOptionCard(
-          //   icon: const Icon(LinksysIcons.supportAgent),
-          //   title: loc(context).dashboardSupportCallbackTitle,
-          //   description: loc(context).dashboardSupportCallbackDesc,
-          //   tapAction: () {
-          //     context.pushNamed(RouteNamed.callbackDescription);
-          //   },
-          // ),
-          const AppGap.small2(),
-          SupportOptionCard(
-            icon: const Icon(LinksysIcons.call),
-            title: loc(context).dashboardSupportCallSupportTitle,
-            description: loc(context).dashboardSupportCallSupportDesc,
-            tapAction: () {
-              context.pushNamed(RouteNamed.callSupportMainRegion);
-            },
-          ),
-
-          const AppGap.small2(),
-          SupportOptionCard(
-            icon: const Icon(LinksysIcons.help),
-            title: 'Remote Assistance',
-            description: '',
-            tapAction: () {
-              _doRemoteAssistance();
-            },
-          ),
-        ],
-      );
 
   void _doRemoteAssistance() {
     ref.read(raSessionProvider.notifier).raGenPin().then((pin) {
@@ -260,41 +195,5 @@ class _DashboardSupportViewState extends ConsumerState<DashboardSupportView> {
         icon: const Icon(LinksysIcons.error),
         title: 'Remote assistance',
         content: AppText.labelLarge('Error! Session is in progress'));
-  }
-}
-
-class SupportOptionCard extends StatelessWidget {
-  final Icon icon;
-  final String title;
-  final String description;
-  final VoidCallback? tapAction;
-
-  const SupportOptionCard({
-    required this.icon,
-    required this.title,
-    required this.description,
-    this.tapAction,
-    super.key,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: AppCard(
-        onTap: tapAction,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            icon,
-            const AppGap.small2(),
-            AppText.titleSmall(title),
-            const AppGap.small2(),
-            AppText.bodyMedium(description),
-          ],
-        ),
-      ),
-    );
   }
 }

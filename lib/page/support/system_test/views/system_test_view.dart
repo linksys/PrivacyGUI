@@ -4,6 +4,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
@@ -24,6 +25,9 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+import 'package:pdf/pdf.dart';
 
 class SystemTestView extends ArgumentsConsumerStatelessView {
   const SystemTestView({
@@ -41,7 +45,7 @@ class SystemTestView extends ArgumentsConsumerStatelessView {
             SingleChildScrollView(child: _deviceInfoCard(context, ref)),
             SingleChildScrollView(
                 child: _connectivityContentWidget(context, ref)),
-            _speedTestContent(context),
+            SingleChildScrollView(child: _speedTestContent(context)),
             _topologyView(),
           ]
         : [
@@ -54,7 +58,9 @@ class SystemTestView extends ArgumentsConsumerStatelessView {
         AppTextButton(
           'Print',
           icon: LinksysIcons.person,
-          onTap: () {},
+          onTap: () {
+            _printPdf(context, ref);
+          },
         )
       ],
       tabs: tabs.map((e) => AppTab(title: e)).toList(),
@@ -606,5 +612,48 @@ class SystemTestView extends ArgumentsConsumerStatelessView {
       title: 'Traceroute',
       content: const TracerouteModal(),
     );
+  }
+
+  Future<void> _printPdf(BuildContext context, WidgetRef ref) async {
+    final dashboardState = ref.read(dashboardManagerProvider);
+    final devicesState = ref.read(deviceManagerProvider);
+    final uptime = DateFormatUtils.formatDuration(
+        Duration(seconds: dashboardState.uptimes), context);
+    final master = devicesState.masterDevice;
+    try {
+      final doc = pw.Document();
+
+      doc.addPage(pw.Page(
+          pageFormat: PdfPageFormat.a4,
+          build: (pw.Context pwContext) {
+            return pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text('Device Info'),
+                pw.Text(
+                    '${loc(context).systemTestDateFormat(DateTime.now())}|${loc(context).systemTestDateTime(DateTime.now())}'),
+                pw.Text('${loc(context).uptime}: $uptime'),
+                pw.Text('${loc(context).model}: ${master.modelNumber ?? '--'}'),
+                pw.Text(
+                    '${loc(context).sku}: ${dashboardState.skuModelNumber ?? '--'}'),
+                pw.Text(
+                    '${loc(context).serialNumber}: ${master.unit.serialNumber ?? '--'}'),
+                pw.Text(
+                    '${loc(context).macAddress}: ${master.getMacAddress()}'),
+                pw.Text(
+                    '${loc(context).firmwareVersion}: ${master.unit.firmwareVersion ?? '--'}'),
+                pw.Text('CPU Utilization: ####'),
+                pw.Text('Memory Utilization: ####'),
+                pw.Divider(height: 1),
+              ],
+            );
+          }));
+
+      await Printing.layoutPdf(
+        onLayout: (PdfPageFormat format) async => doc.save(),
+      );
+    } catch (e) {
+      logger.e('Print page error', error: e);
+    }
   }
 }

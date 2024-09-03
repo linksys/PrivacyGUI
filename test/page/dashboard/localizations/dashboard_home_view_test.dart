@@ -9,6 +9,7 @@ import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacygui_widgets/theme/custom_theme.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../common/config.dart';
 import '../../../common/test_responsive_widget.dart';
@@ -25,6 +26,9 @@ void main() async {
   late FirmwareUpdateNotifier mockFirmwareUpdateNotifier;
   late DeviceManagerNotifier mockDeviceManagerNotifier;
 
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
   group('Dashboard Home View with 4-ports', () {
     setUp(() {
       mockDashboardHomeNotifier = MockDashboardHomeNotifier();
