@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
 import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
@@ -21,13 +22,11 @@ class NodeSwitchLightView extends ArgumentsConsumerStatefulView {
 class _NodeSwitchLightViewState extends ConsumerState<NodeSwitchLightView> {
   NodeLightStatus? _nodeLightStatus = NodeLightStatus.off;
   bool _isSupportLed4 = false;
-  bool _isSupportLed3 = false;
 
   @override
   void initState() {
     super.initState();
-    _isSupportLed4 = isServiceSupport(JNAPService.routerLEDs4);
-    _isSupportLed3 = isServiceSupport(JNAPService.routerLEDs3);
+    _isSupportLed4 = ServiceHelper().isSupportLedMode();
     _nodeLightStatus = NodeLightStatus.getStatus(
         ref.read(nodeDetailProvider).nodeLightSettings);
   }

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/bullet_list/bullet_list.dart';
 import 'package:privacygui_widgets/widgets/buttons/button.dart';
@@ -215,6 +216,7 @@ Future<T?> showMessageAppDialog<T>(
   return showSimpleAppDialog<T?>(
     context,
     dismissible: dismissible,
+    icon: icon,
     title: title,
     content: AppText.bodyMedium(message),
     actions: actions,
@@ -307,6 +309,58 @@ Future showRouterNotFoundAlert(BuildContext context, WidgetRef ref) {
 
               context.pop();
             });
+          },
+        ),
+      ]);
+}
+
+Future<bool?> showFactoryResetModal(BuildContext context) {
+  return showMessageAppDialog<bool>(context,
+      icon: Icon(
+        LinksysIcons.resetWrench,
+        color: Theme.of(context).colorScheme.error,
+        size: 42,
+      ),
+      message: loc(context).factoryResetDesc,
+      title: loc(context).factoryResetTitle,
+      actions: [
+        AppTextButton(
+          loc(context).cancel,
+          onTap: () {
+            context.pop();
+          },
+        ),
+        AppTextButton(
+          loc(context).factoryResetOk,
+          color: Theme.of(context).colorScheme.error,
+          onTap: () {
+            context.pop(true);
+          },
+        ),
+      ]);
+}
+
+Future<bool?> showRebootModal(BuildContext context) {
+  return showMessageAppDialog<bool>(context,
+      icon: Icon(
+        LinksysIcons.restartAlt,
+        color: Theme.of(context).colorScheme.error,
+        size: 42,
+      ),
+      message: loc(context).menuRestartNetworkMessage,
+      title: loc(context).rebootTitle,
+      actions: [
+        AppTextButton(
+          loc(context).cancel,
+          onTap: () {
+            context.pop();
+          },
+        ),
+        AppTextButton(
+          loc(context).rebootOk,
+          color: Theme.of(context).colorScheme.error,
+          onTap: () {
+            context.pop(true);
           },
         ),
       ]);

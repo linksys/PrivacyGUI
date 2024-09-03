@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
@@ -136,7 +137,7 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
       const MapEntry(JNAPAction.getSystemStats, {}),
       const MapEntry(JNAPAction.getDeviceInfo, {}),
     ];
-    if (isServiceSupport(JNAPService.healthCheckManager)) {
+    if (ServiceHelper().isSupportHealthCheck()) {
       commands.add(const MapEntry(JNAPAction.getHealthCheckResults, {
         'includeModuleResults': true,
         "lastNumberOfResults": 5,
@@ -144,7 +145,7 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
       commands
           .add(const MapEntry(JNAPAction.getSupportedHealthCheckModules, {}));
     }
-    if (isServiceSupport(JNAPService.nodesFirmwareUpdate)) {
+    if (ServiceHelper().isSupportNodeFirmwareUpdate()) {
       commands.add(
         const MapEntry(JNAPAction.getNodesFirmwareUpdateStatus, {}),
       );
@@ -153,7 +154,7 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
         const MapEntry(JNAPAction.getFirmwareUpdateStatus, {}),
       );
     }
-    if (isServiceSupport(JNAPService.product)) {
+    if (ServiceHelper().isSupportProduct()) {
       commands.add(const MapEntry(JNAPAction.getSoftSKUSettings, {}));
     }
 

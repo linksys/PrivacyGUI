@@ -13,7 +13,9 @@ import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/util/uuid.dart';
+import 'package:privacygui_widgets/hook/icon_hooks.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:share_plus/share_plus.dart';
 import 'core/utils/logger.dart';
 import 'core/utils/storage.dart';
@@ -560,6 +562,34 @@ extension WiFiUtils on Utils {
         return LinksysIcons.ethernet;
     }
   }
+
+  static Icon resolveSignalStrengthIcon(
+      BuildContext context, int signalStrength,
+      {bool isOnline = true, bool isWired = false}) {
+    return Icon(
+      !isOnline
+          ? LinksysIcons.signalWifiNone
+          : isWired
+              ? WiFiUtils.getWifiSignalIconData(context, null)
+              : WiFiUtils.getWifiSignalIconData(context, signalStrength),
+      color: !isOnline
+          ? Theme.of(context).colorScheme.outline
+          : getWifiSignalLevel(isWired ? null : signalStrength)
+              .resolveColor(context),
+      semanticLabel: 'signal strength icon',
+    );
+  }
+
+  static Image resolveRouterImage(BuildContext context, String iconName,
+      {double size = 40}) {
+    return Image(
+      image: CustomTheme.of(context).images.devices.getByName(iconName) ??
+          CustomTheme.of(context).images.devices.routerLn11,
+      semanticLabel: 'router image',
+      width: size,
+      height: size,
+    );
+  }
 }
 
 extension NodeSignalLevelExt on NodeSignalLevel {
@@ -573,13 +603,14 @@ extension NodeSignalLevelExt on NodeSignalLevel {
       NodeSignalLevel.none => '',
     };
   }
-  Color resolveColor(BuildContext context) {
+
+  Color? resolveColor(BuildContext context) {
     return switch (this) {
-      NodeSignalLevel.excellent => Colors.green,
-      NodeSignalLevel.poor => Colors.green,
-      NodeSignalLevel.good => Colors.yellow,
-      NodeSignalLevel.fair => Colors.red,
-      NodeSignalLevel.wired => Colors.green,
+      NodeSignalLevel.excellent => Theme.of(context).colorSchemeExt.green,
+      NodeSignalLevel.poor => Theme.of(context).colorSchemeExt.green,
+      NodeSignalLevel.good => Theme.of(context).colorSchemeExt.orange,
+      NodeSignalLevel.fair => Theme.of(context).colorScheme.error,
+      NodeSignalLevel.wired => Theme.of(context).colorScheme.primary,
       NodeSignalLevel.none => Colors.black,
     };
   }

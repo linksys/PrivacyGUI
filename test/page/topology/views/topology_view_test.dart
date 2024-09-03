@@ -327,7 +327,7 @@ void main() {
   group('Topology view test - has offline nodes', () {
     testResponsiveWidgets('topology view - 1 offline node', (tester) async {
       when(mockTopologyNotifier.build()).thenReturn(testTopologyStateOffline1);
-      when(mockTopologyNotifier.isSupportAutoOnboarding()).thenReturn(true);
+      // when(mockTopologyNotifier.isSupportAutoOnboarding()).thenReturn(true);
       final widget = testableWidget(
           themeMode: ThemeMode.dark,
           overrides: [
@@ -378,7 +378,7 @@ void main() {
 
     testResponsiveWidgets('topology view - 2 offline nodes', (tester) async {
       when(mockTopologyNotifier.build()).thenReturn(testTopologyStateOffline2);
-      when(mockTopologyNotifier.isSupportAutoOnboarding()).thenReturn(true);
+      // when(mockTopologyNotifier.isSupportAutoOnboarding()).thenReturn(true);
 
       final widget = testableWidget(overrides: [
         topologyProvider.overrideWith(() => mockTopologyNotifier),

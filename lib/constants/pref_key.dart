@@ -12,6 +12,7 @@ const pShowPushPrompt = 'PushPrompt';
 const pAppFirstLaunch = 'AppFirstLaunch';
 const pWebLog = 'web_log';
 const pRedirection = 'Redirection';
+const pBlinkingNodeId = 'BlinkingNodeId';
 
 const pNotificationLastSeen = 'NotificationLastSeen';
 const pNotifications = 'Notifications';

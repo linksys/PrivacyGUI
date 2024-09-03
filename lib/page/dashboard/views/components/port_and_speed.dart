@@ -264,13 +264,14 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                       children: [
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Expanded(
                               child: _downloadSpeedResult(
                                   context,
                                   state.downloadResult?.value ?? '--',
                                   state.downloadResult?.unit,
-                                  isLegacy,
+                                  !state.isHealthCheckSupported || isLegacy,
                                   WrapAlignment.center),
                             ),
                             const AppGap.large2(),
@@ -279,13 +280,13 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                                   context,
                                   state.uploadResult?.value ?? '--',
                                   state.uploadResult?.unit,
-                                  isLegacy,
+                                  !state.isHealthCheckSupported || isLegacy,
                                   WrapAlignment.center),
                             ),
+                            const AppGap.large2(),
+                            _speedTestButton(context),
                           ],
                         ),
-                        const AppGap.large2(),
-                        _speedTestButton(context),
                       ]))
             ],
           ),
@@ -322,7 +323,9 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
         Icon(
           LinksysIcons.arrowDownward,
           semanticLabel: 'arrow Downward',
-          color: Theme.of(context).colorScheme.primary,
+          color: isLegacy
+              ? Theme.of(context).colorScheme.outline
+              : Theme.of(context).colorScheme.primary,
         ),
         AppText.titleLarge(
           value,
@@ -330,13 +333,15 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
               ? Theme.of(context).colorScheme.outline
               : Theme.of(context).colorScheme.onSurface,
         ),
-        if (unit != null)
+        if (unit != null && unit.isNotEmpty) ...[
+          const AppGap.small1(),
           AppText.bodySmall(
             '${unit}ps',
             color: isLegacy
                 ? Theme.of(context).colorScheme.outline
                 : Theme.of(context).colorScheme.onSurface,
           )
+        ]
       ],
     );
   }
@@ -351,7 +356,9 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
         Icon(
           LinksysIcons.arrowUpward,
           semanticLabel: 'arrow upward',
-          color: Theme.of(context).colorScheme.primary,
+          color: isLegacy
+              ? Theme.of(context).colorScheme.outline
+              : Theme.of(context).colorScheme.primary,
         ),
         AppText.titleLarge(
           value,
@@ -359,13 +366,15 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
               ? Theme.of(context).colorScheme.outline
               : Theme.of(context).colorScheme.onSurface,
         ),
-        if (unit != null)
+        if (unit != null && unit.isNotEmpty) ...[
+          const AppGap.small1(),
           AppText.bodySmall(
             '${unit}ps',
             color: isLegacy
                 ? Theme.of(context).colorScheme.outline
                 : Theme.of(context).colorScheme.onSurface,
           )
+        ]
       ],
     );
   }
@@ -416,7 +425,17 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
             height: 40,
           ),
         ),
-        if (connection != null) AppText.bodySmall(connection),
+        if (connection != null)
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                LinksysIcons.bidirectional,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              AppText.bodySmall(connection),
+            ],
+          ),
         if (isWan) AppText.labelMedium(loc(context).internet),
         Container(
           constraints: const BoxConstraints(maxWidth: 60),

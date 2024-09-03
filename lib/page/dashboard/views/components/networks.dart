@@ -1,15 +1,10 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
-import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
-import 'package:privacy_gui/core/utils/devices.dart';
-import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
@@ -18,6 +13,7 @@ import 'package:privacy_gui/page/dashboard/views/components/shimmer.dart';
 import 'package:privacy_gui/page/nodes/providers/node_detail_id_provider.dart';
 import 'package:privacy_gui/page/topology/providers/_providers.dart';
 import 'package:privacy_gui/page/topology/views/topology_model.dart';
+import 'package:privacy_gui/page/topology/views/widgets/tree_node_item.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/hook/icon_hooks.dart';
@@ -25,9 +21,7 @@ import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/card/list_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/topology/tree_item.dart';
 
 class DashboardNetworks extends ConsumerStatefulWidget {
@@ -102,38 +96,22 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
                             strokeJoin: StrokeJoin.miter),
                         child: Padding(
                           padding: const EdgeInsets.fromLTRB(0, 16, 8, 0),
-                          child: AppTreeNodeItem(
-                            name: entry.node.data.location,
-                            image: CustomTheme.of(context)
-                                .images
-                                .devices
-                                .getByName(entry.node.data.icon),
-                            status: entry.node.data.isOnline
-                                ? loc(context).nDevices(
-                                    entry.node.data.connectedDeviceCount)
-                                : loc(context).offline,
-                            thirdLine: entry.node.data.isMaster
+                          child: SimpleTreeNodeItem(
+                            node: entry.node,
+                            extra: entry.node.data.isMaster
                                 ? '${loc(context).uptime}: $uptime'
                                 : null,
-                            tail: entry.node.data.isOnline
-                                ? Icon(
-                                    entry.node.data.isWiredConnection
-                                        ? WiFiUtils.getWifiSignalIconData(context, null)
-                                        : WiFiUtils.getWifiSignalIconData(context,
-                                            entry.node.data.signalStrength),
-                                  )
+                            onTap: entry.node.data.isOnline
+                                ? () {
+                                    ref
+                                        .read(nodeDetailIdProvider.notifier)
+                                        .state = entry.node.data.deviceId;
+                                    if (entry.node.data.isOnline) {
+                                      // Update the current target Id for node state
+                                      context.pushNamed(RouteNamed.nodeDetails);
+                                    }
+                                  }
                                 : null,
-                            background: entry.node.data.isOnline
-                                ? Theme.of(context).colorScheme.surface
-                                : Theme.of(context).colorScheme.surfaceVariant,
-                            onTap: () {
-                              ref.read(nodeDetailIdProvider.notifier).state =
-                                  entry.node.data.deviceId;
-                              if (entry.node.data.isOnline) {
-                                // Update the current target Id for node state
-                                context.pushNamed(RouteNamed.nodeDetails);
-                              }
-                            },
                           ),
                         ),
                       );
@@ -308,8 +286,6 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
         callbackTags: const {});
   }
 
-  
-
   Widget _nodesInfoTile(
       BuildContext context, WidgetRef ref, DashboardHomeState state) {
     return _infoTile(
@@ -320,7 +296,7 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
           ? Icon(
               LinksysIcons.infoCircle,
               semanticLabel: 'info',
-              size: 24,
+              size: 20,
               color: Theme.of(context).colorScheme.error,
             )
           : null,

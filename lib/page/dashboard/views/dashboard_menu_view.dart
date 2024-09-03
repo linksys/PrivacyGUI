@@ -126,7 +126,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
           title: loc(context).instantSafety,
           description: loc(context).instantSafetyDesc,
           iconData: LinksysIcons.encrypted,
-          status: safetyState.safeBrowsingType != SafeBrowsingType.off,
+          status: safetyState.safeBrowsingType == SafeBrowsingType.off,
           onTap: () {
             _navigateTo(RouteNamed.menuInstantSafety);
           }),
@@ -156,7 +156,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
       AppSectionItemData(
           title: loc(context).instantVerify,
           description: loc(context).instantVerifyDesc,
-          iconData: LinksysIcons.settings,
+          iconData: LinksysIcons.technician,
           onTap: () {
             _navigateTo(RouteNamed.menuInstantVerify);
           }),

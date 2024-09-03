@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/models/firmware_update_status_nodes.dart';
 import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
@@ -231,10 +232,8 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
   }
 
   Widget _lightCard(NodeDetailState state) {
-    final hasBlinkFunction =
-        ref.read(nodeDetailProvider.notifier).isSupportLedBlinking();
-    bool isSupportNodeLight =
-        ref.read(nodeDetailProvider.notifier).isSupportLedMode();
+    final hasBlinkFunction = ServiceHelper().isSupportLedBlinking();
+    bool isSupportNodeLight = ServiceHelper().isSupportLedMode();
     if (!hasBlinkFunction && !isSupportNodeLight) {
       return const Center();
     }
@@ -269,9 +268,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
   }
 
   List<Widget> _createNodeLightTile(NodeLightSettings? nodeLightSettings) {
-    bool isSupportNodeLight =
-        ref.read(nodeDetailProvider.notifier).isSupportLedMode();
-    if (!isSupportNodeLight) {
+    if (!ServiceHelper().isSupportLedMode()) {
       return [];
     } else {
       final title = loc(context).nodeLight;
@@ -368,8 +365,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
 
   void _showEditNodeNameDialog(NodeDetailState state) {
     final textController = TextEditingController()..text = state.location;
-    final hasBlinkFunction =
-        ref.read(nodeDetailProvider.notifier).isSupportLedBlinking();
+    final hasBlinkFunction = ServiceHelper().isSupportLedBlinking();
     showSubmitAppDialog(context, title: loc(context).nodeName,
         contentBuilder: (context, setState) {
       return Column(

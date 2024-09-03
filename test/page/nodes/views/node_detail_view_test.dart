@@ -20,8 +20,8 @@ void main() {
   setUp(() {
     mockNodeDetailNotifier = MockNodeDetailNotifier();
     mockFirmwareUpdateNotifier = MockFirmwareUpdateNotifier();
-    when(mockNodeDetailNotifier.isSupportLedBlinking()).thenReturn(true);
-    when(mockNodeDetailNotifier.isSupportLedMode()).thenReturn(true);
+    // when(mockNodeDetailNotifier.isSupportLedBlinking()).thenReturn(true);
+    // when(mockNodeDetailNotifier.isSupportLedMode()).thenReturn(true);
   });
   testResponsiveWidgets('Test node details view with mobile layout',
       (tester) async {

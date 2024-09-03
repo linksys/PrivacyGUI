@@ -119,7 +119,7 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
   ({String value, String unit}) _formatHealthCheckResult({required int speed}) {
     if (speed == 0) {
       return (
-        value: '-',
+        value: '--',
         unit: '',
       );
     }

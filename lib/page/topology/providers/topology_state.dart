@@ -16,6 +16,7 @@ class TopologyState {
   TopologyState copyWith({
     RouterTreeNode? onlineRoot,
     RouterTreeNode? offlineRoot,
+    RouterTreeNode? treeRoot,
     int? nodesCount,
   }) {
     return TopologyState(

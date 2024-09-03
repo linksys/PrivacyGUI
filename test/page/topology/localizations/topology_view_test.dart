@@ -13,7 +13,7 @@ void main() async {
 
   setUp(() {
     mockTopologyNotifier = MockTopologyNotifier();
-    when(mockTopologyNotifier.isSupportAutoOnboarding()).thenReturn(true);
+    // when(mockTopologyNotifier.isSupportAutoOnboarding()).thenReturn(true);
   });
   group('Topology view test - online nodes', () {
     testLocalizations('topology view - 2 online nodes', (tester, locale) async {
@@ -104,7 +104,7 @@ void main() async {
   group('Topology view test - has offline nodes', () {
     testLocalizations('topology view - 1 offline node', (tester, locale) async {
       when(mockTopologyNotifier.build()).thenReturn(testTopologyStateOffline1);
-      when(mockTopologyNotifier.isSupportAutoOnboarding()).thenReturn(true);
+      // when(mockTopologyNotifier.isSupportAutoOnboarding()).thenReturn(true);
       final widget = testableSingleRoute(
         themeMode: ThemeMode.dark,
         overrides: [
@@ -119,7 +119,7 @@ void main() async {
     testLocalizations('topology view - 2 offline nodes',
         (tester, locale) async {
       when(mockTopologyNotifier.build()).thenReturn(testTopologyStateOffline2);
-      when(mockTopologyNotifier.isSupportAutoOnboarding()).thenReturn(true);
+      // when(mockTopologyNotifier.isSupportAutoOnboarding()).thenReturn(true);
 
       final widget = testableSingleRoute(
         overrides: [

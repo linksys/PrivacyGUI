@@ -1,13 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
+import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/page/topology/_topology.dart';
+import 'package:privacy_gui/page/topology/views/topology_data.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 final topologySelectedIdProvider = StateProvider((ref) => '');
 final topologyProvider = NotifierProvider<TopologyNotifier, TopologyState>(
@@ -20,8 +24,17 @@ class TopologyNotifier extends Notifier<TopologyState> {
     final deviceManagerState = ref.watch(deviceManagerProvider);
     final topologySelectId = ref.watch(topologySelectedIdProvider);
     final count = deviceManagerState.nodeDevices.length;
+
+    final onlineRoot = _buildRootNode(deviceManagerState, topologySelectId);
+    final offlineRoot = _buildOfflineRootNode(deviceManagerState);
+    // final onlineRoot = testTopologyStateOffline4.onlineRoot;
+    // final offlineRoot = testTopologyStateOffline4.offlineRoot;
+    // final treeRoot;
+    if (onlineRoot.children.isNotEmpty) {
+      onlineRoot.children.first.children.addAll(offlineRoot.children);
+    }
     return TopologyState(
-        onlineRoot: _buildRootNode(deviceManagerState, topologySelectId),
+        onlineRoot: onlineRoot,
         offlineRoot: _buildOfflineRootNode(deviceManagerState),
         nodesCount: count);
   }
@@ -200,6 +213,40 @@ class TopologyNotifier extends Notifier<TopologyState> {
     );
   }
 
-  bool isSupportAutoOnboarding() =>
-      isServiceSupport(JNAPService.autoOnboarding);
+  Future startBlinkNodeLED(String deviceId) async {
+    final repository = ref.read(routerRepositoryProvider);
+    return repository.send(
+      JNAPAction.startBlinkNodeLed,
+      data: {'deviceID': deviceId},
+      fetchRemote: true,
+      cacheLevel: CacheLevel.noCache,
+      auth: true,
+    );
+  }
+
+  Future stopBlinkNodeLED() async {
+    final repository = ref.read(routerRepositoryProvider);
+    return repository.send(
+      JNAPAction.stopBlinkNodeLed,
+      auth: true,
+      fetchRemote: true,
+      cacheLevel: CacheLevel.noCache,
+    );
+  }
+
+  Future<void> toggleBlinkNode(String deviceId, [bool stopOnly = false]) async {
+    final prefs = await SharedPreferences.getInstance();
+    final blinkDevice = prefs.get(pBlinkingNodeId);
+    if (blinkDevice != null && deviceId != blinkDevice) {
+      stopBlinkNodeLED();
+    }
+    startBlinkNodeLED(deviceId).then((_) {
+      prefs.setString(pBlinkingNodeId, deviceId);
+    });
+  }
+
+  Future factoryReset() {
+    return ref.read(routerRepositoryProvider).send(JNAPAction.factoryReset,
+        fetchRemote: true, cacheLevel: CacheLevel.noCache);
+  }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
@@ -42,8 +43,7 @@ class _TopologyViewState extends ConsumerState<TopologyView> {
 
     final isShowingDeviceChain =
         ref.watch(topologySelectedIdProvider).isNotEmpty;
-    final autoOnboarding =
-        ref.read(topologyProvider.notifier).isSupportAutoOnboarding();
+    // final autoOnboarding = isSupportAutoOnboarding();
     return LayoutBuilder(builder: (context, constraint) {
       return _isLoading
           ? AppFullScreenSpinner(
@@ -53,20 +53,7 @@ class _TopologyViewState extends ConsumerState<TopologyView> {
               // scrollable: true,
               padding: EdgeInsets.zero,
               title: loc(context).node,
-              actions: [
-                if (autoOnboarding)
-                  AppTextButton.noPadding(
-                    loc(context).addNodes,
-                    icon: LinksysIcons.add,
-                    onTap: () {
-                      context.pushNamed(RouteNamed.addNodes).then((result) {
-                        if (result is bool && result) {
-                          _showMoveChildNodesModal();
-                        }
-                      });
-                    },
-                  )
-              ],
+
               child: AppBasicLayout(
                 content: Column(
                   mainAxisAlignment: MainAxisAlignment.start,
@@ -139,7 +126,8 @@ class _TopologyViewState extends ConsumerState<TopologyView> {
           ? Icon(
               node.data.isWiredConnection
                   ? WiFiUtils.getWifiSignalIconData(context, null)
-                  : WiFiUtils.getWifiSignalIconData(context, node.data.signalStrength),
+                  : WiFiUtils.getWifiSignalIconData(
+                      context, node.data.signalStrength),
               semanticLabel: 'signal strength icon',
             )
           : null,
