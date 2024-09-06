@@ -5,9 +5,9 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'package:flutter_riverpod/flutter_riverpod.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:privacy_gui/page/devices/providers/device_filtered_list_provider.dart'
+import 'package:privacy_gui/page/instant_device/providers/device_filtered_list_provider.dart'
     as _i4;
-import 'package:privacy_gui/page/devices/providers/device_filtered_list_state.dart'
+import 'package:privacy_gui/page/instant_device/providers/device_filtered_list_state.dart'
     as _i3;
 
 // ignore_for_file: type=lint

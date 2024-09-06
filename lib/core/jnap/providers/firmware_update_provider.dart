@@ -55,7 +55,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     }
 
     List<FirmwareUpdateStatus>? fwUpdateStatusList =
-        switch (ServiceHelper().isSupportNodeFirmwareUpdate()) {
+        switch (serviceHelper.isSupportNodeFirmwareUpdate()) {
       true when nodesFwUpdateCheckRaw is JNAPSuccess =>
         List.from(nodesFwUpdateCheckRaw.output['firmwareUpdateStatus'])
             .map((e) => NodesFirmwareUpdateStatus.fromMap(e))
@@ -105,7 +105,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
           '[FIRMWARE]: Skip checking firmware update avaliable: last check time {${DateTime.fromMillisecondsSinceEpoch(lastCheckTime)}}');
       yield [];
     } else {
-      final action = ServiceHelper().isSupportNodeFirmwareUpdate()
+      final action = serviceHelper.isSupportNodeFirmwareUpdate()
           ? JNAPAction.updateFirmwareNow
           : JNAPAction.nodesUpdateFirmwareNow;
       await ref
@@ -136,7 +136,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     final benchmark = BenchMarkLogger(name: 'FirmwareUpdate');
     benchmark.start();
     state = state.copyWith(isUpdating: true);
-    final action = ServiceHelper().isSupportNodeFirmwareUpdate()
+    final action = serviceHelper.isSupportNodeFirmwareUpdate()
         ? JNAPAction.updateFirmwareNow
         : JNAPAction.nodesUpdateFirmwareNow;
     await ref.read(routerRepositoryProvider).send(
@@ -175,8 +175,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     List<FirmwareUpdateStatus> records,
   ) {
     if (result is JNAPSuccess) {
-      final statusList =
-          switch (ServiceHelper().isSupportNodeFirmwareUpdate()) {
+      final statusList = switch (serviceHelper.isSupportNodeFirmwareUpdate()) {
         false => [FirmwareUpdateStatus.fromMap(result.output)],
         true => List.from(result.output['firmwareUpdateStatus'])
             .map((e) => NodesFirmwareUpdateStatus.fromMap(e))
@@ -249,7 +248,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     bool Function(JNAPResult)? stopCondition,
     Function()? onCompleted,
   }) {
-    final action = ServiceHelper().isSupportNodeFirmwareUpdate()
+    final action = serviceHelper.isSupportNodeFirmwareUpdate()
         ? JNAPAction.getNodesFirmwareUpdateStatus
         : JNAPAction.getFirmwareUpdateStatus;
     return ref

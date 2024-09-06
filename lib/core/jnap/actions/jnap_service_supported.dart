@@ -1,5 +1,8 @@
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/utils/nodes.dart';
+import 'package:privacy_gui/di.dart';
+
+final serviceHelper = getIt<ServiceHelper>();
 
 class ServiceHelper {
   bool isSupportLedMode([List<String>? services]) =>

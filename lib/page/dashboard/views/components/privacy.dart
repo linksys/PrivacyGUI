@@ -9,6 +9,7 @@ import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/label/status_label.dart';
 
 class PrivacyWidget extends ConsumerStatefulWidget {
@@ -27,6 +28,7 @@ class _PrivacyWidgetState extends ConsumerState<PrivacyWidget> {
     return ShimmerContainer(
       isLoading: isLoading,
       child: AppCard(
+        padding: EdgeInsets.all(Spacing.large2),
         onTap: () {
           context.pushNamed(RouteNamed.menuInstantPrivacy);
         },

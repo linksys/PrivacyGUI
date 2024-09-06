@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart'
     as _i4;
-import 'package:privacy_gui/page/devices/_devices.dart' as _i3;
+import 'package:privacy_gui/page/instant_device/_instant_device.dart' as _i3;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values

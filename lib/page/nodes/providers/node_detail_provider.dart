@@ -44,7 +44,7 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
       return newState;
     }
 
-    if (ServiceHelper().isSupportLedMode()) {
+    if (serviceHelper.isSupportLedMode()) {
       getLEDLight();
     }
     // Details of the specific device

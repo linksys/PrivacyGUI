@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_state.dart';
-import 'package:privacy_gui/page/network_admin/_network_admin.dart';
+import 'package:privacy_gui/page/instant_admin/_instant_admin.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 
 import '../../../../common/config.dart';

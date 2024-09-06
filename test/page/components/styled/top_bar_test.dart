@@ -50,7 +50,6 @@ void main() async {
 
   testResponsiveWidgets(
     'Test top bar with Linksys logo should displsy on mobile variants',
-    variants: responsiveMobileVariants,
     (tester) async {
       final provider = ProviderContainer();
 
@@ -67,40 +66,10 @@ void main() async {
           const AsyncData(AuthState(loginType: LoginType.local));
       await tester.pumpAndSettle();
 
-      // Find Build Context
-      final BuildContext context = tester.element(find.byType(TopBar));
-      final asset = CustomTheme.of(context).images.linksysLogoBlack;
-      final logoFinder = find.svg(asset);
-      expect(logoFinder, findsOneWidget);
+      expect(find.text('Linksys Now'), findsOneWidget);
     },
   );
 
-  testResponsiveWidgets(
-    'Test top bar with Linksys logo should not displsy on desktop variants',
-    variants: responsiveDesktopVariants,
-    (tester) async {
-      final provider = ProviderContainer();
-
-      await tester.pumpWidget(
-        testableRouter(
-          provider: provider,
-          overrides: [authProvider.overrideWith(() => mockAuthNotifier)],
-          router: GoRouter(routes: [
-            LinksysRoute(path: '/', builder: (context, state) => const Center())
-          ], initialLocation: '/'),
-        ),
-      );
-      mockAuthNotifier.state =
-          const AsyncData(AuthState(loginType: LoginType.local));
-      await tester.pumpAndSettle();
-
-      // Find Build Context
-      final BuildContext context = tester.element(find.byType(TopBar));
-      final asset = CustomTheme.of(context).images.linksysLogoBlack;
-      final logoFinder = find.svg(asset);
-      expect(logoFinder, findsNothing);
-    },
-  );
   testResponsiveWidgets(
     'Test general settings menu should not has log out button when not log in yet',
     (tester) async {

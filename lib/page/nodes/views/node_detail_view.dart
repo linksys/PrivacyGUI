@@ -9,13 +9,14 @@ import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/shared_widgets.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/styled/styled_tab_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
-import 'package:privacy_gui/page/devices/_devices.dart';
+import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacy_gui/page/nodes/_nodes.dart';
 import 'package:privacy_gui/page/nodes/views/connected_device_widget.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -232,9 +233,8 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
   }
 
   Widget _lightCard(NodeDetailState state) {
-    final hasBlinkFunction = ServiceHelper().isSupportLedBlinking();
-    bool isSupportNodeLight = ServiceHelper().isSupportLedMode();
-    if (!hasBlinkFunction && !isSupportNodeLight) {
+    bool isSupportNodeLight = serviceHelper.isSupportLedMode();
+    if (!isSupportNodeLight) {
       return const Center();
     }
     return AppCard(
@@ -243,17 +243,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ..._createNodeLightTile(state.nodeLightSettings),
-            ...hasBlinkFunction
-                ? [
-                    const Padding(
-                      padding: EdgeInsets.all(Spacing.medium),
-                      child: BlinkNodeLightWidget(),
-                    ),
-                  ]
-                : [],
-          ],
+          children: _createNodeLightTile(state.nodeLightSettings),
         ));
   }
 
@@ -268,10 +258,10 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
   }
 
   List<Widget> _createNodeLightTile(NodeLightSettings? nodeLightSettings) {
-    if (!ServiceHelper().isSupportLedMode()) {
+    if (!serviceHelper.isSupportLedMode()) {
       return [];
     } else {
-      final title = loc(context).nodeLight;
+      final title = loc(context).nightMode;
       return [
         AppSettingCard(
           key: const ValueKey('nodeLightSettings'),
@@ -306,12 +296,6 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppSettingCard(
-            showBorder: false,
-            padding: const EdgeInsets.all(Spacing.medium),
-            title: loc(context).lanIPAddress,
-            description: state.lanIpAddress,
-          ),
           if (state.isMaster) ...[
             const AppGap.small2(),
             AppSettingCard(
@@ -321,43 +305,35 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
               description: state.wanIpAddress,
             ),
           ],
-          // AppDeviceInfoCard(
-          //   title: loc(context).serialNumber,
-          //   description: _checkEmptyValue(state.serialNumber),
-          // ),
-          // AppDeviceInfoCard(
-          //   title: loc(context).modelNumber,
-          //   description: _checkEmptyValue(state.modelNumber),
-          // ),
-
           AppSettingCard(
             showBorder: false,
             padding: const EdgeInsets.all(Spacing.medium),
-            title: loc(context).firmwareVersion,
-            description: _checkEmptyValue(state.firmwareVersion),
-            trailing: Visibility(
-                visible: isFwUpToDate,
-                replacement: InkWell(
-                  child: AppText.labelSmall(
-                    loc(context).update,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  onTap: () {
-                    context.pushNamed(RouteNamed.firmwareUpdateDetail);
-                  },
-                ),
-                child: AppText.labelSmall(
-                  loc(context).upToDate,
-                  color: Theme.of(context).colorSchemeExt.green,
-                )),
+            title: loc(context).lanIPAddress,
+            description: state.lanIpAddress,
           ),
-          AppTextButton(
-            loc(context).moreInfo,
+
+          AppSettingCard(
+              showBorder: false,
+              padding: const EdgeInsets.all(Spacing.medium),
+              title: loc(context).firmwareVersion,
+              description: _checkEmptyValue(state.firmwareVersion),
+              trailing: SharedWidgets.nodeFirmwareStatusWidget(
+                  context, !isFwUpToDate, () {
+                context.pushNamed(RouteNamed.firmwareUpdateDetail);
+              })),
+          // AppTextButton(
+          AppSettingCard(
+            showBorder: false,
             padding: const EdgeInsets.all(Spacing.medium),
-            onTap: () {
-              _showMoreRouterInfoModal(state);
-            },
-          )
+            title: loc(context).modelNumber,
+            description: _checkEmptyValue(state.modelNumber),
+          ),
+          AppSettingCard(
+            showBorder: false,
+            padding: const EdgeInsets.all(Spacing.medium),
+            title: loc(context).serialNumber,
+            description: _checkEmptyValue(state.serialNumber),
+          ),
         ],
       ),
     );
@@ -365,7 +341,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
 
   void _showEditNodeNameDialog(NodeDetailState state) {
     final textController = TextEditingController()..text = state.location;
-    final hasBlinkFunction = ServiceHelper().isSupportLedBlinking();
+    final hasBlinkFunction = serviceHelper.isSupportLedBlinking();
     showSubmitAppDialog(context, title: loc(context).nodeName,
         contentBuilder: (context, setState) {
       return Column(

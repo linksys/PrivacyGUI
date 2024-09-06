@@ -8,9 +8,9 @@ import 'dart:async' as _i5;
 import 'package:flutter_riverpod/flutter_riverpod.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:privacy_gui/core/jnap/models/lan_settings.dart' as _i6;
-import 'package:privacy_gui/page/safe_browsing/providers/safe_browsing_provider.dart'
+import 'package:privacy_gui/page/instant_safety/providers/safe_browsing_provider.dart'
     as _i4;
-import 'package:privacy_gui/page/safe_browsing/providers/safe_browsing_state.dart'
+import 'package:privacy_gui/page/instant_safety/providers/safe_browsing_state.dart'
     as _i3;
 
 // ignore_for_file: type=lint

@@ -19,26 +19,26 @@ class WifiAdvancedSettingsNotifier extends Notifier<WifiAdvancedSettingsState> {
 
   List<MapEntry<JNAPAction, Map<String, dynamic>>> _buildGetCommends() {
     List<MapEntry<JNAPAction, Map<String, dynamic>>> commands = [];
-    if (ServiceHelper().isSupportTopologyOptimization()) {
+    if (serviceHelper.isSupportTopologyOptimization()) {
       commands
           .add(const MapEntry(JNAPAction.getTopologyOptimizationSettings, {}));
     }
-    if (ServiceHelper().isSupportIPTv()) {
+    if (serviceHelper.isSupportIPTv()) {
       commands.add(
         const MapEntry(JNAPAction.getIptvSettings, {}),
       );
     }
-    if (ServiceHelper().isSupportMLO()) {
+    if (serviceHelper.isSupportMLO()) {
       commands.add(
         const MapEntry(JNAPAction.getMLOSettings, {}),
       );
     }
-    if (ServiceHelper().isSupportDFS()) {
+    if (serviceHelper.isSupportDFS()) {
       commands.add(
         const MapEntry(JNAPAction.getDFSSettings, {}),
       );
     }
-    if (ServiceHelper().isSupportAirtimeFairness()) {
+    if (serviceHelper.isSupportAirtimeFairness()) {
       commands.add(
         const MapEntry(JNAPAction.getAirtimeFairnessSettings, {}),
       );
@@ -55,7 +55,7 @@ class WifiAdvancedSettingsNotifier extends Notifier<WifiAdvancedSettingsState> {
     bool? isAirtimeFairnessEnabled,
   }) {
     List<MapEntry<JNAPAction, Map<String, dynamic>>> commands = [];
-    if (ServiceHelper().isSupportTopologyOptimization()) {
+    if (serviceHelper.isSupportTopologyOptimization()) {
       commands.add(MapEntry(
           JNAPAction.setTopologyOptimizationSettings,
           {
@@ -63,22 +63,23 @@ class WifiAdvancedSettingsNotifier extends Notifier<WifiAdvancedSettingsState> {
             'isNodeSteeringEnabled': isNodeSteeringEnabled,
           }..removeWhere((key, value) => value == null)));
     }
-    if (ServiceHelper().isSupportIPTv()) {
+    if (serviceHelper.isSupportIPTv()) {
       commands.add(
         MapEntry(JNAPAction.setIptvSettings, {'isEnabled': isIptvEnabled}),
       );
     }
-    if (ServiceHelper().isSupportMLO() && isMLOEnabled != null) {
+    if (serviceHelper.isSupportMLO() && isMLOEnabled != null) {
       commands.add(
         MapEntry(JNAPAction.setMLOSettings, {'isMLOEnabled': isMLOEnabled}),
       );
     }
-    if (ServiceHelper().isSupportDFS() && isDFSEnabled != null) {
+    if (serviceHelper.isSupportDFS() && isDFSEnabled != null) {
       commands.add(
         MapEntry(JNAPAction.setDFSSettings, {'isDFSEnabled': isDFSEnabled}),
       );
     }
-    if (ServiceHelper().isSupportAirtimeFairness() && isAirtimeFairnessEnabled != null) {
+    if (serviceHelper.isSupportAirtimeFairness() &&
+        isAirtimeFairnessEnabled != null) {
       commands.add(
         MapEntry(JNAPAction.setAirtimeFairnessSettings,
             {'isAirtimeFairnessEnabled': isAirtimeFairnessEnabled}),

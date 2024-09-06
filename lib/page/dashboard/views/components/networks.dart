@@ -5,24 +5,21 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
-import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
 import 'package:privacy_gui/page/dashboard/views/components/shimmer.dart';
 import 'package:privacy_gui/page/nodes/providers/node_detail_id_provider.dart';
-import 'package:privacy_gui/page/topology/providers/_providers.dart';
-import 'package:privacy_gui/page/topology/views/topology_model.dart';
-import 'package:privacy_gui/page/topology/views/widgets/tree_node_item.dart';
+import 'package:privacy_gui/page/instant_topology/providers/_providers.dart';
+import 'package:privacy_gui/page/instant_topology/views/model/topology_model.dart';
+import 'package:privacy_gui/page/instant_topology/views/widgets/tree_node_item.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/utils.dart';
-import 'package:privacygui_widgets/hook/icon_hooks.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
-import 'package:privacygui_widgets/widgets/topology/tree_item.dart';
 
 class DashboardNetworks extends ConsumerStatefulWidget {
   const DashboardNetworks({super.key});

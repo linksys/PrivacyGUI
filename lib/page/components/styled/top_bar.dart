@@ -1,6 +1,7 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
@@ -17,6 +18,7 @@ import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/debug_mixin.dart';
 import 'package:privacy_gui/utils.dart';
+import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 
 class TopBar extends ConsumerStatefulWidget {
   final void Function(int)? onMenuClick;
@@ -46,50 +48,45 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
         },
         child: Container(
           color: Color(neutralTonal.get(6)),
-          height: 56,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
+          height: 64,
+          padding: const EdgeInsets.only(
+            left: 24.0,
+            right: 24,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Padding(
-                padding: const EdgeInsets.only(
-                    left: 24.0, right: 24, top: 14, bottom: 6),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    AppText.titleLarge(loc(context).appTitle,
-                        color: Color(neutralTonal.get(100))),
-                    MenuHolder(
-                      builder: (context, controller) {
-                        return controller.displayType == MenuDisplay.top
-                            ? NavigationMenu(
-                                items: controller.items,
-                                selected: controller.selected,
-                                onItemClick: (index) {
-                                  controller.select(controller.items[index]);
-                                },
-                              )
-                            : const Center();
-                      },
-                    ),
-                    Wrap(
-                      children: [
-                        if (loginType == LoginType.remote) _networkSelect(),
-                        // if (loginType != LoginType.none)
-                        //   const Padding(
-                        //     padding: EdgeInsets.all(4.0),
-                        //     child: NotificationPopupWidget(),
-                        //   ),
-                        const Padding(
-                          padding: EdgeInsets.all(4.0),
-                          child: GeneralSettingsWidget(),
-                        ),
-                      ],
-                    ),
-                  ],
+              AppText.titleLarge(loc(context).appTitle,
+                  color: Color(neutralTonal.get(100))),
+              if (!ResponsiveLayout.isMobileLayout(context))
+                MenuHolder(
+                  builder: (context, controller) {
+                    return controller.displayType == MenuDisplay.top
+                        ? NavigationMenu(
+                            items: controller.items,
+                            selected: controller.selected,
+                            onItemClick: (index) {
+                              controller.select(controller.items[index]);
+                            },
+                          )
+                        : const SizedBox.shrink();
+                  },
                 ),
+              Wrap(
+                children: [
+                  if (loginType == LoginType.remote) _networkSelect(),
+                  // if (loginType != LoginType.none)
+                  //   const Padding(
+                  //     padding: EdgeInsets.all(4.0),
+                  //     child: NotificationPopupWidget(),
+                  //   ),
+                  const Padding(
+                    padding: EdgeInsets.all(4.0),
+                    child: GeneralSettingsWidget(),
+                  ),
+                ],
               ),
-              const Spacer(),
             ],
           ),
         ),

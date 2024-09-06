@@ -574,7 +574,7 @@
   "speed": "Speed",
   "passwordAndAccess": "Password & Access",
   "hardware": "Hardware",
-  "upToDate": "Up-to-date",
+  "upToDate": "Up to date",
   "dhcpReservationDescption": "Use DHCP reservations to make a device use the same IP address",
   "selectFromMyDHCPList": "Select from my DHCP list",
   "manuallyAddReservation": "Manually add reservation",
@@ -862,5 +862,16 @@
   "factoryResetOk": "Yes, Factory Reset All",
   "rebootTitle": "Reboot Parent and all its child/s",
   "rebootOk": "Yes, Reboot All",
-  "goodNight": "Good night!"
+  "goodNight": "Good night!",
+  "instantInfo": "Instant-Info",
+  "deviceModel": "Device Model",
+  "mac": "MAC",
+  "selfTest": "Self Test",
+  "ping": "Ping",
+  "traceroute": "Traceroute",
+  "print": "Print",
+  "serverId": "Server ID",
+  "dateAndTime": "Date & Time",
+  "upstream": "Upstream",
+  "ssid": "SSID"
 }

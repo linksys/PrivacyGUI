@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
@@ -15,7 +14,6 @@ enum _WiFiSubMenus {
   wifi,
   guest,
   advanced,
-  filtering,
   ;
 }
 
@@ -83,13 +81,11 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView> {
         _WiFiSubMenus.wifi => loc(context).wifi,
         _WiFiSubMenus.guest => loc(context).guestWifi,
         _WiFiSubMenus.advanced => loc(context).advanced,
-        _WiFiSubMenus.filtering => loc(context).macFiltering,
       };
 
   Widget _content(_WiFiSubMenus sub) => switch (sub) {
         _WiFiSubMenus.wifi => WiFiListView(args: widget.args),
         _WiFiSubMenus.guest => const GuestWiFiSettingsView(),
         _WiFiSubMenus.advanced => const WifiAdvancedSettingsView(),
-        _WiFiSubMenus.filtering => const MacFilteringView(),
       };
 }

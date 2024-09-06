@@ -34,7 +34,7 @@ NodeSignalLevel getWifiSignalLevel(int? signalStrength) {
       case 1:
         return NodeSignalLevel.fair;
       default:
-        return NodeSignalLevel.none;
+        return NodeSignalLevel.poor;
     }
   }
 }

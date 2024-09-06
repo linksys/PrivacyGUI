@@ -2,12 +2,14 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
 import 'package:privacy_gui/page/dashboard/views/components/shimmer.dart';
+import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
@@ -304,7 +306,9 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
     //   },
     // );
     return InkResponse(
-      onTap: () {},
+      onTap: () {
+        context.pushNamed(RouteNamed.dashboardSpeedTest);
+      },
       child: SvgPicture(
         CustomTheme.of(context).images.btnCheckSpeeds,
         width: 64,

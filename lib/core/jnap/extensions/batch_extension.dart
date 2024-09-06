@@ -108,7 +108,7 @@ extension BatchCommands on RouterRepository {
       // Firmware updates info
       const MapEntry(JNAPAction.getFirmwareUpdateSettings, {}),
     ];
-    if (ServiceHelper().isSupportNodeFirmwareUpdate()) {
+    if (serviceHelper.isSupportNodeFirmwareUpdate()) {
       commands.add(
         const MapEntry(JNAPAction.getNodesFirmwareUpdateStatus, {}),
       );

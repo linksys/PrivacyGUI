@@ -26,7 +26,7 @@ class _NodeSwitchLightViewState extends ConsumerState<NodeSwitchLightView> {
   @override
   void initState() {
     super.initState();
-    _isSupportLed4 = ServiceHelper().isSupportLedMode();
+    _isSupportLed4 = serviceHelper.isSupportLedMode();
     _nodeLightStatus = NodeLightStatus.getStatus(
         ref.read(nodeDetailProvider).nodeLightSettings);
   }

@@ -1,37 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:golden_toolkit/golden_toolkit.dart';
-import 'package:privacy_gui/page/topology/_topology.dart';
+import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
+import 'package:privacy_gui/di.dart';
+import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/instant_topology/_instant_topology.dart';
+import 'package:privacy_gui/page/instant_topology/views/widgets/tree_node_item.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/topology/tree_item.dart';
 import 'package:mockito/mockito.dart';
 
-import '../../../common/test_responsive_widget.dart';
-import '../../../common/testable_widget.dart';
+import '../../../common/_index.dart';
+import '../../../mocks/jnap_service_helper_spec_mocks.dart';
 import '../../../test_data/topology_data.dart';
 import '../../../mocks/topology_notifier_mocks.dart';
 
 void main() {
   late TopologyNotifier mockTopologyNotifier;
+  ServiceHelper mockServiceHelper = MockServiceHelper();
+  getIt.registerSingleton<ServiceHelper>(mockServiceHelper);
 
   setUp(() {
     mockTopologyNotifier = MockTopologyNotifier();
+    initBetterActions();
+    when(mockServiceHelper.isSupportAutoOnboarding()).thenReturn(true);
+    when(mockServiceHelper.isSupportLedBlinking()).thenReturn(true);
   });
   group('Topology view test - online nodes', () {
     testResponsiveWidgets('topology view - 2 online nodes', (tester) async {
       when(mockTopologyNotifier.build()).thenReturn(testTopologyState1);
 
-      final widget = testableWidget(
+      final widget = testableSingleRoute(
           themeMode: ThemeMode.dark,
           overrides: [
             topologyProvider.overrideWith(() => mockTopologyNotifier),
           ],
-          child: const TopologyView());
+          child: const InstantTopologyView());
       await tester.pumpWidget(widget);
 
+      await tester.pumpAndSettle();
       // Find Build Context
-      final BuildContext context = tester.element(find.byType(TopologyView));
+      final BuildContext context =
+          tester.element(find.byType(InstantTopologyView));
 
       // Find by text
       final internetItem = find.text('Internet');
@@ -41,35 +51,40 @@ void main() {
       expect(internetItem, findsOneWidget);
       expect(internetItemIcon, findsOneWidget);
 
-      // Find by type
-      final treeNodeItems = find.byType(AppTreeNodeItem);
-      // nodes check
-      expect(treeNodeItems, findsNWidgets(2));
+      // TreeNodeItem widget
+      final node1Finder = find.widgetWithText(TreeNodeItem, 'Living room');
+      final node1 = tester.firstWidget(node1Finder) as TreeNodeItem;
+      final node1ImageFinder =
+          find.descendant(of: node1Finder, matching: find.byType(Image));
+      final node1Image = tester.firstWidget(node1ImageFinder) as Image;
+      expect(node1Image.image,
+          CustomTheme.of(context).images.devices.routerMx6200);
+      expect(node1.node.data.location, 'Living room');
 
-      // AppTreeNodeItem widget
-      final node1Finder = find.widgetWithText(AppTreeNodeItem, 'Living room');
-      final node1 = tester.firstWidget(node1Finder) as AppTreeNodeItem;
+      final node2Finder = find.widgetWithText(TreeNodeItem, 'Kitchen');
+      final node2 = tester.firstWidget(node2Finder) as TreeNodeItem;
+      final node2ImageFinder =
+          find.descendant(of: node1Finder, matching: find.byType(Image));
+      final node2Image = tester.firstWidget(node2ImageFinder) as Image;
+      expect(node2Image.image,
+          CustomTheme.of(context).images.devices.routerMx6200);
 
-      expect(node1.name, 'Living room');
-      expect(node1.image, CustomTheme.of(context).images.devices.routerMx6200);
-
-      final node2Finder = find.widgetWithText(AppTreeNodeItem, 'Kitchen');
-      final node2 = tester.firstWidget(node2Finder) as AppTreeNodeItem;
-      expect(node2.name, 'Kitchen');
-      expect(node2.image, CustomTheme.of(context).images.devices.routerMx6200);
-    });
+      expect(node2.node.data.location, 'Kitchen');
+    }, variants: ValueVariant({device480w}));
 
     testResponsiveWidgets('topology view - 3 online nodes stars',
         (tester) async {
       when(mockTopologyNotifier.build()).thenReturn(testTopologyState2);
 
-      final widget = testableWidget(overrides: [
+      final widget = testableSingleRoute(overrides: [
         topologyProvider.overrideWith(() => mockTopologyNotifier),
-      ], child: const TopologyView());
+      ], child: const InstantTopologyView());
       await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
 
       // Find Build Context
-      final BuildContext context = tester.element(find.byType(TopologyView));
+      final BuildContext context =
+          tester.element(find.byType(InstantTopologyView));
 
       // Find by text
       final internetItem = find.text('Internet');
@@ -79,40 +94,72 @@ void main() {
       expect(internetItem, findsOneWidget);
       expect(internetItemIcon, findsOneWidget);
 
-      // Find by type
-      final treeNodeItems = find.byType(AppTreeNodeItem);
-      // nodes check
-      expect(treeNodeItems, findsNWidgets(3));
+      // TreeNodeItem widget
+      final node1Finder =
+          find.widgetWithText(TreeNodeItem, 'Living room', skipOffstage: false);
+      final node1 = tester.firstWidget(node1Finder) as TreeNodeItem;
+      final node1ImageFinder =
+          find.descendant(of: node1Finder, matching: find.byType(Image));
+      final node1Image = tester.firstWidget(node1ImageFinder) as Image;
+      expect(node1Image.image,
+          CustomTheme.of(context).images.devices.routerMx6200);
+      expect(node1.node.data.location, 'Living room');
 
-      // AppTreeNodeItem widget
-      final node1Finder = find.widgetWithText(AppTreeNodeItem, 'Living room');
-      final node1 = tester.firstWidget(node1Finder) as AppTreeNodeItem;
+      // TreeNodeItem widget
+      final node2Finder =
+          find.widgetWithText(TreeNodeItem, 'Kitchen', skipOffstage: false);
 
-      expect(node1.name, 'Living room');
-      expect(node1.image, CustomTheme.of(context).images.devices.routerMx6200);
+      // Scroll until node 2 visible
+      await tester.scrollUntilVisible(node2Finder.first, 100,
+          scrollable: find
+              .descendant(
+                  of: find.byType(StyledAppPageView),
+                  matching: find.byType(Scrollable))
+              .last);
+      await tester.pumpAndSettle();
 
-      final node2Finder = find.widgetWithText(AppTreeNodeItem, 'Kitchen');
-      final node2 = tester.firstWidget(node2Finder) as AppTreeNodeItem;
-      expect(node2.name, 'Kitchen');
-      expect(node2.image, CustomTheme.of(context).images.devices.routerMx6200);
+      final node2 = tester.firstWidget(node2Finder) as TreeNodeItem;
+      final node2ImageFinder =
+          find.descendant(of: node2Finder, matching: find.byType(Image));
+      final node2Image = tester.firstWidget(node2ImageFinder) as Image;
+      expect(node2Image.image,
+          CustomTheme.of(context).images.devices.routerMx6200);
+      expect(node2.node.data.location, 'Kitchen');
 
-      final node3Finder = find.widgetWithText(AppTreeNodeItem, 'Basement');
-      final node3 = tester.firstWidget(node3Finder) as AppTreeNodeItem;
-      expect(node3.name, 'Basement');
-      expect(node3.image, CustomTheme.of(context).images.devices.routerMx6200);
+      // TreeNodeItem widget
+      final node3Finder =
+          find.widgetWithText(TreeNodeItem, 'Basement', skipOffstage: false);
+
+      // Scroll until node 3 visible
+      await tester.scrollUntilVisible(node3Finder.first, 100,
+          scrollable: find
+              .descendant(
+                  of: find.byType(StyledAppPageView),
+                  matching: find.byType(Scrollable))
+              .last);
+      await tester.pumpAndSettle();
+
+      final node3 = tester.firstWidget(node3Finder) as TreeNodeItem;
+      final node3ImageFinder = find.descendant(
+          of: node3Finder, matching: find.byType(Image), skipOffstage: false);
+      final node3Image = tester.firstWidget(node3ImageFinder) as Image;
+      expect(node3Image.image,
+          CustomTheme.of(context).images.devices.routerMx6200);
+      expect(node3.node.data.location, 'Basement');
     });
 
     testResponsiveWidgets('topology view - 3 online nodes daisy',
         (tester) async {
       when(mockTopologyNotifier.build()).thenReturn(testTopologyState3);
 
-      final widget = testableWidget(overrides: [
+      final widget = testableSingleRoute(overrides: [
         topologyProvider.overrideWith(() => mockTopologyNotifier),
-      ], child: const TopologyView());
+      ], child: const InstantTopologyView());
       await tester.pumpWidget(widget);
 
       // Find Build Context
-      final BuildContext context = tester.element(find.byType(TopologyView));
+      final BuildContext context =
+          tester.element(find.byType(InstantTopologyView));
 
       // Find by text
       final internetItem = find.text('Internet');
@@ -122,40 +169,68 @@ void main() {
       expect(internetItem, findsOneWidget);
       expect(internetItemIcon, findsOneWidget);
 
-      // Find by type
-      final treeNodeItems = find.byType(AppTreeNodeItem);
-      // nodes check
-      expect(treeNodeItems, findsNWidgets(3));
+      // TreeNodeItem widget
+      final node1Finder = find.widgetWithText(TreeNodeItem, 'Living room');
+      final node1 = tester.firstWidget(node1Finder) as TreeNodeItem;
+      final node1ImageFinder =
+          find.descendant(of: node1Finder, matching: find.byType(Image));
+      final node1Image = tester.firstWidget(node1ImageFinder) as Image;
+      expect(node1Image.image,
+          CustomTheme.of(context).images.devices.routerMx6200);
+      expect(node1.node.data.location, 'Living room');
 
-      // AppTreeNodeItem widget
-      final node1Finder = find.widgetWithText(AppTreeNodeItem, 'Living room');
-      final node1 = tester.firstWidget(node1Finder) as AppTreeNodeItem;
+      // TreeNodeItem widget
+      final node2Finder = find.widgetWithText(TreeNodeItem, 'Kitchen');
 
-      expect(node1.name, 'Living room');
-      expect(node1.image, CustomTheme.of(context).images.devices.routerMx6200);
+      // Scroll until node 2 visible
+      await tester.scrollUntilVisible(node2Finder.first, 100,
+          scrollable: find
+              .descendant(
+                  of: find.byType(StyledAppPageView),
+                  matching: find.byType(Scrollable))
+              .last);
+      await tester.pumpAndSettle();
 
-      final node2Finder = find.widgetWithText(AppTreeNodeItem, 'Kitchen');
-      final node2 = tester.firstWidget(node2Finder) as AppTreeNodeItem;
-      expect(node2.name, 'Kitchen');
-      expect(node2.image, CustomTheme.of(context).images.devices.routerMx6200);
+      final node2 = tester.firstWidget(node2Finder) as TreeNodeItem;
+      final node2ImageFinder =
+          find.descendant(of: node2Finder, matching: find.byType(Image));
+      final node2Image = tester.firstWidget(node2ImageFinder) as Image;
+      expect(node2Image.image,
+          CustomTheme.of(context).images.devices.routerMx6200);
+      expect(node2.node.data.location, 'Kitchen');
 
-      final node3Finder = find.widgetWithText(AppTreeNodeItem, 'Basement');
-      final node3 = tester.firstWidget(node3Finder) as AppTreeNodeItem;
-      expect(node3.name, 'Basement');
-      expect(node3.image, CustomTheme.of(context).images.devices.routerMx6200);
+      // TreeNodeItem widget
+      final node3Finder = find.widgetWithText(TreeNodeItem, 'Basement');
+      // Scroll until node 3 visible
+      await tester.scrollUntilVisible(node3Finder.first, 100,
+          scrollable: find
+              .descendant(
+                  of: find.byType(StyledAppPageView),
+                  matching: find.byType(Scrollable))
+              .last);
+      await tester.pumpAndSettle();
+
+      final node3 = tester.firstWidget(node3Finder) as TreeNodeItem;
+      final node3ImageFinder =
+          find.descendant(of: node3Finder, matching: find.byType(Image));
+      final node3Image = tester.firstWidget(node3ImageFinder) as Image;
+      expect(node3Image.image,
+          CustomTheme.of(context).images.devices.routerMx6200);
+      expect(node3.node.data.location, 'Basement');
     });
 
     testResponsiveWidgets('topology view - 6 online nodes stars',
         (tester) async {
       when(mockTopologyNotifier.build()).thenReturn(testTopologyState4);
 
-      final widget = testableWidget(overrides: [
+      final widget = testableSingleRoute(overrides: [
         topologyProvider.overrideWith(() => mockTopologyNotifier),
-      ], child: const TopologyView());
+      ], child: const InstantTopologyView());
       await tester.pumpWidget(widget);
 
       // Find Build Context
-      final BuildContext context = tester.element(find.byType(TopologyView));
+      final BuildContext context =
+          tester.element(find.byType(InstantTopologyView));
 
       // Find by text
       final internetItem = find.text('Internet');
@@ -165,57 +240,126 @@ void main() {
       expect(internetItem, findsOneWidget);
       expect(internetItemIcon, findsOneWidget);
 
-      // Find by type
-      final treeNodeItems = find.byType(AppTreeNodeItem);
+      // TreeNodeItem widget
+      final node1Finder = find.widgetWithText(TreeNodeItem, 'Living room');
+      final node1 = tester.firstWidget(node1Finder) as TreeNodeItem;
+      final node1ImageFinder =
+          find.descendant(of: node1Finder, matching: find.byType(Image));
+      final node1Image = tester.firstWidget(node1ImageFinder) as Image;
+      expect(node1Image.image,
+          CustomTheme.of(context).images.devices.routerMx6200);
+      expect(node1.node.data.location, 'Living room');
 
-      // nodes check
-      expect(treeNodeItems, findsNWidgets(6));
+      // TreeNodeItem widget
+      final node2Finder = find.widgetWithText(TreeNodeItem, 'Kitchen');
+      // Scroll until node 2 visible
+      await tester.scrollUntilVisible(node2Finder.first, 100,
+          scrollable: find
+              .descendant(
+                  of: find.byType(StyledAppPageView),
+                  matching: find.byType(Scrollable))
+              .last);
+      await tester.pumpAndSettle();
 
-      // AppTreeNodeItem widget
-      final node1Finder = find.widgetWithText(AppTreeNodeItem, 'Living room');
-      final node1 = tester.firstWidget(node1Finder) as AppTreeNodeItem;
+      final node2 = tester.firstWidget(node2Finder) as TreeNodeItem;
+      final node2ImageFinder =
+          find.descendant(of: node2Finder, matching: find.byType(Image));
+      final node2Image = tester.firstWidget(node2ImageFinder) as Image;
+      expect(node2Image.image,
+          CustomTheme.of(context).images.devices.routerMx6200);
+      expect(node2.node.data.location, 'Kitchen');
 
-      expect(node1.name, 'Living room');
-      expect(node1.image, CustomTheme.of(context).images.devices.routerMx6200);
+      // TreeNodeItem widget
+      final node3Finder = find.widgetWithText(TreeNodeItem, 'Basement');
+      // Scroll until node 3 visible
+      await tester.scrollUntilVisible(node3Finder.first, 100,
+          scrollable: find
+              .descendant(
+                  of: find.byType(StyledAppPageView),
+                  matching: find.byType(Scrollable))
+              .last);
+      await tester.pumpAndSettle();
 
-      final node2Finder = find.widgetWithText(AppTreeNodeItem, 'Kitchen');
-      final node2 = tester.firstWidget(node2Finder) as AppTreeNodeItem;
-      expect(node2.name, 'Kitchen');
-      expect(node2.image, CustomTheme.of(context).images.devices.routerMx6200);
+      final node3 = tester.firstWidget(node3Finder) as TreeNodeItem;
+      final node3ImageFinder =
+          find.descendant(of: node3Finder, matching: find.byType(Image));
+      final node3Image = tester.firstWidget(node3ImageFinder) as Image;
+      expect(node3Image.image,
+          CustomTheme.of(context).images.devices.routerMx6200);
+      expect(node3.node.data.location, 'Basement');
 
-      final node3Finder = find.widgetWithText(AppTreeNodeItem, 'Basement');
-      final node3 = tester.firstWidget(node3Finder) as AppTreeNodeItem;
-      expect(node3.name, 'Basement');
-      expect(node3.image, CustomTheme.of(context).images.devices.routerMx6200);
+      // TreeNodeItem widget
+      final node4Finder = find.widgetWithText(TreeNodeItem, 'Bed room 1');
+      // Scroll until node 3 visible
+      await tester.scrollUntilVisible(node4Finder.first, 100,
+          scrollable: find
+              .descendant(
+                  of: find.byType(StyledAppPageView),
+                  matching: find.byType(Scrollable))
+              .last);
+      await tester.pumpAndSettle();
 
-      final node4Finder = find.widgetWithText(AppTreeNodeItem, 'Bed room 1');
-      final node4 = tester.firstWidget(node4Finder) as AppTreeNodeItem;
-      expect(node4.name, 'Bed room 1');
-      expect(node4.image, CustomTheme.of(context).images.devices.routerMx6200);
+      final node4 = tester.firstWidget(node4Finder) as TreeNodeItem;
+      final node4ImageFinder =
+          find.descendant(of: node4Finder, matching: find.byType(Image));
+      final node4Image = tester.firstWidget(node4ImageFinder) as Image;
+      expect(node4Image.image,
+          CustomTheme.of(context).images.devices.routerMx6200);
+      expect(node4.node.data.location, 'Bed room 1');
 
-      final node5Finder = find.widgetWithText(AppTreeNodeItem, 'Bed room 2');
-      final node5 = tester.firstWidget(node5Finder) as AppTreeNodeItem;
-      expect(node5.name, 'Bed room 2');
-      expect(node5.image, CustomTheme.of(context).images.devices.routerMx6200);
+      // TreeNodeItem widget
+      final node5Finder = find.widgetWithText(TreeNodeItem, 'Bed room 2');
+      // Scroll until node 3 visible
+      await tester.scrollUntilVisible(node5Finder.first, 100,
+          scrollable: find
+              .descendant(
+                  of: find.byType(StyledAppPageView),
+                  matching: find.byType(Scrollable))
+              .last);
+      await tester.pumpAndSettle();
 
+      final node5 = tester.firstWidget(node5Finder) as TreeNodeItem;
+      final node5ImageFinder =
+          find.descendant(of: node5Finder, matching: find.byType(Image));
+      final node5Image = tester.firstWidget(node5ImageFinder) as Image;
+      expect(node5Image.image,
+          CustomTheme.of(context).images.devices.routerMx6200);
+      expect(node5.node.data.location, 'Bed room 2');
+
+      // TreeNodeItem widget
       final node6Finder = find.widgetWithText(
-          AppTreeNodeItem, 'A super long long long long long long cool name');
-      final node6 = tester.firstWidget(node6Finder) as AppTreeNodeItem;
-      expect(node6.name, 'A super long long long long long long cool name');
-      expect(node6.image, CustomTheme.of(context).images.devices.routerMx6200);
+          TreeNodeItem, 'A super long long long long long long cool name');
+      // Scroll until node 3 visible
+      await tester.scrollUntilVisible(node5Finder.first, 100,
+          scrollable: find
+              .descendant(
+                  of: find.byType(StyledAppPageView),
+                  matching: find.byType(Scrollable))
+              .last);
+      await tester.pumpAndSettle();
+
+      final node6 = tester.firstWidget(node6Finder) as TreeNodeItem;
+      final node6ImageFinder =
+          find.descendant(of: node6Finder, matching: find.byType(Image));
+      final node6Image = tester.firstWidget(node6ImageFinder) as Image;
+      expect(node6Image.image,
+          CustomTheme.of(context).images.devices.routerMx6200);
+      expect(node6.node.data.location,
+          'A super long long long long long long cool name');
     });
 
     testResponsiveWidgets('topology view - 6 online nodes daisy',
         (tester) async {
       when(mockTopologyNotifier.build()).thenReturn(testTopologyState5);
 
-      final widget = testableWidget(overrides: [
+      final widget = testableSingleRoute(overrides: [
         topologyProvider.overrideWith(() => mockTopologyNotifier),
-      ], child: const TopologyView());
+      ], child: const InstantTopologyView());
       await tester.pumpWidget(widget);
 
       // Find Build Context
-      final BuildContext context = tester.element(find.byType(TopologyView));
+      final BuildContext context =
+          tester.element(find.byType(InstantTopologyView));
 
       // Find by text
       final internetItem = find.text('Internet');
@@ -225,56 +369,126 @@ void main() {
       expect(internetItem, findsOneWidget);
       expect(internetItemIcon, findsOneWidget);
 
-      // Find by type
-      final treeNodeItems = find.byType(AppTreeNodeItem);
-      // nodes check
-      expect(treeNodeItems, findsNWidgets(6));
+      // TreeNodeItem widget
+      final node1Finder = find.widgetWithText(TreeNodeItem, 'Living room');
+      final node1 = tester.firstWidget(node1Finder) as TreeNodeItem;
+      final node1ImageFinder =
+          find.descendant(of: node1Finder, matching: find.byType(Image));
+      final node1Image = tester.firstWidget(node1ImageFinder) as Image;
+      expect(node1Image.image,
+          CustomTheme.of(context).images.devices.routerMx6200);
+      expect(node1.node.data.location, 'Living room');
 
-      // AppTreeNodeItem widget
-      final node1Finder = find.widgetWithText(AppTreeNodeItem, 'Living room');
-      final node1 = tester.firstWidget(node1Finder) as AppTreeNodeItem;
+      // TreeNodeItem widget
+      final node2Finder = find.widgetWithText(TreeNodeItem, 'Kitchen');
+      // Scroll until node 2 visible
+      await tester.scrollUntilVisible(node2Finder.first, 100,
+          scrollable: find
+              .descendant(
+                  of: find.byType(StyledAppPageView),
+                  matching: find.byType(Scrollable))
+              .last);
+      await tester.pumpAndSettle();
 
-      expect(node1.name, 'Living room');
-      expect(node1.image, CustomTheme.of(context).images.devices.routerMx6200);
+      final node2 = tester.firstWidget(node2Finder) as TreeNodeItem;
+      final node2ImageFinder =
+          find.descendant(of: node2Finder, matching: find.byType(Image));
+      final node2Image = tester.firstWidget(node2ImageFinder) as Image;
+      expect(node2Image.image,
+          CustomTheme.of(context).images.devices.routerMx6200);
+      expect(node2.node.data.location, 'Kitchen');
 
-      final node2Finder = find.widgetWithText(AppTreeNodeItem, 'Kitchen');
-      final node2 = tester.firstWidget(node2Finder) as AppTreeNodeItem;
-      expect(node2.name, 'Kitchen');
-      expect(node2.image, CustomTheme.of(context).images.devices.routerMx6200);
+      // TreeNodeItem widget
+      final node3Finder = find.widgetWithText(TreeNodeItem, 'Basement');
+      // Scroll until node 3 visible
+      await tester.scrollUntilVisible(node3Finder.first, 100,
+          scrollable: find
+              .descendant(
+                  of: find.byType(StyledAppPageView),
+                  matching: find.byType(Scrollable))
+              .last);
+      await tester.pumpAndSettle();
 
-      final node3Finder = find.widgetWithText(AppTreeNodeItem, 'Basement');
-      final node3 = tester.firstWidget(node3Finder) as AppTreeNodeItem;
-      expect(node3.name, 'Basement');
-      expect(node3.image, CustomTheme.of(context).images.devices.routerMx6200);
+      final node3 = tester.firstWidget(node3Finder) as TreeNodeItem;
+      final node3ImageFinder =
+          find.descendant(of: node3Finder, matching: find.byType(Image));
+      final node3Image = tester.firstWidget(node3ImageFinder) as Image;
+      expect(node3Image.image,
+          CustomTheme.of(context).images.devices.routerMx6200);
+      expect(node3.node.data.location, 'Basement');
 
-      final node4Finder = find.widgetWithText(AppTreeNodeItem, 'Bed room 1');
-      final node4 = tester.firstWidget(node4Finder) as AppTreeNodeItem;
-      expect(node4.name, 'Bed room 1');
-      expect(node4.image, CustomTheme.of(context).images.devices.routerMx6200);
+      // TreeNodeItem widget
+      final node4Finder = find.widgetWithText(TreeNodeItem, 'Bed room 1');
+      // Scroll until node 3 visible
+      await tester.scrollUntilVisible(node4Finder.first, 100,
+          scrollable: find
+              .descendant(
+                  of: find.byType(StyledAppPageView),
+                  matching: find.byType(Scrollable))
+              .last);
+      await tester.pumpAndSettle();
 
-      final node5Finder = find.widgetWithText(AppTreeNodeItem, 'Bed room 2');
-      final node5 = tester.firstWidget(node5Finder) as AppTreeNodeItem;
-      expect(node5.name, 'Bed room 2');
-      expect(node5.image, CustomTheme.of(context).images.devices.routerMx6200);
+      final node4 = tester.firstWidget(node4Finder) as TreeNodeItem;
+      final node4ImageFinder =
+          find.descendant(of: node4Finder, matching: find.byType(Image));
+      final node4Image = tester.firstWidget(node4ImageFinder) as Image;
+      expect(node4Image.image,
+          CustomTheme.of(context).images.devices.routerMx6200);
+      expect(node4.node.data.location, 'Bed room 1');
 
+      // TreeNodeItem widget
+      final node5Finder = find.widgetWithText(TreeNodeItem, 'Bed room 2');
+      // Scroll until node 3 visible
+      await tester.scrollUntilVisible(node5Finder.first, 100,
+          scrollable: find
+              .descendant(
+                  of: find.byType(StyledAppPageView),
+                  matching: find.byType(Scrollable))
+              .last);
+      await tester.pumpAndSettle();
+
+      final node5 = tester.firstWidget(node5Finder) as TreeNodeItem;
+      final node5ImageFinder =
+          find.descendant(of: node5Finder, matching: find.byType(Image));
+      final node5Image = tester.firstWidget(node5ImageFinder) as Image;
+      expect(node5Image.image,
+          CustomTheme.of(context).images.devices.routerMx6200);
+      expect(node5.node.data.location, 'Bed room 2');
+
+      // TreeNodeItem widget
       final node6Finder = find.widgetWithText(
-          AppTreeNodeItem, 'A super long long long long long long cool name');
-      final node6 = tester.firstWidget(node6Finder) as AppTreeNodeItem;
-      expect(node6.name, 'A super long long long long long long cool name');
-      expect(node6.image, CustomTheme.of(context).images.devices.routerMx6200);
+          TreeNodeItem, 'A super long long long long long long cool name');
+      // Scroll until node 3 visible
+      await tester.scrollUntilVisible(node5Finder.first, 100,
+          scrollable: find
+              .descendant(
+                  of: find.byType(StyledAppPageView),
+                  matching: find.byType(Scrollable))
+              .last);
+      await tester.pumpAndSettle();
+
+      final node6 = tester.firstWidget(node6Finder) as TreeNodeItem;
+      final node6ImageFinder =
+          find.descendant(of: node6Finder, matching: find.byType(Image));
+      final node6Image = tester.firstWidget(node6ImageFinder) as Image;
+      expect(node6Image.image,
+          CustomTheme.of(context).images.devices.routerMx6200);
+      expect(node6.node.data.location,
+          'A super long long long long long long cool name');
     });
 
     testResponsiveWidgets('topology view - 6 online nodes hybrid',
         (tester) async {
       when(mockTopologyNotifier.build()).thenReturn(testTopologyState5);
 
-      final widget = testableWidget(overrides: [
+      final widget = testableSingleRoute(overrides: [
         topologyProvider.overrideWith(() => mockTopologyNotifier),
-      ], child: const TopologyView());
+      ], child: const InstantTopologyView());
       await tester.pumpWidget(widget);
 
       // Find Build Context
-      final BuildContext context = tester.element(find.byType(TopologyView));
+      final BuildContext context =
+          tester.element(find.byType(InstantTopologyView));
 
       // Find by text
       final internetItem = find.text('Internet');
@@ -284,151 +498,220 @@ void main() {
       expect(internetItem, findsOneWidget);
       expect(internetItemIcon, findsOneWidget);
 
-      // Find by type
-      final treeNodeItems = find.byType(AppTreeNodeItem);
-      // nodes check
-      expect(treeNodeItems, findsNWidgets(6));
+      // TreeNodeItem widget
+      final node1Finder = find.widgetWithText(TreeNodeItem, 'Living room');
+      final node1 = tester.firstWidget(node1Finder) as TreeNodeItem;
+      final node1ImageFinder =
+          find.descendant(of: node1Finder, matching: find.byType(Image));
+      final node1Image = tester.firstWidget(node1ImageFinder) as Image;
+      expect(node1Image.image,
+          CustomTheme.of(context).images.devices.routerMx6200);
+      expect(node1.node.data.location, 'Living room');
 
-      // AppTreeNodeItem widget
-      final node1Finder = find.widgetWithText(AppTreeNodeItem, 'Living room');
-      final node1 = tester.firstWidget(node1Finder) as AppTreeNodeItem;
+      // TreeNodeItem widget
+      final node2Finder = find.widgetWithText(TreeNodeItem, 'Kitchen');
+      // Scroll until node 2 visible
+      await tester.scrollUntilVisible(node2Finder.first, 100,
+          scrollable: find
+              .descendant(
+                  of: find.byType(StyledAppPageView),
+                  matching: find.byType(Scrollable))
+              .last);
+      await tester.pumpAndSettle();
 
-      expect(node1.name, 'Living room');
-      expect(node1.image, CustomTheme.of(context).images.devices.routerMx6200);
+      final node2 = tester.firstWidget(node2Finder) as TreeNodeItem;
+      final node2ImageFinder =
+          find.descendant(of: node2Finder, matching: find.byType(Image));
+      final node2Image = tester.firstWidget(node2ImageFinder) as Image;
+      expect(node2Image.image,
+          CustomTheme.of(context).images.devices.routerMx6200);
+      expect(node2.node.data.location, 'Kitchen');
 
-      final node2Finder = find.widgetWithText(AppTreeNodeItem, 'Kitchen');
-      final node2 = tester.firstWidget(node2Finder) as AppTreeNodeItem;
-      expect(node2.name, 'Kitchen');
-      expect(node2.image, CustomTheme.of(context).images.devices.routerMx6200);
+      // TreeNodeItem widget
+      final node3Finder = find.widgetWithText(TreeNodeItem, 'Basement');
+      // Scroll until node 3 visible
+      await tester.scrollUntilVisible(node3Finder.first, 100,
+          scrollable: find
+              .descendant(
+                  of: find.byType(StyledAppPageView),
+                  matching: find.byType(Scrollable))
+              .last);
+      await tester.pumpAndSettle();
 
-      final node3Finder = find.widgetWithText(AppTreeNodeItem, 'Basement');
-      final node3 = tester.firstWidget(node3Finder) as AppTreeNodeItem;
-      expect(node3.name, 'Basement');
-      expect(node3.image, CustomTheme.of(context).images.devices.routerMx6200);
+      final node3 = tester.firstWidget(node3Finder) as TreeNodeItem;
+      final node3ImageFinder =
+          find.descendant(of: node3Finder, matching: find.byType(Image));
+      final node3Image = tester.firstWidget(node3ImageFinder) as Image;
+      expect(node3Image.image,
+          CustomTheme.of(context).images.devices.routerMx6200);
+      expect(node3.node.data.location, 'Basement');
 
-      final node4Finder = find.widgetWithText(AppTreeNodeItem, 'Bed room 1');
-      final node4 = tester.firstWidget(node4Finder) as AppTreeNodeItem;
-      expect(node4.name, 'Bed room 1');
-      expect(node4.image, CustomTheme.of(context).images.devices.routerMx6200);
+      // TreeNodeItem widget
+      final node4Finder = find.widgetWithText(TreeNodeItem, 'Bed room 1');
+      // Scroll until node 3 visible
+      await tester.scrollUntilVisible(node4Finder.first, 100,
+          scrollable: find
+              .descendant(
+                  of: find.byType(StyledAppPageView),
+                  matching: find.byType(Scrollable))
+              .last);
+      await tester.pumpAndSettle();
 
-      final node5Finder = find.widgetWithText(AppTreeNodeItem, 'Bed room 2');
-      final node5 = tester.firstWidget(node5Finder) as AppTreeNodeItem;
-      expect(node5.name, 'Bed room 2');
-      expect(node5.image, CustomTheme.of(context).images.devices.routerMx6200);
+      final node4 = tester.firstWidget(node4Finder) as TreeNodeItem;
+      final node4ImageFinder =
+          find.descendant(of: node4Finder, matching: find.byType(Image));
+      final node4Image = tester.firstWidget(node4ImageFinder) as Image;
+      expect(node4Image.image,
+          CustomTheme.of(context).images.devices.routerMx6200);
+      expect(node4.node.data.location, 'Bed room 1');
 
+      // TreeNodeItem widget
+      final node5Finder = find.widgetWithText(TreeNodeItem, 'Bed room 2');
+      // Scroll until node 3 visible
+      await tester.scrollUntilVisible(node5Finder.first, 100,
+          scrollable: find
+              .descendant(
+                  of: find.byType(StyledAppPageView),
+                  matching: find.byType(Scrollable))
+              .last);
+      await tester.pumpAndSettle();
+
+      final node5 = tester.firstWidget(node5Finder) as TreeNodeItem;
+      final node5ImageFinder =
+          find.descendant(of: node5Finder, matching: find.byType(Image));
+      final node5Image = tester.firstWidget(node5ImageFinder) as Image;
+      expect(node5Image.image,
+          CustomTheme.of(context).images.devices.routerMx6200);
+      expect(node5.node.data.location, 'Bed room 2');
+
+      // TreeNodeItem widget
       final node6Finder = find.widgetWithText(
-          AppTreeNodeItem, 'A super long long long long long long cool name');
-      final node6 = tester.firstWidget(node6Finder) as AppTreeNodeItem;
-      expect(node6.name, 'A super long long long long long long cool name');
-      expect(node6.image, CustomTheme.of(context).images.devices.routerMx6200);
+          TreeNodeItem, 'A super long long long long long long cool name');
+      // Scroll until node 3 visible
+      await tester.scrollUntilVisible(node5Finder.first, 100,
+          scrollable: find
+              .descendant(
+                  of: find.byType(StyledAppPageView),
+                  matching: find.byType(Scrollable))
+              .last);
+      await tester.pumpAndSettle();
+
+      final node6 = tester.firstWidget(node6Finder) as TreeNodeItem;
+      final node6ImageFinder =
+          find.descendant(of: node6Finder, matching: find.byType(Image));
+      final node6Image = tester.firstWidget(node6ImageFinder) as Image;
+      expect(node6Image.image,
+          CustomTheme.of(context).images.devices.routerMx6200);
+      expect(node6.node.data.location,
+          'A super long long long long long long cool name');
     });
   });
 
-  group('Topology view test - has offline nodes', () {
-    testResponsiveWidgets('topology view - 1 offline node', (tester) async {
-      when(mockTopologyNotifier.build()).thenReturn(testTopologyStateOffline1);
-      // when(mockTopologyNotifier.isSupportAutoOnboarding()).thenReturn(true);
-      final widget = testableWidget(
-          themeMode: ThemeMode.dark,
-          overrides: [
-            topologyProvider.overrideWith(() => mockTopologyNotifier),
-          ],
-          child: const TopologyView());
-      await tester.pumpWidget(widget);
+  // group('Topology view test - has offline nodes', () {
+  //   testResponsiveWidgets('topology view - 1 offline node', (tester) async {
+  //     when(mockTopologyNotifier.build()).thenReturn(testTopologyStateOffline1);
+  //     // when(mockTopologyNotifier.isSupportAutoOnboarding()).thenReturn(true);
+  //     final widget = testableSingleRoute(
+  //         themeMode: ThemeMode.dark,
+  //         overrides: [
+  //           topologyProvider.overrideWith(() => mockTopologyNotifier),
+  //         ],
+  //         child: const TopologyDetailedView());
+  //     await tester.pumpWidget(widget);
 
-      // Find Build Context
-      final BuildContext context = tester.element(find.byType(TopologyView));
+  //     // Find Build Context
+  //     final BuildContext context =
+  //         tester.element(find.byType(TopologyDetailedView));
 
-      // Find by text
-      final internetItem = find.text('Internet');
-      // Find by icon
-      final internetItemIcon = find.byIcon(LinksysIcons.language);
-      // internet node check
-      expect(internetItem, findsOneWidget);
-      expect(internetItemIcon, findsOneWidget);
+  //     // Find by text
+  //     final internetItem = find.text('Internet');
+  //     // Find by icon
+  //     final internetItemIcon = find.byIcon(LinksysIcons.language);
+  //     // internet node check
+  //     expect(internetItem, findsOneWidget);
+  //     expect(internetItemIcon, findsOneWidget);
 
-      // Find offline text
-      final offlineItem = find.text('Offline');
+  //     // Find offline text
+  //     final offlineItem = find.text('Offline');
 
-      // check
-      expect(offlineItem, findsNWidgets(1));
+  //     // check
+  //     expect(offlineItem, findsNWidgets(1));
 
-      // Find by type
-      final treeNodeItems = find.byType(AppTreeNodeItem);
-      final treeNodeLargeItems = find.byType(AppTreeNodeItem);
+  //     // Find by type
+  //     final treeNodeItems = find.byType(TreeNodeItem);
+  //     final treeNodeLargeItems = find.byType(TreeNodeItem);
 
-      // nodes check
-      expect(treeNodeItems, findsNWidgets(1));
-      expect(treeNodeLargeItems, findsNWidgets(1));
+  //     // nodes check
+  //     expect(treeNodeItems, findsNWidgets(1));
+  //     expect(treeNodeLargeItems, findsNWidgets(1));
 
-      // AppTreeNodeItem widget
-      final node1Finder =
-          find.widgetWithText(AppTreeNodeItemLarge, 'Living room');
-      final node1 = tester.firstWidget(node1Finder) as AppTreeNodeItemLarge;
+  //     // TreeNodeItem widget
+  //     final node1Finder = find.widgetWithText(TreeNodeItem, 'Living room');
+  //     final node1 = tester.firstWidget(node1Finder) as TreeNodeItem;
 
-      expect(node1.name, 'Living room');
-      expect(node1.image, CustomTheme.of(context).images.devices.routerMx6200);
+  //     expect(node1.name, 'Living room');
+  //     expect(node1.image, CustomTheme.of(context).images.devices.routerMx6200);
 
-      final node2Finder = find.widgetWithText(AppTreeNodeItem, 'Kitchen');
-      final node2 = tester.firstWidget(node2Finder) as AppTreeNodeItem;
-      expect(node2.name, 'Kitchen');
-      expect(node2.image, CustomTheme.of(context).images.devices.routerMx6200);
-      expect(node2.status, 'Offline');
-    });
+  //     final node2Finder = find.widgetWithText(TreeNodeItem, 'Kitchen');
+  //     final node2 = tester.firstWidget(node2Finder) as TreeNodeItem;
+  //     expect(node2.name, 'Kitchen');
+  //     expect(node2.image, CustomTheme.of(context).images.devices.routerMx6200);
+  //     expect(node2.status, 'Offline');
+  //   });
 
-    testResponsiveWidgets('topology view - 2 offline nodes', (tester) async {
-      when(mockTopologyNotifier.build()).thenReturn(testTopologyStateOffline2);
-      // when(mockTopologyNotifier.isSupportAutoOnboarding()).thenReturn(true);
+  //   testResponsiveWidgets('topology view - 2 offline nodes', (tester) async {
+  //     when(mockTopologyNotifier.build()).thenReturn(testTopologyStateOffline2);
+  //     // when(mockTopologyNotifier.isSupportAutoOnboarding()).thenReturn(true);
 
-      final widget = testableWidget(overrides: [
-        topologyProvider.overrideWith(() => mockTopologyNotifier),
-      ], child: const TopologyView());
-      await tester.pumpWidget(widget);
+  //     final widget = testableSingleRoute(overrides: [
+  //       topologyProvider.overrideWith(() => mockTopologyNotifier),
+  //     ], child: const TopologyDetailedView());
+  //     await tester.pumpWidget(widget);
 
-      // Find Build Context
-      final BuildContext context = tester.element(find.byType(TopologyView));
+  //     // Find Build Context
+  //     final BuildContext context =
+  //         tester.element(find.byType(TopologyDetailedView));
 
-      // Find by text
-      final internetItem = find.text('Internet');
-      // Find by icon
-      final internetItemIcon = find.byIcon(LinksysIcons.language);
-      // internet node check
-      expect(internetItem, findsOneWidget);
-      expect(internetItemIcon, findsOneWidget);
+  //     // Find by text
+  //     final internetItem = find.text('Internet');
+  //     // Find by icon
+  //     final internetItemIcon = find.byIcon(LinksysIcons.language);
+  //     // internet node check
+  //     expect(internetItem, findsOneWidget);
+  //     expect(internetItemIcon, findsOneWidget);
 
-      // Find offline text
-      final offlineItem = find.text('Offline');
+  //     // Find offline text
+  //     final offlineItem = find.text('Offline');
 
-      // check
-      expect(offlineItem, findsNWidgets(2));
+  //     // check
+  //     expect(offlineItem, findsNWidgets(2));
 
-      // Find by type
-      final treeNodeItems = find.byType(AppTreeNodeItem);
-      final treeNodeLargeItems = find.byType(AppTreeNodeItemLarge);
+  //     // Find by type
+  //     final treeNodeItems = find.byType(TreeNodeItem);
+  //     final treeNodeLargeItems = find.byType(TreeNodeItem);
 
-      // nodes check
-      expect(treeNodeItems, findsNWidgets(2));
-      expect(treeNodeLargeItems, findsNWidgets(1));
+  //     // nodes check
+  //     expect(treeNodeItems, findsNWidgets(2));
+  //     expect(treeNodeLargeItems, findsNWidgets(1));
 
-      // AppTreeNodeItem widget
-      final node1Finder =
-          find.widgetWithText(AppTreeNodeItemLarge, 'Living room');
-      final node1 = tester.firstWidget(node1Finder) as AppTreeNodeItemLarge;
+  //     // TreeNodeItem widget
+  //     final node1Finder = find.widgetWithText(TreeNodeItem, 'Living room');
+  //     final node1 = tester.firstWidget(node1Finder) as TreeNodeItem;
 
-      expect(node1.name, 'Living room');
-      expect(node1.image, CustomTheme.of(context).images.devices.routerMx6200);
+  //     expect(node1.name, 'Living room');
+  //     expect(node1.image, CustomTheme.of(context).images.devices.routerMx6200);
 
-      final node2Finder = find.widgetWithText(AppTreeNodeItem, 'Kitchen');
-      final node2 = tester.firstWidget(node2Finder) as AppTreeNodeItem;
-      expect(node2.name, 'Kitchen');
-      expect(node2.status, 'Offline');
-      expect(node2.image, CustomTheme.of(context).images.devices.routerMx6200);
+  //     final node2Finder = find.widgetWithText(TreeNodeItem, 'Kitchen');
+  //     final node2 = tester.firstWidget(node2Finder) as TreeNodeItem;
+  //     expect(node2.name, 'Kitchen');
+  //     expect(node2.status, 'Offline');
+  //     expect(node2.image, CustomTheme.of(context).images.devices.routerMx6200);
 
-      final node3Finder = find.widgetWithText(AppTreeNodeItem, 'Basement');
-      final node3 = tester.firstWidget(node3Finder) as AppTreeNodeItem;
-      expect(node3.name, 'Basement');
-      expect(node3.status, 'Offline');
-      expect(node3.image, CustomTheme.of(context).images.devices.routerMx6200);
-    });
-  });
+  //     final node3Finder = find.widgetWithText(TreeNodeItem, 'Basement');
+  //     final node3 = tester.firstWidget(node3Finder) as TreeNodeItem;
+  //     expect(node3.name, 'Basement');
+  //     expect(node3.status, 'Offline');
+  //     expect(node3.image, CustomTheme.of(context).images.devices.routerMx6200);
+  //   });
+  // });
 }

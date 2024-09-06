@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:privacy_gui/page/safe_browsing/providers/_providers.dart';
-import 'package:privacy_gui/page/safe_browsing/views/safe_browsing_view.dart';
+import 'package:privacy_gui/page/instant_safety/providers/_providers.dart';
+import 'package:privacy_gui/page/instant_safety/views/instant_safety_view.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 
@@ -25,7 +25,7 @@ void main() {
   testLocalizations('Safe browsing view - off', (tester, locale) async {
     await tester.pumpWidget(
       testableSingleRoute(
-        child: const SafeBrowsingView(),
+        child: const InstantSafetyView(),
         config:
             LinksysRouteConfig(column: ColumnGrid(column: 9, centered: true)),
         locale: locale,
@@ -42,7 +42,7 @@ void main() {
         .thenReturn(SafeBrowsingState.fromMap(safeBrowsingTestState1));
     await tester.pumpWidget(
       testableSingleRoute(
-        child: const SafeBrowsingView(),
+        child: const InstantSafetyView(),
         config:
             LinksysRouteConfig(column: ColumnGrid(column: 9, centered: true)),
         locale: locale,
@@ -62,7 +62,7 @@ void main() {
         .thenReturn(SafeBrowsingState.fromMap(safeBrowsingTestState1));
     await tester.pumpWidget(
       testableSingleRoute(
-        child: const SafeBrowsingView(),
+        child: const InstantSafetyView(),
         config:
             LinksysRouteConfig(column: ColumnGrid(column: 9, centered: true)),
         locale: locale,
@@ -79,7 +79,7 @@ void main() {
         .thenReturn(SafeBrowsingState.fromMap(safeBrowsingTestState2));
     await tester.pumpWidget(
       testableSingleRoute(
-        child: const SafeBrowsingView(),
+        child: const InstantSafetyView(),
         config:
             LinksysRouteConfig(column: ColumnGrid(column: 9, centered: true)),
         locale: locale,
@@ -97,7 +97,7 @@ void main() {
         SafeBrowsingState.fromMap(safeBrowsingTestStateNotSupported));
     await tester.pumpWidget(
       testableSingleRoute(
-        child: const SafeBrowsingView(),
+        child: const InstantSafetyView(),
         config:
             LinksysRouteConfig(column: ColumnGrid(column: 9, centered: true)),
         locale: locale,
@@ -114,7 +114,7 @@ void main() {
         SafeBrowsingState.fromMap(safeBrowsingTestStateNotSupported));
     await tester.pumpWidget(
       testableSingleRoute(
-        child: const SafeBrowsingView(),
+        child: const InstantSafetyView(),
         config:
             LinksysRouteConfig(column: ColumnGrid(column: 9, centered: true)),
         locale: locale,

@@ -138,7 +138,8 @@ class Utils {
 }
 
 extension DateFormatUtils on Utils {
-  static String formatDuration(Duration d, [BuildContext? context]) {
+  static String formatDuration(Duration d,
+      [BuildContext? context, bool excludeSecs = false]) {
     var seconds = d.inSeconds;
     final days = seconds ~/ Duration.secondsPerDay;
     seconds -= days * Duration.secondsPerDay;
@@ -161,9 +162,11 @@ extension DateFormatUtils on Utils {
           context == null ? '${minutes}m' : loc(context).nMinutes(minutes);
       tokens.add(token);
     }
-    final token =
-        context == null ? '${seconds}s' : loc(context).nSeconds(seconds);
-    tokens.add(token);
+    if (!excludeSecs) {
+      final token =
+          context == null ? '${seconds}s' : loc(context).nSeconds(seconds);
+      tokens.add(token);
+    }
 
     return tokens.join(' ');
   }
@@ -562,34 +565,6 @@ extension WiFiUtils on Utils {
         return LinksysIcons.ethernet;
     }
   }
-
-  static Icon resolveSignalStrengthIcon(
-      BuildContext context, int signalStrength,
-      {bool isOnline = true, bool isWired = false}) {
-    return Icon(
-      !isOnline
-          ? LinksysIcons.signalWifiNone
-          : isWired
-              ? WiFiUtils.getWifiSignalIconData(context, null)
-              : WiFiUtils.getWifiSignalIconData(context, signalStrength),
-      color: !isOnline
-          ? Theme.of(context).colorScheme.outline
-          : getWifiSignalLevel(isWired ? null : signalStrength)
-              .resolveColor(context),
-      semanticLabel: 'signal strength icon',
-    );
-  }
-
-  static Image resolveRouterImage(BuildContext context, String iconName,
-      {double size = 40}) {
-    return Image(
-      image: CustomTheme.of(context).images.devices.getByName(iconName) ??
-          CustomTheme.of(context).images.devices.routerLn11,
-      semanticLabel: 'router image',
-      width: size,
-      height: size,
-    );
-  }
 }
 
 extension NodeSignalLevelExt on NodeSignalLevel {
@@ -607,10 +582,10 @@ extension NodeSignalLevelExt on NodeSignalLevel {
   Color? resolveColor(BuildContext context) {
     return switch (this) {
       NodeSignalLevel.excellent => Theme.of(context).colorSchemeExt.green,
-      NodeSignalLevel.poor => Theme.of(context).colorSchemeExt.green,
-      NodeSignalLevel.good => Theme.of(context).colorSchemeExt.orange,
-      NodeSignalLevel.fair => Theme.of(context).colorScheme.error,
-      NodeSignalLevel.wired => Theme.of(context).colorScheme.primary,
+      NodeSignalLevel.good => Theme.of(context).colorScheme.primary,
+      NodeSignalLevel.fair => Theme.of(context).colorSchemeExt.orange,
+      NodeSignalLevel.poor => Theme.of(context).colorScheme.error,
+      NodeSignalLevel.wired => Theme.of(context).colorScheme.onSurface,
       NodeSignalLevel.none => Colors.black,
     };
   }

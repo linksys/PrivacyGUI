@@ -4,4 +4,4 @@
 ///
 @GenerateNiceMocks([MockSpec<TopologyNotifier>()])
 import 'package:mockito/annotations.dart';
-import 'package:privacy_gui/page/topology/providers/topology_provider.dart';
+import 'package:privacy_gui/page/instant_topology/providers/topology_provider.dart';

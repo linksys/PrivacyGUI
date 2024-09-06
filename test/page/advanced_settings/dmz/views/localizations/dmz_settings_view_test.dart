@@ -5,9 +5,9 @@ import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/page/advanced_settings/dmz/providers/dmz_settings_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/dmz/providers/dmz_settings_state.dart';
 import 'package:privacy_gui/page/advanced_settings/dmz/views/dmz_settings_view.dart';
-import 'package:privacy_gui/page/devices/providers/device_list_provider.dart';
-import 'package:privacy_gui/page/devices/providers/device_list_state.dart';
-import 'package:privacy_gui/page/devices/views/select_device_view.dart';
+import 'package:privacy_gui/page/instant_device/providers/device_list_provider.dart';
+import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
+import 'package:privacy_gui/page/instant_device/views/select_device_view.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 

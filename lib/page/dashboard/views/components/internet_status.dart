@@ -61,7 +61,7 @@ class _InternetConnectionWidgetState
                               ? Theme.of(context).colorSchemeExt.green
                               : Theme.of(context).colorScheme.surfaceVariant,
                         ),
-                        const AppGap.medium(),
+                        const AppGap.small2(),
                         AppText.titleMedium(
                           isOnline
                               ? loc(context).internetOnline

@@ -6,7 +6,7 @@
 import 'dart:async' as _i4;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart' as _i2;
-import 'package:privacy_gui/page/topology/_topology.dart' as _i3;
+import 'package:privacy_gui/page/instant_topology/_instant_topology.dart' as _i3;
 import 'package:mockito/mockito.dart' as _i1;
 
 // ignore_for_file: type=lint

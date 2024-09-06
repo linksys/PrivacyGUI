@@ -9,8 +9,8 @@ import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
-import 'package:privacy_gui/page/safe_browsing/providers/_providers.dart';
-import 'package:privacy_gui/page/topology/providers/topology_provider.dart';
+import 'package:privacy_gui/page/instant_safety/providers/_providers.dart';
+import 'package:privacy_gui/page/instant_topology/providers/topology_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/route/router_provider.dart';
@@ -50,8 +50,12 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
             onTap: () {
               _restartNetwork();
             }),
-        // PageMenuItem(
-        //     label: loc(context).menuSetupANewProduct, icon: LinksysIcons.add)
+        PageMenuItem(
+            label: loc(context).menuSetupANewProduct,
+            icon: LinksysIcons.add,
+            onTap: () {
+              context.pushNamed(RouteNamed.addNodes);
+            })
       ]),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,

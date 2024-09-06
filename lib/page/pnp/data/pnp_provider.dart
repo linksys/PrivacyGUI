@@ -242,7 +242,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
 
   @override
   Future<bool> pnpCheck() async {
-    if (!ServiceHelper().isSupportPnP(state.deviceInfo?.services)) {
+    if (!serviceHelper.isSupportPnP(state.deviceInfo?.services)) {
       logger.i('[PnP]: The router does NOT support PNP!');
       return false;
     }
@@ -300,7 +300,8 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
 
   @override
   Future fetchData() {
-    bool isSupportNodeLight = ServiceHelper().isSupportLedMode(state.deviceInfo?.services);
+    bool isSupportNodeLight =
+        serviceHelper.isSupportLedMode(state.deviceInfo?.services);
     final transaction = JNAPTransactionBuilder(
       commands: [
         const MapEntry(JNAPAction.getSimpleWiFiSettings, {}),
