@@ -2,4 +2,4 @@
   MockSpec<TimezoneNotifier>(),
 ])
 import 'package:mockito/annotations.dart';
-import 'package:privacy_gui/page/network_admin/providers/timezone_provider.dart';
+import 'package:privacy_gui/page/instant_admin/providers/timezone_provider.dart';

@@ -6,7 +6,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/bottom_bar.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
-import 'package:privacy_gui/page/network_admin/providers/_providers.dart';
+import 'package:privacy_gui/page/instant_admin/providers/_providers.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';

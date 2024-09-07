@@ -2,10 +2,10 @@ import 'dart:async' as _i6;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:privacy_gui/page/network_admin/providers/_providers.dart';
-import 'package:privacy_gui/page/network_admin/providers/router_password_provider.dart'
+import 'package:privacy_gui/page/instant_admin/providers/_providers.dart';
+import 'package:privacy_gui/page/instant_admin/providers/router_password_provider.dart'
     as _i5;
-import 'package:privacy_gui/page/network_admin/providers/router_password_state.dart'
+import 'package:privacy_gui/page/instant_admin/providers/router_password_state.dart'
     as _i3;
 
 // ignore_for_file: type=lint

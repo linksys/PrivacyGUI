@@ -7,7 +7,7 @@ final menus = [
     config: LinksysRouteConfig(
       column: ColumnGrid(column: 9),
     ),
-    builder: (context, state) => const SafeBrowsingView(),
+    builder: (context, state) => const InstantSafetyView(),
   ),
   LinksysRoute(
     name: RouteNamed.menuInstantDevices,
@@ -15,7 +15,7 @@ final menus = [
     config: LinksysRouteConfig(
       column: ColumnGrid(column: 12),
     ),
-    builder: (context, state) => DashboardDevices(),
+    builder: (context, state) => InstantDeviceView(),
     routes: [
       LinksysRoute(
         name: RouteNamed.deviceDetails,
@@ -39,7 +39,7 @@ final menus = [
   LinksysRoute(
       name: RouteNamed.menuInstantTopology,
       path: RoutePath.menuInstantTopology,
-      builder: (context, state) => TopologyDetailedView(
+      builder: (context, state) => InstantTopologyView(
             args: state.uri.queryParameters,
           ),
       routes: [
@@ -109,7 +109,7 @@ final menus = [
     path: RoutePath.menuInstantVerify,
     config:
         LinksysRouteConfig(column: ColumnGrid(column: 12), noNaviRail: true),
-    builder: (context, state) => SystemTestView(
+    builder: (context, state) => InstantVerifyView(
       args: state.extra as Map<String, dynamic>? ?? const {},
     ),
   ),

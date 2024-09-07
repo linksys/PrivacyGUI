@@ -28,8 +28,7 @@ class DashboardWiFiGrid extends ConsumerWidget {
         ref.watch(dashboardHomeProvider.select((value) => value.wifis));
     final isLoading = ref.watch(deviceManagerProvider).deviceList.isEmpty;
 
-    final crossAxisCount = 2;
-    // (ResponsiveLayout.isMobileLayout(context) || !isHorizontal) ? 1 : 2;
+    final crossAxisCount = ResponsiveLayout.isMobileLayout(context) ? 1 : 2;
     final mainSpacing = ResponsiveLayout.columnPadding(context);
     const itemHeight = 176.0;
     final mainAxisCount = (items.length / crossAxisCount);

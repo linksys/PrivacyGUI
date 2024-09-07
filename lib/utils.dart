@@ -13,7 +13,9 @@ import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/util/uuid.dart';
+import 'package:privacygui_widgets/hook/icon_hooks.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:share_plus/share_plus.dart';
 import 'core/utils/logger.dart';
 import 'core/utils/storage.dart';
@@ -136,7 +138,8 @@ class Utils {
 }
 
 extension DateFormatUtils on Utils {
-  static String formatDuration(Duration d, [BuildContext? context]) {
+  static String formatDuration(Duration d,
+      [BuildContext? context, bool excludeSecs = false]) {
     var seconds = d.inSeconds;
     final days = seconds ~/ Duration.secondsPerDay;
     seconds -= days * Duration.secondsPerDay;
@@ -159,9 +162,11 @@ extension DateFormatUtils on Utils {
           context == null ? '${minutes}m' : loc(context).nMinutes(minutes);
       tokens.add(token);
     }
-    final token =
-        context == null ? '${seconds}s' : loc(context).nSeconds(seconds);
-    tokens.add(token);
+    if (!excludeSecs) {
+      final token =
+          context == null ? '${seconds}s' : loc(context).nSeconds(seconds);
+      tokens.add(token);
+    }
 
     return tokens.join(' ');
   }
@@ -573,13 +578,14 @@ extension NodeSignalLevelExt on NodeSignalLevel {
       NodeSignalLevel.none => '',
     };
   }
-  Color resolveColor(BuildContext context) {
+
+  Color? resolveColor(BuildContext context) {
     return switch (this) {
-      NodeSignalLevel.excellent => Colors.green,
-      NodeSignalLevel.poor => Colors.green,
-      NodeSignalLevel.good => Colors.yellow,
-      NodeSignalLevel.fair => Colors.red,
-      NodeSignalLevel.wired => Colors.green,
+      NodeSignalLevel.excellent => Theme.of(context).colorSchemeExt.green,
+      NodeSignalLevel.good => Theme.of(context).colorScheme.primary,
+      NodeSignalLevel.fair => Theme.of(context).colorSchemeExt.orange,
+      NodeSignalLevel.poor => Theme.of(context).colorScheme.error,
+      NodeSignalLevel.wired => Theme.of(context).colorScheme.onSurface,
       NodeSignalLevel.none => Colors.black,
     };
   }

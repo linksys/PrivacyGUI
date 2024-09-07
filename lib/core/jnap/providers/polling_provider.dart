@@ -1,17 +1,17 @@
 import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/bench_mark.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 
-const int pollDurationInSec = 120;
 const int pollFirstDelayInSec = 1;
 
 final pollingProvider =
@@ -102,17 +102,24 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
 
   startPolling() {
     logger.d('prepare start polling data');
-    _coreTransactions = _buildCoreTransaction();
-    fetchFirstLaunchedCacheData();
     final routerRepository = ref.read(routerRepositoryProvider);
-    Future.delayed(const Duration(seconds: pollFirstDelayInSec), () {
-      _polling(routerRepository);
-    }).then((_) {
-      _timer =
-          Timer.periodic(const Duration(seconds: pollDurationInSec), (timer) {
+    checkSmartMode().then((mode) {
+      _coreTransactions = _buildCoreTransaction(mode: mode);
+      fetchFirstLaunchedCacheData();
+    }).then(
+      (value) =>
+          Future.delayed(const Duration(seconds: pollFirstDelayInSec), () {
         _polling(routerRepository);
-      });
-    });
+      }).then(
+        (_) {
+          _timer = Timer.periodic(
+              const Duration(seconds: BuildConfig.refreshTimeInterval),
+              (timer) {
+            _polling(routerRepository);
+          });
+        },
+      ),
+    );
   }
 
   stopPolling() {
@@ -122,7 +129,8 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     }
   }
 
-  List<MapEntry<JNAPAction, Map<String, dynamic>>> _buildCoreTransaction() {
+  List<MapEntry<JNAPAction, Map<String, dynamic>>> _buildCoreTransaction(
+      {String? mode}) {
     List<MapEntry<JNAPAction, Map<String, dynamic>>> commands = [
       const MapEntry(JNAPAction.getNodesWirelessNetworkConnections, {}),
       const MapEntry(JNAPAction.getNetworkConnections, {}),
@@ -130,13 +138,14 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
       const MapEntry(JNAPAction.getGuestRadioSettings, {}),
       const MapEntry(JNAPAction.getDevices, {}),
       const MapEntry(JNAPAction.getFirmwareUpdateSettings, {}),
-      const MapEntry(JNAPAction.getBackhaulInfo, {}),
+      if ((mode ?? 'Unconfigured') != 'Unconfigured')
+        const MapEntry(JNAPAction.getBackhaulInfo, {}),
       const MapEntry(JNAPAction.getWANStatus, {}),
       const MapEntry(JNAPAction.getEthernetPortConnections, {}),
       const MapEntry(JNAPAction.getSystemStats, {}),
       const MapEntry(JNAPAction.getDeviceInfo, {}),
     ];
-    if (isServiceSupport(JNAPService.healthCheckManager)) {
+    if (serviceHelper.isSupportHealthCheck()) {
       commands.add(const MapEntry(JNAPAction.getHealthCheckResults, {
         'includeModuleResults': true,
         "lastNumberOfResults": 5,
@@ -144,7 +153,7 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
       commands
           .add(const MapEntry(JNAPAction.getSupportedHealthCheckModules, {}));
     }
-    if (isServiceSupport(JNAPService.nodesFirmwareUpdate)) {
+    if (serviceHelper.isSupportNodeFirmwareUpdate()) {
       commands.add(
         const MapEntry(JNAPAction.getNodesFirmwareUpdateStatus, {}),
       );
@@ -153,10 +162,20 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
         const MapEntry(JNAPAction.getFirmwareUpdateStatus, {}),
       );
     }
-    if (isServiceSupport(JNAPService.product)) {
+    if (serviceHelper.isSupportProduct()) {
       commands.add(const MapEntry(JNAPAction.getSoftSKUSettings, {}));
     }
 
     return commands;
+  }
+
+  Future<String> checkSmartMode() async {
+    final routerRepository = ref.read(routerRepositoryProvider);
+    return await routerRepository
+        .send(
+          JNAPAction.getDeviceMode,
+          fetchRemote: true,
+        )
+        .then((value) => value.output['mode'] ?? 'Unconfigured');
   }
 }

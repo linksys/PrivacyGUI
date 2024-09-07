@@ -10,6 +10,7 @@ import 'package:privacy_gui/constants/jnap_const.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/http/linksys_http_client.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/models/firmware_update_settings.dart';
 import 'package:privacy_gui/core/jnap/models/firmware_update_status.dart';
@@ -54,7 +55,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     }
 
     List<FirmwareUpdateStatus>? fwUpdateStatusList =
-        switch (isServiceSupport(JNAPService.nodesFirmwareUpdate)) {
+        switch (serviceHelper.isSupportNodeFirmwareUpdate()) {
       true when nodesFwUpdateCheckRaw is JNAPSuccess =>
         List.from(nodesFwUpdateCheckRaw.output['firmwareUpdateStatus'])
             .map((e) => NodesFirmwareUpdateStatus.fromMap(e))
@@ -104,7 +105,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
           '[FIRMWARE]: Skip checking firmware update avaliable: last check time {${DateTime.fromMillisecondsSinceEpoch(lastCheckTime)}}');
       yield [];
     } else {
-      final action = isServiceSupport(JNAPService.nodesFirmwareUpdate)
+      final action = serviceHelper.isSupportNodeFirmwareUpdate()
           ? JNAPAction.updateFirmwareNow
           : JNAPAction.nodesUpdateFirmwareNow;
       await ref
@@ -135,7 +136,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     final benchmark = BenchMarkLogger(name: 'FirmwareUpdate');
     benchmark.start();
     state = state.copyWith(isUpdating: true);
-    final action = isServiceSupport(JNAPService.nodesFirmwareUpdate)
+    final action = serviceHelper.isSupportNodeFirmwareUpdate()
         ? JNAPAction.updateFirmwareNow
         : JNAPAction.nodesUpdateFirmwareNow;
     await ref.read(routerRepositoryProvider).send(
@@ -174,8 +175,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     List<FirmwareUpdateStatus> records,
   ) {
     if (result is JNAPSuccess) {
-      final statusList =
-          switch (isServiceSupport(JNAPService.nodesFirmwareUpdate)) {
+      final statusList = switch (serviceHelper.isSupportNodeFirmwareUpdate()) {
         false => [FirmwareUpdateStatus.fromMap(result.output)],
         true => List.from(result.output['firmwareUpdateStatus'])
             .map((e) => NodesFirmwareUpdateStatus.fromMap(e))
@@ -248,7 +248,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     bool Function(JNAPResult)? stopCondition,
     Function()? onCompleted,
   }) {
-    final action = isServiceSupport(JNAPService.nodesFirmwareUpdate)
+    final action = serviceHelper.isSupportNodeFirmwareUpdate()
         ? JNAPAction.getNodesFirmwareUpdateStatus
         : JNAPAction.getFirmwareUpdateStatus;
     return ref

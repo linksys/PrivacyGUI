@@ -1,4 +1,6 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
+import 'dart:convert';
+
 import 'package:equatable/equatable.dart';
 
 class CAUserAccount extends Equatable {
@@ -171,19 +173,24 @@ class CAMobile extends Equatable {
     );
   }
 
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toMap() {
     return {
       'countryCode': countryCode,
       'phoneNumber': phoneNumber,
     };
   }
 
-  factory CAMobile.fromJson(Map<String, dynamic> json) {
+  factory CAMobile.fromMap(Map<String, dynamic> json) {
     return CAMobile(
       countryCode: json['countryCode'],
       phoneNumber: json['phoneNumber'],
     );
   }
+
+  String toJson() => json.encode(toMap());
+
+  factory CAMobile.fromJson(String source) =>
+      CAMobile.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
   List<Object?> get props => [countryCode, phoneNumber];
@@ -287,7 +294,7 @@ class CAPreferences extends Equatable {
       'fakeSubscription': fakeSubscription,
       'mfaEnabled': mfaEnabled,
       'locale': locale?.toJson(),
-      'mobile': mobile?.toJson(),
+      'mobile': mobile?.toMap(),
       'notifications': notifications?.toJson(),
     }..removeWhere((key, value) => value == null);
   }
@@ -298,7 +305,7 @@ class CAPreferences extends Equatable {
       fakeSubscription: json['fakeSubscription'],
       mfaEnabled: json['mfaEnabled'],
       locale: json['locale'] != null ? CALocale.fromJson(json['locale']) : null,
-      mobile: json['mobile'] != null ? CAMobile.fromJson(json['mobile']) : null,
+      mobile: json['mobile'] != null ? CAMobile.fromMap(json['mobile']) : null,
       notifications: json['notifications'] != null
           ? CANotifications.fromJson(json['notifications'])
           : null,

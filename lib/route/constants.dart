@@ -11,6 +11,8 @@ class RoutePath {
   static const localLoginPassword = '/localLoginPassword';
   static const localRouterRecovery = 'localRouterRecovery';
   static const localPasswordReset = 'localPasswordReset';
+  static const cloudRALogin = 'cloudRALogin';
+  static const cloudRAPin = 'cloudRAPin';
 
   /// dashboard
   static const dashboardHome = '/dashboardHome';
@@ -152,6 +154,8 @@ class RouteNamed {
   static const localLoginPassword = 'localLoginPassword';
   static const localRouterRecovery = 'localRouterRecovery';
   static const localPasswordReset = 'localPasswordReset';
+  static const cloudRALogin = 'cloudRALogin';
+  static const cloudRAPin = 'cloudRAPin';
 
   /// dashboard
   static const dashboardMenu = 'dashboardMenu';

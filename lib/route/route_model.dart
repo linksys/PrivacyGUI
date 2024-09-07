@@ -60,7 +60,7 @@ class LinksysRoute extends GoRoute {
               valueListenable: showColumnOverlayNotifier,
               builder: (context, showColumnOverlay, _) {
                 return Column(children: [
-                  PreferredSize(preferredSize: Size(0, 80), child: TopBar()),
+                  PreferredSize(preferredSize: const Size(0, 80), child: const TopBar()),
                   Expanded(child: builder(context, state))
                 ]);
               });

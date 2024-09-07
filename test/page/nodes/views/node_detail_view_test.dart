@@ -1,27 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_state.dart';
+import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/nodes/_nodes.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:mockito/mockito.dart';
 
-import '../../../common/config.dart';
-import '../../../common/test_responsive_widget.dart';
-import '../../../common/testable_widget.dart';
+import '../../../common/_index.dart';
 import '../../../mocks/firmware_update_notifier_mocks.dart';
+import '../../../mocks/jnap_service_helper_spec_mocks.dart';
 import '../../../test_data/node_details_data.dart';
 import '../../../mocks/node_detail_notifier_mocks.dart';
 
 void main() {
   late NodeDetailNotifier mockNodeDetailNotifier;
   late FirmwareUpdateNotifier mockFirmwareUpdateNotifier;
-
+  ServiceHelper mockServiceHelper = MockServiceHelper();
+  getIt.registerSingleton<ServiceHelper>(mockServiceHelper);
   setUp(() {
     mockNodeDetailNotifier = MockNodeDetailNotifier();
     mockFirmwareUpdateNotifier = MockFirmwareUpdateNotifier();
-    when(mockNodeDetailNotifier.isSupportLedBlinking()).thenReturn(true);
-    when(mockNodeDetailNotifier.isSupportLedMode()).thenReturn(true);
+    // when(mockNodeDetailNotifier.isSupportLedBlinking()).thenReturn(true);
+    // when(mockNodeDetailNotifier.isSupportLedMode()).thenReturn(true);
+    initBetterActions();
   });
   testResponsiveWidgets('Test node details view with mobile layout',
       (tester) async {
@@ -29,7 +33,7 @@ void main() {
         .thenReturn(NodeDetailState.fromMap(fakeNodeDetailsState1));
     when(mockFirmwareUpdateNotifier.build())
         .thenReturn(FirmwareUpdateState.empty());
-    final widget = testableWidget(
+    final widget = testableSingleRoute(
         themeMode: ThemeMode.dark,
         overrides: [
           nodeDetailProvider.overrideWith(() => mockNodeDetailNotifier),
@@ -47,7 +51,7 @@ void main() {
         .thenReturn(NodeDetailState.fromMap(fakeNodeDetailsState1));
     when(mockFirmwareUpdateNotifier.build())
         .thenReturn(FirmwareUpdateState.empty());
-    final widget = testableWidget(
+    final widget = testableSingleRoute(
         themeMode: ThemeMode.dark,
         overrides: [
           nodeDetailProvider.overrideWith(() => mockNodeDetailNotifier),

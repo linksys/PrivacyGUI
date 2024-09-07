@@ -4,8 +4,8 @@ import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart'
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
-import 'package:privacy_gui/page/devices/_devices.dart';
-import 'package:privacy_gui/page/devices/providers/device_filtered_list_state.dart';
+import 'package:privacy_gui/page/instant_device/_instant_device.dart';
+import 'package:privacy_gui/page/instant_device/providers/device_filtered_list_state.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 
 import '../../../../common/test_responsive_widget.dart';
@@ -48,7 +48,7 @@ void main() {
             .toList())
       ],
       locale: locale,
-      child: const DashboardDevices(),
+      child: const InstantDeviceView(),
     );
     await tester.pumpWidget(widget);
   });
@@ -70,7 +70,7 @@ void main() {
                 .toList())
       ],
       locale: locale,
-      child: const DashboardDevices(),
+      child: const InstantDeviceView(),
     );
     await tester.pumpWidget(widget);
   });
@@ -93,7 +93,7 @@ void main() {
                 .toList())
       ],
       locale: locale,
-      child: const DashboardDevices(),
+      child: const InstantDeviceView(),
     );
     await tester.pumpWidget(widget);
     final editFinder = find.byIcon(LinksysIcons.edit);

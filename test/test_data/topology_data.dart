@@ -1,4 +1,4 @@
-import 'package:privacy_gui/page/topology/_topology.dart';
+import 'package:privacy_gui/page/instant_topology/_instant_topology.dart';
 
 final _onlineRoot = OnlineTopologyNode(
   data: const TopologyModel(isOnline: true, location: 'Internet'),
@@ -173,7 +173,7 @@ final _slaveOfflineNode5 = RouterTopologyNode(
 /// State
 
 final testTopologyState1 = TopologyState(
-  nodesCount: 1,
+  nodesCount: 2,
   onlineRoot: _onlineRoot
     ..children.add(
       _masterNode
@@ -187,7 +187,7 @@ final testTopologyState1 = TopologyState(
 );
 
 final testTopologyState2 = TopologyState(
-  nodesCount: 1,
+  nodesCount: 3,
   onlineRoot: _onlineRoot
     ..children.clear()
     ..children.add(_masterNode

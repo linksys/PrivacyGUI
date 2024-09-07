@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
@@ -18,26 +19,26 @@ class WifiAdvancedSettingsNotifier extends Notifier<WifiAdvancedSettingsState> {
 
   List<MapEntry<JNAPAction, Map<String, dynamic>>> _buildGetCommends() {
     List<MapEntry<JNAPAction, Map<String, dynamic>>> commands = [];
-    if (isServiceSupport(JNAPService.nodesTopologyOptimization2)) {
+    if (serviceHelper.isSupportTopologyOptimization()) {
       commands
           .add(const MapEntry(JNAPAction.getTopologyOptimizationSettings, {}));
     }
-    if (isServiceSupport(JNAPService.iptv)) {
+    if (serviceHelper.isSupportIPTv()) {
       commands.add(
         const MapEntry(JNAPAction.getIptvSettings, {}),
       );
     }
-    if (isServiceSupport(JNAPService.mlo)) {
+    if (serviceHelper.isSupportMLO()) {
       commands.add(
         const MapEntry(JNAPAction.getMLOSettings, {}),
       );
     }
-    if (isServiceSupport(JNAPService.dfs)) {
+    if (serviceHelper.isSupportDFS()) {
       commands.add(
         const MapEntry(JNAPAction.getDFSSettings, {}),
       );
     }
-    if (isServiceSupport(JNAPService.airtimeFairness)) {
+    if (serviceHelper.isSupportAirtimeFairness()) {
       commands.add(
         const MapEntry(JNAPAction.getAirtimeFairnessSettings, {}),
       );
@@ -54,7 +55,7 @@ class WifiAdvancedSettingsNotifier extends Notifier<WifiAdvancedSettingsState> {
     bool? isAirtimeFairnessEnabled,
   }) {
     List<MapEntry<JNAPAction, Map<String, dynamic>>> commands = [];
-    if (isServiceSupport(JNAPService.nodesTopologyOptimization2)) {
+    if (serviceHelper.isSupportTopologyOptimization()) {
       commands.add(MapEntry(
           JNAPAction.setTopologyOptimizationSettings,
           {
@@ -62,22 +63,22 @@ class WifiAdvancedSettingsNotifier extends Notifier<WifiAdvancedSettingsState> {
             'isNodeSteeringEnabled': isNodeSteeringEnabled,
           }..removeWhere((key, value) => value == null)));
     }
-    if (isServiceSupport(JNAPService.iptv)) {
+    if (serviceHelper.isSupportIPTv()) {
       commands.add(
         MapEntry(JNAPAction.setIptvSettings, {'isEnabled': isIptvEnabled}),
       );
     }
-    if (isServiceSupport(JNAPService.mlo) && isMLOEnabled != null) {
+    if (serviceHelper.isSupportMLO() && isMLOEnabled != null) {
       commands.add(
         MapEntry(JNAPAction.setMLOSettings, {'isMLOEnabled': isMLOEnabled}),
       );
     }
-    if (isServiceSupport(JNAPService.dfs) && isDFSEnabled != null) {
+    if (serviceHelper.isSupportDFS() && isDFSEnabled != null) {
       commands.add(
         MapEntry(JNAPAction.setDFSSettings, {'isDFSEnabled': isDFSEnabled}),
       );
     }
-    if (isServiceSupport(JNAPService.airtimeFairness) &&
+    if (serviceHelper.isSupportAirtimeFairness() &&
         isAirtimeFairnessEnabled != null) {
       commands.add(
         MapEntry(JNAPAction.setAirtimeFairnessSettings,

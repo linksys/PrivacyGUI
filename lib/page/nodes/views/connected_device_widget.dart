@@ -4,7 +4,7 @@ import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
-import 'package:privacy_gui/page/devices/extensions/icon_device_category_ext.dart';
+import 'package:privacy_gui/page/instant_device/extensions/icon_device_category_ext.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';

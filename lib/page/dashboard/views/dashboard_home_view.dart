@@ -55,59 +55,63 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
             const DashboardHomeTitle(),
             const AppGap.large1(),
             horizontalLayout
-                ? Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Expanded(
-                        child: Column(
-                          children: [
-                            InternetConnectionWidget(),
-                            AppGap.medium(),
-                            DashboardHomePortAndSpeed(),
-                            AppGap.medium(),
-                            DashboardWiFiGrid(),
-                          ],
+                ? IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Expanded(
+                          child: Column(
+                            children: [
+                              InternetConnectionWidget(),
+                              AppGap.medium(),
+                              DashboardHomePortAndSpeed(),
+                              AppGap.medium(),
+                              DashboardWiFiGrid(),
+                            ],
+                          ),
                         ),
-                      ),
-                      const AppGap.gutter(),
-                      SizedBox(
-                          width: 4.col,
+                        const AppGap.gutter(),
+                        SizedBox(
+                            width: 4.col,
+                            child: const Column(
+                              children: [
+                                DashboardNetworks(),
+                                AppGap.medium(),
+                                PrivacyWidget(),
+                                // _networkInfoTiles(state, isLoading),
+                              ],
+                            )),
+                      ],
+                    ),
+                  )
+                : IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        SizedBox(
+                          width: 3.col,
                           child: const Column(
+                            children: [
+                              InternetConnectionWidget(),
+                              AppGap.medium(),
+                              DashboardHomePortAndSpeed(),
+                            ],
+                          ),
+                        ),
+                        const AppGap.gutter(),
+                        const Expanded(
+                          child: Column(
                             children: [
                               DashboardNetworks(),
                               AppGap.medium(),
                               PrivacyWidget(),
-                              // _networkInfoTiles(state, isLoading),
+                              AppGap.medium(),
+                              DashboardWiFiGrid(),
                             ],
-                          )),
-                    ],
-                  )
-                : Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        width: 3.col,
-                        child: const Column(
-                          children: [
-                            InternetConnectionWidget(),
-                            AppGap.medium(),
-                            DashboardHomePortAndSpeed(),
-                          ],
+                          ),
                         ),
-                      ),
-                      const AppGap.gutter(),
-                      const Expanded(
-                        child: Column(
-                          children: [
-                            DashboardNetworks(),
-                            AppGap.medium(),
-                            PrivacyWidget(),
-                            AppGap.medium(),
-                            DashboardWiFiGrid(),
-                          ],
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
           ],
         ),
@@ -117,7 +121,8 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
           children: [
             DashboardHomeTitle(),
             AppGap.large1(),
-
+            InternetConnectionWidget(),
+            AppGap.medium(),
             DashboardHomePortAndSpeed(),
             AppGap.medium(),
             DashboardNetworks(),

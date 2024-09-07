@@ -24,7 +24,7 @@ class DashboardHomeTitle extends ConsumerWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        AppText.titleLarge(loc(context).goodMorning),
+        AppText.titleLarge(helloString(context)),
         Row(
           children: [
             Icon(LinksysIcons.calendar,
@@ -57,4 +57,11 @@ class DashboardHomeTitle extends ConsumerWidget {
       ),
     );
   }
+
+  String helloString(BuildContext context) => switch (DateTime.now().hour) {
+        >= 18 && < 24 => loc(context).goodEvening,
+        >= 12 && < 18 => loc(context).goodAfternoon,
+        >= 6 && < 12 => loc(context).goodMorning,
+        _ => loc(context).goodNight,
+      };
 }

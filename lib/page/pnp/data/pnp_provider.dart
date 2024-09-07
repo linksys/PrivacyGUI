@@ -4,6 +4,7 @@ import 'package:http/http.dart';
 import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/cloud/linksys_cloud_repository.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
@@ -241,9 +242,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
 
   @override
   Future<bool> pnpCheck() async {
-    final isSupportedSetup11 =
-        isServiceSupport(JNAPService.setup11, state.deviceInfo?.services);
-    if (!isSupportedSetup11) {
+    if (!serviceHelper.isSupportPnP(state.deviceInfo?.services)) {
       logger.i('[PnP]: The router does NOT support PNP!');
       return false;
     }
@@ -301,7 +300,8 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
 
   @override
   Future fetchData() {
-    bool isSupportNodeLight = isServiceSupport(JNAPService.routerLEDs4, state.deviceInfo?.services);
+    bool isSupportNodeLight =
+        serviceHelper.isSupportLedMode(state.deviceInfo?.services);
     final transaction = JNAPTransactionBuilder(
       commands: [
         const MapEntry(JNAPAction.getSimpleWiFiSettings, {}),

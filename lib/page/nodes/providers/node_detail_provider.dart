@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/models/device.dart';
 import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
@@ -43,7 +44,7 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
       return newState;
     }
 
-    if (isServiceSupport(JNAPService.routerLEDs3)) {
+    if (serviceHelper.isSupportLedMode()) {
       getLEDLight();
     }
     // Details of the specific device
@@ -108,9 +109,6 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
     return state;
   }
 
-  bool isSupportLedBlinking() => isServiceSupport(JNAPService.setup9);
-  bool isSupportLedMode() => isServiceSupport(JNAPService.routerLEDs4);
-
   Future<void> getLEDLight() async {
     return ref.read(deviceManagerProvider.notifier).getLEDLight().then((value) {
       state = state.copyWith(nodeLightSettings: value);
@@ -127,7 +125,7 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
     });
   }
 
-  Future<JNAPResult> startBlinkNodeLED(String deviceId) async {
+  Future startBlinkNodeLED(String deviceId) async {
     final repository = ref.read(routerRepositoryProvider);
     return repository.send(
       JNAPAction.startBlinkNodeLed,
@@ -138,7 +136,7 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
     );
   }
 
-  Future<JNAPResult> stopBlinkNodeLED() async {
+  Future stopBlinkNodeLED() async {
     final repository = ref.read(routerRepositoryProvider);
     return repository.send(
       JNAPAction.stopBlinkNodeLed,

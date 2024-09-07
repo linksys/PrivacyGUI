@@ -7,9 +7,9 @@ import 'dart:async' as _i6;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:privacy_gui/page/network_admin/providers/timezone_provider.dart'
+import 'package:privacy_gui/page/instant_admin/providers/timezone_provider.dart'
     as _i7;
-import 'package:privacy_gui/page/network_admin/providers/timezone_state.dart'
+import 'package:privacy_gui/page/instant_admin/providers/timezone_state.dart'
     as _i4;
 
 // ignore_for_file: type=lint

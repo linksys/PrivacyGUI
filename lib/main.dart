@@ -6,10 +6,13 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:get_it/get_it.dart';
 import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/app.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
+import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/providers/logger_observer.dart';
 
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -40,6 +43,10 @@ void main() async {
   if (!kIsWeb) {
     HttpOverrides.global = MyHTTPOverrides();
   }
+
+  // GetIt
+  dependencySetup();
+
   runApp(app());
 }
 
@@ -68,7 +75,6 @@ initErrorHandler() {
 }
 
 final container = ProviderContainer();
-
 
 Widget app() {
   return ProviderScope(

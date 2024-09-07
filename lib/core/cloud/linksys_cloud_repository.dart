@@ -7,10 +7,12 @@ import 'package:privacy_gui/core/cloud/linksys_requests/asset_service.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/cloud2_service.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/event_service.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/ping_service.dart';
+import 'package:privacy_gui/core/cloud/linksys_requests/remote_assistance_service.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/smart_device_service.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_event_action.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_event_subscription.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_linkup.dart';
+import 'package:privacy_gui/core/cloud/model/cloud_remote_assistance_info.dart';
 import 'package:privacy_gui/core/cloud/model/create_ticket.dart';
 import 'package:privacy_gui/core/http/linksys_http_client.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/authorization_service.dart';
@@ -327,5 +329,152 @@ class LinksysCloudRepository {
             response.statusCode == HttpStatus.ok &&
             response.headers['content-type'] == 'image/png')
         .onError((error, stackTrace) => false);
+  }
+
+  /// Remote assistance
+  Future<(String, String)> raLogin({
+    required String username,
+    required String password,
+    required String serialNumber,
+  }) {
+    return _httpClient
+        .raLogin(
+      username: username,
+      password: password,
+      serialNumber: serialNumber,
+    )
+        .then((response) {
+      final json = jsonDecode(response.body);
+      final raSession = json['remoteAssistanceSession'];
+      return (
+        raSession['remoteAssistanceSessionId'] as String,
+        raSession['session']['token'] as String,
+      );
+    });
+  }
+
+  ///
+  /// {
+  /// "remoteAssistanceSessions": [
+  ///   {
+  ///     "remoteAssistanceSession": {
+  ///       "remoteAssistanceSessionId": "8AD8DBC2-552D-4102-A76F-65DBA1867219"
+  ///     }
+  ///   }
+  /// ]
+  /// }
+  Future<String> raGetSession({required String networkId}) {
+    return loadSessionToken().then((token) => _httpClient
+            .getRASession(token: token, networkId: networkId)
+            .then((response) {
+          final jsonArray =
+              List.from(jsonDecode(response.body)['remoteAssistanceSessions']);
+          final raSession = jsonArray.first['remoteAssistanceSession'];
+          return raSession['remoteAssistanceSessionId'];
+        }));
+  }
+
+  ///
+  /// {
+  ///     "remoteAssistanceSession": {
+  ///         "remoteAssistanceSessionId": "727DEBA0-FE9C-41F3-A5A8-28A84B87E930",
+  ///         "status": "PENDING",
+  ///         "expiredIn": -1757,
+  ///         "createdAt": 1722240538000,
+  ///         "statusChangedAt": 1722240574000,
+  ///         "currentTime": 1722240580739
+  ///     }
+  /// }
+  ///
+  Future<CloudRemoteAssistanceInfo> raGetSessionInfo(
+      {required String networkId, required String sessionId}) {
+    return loadSessionToken().then((token) => _httpClient
+            .getRASessionInfo(
+                token: token, networkId: networkId, sessionId: sessionId)
+            .then((response) {
+          final json = jsonDecode(response.body)['remoteAssistanceSession'];
+          return CloudRemoteAssistanceInfo.fromMap(json);
+        }));
+  }
+
+  ///
+  ///{
+  ///"remoteAssistanceSession": {
+  ///  "remoteAssistanceSessionId": "8AD8DBC2-552D-4102-A76F-65DBA1867219",
+  ///  "pin": "010794",
+  ///  "status": "PENDING"
+  ///}
+  ///}
+  ///
+  Future<String> raGenPin({
+    required String sessionId,
+    required String networkId,
+  }) {
+    return loadSessionToken().then((token) => _httpClient
+            .genRAPin(
+          token: token,
+          sessionId: sessionId,
+          networkId: networkId,
+        )
+            .then((response) {
+          final json = jsonDecode(response.body);
+          final raSession = json['remoteAssistanceSession'];
+          return raSession['pin'];
+          // TODO expire handling
+        }));
+  }
+
+  Future<(String, CAMobile?)> raGetInfo({
+    required String sessionId,
+    required String token,
+  }) {
+    return _httpClient
+        .raGetInfo(sessionId: sessionId, token: token)
+        .then((response) {
+      final json = jsonDecode(response.body);
+      final raSession = json['remoteAssistanceSession'];
+
+      final accountInfo = raSession['accountInfo'];
+      final email = accountInfo['emailAddress'] as String;
+      final mobile = accountInfo['mobile'] != null
+          ? CAMobile.fromMap(accountInfo['mobile'])
+          : null;
+      return (email, mobile);
+    });
+  }
+
+  Future sendRAPin(
+      {required String sessionId,
+      required String token,
+      required String method}) {
+    return _httpClient.sendRAPin(
+        token: token, sessionId: sessionId, method: method);
+  }
+
+  /// {
+  /// "temporaryRAS": {
+  ///   "networkId": "network-774AFF4CC419408EB8FEAD4F3028D3DB55E41185@ciscoconnectcloud.com",
+  ///   "sessionToken": "AGENT540ADDDB4D7D45188EF89685BE0C408FA64B6A164BE340DF83203B2FB8B"
+  /// }
+  /// }
+  Future<({String token, String networkId})> pinVerify(
+      {required String sessionId, required String token, required String pin}) {
+    return _httpClient
+        .pinVerify(token: token, sessionId: sessionId, pin: pin)
+        .then((response) {
+      final json = jsonDecode(response.body);
+      final temporaryRAS = json['temporaryRAS'];
+      return (
+        networkId: temporaryRAS['networkId'] as String,
+        token: temporaryRAS['sessionToken'] as String
+      );
+    });
+  }
+
+  Future deleteSession({
+    required String sessionId,
+  }) {
+    return loadSessionToken().then((token) =>
+        _httpClient.deleteSession(sessionId: sessionId, token: token));
   }
 }
