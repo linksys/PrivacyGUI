@@ -89,8 +89,8 @@ final menus = [
   LinksysRoute(
     name: RouteNamed.menuInstantPrivacy,
     path: RoutePath.menuInstantPrivacy,
-    config: LinksysRouteConfig(column: ColumnGrid(column: 9), noNaviRail: true),
-    builder: (context, state) => MacFilteringView(
+    config: LinksysRouteConfig(column: ColumnGrid(column: 12)),
+    builder: (context, state) => InstantPrivacyView(
       args: state.extra as Map<String, dynamic>? ?? const {},
     ),
     routes: [

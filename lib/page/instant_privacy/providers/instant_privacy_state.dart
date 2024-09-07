@@ -18,7 +18,7 @@ enum MacFilterMode {
       };
 }
 
-class MacFilteringState extends Equatable {
+class InstantPrivacyState extends Equatable {
   final MacFilterMode mode;
   final List<String> macAddresses;
   final int maxMacAddresses;
@@ -26,26 +26,26 @@ class MacFilteringState extends Equatable {
   @override
   List<Object> get props => [mode, macAddresses, maxMacAddresses];
 
-  const MacFilteringState({
+  const InstantPrivacyState({
     required this.mode,
     required this.macAddresses,
     required this.maxMacAddresses,
   });
 
-  factory MacFilteringState.init() {
-    return const MacFilteringState(
+  factory InstantPrivacyState.init() {
+    return const InstantPrivacyState(
       mode: MacFilterMode.disabled,
       macAddresses: [],
       maxMacAddresses: 32,
     );
   }
 
-  MacFilteringState copyWith({
+  InstantPrivacyState copyWith({
     MacFilterMode? mode,
     List<String>? macAddresses,
     int? maxMacAddresses,
   }) {
-    return MacFilteringState(
+    return InstantPrivacyState(
       mode: mode ?? this.mode,
       macAddresses: macAddresses ?? this.macAddresses,
       maxMacAddresses: maxMacAddresses ?? this.maxMacAddresses,
@@ -60,8 +60,8 @@ class MacFilteringState extends Equatable {
     };
   }
 
-  factory MacFilteringState.fromMap(Map<String, dynamic> map) {
-    return MacFilteringState(
+  factory InstantPrivacyState.fromMap(Map<String, dynamic> map) {
+    return InstantPrivacyState(
       mode: MacFilterMode.reslove(map['status']),
       macAddresses: List.from(map['macAddresses']),
       maxMacAddresses: map['maxMacAddresses'] as int,
@@ -70,8 +70,8 @@ class MacFilteringState extends Equatable {
 
   String toJson() => json.encode(toMap());
 
-  factory MacFilteringState.fromJson(String source) =>
-      MacFilteringState.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory InstantPrivacyState.fromJson(String source) =>
+      InstantPrivacyState.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
   bool get stringify => true;

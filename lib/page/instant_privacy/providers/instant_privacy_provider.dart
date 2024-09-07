@@ -3,47 +3,65 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/models/mac_filter_settings.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/mac_filtering_state.dart';
+import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
 import 'package:privacy_gui/util/extensions.dart';
 
-final macFilteringProvider =
-    NotifierProvider<MacFilteringNotifier, MacFilteringState>(
-        () => MacFilteringNotifier());
+final instantPrivacyProvider =
+    NotifierProvider<InstantPrivacyNotifier, InstantPrivacyState>(
+        () => InstantPrivacyNotifier());
 
-class MacFilteringNotifier extends Notifier<MacFilteringState> {
+class InstantPrivacyNotifier extends Notifier<InstantPrivacyState> {
   @override
-  MacFilteringState build() => MacFilteringState.init();
+  InstantPrivacyState build() {
+    fetch(fetchRemote: true);
+    return InstantPrivacyState.init();
+  }
 
-  Future<MacFilteringState> fetch() async {
+  Future<InstantPrivacyState> fetch({bool fetchRemote = false}) async {
     final settings = await ref
         .read(routerRepositoryProvider)
         .send(
           JNAPAction.getMACFilterSettings,
-          fetchRemote: true,
+          fetchRemote: fetchRemote,
           auth: true,
         )
         .then((result) => MACFilterSettings.fromMap(result.output));
     state = state.copyWith(
       mode: MacFilterMode.reslove(settings.macFilterMode),
-      macAddresses: settings.macAddresses,
+      macAddresses: settings.macAddresses.map((e) => e.toUpperCase()).toList(),
       maxMacAddresses: settings.maxMACAddresses,
     );
     return state;
   }
 
   Future save() async {
+    var macAddresses = [];
+    if (state.mode == MacFilterMode.allow) {
+      final nodesMacAddresses = ref
+          .read(deviceManagerProvider)
+          .nodeDevices
+          .map((e) => e.getMacAddress().toUpperCase())
+          .toList();
+      macAddresses = [
+        ...state.macAddresses,
+        ...nodesMacAddresses,
+      ].unique();
+    }
     await ref.read(routerRepositoryProvider).send(
           JNAPAction.setMACFilterSettings,
           data: {
             'macFilterMode': state.mode.name.capitalize(),
-            'macAddresses': state.macAddresses,
+            'macAddresses': macAddresses,
           },
           auth: true,
           fetchRemote: true,
           cacheLevel: CacheLevel.noCache,
         );
+    await fetch(fetchRemote: true);
   }
 
   setEnable(bool isEnabled) {
@@ -60,6 +78,7 @@ class MacFilteringNotifier extends Notifier<MacFilteringState> {
   }
 
   setSelection(List<String> selections) {
+    selections = selections.map((e) => e.toUpperCase()).toList();
     final List<String> unique = List.from(state.macAddresses)
       ..addAll(selections)
       ..unique();
@@ -67,8 +86,14 @@ class MacFilteringNotifier extends Notifier<MacFilteringState> {
   }
 
   removeSelection(List<String> selection) {
+    selection = selection.map((e) => e.toUpperCase()).toList();
     final list = List<String>.from(state.macAddresses)
       ..removeWhere((element) => selection.contains(element));
     state = state.copyWith(macAddresses: list);
+  }
+
+  setMacAddressList(List<String> macAddressList) {
+    macAddressList = macAddressList.map((e) => e.toUpperCase()).toList();
+    state = state.copyWith(macAddresses: macAddressList);
   }
 }

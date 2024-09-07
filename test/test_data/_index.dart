@@ -18,7 +18,7 @@ export 'health_check_state_data.dart';
 export 'internet_settings_state_data.dart';
 export 'ipv6_port_service_list_test_state.dart';
 export 'local_network_settings_state.dart';
-export 'mac_filtering_test_state.dart';
+export 'instant_privacy_test_state.dart';
 export 'node_details_data.dart';
 export 'port_range_forwarding_test_state.dart';
 export 'port_range_trigger_test_state.dart';
