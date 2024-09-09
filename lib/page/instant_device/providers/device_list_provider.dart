@@ -64,7 +64,7 @@ class DeviceListNotifier extends Notifier<DeviceListState> {
     upstreamDeviceID = upstream?.deviceID ?? '';
     upstreamIcon = routerIconTest(upstream?.toMap() ?? {});
     isOnline = device.isOnline();
-    isWired = !device.isWirelessConnection();
+    isWired = device.getConnectionType() == DeviceConnectionType.wired;
     ipv4Address = isOnline ? (device.connections.first.ipAddress ?? '') : '';
     ipv6Address = isOnline ? (device.connections.first.ipv6Address ?? '') : '';
     macAddress = device.getMacAddress();

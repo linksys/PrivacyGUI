@@ -151,7 +151,7 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     nodes = nodes.fold(<LinksysDevice>[], (list, node) {
       final connectedDevices = externalDevices.where((device) {
         // Make sure the external device is online
-        if (device.connections.isNotEmpty) {
+        if (device.isOnline()) {
           // There usually be only one item
           final parentDeviceId = device.connections.firstOrNull?.parentDeviceID;
           // Count it if this item's parentId is the target node,
@@ -205,7 +205,7 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
         final deviceId = device.deviceID;
         final backhaulInfo = newState.backhaulInfoData
             .firstWhereOrNull((backhaul) => backhaul.deviceUUID == deviceId);
-        if (backhaulInfo != null && device.connections.isNotEmpty) {
+        if (backhaulInfo != null && device.isOnline()) {
           // Replace the IP in Devices with the one from BackhaulInfo
           final updatedConnections = device.connections
               .map(
@@ -235,13 +235,13 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
       final rssi = element.wirelessConnectionInfo?.stationRSSI;
       final band = element.wirelessConnectionInfo?.radioID;
       final bssid = element.wirelessConnectionInfo?.apBSSID;
-      if (mac != null) {
+      if (mac != null && rssi != null) {
         wireleeConnectionInfo[mac] = WirelessConnection(
           bssid: bssid ?? '',
           isGuest: false,
           radioID: 'RADIO_${band}z',
           band: '${band}z',
-          signalDecibels: rssi ?? -1,
+          signalDecibels: rssi,
         );
       }
     });
@@ -284,12 +284,12 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     return state.radioInfos[radioID]?.settings.ssid;
   }
 
-  int _getWirelessSignalOf(RawDevice device,
+  int? _getWirelessSignalOf(RawDevice device,
       [DeviceManagerState? currentState]) {
     final wirelessConnections = (currentState ?? state).wirelessConnections;
     final wirelessData = wirelessConnections[device.getMacAddress()];
     final signalDecibels = wirelessData?.signalDecibels;
-    return signalDecibels ?? -1;
+    return signalDecibels;
   }
 
   String getBandConnectedBy(LinksysDevice device) {
@@ -298,7 +298,10 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     // If the band data is absent in (NodesWireless)NetworkConnection,
     // check the knownInterface in GetDevices
     final band = wirelessData?.band ?? _getBandFromKnownInterfacesOf(device);
-    return band ?? (!device.isWirelessConnection() ? 'Ethernet' : '');
+    return band ??
+        (device.getConnectionType() == DeviceConnectionType.wired
+            ? 'Ethernet'
+            : '');
   }
 
   String? _getBandFromKnownInterfacesOf(RawDevice device) {
@@ -316,7 +319,7 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     if (device == null) {
       return master;
     }
-    if (device.connections.isEmpty) {
+    if (!device.isOnline()) {
       return master;
     }
     String? parentIpAddr;

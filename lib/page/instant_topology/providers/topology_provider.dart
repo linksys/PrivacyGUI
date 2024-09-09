@@ -66,7 +66,7 @@ class TopologyNotifier extends Notifier<TopologyState> {
       DeviceManagerState deviceManagerState) {
     return [
       ...deviceManagerState.nodeDevices
-          .where((device) => device.connections.isEmpty)
+          .where((device) => !device.isOnline())
           .map(
             (device) => _createRouterTopologyNode(device)..tag = 'offline',
           )
@@ -78,9 +78,7 @@ class TopologyNotifier extends Notifier<TopologyState> {
       DeviceManagerState deviceManagerState, String selectId) {
     // {DeviceId : NodeObject}
     final nodeMap = Map.fromEntries(
-      deviceManagerState.nodeDevices
-          .where((device) => device.connections.isNotEmpty)
-          .map(
+      deviceManagerState.nodeDevices.where((device) => device.isOnline()).map(
             (device) =>
                 MapEntry(device.deviceID, _createRouterTopologyNode(device)),
           ),
@@ -147,9 +145,10 @@ class TopologyNotifier extends Notifier<TopologyState> {
     String deviceId = device.deviceID;
     String location = device.getDeviceLocation();
     bool isMaster = device.isAuthority || device.nodeType == 'Master';
-    bool isOnline = device.connections.isNotEmpty;
+    bool isOnline = device.isOnline();
     bool isRouter = device.isAuthority || device.nodeType != null;
-    bool isWiredConnection = !device.isWirelessConnection();
+    bool isWiredConnection =
+        device.getConnectionType() == DeviceConnectionType.wired;
     String model = device.modelNumber ?? '';
     String serialNumber = device.unit.serialNumber ?? '';
     String fwVersion = device.unit.firmwareVersion ?? '';
@@ -183,9 +182,10 @@ class TopologyNotifier extends Notifier<TopologyState> {
     String deviceId = device.deviceID;
     String location = device.getDeviceLocation();
     bool isMaster = device.isAuthority || device.nodeType == 'Master';
-    bool isOnline = device.connections.isNotEmpty;
+    bool isOnline = device.isOnline();
     bool isRouter = device.isAuthority || device.nodeType != null;
-    bool isWiredConnection = !device.isWirelessConnection();
+    bool isWiredConnection =
+        device.getConnectionType() == DeviceConnectionType.wired;
     int? signalStrength = device.signalDecibels;
     final data = TopologyModel(
       deviceId: deviceId,
