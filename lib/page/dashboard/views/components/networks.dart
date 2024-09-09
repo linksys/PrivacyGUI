@@ -315,7 +315,7 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
       count: count,
       iconData: LinksysIcons.devices,
       onTap: () {
-        context.goNamed(RouteNamed.menuInstantDevices);
+        context.pushNamed(RouteNamed.menuInstantDevices);
       },
     );
   }

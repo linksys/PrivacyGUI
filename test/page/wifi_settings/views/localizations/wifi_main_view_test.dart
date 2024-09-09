@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
-import 'package:privacy_gui/page/instant_device/_instant_device.dart';
-import 'package:privacy_gui/page/instant_device/views/select_device_view.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/guest_wifi_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/guest_wifi_state.dart';
@@ -23,14 +21,12 @@ void main() {
   late WifiListNotifier mockWiFiListNotifier;
   late GuestWifiNotifier mockGuestWifiNotifier;
   late WifiAdvancedSettingsNotifier mockWiFiAdvancedSettingsNotifier;
-  late MacFilteringNotifier mockMacFilteringNotifier;
 
   setUp(() {
     mockWiFiViewNotifier = MockWiFiViewNotifier();
     mockWiFiListNotifier = MockWifiListNotifier();
     mockGuestWifiNotifier = MockGuestWifiNotifier();
     mockWiFiAdvancedSettingsNotifier = MockWifiAdvancedSettingsNotifier();
-    mockMacFilteringNotifier = MockMacFilteringNotifier();
 
     when(mockWiFiListNotifier.build())
         .thenReturn(WiFiState.fromMap(wifiListTestState));
@@ -38,8 +34,6 @@ void main() {
         .thenReturn(GuestWiFiState.fromMap(guestWiFiTestState));
     when(mockWiFiAdvancedSettingsNotifier.build()).thenReturn(
         WifiAdvancedSettingsState.fromMap(wifiAdvancedSettingsTestState));
-    when(mockMacFilteringNotifier.build())
-        .thenReturn(MacFilteringState.fromMap(macFilteringTestState));
 
     when(mockWiFiListNotifier.fetch()).thenAnswer((realInvocation) async {
       await Future.delayed(Durations.extralong1);
@@ -54,10 +48,6 @@ void main() {
       await Future.delayed(Durations.extralong1);
       return WifiAdvancedSettingsState.fromMap(wifiAdvancedSettingsTestState);
     });
-    when(mockMacFilteringNotifier.fetch()).thenAnswer((realInvocation) async {
-      await Future.delayed(Durations.extralong1);
-      return MacFilteringState.fromMap(macFilteringTestState);
-    });
   });
   group('WiFi list view', () {
     testLocalizations('Wifi list view - advanced view', (tester, locale) async {
@@ -68,7 +58,6 @@ void main() {
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
           guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
-          macFilteringProvider.overrideWith(() => mockMacFilteringNotifier),
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -86,7 +75,6 @@ void main() {
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
           guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
-          macFilteringProvider.overrideWith(() => mockMacFilteringNotifier),
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -107,7 +95,6 @@ void main() {
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
           guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
-          macFilteringProvider.overrideWith(() => mockMacFilteringNotifier),
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -128,7 +115,6 @@ void main() {
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
           guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
-          macFilteringProvider.overrideWith(() => mockMacFilteringNotifier),
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -149,7 +135,6 @@ void main() {
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
           guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
-          macFilteringProvider.overrideWith(() => mockMacFilteringNotifier),
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -170,7 +155,6 @@ void main() {
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
           guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
-          macFilteringProvider.overrideWith(() => mockMacFilteringNotifier),
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -191,7 +175,6 @@ void main() {
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
           guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
-          macFilteringProvider.overrideWith(() => mockMacFilteringNotifier),
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -212,7 +195,6 @@ void main() {
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
           guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
-          macFilteringProvider.overrideWith(() => mockMacFilteringNotifier),
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -239,7 +221,6 @@ void main() {
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
           guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
-          macFilteringProvider.overrideWith(() => mockMacFilteringNotifier),
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -264,7 +245,6 @@ void main() {
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
           guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
-          macFilteringProvider.overrideWith(() => mockMacFilteringNotifier),
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -292,7 +272,6 @@ void main() {
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
           guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
-          macFilteringProvider.overrideWith(() => mockMacFilteringNotifier),
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -318,7 +297,6 @@ void main() {
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
           guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
-          macFilteringProvider.overrideWith(() => mockMacFilteringNotifier),
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -342,7 +320,6 @@ void main() {
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
           guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
-          macFilteringProvider.overrideWith(() => mockMacFilteringNotifier),
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -367,7 +344,6 @@ void main() {
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
           guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
-          macFilteringProvider.overrideWith(() => mockMacFilteringNotifier),
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -388,7 +364,6 @@ void main() {
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
           guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
-          macFilteringProvider.overrideWith(() => mockMacFilteringNotifier),
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -414,7 +389,6 @@ void main() {
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
           guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
-          macFilteringProvider.overrideWith(() => mockMacFilteringNotifier),
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -439,7 +413,6 @@ void main() {
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
           guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
-          macFilteringProvider.overrideWith(() => mockMacFilteringNotifier),
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -468,7 +441,6 @@ void main() {
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
           guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
-          macFilteringProvider.overrideWith(() => mockMacFilteringNotifier),
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -493,7 +465,6 @@ void main() {
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
           guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
-          macFilteringProvider.overrideWith(() => mockMacFilteringNotifier),
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -523,7 +494,6 @@ void main() {
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
           guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
-          macFilteringProvider.overrideWith(() => mockMacFilteringNotifier),
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -544,7 +514,6 @@ void main() {
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
           guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
-          macFilteringProvider.overrideWith(() => mockMacFilteringNotifier),
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -575,7 +544,6 @@ void main() {
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
           guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
-          macFilteringProvider.overrideWith(() => mockMacFilteringNotifier),
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -609,7 +577,6 @@ void main() {
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
           guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
-          macFilteringProvider.overrideWith(() => mockMacFilteringNotifier),
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -634,399 +601,6 @@ void main() {
               .last);
       await tester.pumpAndSettle();
     }, screens: responsiveMobileScreens);
-  });
-
-  group('Mac filtering', () {
-    testLocalizations('MAC Filtering view - disabled', (tester, locale) async {
-      final widget = testableSingleRoute(
-        overrides: [
-          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-          wifiAdvancedProvider
-              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
-          macFilteringProvider.overrideWith(() => mockMacFilteringNotifier),
-        ],
-        locale: locale,
-        child: const WiFiMainView(),
-      );
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
-
-      final listTileFinder = find.byType(ListTile);
-      await tester.tap(listTileFinder.at(3));
-      await tester.pumpAndSettle();
-    }, screens: responsiveDesktopScreens);
-
-    testLocalizations('MAC Filtering view - disabled', (tester, locale) async {
-      final widget = testableSingleRoute(
-        overrides: [
-          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-          wifiAdvancedProvider
-              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
-          macFilteringProvider.overrideWith(() => mockMacFilteringNotifier),
-        ],
-        locale: locale,
-        child: const WiFiMainView(),
-      );
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
-      final menuFinder = find.byIcon(LinksysIcons.moreHoriz);
-      await tester.tap(menuFinder);
-      await tester.pumpAndSettle();
-      final listTileFinder = find.byType(ListTile);
-      await tester.tap(listTileFinder.at(3));
-      await tester.pumpAndSettle();
-      await tester.tapAt(tester.getCenter(find.byType(MacFilteringView)));
-      await tester.pumpAndSettle();
-    }, screens: responsiveMobileScreens);
-
-    testLocalizations('MAC Filtering view - allow status',
-        (tester, locale) async {
-      when(mockMacFilteringNotifier.build()).thenReturn(
-          MacFilteringState.fromMap(macFilteringTestState)
-              .copyWith(mode: MacFilterMode.allow));
-
-      when(mockMacFilteringNotifier.fetch()).thenAnswer((realInvocation) async {
-        await Future.delayed(Durations.extralong1);
-        return MacFilteringState.fromMap(macFilteringTestState)
-            .copyWith(mode: MacFilterMode.allow);
-      });
-      final widget = testableSingleRoute(
-        overrides: [
-          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-          wifiAdvancedProvider
-              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
-          macFilteringProvider.overrideWith(() => mockMacFilteringNotifier),
-        ],
-        locale: locale,
-        child: const WiFiMainView(),
-      );
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
-
-      final listTileFinder = find.byType(ListTile);
-      await tester.tap(listTileFinder.at(3));
-      await tester.pumpAndSettle();
-    }, screens: responsiveDesktopScreens);
-
-    testLocalizations('MAC Filtering view - allow status',
-        (tester, locale) async {
-      when(mockMacFilteringNotifier.build()).thenReturn(
-          MacFilteringState.fromMap(macFilteringTestState)
-              .copyWith(mode: MacFilterMode.allow));
-
-      when(mockMacFilteringNotifier.fetch()).thenAnswer((realInvocation) async {
-        await Future.delayed(Durations.extralong1);
-        return MacFilteringState.fromMap(macFilteringTestState)
-            .copyWith(mode: MacFilterMode.allow);
-      });
-      final widget = testableSingleRoute(
-        overrides: [
-          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-          wifiAdvancedProvider
-              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
-          macFilteringProvider.overrideWith(() => mockMacFilteringNotifier),
-        ],
-        locale: locale,
-        child: const WiFiMainView(),
-      );
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
-      final menuFinder = find.byIcon(LinksysIcons.moreHoriz);
-      await tester.tap(menuFinder);
-      await tester.pumpAndSettle();
-      final listTileFinder = find.byType(ListTile);
-      await tester.tap(listTileFinder.at(3));
-      await tester.pumpAndSettle();
-      await tester.tapAt(tester.getCenter(find.byType(MacFilteringView)));
-      await tester.pumpAndSettle();
-    }, screens: responsiveMobileScreens);
-
-    testLocalizations('MAC Filtering view - deny status',
-        (tester, locale) async {
-      when(mockMacFilteringNotifier.build()).thenReturn(
-          MacFilteringState.fromMap(macFilteringTestState)
-              .copyWith(mode: MacFilterMode.deny));
-
-      when(mockMacFilteringNotifier.fetch()).thenAnswer((realInvocation) async {
-        await Future.delayed(Durations.extralong1);
-        return MacFilteringState.fromMap(macFilteringTestState)
-            .copyWith(mode: MacFilterMode.deny);
-      });
-      final widget = testableSingleRoute(
-        overrides: [
-          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-          wifiAdvancedProvider
-              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
-          macFilteringProvider.overrideWith(() => mockMacFilteringNotifier),
-        ],
-        locale: locale,
-        child: const WiFiMainView(),
-      );
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
-
-      final listTileFinder = find.byType(ListTile);
-      await tester.tap(listTileFinder.at(3));
-      await tester.pumpAndSettle();
-    }, screens: responsiveDesktopScreens);
-
-    testLocalizations('MAC Filtering view - deny status',
-        (tester, locale) async {
-      when(mockMacFilteringNotifier.build()).thenReturn(
-          MacFilteringState.fromMap(macFilteringTestState)
-              .copyWith(mode: MacFilterMode.deny));
-
-      when(mockMacFilteringNotifier.fetch()).thenAnswer((realInvocation) async {
-        await Future.delayed(Durations.extralong1);
-        return MacFilteringState.fromMap(macFilteringTestState)
-            .copyWith(mode: MacFilterMode.deny);
-      });
-      final widget = testableSingleRoute(
-        overrides: [
-          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-          wifiAdvancedProvider
-              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
-          macFilteringProvider.overrideWith(() => mockMacFilteringNotifier),
-        ],
-        locale: locale,
-        child: const WiFiMainView(),
-      );
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
-      final menuFinder = find.byIcon(LinksysIcons.moreHoriz);
-      await tester.tap(menuFinder);
-      await tester.pumpAndSettle();
-      final listTileFinder = find.byType(ListTile);
-      await tester.tap(listTileFinder.at(3));
-      await tester.pumpAndSettle();
-      await tester.tapAt(tester.getCenter(find.byType(MacFilteringView)));
-      await tester.pumpAndSettle();
-    }, screens: responsiveMobileScreens);
-
-    testLocalizations('MAC Filtering view - edit access modal',
-        (tester, locale) async {
-      when(mockMacFilteringNotifier.build()).thenReturn(
-          MacFilteringState.fromMap(macFilteringTestState)
-              .copyWith(mode: MacFilterMode.allow));
-
-      when(mockMacFilteringNotifier.fetch()).thenAnswer((realInvocation) async {
-        await Future.delayed(Durations.extralong1);
-        return MacFilteringState.fromMap(macFilteringTestState)
-            .copyWith(mode: MacFilterMode.allow);
-      });
-      final widget = testableSingleRoute(
-        overrides: [
-          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-          wifiAdvancedProvider
-              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
-          macFilteringProvider.overrideWith(() => mockMacFilteringNotifier),
-        ],
-        locale: locale,
-        child: const WiFiMainView(),
-      );
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
-
-      final listTileFinder = find.byType(ListTile);
-      await tester.tap(listTileFinder.at(3));
-      await tester.pumpAndSettle();
-      final iconFinder = find.byIcon(LinksysIcons.chevronRight);
-      await tester.tap(iconFinder.first);
-      await tester.pumpAndSettle();
-    }, screens: responsiveDesktopScreens);
-
-    testLocalizations('MAC Filtering view - edit access modal',
-        (tester, locale) async {
-      when(mockMacFilteringNotifier.build()).thenReturn(
-          MacFilteringState.fromMap(macFilteringTestState)
-              .copyWith(mode: MacFilterMode.allow));
-
-      when(mockMacFilteringNotifier.fetch()).thenAnswer((realInvocation) async {
-        await Future.delayed(Durations.extralong1);
-        return MacFilteringState.fromMap(macFilteringTestState)
-            .copyWith(mode: MacFilterMode.allow);
-      });
-      final widget = testableSingleRoute(
-        overrides: [
-          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-          wifiAdvancedProvider
-              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
-          macFilteringProvider.overrideWith(() => mockMacFilteringNotifier),
-        ],
-        locale: locale,
-        child: const WiFiMainView(),
-      );
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
-      final menuFinder = find.byIcon(LinksysIcons.moreHoriz);
-      await tester.tap(menuFinder);
-      await tester.pumpAndSettle();
-      final listTileFinder = find.byType(ListTile);
-      await tester.tap(listTileFinder.at(3));
-      await tester.pumpAndSettle();
-      await tester.tapAt(tester.getCenter(find.byType(MacFilteringView)));
-      await tester.pumpAndSettle();
-      final iconFinder = find.byIcon(LinksysIcons.chevronRight);
-      await tester.tap(iconFinder.first);
-      await tester.pumpAndSettle();
-    }, screens: responsiveMobileScreens);
-
-    testLocalizations(
-      'MAC Filtering view - filtered devices view',
-      (tester, locale) async {
-        final widget = testableSingleRoute(
-          overrides: [
-            wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-            wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-            wifiAdvancedProvider
-                .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-            guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
-            macFilteringProvider.overrideWith(() => mockMacFilteringNotifier),
-          ],
-          locale: locale,
-          child: const FilteredDevicesView(),
-        );
-        await tester.pumpWidget(widget);
-        await tester.pumpAndSettle();
-      },
-    );
-    testLocalizations(
-      'MAC Filtering view - filtered devices view - has data',
-      (tester, locale) async {
-        when(mockMacFilteringNotifier.build())
-            .thenReturn(MacFilteringState.fromMap(macFilteringTestState1));
-
-        when(mockMacFilteringNotifier.fetch())
-            .thenAnswer((realInvocation) async {
-          await Future.delayed(Durations.extralong1);
-          return MacFilteringState.fromMap(macFilteringTestState1);
-        });
-        final widget = testableSingleRoute(
-          overrides: [
-            wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-            wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-            wifiAdvancedProvider
-                .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-            guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
-            macFilteringProvider.overrideWith(() => mockMacFilteringNotifier),
-          ],
-          locale: locale,
-          child: const FilteredDevicesView(),
-        );
-        await tester.pumpWidget(widget);
-        await tester.pumpAndSettle();
-      },
-    );
-
-    testLocalizations(
-      'MAC Filtering view - filtered devices view - edit devices',
-      (tester, locale) async {
-        when(mockMacFilteringNotifier.build())
-            .thenReturn(MacFilteringState.fromMap(macFilteringTestState1));
-
-        when(mockMacFilteringNotifier.fetch())
-            .thenAnswer((realInvocation) async {
-          await Future.delayed(Durations.extralong1);
-          return MacFilteringState.fromMap(macFilteringTestState1);
-        });
-        final widget = testableSingleRoute(
-          overrides: [
-            wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-            wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-            wifiAdvancedProvider
-                .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-            guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
-            macFilteringProvider.overrideWith(() => mockMacFilteringNotifier),
-          ],
-          locale: locale,
-          child: const FilteredDevicesView(),
-        );
-        await tester.pumpWidget(widget);
-        await tester.pumpAndSettle();
-        final editFinder = find.byIcon(LinksysIcons.edit);
-        await tester.tap(editFinder.first);
-        await tester.pumpAndSettle();
-      },
-    );
-
-    testLocalizations(
-      'MAC Filtering view - filtered devices view - manual add device',
-      (tester, locale) async {
-        when(mockMacFilteringNotifier.build())
-            .thenReturn(MacFilteringState.fromMap(macFilteringTestState1));
-
-        when(mockMacFilteringNotifier.fetch())
-            .thenAnswer((realInvocation) async {
-          await Future.delayed(Durations.extralong1);
-          return MacFilteringState.fromMap(macFilteringTestState1);
-        });
-        final widget = testableSingleRoute(
-          overrides: [
-            wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-            wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-            wifiAdvancedProvider
-                .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-            guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
-            macFilteringProvider.overrideWith(() => mockMacFilteringNotifier),
-          ],
-          locale: locale,
-          child: const FilteredDevicesView(),
-        );
-        await tester.pumpWidget(widget);
-        await tester.pumpAndSettle();
-        final plusFinder = find.byIcon(LinksysIcons.add);
-        await tester.tap(plusFinder.last);
-        await tester.pumpAndSettle();
-      },
-    );
-
-    testLocalizations(
-      'MAC Filtering view - filtered devices view - select devices',
-      (tester, locale) async {
-        final mockDeviceListNotifier = MockDeviceListNotifier();
-        when(mockDeviceListNotifier.build())
-            .thenReturn(DeviceListState.fromMap(deviceListTestState));
-        when(mockMacFilteringNotifier.build())
-            .thenReturn(MacFilteringState.fromMap(macFilteringTestState1));
-
-        when(mockMacFilteringNotifier.fetch())
-            .thenAnswer((realInvocation) async {
-          await Future.delayed(Durations.extralong1);
-          return MacFilteringState.fromMap(macFilteringTestState1);
-        });
-        final widget = testableSingleRoute(
-          overrides: [
-            wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-            wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-            wifiAdvancedProvider
-                .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-            guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
-            macFilteringProvider.overrideWith(() => mockMacFilteringNotifier),
-            deviceListProvider.overrideWith(() => mockDeviceListNotifier),
-          ],
-          locale: locale,
-          child: const SelectDeviceView(args: {'type': 'mac',},),
-        );
-        await tester.pumpWidget(widget);
-        await tester.pumpAndSettle();
-      },
-    );
   });
 }
 

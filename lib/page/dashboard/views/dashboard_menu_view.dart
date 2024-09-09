@@ -9,9 +9,10 @@ import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
+import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
 import 'package:privacy_gui/page/instant_safety/providers/_providers.dart';
 import 'package:privacy_gui/page/instant_topology/providers/topology_provider.dart';
-import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
@@ -103,7 +104,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
     // final isCloudLogin =
     //     ref.watch(authProvider).value?.loginType == LoginType.remote;
     final safetyState = ref.watch(safeBrowsingProvider);
-    final privacyState = ref.watch(macFilteringProvider);
+    final privacyState = ref.watch(instantPrivacyProvider);
     return [
       AppSectionItemData(
           title: loc(context).incredibleWiFi,
