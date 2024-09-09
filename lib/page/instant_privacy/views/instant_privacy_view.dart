@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/shared_widgets.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
@@ -11,7 +13,6 @@ import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_device_list_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
-import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 
@@ -37,7 +38,9 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView> {
     _notifier = ref.read(instantPrivacyProvider.notifier);
     doSomethingWithSpinner(
       context,
-      _notifier.fetch(),
+      _notifier
+          .fetch()
+          .then((value) => ref.read(pollingProvider.notifier).forcePolling()),
     );
     super.initState();
   }
@@ -50,13 +53,13 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(instantPrivacyProvider);
-    final deviceListState = ref.watch(instantPrivacyDeviceListProvider);
+    final displayDevices = ref.watch(instantPrivacyDeviceListProvider);
     return StyledAppPageView(
       scrollable: true,
       title: loc(context).instantPrivacy,
       child: ResponsiveLayout(
-        desktop: _desktopLayout(state, deviceListState.displayDevices),
-        mobile: _mobileLayout(state, deviceListState.displayDevices),
+        desktop: _desktopLayout(state, displayDevices),
+        mobile: _mobileLayout(state, displayDevices),
       ),
     );
   }
@@ -180,23 +183,23 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 AppText.labelLarge(device.name),
-                const AppGap.small1(),
-                AppText.bodyMedium(device.ipv4Address),
+                if (device.isOnline) ...[
+                  const AppGap.small1(),
+                  AppText.bodyMedium(device.ipv4Address),
+                ],
                 const AppGap.small1(),
                 AppText.bodyMedium(device.macAddress),
               ],
             ),
           ),
-          // const Spacer(),
           const AppGap.small1(),
           _connectionInfo(device),
           const AppGap.medium(),
-          Icon(
-            device.isOnline
-                ? WiFiUtils.getWifiSignalIconData(
-                    context, device.isWired ? null : device.signalStrength)
-                : null,
-            size: 24,
+          SharedWidgets.resolveSignalStrengthIcon(
+            context,
+            device.signalStrength,
+            isOnline: device.isOnline,
+            isWired: device.isWired,
           ),
           if (isEnable) ...[
             const AppGap.medium(),
@@ -215,22 +218,23 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView> {
   }
 
   Widget _connectionInfo(DeviceListItem device) {
-    bool wireless = !device.isWired;
-    return ResponsiveLayout(
-      desktop: AppText.bodyMedium(wireless
-          ? '${device.ssid}  •  ${device.band}'
-          : loc(context).ethernet),
-      mobile: wireless
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                AppText.bodyMedium(device.ssid),
-                const AppGap.small1(),
-                AppText.bodyMedium(device.band),
-              ],
-            )
-          : AppText.bodyMedium(loc(context).ethernet),
-    );
+    return device.isOnline
+        ? ResponsiveLayout(
+            desktop: AppText.bodyMedium(device.isWired
+                ? loc(context).ethernet
+                : '${device.ssid}  •  ${device.band}'),
+            mobile: device.isWired
+                ? AppText.bodyMedium(loc(context).ethernet)
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      AppText.bodyMedium(device.ssid),
+                      const AppGap.small1(),
+                      AppText.bodyMedium(device.band),
+                    ],
+                  ),
+          )
+        : Container();
   }
 
   Widget _enableTile(InstantPrivacyState state) {
@@ -273,7 +277,6 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView> {
             if (enable) {
               final macAddressList = ref
                   .read(instantPrivacyDeviceListProvider)
-                  .displayDevices
                   .map((e) => e.macAddress.toUpperCase())
                   .toList();
               _notifier.setMacAddressList(macAddressList);

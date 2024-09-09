@@ -18,6 +18,7 @@ import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacy_gui/page/instant_device/views/select_device_view.dart';
 import 'package:privacy_gui/page/firmware_update/_firmware_update.dart';
 import 'package:privacy_gui/page/health_check/_health_check.dart';
+import 'package:privacy_gui/page/instant_privacy/views/instant_privacy_view.dart';
 import 'package:privacy_gui/page/landing/_landing.dart';
 
 import 'package:privacy_gui/page/linkup/views/linkup_view.dart';
