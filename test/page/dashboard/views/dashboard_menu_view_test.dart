@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
@@ -14,6 +15,7 @@ void main() {
 
   setUp(() {
     mockAuthNotifier = MockAuthNotifier();
+    initBetterActions();
   });
 
   testResponsiveWidgets('Test Dashboard Menu item count on one column',

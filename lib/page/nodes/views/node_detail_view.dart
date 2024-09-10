@@ -70,7 +70,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
   Widget _desktopLayout(BoxConstraints constraint, NodeDetailState state) {
     return StyledAppPageView(
       padding: const EdgeInsets.only(),
-      title: loc(context).router,
+      title: state.location,
       scrollable: true,
       actions: [
         AnimatedRefreshContainer(
@@ -122,11 +122,13 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
       ],
       tabContentViews: [
         StyledAppPageView(
+          useMainPadding: false,
           appBarStyle: AppBarStyle.none,
           scrollable: true,
           child: infoTab(state),
         ),
         StyledAppPageView(
+            useMainPadding: false,
             appBarStyle: AppBarStyle.none,
             scrollable: true,
             child:
