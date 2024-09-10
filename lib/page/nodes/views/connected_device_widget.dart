@@ -70,7 +70,7 @@ class _DeviceListWidgetState extends ConsumerState<ConnectedDeviceListWidget> {
           }
         },
         trailing: WiFiUtils.getWifiSignalIconData(
-            context, !item.isWirelessConnection() ? null : item.signalDecibels),
+            context, item.getConnectionType() == DeviceConnectionType.wired ? null : item.signalDecibels),
       ),
     );
   }

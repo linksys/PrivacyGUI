@@ -47,7 +47,7 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
                   .read(deviceManagerProvider.notifier)
                   .getBandConnectedBy(device);
               return device.nodeType == null &&
-                  device.connections.isNotEmpty &&
+                  device.isOnline() &&
                   e.value.any((element) => element.band == deviceBand);
             }).length))
         .toList();
@@ -55,7 +55,7 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
       wifiList.add(DashboardWiFiItem.fromGuestRadios(
               dashboardManagerState.guestRadios,
               deviceManagerState.guestWifiDevices
-                  .where((device) => device.connections.isNotEmpty)
+                  .where((device) => device.isOnline())
                   .length)
           .copyWith(isEnabled: dashboardManagerState.isGuestNetworkEnabled));
     }

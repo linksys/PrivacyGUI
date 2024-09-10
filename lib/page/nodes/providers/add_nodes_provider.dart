@@ -188,7 +188,7 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
                                 .contains(knownInterface.macAddress)) ??
                         false)
                     .every((device) {
-                  final hasConnections = device.connections.isNotEmpty;
+                  final hasConnections = device.isOnline();
                   logger.d(
                       '[AddNodes]: [pollForNodesOnline] <${device.getDeviceLocation()}> has connections: $hasConnections');
                   return hasConnections;

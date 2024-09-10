@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/jnap/providers/dashboard_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/guest_wifi_state.dart';
 
 final guestWifiProvider = NotifierProvider<GuestWifiNotifier, GuestWiFiState>(
@@ -74,7 +75,7 @@ class GuestWifiNotifier extends Notifier<GuestWiFiState> {
       ssid: guestRadio?.guestSSID ?? '',
       password: guestRadio?.guestWPAPassphrase ?? '',
       numOfDevices: deviceManagerState.guestWifiDevices
-          .where((device) => device.connections.isNotEmpty)
+          .where((device) => device.isOnline())
           .length,
     );
 

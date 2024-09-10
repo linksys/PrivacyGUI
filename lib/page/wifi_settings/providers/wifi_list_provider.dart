@@ -9,6 +9,7 @@ import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/_providers.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_state.dart';
@@ -43,8 +44,7 @@ class WifiListNotifier extends Notifier<WiFiState> {
                 final deviceBand = ref
                     .read(deviceManagerProvider.notifier)
                     .getBandConnectedBy(device);
-                return device.connections.isNotEmpty &&
-                    deviceBand == radio.band;
+                return device.isOnline() && deviceBand == radio.band;
               }).length),
         )
         .toList();
@@ -66,8 +66,7 @@ class WifiListNotifier extends Notifier<WiFiState> {
                 final deviceBand = ref
                     .read(deviceManagerProvider.notifier)
                     .getBandConnectedBy(device);
-                return device.connections.isNotEmpty &&
-                    deviceBand == radio.band;
+                return device.isOnline() && deviceBand == radio.band;
               }).length),
         )
         .toList();

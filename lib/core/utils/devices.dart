@@ -88,21 +88,51 @@ extension DeviceUtil on RawDevice {
   bool containsIpv6Address(String ip) {
     return connections.any((element) => element.ipv6Address == ip);
   }
-
-  bool isOnline() {
-    return connections.isNotEmpty;
-  }
 }
 
 extension LinksysDeviceExt on LinksysDevice {
+  DeviceConnectionType getConnectionType() {
+    bool ret = isOnline();
+    if (!ret) {
+      return DeviceConnectionType.none;
+    }
+    if (nodeType == 'Slave') {
+      return connectionType == 'Wireless' && wirelessConnectionInfo != null
+          ? DeviceConnectionType.wireless
+          : DeviceConnectionType.wired;
+    }
+    final interfaces = knownInterfaces;
+    return interfaces?.any((element) => element.interfaceType == 'Wireless') ==
+            true
+        ? DeviceConnectionType.wireless
+        : DeviceConnectionType.wired;
+  }
+
   bool isWirelessConnection() {
     bool ret = false;
     if (nodeType == 'Slave') {
       ret = connectionType == 'Wireless' && wirelessConnectionInfo != null;
     }
     final interfaces = knownInterfaces;
-    return ret || interfaces?.firstWhereOrNull(
-            (element) => element.interfaceType == 'Wireless') !=
-        null;
+    return ret ||
+        interfaces?.firstWhereOrNull(
+                (element) => element.interfaceType == 'Wireless') !=
+            null;
   }
+
+  bool isOnline() {
+    return nodeType == 'Master'
+        ? connections.isNotEmpty
+        : connections.isNotEmpty &&
+            knownInterfaces?.any((element) =>
+                    element.interfaceType == 'Wired' ||
+                    element.interfaceType == 'Wireless') ==
+                true;
+  }
+}
+
+enum DeviceConnectionType {
+  wired,
+  wireless,
+  none;
 }

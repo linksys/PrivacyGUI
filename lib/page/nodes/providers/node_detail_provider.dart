@@ -70,13 +70,13 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
       if (device.deviceID == targetId) {
         location = device.getDeviceLocation();
         isMaster = (targetId == master?.deviceID);
-        isOnline = device.connections.isNotEmpty;
+        isOnline = device.isOnline();
         upstreamDevice = isMaster
             ? 'INTERNET'
             : (device.upstream?.getDeviceLocation() ??
                 master?.getDeviceLocation() ??
                 '');
-        isWired = !device.isWirelessConnection();
+        isWired = device.getConnectionType() == DeviceConnectionType.wired;
         signalStrength = device.signalDecibels ?? 0;
         serialNumber = device.unit.serialNumber ?? '';
         modelNumber = device.model.modelNumber ?? '';

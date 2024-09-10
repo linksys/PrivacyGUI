@@ -47,7 +47,10 @@ final compatibilityMap = [
 
 class SafeBrowsingNotifier extends Notifier<SafeBrowsingState> {
   @override
-  SafeBrowsingState build() => const SafeBrowsingState();
+  SafeBrowsingState build() {
+    fetchLANSettings(fetchRemote: true);
+    return const SafeBrowsingState();
+  }
 
   Future fetchLANSettings({bool fetchRemote = false}) async {
     final repo = ref.read(routerRepositoryProvider);
