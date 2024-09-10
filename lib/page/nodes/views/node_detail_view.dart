@@ -109,7 +109,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
 
   Widget _mobileLayout(BoxConstraints constraint, NodeDetailState state) {
     return StyledAppTabPageView(
-      title: loc(context).router,
+      title: state.location,
       tabs: [
         Tab(
           text: loc(context).info,

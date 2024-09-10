@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/build_config.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_column_layout.dart';
 
 import 'package:privacy_gui/page/components/styled/top_bar.dart';
 
@@ -60,7 +59,7 @@ class LinksysRoute extends GoRoute {
               valueListenable: showColumnOverlayNotifier,
               builder: (context, showColumnOverlay, _) {
                 return Column(children: [
-                  PreferredSize(preferredSize: const Size(0, 80), child: const TopBar()),
+                  const PreferredSize(preferredSize: Size(0, 80), child: TopBar()),
                   Expanded(child: builder(context, state))
                 ]);
               });

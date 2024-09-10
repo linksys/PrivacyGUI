@@ -5,10 +5,12 @@ import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/customs/animated_refresh_container.dart';
 import 'package:privacy_gui/page/components/shared_widgets.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/styled_tab_page_view.dart';
@@ -387,13 +389,21 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
           children: [
             _headerWidget(
               loc(context).connectivity,
-              AppIconButton.noPadding(
-                icon: LinksysIcons.refresh,
-                semanticLabel: 'refresh',
-                color: Theme.of(context).colorScheme.primary,
-                onTap: () {
-                  // force polling?
-                },
+              AnimatedRefreshContainer(
+                builder: (controller) => AppIconButton(
+                  icon: LinksysIcons.refresh,
+                  semanticLabel: 'refresh',
+                  color: Theme.of(context).colorScheme.primary,
+                  onTap: () {
+                    controller.repeat();
+                    ref
+                        .read(pollingProvider.notifier)
+                        .forcePolling()
+                        .then((value) {
+                      controller.stop();
+                    });
+                  },
+                ),
               ),
             ),
             const AppGap.large2(),

@@ -1,6 +1,6 @@
-
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -166,14 +166,17 @@ class StyledAppPageView extends ConsumerWidget {
         .last as LinksysRoute?;
     final config = pageRoute?.config;
     return useMainPadding
-        ? AppResponsiveColumnLayout(
-            column: config?.column?.column,
-            centered: config?.column?.centered ?? false,
-            isShowNaviRail: LinksysRoute.isShowNaviRail(context, config),
-            // topWidget: const TopBar(),
-            builder: () => buildMainContent(context, ref),
-            // showColumnOverlay: showColumnOverlay,
-          )
+        ? ValueListenableBuilder<bool>(
+            valueListenable: showColumnOverlayNotifier,
+            builder: (context, showColumnOverlay, _) {
+              return AppResponsiveColumnLayout(
+                column: config?.column?.column,
+                centered: config?.column?.centered ?? false,
+                isShowNaviRail: LinksysRoute.isShowNaviRail(context, config),
+                builder: () => buildMainContent(context, ref),
+                showColumnOverlay: !kReleaseMode && showColumnOverlay,
+              );
+            })
         : buildMainContent(context, ref);
     // return buildMainContent(context, ref);
   }
