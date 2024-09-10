@@ -9,6 +9,7 @@ import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/customs/animated_refresh_container.dart';
 import 'package:privacy_gui/page/components/shared_widgets.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
@@ -71,6 +72,22 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
       padding: const EdgeInsets.only(),
       title: loc(context).router,
       scrollable: true,
+      actions: [
+        AnimatedRefreshContainer(
+          builder: (controller) {
+            return AppTextButton.noPadding(
+              loc(context).refresh,
+              icon: LinksysIcons.refresh,
+              onTap: () {
+                controller.repeat();
+                ref.read(pollingProvider.notifier).forcePolling().then((value) {
+                  controller.stop();
+                });
+              },
+            );
+          },
+        ),
+      ],
       child: AppBasicLayout(
         content: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
