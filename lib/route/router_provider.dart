@@ -31,6 +31,7 @@ import 'package:privacy_gui/page/nodes/_nodes.dart';
 import 'package:privacy_gui/page/nodes/views/add_nodes_view.dart';
 import 'package:privacy_gui/page/otp_flow/providers/_providers.dart';
 import 'package:privacy_gui/page/otp_flow/views/_views.dart';
+import 'package:privacy_gui/page/pnp/explanation_view.dart';
 import 'package:privacy_gui/page/pnp/troubleshooter/views/call_support/call_support_main_region_view.dart';
 import 'package:privacy_gui/page/pnp/troubleshooter/views/call_support/call_support_more_region_view.dart';
 import 'package:privacy_gui/page/pnp/data/pnp_provider.dart';
@@ -56,6 +57,9 @@ import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_logger.dart';
+import 'package:privacy_gui/util/cookie_helper/cookie_helper.dart'
+    if (dart.library.io) 'package:privacy_gui/util/cookie_helper/cookie_helper_mobile.dart'
+    if (dart.library.html) 'package:privacy_gui/util/cookie_helper/cookie_helper_web.dart';
 import 'constants.dart';
 
 part 'route_home.dart';
@@ -98,6 +102,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const SelectNetworkView(),
       ),
       dashboardRoute,
+      explanationRoute,
       pnpRoute,
       pnpTroubleshootingRoute,
       addNodesRoute,
@@ -184,7 +189,12 @@ class RouterNotifier extends ChangeNotifier {
 
   FutureOr<String?> _goPnp(String? query) {
     FlutterNativeSplash.remove();
-    final path = '${RoutePath.pnp}?${query ?? ''}';
+    final skip = getCookie('skip-http-blocking')?.isNotEmpty == true;
+    // final path = '${RoutePath.pnp}?${query ?? ''}';
+    final path = skip
+        ? '${RoutePath.pnp}?${query ?? ''}'
+        : '${RoutePath.explanation}?${query ?? ''}';
+
     logger.i('[Route]: Go to PnP, URI=$path');
     return path;
   }

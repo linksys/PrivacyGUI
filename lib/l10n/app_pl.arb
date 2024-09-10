@@ -252,6 +252,7 @@
   "speed": "Szybkość",
   "passwordAndAccess": "Hasło i dostęp",
   "hardware": "Sprzęt",
+  "upToDate": "Aktualne",
   "invalidIpAddress": "Nieprawidłowy adres IP",
   "textMessage": "Wiadomość SMS",
   "nodes": "Węzły",
@@ -316,6 +317,9 @@
   "good": "Dobry",
   "fair": "Umiarkowany",
   "poor": "Słaba",
+  "deviceModel": "Model urządzenia",
+  "ping": "Pinguj",
+  "learnMore": "Dowiedz się więcej",
   "administration": "Administracja",
   "advanced": "Zaawansowane",
   "duid": "DUID:",
@@ -433,5 +437,9 @@
   "dmzIpAddressIsEqualRouter": "Nie można użyć adresu IP routera, adresu sieci ani adresu rozgłaszania.",
   "rulesOverlapError": "Nie można utworzyć zasad, ponieważ określono wiele zasad dla jednego połączenia portu/protokołu.",
   "routerNotFound": "Nie znaleziono routera",
-  "connection": "Połączenie"
+  "connection": "Połączenie",
+  "print": "Drukuj",
+  "upstream": "Upstream",
+  "ssid": "SSID",
+  "turnOff": "Wyłącz"
 }

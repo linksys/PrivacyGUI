@@ -24,14 +24,14 @@ class InstantSafetyView extends ArgumentsConsumerStatefulView {
 }
 
 class _InstantSafetyViewState extends ConsumerState<InstantSafetyView> {
-  late final SafeBrowsingNotifier _notifier;
+  late final InstantSafetyNotifier _notifier;
   bool enableSafeBrowsing = false;
-  SafeBrowsingType currentSafeBrowsingType = SafeBrowsingType.fortinet;
+  InstantSafetyType currentSafeBrowsingType = InstantSafetyType.fortinet;
   String loadingDesc = '';
 
   @override
   void initState() {
-    _notifier = ref.read(safeBrowsingProvider.notifier);
+    _notifier = ref.read(instantSafetyProvider.notifier);
 
     _fetchData();
     super.initState();
@@ -39,7 +39,7 @@ class _InstantSafetyViewState extends ConsumerState<InstantSafetyView> {
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(safeBrowsingProvider);
+    final state = ref.watch(instantSafetyProvider);
     return StyledAppPageView(
       scrollable: true,
       title: loc(context).instantSafety,
@@ -94,8 +94,8 @@ class _InstantSafetyViewState extends ConsumerState<InstantSafetyView> {
   }
 
   _showProviderSelector(bool hasFortinet) {
-    SafeBrowsingType type = currentSafeBrowsingType;
-    showDialog<SafeBrowsingType?>(
+    InstantSafetyType type = currentSafeBrowsingType;
+    showDialog<InstantSafetyType?>(
         context: context,
         builder: (context) {
           return AlertDialog(
@@ -108,11 +108,11 @@ class _InstantSafetyViewState extends ConsumerState<InstantSafetyView> {
                 if (hasFortinet)
                   AppRadioListItem(
                     title: loc(context).fortinetSecureDns,
-                    value: SafeBrowsingType.fortinet,
+                    value: InstantSafetyType.fortinet,
                   ),
                 AppRadioListItem(
                   title: loc(context).openDNS,
-                  value: SafeBrowsingType.openDNS,
+                  value: InstantSafetyType.openDNS,
                 ),
               ],
               onChanged: (index, selectedType) {
@@ -172,11 +172,11 @@ class _InstantSafetyViewState extends ConsumerState<InstantSafetyView> {
     );
   }
 
-  String _getTextFormSafeBrowsingType(SafeBrowsingType type) {
+  String _getTextFormSafeBrowsingType(InstantSafetyType type) {
     return switch (type) {
-      SafeBrowsingType.fortinet => loc(context).fortinetSecureDns,
-      SafeBrowsingType.openDNS => loc(context).openDNS,
-      SafeBrowsingType.off => loc(context).off,
+      InstantSafetyType.fortinet => loc(context).fortinetSecureDns,
+      InstantSafetyType.openDNS => loc(context).openDNS,
+      InstantSafetyType.off => loc(context).off,
     };
   }
 
@@ -190,7 +190,7 @@ class _InstantSafetyViewState extends ConsumerState<InstantSafetyView> {
       _notifier
           .setSafeBrowsing(enableSafeBrowsing
               ? currentSafeBrowsingType
-              : SafeBrowsingType.off)
+              : InstantSafetyType.off)
           .then((_) {
         _initCurrentState();
         showSuccessSnackBar(
@@ -230,20 +230,20 @@ class _InstantSafetyViewState extends ConsumerState<InstantSafetyView> {
   _initCurrentState() {
     setState(() {
       final stateSafeBrowsingType =
-          ref.read(safeBrowsingProvider).safeBrowsingType;
-      enableSafeBrowsing = !(stateSafeBrowsingType == SafeBrowsingType.off);
-      if (stateSafeBrowsingType == SafeBrowsingType.off) {
-        currentSafeBrowsingType = ref.read(safeBrowsingProvider).hasFortinet
-            ? SafeBrowsingType.fortinet
-            : SafeBrowsingType.openDNS;
+          ref.read(instantSafetyProvider).safeBrowsingType;
+      enableSafeBrowsing = !(stateSafeBrowsingType == InstantSafetyType.off);
+      if (stateSafeBrowsingType == InstantSafetyType.off) {
+        currentSafeBrowsingType = ref.read(instantSafetyProvider).hasFortinet
+            ? InstantSafetyType.fortinet
+            : InstantSafetyType.openDNS;
       } else {
         currentSafeBrowsingType = stateSafeBrowsingType;
       }
     });
   }
 
-  bool _edited(SafeBrowsingType stateSafeBrowsingType) {
-    if (stateSafeBrowsingType == SafeBrowsingType.off) {
+  bool _edited(InstantSafetyType stateSafeBrowsingType) {
+    if (stateSafeBrowsingType == InstantSafetyType.off) {
       return enableSafeBrowsing;
     } else {
       return !enableSafeBrowsing ||

@@ -252,6 +252,7 @@
   "speed": "Hastighed",
   "passwordAndAccess": "Adgangskode og adgang",
   "hardware": "Hardware",
+  "upToDate": "Opdateret",
   "invalidIpAddress": "Ugyldig IP-adresse",
   "textMessage": "SMS",
   "nodes": "Noder",
@@ -316,6 +317,9 @@
   "good": "God",
   "fair": "Rimelig",
   "poor": "Dårlig",
+  "deviceModel": "Enhedsmodel",
+  "ping": "Ping",
+  "learnMore": "Flere oplysninger",
   "administration": "Administration",
   "advanced": "Avanceret",
   "duid": "DUID:",
@@ -433,5 +437,9 @@
   "dmzIpAddressIsEqualRouter": "Du kan ikke bruge routerens IP-, netværks- eller broadcastadresse.",
   "rulesOverlapError": "Reglerne kan ikke oprettes, fordi der blev angivet flere regler for en kombination af en enkelt port/protokol.",
   "routerNotFound": "Routeren blev ikke fundet",
-  "connection": "Forbindelse"
+  "connection": "Forbindelse",
+  "print": "Udskriv",
+  "upstream": "Upstream",
+  "ssid": "SSID",
+  "turnOff": "Sluk"
 }

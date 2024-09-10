@@ -8,9 +8,9 @@ import 'dart:async' as _i5;
 import 'package:flutter_riverpod/flutter_riverpod.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:privacy_gui/core/jnap/models/lan_settings.dart' as _i6;
-import 'package:privacy_gui/page/instant_safety/providers/safe_browsing_provider.dart'
+import 'package:privacy_gui/page/instant_safety/providers/instant_safety_provider.dart'
     as _i4;
-import 'package:privacy_gui/page/instant_safety/providers/safe_browsing_state.dart'
+import 'package:privacy_gui/page/instant_safety/providers/instant_safety_state.dart'
     as _i3;
 
 // ignore_for_file: type=lint
@@ -38,7 +38,7 @@ class _FakeNotifierProviderRef_0<T> extends _i1.SmartFake
 }
 
 class _FakeSafeBrowsingState_1 extends _i1.SmartFake
-    implements _i3.SafeBrowsingState {
+    implements _i3.InstantSafetyState {
   _FakeSafeBrowsingState_1(
     Object parent,
     Invocation parentInvocation,
@@ -51,24 +51,26 @@ class _FakeSafeBrowsingState_1 extends _i1.SmartFake
 /// A class which mocks [SafeBrowsingNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockSafeBrowsingNotifier extends _i2.Notifier<_i3.SafeBrowsingState> with _i1.Mock
-    implements _i4.SafeBrowsingNotifier {
+class MockSafeBrowsingNotifier extends _i2.Notifier<_i3.InstantSafetyState>
+    with _i1.Mock
+    implements _i4.InstantSafetyNotifier {
   @override
-  _i2.NotifierProviderRef<_i3.SafeBrowsingState> get ref => (super.noSuchMethod(
+  _i2.NotifierProviderRef<_i3.InstantSafetyState> get ref =>
+      (super.noSuchMethod(
         Invocation.getter(#ref),
-        returnValue: _FakeNotifierProviderRef_0<_i3.SafeBrowsingState>(
+        returnValue: _FakeNotifierProviderRef_0<_i3.InstantSafetyState>(
           this,
           Invocation.getter(#ref),
         ),
         returnValueForMissingStub:
-            _FakeNotifierProviderRef_0<_i3.SafeBrowsingState>(
+            _FakeNotifierProviderRef_0<_i3.InstantSafetyState>(
           this,
           Invocation.getter(#ref),
         ),
-      ) as _i2.NotifierProviderRef<_i3.SafeBrowsingState>);
+      ) as _i2.NotifierProviderRef<_i3.InstantSafetyState>);
 
   @override
-  _i3.SafeBrowsingState get state => (super.noSuchMethod(
+  _i3.InstantSafetyState get state => (super.noSuchMethod(
         Invocation.getter(#state),
         returnValue: _FakeSafeBrowsingState_1(
           this,
@@ -78,10 +80,10 @@ class MockSafeBrowsingNotifier extends _i2.Notifier<_i3.SafeBrowsingState> with 
           this,
           Invocation.getter(#state),
         ),
-      ) as _i3.SafeBrowsingState);
+      ) as _i3.InstantSafetyState);
 
   @override
-  set state(_i3.SafeBrowsingState? value) => super.noSuchMethod(
+  set state(_i3.InstantSafetyState? value) => super.noSuchMethod(
         Invocation.setter(
           #state,
           value,
@@ -90,7 +92,7 @@ class MockSafeBrowsingNotifier extends _i2.Notifier<_i3.SafeBrowsingState> with 
       );
 
   @override
-  _i3.SafeBrowsingState build() => (super.noSuchMethod(
+  _i3.InstantSafetyState build() => (super.noSuchMethod(
         Invocation.method(
           #build,
           [],
@@ -109,7 +111,7 @@ class MockSafeBrowsingNotifier extends _i2.Notifier<_i3.SafeBrowsingState> with 
             [],
           ),
         ),
-      ) as _i3.SafeBrowsingState);
+      ) as _i3.InstantSafetyState);
 
   @override
   _i5.Future<dynamic> fetchLANSettings({bool? fetchRemote = false}) =>
@@ -124,7 +126,8 @@ class MockSafeBrowsingNotifier extends _i2.Notifier<_i3.SafeBrowsingState> with 
       ) as _i5.Future<dynamic>);
 
   @override
-  _i5.Future<dynamic> setSafeBrowsing(_i3.SafeBrowsingType? safeBrowsingType) =>
+  _i5.Future<dynamic> setSafeBrowsing(
+          _i3.InstantSafetyType? safeBrowsingType) =>
       (super.noSuchMethod(
         Invocation.method(
           #setSafeBrowsing,
@@ -135,16 +138,16 @@ class MockSafeBrowsingNotifier extends _i2.Notifier<_i3.SafeBrowsingState> with 
       ) as _i5.Future<dynamic>);
 
   @override
-  _i3.SafeBrowsingType getSafeBrowsingType(
+  _i3.InstantSafetyType getSafeBrowsingType(
           _i6.RouterLANSettings? lanSettings) =>
       (super.noSuchMethod(
         Invocation.method(
           #getSafeBrowsingType,
           [lanSettings],
         ),
-        returnValue: _i3.SafeBrowsingType.off,
-        returnValueForMissingStub: _i3.SafeBrowsingType.off,
-      ) as _i3.SafeBrowsingType);
+        returnValue: _i3.InstantSafetyType.off,
+        returnValueForMissingStub: _i3.InstantSafetyType.off,
+      ) as _i3.InstantSafetyType);
 
   @override
   bool hasFortinet() => (super.noSuchMethod(
@@ -158,8 +161,8 @@ class MockSafeBrowsingNotifier extends _i2.Notifier<_i3.SafeBrowsingState> with 
 
   @override
   bool updateShouldNotify(
-    _i3.SafeBrowsingState? previous,
-    _i3.SafeBrowsingState? next,
+    _i3.InstantSafetyState? previous,
+    _i3.InstantSafetyState? next,
   ) =>
       (super.noSuchMethod(
         Invocation.method(

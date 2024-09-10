@@ -252,6 +252,7 @@
   "speed": "Tốc độ",
   "passwordAndAccess": "Mật khẩu & Truy nhập",
   "hardware": "Phần cứng",
+  "upToDate": "Mới nhất",
   "invalidIpAddress": "Địa chỉ IP không hợp lệ",
   "textMessage": "Tin nhắn văn bản",
   "nodes": "Điểm nút",
@@ -316,6 +317,9 @@
   "good": "Tốt",
   "fair": "Khá tốt",
   "poor": "Kém",
+  "deviceModel": "Mã thiết bị",
+  "ping": "Ping",
+  "learnMore": "Tìm hiểu thêm",
   "administration": "Quản trị",
   "advanced": "Nâng cao",
   "duid": "DUID:",
@@ -433,5 +437,9 @@
   "dmzIpAddressIsEqualRouter": "Bạn không thể sử dụng IP của bộ định tuyến, mạng hoặc địa chỉ phát.",
   "rulesOverlapError": "Không thể tạo quy tắc vì nhiều quy tắc đã được xác định cho một kết hợp cổng/giao thức duy nhất.",
   "routerNotFound": "Không Tìm thấy Bộ định tuyến",
-  "connection": "Kết nối"
+  "connection": "Kết nối",
+  "print": "In",
+  "upstream": "Tải lên",
+  "ssid": "SSID",
+  "turnOff": "Tắt"
 }

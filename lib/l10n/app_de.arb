@@ -252,6 +252,7 @@
   "speed": "Geschwindigkeit",
   "passwordAndAccess": "Passwort und Zugriff",
   "hardware": "Hardware",
+  "upToDate": "Aktuell",
   "invalidIpAddress": "Ungültige IP-Adresse",
   "textMessage": "SMS",
   "nodes": "Nodes",
@@ -316,6 +317,9 @@
   "good": "Gut",
   "fair": "Mittelmäßig",
   "poor": "Schlecht",
+  "deviceModel": "Gerätemodell",
+  "ping": "Ping",
+  "learnMore": "Weitere Informationen",
   "administration": "Verwaltung",
   "advanced": "Erweitert",
   "duid": "DUID:",
@@ -433,5 +437,9 @@
   "dmzIpAddressIsEqualRouter": "Die IP-Adresse des Routers, die Netzwerk- oder die übertragene Adresse können nicht verwendet werden.",
   "rulesOverlapError": "Diese Regeln können nicht erstellt werden, da für eine einzelne Port/Protokoll-Kombination mehrere Regeln angegeben wurden.",
   "routerNotFound": "Router nicht gefunden",
-  "connection": "Verbindung"
+  "connection": "Verbindung",
+  "print": "Drucken",
+  "upstream": "Upstream",
+  "ssid": "SSID",
+  "turnOff": "Deaktivieren"
 }

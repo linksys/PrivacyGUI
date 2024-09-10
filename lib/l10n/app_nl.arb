@@ -252,6 +252,7 @@
   "speed": "Snelheid",
   "passwordAndAccess": "Wachtwoord en toegang",
   "hardware": "Hardware",
+  "upToDate": "Up-to-date",
   "invalidIpAddress": "Ongeldig IP-adres",
   "textMessage": "Sms",
   "nodes": "Nodes",
@@ -316,6 +317,9 @@
   "good": "Goed",
   "fair": "Redelijk",
   "poor": "Slecht",
+  "deviceModel": "Model van het apparaat",
+  "ping": "Ping",
+  "learnMore": "Meer informatie",
   "administration": "Beheer",
   "advanced": "Geavanceerd",
   "duid": "DUID:",
@@ -433,5 +437,9 @@
   "dmzIpAddressIsEqualRouter": "U kunt het IP-adres, het netwerkadres of het broadcast-adres van de router niet gebruiken.",
   "rulesOverlapError": "De regels kunnen niet worden gemaakt, omdat er meerdere regels zijn opgegeven voor één poort/protocolcombinatie.",
   "routerNotFound": "Router niet gevonden",
-  "connection": "Verbinding"
+  "connection": "Verbinding",
+  "print": "Afdrukken",
+  "upstream": "Upstream",
+  "ssid": "SSID",
+  "turnOff": "Uitschakelen"
 }

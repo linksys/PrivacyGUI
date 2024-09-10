@@ -252,6 +252,7 @@
   "speed": "Hastighet",
   "passwordAndAccess": "Passord og tilgang",
   "hardware": "Maskinvare",
+  "upToDate": "Oppdatert",
   "invalidIpAddress": "Ugyldig IP-adresse",
   "textMessage": "Tekstmelding",
   "nodes": "Noder",
@@ -316,6 +317,9 @@
   "good": "God",
   "fair": "Grei",
   "poor": "Dårlig",
+  "deviceModel": "Enhetsmodell",
+  "ping": "Ping",
+  "learnMore": "Mer informasjon",
   "administration": "Administrasjon",
   "advanced": "Avansert",
   "duid": "DUID:",
@@ -433,5 +437,9 @@
   "dmzIpAddressIsEqualRouter": "Du kan ikke bruke ruterens IP-, nettverks- eller kringkastingsadresse.",
   "rulesOverlapError": "Reglene kan ikke opprettes fordi flere regler er angitt for én enkelt port/protokollkombinasjon.",
   "routerNotFound": "Finner ikke ruter",
-  "connection": "Tilkobling"
+  "connection": "Tilkobling",
+  "print": "Skriv ut",
+  "upstream": "Upstream",
+  "ssid": "SSID",
+  "turnOff": "Slå av"
 }

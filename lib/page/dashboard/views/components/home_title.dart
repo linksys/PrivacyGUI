@@ -59,9 +59,9 @@ class DashboardHomeTitle extends ConsumerWidget {
   }
 
   String helloString(BuildContext context) => switch (DateTime.now().hour) {
-        >= 18 && < 24 => loc(context).goodEvening,
-        >= 12 && < 18 => loc(context).goodAfternoon,
-        >= 6 && < 12 => loc(context).goodMorning,
+        >= 17 && < 22 => loc(context).goodEvening,
+        >= 12 && < 17 => loc(context).goodAfternoon,
+        >= 1 && < 12 => loc(context).goodMorning,
         _ => loc(context).goodNight,
       };
 }

@@ -4,7 +4,7 @@ const signalThresholdRSSI = [-65, -71, -78];
 enum NodeSignalLevel {
   wired(displayTitle: 'Wired'),
   none(displayTitle: 'No signal'),
-  poor(displayTitle: 'Weak'),
+  poor(displayTitle: 'Poor'),
   good(displayTitle: 'Good'),
   fair(displayTitle: 'Fair'),
   excellent(displayTitle: 'Excellent');

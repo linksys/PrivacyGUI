@@ -252,6 +252,7 @@
   "speed": "Velocidad",
   "passwordAndAccess": "Contraseña y acceso",
   "hardware": "Hardware",
+  "upToDate": "Actualizado",
   "invalidIpAddress": "Dirección IP no válida",
   "textMessage": "Mensaje de texto",
   "nodes": "Nodos",
@@ -316,6 +317,9 @@
   "good": "Buena",
   "fair": "Aceptable",
   "poor": "Deficiente",
+  "deviceModel": "Modelo de dispositivo",
+  "ping": "Ping",
+  "learnMore": "Más información",
   "administration": "Administración",
   "advanced": "Avanzada",
   "duid": "DUID:",
@@ -433,5 +437,9 @@
   "dmzIpAddressIsEqualRouter": "No puede utilizar la dirección de difusión, red o IP del router.",
   "rulesOverlapError": "No es posible crear las reglas porque se han especificado varias reglas para una única combinación de puerto/protocolo.",
   "routerNotFound": "No se ha encontrado el router",
-  "connection": "Conexión"
+  "connection": "Conexión",
+  "print": "Imprimir",
+  "upstream": "Flujo de subida",
+  "ssid": "SSID",
+  "turnOff": "Deshabilitar"
 }

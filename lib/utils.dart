@@ -571,8 +571,8 @@ extension NodeSignalLevelExt on NodeSignalLevel {
   String resolveLabel(BuildContext context) {
     return switch (this) {
       NodeSignalLevel.excellent => loc(context).excellent,
-      NodeSignalLevel.poor => loc(context).poor,
       NodeSignalLevel.good => loc(context).good,
+      NodeSignalLevel.poor => loc(context).poor,
       NodeSignalLevel.fair => loc(context).fair,
       NodeSignalLevel.wired => loc(context).wired,
       NodeSignalLevel.none => '',
@@ -582,9 +582,9 @@ extension NodeSignalLevelExt on NodeSignalLevel {
   Color? resolveColor(BuildContext context) {
     return switch (this) {
       NodeSignalLevel.excellent => Theme.of(context).colorSchemeExt.green,
-      NodeSignalLevel.good => Theme.of(context).colorScheme.primary,
-      NodeSignalLevel.fair => Theme.of(context).colorSchemeExt.orange,
+      NodeSignalLevel.good => Theme.of(context).colorSchemeExt.orange,
       NodeSignalLevel.poor => Theme.of(context).colorScheme.error,
+      NodeSignalLevel.fair => Theme.of(context).colorScheme.error,
       NodeSignalLevel.wired => Theme.of(context).colorScheme.onSurface,
       NodeSignalLevel.none => Colors.black,
     };

@@ -236,24 +236,6 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
                 ],
               ),
             ),
-            _appNoBoarderCard(
-              child: Wrap(
-                direction: Axis.vertical,
-                children: [
-                  AppText.bodySmall('CPU Utilization'),
-                  AppText.labelMedium('####'),
-                ],
-              ),
-            ),
-            _appNoBoarderCard(
-              child: Wrap(
-                direction: Axis.vertical,
-                children: [
-                  AppText.bodySmall('Memory Utilization'),
-                  AppText.labelMedium('####'),
-                ],
-              ),
-            ),
           ],
         ));
   }
@@ -417,27 +399,29 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
             const AppGap.large2(),
             Row(
               children: [
+                // Expanded(
+                //   child: AppCard(
+                //       child: Row(
+                //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                //     children: [
+                //       AppText.labelMedium(loc(context).selfTest),
+                //       _greenCircle(context),
+                //     ],
+                //   )),
+                // ),
+                // const AppGap.small2(),
                 Expanded(
                   child: AppCard(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: Spacing.large2, vertical: Spacing.medium),
                       child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      AppText.labelMedium(loc(context).selfTest),
-                      _greenCircle(context),
-                    ],
-                  )),
-                ),
-                const AppGap.small2(),
-                Expanded(
-                  child: AppCard(
-                      child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      AppText.labelMedium(loc(context).internet),
-                      _greenCircle(context,
-                          systemConnectivityState.wanConnection != null)
-                    ],
-                  )),
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          AppText.labelMedium(loc(context).internet),
+                          _greenCircle(context,
+                              systemConnectivityState.wanConnection != null)
+                        ],
+                      )),
                 ),
               ],
             ),

@@ -252,6 +252,7 @@
   "speed": "ความเร็ว",
   "passwordAndAccess": "รหัสผ่านและการเข้าถึง",
   "hardware": "ฮาร์ดแวร์",
+  "upToDate": "ทันสมัย",
   "invalidIpAddress": "IP แอดเดรสไม่ถูกต้อง",
   "textMessage": "ข้อความ",
   "nodes": "โหนด",
@@ -316,6 +317,9 @@
   "good": "สัญญาณดี",
   "fair": "สัญญาณพอใช้",
   "poor": "ต่ำ",
+  "deviceModel": "รุ่นอุปกรณ์",
+  "ping": "Ping",
+  "learnMore": "ดูรายละเอียดเพิ่มเติม",
   "administration": "การดูแลระบบ",
   "advanced": "ขั้นสูง",
   "duid": "DUID:",
@@ -433,5 +437,9 @@
   "dmzIpAddressIsEqualRouter": "คุณไม่สามารถใช้ IP แอดเดรส, แอดเดรสเครือข่าย หรือแอดเดรสในการเผยแพร่ของเราเตอร์ได้",
   "rulesOverlapError": "ไม่สามารถสร้างกฎได้ เนื่องจากกฎแบบหลากหลายถูกกำหนดไว้สำหรับพอร์ต/โปรโตคอลเดี่ยวร่วม",
   "routerNotFound": "ไม่พบเราเตอร์",
-  "connection": "การเชื่อมต่อ"
+  "connection": "การเชื่อมต่อ",
+  "print": "พิมพ์",
+  "upstream": "การส่งข้อมูล",
+  "ssid": "SSID",
+  "turnOff": "ปิด"
 }

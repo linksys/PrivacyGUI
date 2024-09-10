@@ -252,6 +252,7 @@
   "speed": "السرعة",
   "passwordAndAccess": "كلمة المرور والوصول",
   "hardware": "الأجهزة",
+  "upToDate": "محدَّث حتى تاريخه",
   "invalidIpAddress": "عنوان IP غير صالح",
   "textMessage": "رسالة نصية",
   "nodes": "العُقد",
@@ -316,6 +317,9 @@
   "good": "جيدة",
   "fair": "مقبول",
   "poor": "ضعيفة",
+  "deviceModel": "طراز الجهاز",
+  "ping": "أداة اختبار الاتصال",
+  "learnMore": "معرفة المزيد",
   "administration": "الإدارة",
   "advanced": "متقدم",
   "duid": "DUID:",
@@ -433,5 +437,9 @@
   "dmzIpAddressIsEqualRouter": "لا يمكنك استخدام عنوان البث أو الشبكة أو عنوان IP الخاص بالموجّه.",
   "rulesOverlapError": "يتعذر إنشاء القواعد لأنه تم تحديد قواعد متعددة لمزيج بروتوكول/منفذ واحد.",
   "routerNotFound": "لم يتم العثور على الموجّه",
-  "connection": "الاتصال"
+  "connection": "الاتصال",
+  "print": "طباعة",
+  "upstream": "تحميل البيانات",
+  "ssid": "SSID",
+  "turnOff": "إيقاف"
 }
