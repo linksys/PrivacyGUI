@@ -252,6 +252,7 @@
   "speed": "속도",
   "passwordAndAccess": "암호 및 액세스",
   "hardware": "하드웨어",
+  "upToDate": "최신 상태",
   "invalidIpAddress": "잘못된 IP 주소",
   "textMessage": "문자 메시지",
   "nodes": "노드",
@@ -316,6 +317,9 @@
   "good": "좋음",
   "fair": "양호",
   "poor": "불량",
+  "deviceModel": "장치 모델",
+  "ping": "핑",
+  "learnMore": "추가 정보",
   "administration": "관리",
   "advanced": "고급",
   "duid": "DUID:",
@@ -433,5 +437,9 @@
   "dmzIpAddressIsEqualRouter": "라우터의 IP, 네트워크 또는 브로드캐스트 주소를 사용할 수 없습니다.",
   "rulesOverlapError": "단일 포트/프로토콜 조합에 대해 다중 규칙이 지정되었기 때문에 규칙을 생성할 수 없습니다.",
   "routerNotFound": "라우터를 찾을 수 없음",
-  "connection": "연결"
+  "connection": "연결",
+  "print": "인쇄",
+  "upstream": "업스트림",
+  "ssid": "SSID",
+  "turnOff": "끄기"
 }

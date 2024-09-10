@@ -252,6 +252,7 @@
   "speed": "Nopeus",
   "passwordAndAccess": "Salasana ja kirjautuminen",
   "hardware": "Laitteisto",
+  "upToDate": "Ajan tasalla",
   "invalidIpAddress": "Virheellinen IP-osoite",
   "textMessage": "Tekstiviesti",
   "nodes": "Solmut",
@@ -316,6 +317,9 @@
   "good": "Hyvä",
   "fair": "Tyydyttävä",
   "poor": "Heikko",
+  "deviceModel": "Laitteen malli",
+  "ping": "Ping",
+  "learnMore": "Lue lisää",
   "administration": "Valvonta",
   "advanced": "Lisäasetukset",
   "duid": "DUID:",
@@ -433,5 +437,9 @@
   "dmzIpAddressIsEqualRouter": "Et voi käyttää reitittimen IP-osoitetta, verkko- tai lähetysosoitetta.",
   "rulesOverlapError": "Sääntöjä ei voida luoda, koska yhdelle ulkoisen portin/protokollan yhdistelmälle määritettiin useita sääntöjä.",
   "routerNotFound": "Reititintä ei löydy",
-  "connection": "Liitännät"
+  "connection": "Liitännät",
+  "print": "Tulosta",
+  "upstream": "Tilaajalta verkkoon",
+  "ssid": "SSID",
+  "turnOff": "Poista käytöstä"
 }

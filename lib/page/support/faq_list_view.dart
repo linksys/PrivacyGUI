@@ -40,15 +40,16 @@ class FaqListView extends ArgumentsConsumerStatelessView {
                   locale: ref.read(appSettingsProvider).locale);
             },
           ),
-          const AppGap.large2(),
-          RemoteAssistanceWidget(
-              child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: AppText.labelMedium(
-              'Remote Assistance (PoC)',
-              color: Theme.of(context).colorScheme.primary,
-            ),
-          ))
+          // const AppGap.large2(),
+          // RemoteAssistanceWidget(
+          //   child: Padding(
+          //     padding: const EdgeInsets.all(8.0),
+          //     child: AppText.labelMedium(
+          //       'Remote Assistance (PoC)',
+          //       color: Theme.of(context).colorScheme.primary,
+          //     ),
+          //   ),
+          // )
         ],
       ),
       menuOnRight: true,

@@ -11,12 +11,12 @@ import '../../../../test_data/safe_browsing_test_state.dart';
 import '../../../../mocks/safe_browsing_notifier_mocks.dart';
 
 void main() {
-  late SafeBrowsingNotifier mockSafeBrowsingNotifier;
+  late InstantSafetyNotifier mockSafeBrowsingNotifier;
 
   setUp(() {
     mockSafeBrowsingNotifier = MockSafeBrowsingNotifier();
     when(mockSafeBrowsingNotifier.build())
-        .thenReturn(SafeBrowsingState.fromMap(safeBrowsingTestState));
+        .thenReturn(InstantSafetyState.fromMap(safeBrowsingTestState));
     when(mockSafeBrowsingNotifier.fetchLANSettings())
         .thenAnswer((realInvocation) async {
       await Future.delayed(const Duration(seconds: 1));
@@ -30,7 +30,7 @@ void main() {
             LinksysRouteConfig(column: ColumnGrid(column: 9, centered: true)),
         locale: locale,
         overrides: [
-          safeBrowsingProvider.overrideWith(() => mockSafeBrowsingNotifier),
+          instantSafetyProvider.overrideWith(() => mockSafeBrowsingNotifier),
         ],
       ),
     );
@@ -39,7 +39,7 @@ void main() {
 
   testLocalizations('Safe browsing view - edit', (tester, locale) async {
     when(mockSafeBrowsingNotifier.build())
-        .thenReturn(SafeBrowsingState.fromMap(safeBrowsingTestState1));
+        .thenReturn(InstantSafetyState.fromMap(safeBrowsingTestState1));
     await tester.pumpWidget(
       testableSingleRoute(
         child: const InstantSafetyView(),
@@ -47,7 +47,7 @@ void main() {
             LinksysRouteConfig(column: ColumnGrid(column: 9, centered: true)),
         locale: locale,
         overrides: [
-          safeBrowsingProvider.overrideWith(() => mockSafeBrowsingNotifier),
+          instantSafetyProvider.overrideWith(() => mockSafeBrowsingNotifier),
         ],
       ),
     );
@@ -59,7 +59,7 @@ void main() {
 
   testLocalizations('Safe browsing view - fortinet', (tester, locale) async {
     when(mockSafeBrowsingNotifier.build())
-        .thenReturn(SafeBrowsingState.fromMap(safeBrowsingTestState1));
+        .thenReturn(InstantSafetyState.fromMap(safeBrowsingTestState1));
     await tester.pumpWidget(
       testableSingleRoute(
         child: const InstantSafetyView(),
@@ -67,7 +67,7 @@ void main() {
             LinksysRouteConfig(column: ColumnGrid(column: 9, centered: true)),
         locale: locale,
         overrides: [
-          safeBrowsingProvider.overrideWith(() => mockSafeBrowsingNotifier),
+          instantSafetyProvider.overrideWith(() => mockSafeBrowsingNotifier),
         ],
       ),
     );
@@ -76,7 +76,7 @@ void main() {
 
   testLocalizations('Safe browsing view - openDNS', (tester, locale) async {
     when(mockSafeBrowsingNotifier.build())
-        .thenReturn(SafeBrowsingState.fromMap(safeBrowsingTestState2));
+        .thenReturn(InstantSafetyState.fromMap(safeBrowsingTestState2));
     await tester.pumpWidget(
       testableSingleRoute(
         child: const InstantSafetyView(),
@@ -84,7 +84,7 @@ void main() {
             LinksysRouteConfig(column: ColumnGrid(column: 9, centered: true)),
         locale: locale,
         overrides: [
-          safeBrowsingProvider.overrideWith(() => mockSafeBrowsingNotifier),
+          instantSafetyProvider.overrideWith(() => mockSafeBrowsingNotifier),
         ],
       ),
     );
@@ -94,7 +94,7 @@ void main() {
   testLocalizations('Safe browsing view - not supported fortinet',
       (tester, locale) async {
     when(mockSafeBrowsingNotifier.build()).thenReturn(
-        SafeBrowsingState.fromMap(safeBrowsingTestStateNotSupported));
+        InstantSafetyState.fromMap(safeBrowsingTestStateNotSupported));
     await tester.pumpWidget(
       testableSingleRoute(
         child: const InstantSafetyView(),
@@ -102,7 +102,7 @@ void main() {
             LinksysRouteConfig(column: ColumnGrid(column: 9, centered: true)),
         locale: locale,
         overrides: [
-          safeBrowsingProvider.overrideWith(() => mockSafeBrowsingNotifier),
+          instantSafetyProvider.overrideWith(() => mockSafeBrowsingNotifier),
         ],
       ),
     );
@@ -111,7 +111,7 @@ void main() {
   testLocalizations('Safe browsing view - not supported fortinet - edit',
       (tester, locale) async {
     when(mockSafeBrowsingNotifier.build()).thenReturn(
-        SafeBrowsingState.fromMap(safeBrowsingTestStateNotSupported));
+        InstantSafetyState.fromMap(safeBrowsingTestStateNotSupported));
     await tester.pumpWidget(
       testableSingleRoute(
         child: const InstantSafetyView(),
@@ -119,7 +119,7 @@ void main() {
             LinksysRouteConfig(column: ColumnGrid(column: 9, centered: true)),
         locale: locale,
         overrides: [
-          safeBrowsingProvider.overrideWith(() => mockSafeBrowsingNotifier),
+          instantSafetyProvider.overrideWith(() => mockSafeBrowsingNotifier),
         ],
       ),
     );

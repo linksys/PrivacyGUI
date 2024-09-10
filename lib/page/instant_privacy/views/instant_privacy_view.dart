@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/customs/animated_refresh_container.dart';
 import 'package:privacy_gui/page/components/shared_widgets.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
@@ -13,6 +15,7 @@ import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_device_list_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
+import 'package:privacy_gui/page/nodes/_nodes.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 
@@ -143,14 +146,40 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppText.titleSmall(
-          loc(context).nDevices(deviceList.length).capitalizeWords(),
-          maxLines: 5,
-        ),
-        const AppGap.small1(),
-        AppText.bodyMedium(
-          loc(context).theDevicesAllowedToConnect,
-          maxLines: 5,
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppText.titleSmall(
+                    loc(context).nDevices(deviceList.length).capitalizeWords(),
+                    maxLines: 5,
+                  ),
+                  const AppGap.small1(),
+                  AppText.bodyMedium(
+                    loc(context).theDevicesAllowedToConnect,
+                    maxLines: 5,
+                  ),
+                ],
+              ),
+            ),
+            AnimatedRefreshContainer(builder: (controller) {
+              return AppIconButton(
+                icon: LinksysIcons.refresh,
+                color: Theme.of(context).colorScheme.primary,
+                onTap: () {
+                  controller.repeat();
+                  ref
+                      .read(pollingProvider.notifier)
+                      .forcePolling()
+                      .then((value) {
+                    controller.stop();
+                  });
+                },
+              );
+            }),
+          ],
         ),
         const AppGap.medium(),
         SizedBox(

@@ -5,10 +5,11 @@ import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/models/firmware_update_status_nodes.dart';
 import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
-import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/customs/animated_refresh_container.dart';
 import 'package:privacy_gui/page/components/shared_widgets.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
@@ -69,8 +70,24 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
   Widget _desktopLayout(BoxConstraints constraint, NodeDetailState state) {
     return StyledAppPageView(
       padding: const EdgeInsets.only(),
-      title: loc(context).router,
+      title: state.location,
       scrollable: true,
+      actions: [
+        AnimatedRefreshContainer(
+          builder: (controller) {
+            return AppTextButton.noPadding(
+              loc(context).refresh,
+              icon: LinksysIcons.refresh,
+              onTap: () {
+                controller.repeat();
+                ref.read(pollingProvider.notifier).forcePolling().then((value) {
+                  controller.stop();
+                });
+              },
+            );
+          },
+        ),
+      ],
       child: AppBasicLayout(
         content: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -92,7 +109,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
 
   Widget _mobileLayout(BoxConstraints constraint, NodeDetailState state) {
     return StyledAppTabPageView(
-      title: loc(context).router,
+      title: state.location,
       tabs: [
         Tab(
           text: loc(context).info,
@@ -105,11 +122,13 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
       ],
       tabContentViews: [
         StyledAppPageView(
+          useMainPadding: false,
           appBarStyle: AppBarStyle.none,
           scrollable: true,
           child: infoTab(state),
         ),
         StyledAppPageView(
+            useMainPadding: false,
             appBarStyle: AppBarStyle.none,
             scrollable: true,
             child:

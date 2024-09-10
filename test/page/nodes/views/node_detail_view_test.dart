@@ -41,9 +41,9 @@ void main() {
         ],
         child: const NodeDetailView());
     await tester.pumpWidget(widget);
-
+    
     final nameFinder = find.text('Router123');
-    expect(nameFinder, findsOneWidget);
+    expect(nameFinder, findsNWidgets(2));
   }, variants: responsiveMobileVariants);
   testResponsiveWidgets('Test node details view with desktop layout',
       (tester) async {
@@ -62,7 +62,7 @@ void main() {
 
     BuildContext context = tester.element(find.byType(NodeDetailView));
     final nameFinder = find.text('Router123');
-    expect(nameFinder, findsOneWidget);
+    expect(nameFinder, findsNWidgets(2));
 
     final routerImageFinder =
         find.image(CustomTheme.of(context).images.devices.routerMx6200);

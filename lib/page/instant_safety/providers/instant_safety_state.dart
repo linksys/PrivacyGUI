@@ -6,35 +6,35 @@ import 'package:equatable/equatable.dart';
 
 import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
 
-enum SafeBrowsingType {
+enum InstantSafetyType {
   off,
   fortinet,
   openDNS,
   ;
 
-  static SafeBrowsingType reslove(String value) =>
-      SafeBrowsingType.values
+  static InstantSafetyType reslove(String value) =>
+      InstantSafetyType.values
           .firstWhereOrNull((element) => element.name == value) ??
-      SafeBrowsingType.off;
+      InstantSafetyType.off;
 }
 
-class SafeBrowsingState extends Equatable {
+class InstantSafetyState extends Equatable {
   final RouterLANSettings? lanSetting;
-  final SafeBrowsingType safeBrowsingType;
+  final InstantSafetyType safeBrowsingType;
   final bool hasFortinet;
 
-  const SafeBrowsingState({
+  const InstantSafetyState({
     this.lanSetting,
-    this.safeBrowsingType = SafeBrowsingType.off,
+    this.safeBrowsingType = InstantSafetyType.off,
     this.hasFortinet = false,
   });
 
-  SafeBrowsingState copyWith({
+  InstantSafetyState copyWith({
     RouterLANSettings? lanSetting,
-    SafeBrowsingType? safeBrowsingType,
+    InstantSafetyType? safeBrowsingType,
     bool? hasFortinet,
   }) {
-    return SafeBrowsingState(
+    return InstantSafetyState(
       lanSetting: lanSetting ?? this.lanSetting,
       safeBrowsingType: safeBrowsingType ?? this.safeBrowsingType,
       hasFortinet: hasFortinet ?? this.hasFortinet,
@@ -52,22 +52,22 @@ class SafeBrowsingState extends Equatable {
     };
   }
 
-  factory SafeBrowsingState.fromMap(Map<String, dynamic> map) {
-    return SafeBrowsingState(
+  factory InstantSafetyState.fromMap(Map<String, dynamic> map) {
+    return InstantSafetyState(
       lanSetting: map['lanSetting'] != null
           ? RouterLANSettings.fromMap(map['lanSetting'] as Map<String, dynamic>)
           : null,
       safeBrowsingType: map['safeBrowsingType'] != null
-          ? SafeBrowsingType.reslove(map['safeBrowsingType'])
-          : SafeBrowsingType.off,
+          ? InstantSafetyType.reslove(map['safeBrowsingType'])
+          : InstantSafetyType.off,
       hasFortinet: map['hasFortinet'] as bool,
     );
   }
 
   String toJson() => json.encode(toMap());
 
-  factory SafeBrowsingState.fromJson(String source) =>
-      SafeBrowsingState.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory InstantSafetyState.fromJson(String source) =>
+      InstantSafetyState.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
   bool get stringify => true;

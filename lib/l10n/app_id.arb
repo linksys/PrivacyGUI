@@ -252,6 +252,7 @@
   "speed": "Kecepatan",
   "passwordAndAccess": "Kata Sandi dan Akses",
   "hardware": "Perangkat Keras",
+  "upToDate": "Mutakhir",
   "invalidIpAddress": "Alamat IP tidak valid",
   "textMessage": "Pesan Teks",
   "nodes": "Simpul",
@@ -316,6 +317,9 @@
   "good": "Baik",
   "fair": "Cukup",
   "poor": "Buruk",
+  "deviceModel": "Model Perangkat",
+  "ping": "Ping",
+  "learnMore": "Pelajari lebih lanjut",
   "administration": "Administrasi",
   "advanced": "Tingkat Lanjut",
   "duid": "DUID:",
@@ -433,5 +437,9 @@
   "dmzIpAddressIsEqualRouter": "Anda tidak dapat menggunakan alamat IP, jaringan, atau penyiaran Router.",
   "rulesOverlapError": "Aturan tidak dapat dibuat karena ada beberapa aturan yang ditetapkan untuk satu kombinasi port/protokol.",
   "routerNotFound": "Router Tidak Ditemukan",
-  "connection": "Koneksi"
+  "connection": "Koneksi",
+  "print": "Cetak",
+  "upstream": "Hulu",
+  "ssid": "SSID",
+  "turnOff": "Matikan"
 }

@@ -252,6 +252,7 @@
   "speed": "Hastighet",
   "passwordAndAccess": "Lösenord och åtkomst",
   "hardware": "Maskinvara",
+  "upToDate": "Uppdaterad",
   "invalidIpAddress": "Ogiltig IP-adress",
   "textMessage": "SMS",
   "nodes": "Noder",
@@ -316,6 +317,9 @@
   "good": "Bra",
   "fair": "Acceptabel",
   "poor": "Dålig",
+  "deviceModel": "Enhetsmodell",
+  "ping": "Ping",
+  "learnMore": "Läs mer",
   "administration": "Administration",
   "advanced": "Avancerat",
   "duid": "DUID:",
@@ -433,5 +437,9 @@
   "dmzIpAddressIsEqualRouter": "Du kan inte använda router-IP-, nätverks- eller broadcast-adressen.",
   "rulesOverlapError": "Reglerna kan inte skapas eftersom flera regler angavs för en enda kombination av port/protokoll.",
   "routerNotFound": "Routern hittades inte",
-  "connection": "Anslutning"
+  "connection": "Anslutning",
+  "print": "Skriv ut",
+  "upstream": "Sändning",
+  "ssid": "SSID",
+  "turnOff": "Slå av"
 }

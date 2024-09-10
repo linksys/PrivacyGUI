@@ -252,6 +252,7 @@
   "speed": "速度",
   "passwordAndAccess": "密码和访问",
   "hardware": "硬件",
+  "upToDate": "已为最新版本",
   "invalidIpAddress": "无效的IP地址",
   "textMessage": "文本信息",
   "nodes": "节点",
@@ -316,6 +317,9 @@
   "good": "良好",
   "fair": "一般",
   "poor": "极差",
+  "deviceModel": "设备型号",
+  "ping": "Ping",
+  "learnMore": "了解更多信息",
   "administration": "管理",
   "advanced": "高级设置",
   "duid": "DUID：",
@@ -433,5 +437,9 @@
   "dmzIpAddressIsEqualRouter": "您不能使用路由器的IP、网络或广播地址。",
   "rulesOverlapError": "无法创建规则，因为单个端口/协议组合指定了多个规则。",
   "routerNotFound": "无法找到路由器",
-  "connection": "连接"
+  "connection": "连接",
+  "print": "打印",
+  "upstream": "上游",
+  "ssid": "SSID",
+  "turnOff": "关闭"
 }

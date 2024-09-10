@@ -54,6 +54,9 @@ const linkHardwareNodeNotTureOn =
     '$officialWebHost/support-article?articleNum=48905#NotTurningOn';
 const linkHardwareEthernetPortNotWorking =
     '$officialWebHost/support-article?articleNum=48905#PortsNotWorking';
+// Explanation
+const linksysCertExplanation =
+    '$officialWebHost/support-article?articleNum=318835';
 
 const officialWebConutryMapping = {
   'ar': 'sa',

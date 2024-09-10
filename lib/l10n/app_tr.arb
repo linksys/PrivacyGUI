@@ -252,6 +252,7 @@
   "speed": "Hız",
   "passwordAndAccess": "Parola ve Erişim",
   "hardware": "Donanım",
+  "upToDate": "Güncelle",
   "invalidIpAddress": "Geçersiz IP adresi",
   "textMessage": "SMS Mesajı",
   "nodes": "Düğümler",
@@ -316,6 +317,9 @@
   "good": "İyi",
   "fair": "Orta",
   "poor": "Zayıf",
+  "deviceModel": "Cihaz Modeli",
+  "ping": "Ping",
+  "learnMore": "Daha fazla bilgi alın",
   "administration": "Yönetim",
   "advanced": "İleri Düzey",
   "duid": "DUID:",
@@ -433,5 +437,9 @@
   "dmzIpAddressIsEqualRouter": "Router'ın IP, ağ veya yayın adresini kullanamazsınız.",
   "rulesOverlapError": "Tek bir port/protokol kombinasyonu için birden çok kural belirtildiğinden kurallar oluşturulamıyor.",
   "routerNotFound": "Router Bulunamadı",
-  "connection": "Bağlantı"
+  "connection": "Bağlantı",
+  "print": "Yazdır",
+  "upstream": "Yukarı Yönde",
+  "ssid": "SSID",
+  "turnOff": "Kapat"
 }

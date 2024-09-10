@@ -103,7 +103,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
   List<AppSectionItemData> createMenuItems() {
     // final isCloudLogin =
     //     ref.watch(authProvider).value?.loginType == LoginType.remote;
-    final safetyState = ref.watch(safeBrowsingProvider);
+    final safetyState = ref.watch(instantSafetyProvider);
     final privacyState = ref.watch(instantPrivacyProvider);
     return [
       AppSectionItemData(
@@ -131,7 +131,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
           title: loc(context).instantSafety,
           description: loc(context).instantSafetyDesc,
           iconData: LinksysIcons.encrypted,
-          status: safetyState.safeBrowsingType == SafeBrowsingType.off,
+          status: safetyState.safeBrowsingType == InstantSafetyType.off,
           onTap: () {
             _navigateTo(RouteNamed.menuInstantSafety);
           }),

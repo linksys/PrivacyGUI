@@ -10,18 +10,18 @@ import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
-import 'package:privacy_gui/page/instant_safety/providers/safe_browsing_state.dart';
+import 'package:privacy_gui/page/instant_safety/providers/instant_safety_state.dart';
 
-final safeBrowsingProvider =
-    NotifierProvider<SafeBrowsingNotifier, SafeBrowsingState>(
-        () => SafeBrowsingNotifier());
+final instantSafetyProvider =
+    NotifierProvider<InstantSafetyNotifier, InstantSafetyState>(
+        () => InstantSafetyNotifier());
 
 final DhcpOption fortinetSetting = DhcpOption(
-  type: SafeBrowsingType.fortinet,
+  type: InstantSafetyType.fortinet,
   dnsServer1: '208.91.114.155',
 );
 final DhcpOption openDNSSetting = DhcpOption(
-  type: SafeBrowsingType.openDNS,
+  type: InstantSafetyType.openDNS,
   dnsServer1: '208.67.222.123',
   dnsServer2: '208.67.220.123',
 );
@@ -45,11 +45,11 @@ final compatibilityMap = [
   const CompatibilityItem(modelRegExp: '^MX57'),
 ];
 
-class SafeBrowsingNotifier extends Notifier<SafeBrowsingState> {
+class InstantSafetyNotifier extends Notifier<InstantSafetyState> {
   @override
-  SafeBrowsingState build() {
+  InstantSafetyState build() {
     fetchLANSettings(fetchRemote: true);
-    return const SafeBrowsingState();
+    return const InstantSafetyState();
   }
 
   Future fetchLANSettings({bool fetchRemote = false}) async {
@@ -71,24 +71,24 @@ class SafeBrowsingNotifier extends Notifier<SafeBrowsingState> {
     );
   }
 
-  Future setSafeBrowsing(SafeBrowsingType safeBrowsingType) async {
+  Future setSafeBrowsing(InstantSafetyType safeBrowsingType) async {
     final lanSetting = state.lanSetting;
     if (lanSetting != null) {
       DHCPSettings dhcpSettings;
       switch (safeBrowsingType) {
-        case SafeBrowsingType.fortinet:
+        case InstantSafetyType.fortinet:
           dhcpSettings = lanSetting.dhcpSettings.copyWith(
             dnsServer1: fortinetSetting.dnsServer1,
             dnsServer2: fortinetSetting.dnsServer2,
             dnsServer3: fortinetSetting.dnsServer3,
           );
-        case SafeBrowsingType.openDNS:
+        case InstantSafetyType.openDNS:
           dhcpSettings = lanSetting.dhcpSettings.copyWith(
             dnsServer1: openDNSSetting.dnsServer1,
             dnsServer2: openDNSSetting.dnsServer2,
             dnsServer3: openDNSSetting.dnsServer3,
           );
-        case SafeBrowsingType.off:
+        case InstantSafetyType.off:
           dhcpSettings = DHCPSettings(
             lastClientIPAddress: lanSetting.dhcpSettings.lastClientIPAddress,
             leaseMinutes: lanSetting.dhcpSettings.leaseMinutes,
@@ -123,14 +123,14 @@ class SafeBrowsingNotifier extends Notifier<SafeBrowsingState> {
     }
   }
 
-  SafeBrowsingType getSafeBrowsingType(RouterLANSettings lanSettings) {
+  InstantSafetyType getSafeBrowsingType(RouterLANSettings lanSettings) {
     final dnsServer1 = lanSettings.dhcpSettings.dnsServer1;
     if (dnsServer1 == fortinetSetting.dnsServer1) {
-      return SafeBrowsingType.fortinet;
+      return InstantSafetyType.fortinet;
     } else if (dnsServer1 == openDNSSetting.dnsServer1) {
-      return SafeBrowsingType.openDNS;
+      return InstantSafetyType.openDNS;
     } else {
-      return SafeBrowsingType.off;
+      return InstantSafetyType.off;
     }
   }
 
@@ -171,7 +171,7 @@ class SafeBrowsingNotifier extends Notifier<SafeBrowsingState> {
 }
 
 class DhcpOption {
-  final SafeBrowsingType type;
+  final InstantSafetyType type;
   final String? dnsServer1;
   final String? dnsServer2;
   final String? dnsServer3;

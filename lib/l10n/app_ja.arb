@@ -252,6 +252,7 @@
   "speed": "速度",
   "passwordAndAccess": "パスワードとアクセス",
   "hardware": "ハードウェア",
+  "upToDate": "最新の状態",
   "invalidIpAddress": "無効な IP アドレス",
   "textMessage": "SMS",
   "nodes": "ノード",
@@ -316,6 +317,9 @@
   "good": "良い",
   "fair": "普通",
   "poor": "悪い",
+  "deviceModel": "デバイス モデル",
+  "ping": "Ping",
+  "learnMore": "詳細を表示",
   "administration": "管理",
   "advanced": "高度",
   "duid": "DUID:",
@@ -433,5 +437,9 @@
   "dmzIpAddressIsEqualRouter": "ルーターの IP、ネットワーク、ブロードキャスト アドレスを使用できません。",
   "rulesOverlapError": "複数の規則が単一のポート/プロトコルの組み合わせに対して指定されているため、規則を作成できません。",
   "routerNotFound": "ルーターが見つかりません",
-  "connection": "接続"
+  "connection": "接続",
+  "print": "印刷",
+  "upstream": "アップストリーム",
+  "ssid": "SSID",
+  "turnOff": "オフにする"
 }

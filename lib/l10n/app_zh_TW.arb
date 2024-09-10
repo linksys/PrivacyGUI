@@ -252,6 +252,7 @@
   "speed": "速度",
   "passwordAndAccess": "密碼與存取",
   "hardware": "硬體",
+  "upToDate": "最新狀態",
   "invalidIpAddress": "IP 位址不正確",
   "textMessage": "文字訊息",
   "nodes": "節點",
@@ -316,6 +317,9 @@
   "good": "良好",
   "fair": "尚可",
   "poor": "不良",
+  "deviceModel": "裝置型號",
+  "ping": "偵測",
+  "learnMore": "了解更多資訊",
   "administration": "管理",
   "advanced": "進階",
   "duid": "DUID：",
@@ -433,5 +437,9 @@
   "dmzIpAddressIsEqualRouter": "您無法使用該路由器 IP、網路或廣播位址。",
   "rulesOverlapError": "無法建立規則，因為在單一連接埠/通訊協定組合上指定了多個規則。",
   "routerNotFound": "找不到路由器",
-  "connection": "連線"
+  "connection": "連線",
+  "print": "列印",
+  "upstream": "上游",
+  "ssid": "SSID",
+  "turnOff": "關閉"
 }

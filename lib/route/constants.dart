@@ -103,6 +103,9 @@ class RoutePath {
   /// linkup
   static const linkup = 'linkup';
 
+  /// Explanation
+  static const explanation = '/explanation';
+
   /// PnP
   static const pnp = '/pnp';
   static const pnpConfig = 'pnpConfig';
@@ -246,6 +249,9 @@ class RouteNamed {
   /// linkup
   static const linkup = 'linkup';
 
+  /// Explanation
+  static const explanation = 'explanation';
+  
   /// PnP
   static const pnp = 'pnp';
   static const pnpConfig = 'pnpConfig';
