@@ -35,11 +35,11 @@ class _PrivacyWidgetState extends ConsumerState<PrivacyWidget> {
         },
         child: Row(
           mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             const Icon(LinksysIcons.smartLock),
-            const AppGap.medium(),
-            AppText.titleMedium(loc(context).instantPrivacy),
+            const AppGap.small2(),
+            AppText.titleSmall(loc(context).instantPrivacy),
             const Spacer(),
             AppStatusLabel(
               isOff: state.mode == MacFilterMode.disabled,
