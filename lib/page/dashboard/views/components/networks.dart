@@ -57,7 +57,7 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
     final uptimeInt =
         ref.watch(dashboardHomeProvider.select((value) => value.uptime ?? 0));
     final uptime =
-        DateFormatUtils.formatDuration(Duration(seconds: uptimeInt), context);
+        DateFormatUtils.formatDuration(Duration(seconds: uptimeInt), null);
     final state = ref.watch(dashboardHomeProvider);
     final isLoading = ref.watch(deviceManagerProvider).deviceList.isEmpty;
     final topologyState = ref.watch(topologyProvider);
