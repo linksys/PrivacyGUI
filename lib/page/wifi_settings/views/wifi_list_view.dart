@@ -432,7 +432,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
     final result = await showSubmitAppDialog<String>(
       context,
       title: loc(context).wifiName,
-      contentBuilder: (context, setState) => Column(
+      contentBuilder: (context, setState, onSubmit) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           AppTextField(
@@ -443,6 +443,9 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
               setState(() {
                 isEmpty = value.isEmpty;
               });
+            },
+            onSubmitted: (_) {
+              context.pop(controller.text);
             },
           )
         ],
@@ -465,7 +468,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
     final result = await showSubmitAppDialog<String>(
       context,
       title: loc(context).wifiPassword,
-      contentBuilder: (context, setState) => Column(
+      contentBuilder: (context, setState, onSubmit) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           AppPasswordField.withValidator(
@@ -483,6 +486,9 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
             onValidationChanged: (isValid) => setState(() {
               isPasswordValid = isValid;
             }),
+            onSubmitted: (_) {
+              context.pop(controller.text);
+            },
           )
         ],
       ),
@@ -715,7 +721,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
     final result = await showSubmitAppDialog(
       context,
       title: loc(context).wifiListSaveModalTitle,
-      contentBuilder: (context, setState) => SingleChildScrollView(
+      contentBuilder: (context, setState, onSubmit) => SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,

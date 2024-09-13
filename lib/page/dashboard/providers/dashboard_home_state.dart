@@ -43,7 +43,7 @@ class DashboardWiFiItem extends Equatable {
     final radio = radios.first;
     return DashboardWiFiItem(
       ssid: radio.guestSSID,
-      password: radio.guestPassword ?? '',
+      password: radio.guestWPAPassphrase ?? '',
       radios: radios.map((e) => e.radioID).toList(),
       isGuest: true,
       isEnabled: radio.isEnabled,

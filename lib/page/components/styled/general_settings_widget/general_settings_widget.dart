@@ -106,16 +106,16 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
   List<Widget> _displayAdditional(LoginType loginType) {
     if (loginType != LoginType.none) {
       return [
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: AppTextButton(
-            loc(context).endUserLicenseAgreement,
-            onTap: () {
-              gotoOfficialWebUrl(linkEULA,
-                  locale: ref.read(appSettingsProvider).locale);
-            },
-          ),
-        ),
+        // Padding(
+        //   padding: const EdgeInsets.all(8.0),
+        //   child: AppTextButton(
+        //     loc(context).endUserLicenseAgreement,
+        //     onTap: () {
+        //       gotoOfficialWebUrl(linkEULA,
+        //           locale: ref.read(appSettingsProvider).locale);
+        //     },
+        //   ),
+        // ),
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: AppTextButton(
@@ -154,6 +154,7 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
           padding: const EdgeInsets.all(8.0),
           child: AppTextButton(
             loc(context).logout,
+            color: Theme.of(context).colorScheme.error,
             onTap: () {
               logger.i('[Auth]: The user manually logs out');
               ref.read(authProvider.notifier).logout();

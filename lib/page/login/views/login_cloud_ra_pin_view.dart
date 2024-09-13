@@ -124,7 +124,7 @@ class _CloudRAPinViewState extends ConsumerState<CloudRAPinView> {
     TextEditingController controller = TextEditingController();
     String? error;
     showSubmitAppDialog(context, title: 'Input PIN',
-            contentBuilder: (context, setState) {
+            contentBuilder: (context, setState, onSubmit) {
       return Column(
         mainAxisSize: MainAxisSize.min,
         children: [

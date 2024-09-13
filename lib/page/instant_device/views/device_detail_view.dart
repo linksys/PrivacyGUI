@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/utils/icon_device_category.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_provider.dart';
 import 'package:privacy_gui/page/components/shared_widgets.dart';
@@ -26,7 +27,6 @@ import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/loadable_widget/loadable_widget.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
 
 class DeviceDetailView extends ArgumentsConsumerStatefulView {
   const DeviceDetailView({
@@ -42,7 +42,6 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
   final TextEditingController _deviceNameController = TextEditingController();
   late int _iconIndex;
   String? _errorMessage;
-  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -128,7 +127,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
             title: state.item.name,
             trailing: AppIconButton(
               icon: LinksysIcons.edit,
-              onTap: _showEditingDialog,
+              onTap: _showEdidDeviceModal,
             ),
           ),
           AppSettingCard.noBorder(
@@ -268,53 +267,23 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
     );
   }
 
-  _showEditingDialog() {
+  _showEdidDeviceModal() {
     _deviceNameController.text =
         ref.read(externalDeviceDetailProvider).item.name;
     _iconIndex = _getCurrentIconIndex();
-
-    return showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (sfbContext, sfbSetState) {
-            return AlertDialog(
-              title: AppText.titleLarge(
-                  loc(sfbContext).deviceDetailEditDialogTitle),
-              actions: _isLoading
-                  ? null
-                  : [
-                      AppTextButton(
-                        loc(sfbContext).cancel,
-                        color: Theme.of(sfbContext).colorScheme.onSurface,
-                        onTap: () {
-                          _errorMessage = null;
-                          sfbContext.pop();
-                        },
-                      ),
-                      AppTextButton(
-                        loc(sfbContext).save,
-                        onTap: () {
-                          _saveDevice(sfbContext, sfbSetState);
-                        },
-                      ),
-                    ],
-              content: _isLoading
-                  ? const AppSpinner(
-                      size: Size(400, 200),
-                    )
-                  : _dialogContent(sfbContext, sfbSetState),
-            );
-          },
-        );
-      },
-    );
+    _errorMessage = _deviceNameController.text.isEmpty ? 'empty' : null;
+    return showSubmitAppDialog(context,
+        contentBuilder: (context, setState, onSubmit) {
+          return _dialogContent(context, setState, onSubmit);
+        },
+        event: _saveDevice,
+        checkPositiveEnabled: () => _errorMessage == null);
   }
 
   Widget _dialogContent(
     BuildContext context,
     void Function(void Function()) setState,
+    void Function() onSubmit,
   ) {
     return SizedBox(
       width: 400,
@@ -329,8 +298,11 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
             errorText: _errorMessage,
             onChanged: (text) {
               setState(() {
-                _errorMessage = null;
+                _errorMessage = text.isEmpty ? 'empty' : null;
               });
+            },
+            onSubmitted: (_) {
+              onSubmit();
             },
           ),
           const AppGap.large3(),
@@ -366,41 +338,17 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
     );
   }
 
-  void _saveDevice(
-    BuildContext context,
-    void Function(void Function()) setState,
-  ) {
+  Future _saveDevice() {
     final newName = _deviceNameController.text;
-    if (newName.isEmpty) {
-      setState(() {
-        _errorMessage = loc(context).theNameMustNotBeEmpty;
-      });
-      return;
-    }
-    // Send the request
-    setState(() {
-      _isLoading = true;
-    });
+
     final newIcon = IconDeviceCategory.values[_iconIndex];
     final deviceId = ref.read(externalDeviceDetailProvider).item.deviceId;
-    ref
-        .read(deviceManagerProvider.notifier)
-        .updateDeviceNameAndIcon(
+    return ref.read(deviceManagerProvider.notifier).updateDeviceNameAndIcon(
           targetId: deviceId,
           newName: newName,
           isLocation: false,
           icon: newIcon,
-        )
-        .then((value) {
-      setState(() {
-        _isLoading = false;
-      });
-      context.pop();
-    }).onError((error, stackTrace) {
-      setState(() {
-        _isLoading = false;
-      });
-    });
+        );
   }
 
   int _getCurrentIconIndex() {

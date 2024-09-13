@@ -57,9 +57,6 @@ import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_logger.dart';
-import 'package:privacy_gui/util/cookie_helper/cookie_helper.dart'
-    if (dart.library.io) 'package:privacy_gui/util/cookie_helper/cookie_helper_mobile.dart'
-    if (dart.library.html) 'package:privacy_gui/util/cookie_helper/cookie_helper_web.dart';
 import 'constants.dart';
 
 part 'route_home.dart';
@@ -102,7 +99,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const SelectNetworkView(),
       ),
       dashboardRoute,
-      explanationRoute,
       pnpRoute,
       pnpTroubleshootingRoute,
       addNodesRoute,
@@ -189,12 +185,7 @@ class RouterNotifier extends ChangeNotifier {
 
   FutureOr<String?> _goPnp(String? query) {
     FlutterNativeSplash.remove();
-    final skip = getCookie('skip-http-blocking')?.isNotEmpty == true;
-    // final path = '${RoutePath.pnp}?${query ?? ''}';
-    final path = skip
-        ? '${RoutePath.pnp}?${query ?? ''}'
-        : '${RoutePath.explanation}?${query ?? ''}';
-
+    final path = '${RoutePath.pnp}?${query ?? ''}';
     logger.i('[Route]: Go to PnP, URI=$path');
     return path;
   }
