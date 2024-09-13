@@ -110,10 +110,11 @@ class MockDeviceFilterConfigNotifier extends _i2.Notifier<_i3.DeviceFilterConfig
       ) as _i3.DeviceFilterConfigState);
 
   @override
-  void initFilter() => super.noSuchMethod(
+  void initFilter({List<String>? preselectedNodeId}) => super.noSuchMethod(
         Invocation.method(
           #initFilter,
           [],
+          {#preselectedNodeId: preselectedNodeId},
         ),
         returnValueForMissingStub: null,
       );

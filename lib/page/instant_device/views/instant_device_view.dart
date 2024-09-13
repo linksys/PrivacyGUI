@@ -2,23 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
-import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
-import 'package:privacy_gui/page/instant_device/extensions/icon_device_category_ext.dart';
 import 'package:privacy_gui/page/instant_device/views/device_list_widget.dart';
 import 'package:privacy_gui/page/instant_device/views/devices_filter_widget.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/device_list_card.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
@@ -145,9 +140,6 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
                 devices: filteredDeviceList,
                 isEdit: _isEdit,
                 isItemSelected: (item) => _selectedList.contains(item.deviceId),
-                // itemBuilder: (context, index) {
-                //   return _buildCell(index, filteredDeviceList);
-                // },
                 onItemSelected: (value, item) {
                   setState(() {
                     if (value) {
@@ -204,48 +196,6 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
     };
     return Wrap(
       children: content,
-    );
-  }
-
-  Widget _buildCell(int index, List<DeviceListItem> deviceList) {
-    return _buildDeviceCell(deviceList[index]);
-  }
-
-  Widget _buildDeviceCell(DeviceListItem item) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: Spacing.zero),
-      child: AppDeviceListCard(
-        isSelected: _selectedList.contains(item.deviceId),
-        title: '${item.name} [${item.signalStrength}]',
-        description: ResponsiveLayout.isMobileLayout(context) || !item.isOnline
-            ? null
-            : item.upstreamDevice,
-        band: ResponsiveLayout.isMobileLayout(context) ? null : item.band,
-        leading: IconDeviceCategoryExt.resolveByName(item.icon),
-        trailing: item.isOnline
-            ? WiFiUtils.getWifiSignalIconData(
-                context, item.isWired ? null : item.signalStrength)
-            : null,
-        onSelected: _isEdit
-            ? (value) {
-                setState(() {
-                  if (value) {
-                    _selectedList.add(item.deviceId);
-                  } else {
-                    _selectedList.remove(item.deviceId);
-                  }
-                });
-              }
-            : null,
-        onTap: () {
-          if (_isEdit) {
-            return;
-          } else {
-            ref.read(deviceDetailIdProvider.notifier).state = item.deviceId;
-            context.pushNamed(RouteNamed.deviceDetails);
-          }
-        },
-      ),
     );
   }
 

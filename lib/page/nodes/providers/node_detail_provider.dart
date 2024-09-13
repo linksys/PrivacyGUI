@@ -9,11 +9,10 @@ import 'package:privacy_gui/core/jnap/models/device.dart';
 import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
-import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/core/utils/nodes.dart';
+import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacy_gui/page/nodes/_nodes.dart';
 import 'package:privacy_gui/page/nodes/providers/node_detail_id_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -51,7 +50,7 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
     var location = '';
     var isMaster = false;
     var isOnline = false;
-    var connectedDevices = <LinksysDevice>[];
+    var connectedDevices = <DeviceListItem>[];
     var upstreamDevice = '';
     var isWired = false;
     var signalStrength = 0;
@@ -85,7 +84,9 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
         lanIpAddress = device.connections.firstOrNull?.ipAddress ?? '';
         final wanStatusModel = deviceManagerState.wanStatus;
         wanIpAddress = wanStatusModel?.wanConnection?.ipAddress ?? '';
-        connectedDevices = device.connectedDevices;
+        connectedDevices = device.connectedDevices
+            .map((e) => ref.read(deviceListProvider.notifier).createItem(e))
+            .toList();
       }
     }
 
