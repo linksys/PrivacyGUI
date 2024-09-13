@@ -207,7 +207,7 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
     final result = await showSubmitAppDialog<String?>(
       context,
       title: loc(context).macAddress,
-      contentBuilder: (context, setState) => Column(
+      contentBuilder: (context, setState, onSubmit) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           AppTextField.macAddress(

@@ -186,12 +186,13 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
     TextEditingController controller = TextEditingController();
     TextEditingController hintController = TextEditingController()
       ..text = hint ?? '';
+    FocusNode hintFocusNode = FocusNode();
 
     bool isPasswordValid = false;
     showSubmitAppDialog(
       context,
       title: loc(context).routerPassword,
-      contentBuilder: (context, setState) => Column(
+      contentBuilder: (context, setState, onSubmit) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           AppPasswordField.withValidator(
@@ -217,13 +218,22 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
                 isPasswordValid = isValid;
               });
             },
+            onSubmitted: (_) {
+              FocusScope.of(context).requestFocus(hintFocusNode);
+            },
           ),
           const AppGap.large3(),
           AppTextField(
             border: const OutlineInputBorder(),
             controller: hintController,
             headerText: loc(context).routerPasswordHintOptional,
+            focusNode: hintFocusNode,
             onChanged: (value) {},
+            onSubmitted: (_) {
+              if (isPasswordValid) {
+                onSubmit();
+              }
+            },
           ),
         ],
       ),
@@ -242,7 +252,7 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
     showSubmitAppDialog(
       context,
       title: loc(context).routerPasswordHint,
-      contentBuilder: (context, setState) => Column(
+      contentBuilder: (context, setState, onSubmit) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           AppTextField(

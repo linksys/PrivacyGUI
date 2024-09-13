@@ -511,29 +511,47 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
   void _showEditNodeNameDialog(NodeDetailState state) {
     final textController = TextEditingController()..text = state.location;
     final hasBlinkFunction = serviceHelper.isSupportLedBlinking();
-    showSubmitAppDialog(context, title: loc(context).nodeName,
-        contentBuilder: (context, setState) {
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppTextField(
-            headerText: loc(context).nodeName,
-            border: const OutlineInputBorder(),
-            controller: textController,
-          ),
-          if (hasBlinkFunction) ...[
-            const AppGap.medium(),
-            const BlinkNodeLightWidget(),
-          ],
-        ],
-      );
-    }, event: () async {
-      await ref
-          .read(nodeDetailProvider.notifier)
-          .updateDeviceName(textController.text)
-          .then((_) => showSuccessSnackBar(context, loc(context).saved));
-    });
+    bool isEmpty = false;
+    showSubmitAppDialog(context,
+        title: loc(context).nodeName,
+        contentBuilder: (context, setState, onSubmit) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AppTextField(
+                headerText: loc(context).nodeName,
+                border: const OutlineInputBorder(),
+                controller: textController,
+                onSubmitted: (_) {
+                  if (!isEmpty) {
+                    onSubmit();
+                  }
+                },
+                onChanged: (value) {
+                  setState(() {
+                    isEmpty = value.isEmpty;
+                  });
+                },
+              ),
+              if (hasBlinkFunction) ...[
+                const AppGap.medium(),
+                const BlinkNodeLightWidget(),
+              ],
+            ],
+          );
+        },
+        event: () async {
+          await _saveName(textController.text);
+        },
+        checkPositiveEnabled: () => !isEmpty);
+  }
+
+  Future _saveName(String name) {
+    return ref
+        .read(nodeDetailProvider.notifier)
+        .updateDeviceName(name)
+        .then((_) => showSuccessSnackBar(context, loc(context).saved));
   }
 
   void _showMoreRouterInfoModal(NodeDetailState state) {
@@ -567,7 +585,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
     var nodeLightStatus = NodeLightStatus.getStatus(
         ref.read(nodeDetailProvider).nodeLightSettings);
     showSubmitAppDialog(context, title: loc(context).nodeLight,
-        contentBuilder: (context, setState) {
+        contentBuilder: (context, setState, onSubmit) {
       return Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,

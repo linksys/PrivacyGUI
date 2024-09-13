@@ -89,7 +89,7 @@ Future<T?> showSubmitAppDialog<T>(
   BuildContext context, {
   Widget? icon,
   String? title,
-  required Widget Function(BuildContext, StateSetter) contentBuilder,
+  required Widget Function(BuildContext, StateSetter,  void Function()) contentBuilder,
   Widget? loadingWidget,
   double? width,
   String? negitiveLabel,
@@ -104,6 +104,23 @@ Future<T?> showSubmitAppDialog<T>(
     barrierDismissible: false,
     builder: (context) {
       return StatefulBuilder(builder: (context, setState) {
+        void onSubmit() {
+          setState(() {
+            isLoading = true;
+          });
+          event.call().then((value) {
+            setState(() {
+              isLoading = false;
+            });
+            context.pop(value);
+          }).onError((error, stackTrace) {
+            setState(() {
+              isLoading = false;
+            });
+            onError?.call(error, stackTrace);
+          });
+        }
+
         return AlertDialog(
           icon: icon,
           title: title != null
@@ -115,7 +132,7 @@ Future<T?> showSubmitAppDialog<T>(
               width: width ?? kDefaultDialogWidth,
               child: switch (isLoading) {
                 true => loadingWidget ?? const AppSpinner(),
-                false => contentBuilder(context, setState),
+                false => contentBuilder(context, setState, onSubmit),
               }),
           actions: isLoading
               ? []
@@ -131,20 +148,7 @@ Future<T?> showSubmitAppDialog<T>(
                     positiveLabel ?? loc(context).save,
                     onTap: checkPositiveEnabled?.call() ?? true
                         ? () {
-                            setState(() {
-                              isLoading = true;
-                            });
-                            event.call().then((value) {
-                              setState(() {
-                                isLoading = false;
-                              });
-                              context.pop(value);
-                            }).onError((error, stackTrace) {
-                              setState(() {
-                                isLoading = false;
-                              });
-                              onError?.call(error, stackTrace);
-                            });
+                            onSubmit();
                           }
                         : null,
                   )

@@ -158,7 +158,7 @@ class _LocalNetworkSettingsViewState
     showSubmitAppDialog(
       context,
       title: loc(context).hostName.capitalizeWords(),
-      contentBuilder: (context, setState) {
+      contentBuilder: (context, setState, onSubmit) {
         return AppTextField(
           headerText: loc(context).hostName.capitalizeWords(),
           controller: textController,
@@ -201,7 +201,7 @@ class _LocalNetworkSettingsViewState
     showSubmitAppDialog(
       context,
       title: loc(context).ipAddress.capitalizeWords(),
-      contentBuilder: (context, setState) {
+      contentBuilder: (context, setState, onSubmit) {
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -274,7 +274,7 @@ class _LocalNetworkSettingsViewState
     showSubmitAppDialog(
       context,
       title: loc(context).ipAddress.capitalizeWords(),
-      contentBuilder: (context, setState) {
+      contentBuilder: (context, setState, onSubmit) {
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [

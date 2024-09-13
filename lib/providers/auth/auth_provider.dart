@@ -133,11 +133,12 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   Future<AuthState> build() => Future.value(AuthState.empty());
 
   Future<AuthState?> init() async {
-    if (_isInit) {
-      logger.d('[Auth]: auth provider has already been initialized');
-      return state.value;
-    }
-    _isInit = true;
+    // if (_isInit) {
+    //   logger.d(
+    //       '[Auth]: auth provider has already been initialized: ${state.value?.loginType}');
+    //   return state.value;
+    // }
+    // _isInit = true;
 
     state = const AsyncValue.loading();
     // check session token exist and is session token expored

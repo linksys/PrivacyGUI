@@ -108,11 +108,11 @@ class DeviceListNotifier extends Notifier<DeviceListState> {
       return deviceIconTest(device.toMap());
     }
     final match = IconDeviceCategoryExt.resolveByName(userDeviceType);
-    // The userDeviceType failed to be resolved may be because its value is not one of our custom values
-    // but can be resolved correctly by device icon test (e.g., desktop-mac)
-    if (match == LinksysIcons.genericDevice) {
-      return deviceIconTest(device.toMap());
-    }
+    // // The userDeviceType failed to be resolved may be because its value is not one of our custom values
+    // // but can be resolved correctly by device icon test (e.g., desktop-mac)
+    // if (match == LinksysIcons.genericDevice) {
+    //   return deviceIconTest(device.toMap());
+    // }
     return userDeviceType;
   }
 }
