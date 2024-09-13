@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
@@ -15,7 +14,6 @@ import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_device_list_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
-import 'package:privacy_gui/page/nodes/_nodes.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 
@@ -200,10 +198,15 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView> {
 
   Widget _deviceCard(bool isEnable, DeviceListItem device) {
     return AppCard(
+      color:
+          device.isOnline ? null : Theme.of(context).colorScheme.surfaceVariant,
+      borderColor:
+          device.isOnline ? null : Theme.of(context).colorScheme.outlineVariant,
       child: Row(
         children: [
           Icon(
             IconDeviceCategoryExt.resolveByName(device.icon),
+            semanticLabel: 'device icon',
             size: 24,
           ),
           const AppGap.medium(),
@@ -212,10 +215,10 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 AppText.labelLarge(device.name),
-                if (device.isOnline) ...[
-                  const AppGap.small1(),
-                  AppText.bodyMedium(device.ipv4Address),
-                ],
+                const AppGap.small1(),
+                AppText.bodyMedium(device.isOnline
+                    ? device.ipv4Address
+                    : loc(context).offline),
                 const AppGap.small1(),
                 AppText.bodyMedium(device.macAddress),
               ],

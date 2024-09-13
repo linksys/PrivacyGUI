@@ -5,8 +5,8 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 
 import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
-import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
 
 enum BlinkingStatus {
   blinkNode('Blink Node'),
@@ -58,7 +58,7 @@ class NodeDetailState extends Equatable {
   final String location;
   final bool isMaster;
   final bool isOnline;
-  final List<LinksysDevice> connectedDevices;
+  final List<DeviceListItem> connectedDevices;
   final String upstreamDevice;
   final bool isWiredConnection;
   final int signalStrength;
@@ -95,7 +95,7 @@ class NodeDetailState extends Equatable {
     String? location,
     bool? isMaster,
     bool? isOnline,
-    List<LinksysDevice>? connectedDevices,
+    List<DeviceListItem>? connectedDevices,
     String? upstreamDevice,
     bool? isWiredConnection,
     int? signalStrength,
@@ -155,9 +155,9 @@ class NodeDetailState extends Equatable {
       location: map['location'] as String,
       isMaster: map['isMaster'] as bool,
       isOnline: map['isOnline'] as bool,
-      connectedDevices: List<LinksysDevice>.from(
-        map['connectedDevices'].map<LinksysDevice>(
-          (x) => LinksysDevice.fromMap(x as Map<String, dynamic>),
+      connectedDevices: List<DeviceListItem>.from(
+        map['connectedDevices'].map<DeviceListItem>(
+          (x) => DeviceListItem.fromMap(x as Map<String, dynamic>),
         ),
       ),
       upstreamDevice: map['upstreamDevice'] as String,

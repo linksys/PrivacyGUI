@@ -13,7 +13,12 @@ import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacygui_widgets/widgets/panel/general_section.dart';
 
 class DevicesFilterWidget extends ConsumerStatefulWidget {
-  const DevicesFilterWidget({super.key});
+  final List<String>? preselectedNodeId;
+
+  const DevicesFilterWidget({
+    super.key,
+    this.preselectedNodeId,
+  });
 
   @override
   ConsumerState<ConsumerStatefulWidget> createState() =>
@@ -140,7 +145,9 @@ class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
                 loc(context).resetFilters,
                 icon: LinksysIcons.restartAlt,
                 onTap: () {
-                  ref.read(deviceFilterConfigProvider.notifier).initFilter();
+                  ref
+                      .read(deviceFilterConfigProvider.notifier)
+                      .initFilter(preselectedNodeId: widget.preselectedNodeId);
                 },
               )
             ],
