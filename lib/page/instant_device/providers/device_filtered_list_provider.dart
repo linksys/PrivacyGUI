@@ -42,8 +42,8 @@ class DeviceFilterConfigNotifier extends Notifier<DeviceFilterConfigState> {
         connectionFilter: true, nodeFilter: [], bandFilter: []);
   }
 
-  void initFilter() {
-    final nodes = getNodes();
+  void initFilter({List<String>? preselectedNodeId}) {
+    final nodes = preselectedNodeId ?? getNodes();
 
     final bands = getBands();
     state = state.copyWith(

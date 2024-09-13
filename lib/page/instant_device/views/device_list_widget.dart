@@ -1,30 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/utils/wifi.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/shared_widgets.dart';
 import 'package:privacy_gui/page/instant_device/extensions/icon_device_category_ext.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
-import 'package:privacy_gui/utils.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:privacygui_widgets/widgets/card/device_list_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/gap.dart';
+import 'package:privacygui_widgets/widgets/text/app_text.dart';
 
 class DeviceListWidget extends ConsumerStatefulWidget {
   final List<DeviceListItem> devices;
   final bool isEdit;
+  final bool enableDelete;
   final bool Function(DeviceListItem)? isItemSelected;
   final void Function(DeviceListItem)? onItemClick;
   final void Function(bool, DeviceListItem)? onItemSelected;
+  final void Function(DeviceListItem)? onItemDelete;
   final Widget? Function(BuildContext, int)? itemBuilder;
+  final ScrollPhysics? physics;
 
   const DeviceListWidget({
     super.key,
     this.devices = const [],
     this.isEdit = false,
+    this.enableDelete = false,
     this.isItemSelected,
     this.onItemClick,
     this.onItemSelected,
+    this.onItemDelete,
     this.itemBuilder,
+    this.physics,
   });
 
   @override
@@ -36,6 +44,7 @@ class _DeviceListWidgetState extends ConsumerState<DeviceListWidget> {
   @override
   Widget build(BuildContext context) {
     return ListView.separated(
+      physics: widget.physics,
       padding: EdgeInsets.zero,
       itemCount: widget.devices.length,
       itemBuilder: widget.itemBuilder ??
@@ -55,46 +64,82 @@ class _DeviceListWidgetState extends ConsumerState<DeviceListWidget> {
   }
 
   Widget _buildDeviceCell(DeviceListItem item) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: Spacing.zero),
-      child: AppDeviceListCard(
-        color: (widget.isItemSelected?.call(item) ?? false)
-            ? Theme.of(context).colorScheme.primaryContainer
-            : null,
-        borderColor: (widget.isItemSelected?.call(item) ?? false)
-            ? Theme.of(context).colorScheme.primary
-            : null,
-        isSelected: widget.isItemSelected?.call(item) ?? false,
-        title: item.name,
-        description: ResponsiveLayout.isMobileLayout(context) || !item.isOnline
-            ? null
-            : item.upstreamDevice,
-        band: ResponsiveLayout.isMobileLayout(context)
-            ? null
-            : !item.isOnline
-                ? null
-                : item.isWired
-                    ? null
-                    : item.band,
-        leading: IconDeviceCategoryExt.resolveByName(item.icon),
-        trailing: item.isOnline
-            ? WiFiUtils.getWifiSignalIconData(
-                context, item.isWired ? null : item.signalStrength)
-            : null,
-        onSelected: widget.isEdit
-            ? (value) {
-                widget.onItemSelected?.call(value, item);
-              }
-            : null,
-        onTap: () {
-          if (widget.isEdit) {
-            widget.onItemSelected
-                ?.call(!(widget.isItemSelected?.call(item) ?? false), item);
-          } else {
-            widget.onItemClick?.call(item);
-          }
-        },
-      ),
+    return AppDeviceListCard(
+      color: (widget.isItemSelected?.call(item) ?? false)
+          ? Theme.of(context).colorScheme.primaryContainer
+          : item.isOnline
+              ? null
+              : Theme.of(context).colorScheme.surfaceVariant,
+      borderColor: (widget.isItemSelected?.call(item) ?? false)
+          ? Theme.of(context).colorScheme.primary
+          : item.isOnline
+              ? null
+              : Theme.of(context).colorScheme.outlineVariant,
+      isSelected: widget.isItemSelected?.call(item) ?? false,
+      title: item.name,
+      description: item.isOnline
+          ? AppText.bodyMedium(item.ipv4Address)
+          : AppText.bodyMedium(loc(context).offline),
+      band: _connectionInfo(item),
+      leading: IconDeviceCategoryExt.resolveByName(item.icon),
+      trailing: _trailing(item),
+      onSelected: widget.isEdit
+          ? (value) {
+              widget.onItemSelected?.call(value, item);
+            }
+          : null,
+      onTap: () {
+        if (widget.isEdit) {
+          widget.onItemSelected
+              ?.call(!(widget.isItemSelected?.call(item) ?? false), item);
+        } else {
+          widget.onItemClick?.call(item);
+        }
+      },
+    );
+  }
+
+  Widget _connectionInfo(DeviceListItem device) {
+    return device.isOnline
+        ? ResponsiveLayout(
+            desktop: AppText.bodyMedium(device.isWired
+                ? loc(context).ethernet
+                : '${device.ssid}  •  ${device.band}'),
+            mobile: device.isWired
+                ? AppText.bodyMedium(loc(context).ethernet)
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      AppText.bodyMedium(device.ssid),
+                      const AppGap.small1(),
+                      AppText.bodyMedium(device.band),
+                    ],
+                  ),
+          )
+        : Container();
+  }
+
+  Widget _trailing(DeviceListItem device) {
+    return Row(
+      children: [
+        SharedWidgets.resolveSignalStrengthIcon(
+          context,
+          device.signalStrength,
+          isOnline: device.isOnline,
+          isWired: device.isWired,
+        ),
+        if (widget.enableDelete && !device.isOnline) ...[
+          const AppGap.medium(),
+          AppIconButton.noPadding(
+            icon: LinksysIcons.delete,
+            semanticLabel: 'delete',
+            color: Theme.of(context).colorScheme.error,
+            onTap: () {
+              widget.onItemDelete?.call(device);
+            },
+          ),
+        ],
+      ],
     );
   }
 }
