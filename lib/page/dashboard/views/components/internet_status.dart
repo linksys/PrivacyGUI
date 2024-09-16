@@ -43,7 +43,9 @@ class _InternetConnectionWidgetState
                   child: const SizedBox(
                     width: 16,
                     height: 16,
-                    child: CircularProgressIndicator(),
+                    child: CircularProgressIndicator(
+                      semanticsLabel: 'internet status spinner',
+                    ),
                   ),
                 ),
               ),
@@ -62,7 +64,7 @@ class _InternetConnectionWidgetState
                               : Theme.of(context).colorScheme.surfaceVariant,
                         ),
                         const AppGap.small2(),
-                        AppText.titleMedium(
+                        AppText.titleSmall(
                           isOnline
                               ? loc(context).internetOnline
                               : loc(context).internetOffline,

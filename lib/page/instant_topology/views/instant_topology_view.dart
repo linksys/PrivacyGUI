@@ -35,7 +35,8 @@ class InstantTopologyView extends ArgumentsConsumerStatefulView {
   }
 
   @override
-  ConsumerState<ConsumerStatefulWidget> createState() => _InstantTopologyViewState();
+  ConsumerState<ConsumerStatefulWidget> createState() =>
+      _InstantTopologyViewState();
 }
 
 class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
@@ -67,9 +68,9 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
 
   @override
   Widget build(BuildContext context) {
-    final topologyState = ref.watch(topologyProvider);
+    final topologyState = ref.watch(instantTopologyProvider);
 
-    treeController.roots = [topologyState.onlineRoot];
+    treeController.roots = [topologyState.root];
     treeController.expandAll();
     return LayoutBuilder(builder: (context, constraint) {
       final double treeWidth =
@@ -184,9 +185,9 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
   _doReboot() {
     showRebootModal(context).then((result) {
       if (result == true) {
-        final reboot =
-            Future.sync(() => ref.read(pollingProvider.notifier).stopPolling())
-                .then((_) => ref.read(topologyProvider.notifier).reboot());
+        final reboot = Future.sync(
+                () => ref.read(pollingProvider.notifier).stopPolling())
+            .then((_) => ref.read(instantTopologyProvider.notifier).reboot());
         doSomethingWithSpinner(context, reboot, messages: [
           '${loc(context).restarting}.',
           '${loc(context).restarting}..',
@@ -204,13 +205,13 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
   _doFactoryReset() {
     showFactoryResetModal(context).then((result) {
       if (result == true) {
-        ref.read(topologyProvider.notifier).factoryReset();
+        ref.read(instantTopologyProvider.notifier).factoryReset();
       }
     });
   }
 
   _doBlinkNodeLed(WidgetRef ref, String deviceId) {
-    ref.read(topologyProvider.notifier).toggleBlinkNode(deviceId);
+    ref.read(instantTopologyProvider.notifier).toggleBlinkNode(deviceId);
   }
 
   _doInstantPair() {

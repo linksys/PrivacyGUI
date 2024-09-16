@@ -99,7 +99,6 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
 
     newState = newState.copyWith(
       wifis: wifiList,
-      nodes: nodeList,
       uptime: dashboardManagerState.uptimes,
       wanPortConnection: dashboardManagerState.wanConnection,
       lanPortConnections: dashboardManagerState.lanConnections,

@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/pnp/troubleshooter/providers/pnp_troubleshooter_provider.dart';
+import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_troubleshooter_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 
 class DashboardHomeTitle extends ConsumerWidget {
   const DashboardHomeTitle({super.key});
@@ -20,19 +22,33 @@ class DashboardHomeTitle extends ConsumerWidget {
     final isLoading = ref
         .watch(deviceManagerProvider.select((value) => value.deviceList))
         .isEmpty;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.center,
+    return Column(
       children: [
-        AppText.titleLarge(helloString(context)),
         Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Icon(LinksysIcons.calendar,
-                color: Theme.of(context).colorScheme.onSurface),
-            const AppGap.small2(),
-            AppText.bodyMedium(
-                loc(context).formalDateTime(DateTime.now(), DateTime.now()),
-                color: Theme.of(context).colorScheme.onSurface),
+            Expanded(
+              child: AppText.titleLarge(
+                helloString(context),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Wrap(
+              children: [
+                Icon(LinksysIcons.calendar,
+                    color: Theme.of(context).colorScheme.onSurface),
+                Padding(
+                  padding: const EdgeInsets.only(left: Spacing.small2),
+                  child: AppText.bodyMedium(
+                    loc(context).formalDateTime(DateTime.now(), DateTime.now()),
+                    color: Theme.of(context).colorScheme.onSurface,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
         if (!isLoading && !isOnline) _troubleshooting(context, ref),
@@ -43,7 +59,7 @@ class DashboardHomeTitle extends ConsumerWidget {
   Widget _troubleshooting(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: const EdgeInsets.only(
-        bottom: 16.0,
+        top: 16.0,
       ),
       child: AppListCard(
         title: AppText.labelLarge(loc(context).troubleshoot),
