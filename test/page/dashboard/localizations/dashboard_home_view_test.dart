@@ -1,30 +1,37 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_state.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
+import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
+import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
+import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
+import 'package:privacy_gui/page/instant_topology/providers/_providers.dart';
 import 'package:privacygui_widgets/theme/custom_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../common/config.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
-import '../../../mocks/device_manager_notifier_mocks.dart';
-import '../../../mocks/firmware_update_notifier_mocks.dart';
-import '../../../test_data/dashboard_home_test_state.dart';
-import '../../../test_data/device_manager_test_state.dart';
-import '../../../test_data/firmware_update_test_state.dart';
-import '../../../mocks/dashboard_home_notifier_mocks.dart';
+import '../../../mocks/_index.dart';
+import '../../../mocks/jnap_service_helper_spec_mocks.dart';
+import '../../../test_data/_index.dart';
 
 void main() async {
   late DashboardHomeNotifier mockDashboardHomeNotifier;
   late FirmwareUpdateNotifier mockFirmwareUpdateNotifier;
   late DeviceManagerNotifier mockDeviceManagerNotifier;
+  late InstantPrivacyNotifier mockInstantPrivacyNotifier;
+  late InstantTopologyNotifier mockInstantTopologyNotifier;
+
+  ServiceHelper mockServiceHelper = MockServiceHelper();
+  getIt.registerSingleton<ServiceHelper>(mockServiceHelper);
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
@@ -34,6 +41,8 @@ void main() async {
       mockDashboardHomeNotifier = MockDashboardHomeNotifier();
       mockFirmwareUpdateNotifier = MockFirmwareUpdateNotifier();
       mockDeviceManagerNotifier = MockDeviceManagerNotifier();
+      mockInstantPrivacyNotifier = MockInstantPrivacyNotifier();
+      mockInstantTopologyNotifier = MockInstantTopologyNotifier();
 
       when(mockDashboardHomeNotifier.build())
           .thenReturn(DashboardHomeState.fromMap(dashboardHomeStateData));
@@ -41,6 +50,10 @@ void main() async {
           .thenReturn(FirmwareUpdateState.fromMap(firmwareUpdateTestData));
       when(mockDeviceManagerNotifier.build())
           .thenReturn(DeviceManagerState.fromMap(deviceManagerTestData));
+      when(mockInstantPrivacyNotifier.build())
+          .thenReturn(InstantPrivacyState.fromMap(instantPrivacyTestState));
+      when(mockInstantTopologyNotifier.build())
+          .thenReturn(testTopology2SlavesDaisyState);
     });
 
     testLocalizations('Dashboard Home View - 4-ports mobile layout',
@@ -58,6 +71,10 @@ void main() async {
               deviceManagerProvider
                   .overrideWith(() => mockDeviceManagerNotifier),
               nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
+              instantPrivacyProvider
+                  .overrideWith(() => mockInstantPrivacyNotifier),
+              instantTopologyProvider
+                  .overrideWith(() => mockInstantTopologyNotifier),
             ],
           ),
         );
@@ -91,6 +108,10 @@ void main() async {
               deviceManagerProvider
                   .overrideWith(() => mockDeviceManagerNotifier),
               nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
+              instantPrivacyProvider
+                  .overrideWith(() => mockInstantPrivacyNotifier),
+              instantTopologyProvider
+                  .overrideWith(() => mockInstantTopologyNotifier),
             ],
           ),
         );
@@ -125,6 +146,10 @@ void main() async {
               deviceManagerProvider
                   .overrideWith(() => mockDeviceManagerNotifier),
               nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
+              instantPrivacyProvider
+                  .overrideWith(() => mockInstantPrivacyNotifier),
+              instantTopologyProvider
+                  .overrideWith(() => mockInstantTopologyNotifier),
             ],
           ),
         );
@@ -160,6 +185,10 @@ void main() async {
               deviceManagerProvider
                   .overrideWith(() => mockDeviceManagerNotifier),
               nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
+              instantPrivacyProvider
+                  .overrideWith(() => mockInstantPrivacyNotifier),
+              instantTopologyProvider
+                  .overrideWith(() => mockInstantTopologyNotifier),
             ],
           ),
         );
@@ -196,6 +225,10 @@ void main() async {
               deviceManagerProvider
                   .overrideWith(() => mockDeviceManagerNotifier),
               nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
+              instantPrivacyProvider
+                  .overrideWith(() => mockInstantPrivacyNotifier),
+              instantTopologyProvider
+                  .overrideWith(() => mockInstantTopologyNotifier),
             ],
           ),
         );
@@ -233,6 +266,10 @@ void main() async {
               deviceManagerProvider
                   .overrideWith(() => mockDeviceManagerNotifier),
               nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
+              instantPrivacyProvider
+                  .overrideWith(() => mockInstantPrivacyNotifier),
+              instantTopologyProvider
+                  .overrideWith(() => mockInstantTopologyNotifier),
             ],
           ),
         );
@@ -275,6 +312,10 @@ void main() async {
               deviceManagerProvider
                   .overrideWith(() => mockDeviceManagerNotifier),
               nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
+              instantPrivacyProvider
+                  .overrideWith(() => mockInstantPrivacyNotifier),
+              instantTopologyProvider
+                  .overrideWith(() => mockInstantTopologyNotifier),
             ],
           ),
         );
@@ -311,6 +352,10 @@ void main() async {
               deviceManagerProvider
                   .overrideWith(() => mockDeviceManagerNotifier),
               nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
+              instantPrivacyProvider
+                  .overrideWith(() => mockInstantPrivacyNotifier),
+              instantTopologyProvider
+                  .overrideWith(() => mockInstantTopologyNotifier),
             ],
           ),
         );
@@ -348,6 +393,10 @@ void main() async {
               deviceManagerProvider
                   .overrideWith(() => mockDeviceManagerNotifier),
               nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
+              instantPrivacyProvider
+                  .overrideWith(() => mockInstantPrivacyNotifier),
+              instantTopologyProvider
+                  .overrideWith(() => mockInstantTopologyNotifier),
             ],
           ),
         );
@@ -364,7 +413,7 @@ void main() async {
       });
     }, screens: responsiveDesktopScreens);
 
-    testLocalizations('Dashboard Home View - 4-ports mobile layout offline',
+    testLocalizations('Dashboard Home View - 4-ports mobile layout internet offline',
         (tester, locale) async {
       when(mockDashboardHomeNotifier.build()).thenReturn(
           DashboardHomeState.fromMap(dashboardHomeOfflineStateData).copyWith(
@@ -384,6 +433,10 @@ void main() async {
                   .overrideWith(() => mockDeviceManagerNotifier),
               nodeWanStatusProvider
                   .overrideWith((ref) => NodeWANStatus.offline),
+              instantPrivacyProvider
+                  .overrideWith(() => mockInstantPrivacyNotifier),
+              instantTopologyProvider
+                  .overrideWith(() => mockInstantTopologyNotifier),
             ],
           ),
         );
@@ -400,7 +453,7 @@ void main() async {
       });
     }, screens: responsiveMobileScreens);
 
-    testLocalizations('Dashboard Home View - 4-ports horizontal layout offline',
+    testLocalizations('Dashboard Home View - 4-ports horizontal layout internet offline',
         (tester, locale) async {
       when(mockDashboardHomeNotifier.build()).thenReturn(
           DashboardHomeState.fromMap(dashboardHomeOfflineStateData)
@@ -419,6 +472,10 @@ void main() async {
                   .overrideWith(() => mockDeviceManagerNotifier),
               nodeWanStatusProvider
                   .overrideWith((ref) => NodeWANStatus.offline),
+              instantPrivacyProvider
+                  .overrideWith(() => mockInstantPrivacyNotifier),
+              instantTopologyProvider
+                  .overrideWith(() => mockInstantTopologyNotifier),
             ],
           ),
         );
@@ -435,7 +492,7 @@ void main() async {
       });
     }, screens: responsiveDesktopScreens);
 
-    testLocalizations('Dashboard Home View - 4-ports vertical layout offline',
+    testLocalizations('Dashboard Home View - 4-ports vertical layout internet offline',
         (tester, locale) async {
       when(mockDashboardHomeNotifier.build()).thenReturn(
           DashboardHomeState.fromMap(dashboardHomeOfflineStateData).copyWith(
@@ -455,6 +512,10 @@ void main() async {
                   .overrideWith(() => mockDeviceManagerNotifier),
               nodeWanStatusProvider
                   .overrideWith((ref) => NodeWANStatus.offline),
+              instantPrivacyProvider
+                  .overrideWith(() => mockInstantPrivacyNotifier),
+              instantTopologyProvider
+                  .overrideWith(() => mockInstantTopologyNotifier),
             ],
           ),
         );
@@ -495,6 +556,10 @@ void main() async {
               deviceManagerProvider
                   .overrideWith(() => mockDeviceManagerNotifier),
               nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
+              instantPrivacyProvider
+                  .overrideWith(() => mockInstantPrivacyNotifier),
+              instantTopologyProvider
+                  .overrideWith(() => mockInstantTopologyNotifier),
             ],
           ),
         );
@@ -525,6 +590,8 @@ void main() async {
       mockDashboardHomeNotifier = MockDashboardHomeNotifier();
       mockFirmwareUpdateNotifier = MockFirmwareUpdateNotifier();
       mockDeviceManagerNotifier = MockDeviceManagerNotifier();
+      mockInstantPrivacyNotifier = MockInstantPrivacyNotifier();
+      mockInstantTopologyNotifier = MockInstantTopologyNotifier();
 
       when(mockDashboardHomeNotifier.build()).thenReturn(
           DashboardHomeState.fromMap(dashboardHomeStateData)
@@ -533,6 +600,10 @@ void main() async {
           .thenReturn(FirmwareUpdateState.fromMap(firmwareUpdateTestData));
       when(mockDeviceManagerNotifier.build())
           .thenReturn(DeviceManagerState.fromMap(deviceManagerTestData));
+      when(mockInstantPrivacyNotifier.build())
+          .thenReturn(InstantPrivacyState.fromMap(instantPrivacyTestState));
+      when(mockInstantTopologyNotifier.build())
+          .thenReturn(testTopology2SlavesDaisyState);
     });
     testLocalizations('Dashboard Home View - 2-ports mobile layout',
         (tester, locale) async {
@@ -549,6 +620,10 @@ void main() async {
               deviceManagerProvider
                   .overrideWith(() => mockDeviceManagerNotifier),
               nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
+              instantPrivacyProvider
+                  .overrideWith(() => mockInstantPrivacyNotifier),
+              instantTopologyProvider
+                  .overrideWith(() => mockInstantTopologyNotifier),
             ],
           ),
         );
@@ -583,6 +658,10 @@ void main() async {
               deviceManagerProvider
                   .overrideWith(() => mockDeviceManagerNotifier),
               nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
+              instantPrivacyProvider
+                  .overrideWith(() => mockInstantPrivacyNotifier),
+              instantTopologyProvider
+                  .overrideWith(() => mockInstantTopologyNotifier),
             ],
           ),
         );
@@ -617,6 +696,10 @@ void main() async {
               deviceManagerProvider
                   .overrideWith(() => mockDeviceManagerNotifier),
               nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
+              instantPrivacyProvider
+                  .overrideWith(() => mockInstantPrivacyNotifier),
+              instantTopologyProvider
+                  .overrideWith(() => mockInstantTopologyNotifier),
             ],
           ),
         );
@@ -654,6 +737,10 @@ void main() async {
               deviceManagerProvider
                   .overrideWith(() => mockDeviceManagerNotifier),
               nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
+              instantPrivacyProvider
+                  .overrideWith(() => mockInstantPrivacyNotifier),
+              instantTopologyProvider
+                  .overrideWith(() => mockInstantTopologyNotifier),
             ],
           ),
         );
@@ -691,6 +778,10 @@ void main() async {
               deviceManagerProvider
                   .overrideWith(() => mockDeviceManagerNotifier),
               nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
+              instantPrivacyProvider
+                  .overrideWith(() => mockInstantPrivacyNotifier),
+              instantTopologyProvider
+                  .overrideWith(() => mockInstantTopologyNotifier),
             ],
           ),
         );
@@ -728,6 +819,10 @@ void main() async {
               deviceManagerProvider
                   .overrideWith(() => mockDeviceManagerNotifier),
               nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
+              instantPrivacyProvider
+                  .overrideWith(() => mockInstantPrivacyNotifier),
+              instantTopologyProvider
+                  .overrideWith(() => mockInstantTopologyNotifier),
             ],
           ),
         );
@@ -769,6 +864,10 @@ void main() async {
               deviceManagerProvider
                   .overrideWith(() => mockDeviceManagerNotifier),
               nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
+              instantPrivacyProvider
+                  .overrideWith(() => mockInstantPrivacyNotifier),
+              instantTopologyProvider
+                  .overrideWith(() => mockInstantTopologyNotifier),
             ],
           ),
         );
@@ -802,6 +901,10 @@ void main() async {
               deviceManagerProvider
                   .overrideWith(() => mockDeviceManagerNotifier),
               nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
+              instantPrivacyProvider
+                  .overrideWith(() => mockInstantPrivacyNotifier),
+              instantTopologyProvider
+                  .overrideWith(() => mockInstantTopologyNotifier),
             ],
           ),
         );
@@ -838,6 +941,10 @@ void main() async {
               deviceManagerProvider
                   .overrideWith(() => mockDeviceManagerNotifier),
               nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
+              instantPrivacyProvider
+                  .overrideWith(() => mockInstantPrivacyNotifier),
+              instantTopologyProvider
+                  .overrideWith(() => mockInstantTopologyNotifier),
             ],
           ),
         );
@@ -875,6 +982,10 @@ void main() async {
               deviceManagerProvider
                   .overrideWith(() => mockDeviceManagerNotifier),
               nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
+              instantPrivacyProvider
+                  .overrideWith(() => mockInstantPrivacyNotifier),
+              instantTopologyProvider
+                  .overrideWith(() => mockInstantTopologyNotifier),
             ],
           ),
         );
@@ -891,7 +1002,7 @@ void main() async {
       });
     }, screens: responsiveDesktopScreens);
 
-    testLocalizations('Dashboard Home View - 2-ports mobile layout offline',
+    testLocalizations('Dashboard Home View - 2-ports mobile layout internet offline',
         (tester, locale) async {
       when(mockDashboardHomeNotifier.build()).thenReturn(
           DashboardHomeState.fromMap(dashboardHomeOfflineStateData).copyWith(
@@ -910,6 +1021,10 @@ void main() async {
                   .overrideWith(() => mockDeviceManagerNotifier),
               nodeWanStatusProvider
                   .overrideWith((ref) => NodeWANStatus.offline),
+              instantPrivacyProvider
+                  .overrideWith(() => mockInstantPrivacyNotifier),
+              instantTopologyProvider
+                  .overrideWith(() => mockInstantTopologyNotifier),
             ],
           ),
         );
@@ -926,7 +1041,7 @@ void main() async {
       });
     }, screens: responsiveMobileScreens);
 
-    testLocalizations('Dashboard Home View - 2-ports horizontal layout offline',
+    testLocalizations('Dashboard Home View - 2-ports horizontal layout internet offline',
         (tester, locale) async {
       when(mockDashboardHomeNotifier.build()).thenReturn(
           DashboardHomeState.fromMap(dashboardHomeOfflineStateData).copyWith(
@@ -947,6 +1062,10 @@ void main() async {
                   .overrideWith(() => mockDeviceManagerNotifier),
               nodeWanStatusProvider
                   .overrideWith((ref) => NodeWANStatus.offline),
+              instantPrivacyProvider
+                  .overrideWith(() => mockInstantPrivacyNotifier),
+              instantTopologyProvider
+                  .overrideWith(() => mockInstantTopologyNotifier),
             ],
           ),
         );
@@ -963,7 +1082,7 @@ void main() async {
       });
     }, screens: responsiveDesktopScreens);
 
-    testLocalizations('Dashboard Home View - 2-ports vertical layout offline',
+    testLocalizations('Dashboard Home View - 2-ports vertical layout internet offline',
         (tester, locale) async {
       when(mockDashboardHomeNotifier.build()).thenReturn(
           DashboardHomeState.fromMap(dashboardHomeOfflineStateData).copyWith(
@@ -984,6 +1103,10 @@ void main() async {
                   .overrideWith(() => mockDeviceManagerNotifier),
               nodeWanStatusProvider
                   .overrideWith((ref) => NodeWANStatus.offline),
+              instantPrivacyProvider
+                  .overrideWith(() => mockInstantPrivacyNotifier),
+              instantTopologyProvider
+                  .overrideWith(() => mockInstantTopologyNotifier),
             ],
           ),
         );

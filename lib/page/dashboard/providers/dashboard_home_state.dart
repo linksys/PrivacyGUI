@@ -126,7 +126,6 @@ class DashboardHomeState extends Equatable {
   final int? uptime;
   final String? wanPortConnection;
   final List<String> lanPortConnections;
-  final List<LinksysDevice> nodes;
   final List<DashboardWiFiItem> wifis;
 
   const DashboardHomeState({
@@ -142,7 +141,6 @@ class DashboardHomeState extends Equatable {
     this.uptime,
     this.wanPortConnection,
     this.lanPortConnections = const [],
-    this.nodes = const [],
     this.wifis = const [],
   });
 
@@ -159,7 +157,6 @@ class DashboardHomeState extends Equatable {
     int? uptime,
     String? wanPortConnection,
     List<String>? lanPortConnections,
-    List<LinksysDevice>? nodes,
     List<DashboardWiFiItem>? wifis,
   }) {
     return DashboardHomeState(
@@ -176,7 +173,6 @@ class DashboardHomeState extends Equatable {
       uptime: uptime ?? this.uptime,
       wanPortConnection: wanPortConnection ?? this.wanPortConnection,
       lanPortConnections: lanPortConnections ?? this.lanPortConnections,
-      nodes: nodes ?? this.nodes,
       wifis: wifis ?? this.wifis,
     );
   }
@@ -192,7 +188,6 @@ class DashboardHomeState extends Equatable {
       'uptimes': uptime,
       'wanPortConnection': wanPortConnection,
       'lanPortConnections': lanPortConnections,
-      'nodes': nodes.map((x) => x.toMap()).toList(),
       'wifis': wifis.map((x) => x.toMap()).toList(),
     };
   }
@@ -209,11 +204,6 @@ class DashboardHomeState extends Equatable {
       wanPortConnection: map['wanPortConnection'] as String,
       lanPortConnections:
           List<String>.from((map['lanPortConnections'] as List<String>)),
-      nodes: List<LinksysDevice>.from(
-        map['nodes'].map<LinksysDevice>(
-          (x) => LinksysDevice.fromMap(x as Map<String, dynamic>),
-        ),
-      ),
       wifis: List<DashboardWiFiItem>.from(
         map['wifis'].map<DashboardWiFiItem>(
           (x) => DashboardWiFiItem.fromMap(x as Map<String, dynamic>),
@@ -242,7 +232,6 @@ class DashboardHomeState extends Equatable {
       uptime,
       wanPortConnection,
       lanPortConnections,
-      nodes,
       wifis,
     ];
   }

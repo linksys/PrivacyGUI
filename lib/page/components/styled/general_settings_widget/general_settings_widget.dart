@@ -84,7 +84,7 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
                 const AppGap.medium(),
                 ..._displayAdditional(loginType),
                 FutureBuilder(
-                    future: getVersion(full: true),
+                    future: getVersion(full: false),
                     initialData: '-',
                     builder: (context, data) {
                       return Semantics(

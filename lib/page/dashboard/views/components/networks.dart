@@ -60,11 +60,14 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
         DateFormatUtils.formatDuration(Duration(seconds: uptimeInt), null);
     final state = ref.watch(dashboardHomeProvider);
     final isLoading = ref.watch(deviceManagerProvider).deviceList.isEmpty;
-    final topologyState = ref.watch(topologyProvider);
-    treeController.roots = topologyState.onlineRoot.children;
+    final topologyState = ref.watch(instantTopologyProvider);
+    treeController.roots = topologyState.root.children;
     treeController.expandAll();
+    final nodeTopologyHeight =
+        (topologyState.root.children.firstOrNull?.toFlatList().length ?? 1) *
+            108.0;
     return Container(
-      constraints: const BoxConstraints(minHeight: 200),
+      constraints: BoxConstraints(minHeight: 200 + nodeTopologyHeight),
       child: ShimmerContainer(
         isLoading: isLoading,
         child: AppCard(
@@ -79,7 +82,7 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
               ),
               const AppGap.large2(),
               SizedBox(
-                  height: state.nodes.length * 88,
+                  height: nodeTopologyHeight + 48,
                   child: TreeView<RouterTreeNode>(
                     treeController: treeController,
                     nodeBuilder: (BuildContext context,
@@ -122,10 +125,12 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
   }
 
   Widget _desktopHorizontal(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(dashboardHomeProvider);
-    final newFirmware = hasNewFirmware(ref);
+    final topologyState = ref.watch(instantTopologyProvider);
     final wanStatus = ref.watch(nodeWanStatusProvider);
+
+    final newFirmware = hasNewFirmware(ref);
     final isOnline = wanStatus == NodeWANStatus.online;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -138,17 +143,18 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
         Row(
           children: [
             Expanded(
-                child: _nodesInfoTile(
-              context,
-              ref,
-              state,
-            )),
+              child: _nodesInfoTile(
+                context,
+                ref,
+                topologyState,
+              ),
+            ),
             const AppGap.gutter(),
             Expanded(
               child: _devicesInfoTile(
                 context,
                 ref,
-                state,
+                topologyState,
               ),
             )
           ],
@@ -158,10 +164,11 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
   }
 
   Widget _desktopVertical(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(dashboardHomeProvider);
-    final newFirmware = hasNewFirmware(ref);
     final wanStatus = ref.watch(nodeWanStatusProvider);
+    final topologyState = ref.watch(instantTopologyProvider);
+    final newFirmware = hasNewFirmware(ref);
     final isOnline = wanStatus == NodeWANStatus.online;
+
     return Row(
       children: [
         Column(
@@ -177,16 +184,12 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              _nodesInfoTile(
-                context,
-                ref,
-                state,
-              ),
+              _nodesInfoTile(context, ref, topologyState),
               const AppGap.gutter(),
               _devicesInfoTile(
                 context,
                 ref,
-                state,
+                topologyState,
               )
             ],
           ),
@@ -196,10 +199,10 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
   }
 
   Widget _mobile(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(dashboardHomeProvider);
     final newFirmware = hasNewFirmware(ref);
     final wanStatus = ref.watch(nodeWanStatusProvider);
     final isOnline = wanStatus == NodeWANStatus.online;
+    final topologyState = ref.watch(instantTopologyProvider);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -218,14 +221,14 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
                 child: _nodesInfoTile(
               context,
               ref,
-              state,
+              topologyState,
             )),
             const AppGap.gutter(),
             Expanded(
               child: _devicesInfoTile(
                 context,
                 ref,
-                state,
+                topologyState,
               ),
             )
           ],
@@ -284,12 +287,13 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
   }
 
   Widget _nodesInfoTile(
-      BuildContext context, WidgetRef ref, DashboardHomeState state) {
+      BuildContext context, WidgetRef ref, InstantTopologyState state) {
+    final nodes = state.root.children.firstOrNull?.toFlatList() ?? [];
     return _infoTile(
       iconData: LinksysIcons.networkNode,
-      text: state.nodes.length == 1 ? loc(context).node : loc(context).nodes,
-      count: state.nodes.length,
-      sub: state.isAnyNodesOffline
+      text: nodes.length == 1 ? loc(context).node : loc(context).nodes,
+      count: nodes.length,
+      sub: nodes.any((element) => !element.data.isOnline)
           ? Icon(
               LinksysIcons.infoCircle,
               semanticLabel: 'info',
@@ -305,11 +309,13 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
   }
 
   Widget _devicesInfoTile(
-      BuildContext context, WidgetRef ref, DashboardHomeState state) {
-    final count = state.nodes.fold(
+      BuildContext context, WidgetRef ref, InstantTopologyState state) {
+    final nodes = state.root.children.firstOrNull?.toFlatList() ?? [];
+
+    final count = nodes.fold(
         0,
         (previousValue, element) =>
-            previousValue += element.connectedDevices.length);
+            previousValue += element.data.connectedDeviceCount);
     return _infoTile(
       text: count == 1 ? loc(context).device : loc(context).devices,
       count: count,

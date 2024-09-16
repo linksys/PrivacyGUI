@@ -638,9 +638,9 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
   }
 
   Future<void> _printPdf(BuildContext context, WidgetRef ref) async {
-    final topologyState = ref.read(topologyProvider);
+    final topologyState = ref.read(instantTopologyProvider);
     final nodeList = [
-      ...topologyState.onlineRoot.toFlatList(),
+      ...topologyState.root.toFlatList(),
       // ...topologyState.offlineRoot.toFlatList()
     ]..removeWhere((element) =>
         element is OnlineTopologyNode || element is OfflineTopologyNode);

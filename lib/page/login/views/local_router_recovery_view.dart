@@ -78,10 +78,13 @@ class _LocalRouterRecoveryViewState
                       controller: _otpController,
                       keyboardType: TextInputType.number,
                       autoDismissKeyboard: true,
+                      cursorColor: Theme.of(context).colorScheme.onSurface,
                       pinTheme: PinTheme(
                         shape: PinCodeFieldShape.box,
-                        borderRadius:
-                            CustomTheme.of(context).radius.asBorderRadius().small,
+                        borderRadius: CustomTheme.of(context)
+                            .radius
+                            .asBorderRadius()
+                            .small,
                         borderWidth: 1,
                         fieldHeight: 56,
                         fieldWidth: 40,

@@ -9,7 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/_providers.dart'
     as _i5;
-import 'package:privacy_gui/page/pnp/troubleshooter/providers/pnp_troubleshooter_provider.dart'
+import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_troubleshooter_provider.dart'
     as _i3;
 
 // ignore_for_file: type=lint
