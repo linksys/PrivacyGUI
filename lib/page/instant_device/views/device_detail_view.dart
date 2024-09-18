@@ -127,6 +127,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
             title: state.item.name,
             trailing: AppIconButton(
               icon: LinksysIcons.edit,
+              semanticLabel: 'edit',
               onTap: _showEdidDeviceModal,
             ),
           ),
