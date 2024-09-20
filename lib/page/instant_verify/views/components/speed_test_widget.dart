@@ -3,7 +3,9 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/models/health_check_result.dart';
+import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/health_check/_health_check.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
@@ -26,6 +28,8 @@ class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(healthCheckProvider);
+    final latestSpeedTest = ref.watch(
+        dashboardManagerProvider.select((state) => state.latestSpeedTest));
     ref.listen(healthCheckProvider.select((value) => value.step),
         (previous, next) {
       if (next == previous) {
@@ -70,8 +74,12 @@ class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
         });
       }
     });
+
+    final result =
+        _status == 'IDLE' ? latestSpeedTest : state.result.firstOrNull;
+
     final (latency, downloadBandWidth, uploadBandWidth) =
-        _getDataText(state.result.firstOrNull?.speedTestResult);
+        _getDataText(result?.speedTestResult);
     final value =
         state.step == 'downloadBandwidth' ? downloadBandWidth : uploadBandWidth;
     final meterValue = state.step == 'latency'
@@ -121,7 +129,7 @@ class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
           direction: Axis.vertical,
           children: [
             AppText.bodySmall(loc(context).dateAndTime),
-            AppText.labelMedium(state.result.firstOrNull?.timestamp == null
+            AppText.labelMedium(result?.timestamp == null
                 ? '--'
                 : '${loc(context).systemTestDateFormat(DateTime.now())} ${loc(context).systemTestDateTime(DateTime.now())}'),
           ],
@@ -131,8 +139,7 @@ class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
           direction: Axis.vertical,
           children: [
             AppText.bodySmall(loc(context).serverId),
-            AppText.labelMedium(
-                '${state.result.firstOrNull?.resultID ?? '--'}'),
+            AppText.labelMedium('${result?.resultID ?? '--'}'),
           ],
         ),
         const AppGap.large2(),

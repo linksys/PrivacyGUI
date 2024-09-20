@@ -42,7 +42,7 @@ class Utils {
         Storage.deleteFile(Storage.logFileUri);
         Storage.createLoggerFile();
       }
-      showSnackBar(context, content: Text("Share result: ${result?.status}"));
+      showSnackBar(context, content: Text("Log exported - $shareLogFilename"));
     });
   }
 

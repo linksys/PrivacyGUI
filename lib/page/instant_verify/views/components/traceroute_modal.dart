@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/models/ping_status.dart';
 import 'package:privacy_gui/core/jnap/models/traceroute_status.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/instant_verify/providers/system_connectivity_provider.dart';
+import 'package:privacy_gui/page/instant_verify/providers/instant_verify_provider.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 
@@ -26,9 +26,7 @@ class _TracerouteModalState extends ConsumerState<TracerouteModal> {
   Widget build(BuildContext context) {
     return StreamBuilder<TracerouteStatus>(
         stream: _isRunning
-            ? ref
-                .read(systemConnectivityProvider.notifier)
-                .getTracerouteStatus()
+            ? ref.read(instantVerifyProvider.notifier).getTracerouteStatus()
             : null,
         builder: (context, snapshot) {
           return Column(
@@ -52,9 +50,7 @@ class _TracerouteModalState extends ConsumerState<TracerouteModal> {
                   AppTextButton(
                     loc(context).close,
                     onTap: () {
-                      ref
-                          .read(systemConnectivityProvider.notifier)
-                          .stopTraceroute();
+                      ref.read(instantVerifyProvider.notifier).stopTraceroute();
                       context.pop();
                     },
                   ),
@@ -62,7 +58,7 @@ class _TracerouteModalState extends ConsumerState<TracerouteModal> {
                     'Ping',
                     onTap: () {
                       ref
-                          .read(systemConnectivityProvider.notifier)
+                          .read(instantVerifyProvider.notifier)
                           .traceroute(host: _controller.text, pingCount: 5);
                       setState(() {
                         _isRunning = true;
