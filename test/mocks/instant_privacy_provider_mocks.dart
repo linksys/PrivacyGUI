@@ -50,7 +50,8 @@ class _FakeInstantPrivacyState_1 extends _i1.SmartFake
 /// A class which mocks [InstantPrivacyNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockInstantPrivacyNotifier extends _i2.Notifier<_i3.InstantPrivacyState> with _i1.Mock
+class MockInstantPrivacyNotifier extends _i2.Notifier<_i3.InstantPrivacyState>
+    with _i1.Mock
     implements _i4.InstantPrivacyNotifier {
   @override
   _i2.NotifierProviderRef<_i3.InstantPrivacyState> get ref =>
@@ -138,6 +139,16 @@ class MockInstantPrivacyNotifier extends _i2.Notifier<_i3.InstantPrivacyState> w
           ),
         )),
       ) as _i5.Future<_i3.InstantPrivacyState>);
+
+  @override
+  _i5.Future<dynamic> doPolling() => (super.noSuchMethod(
+        Invocation.method(
+          #doPolling,
+          [],
+        ),
+        returnValue: _i5.Future<dynamic>.value(),
+        returnValueForMissingStub: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
 
   @override
   _i5.Future<dynamic> save() => (super.noSuchMethod(
