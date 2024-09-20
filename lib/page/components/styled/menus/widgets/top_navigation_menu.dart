@@ -25,7 +25,6 @@ class _NavigationMenuState extends State<NavigationMenu> {
   @override
   void initState() {
     super.initState();
-    
   }
 
   @override
@@ -88,9 +87,6 @@ class _NavigationMenuState extends State<NavigationMenu> {
       selected: widget.selected == type,
       showCheckmark: false,
       onSelected: (value) {
-        if (widget.selected == type) {
-          return;
-        }
 
         widget.onItemClick?.call(widget.items.indexOf(type));
       },

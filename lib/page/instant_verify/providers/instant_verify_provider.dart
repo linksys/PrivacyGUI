@@ -9,15 +9,15 @@ import 'package:privacy_gui/core/jnap/models/wan_status.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
-import 'package:privacy_gui/page/instant_verify/providers/system_connectivity_state.dart';
+import 'package:privacy_gui/page/instant_verify/providers/instant_verify_state.dart';
 
-final systemConnectivityProvider =
-    NotifierProvider<SystemConnectivityNotifier, SystemConnectivityState>(
-        () => SystemConnectivityNotifier());
+final instantVerifyProvider =
+    NotifierProvider<InstantVerifyNotifier, InstantVerifyState>(
+        () => InstantVerifyNotifier());
 
-class SystemConnectivityNotifier extends Notifier<SystemConnectivityState> {
+class InstantVerifyNotifier extends Notifier<InstantVerifyState> {
   @override
-  SystemConnectivityState build() {
+  InstantVerifyState build() {
     final pollingData = ref.watch(pollingProvider).value?.data ?? {};
     final wanStatusResult = JNAPTransactionSuccessWrap.getResult(
         JNAPAction.getWANStatus, pollingData);
@@ -34,7 +34,7 @@ class SystemConnectivityNotifier extends Notifier<SystemConnectivityState> {
     final guestRadioSettings = guestRadioSettingsResult == null
         ? null
         : GuestRadioSettings.fromMap(guestRadioSettingsResult.output);
-    return SystemConnectivityState(
+    final state = InstantVerifyState(
       wanConnection: wanStatus?.wanConnection,
       radioInfo: radioInfo ??
           const GetRadioInfo(isBandSteeringSupported: false, radios: []),
@@ -45,6 +45,7 @@ class SystemConnectivityNotifier extends Notifier<SystemConnectivityState> {
             radios: [],
           ),
     );
+    return state;
   }
 
   Future ping({required String host, required int? pingCount}) {

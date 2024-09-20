@@ -323,7 +323,7 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
         context: context,
         builder: (context) {
           return AlertDialog(
-            title: AppText.headlineSmall(loc(context).modalOfflineNodeTitle),
+            title: AppText.headlineSmall(loc(context).removeNode),
             actions: [
               AppTextButton.noPadding(
                 loc(context).cancel,

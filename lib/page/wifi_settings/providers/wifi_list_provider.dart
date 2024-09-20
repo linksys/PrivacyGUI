@@ -183,6 +183,9 @@ class WifiListNotifier extends Notifier<WiFiState> {
     if (radios.isEmpty) {
       return false;
     }
+    if (isMloEnabled == false) {
+      return false;
+    }
     // Bands do not have the same main settings (SSID/PW/Security Type)
     final first = radios.values.first;
     final isMainSettingsInconsitent = radios.values.any((element) =>
@@ -200,8 +203,7 @@ class WifiListNotifier extends Notifier<WiFiState> {
         .where((e) => e.key != WifiRadioBand.radio_24)
         .map((e) => e.value)
         .any((element) => !element.wirelessMode.isIncludeBeMixedMode);
-    return (isMloEnabled ?? false) ||
-        isMainSettingsInconsitent ||
+    return isMainSettingsInconsitent ||
         hasNonWPA3SecurityType ||
         hasDisabled5G6GBand ||
         has5G6GModeNotMixed;

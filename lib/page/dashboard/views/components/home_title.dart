@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -18,10 +19,12 @@ class DashboardHomeTitle extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final wanStatus = ref.watch(nodeWanStatusProvider);
+    final state = ref.watch(dashboardManagerProvider);
     final isOnline = wanStatus == NodeWANStatus.online;
     final isLoading = ref
         .watch(deviceManagerProvider.select((value) => value.deviceList))
         .isEmpty;
+    final localTime = DateTime.fromMillisecondsSinceEpoch(state.localTime);
     return Column(
       children: [
         Row(
@@ -30,7 +33,7 @@ class DashboardHomeTitle extends ConsumerWidget {
           children: [
             Expanded(
               child: AppText.titleLarge(
-                helloString(context),
+                helloString(context, localTime),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -41,7 +44,7 @@ class DashboardHomeTitle extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.only(left: Spacing.small2),
                   child: AppText.bodyMedium(
-                    loc(context).formalDateTime(DateTime.now(), DateTime.now()),
+                    loc(context).formalDateTime(localTime, localTime),
                     color: Theme.of(context).colorScheme.onSurface,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -74,7 +77,8 @@ class DashboardHomeTitle extends ConsumerWidget {
     );
   }
 
-  String helloString(BuildContext context) => switch (DateTime.now().hour) {
+  String helloString(BuildContext context, DateTime localTime) =>
+      switch (localTime.hour) {
         >= 17 && < 22 => loc(context).goodEvening,
         >= 12 && < 17 => loc(context).goodAfternoon,
         >= 1 && < 12 => loc(context).goodMorning,

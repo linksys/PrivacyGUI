@@ -7,23 +7,23 @@ import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
 import 'package:privacy_gui/core/jnap/models/radio_info.dart';
 import 'package:privacy_gui/core/jnap/models/wan_status.dart';
 
-class SystemConnectivityState extends Equatable {
+class InstantVerifyState extends Equatable {
   final WANConnectionInfo? wanConnection;
   final GetRadioInfo radioInfo;
   final GuestRadioSettings guestRadioSettings;
 
-  const SystemConnectivityState({
+  const InstantVerifyState({
     this.wanConnection,
     required this.radioInfo,
     required this.guestRadioSettings,
   });
 
-  SystemConnectivityState copyWith({
+  InstantVerifyState copyWith({
     WANConnectionInfo? wanConnection,
     GetRadioInfo? radioInfo,
     GuestRadioSettings? guestRadioSettings,
   }) {
-    return SystemConnectivityState(
+    return InstantVerifyState(
       wanConnection: wanConnection ?? this.wanConnection,
       radioInfo: radioInfo ?? this.radioInfo,
       guestRadioSettings: guestRadioSettings ?? this.guestRadioSettings,
@@ -38,20 +38,21 @@ class SystemConnectivityState extends Equatable {
     }..removeWhere((key, value) => value == null);
   }
 
-  factory SystemConnectivityState.fromMap(Map<String, dynamic> map) {
-    return SystemConnectivityState(
-      wanConnection: map['wanConnection']==null ? null: WANConnectionInfo.fromMap(
-          map['wanConnection'] as Map<String, dynamic>),
+  factory InstantVerifyState.fromMap(Map<String, dynamic> map) {
+    return InstantVerifyState(
+      wanConnection: map['wanConnection'] == null
+          ? null
+          : WANConnectionInfo.fromMap(
+              map['wanConnection'] as Map<String, dynamic>),
       radioInfo: GetRadioInfo.fromMap(map['radioInfo'] as Map<String, dynamic>),
-      guestRadioSettings: map['guestRadioSettings'],
+      guestRadioSettings: GuestRadioSettings.fromMap(map['guestRadioSettings']),
     );
   }
 
   String toJson() => json.encode(toMap());
 
-  factory SystemConnectivityState.fromJson(String source) =>
-      SystemConnectivityState.fromMap(
-          json.decode(source) as Map<String, dynamic>);
+  factory InstantVerifyState.fromJson(String source) =>
+      InstantVerifyState.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
   bool get stringify => true;

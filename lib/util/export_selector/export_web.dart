@@ -14,7 +14,7 @@ Future<ShareResult?> exportFile(
   var blob = html.Blob([Uint8List.fromList(utf8Bytes), 'text/plain']);
   var anchor = html.AnchorElement(href: html.Url.createObjectUrlFromBlob(blob))
     ..target = 'blank'
-    ..download = '$fileName.txt';
+    ..download = fileName;
   html.document.body!.append(anchor);
   anchor.click();
   anchor.remove();

@@ -42,7 +42,6 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
             )),
       ),
       borderRadius: const BorderRadius.all(Radius.circular(10)),
-      backgroundColor: Theme.of(context).colorScheme.background,
       builder: (controller) {
         final locale =
             ref.watch(appSettingsProvider.select((value) => value.locale));
