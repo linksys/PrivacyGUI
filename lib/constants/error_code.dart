@@ -21,6 +21,7 @@ const errorInvalidResetCode = 'ErrorInvalidResetCode';
 const errorConsecutiveInvalidResetCodeEntered =
     'ErrorConsecutiveInvalidResetCodeEntered';
 const errorInvalidAdminPassword = 'ErrorInvalidAdminPassword';
+const errorPasswordCheckDelayed = 'ErrorPasswordCheckDelayed';
 const errorInvalidGateway = 'ErrorInvalidGateway';
 const errorUnexpected = '_ErrorUnexpected';
 

@@ -88,7 +88,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
   void setErrorMessage(JNAPError? error) {
     if (error != null) {
       // Check if it's the invalid admin password error from CheckAdminPassword3
-      if (error.result == errorInvalidAdminPassword) {
+      if (error.result == errorInvalidAdminPassword || error.result == errorPasswordCheckDelayed) {
         // Do not re-assign the error data while the timer is still running
         if (!_isTimerRunning()) {
           final errorContent =
@@ -97,8 +97,8 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
           _remainingAttempts = errorContent?['attemptsRemaining'] as int?;
           if (_delayTime != null) {
             // Trigger the timer as long as there is delay time
-            _errorMessage = getCountdownPrompt();
-            _startTimer();
+            _errorMessage = getCountdownPrompt(errorResult: error.result);
+            _startTimer(errorResult: error.result);
           } else {
             // delay time will be absent if remaining attempts reach to 0
             // No need to count down
@@ -115,15 +115,19 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
     }
   }
 
-  String getCountdownPrompt() {
+  String getCountdownPrompt({String? errorResult}) {
+    final result = switch (errorResult) {
+      errorPasswordCheckDelayed => '',
+      _ => '${loc(context).localLoginIncorrectRouterPassword}\n',
+    };
     if (_remainingAttempts != null && _delayTime != null) {
-      return '${loc(context).localLoginIncorrectRouterPassword}\n${loc(context).localLoginTryAgainIn(_delayTime!)}\n${loc(context).localLoginRemainingAttempts(_remainingAttempts!)}';
+      return '$result${loc(context).localLoginTryAgainIn(_delayTime!)}\n${loc(context).localLoginRemainingAttempts(_remainingAttempts!)}';
     } else {
       return loc(context).localLoginIncorrectRouterPassword;
     }
   }
 
-  void _startTimer() {
+  void _startTimer({String? errorResult}) {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_delayTime! < 1) {
         // Countdown has finished, clear the error message and refresh the view
@@ -139,7 +143,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
         setState(() {
           // Keep count down the delay time and update the error message
           _delayTime = _delayTime! - 1;
-          _errorMessage = getCountdownPrompt();
+          _errorMessage = getCountdownPrompt(errorResult: errorResult);
         });
       }
     });
