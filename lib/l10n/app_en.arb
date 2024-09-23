@@ -909,5 +909,6 @@
   "safari": "Safari",
   "safariDesc": "Click <b>Show Details > visit this website</b>. A prompt will display, asking you to confirm that you want to visit the website. Click <b>Visit Website</b>",
   "questions": "Questions?",
-  "doNotShowThisAgain": "Don't show this page again"
+  "doNotShowThisAgain": "Don't show this page again",
+  "invalidAdminPassword": "Invalid admin password"
 }
