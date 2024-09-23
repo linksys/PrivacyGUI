@@ -1,4 +1,4 @@
-const safeBrowsingTestState = {
+const instantSafetyTestState = {
   "lanSetting": {
     "minNetworkPrefixLength": 16,
     "maxNetworkPrefixLength": 30,
@@ -20,7 +20,7 @@ const safeBrowsingTestState = {
   "hasFortinet": true
 };
 
-const safeBrowsingTestStateNotSupported = {
+const instantSafetyTestStateNotSupported = {
   "lanSetting": {
     "minNetworkPrefixLength": 16,
     "maxNetworkPrefixLength": 30,
@@ -42,7 +42,7 @@ const safeBrowsingTestStateNotSupported = {
   "hasFortinet": false
 };
 
-const safeBrowsingTestState1 = {
+const instantSafetyTestState1 = {
   "lanSetting": {
     "minNetworkPrefixLength": 16,
     "maxNetworkPrefixLength": 30,
@@ -64,7 +64,7 @@ const safeBrowsingTestState1 = {
   "hasFortinet": true
 };
 
-const safeBrowsingTestState2 = {
+const instantSafetyTestState2 = {
   "lanSetting": {
     "minNetworkPrefixLength": 16,
     "maxNetworkPrefixLength": 30,

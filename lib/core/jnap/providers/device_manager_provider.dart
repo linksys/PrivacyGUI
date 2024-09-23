@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/extensions/_extensions.dart';
 import 'package:privacy_gui/core/jnap/models/back_haul_info.dart';
 import 'package:privacy_gui/core/jnap/models/device.dart';
+import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
 import 'package:privacy_gui/core/jnap/models/layer2_connection.dart';
 import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
 import 'package:privacy_gui/core/jnap/models/node_wireless_connection.dart';
@@ -17,7 +18,6 @@ import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/icon_device_category.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 
 final deviceManagerProvider =
     NotifierProvider<DeviceManagerNotifier, DeviceManagerState>(
@@ -35,7 +35,7 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     Map<String, dynamic>? getNetworkConnectionsData;
     Map<String, dynamic>? getNodesWirelessNetworkConnectionsData;
     Map<String, dynamic>? getRadioInfo;
-
+    Map<String, dynamic>? guestRadioSettings;
     Map<String, dynamic>? getDevicesData;
     Map<String, dynamic>? getWANStatusData;
     Map<String, dynamic>? getBackHaulInfoData;
@@ -54,6 +54,8 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
           (result[JNAPAction.getWANStatus] as JNAPSuccess?)?.output;
       getBackHaulInfoData =
           (result[JNAPAction.getBackhaulInfo] as JNAPSuccess?)?.output;
+      guestRadioSettings =
+          (result[JNAPAction.getGuestRadioSettings] as JNAPSuccess?)?.output;
     }
     final List<Layer2Connection> connectionData;
     if (getNodesWirelessNetworkConnectionsData != null) {
@@ -88,6 +90,10 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     newState = _getWANStatusModel(newState, getWANStatusData);
     newState = _getBackhaukInfoData(newState, getBackHaulInfoData);
     newState = newState.copyWith(radioInfos: radioMap);
+    newState = newState.copyWith(
+        guestRadioSettings: guestRadioSettings == null
+            ? null
+            : GuestRadioSettings.fromMap(guestRadioSettings));
     newState = _checkUpstream(newState);
 
     newState = newState.copyWith(
@@ -276,12 +282,16 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
   // Used in cases where the watched DeviceManager is still empty at very beginning stage
   bool isEmptyState() => state.deviceList.isEmpty;
 
-  String? getSsidConnectedBy(RawDevice device) {
+  String? getSsidConnectedBy(LinksysDevice device) {
     // Get the SSID to the RadioID connected by the given device
     final wirelessConnections = state.wirelessConnections;
     final wirelessData = wirelessConnections[device.getMacAddress()];
     final radioID = wirelessData?.radioID;
-    return state.radioInfos[radioID]?.settings.ssid;
+    return device.connectedWifiType == WifiConnectionType.guest
+        ? state.guestRadioSettings?.radios
+            .firstWhereOrNull((element) => element.radioID == radioID)
+            ?.guestSSID
+        : state.radioInfos[radioID]?.settings.ssid;
   }
 
   int? _getWirelessSignalOf(RawDevice device,

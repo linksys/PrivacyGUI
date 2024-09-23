@@ -15,8 +15,10 @@ import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_provider.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_provider.dart';
+import 'package:privacy_gui/util/debug_mixin.dart';
 import 'package:privacy_gui/util/languages.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -28,7 +30,7 @@ class LinksysApp extends ConsumerStatefulWidget {
 }
 
 class _LinksysAppState extends ConsumerState<LinksysApp>
-    with WidgetsBindingObserver {
+    with DebugObserver, WidgetsBindingObserver {
   LinksysRoute? _currentRoute;
   late ConnectivityNotifier _connectivityNotifier;
   late GoRouterDelegate _routerDelegate;
@@ -57,7 +59,7 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
   @override
   Widget build(BuildContext context) {
     logger.d('App:: build: $_currentRoute');
-    
+
     final appSettings = ref.watch(appSettingsProvider);
     final systemLocaleStr = Intl.getCurrentLocale();
     final systemLocale = Locale(getLanguageData(systemLocaleStr)['value']);
@@ -79,14 +81,23 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
         child: Shortcuts(
           shortcuts: {
             LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyO):
-                ToggleDisplayColumnOverlayIntent()
+                ToggleDisplayColumnOverlayIntent(),
+            LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.shift,
+                LogicalKeyboardKey.keyL): ToggleDownloadLogIntent()
           },
           child: Actions(
             dispatcher: AppGlobalActionDispatcher(),
             actions: {
               ToggleDisplayColumnOverlayIntent: CallbackAction(
                   onInvoke: (intent) => showColumnOverlayNotifier.value =
-                      !showColumnOverlayNotifier.value)
+                      !showColumnOverlayNotifier.value),
+              ToggleDownloadLogIntent: CallbackAction(onInvoke: (intent) {
+                if (increase()) {
+                  // context.pushNamed(RouteNamed.debug);
+                  Utils.exportLogFile(context);
+                  return;
+                }
+              }),
             },
             child: CustomResponsive(
               child: AppRootContainer(
@@ -220,6 +231,8 @@ class NoTransitionsBuilder extends PageTransitionsBuilder {
 }
 
 class ToggleDisplayColumnOverlayIntent extends Intent {}
+
+class ToggleDownloadLogIntent extends Intent {}
 
 class AppGlobalActionDispatcher extends ActionDispatcher {
   @override

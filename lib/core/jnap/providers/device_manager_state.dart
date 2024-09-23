@@ -4,6 +4,7 @@ import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/core/jnap/models/back_haul_info.dart';
 import 'package:privacy_gui/core/jnap/models/device.dart';
+import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
 import 'package:privacy_gui/core/jnap/models/radio_info.dart';
 import 'package:privacy_gui/core/jnap/models/wan_status.dart';
 import 'package:privacy_gui/core/jnap/models/wirless_connection.dart';
@@ -164,6 +165,7 @@ class DeviceManagerState extends Equatable {
   // Collected data for a specific network with its own devices shared to overall screens
   final Map<String, WirelessConnection> wirelessConnections;
   final Map<String, RouterRadio> radioInfos;
+  final GuestRadioSettings? guestRadioSettings;
   final List<LinksysDevice> deviceList;
   final RouterWANStatus? wanStatus;
   final List<BackHaulInfoData> backhaulInfoData;
@@ -201,6 +203,7 @@ class DeviceManagerState extends Equatable {
   const DeviceManagerState({
     this.wirelessConnections = const {},
     this.radioInfos = const {},
+    this.guestRadioSettings,
     this.deviceList = const [],
     this.wanStatus,
     this.backhaulInfoData = const [],
@@ -211,6 +214,7 @@ class DeviceManagerState extends Equatable {
     Map<String, WirelessConnection>? wirelessConnections,
     Map<String, RouterRadio>? radioInfos,
     List<LinksysDevice>? deviceList,
+    GuestRadioSettings? guestRadioSettings,
     RouterWANStatus? wanStatus,
     List<BackHaulInfoData>? backhaulInfoData,
     int? lastUpdateTime,
@@ -218,6 +222,7 @@ class DeviceManagerState extends Equatable {
     return DeviceManagerState(
       wirelessConnections: wirelessConnections ?? this.wirelessConnections,
       radioInfos: radioInfos ?? this.radioInfos,
+      guestRadioSettings: guestRadioSettings ?? this.guestRadioSettings,
       deviceList: deviceList ?? this.deviceList,
       wanStatus: wanStatus ?? this.wanStatus,
       backhaulInfoData: backhaulInfoData ?? this.backhaulInfoData,
@@ -233,11 +238,12 @@ class DeviceManagerState extends Equatable {
     return <String, dynamic>{
       'wirelessConnections': wirelessConnectionMap,
       'radioInfos': radioInfoMap,
+      'guestRadioSettings': guestRadioSettings?.toMap(),
       'deviceList': deviceList.map((x) => x.toMap()).toList(),
       'wanStatus': wanStatus?.toMap(),
       'backhaulInfoData': backhaulInfoData.map((x) => x.toMap()).toList(),
       'lastUpdateTime': lastUpdateTime,
-    };
+    }..removeWhere((key, value) => value == null);
   }
 
   factory DeviceManagerState.fromMap(Map<String, dynamic> map) {
@@ -257,6 +263,7 @@ class DeviceManagerState extends Equatable {
                   RouterRadio.fromMap(e.value),
                 ),
               )),
+      guestRadioSettings: GuestRadioSettings.fromMap(map['guestRadioSettings']),
       deviceList: List<LinksysDevice>.from(
         map['deviceList'].map<LinksysDevice>(
           (x) => LinksysDevice.fromMap(x as Map<String, dynamic>),

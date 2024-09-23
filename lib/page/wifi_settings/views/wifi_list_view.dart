@@ -186,6 +186,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
                   trailing: const Icon(LinksysIcons.edit),
                   onTap: () {
                     _showWifiPasswordModal(mainRadio.password, (value) {
+                      _simplePasswordController.text = value;
                       ref
                           .read(wifiListProvider.notifier)
                           .setWiFiPassword(value, null);

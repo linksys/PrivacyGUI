@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/bottom_bar.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
@@ -10,6 +9,7 @@ import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_admin/providers/_providers.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
+import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/input_field/validator_widget.dart';
@@ -27,20 +27,19 @@ class _LocalResetRouterPasswordViewState
     extends ConsumerState<LocalResetRouterPasswordView> {
   final _newPasswordController = TextEditingController();
   final _hintController = TextEditingController();
-  final validations = [
-    Validation(
-        description: 'At least 10 characters',
-        validator: ((text) => LengthRule().validate(text))),
-    Validation(
-        description: 'Upper and lowercase letters',
-        validator: ((text) => HybridCaseRule().validate(text))),
-    Validation(
-        description: '1 number',
-        validator: ((text) => DigitalCheckRule().validate(text))),
-    Validation(
-        description: '1 special character',
-        validator: ((text) => SpecialCharCheckRule().validate(text))),
-  ];
+
+  Validation get hintNotContainPasswordValidator => Validation(
+        description: loc(context).routerPasswordRuleHintContainPassword,
+        validator: ((text) =>
+            !_hintController.text.toLowerCase().contains(text.toLowerCase())),
+      );
+  bool isPasswordValid = false;
+  bool isHintNotContainPassword = false;
+
+  @override
+  void initState() {
+    super.initState();
+  }
 
   @override
   void dispose() {
@@ -61,7 +60,7 @@ class _LocalResetRouterPasswordViewState
         crossAxisAlignment: CrossAxisAlignment.start,
         content: Center(
           child: SizedBox(
-            width: 289,
+            width: 4.col,
             child: AppCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -76,7 +75,39 @@ class _LocalResetRouterPasswordViewState
                   AppPasswordField(
                     border: const OutlineInputBorder(),
                     withValidator: state.hasEdited,
-                    validations: validations,
+                    validations: [
+                      Validation(
+                          description: loc(context).routerPasswordRuleTenChars,
+                          validator: ((text) => LengthRule().validate(text))),
+                      Validation(
+                          description:
+                              loc(context).routerPasswordRuleLowerUpper,
+                          validator: ((text) =>
+                              HybridCaseRule().validate(text))),
+                      Validation(
+                          description: loc(context).routerPasswordRuleOneNumber,
+                          validator: ((text) =>
+                              DigitalCheckRule().validate(text))),
+                      Validation(
+                          description:
+                              loc(context).routerPasswordRuleSpecialChar,
+                          validator: ((text) =>
+                              SpecialCharCheckRule().validate(text))),
+                      Validation(
+                          description:
+                              loc(context).routerPasswordRuleStartEndWithSpace,
+                          validator: ((text) =>
+                              NoSurroundWhitespaceRule().validate(text))),
+                      Validation(
+                          description:
+                              loc(context).routerPasswordRuleConsecutiveChar,
+                          validator: ((text) =>
+                              !ConsecutiveCharRule().validate(text))),
+                      // Validation(
+                      //     description:
+                      //         loc(context).routerPasswordRuleUnsupportSpecialChar,
+                      //     validator: ((text) => AsciiRule().validate(text))),
+                    ],
                     hintText: loc(context).localResetRouterPasswordTitle,
                     controller: _newPasswordController,
                     onFocusChanged: (hasFocus) {
@@ -85,9 +116,16 @@ class _LocalResetRouterPasswordViewState
                           .setEdited(hasFocus);
                     },
                     onValidationChanged: (isValid) {
+                      isPasswordValid = isValid;
                       ref
                           .read(routerPasswordProvider.notifier)
-                          .setValidate(isValid);
+                          .setValidate(isPasswordValid && isHintNotContainPassword);
+                    },
+                    onChanged: (value) {
+                      setState(() {
+                        isHintNotContainPassword = hintNotContainPasswordValidator
+                            .validator(_newPasswordController.text);
+                      });
                     },
                   ),
                   const AppGap.medium(),
@@ -95,6 +133,20 @@ class _LocalResetRouterPasswordViewState
                     border: const OutlineInputBorder(),
                     hintText: loc(context).routerPasswordHint,
                     controller: _hintController,
+                    onChanged: (value) {
+                      setState(() {
+                        isHintNotContainPassword = hintNotContainPasswordValidator
+                            .validator(_newPasswordController.text);
+                      });
+                      ref
+                          .read(routerPasswordProvider.notifier)
+                          .setValidate(isPasswordValid && isHintNotContainPassword);
+                    },
+                  ),
+                  const AppGap.large2(),
+                  AppValidatorWidget(
+                    validations: [hintNotContainPasswordValidator],
+                    textToValidate: _newPasswordController.text,
                   ),
                   const AppGap.large3(),
                   AppFilledButton(
@@ -134,7 +186,7 @@ class _LocalResetRouterPasswordViewState
     }).onError((error, stackTrace) {
       //TODO: Error messages are not defined by UI
       dialogTitle = loc(context).failedExclamation;
-      dialogContent = (error is JNAPError) ? error.result : '';
+      dialogContent = loc(context).invalidAdminPassword;
       actionTitle = loc(context).ok;
       action = () {
         context.pop();

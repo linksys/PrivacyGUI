@@ -12,7 +12,7 @@ import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
 import 'package:privacy_gui/page/instant_safety/providers/_providers.dart';
-import 'package:privacy_gui/page/instant_topology/providers/topology_provider.dart';
+import 'package:privacy_gui/page/instant_topology/providers/instant_topology_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
@@ -211,7 +211,8 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
 
             final reboot = Future.sync(
                     () => ref.read(pollingProvider.notifier).stopPolling())
-                .then((_) => ref.read(topologyProvider.notifier).reboot());
+                .then(
+                    (_) => ref.read(instantTopologyProvider.notifier).reboot());
             doSomethingWithSpinner(context, reboot, messages: [
               '${loc(context).restarting}.',
               '${loc(context).restarting}..',

@@ -4,6 +4,7 @@ import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/models/mac_filter_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
@@ -36,6 +37,10 @@ class InstantPrivacyNotifier extends Notifier<InstantPrivacyState> {
       maxMacAddresses: settings.maxMACAddresses,
     );
     return state;
+  }
+
+  Future doPolling() {
+    return ref.read(pollingProvider.notifier).forcePolling();
   }
 
   Future save() async {

@@ -39,9 +39,7 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView> {
     _notifier = ref.read(instantPrivacyProvider.notifier);
     doSomethingWithSpinner(
       context,
-      _notifier
-          .fetch()
-          .then((value) => ref.read(pollingProvider.notifier).forcePolling()),
+      _notifier.fetch().then((value) => _notifier.doPolling()),
     );
     super.initState();
   }

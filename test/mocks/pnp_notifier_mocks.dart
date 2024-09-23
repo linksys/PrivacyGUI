@@ -9,10 +9,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i15;
 import 'package:privacy_gui/core/jnap/actions/better_action.dart' as _i17;
-import 'package:privacy_gui/page/pnp/data/pnp_provider.dart' as _i12;
-import 'package:privacy_gui/page/pnp/data/pnp_state.dart' as _i3;
-import 'package:privacy_gui/page/pnp/data/pnp_step_state.dart' as _i4;
-import 'package:privacy_gui/page/pnp/model/pnp_step.dart' as _i16;
+import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart' as _i12;
+import 'package:privacy_gui/page/instant_setup/data/pnp_state.dart' as _i3;
+import 'package:privacy_gui/page/instant_setup/data/pnp_step_state.dart' as _i4;
+import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart' as _i16;
 import 'package:privacy_gui/providers/connectivity/availability_info.dart'
     as _i6;
 import 'package:privacy_gui/providers/connectivity/connectivity_info.dart'

@@ -188,7 +188,13 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
       ..text = hint ?? '';
     FocusNode hintFocusNode = FocusNode();
 
+    final hintNotContainPasswordValidator = Validation(
+        description: loc(context).routerPasswordRuleHintContainPassword,
+        validator: ((text) =>
+            !hintController.text.toLowerCase().contains(text.toLowerCase())));
     bool isPasswordValid = false;
+    bool isHintNotContainPassword =
+        hintNotContainPasswordValidator.validator(controller.text);
     showSubmitAppDialog(
       context,
       title: loc(context).routerPassword,
@@ -210,12 +216,29 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
               Validation(
                   description: loc(context).routerPasswordRuleSpecialChar,
                   validator: ((text) => SpecialCharCheckRule().validate(text))),
+              Validation(
+                  description: loc(context).routerPasswordRuleStartEndWithSpace,
+                  validator: ((text) =>
+                      NoSurroundWhitespaceRule().validate(text))),
+              Validation(
+                  description: loc(context).routerPasswordRuleConsecutiveChar,
+                  validator: ((text) => !ConsecutiveCharRule().validate(text))),
+              // Validation(
+              //     description:
+              //         loc(context).routerPasswordRuleUnsupportSpecialChar,
+              //     validator: ((text) => AsciiRule().validate(text))),
             ],
             controller: controller,
             headerText: loc(context).routerPasswordNew,
             onValidationChanged: (isValid) {
               setState(() {
                 isPasswordValid = isValid;
+              });
+            },
+            onChanged: (value) {
+              setState(() {
+                isHintNotContainPassword =
+                    hintNotContainPasswordValidator.validator(controller.text);
               });
             },
             onSubmitted: (_) {
@@ -228,12 +251,22 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
             controller: hintController,
             headerText: loc(context).routerPasswordHintOptional,
             focusNode: hintFocusNode,
-            onChanged: (value) {},
+            onChanged: (value) {
+              setState(() {
+                isHintNotContainPassword =
+                    hintNotContainPasswordValidator.validator(controller.text);
+              });
+            },
             onSubmitted: (_) {
-              if (isPasswordValid) {
+              if (isPasswordValid && isHintNotContainPassword) {
                 onSubmit();
               }
             },
+          ),
+          const AppGap.large2(),
+          AppValidatorWidget(
+            validations: [hintNotContainPasswordValidator],
+            textToValidate: controller.text,
           ),
         ],
       ),
@@ -241,7 +274,7 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
         await _save(newPassword: controller.text, hint: hintController.text);
       },
       checkPositiveEnabled: () {
-        return isPasswordValid;
+        return isPasswordValid && isHintNotContainPassword;
       },
     );
   }
@@ -283,7 +316,7 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
         .then<void>((_) {
       _success();
     }).onError((error, stackTrace) {
-      showFailedSnackBar(context, loc(context).generalError);
+      showFailedSnackBar(context, loc(context).invalidAdminPassword);
     });
   }
 

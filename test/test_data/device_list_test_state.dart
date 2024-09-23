@@ -782,3 +782,133 @@ const deviceListTestState = {
     }
   ]
 };
+
+const instantPrivacyDeviceListTestState1 = {
+  "devices": [
+    {
+      "deviceId": "290a9b5e-2e5d-452b-a18b-8cb4d6a303e3",
+      "name": "unknown",
+      "icon": "phone",
+      "upstreamDevice": "Room 2",
+      "upstreamDeviceID": "6ceb2fde-ca55-4567-bd43-d8ec5e5660f9",
+      "upstreamIcon": "routerMr7500",
+      "ipv4Address": "10.254.1.232",
+      "ipv6Address": "",
+      "macAddress": "AA:07:17:16:09:33",
+      "manufacturer": "",
+      "model": "",
+      "operatingSystem": "Android",
+      "band": "2.4GHz",
+      "signalStrength": -1,
+      "isOnline": true,
+      "isWired": false,
+      "type": "main",
+      "ssid": "ssid-1"
+    },
+    {
+      "deviceId": "737c5787-ee8d-4546-9c6a-e523e3c163af",
+      "name": "Network Device",
+      "icon": "gameConsole",
+      "upstreamDevice": "Room 1",
+      "upstreamDeviceID": "78705b46-ca02-8be2-af38-80691a202892",
+      "upstreamIcon": "routerMx5300",
+      "ipv4Address": "10.254.1.45",
+      "ipv6Address": "",
+      "macAddress": "5C:52:1E:5C:20:66",
+      "manufacturer": "Nintendo Co., Ltd.",
+      "model": "",
+      "operatingSystem": "",
+      "band": "5GHz",
+      "signalStrength": -66,
+      "isOnline": true,
+      "isWired": false,
+      "type": "main",
+      "ssid": "ssid-1"
+    },
+    {
+      "deviceId": "4d8921cb-cd9e-4967-be9f-59d17df9b9f3",
+      "name": "bosch-dishwasher-012120522899010831",
+      "icon": "unknown",
+      "upstreamDevice": "Room 1",
+      "upstreamDeviceID": "78705b46-ca02-8be2-af38-80691a202892",
+      "upstreamIcon": "routerMx5300",
+      "ipv4Address": "10.254.1.13",
+      "ipv6Address": "",
+      "macAddress": "C8:D7:78:59:C9:82",
+      "manufacturer": "",
+      "model": "",
+      "operatingSystem": "",
+      "band": "5GHz",
+      "signalStrength": -75,
+      "isOnline": true,
+      "isWired": false,
+      "type": "main",
+      "ssid": "ssid-2"
+    },
+  ]
+};
+
+const instantPrivacyDeviceListTestState2 = {
+  "devices": [
+    {
+      "deviceId": "af970fcb-29bb-4e63-a075-4b58bb6f45dd",
+      "name": "4KTV-3MUP",
+      "icon": "tv",
+      "upstreamDevice": "Room 1",
+      "upstreamDeviceID": "78705b46-ca02-8be2-af38-80691a202892",
+      "upstreamIcon": "routerMx5300",
+      "ipv4Address": "10.254.1.139",
+      "ipv6Address": "",
+      "macAddress": "48:9E:9D:1C:AD:39",
+      "manufacturer": "",
+      "model": "",
+      "operatingSystem": "Android",
+      "band": "5GHz",
+      "signalStrength": -110,
+      "isOnline": true,
+      "isWired": false,
+      "type": "main",
+      "ssid": "ssid-2"
+    },
+    {
+      "deviceId": "70a97071-9ade-497f-961d-cae7a948d696",
+      "name": "qmi-plug-tw02_mibt17E3",
+      "icon": "plug",
+      "upstreamDevice": "Room 2",
+      "upstreamDeviceID": "6ceb2fde-ca55-4567-bd43-d8ec5e5660f9",
+      "upstreamIcon": "routerMr7500",
+      "ipv4Address": "10.254.1.138",
+      "ipv6Address": "",
+      "macAddress": "D4:F0:EA:28:17:E3",
+      "manufacturer": "",
+      "model": "",
+      "operatingSystem": "",
+      "band": "2.4GHz",
+      "signalStrength": -62,
+      "isOnline": false,
+      "isWired": false,
+      "type": "main",
+      "ssid": "ssid2"
+    },
+    {
+      "deviceId": "577c8f2a-e6a2-4ae4-a5c5-f42df3926734",
+      "name": "dreame_vacuum_p2114a",
+      "icon": "vacuum",
+      "upstreamDevice": "Room 1",
+      "upstreamDeviceID": "78705b46-ca02-8be2-af38-80691a202892",
+      "upstreamIcon": "routerMx5300",
+      "ipv4Address": "10.254.1.21",
+      "ipv6Address": "",
+      "macAddress": "70:C9:32:2D:71:CD",
+      "manufacturer": "",
+      "model": "",
+      "operatingSystem": "",
+      "band": "2.4GHz",
+      "signalStrength": -43,
+      "isOnline": true,
+      "isWired": true,
+      "type": "main",
+      "ssid": ""
+    },
+  ]
+};
