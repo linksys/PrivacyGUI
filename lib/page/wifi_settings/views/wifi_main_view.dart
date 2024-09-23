@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/styled/styled_tab_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_view_provider.dart';
@@ -38,43 +39,57 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView> {
 
   @override
   Widget build(BuildContext context) {
-    return StyledAppPageView(
-        title: _subMenuLabel(_WiFiSubMenus.values[_selectMenuIndex]),
-        onBackTap: () async {
-          final isCurrentChanged =
-              ref.read(wifiViewProvider).isCurrentViewStateChanged;
-          if (isCurrentChanged && (await showUnsavedAlert(context) != true)) {
-            return;
-          }
-          context.pop();
-        },
-        menuWidget: ListView.builder(
-            shrinkWrap: true,
-            itemCount: _WiFiSubMenus.values.length,
-            itemBuilder: (context, index) {
-              return ListTile(
-                shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(100))),
-                onTap: () async {
-                  final isCurrentChanged =
-                      ref.read(wifiViewProvider).isCurrentViewStateChanged;
-                  if (isCurrentChanged &&
-                      (await showUnsavedAlert(context) != true)) {
-                    return;
-                  }
-                  setState(() {
-                    _selectMenuIndex = index;
-                  });
-                },
-                title: AppText.labelLarge(
-                  _subMenuLabel(_WiFiSubMenus.values[index]),
-                  color: index == _selectMenuIndex
-                      ? Theme.of(context).colorScheme.primary
-                      : null,
-                ),
-              );
-            }),
-        child: _content(_WiFiSubMenus.values[_selectMenuIndex]));
+    final tabs = [loc(context).wifi, loc(context).advanced];
+    final tabContents = [
+      WiFiListView(args: widget.args),
+      const WifiAdvancedSettingsView()
+    ];
+    return StyledAppTabPageView(
+      title: loc(context).incredibleWiFi,
+      onBackTap: () async {
+        final isCurrentChanged =
+            ref.read(wifiViewProvider).isCurrentViewStateChanged;
+        if (isCurrentChanged && (await showUnsavedAlert(context) != true)) {
+          return;
+        }
+        context.pop();
+      },
+      // menuWidget: ListView.builder(
+      //     shrinkWrap: true,
+      //     itemCount: _WiFiSubMenus.values.length,
+      //     itemBuilder: (context, index) {
+      //       return ListTile(
+      //         shape: const RoundedRectangleBorder(
+      //             borderRadius: BorderRadius.all(Radius.circular(100))),
+      //         onTap: () async {
+      //           final isCurrentChanged =
+      //               ref.read(wifiViewProvider).isCurrentViewStateChanged;
+      //           if (isCurrentChanged &&
+      //               (await showUnsavedAlert(context) != true)) {
+      //             return;
+      //           }
+      //           setState(() {
+      //             _selectMenuIndex = index;
+      //           });
+      //         },
+      //         title: AppText.labelLarge(
+      //           _subMenuLabel(_WiFiSubMenus.values[index]),
+      //           color: index == _selectMenuIndex
+      //               ? Theme.of(context).colorScheme.primary
+      //               : null,
+      //         ),
+      //       );
+      //     }),
+      tabs: tabs
+          .map((e) => AppTab(
+                title: e,
+              ))
+          .toList(),
+      tabContentViews: tabContents,
+      expandedHeight: 120,
+
+      // child: _content(_WiFiSubMenus.values[_selectMenuIndex]),
+    );
   }
 
   String _subMenuLabel(_WiFiSubMenus sub) => switch (sub) {

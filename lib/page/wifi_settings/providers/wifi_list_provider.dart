@@ -76,14 +76,8 @@ class WifiListNotifier extends Notifier<WiFiState> {
     );
   }
 
-  Future<WiFiState> save(WiFiListViewMode mode) {
-    final result = switch (mode) {
-      WiFiListViewMode.simple => state.mainWiFi
-          .map((e) => e.copyWith(
-              ssid: state.simpleWiFi.ssid, password: state.simpleWiFi.password))
-          .toList(),
-      WiFiListViewMode.advanced => state.mainWiFi,
-    }
+  Future<WiFiState> save() {
+    final result = state.mainWiFi
         .map((wifiItem) => NewRadioSettings(
               radioID: wifiItem.radioID.value,
               settings: RouterRadioSettings(
