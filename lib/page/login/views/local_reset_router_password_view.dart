@@ -9,6 +9,7 @@ import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_admin/providers/_providers.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
+import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/input_field/validator_widget.dart';
@@ -59,7 +60,7 @@ class _LocalResetRouterPasswordViewState
         crossAxisAlignment: CrossAxisAlignment.start,
         content: Center(
           child: SizedBox(
-            width: 289,
+            width: 4.col,
             child: AppCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

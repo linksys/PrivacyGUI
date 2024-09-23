@@ -51,9 +51,9 @@ class _LocalRouterRecoveryViewState
       scrollable: true,
       child: AppBasicLayout(
         content: Center(
-          child: AppCard(
-            child: SizedBox(
-              width: 289,
+          child: SizedBox(
+            width: 4.col,
+            child: AppCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
