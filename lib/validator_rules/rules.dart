@@ -74,6 +74,11 @@ class AsciiRule extends RegExValidationRule {
   RegExp get _rule => RegExp(r'^[\x20-\x7E]+$');
 }
 
+class ConsecutiveCharRule extends RegExValidationRule {
+  @override
+  RegExp get _rule => RegExp(r'(.)\1{1}');
+}
+
 class MACAddressRule extends RegExValidationRule {
   @override
   RegExp get _rule => RegExp(r"^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$");
