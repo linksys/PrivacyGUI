@@ -1,19 +1,21 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
+import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 
-class MenuHolder extends StatefulWidget {
+class MenuHolder extends ConsumerStatefulWidget {
   final Widget Function(BuildContext, MenuController) builder;
   const MenuHolder({super.key, required this.builder});
 
   @override
-  State<MenuHolder> createState() => _MenuHolderState();
+  ConsumerState<MenuHolder> createState() => _MenuHolderState();
 }
 
-class _MenuHolderState extends State<MenuHolder> {
+class _MenuHolderState extends ConsumerState<MenuHolder> {
   @override
   void initState() {
     super.initState();
@@ -22,6 +24,13 @@ class _MenuHolderState extends State<MenuHolder> {
   static final MenuController _controller = MenuController();
   @override
   Widget build(BuildContext context) {
+    // ref.listen(authProvider.select((value) => value.value?.loginType),
+    //     (previous, next) {
+    //   // reset to home once logged out
+    //   if (next == null || next == LoginType.none) {
+    //     _controller.select(NaviType.home);
+    //   }
+    // });
     Future.doWhile(() => !mounted).then((value) {
       final displayType = shellNavigatorKey.currentContext == null
           ? MenuDisplay.none

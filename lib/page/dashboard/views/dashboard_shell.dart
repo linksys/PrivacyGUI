@@ -114,7 +114,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
   }
 
   Widget _buildLayout() {
-    return ResponsiveLayout(desktop: _buildDesktop(), mobile: _buildMobile());
+    return widget.child;
   }
 
   Widget _buildDesktop() {
@@ -126,93 +126,10 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
 
     final showNavi = LinksysRoute.isShowNaviRail(context, pageRoute?.config);
     return widget.child;
-    return ResponsiveLayout.isOverLargeLayout(context)
-        ? Stack(
-            children: [
-              GestureDetector(
-                onTap: () {
-                  // if (increase()) {
-                  //   logger.d('Triggered!');
-                  //   context.pushNamed(RouteNamed.debug);
-                  // }
-                },
-                child: widget.child,
-              ),
-              if (showNavi)
-                Align(
-                  alignment: Alignment.topLeft,
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: ResponsiveLayout.isOverLargeLayout(context)
-                            ? ResponsiveLayout.naviRailWidth
-                            : ResponsiveLayout.naviRailWidthThin,
-                        child: DashboardNavigationRail(
-                          items: _dashboardNaviItems
-                              .map((e) => _createNavigationRailDestination(e))
-                              .toList(),
-                          onItemTapped: _onItemTapped,
-                          selected: _selectedIndex,
-                        ),
-                      ),
-                      const VerticalDivider(
-                        width: 1,
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          )
-        : Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              if (showNavi)
-                SizedBox(
-                  width: ResponsiveLayout.isOverLargeLayout(context)
-                      ? ResponsiveLayout.naviRailWidth
-                      : ResponsiveLayout.naviRailWidthThin,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: DashboardNavigationRail(
-                          items: _dashboardNaviItems
-                              .map((e) => _createNavigationRailDestination(e))
-                              .toList(),
-                          onItemTapped: _onItemTapped,
-                          selected: _selectedIndex,
-                        ),
-                      ),
-                      const VerticalDivider(
-                        width: 1,
-                      ),
-                    ],
-                  ),
-                ),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () {
-                    if (increase()) {
-                      logger.d('Triggered!');
-                      context.pushNamed(RouteNamed.debug);
-                    }
-                  },
-                  child: widget.child,
-                ),
-              ),
-            ],
-          );
   }
 
   Widget _buildMobile() {
-    return GestureDetector(
-      onTap: () {
-        if (increase()) {
-          logger.d('Triggered!');
-          context.pushNamed(RouteNamed.debug);
-        }
-      },
-      child: widget.child,
-    );
+    return widget.child;
   }
 
   void _onItemTapped(int index) {

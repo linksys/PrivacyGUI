@@ -359,6 +359,10 @@
   "routerPasswordRuleLowerUpper": "Upper and lowercase letters",
   "routerPasswordRuleOneNumber": "1 number",
   "routerPasswordRuleSpecialChar": "1 special character",
+  "routerPasswordRuleStartEndWithSpace": "Not start with space or end with space",
+  "routerPasswordRuleConsecutiveChar": "Not have the same character twice in a row",
+  "routerPasswordRuleUnsupportSpecialChar": "Not use unsupport special character",
+  "routerPasswordRuleHintContainPassword": "Hint can not contain password",
   "localNetwork": "Local Network",
   "advancedRouting": "Advanced Routing",
   "firewall": "Firewall",
@@ -905,5 +909,6 @@
   "safari": "Safari",
   "safariDesc": "Click <b>Show Details > visit this website</b>. A prompt will display, asking you to confirm that you want to visit the website. Click <b>Visit Website</b>",
   "questions": "Questions?",
-  "doNotShowThisAgain": "Don't show this page again"
+  "doNotShowThisAgain": "Don't show this page again",
+  "invalidAdminPassword": "Invalid admin password"
 }

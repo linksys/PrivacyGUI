@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
@@ -12,6 +13,7 @@ import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/bench_mark.dart';
+import 'package:privacy_gui/util/extensions.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final dashboardManagerProvider =
@@ -34,6 +36,7 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
     Map<String, dynamic>? getHealthCheckModuleData;
     Map<String, dynamic>? getSystemStats;
     Map<String, dynamic>? getEthernetPortConnections;
+    Map<String, dynamic>? getLocalTime;
 
     final result = pollingResult?.data;
     if (result != null) {
@@ -53,6 +56,7 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
       getEthernetPortConnections =
           (result[JNAPAction.getEthernetPortConnections] as JNAPSuccess?)
               ?.output;
+      getLocalTime = (result[JNAPAction.getLocalTime] as JNAPSuccess?)?.output;
     }
 
     var newState = const DashboardManagerState();
@@ -87,6 +91,17 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
       newState = newState.copyWith(
           lanConnections: lanPortConnections, wanConnection: wanPortConnection);
     }
+
+    String? timeString;
+    if (getLocalTime != null) {
+      timeString = getLocalTime['currentTime'];
+    }
+
+    final localTime = (timeString != null
+            ? DateFormat("yyyy-MM-ddThh:mm:ssZ").tryParse(timeString)
+            : DateTime.now())
+        ?.millisecondsSinceEpoch;
+    newState = newState.copyWith(localTime: localTime);
 
     final softSKUSettings = JNAPTransactionSuccessWrap.getResult(
         JNAPAction.getSoftSKUSettings, result ?? {});

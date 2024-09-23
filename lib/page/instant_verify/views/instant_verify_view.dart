@@ -1,7 +1,10 @@
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
+import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
+import 'package:privacy_gui/core/jnap/models/radio_info.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
@@ -19,12 +22,13 @@ import 'package:flutter/material.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/dashboard/views/components/shimmer.dart';
 import 'package:privacy_gui/page/health_check/_health_check.dart';
-import 'package:privacy_gui/page/instant_verify/providers/system_connectivity_provider.dart';
+import 'package:privacy_gui/page/instant_verify/providers/instant_verify_provider.dart';
 import 'package:privacy_gui/page/instant_verify/views/components/ping_network_modal.dart';
 import 'package:privacy_gui/page/instant_verify/views/components/speed_test_widget.dart';
 import 'package:privacy_gui/page/instant_verify/views/components/traceroute_modal.dart';
 import 'package:privacy_gui/page/instant_topology/_instant_topology.dart';
 import 'package:privacy_gui/page/instant_topology/views/model/tree_view_node.dart';
+import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
@@ -121,8 +125,11 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
     final devicesState = ref.watch(deviceManagerProvider);
     final uptime = DateFormatUtils.formatDuration(
         Duration(seconds: dashboardState.uptimes), context, true);
+    final localTime =
+        DateTime.fromMillisecondsSinceEpoch(dashboardState.localTime);
     final master = devicesState.masterDevice;
     return AppCard(
+        key: const ValueKey('deviceInfoCard'),
         padding: const EdgeInsets.symmetric(vertical: Spacing.large2),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -147,7 +154,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: Spacing.small2),
                         child: AppText.bodySmall(
-                            '${loc(context).systemTestDateFormat(DateTime.now())} | ${loc(context).systemTestDateTime(DateTime.now())}'),
+                            '${loc(context).systemTestDateFormat(localTime)} | ${loc(context).systemTestDateTime(localTime)}'),
                       ),
                     ],
                   ),
@@ -223,18 +230,23 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
             ),
             _appNoBoarderCard(
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Wrap(
-                    direction: Axis.vertical,
+                  Expanded(
+                      child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      AppText.bodySmall(loc(context).firmwareVersion),
+                      AppText.bodySmall(
+                        loc(context).firmwareVersion,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                       AppText.labelMedium(master.unit.firmwareVersion ?? '--'),
                     ],
-                  ),
+                  )),
                   SharedWidgets.nodeFirmwareStatusWidget(
-                      context, hasNewFirmware(ref), () {}),
+                      context, hasNewFirmware(ref), () {
+                    context.pushNamed(RouteNamed.firmwareUpdateDetail);
+                  }),
                 ],
               ),
             ),
@@ -260,6 +272,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
       child: ShimmerContainer(
         isLoading: isLoading,
         child: AppCard(
+            key: const ValueKey('portCard'),
             padding: EdgeInsets.zero,
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -374,7 +387,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
   }
 
   Widget _connectivityContentWidget(BuildContext context, WidgetRef ref) {
-    final systemConnectivityState = ref.watch(systemConnectivityProvider);
+    final systemConnectivityState = ref.watch(instantVerifyProvider);
     final dnsCount = systemConnectivityState.wanConnection?.dnsServer3 != null
         ? 3
         : systemConnectivityState.wanConnection?.dnsServer2 != null
@@ -382,6 +395,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
             : 1;
     final guestWiFi = systemConnectivityState.guestRadioSettings.radios.first;
     return AppCard(
+      key: const ValueKey('connectivityCard'),
       padding: const EdgeInsets.all(Spacing.large2),
       child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -448,7 +462,11 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         AppText.labelMedium(loc(context).wifi),
-                        _greenCircle(context)
+                        _greenCircle(
+                            context,
+                            !_isAllWiFiOff(
+                                systemConnectivityState.radioInfo.radios,
+                                systemConnectivityState.guestRadioSettings))
                       ],
                     ),
                   ),
@@ -502,7 +520,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
                 children: [
                   AppText.bodySmall(loc(context).wan),
                   AppText.labelMedium(
-                      '${systemConnectivityState.wanConnection?.ipAddress}'),
+                      systemConnectivityState.wanConnection?.ipAddress ?? '--'),
                 ],
               ),
             ),
@@ -526,7 +544,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
                 children: [
                   AppText.bodySmall(loc(context).connectionType),
                   AppText.labelMedium(
-                      '${systemConnectivityState.wanConnection?.wanType}'),
+                      systemConnectivityState.wanConnection?.wanType ?? '--'),
                 ],
               ),
             ),
@@ -548,6 +566,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
             ),
             const AppGap.large2(),
             AppCard(
+              key: const ValueKey('ping'),
               child: Row(
                 children: [
                   Expanded(child: AppText.labelMedium(loc(context).ping)),
@@ -563,6 +582,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
             ),
             const AppGap.small2(),
             AppCard(
+              key: const ValueKey('traceroute'),
               child: Row(
                 children: [
                   Expanded(child: AppText.labelMedium(loc(context).traceroute)),
@@ -583,6 +603,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
   Widget _speedTestContent(BuildContext context) {
     final isSupportedHealthCheck = serviceHelper.isSupportHealthCheck();
     return AppCard(
+      key: const ValueKey('speedTestCard'),
       padding: const EdgeInsets.all(Spacing.large2),
       child: Opacity(
         opacity: isSupportedHealthCheck ? 1 : .3,
@@ -619,6 +640,14 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
         child: child,
       );
 
+  bool _isAllWiFiOff(List<RouterRadio> radios, GuestRadioSettings guestRadio) {
+    final enabledList = [
+      ...radios.map((e) => e.settings.isEnabled),
+      guestRadio.isGuestNetworkEnabled
+    ];
+    return !enabledList.any((e) => e);
+  }
+
   _showPingNetworkModal(BuildContext context, WidgetRef ref) {
     showSimpleAppDialog(
       context,
@@ -638,9 +667,9 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
   }
 
   Future<void> _printPdf(BuildContext context, WidgetRef ref) async {
-    final topologyState = ref.read(topologyProvider);
+    final topologyState = ref.read(instantTopologyProvider);
     final nodeList = [
-      ...topologyState.onlineRoot.toFlatList(),
+      ...topologyState.root.toFlatList(),
       // ...topologyState.offlineRoot.toFlatList()
     ]..removeWhere((element) =>
         element is OnlineTopologyNode || element is OfflineTopologyNode);
@@ -678,7 +707,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
     final deviceManagerState = ref.read(deviceManagerProvider);
     final devicesState = ref.read(deviceManagerProvider);
     final healthCheckState = ref.read(healthCheckProvider);
-    final systemConnectivityState = ref.read(systemConnectivityProvider);
+    final systemConnectivityState = ref.read(instantVerifyProvider);
 
     final uptime = DateFormatUtils.formatDuration(
         Duration(seconds: dashboardState.uptimes), context);

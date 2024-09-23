@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/models/ping_status.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/instant_verify/providers/system_connectivity_provider.dart';
+import 'package:privacy_gui/page/instant_verify/providers/instant_verify_provider.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 
@@ -25,7 +25,7 @@ class _PingNetworkModalState extends ConsumerState<PingNetworkModal> {
   Widget build(BuildContext context) {
     return StreamBuilder<PingStatus>(
         stream: _isRunning
-            ? ref.read(systemConnectivityProvider.notifier).getPingStatus()
+            ? ref.read(instantVerifyProvider.notifier).getPingStatus()
             : null,
         builder: (context, snapshot) {
           return Column(
@@ -50,7 +50,7 @@ class _PingNetworkModalState extends ConsumerState<PingNetworkModal> {
                   AppTextButton(
                     loc(context).close,
                     onTap: () {
-                      ref.read(systemConnectivityProvider.notifier).stopPing();
+                      ref.read(instantVerifyProvider.notifier).stopPing();
                       context.pop();
                     },
                   ),
@@ -58,7 +58,7 @@ class _PingNetworkModalState extends ConsumerState<PingNetworkModal> {
                     'Ping',
                     onTap: () {
                       ref
-                          .read(systemConnectivityProvider.notifier)
+                          .read(instantVerifyProvider.notifier)
                           .ping(host: _controller.text, pingCount: 5);
                       setState(() {
                         _isRunning = true;

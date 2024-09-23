@@ -115,7 +115,9 @@ class _GuestWiFiSettingsViewState extends ConsumerState<GuestWiFiSettingsView> {
                 description: guest.ssid,
                 trailing: const Icon(LinksysIcons.edit),
                 onTap: () {
-                  _showGuestWiFiNameModal(guest.ssid);
+                  _showGuestWiFiNameModal(guest.ssid, (value) {
+                    ref.read(guestWifiProvider.notifier).setGuestSSID(value);
+                  });
                 },
               ),
               const AppGap.small2(),
@@ -139,7 +141,12 @@ class _GuestWiFiSettingsViewState extends ConsumerState<GuestWiFiSettingsView> {
                   semanticLabel: 'edit',
                 ),
                 onTap: () {
-                  _showGuestWifiPasswordModal(guest.password);
+                  _showGuestWifiPasswordModal(guest.password, (value) {
+                    ref
+                        .read(guestWifiProvider.notifier)
+                        .setGuestPassword(value);
+                    _guestPasswordController.text = value;
+                  });
                 },
               ),
             ],
@@ -147,7 +154,8 @@ class _GuestWiFiSettingsViewState extends ConsumerState<GuestWiFiSettingsView> {
         ));
   }
 
-  _showGuestWiFiNameModal(String initValue) async {
+  _showGuestWiFiNameModal(
+      String initValue, void Function(String) onEdited) async {
     TextEditingController controller = TextEditingController()
       ..text = initValue;
     bool isEmpty = initValue.isEmpty;
@@ -177,11 +185,12 @@ class _GuestWiFiSettingsViewState extends ConsumerState<GuestWiFiSettingsView> {
     );
 
     if (result != null) {
-      ref.read(guestWifiProvider.notifier).setGuestSSID(result);
+      onEdited.call(result);
     }
   }
 
-  _showGuestWifiPasswordModal(String initValue) async {
+  _showGuestWifiPasswordModal(
+      String initValue, void Function(String) onEdited) async {
     TextEditingController controller = TextEditingController()
       ..text = initValue;
     bool isEmpty = initValue.isEmpty;
@@ -211,7 +220,7 @@ class _GuestWiFiSettingsViewState extends ConsumerState<GuestWiFiSettingsView> {
     );
 
     if (result != null) {
-      ref.read(guestWifiProvider.notifier).setGuestPassword(result);
+      onEdited.call(result);
     }
   }
 }

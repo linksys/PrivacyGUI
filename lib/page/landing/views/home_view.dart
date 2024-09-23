@@ -75,7 +75,6 @@ class _HomeViewState extends ConsumerState<HomeView> {
             context.pushNamed(RouteNamed.localLoginPassword);
           } else {
             context.pushNamed(RouteNamed.cloudLoginAccount);
-            
           }
         },
       ),

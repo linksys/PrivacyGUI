@@ -23,6 +23,11 @@ class NavigationMenu extends StatefulWidget {
 
 class _NavigationMenuState extends State<NavigationMenu> {
   @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Row(
       children: widget.items
@@ -82,9 +87,6 @@ class _NavigationMenuState extends State<NavigationMenu> {
       selected: widget.selected == type,
       showCheckmark: false,
       onSelected: (value) {
-        if (widget.selected == type) {
-          return;
-        }
 
         widget.onItemClick?.call(widget.items.indexOf(type));
       },
