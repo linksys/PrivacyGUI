@@ -3,8 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/guest_wifi_provider.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/guest_wifi_state.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/guest_wifi_item.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_state.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_view_provider.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
@@ -19,19 +18,16 @@ import '../../../../test_data/_index.dart';
 void main() {
   late WiFiViewNotifier mockWiFiViewNotifier;
   late WifiListNotifier mockWiFiListNotifier;
-  late GuestWifiNotifier mockGuestWifiNotifier;
   late WifiAdvancedSettingsNotifier mockWiFiAdvancedSettingsNotifier;
 
   setUp(() {
     mockWiFiViewNotifier = MockWiFiViewNotifier();
     mockWiFiListNotifier = MockWifiListNotifier();
-    mockGuestWifiNotifier = MockGuestWifiNotifier();
     mockWiFiAdvancedSettingsNotifier = MockWifiAdvancedSettingsNotifier();
 
     when(mockWiFiListNotifier.build())
         .thenReturn(WiFiState.fromMap(wifiListTestState));
-    when(mockGuestWifiNotifier.build())
-        .thenReturn(GuestWiFiState.fromMap(guestWiFiTestState));
+    
     when(mockWiFiAdvancedSettingsNotifier.build()).thenReturn(
         WifiAdvancedSettingsState.fromMap(wifiAdvancedSettingsTestState));
 
@@ -39,10 +35,7 @@ void main() {
       await Future.delayed(Durations.extralong1);
       return WiFiState.fromMap(wifiListTestState);
     });
-    when(mockGuestWifiNotifier.fetch()).thenAnswer((realInvocation) async {
-      await Future.delayed(Durations.extralong1);
-      return GuestWiFiState.fromMap(guestWiFiTestState);
-    });
+
     when(mockWiFiAdvancedSettingsNotifier.fetch())
         .thenAnswer((realInvocation) async {
       await Future.delayed(Durations.extralong1);
@@ -57,7 +50,7 @@ void main() {
           wifiListProvider.overrideWith(() => mockWiFiListNotifier),
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
+          
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -74,7 +67,7 @@ void main() {
           wifiListProvider.overrideWith(() => mockWiFiListNotifier),
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
+          
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -94,7 +87,7 @@ void main() {
           wifiListProvider.overrideWith(() => mockWiFiListNotifier),
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
+          
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -114,7 +107,7 @@ void main() {
           wifiListProvider.overrideWith(() => mockWiFiListNotifier),
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
+          
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -134,7 +127,7 @@ void main() {
           wifiListProvider.overrideWith(() => mockWiFiListNotifier),
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
+          
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -154,7 +147,7 @@ void main() {
           wifiListProvider.overrideWith(() => mockWiFiListNotifier),
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
+          
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -174,7 +167,7 @@ void main() {
           wifiListProvider.overrideWith(() => mockWiFiListNotifier),
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
+          
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -194,7 +187,7 @@ void main() {
           wifiListProvider.overrideWith(() => mockWiFiListNotifier),
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
+          
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -213,14 +206,13 @@ void main() {
         await Future.delayed(Durations.extralong1);
         return WiFiState.fromMap(wifiListTestStateSimple);
       });
-      when(mockWiFiListNotifier.isAllBandsConsistent()).thenReturn(true);
       final widget = testableSingleRoute(
         overrides: [
           wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
           wifiListProvider.overrideWith(() => mockWiFiListNotifier),
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
+          
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -237,14 +229,13 @@ void main() {
         await Future.delayed(Durations.extralong1);
         return WiFiState.fromMap(wifiListTestStateSimple);
       });
-      when(mockWiFiListNotifier.isAllBandsConsistent()).thenReturn(true);
       final widget = testableSingleRoute(
         overrides: [
           wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
           wifiListProvider.overrideWith(() => mockWiFiListNotifier),
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
+          
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -264,14 +255,13 @@ void main() {
         await Future.delayed(Durations.extralong1);
         return WiFiState.fromMap(wifiListTestStateSimple);
       });
-      when(mockWiFiListNotifier.isAllBandsConsistent()).thenReturn(true);
       final widget = testableSingleRoute(
         overrides: [
           wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
           wifiListProvider.overrideWith(() => mockWiFiListNotifier),
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
+          
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -286,17 +276,14 @@ void main() {
 
   group('Guest WiFi', () {
     testLocalizations('Guest wifi view - disabled', (tester, locale) async {
-      when(mockGuestWifiNotifier.build()).thenReturn(
-          GuestWiFiState.fromMap(guestWiFiTestState)
-              .copyWith(isEnabled: false));
-
+      
       final widget = testableSingleRoute(
         overrides: [
           wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
           wifiListProvider.overrideWith(() => mockWiFiListNotifier),
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
+          
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -310,16 +297,14 @@ void main() {
     }, screens: responsiveDesktopScreens);
 
     testLocalizations('Guest wifi view - disabled', (tester, locale) async {
-      when(mockGuestWifiNotifier.build()).thenReturn(
-          GuestWiFiState.fromMap(guestWiFiTestState)
-              .copyWith(isEnabled: false));
+      
       final widget = testableSingleRoute(
         overrides: [
           wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
           wifiListProvider.overrideWith(() => mockWiFiListNotifier),
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
+          
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -332,8 +317,6 @@ void main() {
       final listTileFinder = find.byType(ListTile);
       await tester.tap(listTileFinder.at(1));
       await tester.pumpAndSettle();
-      await tester.tapAt(tester.getCenter(find.byType(GuestWiFiSettingsView)));
-      await tester.pumpAndSettle();
     }, screens: responsiveMobileScreens);
 
     testLocalizations('Guest wifi view - enabled', (tester, locale) async {
@@ -343,7 +326,7 @@ void main() {
           wifiListProvider.overrideWith(() => mockWiFiListNotifier),
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
+          
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -363,7 +346,7 @@ void main() {
           wifiListProvider.overrideWith(() => mockWiFiListNotifier),
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
+          
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -376,8 +359,7 @@ void main() {
       final listTileFinder = find.byType(ListTile);
       await tester.tap(listTileFinder.at(1));
       await tester.pumpAndSettle();
-      await tester.tapAt(tester.getCenter(find.byType(GuestWiFiSettingsView)));
-      await tester.pumpAndSettle();
+
     }, screens: responsiveMobileScreens);
 
     testLocalizations('Guest wifi view - edit guest ssid',
@@ -388,7 +370,6 @@ void main() {
           wifiListProvider.overrideWith(() => mockWiFiListNotifier),
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -412,7 +393,6 @@ void main() {
           wifiListProvider.overrideWith(() => mockWiFiListNotifier),
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -424,8 +404,6 @@ void main() {
       await tester.pumpAndSettle();
       final listTileFinder = find.byType(ListTile);
       await tester.tap(listTileFinder.at(1));
-      await tester.pumpAndSettle();
-      await tester.tapAt(tester.getCenter(find.byType(GuestWiFiSettingsView)));
       await tester.pumpAndSettle();
       final editFinder = find.byIcon(LinksysIcons.edit);
       await tester.tap(editFinder.first);
@@ -440,7 +418,6 @@ void main() {
           wifiListProvider.overrideWith(() => mockWiFiListNotifier),
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -464,7 +441,7 @@ void main() {
           wifiListProvider.overrideWith(() => mockWiFiListNotifier),
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
+          
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -476,8 +453,6 @@ void main() {
       await tester.pumpAndSettle();
       final listTileFinder = find.byType(ListTile);
       await tester.tap(listTileFinder.at(1));
-      await tester.pumpAndSettle();
-      await tester.tapAt(tester.getCenter(find.byType(GuestWiFiSettingsView)));
       await tester.pumpAndSettle();
       final editFinder = find.byIcon(LinksysIcons.edit);
       await tester.tap(editFinder.at(1));
@@ -493,7 +468,7 @@ void main() {
           wifiListProvider.overrideWith(() => mockWiFiListNotifier),
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
+          
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -513,7 +488,7 @@ void main() {
           wifiListProvider.overrideWith(() => mockWiFiListNotifier),
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
+          
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -543,7 +518,7 @@ void main() {
           wifiListProvider.overrideWith(() => mockWiFiListNotifier),
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
+          
         ],
         locale: locale,
         child: const WiFiMainView(),
@@ -576,7 +551,7 @@ void main() {
           wifiListProvider.overrideWith(() => mockWiFiListNotifier),
           wifiAdvancedProvider
               .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          guestWifiProvider.overrideWith(() => mockGuestWifiNotifier),
+          
         ],
         locale: locale,
         child: const WiFiMainView(),

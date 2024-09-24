@@ -91,16 +91,4 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView> {
       // child: _content(_WiFiSubMenus.values[_selectMenuIndex]),
     );
   }
-
-  String _subMenuLabel(_WiFiSubMenus sub) => switch (sub) {
-        _WiFiSubMenus.wifi => loc(context).wifi,
-        _WiFiSubMenus.guest => loc(context).guestWifi,
-        _WiFiSubMenus.advanced => loc(context).advanced,
-      };
-
-  Widget _content(_WiFiSubMenus sub) => switch (sub) {
-        _WiFiSubMenus.wifi => WiFiListView(args: widget.args),
-        _WiFiSubMenus.guest => const GuestWiFiSettingsView(),
-        _WiFiSubMenus.advanced => const WifiAdvancedSettingsView(),
-      };
 }

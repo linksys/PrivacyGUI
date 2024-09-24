@@ -9,7 +9,6 @@ export 'dmz_setting_notifier_mocks.dart';
 export 'external_device_detail_notifier_mocks.dart';
 export 'firewall_notifier_mocks.dart';
 export 'firmware_update_notifier_mocks.dart';
-export 'guest_wifi_notifier_mocks.dart';
 export 'health_check_provider_mocks.dart';
 export 'instant_privacy_provider_mocks.dart';
 export 'internet_settings_notifier_mocks.dart';
