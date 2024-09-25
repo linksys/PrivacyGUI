@@ -128,6 +128,22 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
       List<DeviceListItem> filteredDeviceList) {
     return StyledAppTabPageView(
       title: state.location,
+      actions: [
+        AnimatedRefreshContainer(
+          builder: (controller) {
+            return AppTextButton.noPadding(
+              loc(context).refresh,
+              icon: LinksysIcons.refresh,
+              onTap: () {
+                controller.repeat();
+                ref.read(pollingProvider.notifier).forcePolling().then((value) {
+                  controller.stop();
+                });
+              },
+            );
+          },
+        ),
+      ],
       tabs: [
         Tab(
           text: loc(context).info,
@@ -192,50 +208,51 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
             ),
             const AppGap.medium(),
             ResponsiveLayout(
-                desktop: AppPopupButton(
-                  button: Row(
-                    children: [
-                      Icon(
-                        LinksysIcons.filter,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      const AppGap.small2(),
-                      AppText.labelLarge(
-                        loc(context).filters,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ],
-                  ),
-                  borderRadius: const BorderRadius.all(Radius.circular(10)),
-                  backgroundColor: Theme.of(context).colorScheme.background,
-                  builder: (controller) {
-                    return Container(
-                      constraints:
-                          BoxConstraints(minWidth: 3.col, maxWidth: 7.col),
+              desktop: AppPopupButton(
+                button: Row(
+                  children: [
+                    Icon(
+                      LinksysIcons.filter,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const AppGap.small2(),
+                    AppText.labelLarge(
+                      loc(context).filters,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ],
+                ),
+                borderRadius: const BorderRadius.all(Radius.circular(10)),
+                backgroundColor: Theme.of(context).colorScheme.background,
+                builder: (controller) {
+                  return Container(
+                    constraints:
+                        BoxConstraints(minWidth: 3.col, maxWidth: 7.col),
+                    child: DevicesFilterWidget(
+                      preselectedNodeId: [deviceId],
+                    ),
+                  );
+                },
+              ),
+              mobile: AppIconButton.noPadding(
+                icon: LinksysIcons.filter,
+                color: Theme.of(context).colorScheme.primary,
+                onTap: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    useRootNavigator: true,
+                    builder: (context) => Container(
+                      padding: const EdgeInsets.all(Spacing.large2),
+                      width: double.infinity,
                       child: DevicesFilterWidget(
                         preselectedNodeId: [deviceId],
                       ),
-                    );
-                  },
-                ),
-                mobile: AppIconButton.noPadding(
-                  icon: LinksysIcons.filter,
-                  color: Theme.of(context).colorScheme.primary,
-                  onTap: () {
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      useRootNavigator: true,
-                      builder: (context) => Container(
-                        padding: const EdgeInsets.all(Spacing.large2),
-                        width: double.infinity,
-                        child: DevicesFilterWidget(
-                          preselectedNodeId: [deviceId],
-                        ),
-                      ),
-                    );
-                  },
-                )),
+                    ),
+                  );
+                },
+              ),
+            ),
           ],
         ),
         const AppGap.medium(),
@@ -271,7 +288,6 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
                       context.pop();
                       doSomethingWithSpinner(
                         context,
-                        // Future.delayed(const Duration(seconds: 5)),
                         ref
                             .read(deviceManagerProvider.notifier)
                             .deleteDevices(deviceIds: [device.deviceId]),
@@ -356,7 +372,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
     if (!serviceHelper.isSupportLedMode()) {
       return [];
     } else {
-      final title = loc(context).nightMode;
+      final title = loc(context).nodeLight;
       return [
         AppSettingCard(
           key: const ValueKey('nodeLightSettings'),

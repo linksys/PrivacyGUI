@@ -5,7 +5,6 @@ import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/utils/icon_device_category.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_provider.dart';
 import 'package:privacy_gui/page/components/shared_widgets.dart';
@@ -42,6 +41,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
   final TextEditingController _deviceNameController = TextEditingController();
   late int _iconIndex;
   String? _errorMessage;
+  bool? isReservedIp;
 
   @override
   void dispose() {
@@ -53,11 +53,24 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
   void initState() {
     super.initState();
     _iconIndex = _getCurrentIconIndex();
+
+    // Fetch lan setting
+    ref.read(localNetworkSettingProvider.notifier).fetch();
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(externalDeviceDetailProvider);
+    final dhcpReservationList = ref.watch(localNetworkSettingProvider
+        .select((value) => value.dhcpReservationList));
+    final dhcpReservationItem = DHCPReservation(
+      description: state.item.name.replaceAll(RegExp(r' '), ''),
+      ipAddress: state.item.ipv4Address,
+      macAddress: state.item.macAddress,
+    );
+    setState(() {
+      isReservedIp = dhcpReservationList.contains(dhcpReservationItem);
+    });
     return LayoutBuilder(
       builder: (context, constraint) {
         return StyledAppPageView(
@@ -66,7 +79,9 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
           scrollable: true,
           child: AppBasicLayout(
             content: ResponsiveLayout(
-                desktop: _desktopLayout(state), mobile: _mobileLayout(state)),
+              desktop: _desktopLayout(state),
+              mobile: _mobileLayout(state),
+            ),
           ),
         );
       },
@@ -110,6 +125,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
   Widget _avatarCard(ExternalDeviceDetailState state) {
     return AppCard(
       padding: const EdgeInsets.all(Spacing.small2),
+      color: Theme.of(context).colorScheme.background,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -124,6 +140,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
           ),
           AppSettingCard.noBorder(
             padding: const EdgeInsets.all(Spacing.medium),
+            color: Theme.of(context).colorScheme.background,
             title: state.item.name,
             trailing: AppIconButton(
               icon: LinksysIcons.edit,
@@ -133,11 +150,13 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
           ),
           AppSettingCard.noBorder(
             padding: const EdgeInsets.all(Spacing.medium),
+            color: Theme.of(context).colorScheme.background,
             title: loc(context).manufacturer,
             description: _formatEmptyValue(state.item.manufacturer),
           ),
           AppSettingCard.noBorder(
             padding: const EdgeInsets.all(Spacing.medium),
+            color: Theme.of(context).colorScheme.background,
             title: loc(context).device,
             description: _formatEmptyValue(state.item.model),
           ),
@@ -199,12 +218,17 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
               horizontal: Spacing.large2, vertical: Spacing.medium),
           title: loc(context).ipAddress,
           description: _formatEmptyValue(state.item.ipv4Address),
-          trailing: state.item.isOnline
+          trailing: state.item.isOnline && isReservedIp != null
               ? AppLoadableWidget.textButton(
-                  title: loc(context).reserveDHCP,
-                  semanticsLabel: 'reserve DHCP',
+                  title: isReservedIp == true
+                      ? loc(context).releaseReservedIp
+                      : loc(context).reserveIp,
+                  semanticsLabel: isReservedIp == true
+                      ? 'release reserved ip'
+                      : 'reserved ip',
+                  padding: const EdgeInsets.only(),
                   onTap: () async {
-                    await handleReserveDhcp(state.item);
+                    await handleReserveDhcp(state.item, isReservedIp!);
                   },
                 )
               : null,
@@ -363,48 +387,55 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
     return (value == null || value.isEmpty) ? '--' : value;
   }
 
-  Future<dynamic> handleReserveDhcp(DeviceListItem item) async {
+  Future<dynamic> handleReserveDhcp(
+      DeviceListItem item, bool isReservedIp) async {
     final notifier = ref.read(localNetworkSettingProvider.notifier);
-    // Fetch lan setting
-    await notifier.fetch();
-    final dhcpReservationList =
-        ref.read(localNetworkSettingProvider).dhcpReservationList;
     final dhcpReservationItem = DHCPReservation(
       description: item.name.replaceAll(RegExp(r' '), ''),
       ipAddress: item.ipv4Address,
       macAddress: item.macAddress,
     );
-    if (dhcpReservationList.contains(dhcpReservationItem)) {
-      // Show alert to delete
-      final delete = await _showDeleteAlert();
+    if (isReservedIp) {
+      // Show dialog to release
+      final delete = await _showResevedIpDialog(isReservedIp);
       if (delete) {
+        final dhcpReservationList =
+            ref.read(localNetworkSettingProvider).dhcpReservationList;
         final index = dhcpReservationList.indexOf(dhcpReservationItem);
         notifier.updateDHCPReservationOfIndex(
             dhcpReservationItem.copyWith(ipAddress: 'DELETE'), index);
         await _saveDhcpResevervationSetting();
       }
     } else {
-      final isOverlap =
-          notifier.isReservationOverlap(item: dhcpReservationItem);
-      if (isOverlap) {
-        // Show overlap
-        showFailedSnackBar(
-          context,
-          loc(context).ipOrMacAddressOverlap,
-        );
-      } else {
-        // Save setting
-        notifier.updateDHCPReservationList([dhcpReservationItem]);
-        await _saveDhcpResevervationSetting();
+      // Show dialog to release
+      final reserve = await _showResevedIpDialog(isReservedIp);
+      if (reserve) {
+        final isOverlap =
+            notifier.isReservationOverlap(item: dhcpReservationItem);
+        if (isOverlap) {
+          // Show overlap
+          showFailedSnackBar(
+            context,
+            loc(context).ipOrMacAddressOverlap,
+          );
+        } else {
+          // Save setting
+          notifier.updateDHCPReservationList([dhcpReservationItem]);
+          await _saveDhcpResevervationSetting();
+        }
       }
     }
   }
 
-  Future<bool> _showDeleteAlert() async {
+  Future<bool> _showResevedIpDialog(bool isReservedIp) async {
     return await showSimpleAppDialog(
       context,
-      title: loc(context).deleteReservation,
-      content: AppText.bodyMedium(loc(context).thisActionCannotBeUndone),
+      title: isReservedIp
+          ? loc(context).releaseReservedIp
+          : loc(context).reserveIp,
+      content: AppText.bodyMedium(isReservedIp
+          ? loc(context).releaseReservedIpDescription
+          : loc(context).reservedIpDescription),
       actions: [
         AppTextButton(
           loc(context).cancel,
@@ -414,8 +445,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
           },
         ),
         AppTextButton(
-          loc(context).delete,
-          color: Theme.of(context).colorScheme.error,
+          isReservedIp ? loc(context).okay : loc(context).reserveIp,
           onTap: () {
             context.pop(true);
           },
