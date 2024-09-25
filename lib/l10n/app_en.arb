@@ -910,5 +910,14 @@
   "safariDesc": "Click <b>Show Details > visit this website</b>. A prompt will display, asking you to confirm that you want to visit the website. Click <b>Visit Website</b>",
   "questions": "Questions?",
   "doNotShowThisAgain": "Don't show this page again",
-  "invalidAdminPassword": "Invalid admin password"
+  "invalidAdminPassword": "Invalid admin password",
+  "deviceDeleted": "Device deleted.",
+  "options": "Options",
+  "selectToDelete": "Select to Delete",
+  "deselectAll": "Deselect All",
+  "reserveIp": "Reserve IP",
+  "reservedIpDescription": "Reserving DHCP means your device will always be assigned to this specific IP address.",
+  "releaseReservedIp": "Release Reserved IP",
+  "releaseReservedIpDescription": "Once IP reservation is released your device will obtain a different IP address upon reconnecting."
+  
 }
