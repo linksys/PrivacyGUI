@@ -44,6 +44,10 @@ void _updateBetterActions(JNAPService service) {
       _betterActionMap[JNAPAction.coreSetAdminPassword] =
           _JNAPActionValue.coreSetAdminPassword3.value;
       break;
+    case JNAPService.core8:
+      break;
+    case JNAPService.core9:
+      break;
     case JNAPService.ddns:
       break;
     case JNAPService.ddns2:
@@ -380,8 +384,11 @@ void initBetterActions() {
   _betterActionMap[JNAPAction.isServiceSupported] =
       _JNAPActionValue.isServiceSupported.value;
   _betterActionMap[JNAPAction.reboot] = _JNAPActionValue.reboot.value;
+  _betterActionMap[JNAPAction.reboot2] = _JNAPActionValue.reboot2.value;
   _betterActionMap[JNAPAction.factoryReset] =
       _JNAPActionValue.factoryReset.value;
+  _betterActionMap[JNAPAction.factoryReset2] =
+      _JNAPActionValue.factoryReset2.value;
   _betterActionMap[JNAPAction.getDDNSSettings] =
       _JNAPActionValue.getDDNSSettings.value;
   _betterActionMap[JNAPAction.getDDNSStatus] =

@@ -477,4 +477,10 @@ class LinksysCloudRepository {
     return loadSessionToken().then((token) =>
         _httpClient.deleteSession(sessionId: sessionId, token: token));
   }
+
+  // Geolocation
+  Future getGeolocation({required String linksysToken, required String serialNumber,}) {
+    return _httpClient.geolocation(
+        linksysToken: linksysToken, serialNumber: serialNumber);
+  }
 }

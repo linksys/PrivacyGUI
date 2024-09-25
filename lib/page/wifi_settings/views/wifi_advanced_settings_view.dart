@@ -28,18 +28,15 @@ class _WifiAdvancedSettingsViewState
   void initState() {
     super.initState();
 
-    doSomethingWithSpinner(
-      context,
-      ref.read(wifiAdvancedProvider.notifier).fetch().then(
-        (state) {
-          ref.read(wifiViewProvider.notifier).setChanged(false);
-          setState(
-            () {
-              _preservedState = state;
-            },
-          );
-        },
-      ),
+    ref.read(wifiAdvancedProvider.notifier).fetch().then(
+      (state) {
+        ref.read(wifiViewProvider.notifier).setChanged(false);
+        setState(
+          () {
+            _preservedState = state;
+          },
+        );
+      },
     );
   }
 

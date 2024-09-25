@@ -394,7 +394,11 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
         ),
         onTap: () {
           _showWirelessWiFiModeModal(radio.wirelessMode, radio.defaultMixedMode,
-              radio.availableWirelessModes, (value) {});
+              radio.availableWirelessModes, (value) {
+            ref
+                .read(wifiListProvider.notifier)
+                .setWiFiMode(value, radio.radioID);
+          });
         },
       );
 
