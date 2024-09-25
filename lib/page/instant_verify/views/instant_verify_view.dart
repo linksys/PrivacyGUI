@@ -730,8 +730,8 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
         pw.Text('${loc(context).macAddress}: ${master.getMacAddress()}'),
         pw.Text(
             '${loc(context).firmwareVersion}: ${master.unit.firmwareVersion ?? '--'}'),
-        pw.Text('CPU Utilization: ####'),
-        pw.Text('Memory Utilization: ####'),
+        // pw.Text('CPU Utilization: ####'),
+        // pw.Text('Memory Utilization: ####'),
         pw.Divider(height: Spacing.medium),
         //
         pw.Text(loc(context).connectivity),
