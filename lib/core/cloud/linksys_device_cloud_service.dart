@@ -111,7 +111,6 @@ class DeviceCloudService {
               jsonDecode(response.body)['clientDevice']['linksysToken'],
         )
         .onError((error, stackTrace) {
-      logger.d('XXXXXX: $error');
       throw error!;
     });
     return linksysToken;
