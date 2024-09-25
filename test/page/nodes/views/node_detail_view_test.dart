@@ -11,7 +11,7 @@ import 'package:mockito/mockito.dart';
 
 import '../../../common/_index.dart';
 import '../../../mocks/firmware_update_notifier_mocks.dart';
-import '../../../mocks/jnap_service_helper_spec_mocks.dart';
+import '../../../mocks/jnap_service_helper_mocks.dart';
 import '../../../test_data/node_details_data.dart';
 import '../../../mocks/node_detail_notifier_mocks.dart';
 
@@ -41,7 +41,7 @@ void main() {
         ],
         child: const NodeDetailView());
     await tester.pumpWidget(widget);
-    
+
     final nameFinder = find.text('Router123');
     expect(nameFinder, findsNWidgets(2));
   }, variants: responsiveMobileVariants);

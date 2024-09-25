@@ -30,3 +30,5 @@ const pUserPassword = 'UserPassword';
 const pUsername = 'Username';
 const pLocalPassword = 'LocalPassword';
 const pBiometrics = 'Biometrics';
+const pLinksysToken = 'LinksysToken';
+const pLinksysTokenTs = 'LinksysTokenTs';

@@ -146,4 +146,14 @@ class MockServiceHelper extends _i1.Mock implements _i2.ServiceHelper {
         returnValue: false,
         returnValueForMissingStub: false,
       ) as bool);
+
+  @override
+  bool isSupportChildReboot([List<String>? services]) => (super.noSuchMethod(
+        Invocation.method(
+          #isSupportChildReboot,
+          [services],
+        ),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
 }

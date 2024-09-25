@@ -2,14 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
-import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
 import 'package:privacy_gui/page/dashboard/views/components/shimmer.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/guest_wifi_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -86,23 +84,16 @@ class DashboardWiFiGrid extends ConsumerWidget {
                 onChanged: (value) async {
                   if (item.isGuest) {
                     showSpinnerDialog(context);
-                    final guestWiFiProvider =
-                        ref.read(guestWifiProvider.notifier);
-                    await guestWiFiProvider.fetch();
-                    guestWiFiProvider.setEnable(value);
-                    await guestWiFiProvider
-                        .save()
-                        .then((value) =>
-                            ref.read(pollingProvider.notifier).forcePolling())
-                        .then((value) => context.pop());
+                    final wifiProvider = ref.read(wifiListProvider.notifier);
+                    await wifiProvider.fetch();
+                    wifiProvider.setWiFiEnabled(value);
+                    await wifiProvider.save().then((value) => context.pop());
                   } else {
                     showSpinnerDialog(context);
                     final wifiProvider = ref.read(wifiListProvider.notifier);
                     await wifiProvider.fetch();
                     await wifiProvider
                         .saveToggleEnabled(radios: item.radios, enabled: value)
-                        .then((value) =>
-                            ref.read(pollingProvider.notifier).forcePolling())
                         .then((value) => context.pop());
                   }
                 },

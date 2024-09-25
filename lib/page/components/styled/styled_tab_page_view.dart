@@ -56,14 +56,18 @@ class StyledAppTabPageView extends ConsumerWidget {
         .last as LinksysRoute?;
     final config = pageRoute?.config;
     return useMainPadding
-        ? AppResponsiveColumnLayout(
-            column: config?.column?.column,
-            centered: config?.column?.centered ?? false,
-            isShowNaviRail: LinksysRoute.isShowNaviRail(context, config),
-            // topWidget: const TopBar(),
-            builder: () => buildMainContent(context, ref),
-            // showColumnOverlay: showColumnOverlay,
-          )
+        ? ValueListenableBuilder<bool>(
+            valueListenable: showColumnOverlayNotifier,
+            builder: (context, showColumnOverlay, _) {
+              return AppResponsiveColumnLayout(
+                column: config?.column?.column,
+                centered: config?.column?.centered ?? false,
+                isShowNaviRail: LinksysRoute.isShowNaviRail(context, config),
+                // topWidget: const TopBar(),
+                builder: () => buildMainContent(context, ref),
+                showColumnOverlay: showColumnOverlay,
+              );
+            })
         : buildMainContent(context, ref);
   }
 

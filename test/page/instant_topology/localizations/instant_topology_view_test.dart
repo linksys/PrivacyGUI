@@ -9,7 +9,7 @@ import 'package:privacy_gui/page/instant_topology/views/instant_topology_view.da
 
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
-import '../../../mocks/jnap_service_helper_spec_mocks.dart';
+import '../../../mocks/jnap_service_helper_mocks.dart';
 import '../../../test_data/topology_data.dart';
 import '../../../mocks/instant_topology_notifier_mocks.dart';
 

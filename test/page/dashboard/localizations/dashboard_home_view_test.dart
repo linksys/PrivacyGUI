@@ -20,7 +20,7 @@ import '../../../common/config.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
 import '../../../mocks/_index.dart';
-import '../../../mocks/jnap_service_helper_spec_mocks.dart';
+import '../../../mocks/jnap_service_helper_mocks.dart';
 import '../../../test_data/_index.dart';
 
 void main() async {

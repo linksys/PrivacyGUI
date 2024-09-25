@@ -5,7 +5,7 @@ import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/hook/icon_hooks.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/theme/custom_theme.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/text/app_text.dart';
 
@@ -69,5 +69,10 @@ abstract class SharedWidgets {
         ],
       ),
     );
+  }
+
+  static geolocationWidget(BuildContext context, String name, String region, String countryCode) {
+    return AppStyledText.bold('<b>$name</b> • $region, $countryCode',
+        defaultTextStyle: Theme.of(context).textTheme.bodyMedium!, tags: const ['b']);
   }
 }

@@ -343,6 +343,8 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       await storage.delete(key: pLocalPassword);
       await storage.delete(key: pUsername);
       await storage.delete(key: pUserPassword);
+      await storage.delete(key: pLinksysToken);
+      await storage.delete(key: pLinksysTokenTs);
 
       // RA sessions
       bool raMode = prefs.getBool(pRAMode) ?? false;
