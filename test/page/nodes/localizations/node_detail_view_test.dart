@@ -16,7 +16,7 @@ import '../../../common/config.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
 import '../../../mocks/_index.dart';
-import '../../../mocks/jnap_service_helper_spec_mocks.dart';
+import '../../../mocks/jnap_service_helper_mocks.dart';
 import '../../../test_data/device_filter_config_test_state.dart';
 import '../../../test_data/firmware_update_test_state.dart';
 import '../../../test_data/node_details_data.dart';

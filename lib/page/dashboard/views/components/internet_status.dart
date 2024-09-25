@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/shared_widgets.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -28,6 +30,7 @@ class _InternetConnectionWidgetState
     final isLoading = ref
         .watch(deviceManagerProvider.select((value) => value.deviceList))
         .isEmpty;
+    final geolocationState = ref.watch(geolocationProvider);
     return AppCard(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
@@ -52,10 +55,11 @@ class _InternetConnectionWidgetState
               AnimatedOpacity(
                 opacity: isFirstPolling ? 0.0 : 1.0,
                 duration: const Duration(milliseconds: 500),
-                child: Row(
+                child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Icon(
                           Icons.circle,
@@ -64,10 +68,27 @@ class _InternetConnectionWidgetState
                               : Theme.of(context).colorScheme.surfaceVariant,
                         ),
                         const AppGap.small2(),
-                        AppText.titleSmall(
-                          isOnline
-                              ? loc(context).internetOnline
-                              : loc(context).internetOffline,
+                        Expanded(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              AppText.titleSmall(
+                                isOnline
+                                    ? loc(context).internetOnline
+                                    : loc(context).internetOffline,
+                              ),
+                              if (geolocationState.value?.name.isNotEmpty ==
+                                  true) ...[
+                                const AppGap.small2(),
+                                SharedWidgets.geolocationWidget(
+                                    context,
+                                    geolocationState.value?.name ?? '',
+                                    geolocationState.value?.region ?? '',
+                                    geolocationState.value?.countryCode ?? ''),
+                              ],
+                            ],
+                          ),
                         ),
                       ],
                     ),

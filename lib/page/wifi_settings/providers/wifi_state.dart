@@ -4,36 +4,37 @@ import 'dart:convert';
 import 'package:equatable/equatable.dart';
 
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/guest_wifi_item.dart';
 
 class WiFiState extends Equatable {
   final List<WiFiItem> mainWiFi;
-  final WiFiItem simpleWiFi;
+  final GuestWiFiItem guestWiFi;
 
   const WiFiState({
     required this.mainWiFi,
-    required this.simpleWiFi,
+    required this.guestWiFi,
   });
 
   WiFiState copyWith({
     List<WiFiItem>? mainWiFi,
-    WiFiItem? simpleWiFi,
+    GuestWiFiItem? guestWiFi,
   }) {
     return WiFiState(
       mainWiFi: mainWiFi ?? this.mainWiFi,
-      simpleWiFi: simpleWiFi ?? this.simpleWiFi,
+      guestWiFi: guestWiFi ?? this.guestWiFi,
     );
   }
 
   @override
   List<Object> get props => [
         mainWiFi,
-        simpleWiFi,
+        guestWiFi,
       ];
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'mainWiFi': mainWiFi.map((x) => x.toMap()).toList(),
-      'simpleWiFi': simpleWiFi.toMap(),
+      'guestWiFi': guestWiFi.toMap(),
     };
   }
 
@@ -44,7 +45,7 @@ class WiFiState extends Equatable {
           (x) => WiFiItem.fromMap(x),
         ),
       ),
-      simpleWiFi: WiFiItem.fromMap(map['simpleWiFi']),
+      guestWiFi: GuestWiFiItem.fromMap(map['guestWiFi']),
     );
   }
 

@@ -10,8 +10,6 @@ import 'package:mockito/mockito.dart' as _i1;
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart' as _i4;
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_state.dart'
     as _i3;
-import 'package:privacy_gui/page/wifi_settings/views/wifi_list_view.dart'
-    as _i6;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -50,7 +48,7 @@ class _FakeWiFiState_1 extends _i1.SmartFake implements _i3.WiFiState {
 /// A class which mocks [WifiListNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockWifiListNotifier extends _i2.Notifier<_i3.WiFiState> with _i1.Mock implements _i4.WifiListNotifier {
+class MockWifiListNotifier extends _i2.Notifier<_i3.WiFiState> with  _i1.Mock implements _i4.WifiListNotifier {
   @override
   _i2.NotifierProviderRef<_i3.WiFiState> get ref => (super.noSuchMethod(
         Invocation.getter(#ref),
@@ -132,17 +130,16 @@ class MockWifiListNotifier extends _i2.Notifier<_i3.WiFiState> with _i1.Mock imp
       ) as _i5.Future<_i3.WiFiState>);
 
   @override
-  _i5.Future<_i3.WiFiState> save(_i6.WiFiListViewMode? mode) =>
-      (super.noSuchMethod(
+  _i5.Future<_i3.WiFiState> save() => (super.noSuchMethod(
         Invocation.method(
           #save,
-          [mode],
+          [],
         ),
         returnValue: _i5.Future<_i3.WiFiState>.value(_FakeWiFiState_1(
           this,
           Invocation.method(
             #save,
-            [mode],
+            [],
           ),
         )),
         returnValueForMissingStub:
@@ -150,7 +147,7 @@ class MockWifiListNotifier extends _i2.Notifier<_i3.WiFiState> with _i1.Mock imp
           this,
           Invocation.method(
             #save,
-            [mode],
+            [],
           ),
         )),
       ) as _i5.Future<_i3.WiFiState>);
@@ -189,16 +186,6 @@ class MockWifiListNotifier extends _i2.Notifier<_i3.WiFiState> with _i1.Mock imp
       ) as bool);
 
   @override
-  bool isAllBandsConsistent() => (super.noSuchMethod(
-        Invocation.method(
-          #isAllBandsConsistent,
-          [],
-        ),
-        returnValue: false,
-        returnValueForMissingStub: false,
-      ) as bool);
-
-  @override
   int? checkIfChannelLegalWithWidth({
     required int? channel,
     required _i4.WifiChannelWidth? channelWidth,
@@ -219,9 +206,9 @@ class MockWifiListNotifier extends _i2.Notifier<_i3.WiFiState> with _i1.Mock imp
 
   @override
   void setWiFiSSID(
-    String? ssid,
+    String? ssid, [
     _i4.WifiRadioBand? band,
-  ) =>
+  ]) =>
       super.noSuchMethod(
         Invocation.method(
           #setWiFiSSID,
@@ -235,9 +222,9 @@ class MockWifiListNotifier extends _i2.Notifier<_i3.WiFiState> with _i1.Mock imp
 
   @override
   void setWiFiPassword(
-    String? password,
+    String? password, [
     _i4.WifiRadioBand? band,
-  ) =>
+  ]) =>
       super.noSuchMethod(
         Invocation.method(
           #setWiFiPassword,
@@ -251,9 +238,9 @@ class MockWifiListNotifier extends _i2.Notifier<_i3.WiFiState> with _i1.Mock imp
 
   @override
   void setWiFiEnabled(
-    bool? isEnabled,
+    bool? isEnabled, [
     _i4.WifiRadioBand? band,
-  ) =>
+  ]) =>
       super.noSuchMethod(
         Invocation.method(
           #setWiFiEnabled,

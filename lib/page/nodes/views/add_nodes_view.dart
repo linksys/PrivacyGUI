@@ -1,12 +1,16 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/page/components/shared_widgets.dart';
 import 'package:privacy_gui/page/nodes/providers/add_nodes_state.dart';
+import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/hook/icon_hooks.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -122,17 +126,27 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
                 }
               },
             ),
+          const AppGap.medium(),
           Column(
             children: [
-              ...state?.childNodes
-                      ?.map((e) => AppNodeListCard(
-                          leading: CustomTheme.of(context)
-                              .images
-                              .devices
-                              .getByName(routerIconTest(e.toMap())),
-                          title: e.getDeviceLocation(),
-                          trailing: null))
-                      .toList() ??
+              ...state?.childNodes?.map((e) {
+                    final node = LinksysDevice.fromMap(e.toMap());
+                    return AppNodeListCard(
+                        leading: CustomTheme.of(context)
+                            .images
+                            .devices
+                            .getByName(routerIconTest(e.toMap())),
+                        title: e.getDeviceLocation(),
+                        trailing: SharedWidgets.resolveSignalStrengthIcon(
+                          context,
+                          node.signalDecibels ?? 0,
+                          isOnline: node.isOnline(),
+                          isWired: !node.isWirelessConnection(),
+                        ));
+                  }).expandIndexed((index, element) sync* {
+                    yield element;
+                    yield const AppGap.medium();
+                  }).toList() ??
                   []
             ],
           ),
