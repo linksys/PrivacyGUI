@@ -130,6 +130,9 @@ const kCreateTicketUpload = '/cloud/v1/tickets/$kTicketId/uploads';
 // NEW smart device
 const kSmartDeviceAssociate = '/cloud/v1/smart-devices/associate';
 
+// Geo location
+const kGeoLocation = '/cloud/v1/guardians/devices/geolocation';
+
 // Client type id/secret
 final kClientTypeId = clientTypeID;
 final kClientSecret = clientTypeSecret;

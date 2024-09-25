@@ -200,12 +200,13 @@ class InstantTopologyNotifier extends Notifier<InstantTopologyState> {
     return DeviceTopologyNode(data: data, children: []);
   }
 
-  Future reboot() {
+  Future reboot([String? deviceUUID]) {
     final routerRepository = ref.read(routerRepositoryProvider);
     return routerRepository.send(
-      JNAPAction.reboot,
+      deviceUUID == null ? JNAPAction.reboot : JNAPAction.reboot2,
       fetchRemote: true,
       cacheLevel: CacheLevel.noCache,
+      data: deviceUUID == null ? {} : {'deviceUUID': deviceUUID},
       auth: true,
     );
   }
@@ -242,8 +243,11 @@ class InstantTopologyNotifier extends Notifier<InstantTopologyState> {
     });
   }
 
-  Future factoryReset() {
-    return ref.read(routerRepositoryProvider).send(JNAPAction.factoryReset,
-        fetchRemote: true, cacheLevel: CacheLevel.noCache);
+  Future factoryReset([String? deviceUUID]) {
+    return ref.read(routerRepositoryProvider).send(
+        deviceUUID == null ? JNAPAction.factoryReset : JNAPAction.factoryReset2,
+        data: deviceUUID == null ? {} : {'deviceUUID': deviceUUID},
+        fetchRemote: true,
+        cacheLevel: CacheLevel.noCache, auth: true,);
   }
 }

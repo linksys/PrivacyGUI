@@ -40,4 +40,7 @@ class ServiceHelper {
 
   bool isSupportAirtimeFairness([List<String>? services]) =>
       isServiceSupport(JNAPService.airtimeFairness, services);
+      
+  bool isSupportChildReboot([List<String>? services]) =>
+      isServiceSupport(JNAPService.core9, services);
 }

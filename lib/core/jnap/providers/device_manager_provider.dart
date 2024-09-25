@@ -1,5 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_provider.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/extensions/_extensions.dart';
@@ -321,7 +322,7 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
         ?.band;
   }
 
-  LinksysDevice findParent(String deviceID, [DeviceManagerState? current]) {
+  LinksysDevice? findParent(String deviceID, [DeviceManagerState? current]) {
     final currentState = current ?? state;
     final master = currentState.masterDevice;
     final device = currentState.deviceList

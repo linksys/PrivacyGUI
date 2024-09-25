@@ -27,11 +27,6 @@ final dashboardRoute = ShellRoute(
       builder: (context, state) => DashboardHomeView(),
       routes: [
         LinksysRoute(
-          name: RouteNamed.wifiShare,
-          path: RoutePath.wifiShare,
-          builder: (context, state) => WiFiShareTabView(),
-        ),
-        LinksysRoute(
           name: RouteNamed.speedTestSelection,
           path: RoutePath.speedTestSelection,
           config: LinksysRouteConfig(

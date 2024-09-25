@@ -26,7 +26,9 @@ enum JNAPAction {
   isAdminPasswordDefault,
   isServiceSupported,
   reboot,
+  reboot2,
   factoryReset,
+  factoryReset2,
   // ddns
   getDDNSSettings,
   getDDNSStatus,

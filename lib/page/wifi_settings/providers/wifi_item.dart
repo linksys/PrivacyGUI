@@ -3,7 +3,6 @@ import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/core/jnap/models/radio_info.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 
 class WiFiItem extends Equatable {
   final WifiRadioBand radioID;
