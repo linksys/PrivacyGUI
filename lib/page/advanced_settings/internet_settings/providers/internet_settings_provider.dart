@@ -215,7 +215,6 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
           .doTransaction(transactions, fetchRemote: true)
           .then((results) async {
         _handleWebRedirection(results);
-        
       }).catchError(
         (error) {
           final sideEffectError = error as JNAPSideEffectError;
@@ -405,8 +404,8 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
         macAddress: isMACAddressCloneEnabled ? macAddress : null,
       ).toMap(),
     )
-        .then((_) {
-      getMacAddressClone();
+        .then((_) async {
+      await getMacAddressClone();
     });
   }
 
