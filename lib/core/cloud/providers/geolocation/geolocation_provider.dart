@@ -4,6 +4,7 @@ import 'package:privacy_gui/core/cloud/linksys_device_cloud_service.dart';
 import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_state.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 
 final geolocationProvider =
     AsyncNotifierProvider<GeolocationNotifier, GeolocationState>(
@@ -23,8 +24,13 @@ class GeolocationNotifier extends AsyncNotifier<GeolocationState> {
     if (master == null) {
       return const GeolocationState(name: '', region: '', countryCode: '');
     }
-    final result =
-        await ref.read(deviceCloudServiceProvider).getGeolocation(master);
+    final result = await ref
+        .read(deviceCloudServiceProvider)
+        .getGeolocation(master)
+        .onError((error, stackTrace) {
+      logger.e('Not able to fetch geolocation!');
+      return {};
+    });
     final name = result['org'] ?? '';
     final region = result['region'] ?? '';
     final countryCode = result['countryCode'] ?? '';

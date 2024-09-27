@@ -110,10 +110,11 @@ class MockInstantTopologyNotifier extends _i2.Notifier<_i3.InstantTopologyState>
       ) as _i3.InstantTopologyState);
 
   @override
-  _i4.Future<dynamic> reboot([String? deviceUUID]) => (super.noSuchMethod(
+  _i4.Future<dynamic> reboot([List<String>? deviceUUIDs = const []]) =>
+      (super.noSuchMethod(
         Invocation.method(
           #reboot,
-          [deviceUUID],
+          [deviceUUIDs],
         ),
         returnValue: _i4.Future<dynamic>.value(),
         returnValueForMissingStub: _i4.Future<dynamic>.value(),
@@ -158,10 +159,11 @@ class MockInstantTopologyNotifier extends _i2.Notifier<_i3.InstantTopologyState>
       ) as _i4.Future<void>);
 
   @override
-  _i4.Future<dynamic> factoryReset([String? deviceUUID]) => (super.noSuchMethod(
+  _i4.Future<dynamic> factoryReset([List<String>? deviceUUIDs = const []]) =>
+      (super.noSuchMethod(
         Invocation.method(
           #factoryReset,
-          [deviceUUID],
+          [deviceUUIDs],
         ),
         returnValue: _i4.Future<dynamic>.value(),
         returnValueForMissingStub: _i4.Future<dynamic>.value(),

@@ -1,12 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
+import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/instant_topology/_instant_topology.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -200,15 +203,29 @@ class InstantTopologyNotifier extends Notifier<InstantTopologyState> {
     return DeviceTopologyNode(data: data, children: []);
   }
 
-  Future reboot([String? deviceUUID]) {
+  Future reboot([List<String> deviceUUIDs = const []]) {
     final routerRepository = ref.read(routerRepositoryProvider);
-    return routerRepository.send(
-      deviceUUID == null ? JNAPAction.reboot : JNAPAction.reboot2,
-      fetchRemote: true,
-      cacheLevel: CacheLevel.noCache,
-      data: deviceUUID == null ? {} : {'deviceUUID': deviceUUID},
-      auth: true,
-    );
+    final builder = JNAPTransactionBuilder(
+        commands: deviceUUIDs.reversed
+            .map((uuid) => MapEntry(JNAPAction.reboot2, {'deviceUUID': uuid}))
+            .toList(),
+        auth: true);
+    if (deviceUUIDs.isEmpty) {
+      return routerRepository.send(
+        JNAPAction.reboot,
+        fetchRemote: true,
+        cacheLevel: CacheLevel.noCache,
+        auth: true,
+      );
+    } else {
+      return routerRepository
+          .transaction(
+            builder,
+            fetchRemote: true,
+            cacheLevel: CacheLevel.noCache,
+          )
+          .then((_) => _waitForNodesOffline(deviceUUIDs));
+    }
   }
 
   Future startBlinkNodeLED(String deviceId) async {
@@ -243,11 +260,61 @@ class InstantTopologyNotifier extends Notifier<InstantTopologyState> {
     });
   }
 
-  Future factoryReset([String? deviceUUID]) {
-    return ref.read(routerRepositoryProvider).send(
-        deviceUUID == null ? JNAPAction.factoryReset : JNAPAction.factoryReset2,
-        data: deviceUUID == null ? {} : {'deviceUUID': deviceUUID},
+  Future factoryReset([List<String> deviceUUIDs = const []]) {
+    final routerRepository = ref.read(routerRepositoryProvider);
+    final builder = JNAPTransactionBuilder(
+        commands: deviceUUIDs.reversed
+            .map((uuid) =>
+                MapEntry(JNAPAction.factoryReset2, {'deviceUUID': uuid}))
+            .toList(),
+        auth: true);
+    if (deviceUUIDs.isEmpty) {
+      return routerRepository.send(
+        JNAPAction.factoryReset,
         fetchRemote: true,
-        cacheLevel: CacheLevel.noCache, auth: true,);
+        cacheLevel: CacheLevel.noCache,
+        auth: true,
+      );
+    } else {
+      return routerRepository.transaction(
+        builder,
+        fetchRemote: true,
+        cacheLevel: CacheLevel.noCache,
+      );
+    }
+  }
+
+  Future _waitForNodesOffline(List<String> deviceUUIDs) async {
+    final waitingStream = ref.read(routerRepositoryProvider).scheduledCommand(
+        action: JNAPAction.getDevices,
+        retryDelayInMilliSec: 3000,
+        maxRetry: 20,
+        condition: (result) {
+          if (result is JNAPSuccess) {
+            final deviceList = List.from(
+              result.output['devices'],
+            )
+                .map((e) => LinksysDevice.fromMap(e))
+                .where((device) => deviceUUIDs.contains(device.deviceID))
+                .toList();
+            return !deviceList.any((device) => device.isOnline());
+          }
+          return false;
+        });
+    await for (final result in waitingStream) {
+      logger.d('[Reboot] Waiting for all nodes offline');
+      if (result is JNAPSuccess) {
+        final deviceList = List.from(
+          result.output['devices'],
+        )
+            .map((e) => LinksysDevice.fromMap(e))
+            .where((device) => deviceUUIDs.contains(device.deviceID))
+            .toList();
+        for (final device in deviceList) {
+          logger.d(
+              '[Reboot] Waiting for - isDevice<${device.getDeviceLocation()}> Online - ${device.isOnline()}');
+        }
+      }
+    }
   }
 }

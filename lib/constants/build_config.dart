@@ -47,7 +47,8 @@ class BuildConfig {
       const bool.fromEnvironment('overlay', defaultValue: false);
   static const bool caLogin = bool.fromEnvironment('ca', defaultValue: false);
 
-  static const int refreshTimeInterval = int.fromEnvironment('refresh_time', defaultValue: 120);
+  static const int refreshTimeInterval =
+      int.fromEnvironment('refresh_time', defaultValue: 60);
 
   static load() async {
     logger.d('load build configuration');

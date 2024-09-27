@@ -520,7 +520,9 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
                 children: [
                   AppText.bodySmall(loc(context).wan),
                   AppText.labelMedium(
-                      systemConnectivityState.wanConnection?.ipAddress ?? '--'),
+                      systemConnectivityState.wanExternal?.publicWanIPv4 ??
+                          systemConnectivityState.wanConnection?.ipAddress ??
+                          '--'),
                 ],
               ),
             ),

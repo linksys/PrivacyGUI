@@ -6,10 +6,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:privacy_gui/constants/_constants.dart';
+import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/layouts/root_container.dart';
+import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_provider.dart';
@@ -117,7 +119,7 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    logger.v('didChangeAppLifecycleState: ${state.name}');
+    logger.i('didChangeAppLifecycleState: ${state.name}');
     if (state == AppLifecycleState.resumed) {
       ref
           .read(connectivityProvider.notifier)
@@ -125,7 +127,13 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
           .then((_) => SharedPreferences.getInstance())
           .then((prefs) {
         final currentSN = prefs.getString(pCurrentSN);
-        if (ref.read(authProvider).value?.loginType != LoginType.none &&
+        if (currentSN != null &&
+            ref.read(dashboardManagerProvider).deviceInfo?.serialNumber !=
+                currentSN) {
+          if (mounted) {
+            showRouterNotFoundAlert(context, ref);
+          }
+        } else if (ref.read(authProvider).value?.loginType != LoginType.none &&
             currentSN?.isNotEmpty == true) {
           ref.read(pollingProvider.notifier).startPolling();
         }

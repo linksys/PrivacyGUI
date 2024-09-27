@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -11,6 +12,7 @@ import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_troubleshooter_provider.dart';
+import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:privacy_gui/validator_rules/input_validators.dart';
@@ -123,6 +125,10 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
         .catchError((error, stackTrace) {
           final route = (error as ExceptionInterruptAndExit).route;
           logger.e('[PnP]: Interrupted and go to: $route');
+          // Force polling to fetch latest data
+          if (ref.read(authProvider).value?.loginType == LoginType.local) {
+            ref.read(pollingProvider.notifier).forcePolling();
+          }
           context.goNamed(route);
         }, test: (error) => error is ExceptionInterruptAndExit)
         .onError((error, stackTrace) {
@@ -165,7 +171,9 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const AppSpinner(semanticLabel: 'Check Internet spinner',),
+                const AppSpinner(
+                  semanticLabel: 'Check Internet spinner',
+                ),
                 const AppGap.medium(),
                 AppText.titleMedium(loc(context).launchCheckInternet),
               ],

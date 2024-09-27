@@ -55,14 +55,7 @@ class LinksysRoute extends GoRoute {
     this.config,
     super.routes = const <RouteBase>[],
   }) : super(builder: (context, state) {
-          return ValueListenableBuilder<bool>(
-              valueListenable: showColumnOverlayNotifier,
-              builder: (context, showColumnOverlay, _) {
-                return Column(children: [
-                  const PreferredSize(preferredSize: Size(0, 80), child: TopBar()),
-                  Expanded(child: builder(context, state))
-                ]);
-              });
+          return builder(context, state);
         });
 
   static bool isShowNaviRail(

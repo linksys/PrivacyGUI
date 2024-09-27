@@ -156,4 +156,23 @@ class MockServiceHelper extends _i1.Mock implements _i2.ServiceHelper {
         returnValue: false,
         returnValueForMissingStub: false,
       ) as bool);
+  @override
+  bool isSupportChildFactoryReset([List<String>? services]) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #isSupportChildFactoryReset,
+          [services],
+        ),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+  @override
+  bool isSupportWANExternal([List<String>? services]) => (super.noSuchMethod(
+        Invocation.method(
+          #isSupportWANExternal,
+          [services],
+        ),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
 }

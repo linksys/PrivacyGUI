@@ -255,6 +255,8 @@ enum _JNAPActionValue {
       value: 'http://linksys.com/jnap/router/GetExpressForwardingSettings'),
   setExpressForwardingSettings(
       value: 'http://linksys.com/jnap/router/SetExpressForwardingSettings'),
+  getWANExternal(
+      value: 'http://linksys.com/jnap/router/GetWANExternal'),    
   getManagementSettings(
       value: 'http://linksys.com/jnap/routermanagement/GetManagementSettings'),
   getManagementSettings2(

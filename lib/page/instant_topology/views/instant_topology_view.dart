@@ -147,6 +147,7 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
     final autoOnboarding = serviceHelper.isSupportAutoOnboarding();
     final hasBlinkFunction = serviceHelper.isSupportLedBlinking();
     final supportChildReboot = serviceHelper.isSupportChildReboot();
+    final supportChildFactoryReset = serviceHelper.isSupportChildFactoryReset();
     return TreeNodeItem(
       node: node,
       actions: node.data.isMaster
@@ -159,7 +160,7 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
           : [
               if (hasBlinkFunction) NodeInstantActions.blink,
               if (supportChildReboot) NodeInstantActions.reboot,
-              if (supportChildReboot) NodeInstantActions.reset,
+              if (supportChildFactoryReset) NodeInstantActions.reset,
             ],
       onTap: () {
         onNodeTap(context, ref, node);
@@ -167,8 +168,7 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
       onActionTap: (action) {
         switch (action) {
           case NodeInstantActions.reboot:
-            _doReboot(
-                supportChildReboot && !node.data.isMaster ? node.data : null);
+            _doReboot(supportChildReboot && !node.data.isMaster ? node : null);
             break;
           case NodeInstantActions.pair:
             _doInstantPair();
@@ -178,7 +178,7 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
             break;
           case NodeInstantActions.reset:
             _doFactoryReset(
-                supportChildReboot && !node.data.isMaster ? node.data : null);
+                supportChildReboot && !node.data.isMaster ? node : null);
             break;
           default:
             break;
@@ -187,18 +187,17 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
     );
   }
 
-  _doReboot(TopologyModel? node) {
+  _doReboot(RouterTreeNode? node) {
     showRebootModal(context).then((result) {
       if (result == true) {
-        final reboot =
-            Future.sync(() => ref.read(pollingProvider.notifier).stopPolling())
-                .then((_) => ref
-                    .read(instantTopologyProvider.notifier)
-                    .reboot(node?.deviceId))
-                .then((_) async {
-          if (node?.isMaster == false) {
+        final reboot = Future.sync(
+                () => ref.read(pollingProvider.notifier).stopPolling())
+            .then((_) => ref.read(instantTopologyProvider.notifier).reboot(
+                node?.toFlatList().map((e) => e.data.deviceId).toList() ?? []))
+            .then((_) async {
+          if (node?.data.isMaster == false) {
             // A delay to wait for child off
-            await Future.delayed(const Duration(seconds: 5));
+            // await Future.delayed(const Duration(seconds: 5));
             await ref.read(pollingProvider.notifier).forcePolling();
           }
         });
@@ -216,10 +215,25 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
     });
   }
 
-  _doFactoryReset(TopologyModel? node) {
+  _doFactoryReset(RouterTreeNode? node) {
     showFactoryResetModal(context).then((result) {
       if (result == true) {
-        ref.read(instantTopologyProvider.notifier).factoryReset(node?.deviceId);
+        doSomethingWithSpinner(
+            context,
+            ref
+                .read(instantTopologyProvider.notifier)
+                .factoryReset(
+                    node?.toFlatList().map((e) => e.data.deviceId).toList() ??
+                        [])
+                .then((_) async {
+              if (node?.data.isMaster == false) {
+                // A delay to wait for child off
+                await Future.delayed(const Duration(seconds: 5));
+                await ref.read(pollingProvider.notifier).forcePolling();
+              } else {
+                showRouterNotFoundAlert(context, ref);
+              }
+            }));
       }
     });
   }

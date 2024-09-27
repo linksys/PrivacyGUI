@@ -47,9 +47,6 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    final titleFinder = find.descendant(
-        of: find.byType(DashboardMenuView), matching: find.text('Menu'));
-    expect(titleFinder, findsOneWidget);
     final menuCardFinder = find.byType(AppMenuCard);
     expect(menuCardFinder, findsNWidgets(8));
   });

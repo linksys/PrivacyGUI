@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/page/components/styled/top_bar.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
@@ -169,12 +170,21 @@ class StyledAppPageView extends ConsumerWidget {
         ? ValueListenableBuilder<bool>(
             valueListenable: showColumnOverlayNotifier,
             builder: (context, showColumnOverlay, _) {
-              return AppResponsiveColumnLayout(
-                column: config?.column?.column,
-                centered: config?.column?.centered ?? false,
-                isShowNaviRail: LinksysRoute.isShowNaviRail(context, config),
-                builder: () => buildMainContent(context, ref),
-                showColumnOverlay: !kReleaseMode && showColumnOverlay,
+              return Column(
+                children: [
+                  const PreferredSize(
+                      preferredSize: Size(0, 80), child: TopBar()),
+                  Expanded(
+                    child: AppResponsiveColumnLayout(
+                      column: config?.column?.column,
+                      centered: config?.column?.centered ?? false,
+                      isShowNaviRail:
+                          LinksysRoute.isShowNaviRail(context, config),
+                      builder: () => buildMainContent(context, ref),
+                      showColumnOverlay: !kReleaseMode && showColumnOverlay,
+                    ),
+                  ),
+                ],
               );
             })
         : buildMainContent(context, ref);

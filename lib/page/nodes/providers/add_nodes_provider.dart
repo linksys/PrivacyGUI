@@ -71,7 +71,6 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
     ref.read(pollingProvider.notifier).stopPolling();
     final nodeSnapshot =
         List<LinksysDevice>.from(ref.read(deviceManagerProvider).deviceList)
-            .where((device) => device.isAuthority == false)
             .toList();
     // Commence the auto-onboarding process
     final repo = ref.read(routerRepositoryProvider);
@@ -117,7 +116,7 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
     if (onboardingProceed && anyOnboarded) {
       await for (final result in pollForNodesOnline(onboardedMACList)) {
         childNodes =
-            result.where((element) => element.nodeType == 'Slave').toList();
+            result.where((element) => element.nodeType != null).toList();
         addedDevices = result
             .where(
               (element) =>
@@ -132,13 +131,14 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
     } else {
       // put original slave nodes
       childNodes =
-          nodeSnapshot.where((element) => element.nodeType == 'Slave').toList();
+          nodeSnapshot.where((element) => element.nodeType != null).toList();
     }
     final polling = ref.read(pollingProvider.notifier);
     await polling.forcePolling().then((value) => polling.startPolling());
     logger.d('[AddNodes]: Update state: nodesSnapshot = $nodeSnapshot');
     logger.d('[AddNodes]: Update state: addedDevices = $addedDevices');
-    logger.d('[AddNodes]: Update state: onboardingProceed = $onboardingProceed, anyOnboarded=$anyOnboarded');
+    logger.d(
+        '[AddNodes]: Update state: onboardingProceed = $onboardingProceed, anyOnboarded=$anyOnboarded');
     benchMark.end();
 
     state = state.copyWith(

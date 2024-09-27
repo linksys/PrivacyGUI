@@ -35,6 +35,7 @@ import 'package:privacygui_widgets/widgets/card/list_card.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/label/status_label.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
 import 'package:collection/collection.dart';
@@ -373,6 +374,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
       return [];
     } else {
       final title = loc(context).nodeLight;
+      final nodeLightStatus = NodeLightStatus.getStatus(nodeLightSettings);
       return [
         AppSettingCard(
           key: const ValueKey('nodeLightSettings'),
@@ -380,9 +382,21 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
           showBorder: false,
           color: Theme.of(context).colorScheme.background,
           padding: const EdgeInsets.all(Spacing.medium),
-          trailing: AppText.bodySmall(
-            NodeLightStatus.getStatus(nodeLightSettings).resolveString(context),
-          ),
+          trailing: nodeLightStatus != NodeLightStatus.night
+              ? AppStatusLabel(
+                  isOff: nodeLightStatus == NodeLightStatus.off,
+                  label: loc(context).on,
+                  offLabel: loc(context).off,
+                )
+              : const Row(
+                  children: [
+                    Icon(
+                      LinksysIcons.darkMode,
+                      size: 16,
+                    ),
+                    AppText.bodyMedium('8AM - 8PM')
+                  ],
+                ),
           onTap: () {
             // context.pushNamed(RouteNamed.nodeLightSettings);
             _showNodeLightSelectionDialog();
