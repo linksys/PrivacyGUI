@@ -74,7 +74,7 @@ class _LocalResetRouterPasswordViewState
                   const AppGap.large3(),
                   AppPasswordField(
                     border: const OutlineInputBorder(),
-                    withValidator: state.hasEdited,
+                    withValidator: true,
                     validations: [
                       Validation(
                           description: loc(context).routerPasswordRuleTenChars,
