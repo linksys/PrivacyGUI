@@ -4,6 +4,7 @@ import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/providers/auth/ra_session_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -327,6 +328,24 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         );
       });
     }
+  }
+
+  Future<Map<String, dynamic>?> getAdminPasswordAuthStatus(List<String> services) async {
+    if (serviceHelper.isSupportAdminPasswordAuthStatus(services) != true) {
+      return null;
+    }
+    final routerRepository = ref.read(routerRepositoryProvider);
+    final result = await routerRepository.send(
+      JNAPAction.getAdminPasswordAuthStatus,
+    );
+    return result.output;
+  }
+
+  Future<void> getDeviceInfo() async {
+    final routerRepository = ref.read(routerRepositoryProvider);
+    await routerRepository.send(
+      JNAPAction.getDeviceInfo,
+    );
   }
 
   Future logout() async {
