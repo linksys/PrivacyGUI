@@ -192,8 +192,9 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
             CustomTheme.of(context).images.imgAddNodes,
             semanticsLabel: 'add nodes image',
           ),
-          LightInfoTile(
-              color: ledBlue,
+          LightInfoImageTile(
+              image:
+                  SvgPicture(CustomTheme.of(context).images.nodeLightSolidBlue),
               content: AppStyledText.bold(loc(context).addNodesSolidBlueDesc,
                   defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
                   tags: const ['b'])),

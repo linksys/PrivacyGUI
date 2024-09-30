@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg_test/flutter_svg_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/styled/top_bar.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
@@ -33,7 +34,10 @@ void main() async {
           provider: provider,
           overrides: [authProvider.overrideWith(() => mockAuthNotifier)],
           router: GoRouter(routes: [
-            LinksysRoute(path: '/', builder: (context, state) => const Center())
+            LinksysRoute(
+                path: '/',
+                builder: (context, state) =>
+                    const StyledAppPageView(child: Center()))
           ], initialLocation: '/'),
         ),
       );
@@ -58,7 +62,10 @@ void main() async {
           provider: provider,
           overrides: [authProvider.overrideWith(() => mockAuthNotifier)],
           router: GoRouter(routes: [
-            LinksysRoute(path: '/', builder: (context, state) => const Center())
+            LinksysRoute(
+                path: '/',
+                builder: (context, state) =>
+                    const StyledAppPageView(child: Center()))
           ], initialLocation: '/'),
         ),
       );
@@ -80,7 +87,10 @@ void main() async {
           provider: provider,
           overrides: [authProvider.overrideWith(() => mockAuthNotifier)],
           router: GoRouter(routes: [
-            LinksysRoute(path: '/', builder: (context, state) => const Center())
+            LinksysRoute(
+                path: '/',
+                builder: (context, state) =>
+                    const StyledAppPageView(child: Center()))
           ], initialLocation: '/'),
         ),
       );
@@ -107,7 +117,10 @@ void main() async {
           provider: provider,
           overrides: [authProvider.overrideWith(() => mockAuthNotifier)],
           router: GoRouter(routes: [
-            LinksysRoute(path: '/', builder: (context, state) => const Center())
+            LinksysRoute(
+                path: '/',
+                builder: (context, state) =>
+                    const StyledAppPageView(child: Center()))
           ], initialLocation: '/'),
         ),
       );

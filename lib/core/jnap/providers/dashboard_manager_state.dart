@@ -7,6 +7,7 @@ import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
 import 'package:privacy_gui/core/jnap/models/health_check_result.dart';
 import 'package:privacy_gui/core/jnap/models/radio_info.dart';
+import 'package:privacy_gui/core/jnap/models/wan_external.dart';
 
 class DashboardManagerState extends Equatable {
   final NodeDeviceInfo? deviceInfo;
@@ -20,6 +21,7 @@ class DashboardManagerState extends Equatable {
   final List<String> lanConnections;
   final String? skuModelNumber;
   final int localTime;
+  final WanExternal? wanExternal;
 
   const DashboardManagerState({
     this.deviceInfo,
@@ -33,6 +35,7 @@ class DashboardManagerState extends Equatable {
     this.lanConnections = const [],
     this.skuModelNumber,
     this.localTime = 0,
+    this.wanExternal,
   });
 
   @override
@@ -49,6 +52,7 @@ class DashboardManagerState extends Equatable {
       lanConnections,
       skuModelNumber,
       localTime,
+      wanExternal,
     ];
   }
 
@@ -64,6 +68,7 @@ class DashboardManagerState extends Equatable {
     List<String>? lanConnections,
     String? skuModelNumber,
     int? localTime,
+    WanExternal? wanExternal,
   }) {
     return DashboardManagerState(
       deviceInfo: deviceInfo ?? this.deviceInfo,
@@ -78,6 +83,7 @@ class DashboardManagerState extends Equatable {
       lanConnections: lanConnections ?? this.lanConnections,
       skuModelNumber: skuModelNumber ?? this.skuModelNumber,
       localTime: localTime ?? this.localTime,
+      wanExternal: wanExternal ?? this.wanExternal,
     );
   }
 
@@ -94,6 +100,7 @@ class DashboardManagerState extends Equatable {
       'lanConnections': lanConnections,
       'skuModelNumber': skuModelNumber,
       'localTime': localTime,
+      'wanExternal': wanExternal?.toMap(),
     }..removeWhere((key, value) => value == null);
   }
 
@@ -128,6 +135,9 @@ class DashboardManagerState extends Equatable {
       ),
       skuModelNumber: map['skuModelNumber'],
       localTime: map['localTime'],
+      wanExternal: map['wanExternal'] == null
+          ? null
+          : WanExternal.fromMap(map['wanExternal']),
     );
   }
 

@@ -146,6 +146,7 @@ enum JNAPAction {
   getEthernetPortConnections,
   getExpressForwardingSettings,
   setExpressForwardingSettings, 
+  getWANExternal,
   // routerManagement
   getManagementSettings,
   setManagementSettings,

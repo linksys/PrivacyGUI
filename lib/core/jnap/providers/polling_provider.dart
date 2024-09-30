@@ -68,7 +68,7 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
         lastUpdate: 0, data: Map.fromEntries(cacheDataList)));
   }
 
-  _polling(RouterRepository repository, {bool force = false}) async {
+  Future _polling(RouterRepository repository, {bool force = false}) async {
     final benchMark = BenchMarkLogger(name: 'Polling provider');
     benchMark.start();
     state = const AsyncValue.loading();
@@ -97,7 +97,9 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
 
   Future forcePolling() {
     final routerRepository = ref.read(routerRepositoryProvider);
-    return _polling(routerRepository, force: true);
+
+    return _polling(routerRepository, force: true)
+        .then((_) => _setTimePeriod(routerRepository));
   }
 
   startPolling() {
@@ -112,11 +114,7 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
         _polling(routerRepository);
       }).then(
         (_) {
-          _timer = Timer.periodic(
-              const Duration(seconds: BuildConfig.refreshTimeInterval),
-              (timer) {
-            _polling(routerRepository);
-          });
+          _setTimePeriod(routerRepository);
         },
       ),
     );
@@ -127,6 +125,14 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     if ((_timer?.isActive ?? false)) {
       _timer?.cancel();
     }
+  }
+
+  _setTimePeriod(RouterRepository routerRepository) {
+    _timer?.cancel();
+    _timer = Timer.periodic(
+        const Duration(seconds: BuildConfig.refreshTimeInterval), (timer) {
+      _polling(routerRepository);
+    });
   }
 
   List<MapEntry<JNAPAction, Map<String, dynamic>>> _buildCoreTransaction(
@@ -166,7 +172,9 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     if (serviceHelper.isSupportProduct()) {
       commands.add(const MapEntry(JNAPAction.getSoftSKUSettings, {}));
     }
-
+    if (serviceHelper.isSupportWANExternal()) {
+      commands.add(const MapEntry(JNAPAction.getWANExternal, {}));
+    }
     return commands;
   }
 

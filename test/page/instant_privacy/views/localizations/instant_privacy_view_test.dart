@@ -14,7 +14,7 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import '../../../../common/test_responsive_widget.dart';
 import '../../../../common/testable_router.dart';
 import '../../../../mocks/_index.dart';
-import '../../../../mocks/jnap_service_helper_mocks.dart';
+import '../../../../mocks/jnap_service_supported_mocks.dart';
 import '../../../../test_data/device_list_test_state.dart';
 import '../../../../test_data/instant_privacy_test_data.dart';
 

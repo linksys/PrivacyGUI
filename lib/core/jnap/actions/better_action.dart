@@ -227,6 +227,12 @@ void _updateBetterActions(JNAPService service) {
       break;
     case JNAPService.router11:
       break;
+    case JNAPService.router12:
+      break;
+    case JNAPService.router13:
+      _betterActionMap[JNAPAction.getWANExternal] =
+          _JNAPActionValue.getWANExternal.value;
+      break;
     case JNAPService.routerManagement:
       break;
     case JNAPService.routerManagement2:

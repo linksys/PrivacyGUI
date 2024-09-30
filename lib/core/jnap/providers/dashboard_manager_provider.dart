@@ -8,12 +8,12 @@ import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
 import 'package:privacy_gui/core/jnap/models/health_check_result.dart';
 import 'package:privacy_gui/core/jnap/models/radio_info.dart';
 import 'package:privacy_gui/core/jnap/models/soft_sku_settings.dart';
+import 'package:privacy_gui/core/jnap/models/wan_external.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/bench_mark.dart';
-import 'package:privacy_gui/util/extensions.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final dashboardManagerProvider =
@@ -109,6 +109,13 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
       final settings = SoftSKUSettings.fromMap(softSKUSettings.output);
       newState = newState.copyWith(skuModelNumber: settings.modelNumber);
     }
+    final wanExternalData = JNAPTransactionSuccessWrap.getResult(
+        JNAPAction.getWANExternal, result ?? {});
+    if (wanExternalData != null) {
+      final wanExternal = WanExternal.fromMap(wanExternalData.output);
+      newState = newState.copyWith(wanExternal: wanExternal);
+    }
+
     return newState;
   }
 

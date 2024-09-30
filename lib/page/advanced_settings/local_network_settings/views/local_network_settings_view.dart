@@ -42,7 +42,10 @@ class _LocalNetworkSettingsViewState
     super.initState();
     doSomethingWithSpinner(
       context,
-      ref.read(localNetworkSettingProvider.notifier).fetch().then(
+      ref
+          .read(localNetworkSettingProvider.notifier)
+          .fetch(fetchRemote: true)
+          .then(
         (value) {
           setState(
             () {

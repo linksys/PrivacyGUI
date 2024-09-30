@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart'
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/dashboard/views/components/shimmer.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_troubleshooter_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
@@ -25,37 +26,40 @@ class DashboardHomeTitle extends ConsumerWidget {
         .watch(deviceManagerProvider.select((value) => value.deviceList))
         .isEmpty;
     final localTime = DateTime.fromMillisecondsSinceEpoch(state.localTime);
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              child: AppText.titleLarge(
-                helloString(context, localTime),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            Wrap(
-              children: [
-                Icon(LinksysIcons.calendar,
-                    color: Theme.of(context).colorScheme.onSurface),
-                Padding(
-                  padding: const EdgeInsets.only(left: Spacing.small2),
-                  child: AppText.bodyMedium(
-                    loc(context).formalDateTime(localTime, localTime),
-                    color: Theme.of(context).colorScheme.onSurface,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+    return ShimmerContainer(
+      isLoading: isLoading,
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: AppText.titleLarge(
+                  helloString(context, localTime),
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ],
-            ),
-          ],
-        ),
-        if (!isLoading && !isOnline) _troubleshooting(context, ref),
-      ],
+              ),
+              Wrap(
+                children: [
+                  Icon(LinksysIcons.calendar,
+                      color: Theme.of(context).colorScheme.onSurface),
+                  Padding(
+                    padding: const EdgeInsets.only(left: Spacing.small2),
+                    child: AppText.bodyMedium(
+                      loc(context).formalDateTime(localTime, localTime),
+                      color: Theme.of(context).colorScheme.onSurface,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          if (!isLoading && !isOnline) _troubleshooting(context, ref),
+        ],
+      ),
     );
   }
 

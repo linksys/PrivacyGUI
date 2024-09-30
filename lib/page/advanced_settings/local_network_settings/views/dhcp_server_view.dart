@@ -253,7 +253,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
           controller: _dns1Controller,
           border: const OutlineInputBorder(),
           onFocusChanged: (focused) {
-            if (!focused && _dns1Controller.text.isNotEmpty) {
+            if (!focused) {
               // DNS1 input finishes
               final result = ref
                   .read(localNetworkSettingProvider.notifier)
@@ -280,7 +280,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
           controller: _dns2Controller,
           border: const OutlineInputBorder(),
           onFocusChanged: (focused) {
-            if (!focused && _dns2Controller.text.isNotEmpty) {
+            if (!focused) {
               // DNS2 input finishes
               final result = ref
                   .read(localNetworkSettingProvider.notifier)
@@ -307,7 +307,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
           controller: _dns3Controller,
           border: const OutlineInputBorder(),
           onFocusChanged: (focused) {
-            if (!focused && _dns3Controller.text.isNotEmpty) {
+            if (!focused) {
               // DNS3 input finishes
               final result = ref
                   .read(localNetworkSettingProvider.notifier)
@@ -334,7 +334,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
           controller: _winsController,
           border: const OutlineInputBorder(),
           onFocusChanged: (focused) {
-            if (!focused && _winsController.text.isNotEmpty) {
+            if (!focused) {
               // WINS server input finishes
               final result = ref
                   .read(localNetworkSettingProvider.notifier)

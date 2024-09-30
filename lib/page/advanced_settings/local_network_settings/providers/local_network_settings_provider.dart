@@ -90,10 +90,10 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
         firstClientIPAddress: settings.firstIPAddress,
         lastClientIPAddress: settings.lastIPAddress,
         leaseMinutes: settings.clientLeaseTime,
-        dnsServer1: settings.dns1,
-        dnsServer2: settings.dns2,
-        dnsServer3: settings.dns3,
-        winsServer: settings.wins,
+        dnsServer1: settings.dns1?.isEmpty == true ? null : settings.dns1,
+        dnsServer2: settings.dns2?.isEmpty == true ? null : settings.dns2,
+        dnsServer3: settings.dns3?.isEmpty == true ? null : settings.dns3,
+        winsServer: settings.wins?.isEmpty == true ? null : settings.wins,
         reservations: settings.dhcpReservationList,
       ),
     );
@@ -341,7 +341,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
   ) {
     // Due to the UI limit, the value input from users should always be valid
     final isValid = _serverIpAddressValidator.validate(dnsIp);
-    if (isValid) {
+    if (isValid || dnsIp.isEmpty) {
       settings = settings.copyWith(
         dns1: dnsIp,
       );
@@ -355,7 +355,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
   ) {
     // Due to the UI limit, the value input from users should always be valid
     final isValid = _serverIpAddressValidator.validate(dnsIp);
-    if (isValid) {
+    if (isValid || dnsIp.isEmpty) {
       settings = settings.copyWith(
         dns2: dnsIp,
       );
@@ -369,7 +369,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
   ) {
     // Due to the UI limit, the value input from users should always be valid
     final isValid = _serverIpAddressValidator.validate(dnsIp);
-    if (isValid) {
+    if (isValid || dnsIp.isEmpty) {
       settings = settings.copyWith(
         dns3: dnsIp,
       );

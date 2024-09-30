@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/page/components/styled/top_bar.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_column_layout.dart';
@@ -59,13 +60,22 @@ class StyledAppTabPageView extends ConsumerWidget {
         ? ValueListenableBuilder<bool>(
             valueListenable: showColumnOverlayNotifier,
             builder: (context, showColumnOverlay, _) {
-              return AppResponsiveColumnLayout(
-                column: config?.column?.column,
-                centered: config?.column?.centered ?? false,
-                isShowNaviRail: LinksysRoute.isShowNaviRail(context, config),
-                // topWidget: const TopBar(),
-                builder: () => buildMainContent(context, ref),
-                showColumnOverlay: showColumnOverlay,
+              return Column(
+                children: [
+                  const PreferredSize(
+                      preferredSize: Size(0, 80), child: TopBar()),
+                  Expanded(
+                    child: AppResponsiveColumnLayout(
+                      column: config?.column?.column,
+                      centered: config?.column?.centered ?? false,
+                      isShowNaviRail:
+                          LinksysRoute.isShowNaviRail(context, config),
+                      // topWidget: const TopBar(),
+                      builder: () => buildMainContent(context, ref),
+                      showColumnOverlay: showColumnOverlay,
+                    ),
+                  ),
+                ],
               );
             })
         : buildMainContent(context, ref);
