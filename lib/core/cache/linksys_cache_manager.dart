@@ -125,11 +125,11 @@ class LinksysCacheManager {
     return _cache;
   }
 
-  bool didCacheExpire(String action) {
+  bool didCacheExpire(String action, [int? expirationOverride]) {
     if (data[action] == null ||
         data[action]["cachedAt"] == null ||
         DateTime.now().millisecondsSinceEpoch - data[action]["cachedAt"] >=
-            defaultCacheExpiration) {
+            (expirationOverride ?? defaultCacheExpiration)) {
       return true;
     } else {
       return false;
@@ -152,10 +152,10 @@ class LinksysCacheManager {
     }
   }
 
-  bool checkCacheDataValid(String action) {
+  bool checkCacheDataValid(String action, [int? expirationOverride]) {
     if (data.containsKey(action) &&
         data[action] != null &&
-        !didCacheExpire(action)) {
+        !didCacheExpire(action, expirationOverride)) {
       return true;
     } else {
       return false;
