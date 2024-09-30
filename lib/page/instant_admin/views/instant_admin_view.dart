@@ -130,7 +130,6 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
             ),
           ),
           const AppGap.small2(),
-
           AppListCard(
             title: AppText.bodyLarge(loc(context).timezone),
             description: AppText.labelLarge(_getTimezone(timezoneState)),

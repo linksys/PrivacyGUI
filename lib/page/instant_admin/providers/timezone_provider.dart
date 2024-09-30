@@ -47,6 +47,7 @@ class TimezoneNotifier extends Notifier<TimezoneState> {
       auth: true,
     )
         .then<void>((value) async {
+      await fetch(fetchRemote: true);
       await ref.read(pollingProvider.notifier).forcePolling();
     }).onError((error, stackTrace) {
       if (error is JNAPError) {
