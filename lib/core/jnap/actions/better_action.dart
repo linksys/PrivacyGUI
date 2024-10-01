@@ -542,6 +542,8 @@ void initBetterActions() {
       _JNAPActionValue.getParentalControlSettings.value;
   _betterActionMap[JNAPAction.getPowerTableSettings] =
       _JNAPActionValue.getPowerTableSettings.value;
+  _betterActionMap[JNAPAction.setPowerTableSettings] =
+      _JNAPActionValue.setPowerTableSettings.value;
   _betterActionMap[JNAPAction.getSoftSKUSettings] =
       _JNAPActionValue.getSoftSKUSettings.value;
   _betterActionMap[JNAPAction.getQoSSettings] =

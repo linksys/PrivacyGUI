@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/models/firmware_update_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
@@ -18,6 +19,7 @@ import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/input_field/validator_widget.dart';
 import 'package:privacygui_widgets/widgets/panel/switch_trigger_tile.dart';
 
@@ -28,13 +30,14 @@ class NetworkAdminView extends ArgumentsConsumerStatefulView {
   }) : super(key: key);
 
   @override
-  ConsumerState<NetworkAdminView> createState() =>
-      _RouterPasswordContentViewState();
+  ConsumerState<NetworkAdminView> createState() => _NetworkAdminViewState();
 }
 
-class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
+class _NetworkAdminViewState extends ConsumerState<NetworkAdminView> {
   late final RouterPasswordNotifier _routerPasswordNotifier;
   late final TimezoneNotifier _timezoneNotifier;
+  late final PowerTableNotifier _powerTableNotifier;
+
   final TextEditingController _passwordController = TextEditingController();
 
   @override
@@ -43,6 +46,7 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
 
     _routerPasswordNotifier = ref.read(routerPasswordProvider.notifier);
     _timezoneNotifier = ref.read(timezoneProvider.notifier);
+    _powerTableNotifier = ref.read(powerTableProvider.notifier);
     doSomethingWithSpinner(
       context,
       Future.wait([_routerPasswordNotifier.fetch(), _timezoneNotifier.fetch()])
@@ -69,6 +73,7 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
     final isFwAutoUpdate = ref.watch(firmwareUpdateProvider
             .select((value) => value.settings.updatePolicy)) ==
         FirmwareUpdateSettings.firmwareUpdatePolicyAuto;
+    final powerTableState = ref.watch(powerTableProvider);
 
     return StyledAppPageView(
       scrollable: true,
@@ -76,6 +81,8 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
       child: Column(
         children: [
           AppCard(
+            padding: const EdgeInsets.symmetric(
+                vertical: Spacing.medium, horizontal: Spacing.large2),
             child: Column(children: [
               AppListCard(
                 padding: EdgeInsets.zero,
@@ -116,6 +123,8 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
           ),
           const AppGap.small2(),
           AppCard(
+            padding: const EdgeInsets.symmetric(
+                vertical: Spacing.medium, horizontal: Spacing.large2),
             child: AppSwitchTriggerTile(
               value: isFwAutoUpdate,
               title: AppText.labelLarge(loc(context).autoFirmwareUpdate),
@@ -145,6 +154,30 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
               });
             },
           ),
+          if (powerTableState.isPowerTableSelectable) ...[
+            const AppGap.small2(),
+            AppListCard(
+              title: AppText.bodyLarge(loc(context).transmitRegion),
+              description: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AppText.labelLarge(
+                      powerTableState.country?.resolveDisplayText(context) ??
+                          ''),
+                  const AppGap.small2(),
+                  AppText.bodyMedium(
+                    loc(context).transmitRegionDesc,
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+                ],
+              ),
+              trailing: const Icon(LinksysIcons.chevronRight),
+              onTap: () {
+                handleTransmitRefionTap(powerTableState);
+              },
+            ),
+          ],
           // AppListCard(
           //   title: AppText.bodyLarge('Manual Firmware update'),
           //   trailing: const Icon(LinksysIcons.add),
@@ -172,6 +205,80 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
         ],
       ),
     );
+  }
+
+  void handleTransmitRefionTap(PowerTableState state) {
+    var selected = state.country;
+    showSimpleAppDialog(context,
+        content: StatefulBuilder(builder: (context, setState) {
+      return ListView.separated(
+          itemBuilder: (context, index) {
+            final country = state.supportedCountries[index];
+            return ListTile(
+              hoverColor:
+                  Theme.of(context).colorScheme.background.withOpacity(.5),
+              title: Semantics(
+                identifier: 'now-locale-item-${country.name}',
+                child: AppText.labelLarge(
+                  country.resolveDisplayText(context),
+                ),
+              ),
+              trailing: selected == country
+                  ? Semantics(
+                      identifier: 'now-country-item-checked',
+                      label: 'checked',
+                      child: const Icon(LinksysIcons.check))
+                  : null,
+              onTap: () {
+                setState(() {
+                  selected = country;
+                });
+              },
+            );
+          },
+          separatorBuilder: (context, index) => Divider(),
+          itemCount: state.supportedCountries.length);
+    }), actions: [
+      AppTextButton(
+        loc(context).cancel,
+        onTap: () {
+          context.pop();
+        },
+      ),
+      AppTextButton(
+        loc(context).ok,
+        onTap: () {
+          context.pop(selected);
+        },
+      ),
+    ]).then((value) {
+      if (value != null && value is PowerTableCountries) {
+        onSave(_powerTableNotifier.save(value)).then((_) {
+          showSavedSuccessSnackbar();
+        }).onError((_, __) {
+          showSavedFailSnackbar();
+        }).catchError((error) {
+          showRouterNotFound();
+        }, test: (error) => error is JNAPSideEffectError);
+        ;
+      }
+    });
+  }
+
+  Future<T?> onSave<T>(Future<T> task) {
+    return doSomethingWithSpinner(context, task);
+  }
+
+  void showRouterNotFound() {
+    showRouterNotFoundAlert(context, ref);
+  }
+
+  void showSavedSuccessSnackbar() {
+    showSuccessSnackBar(context, loc(context).saved);
+  }
+
+  void showSavedFailSnackbar() {
+    showFailedSnackBar(context, loc(context).failedExclamation);
   }
 
   String _getTimezone(TimezoneState timezoneState) {

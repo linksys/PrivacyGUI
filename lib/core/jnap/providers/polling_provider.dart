@@ -149,6 +149,7 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
       const MapEntry(JNAPAction.getWANStatus, {}),
       const MapEntry(JNAPAction.getEthernetPortConnections, {}),
       const MapEntry(JNAPAction.getSystemStats, {}),
+      const MapEntry(JNAPAction.getPowerTableSettings, {}),
       const MapEntry(JNAPAction.getLocalTime, {}),
       const MapEntry(JNAPAction.getDeviceInfo, {}),
     ];

@@ -124,6 +124,7 @@ enum JNAPAction {
   getParentalControlSettings,
   // powerTable
   getPowerTableSettings,
+  setPowerTableSettings,
   // product
   getSoftSKUSettings,
   // qos

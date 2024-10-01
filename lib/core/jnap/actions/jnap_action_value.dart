@@ -210,6 +210,8 @@ enum _JNAPActionValue {
           'http://linksys.com/jnap/parentalcontrol/GetParentalControlSettings'),
   getPowerTableSettings(
       value: 'http://linksys.com/jnap/powertable/GetPowerTableSettings'),
+  setPowerTableSettings(
+      value: 'http://linksys.com/jnap/powertable/SetPowerTableSettings'),
   getSoftSKUSettings(
       value: 'http://linksys.com/jnap/product/GetSoftSKUSettings'),
   getQoSSettings(value: 'http://linksys.com/jnap/qos/GetQoSSettings'),
@@ -293,7 +295,7 @@ enum _JNAPActionValue {
       value: 'http://linksys.com/jnap/wirelessap/GetWPSServerSessionStatus'),
   setRadioSettings(
       value: 'http://linksys.com/jnap/wirelessap/SetRadioSettings'),
-      clientDeuth(value: 'http://linksys.com/jnap/wirelessap/ClientDeauth'),
+  clientDeuth(value: 'http://linksys.com/jnap/wirelessap/ClientDeauth'),
   // TODO - Checking for the reference
   setRadioSettings2(
       value: 'http://linksys.com/jnap/wirelessap/SetRadioSettings2'),

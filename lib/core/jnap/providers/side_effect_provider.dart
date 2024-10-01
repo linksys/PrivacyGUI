@@ -115,7 +115,21 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
     logger.d('[SideEffectManager] handleSideEffect: $result');
 
     state = state.copyWith(hasSideEffect: true, reason: sideEffects[0]);
-    if (sideEffects.contains('WirelessInterruption')) {
+    if (sideEffects.contains('DeviceRestart')) {
+      return poll(
+        pollFunc: testRouterReconnected,
+        maxRetry: overrides?.maxRetry ?? -1,
+        timeDelayStartInSec: overrides?.timeDelayStartInSec ?? 10,
+        retryDelayInSec: overrides?.retryDelayInSec ?? 10,
+        maxPollTimeInSec: overrides?.maxPollTimeInSec ?? 240,
+        condition: overrides?.condition,
+      ).then((value) => result).catchError(
+        (error) {
+          throw JNAPSideEffectError(result);
+        },
+        test: (error) => error is JNAPSideEffectError,
+      );
+    } else if (sideEffects.contains('WirelessInterruption')) {
       return poll(
         pollFunc: testRouterReconnected,
         maxRetry: overrides?.maxRetry ?? -1,
@@ -197,17 +211,7 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
   Future<bool> testRouterFullyBootedUp() async {
     final startTime = DateTime.now().millisecondsSinceEpoch;
 
-    final routerRepository = ref.read(routerRepositoryProvider);
-    return routerRepository
-        .send(
-          JNAPAction.getWANStatus,
-          fetchRemote: true,
-          cacheLevel: CacheLevel.noCache,
-          timeoutMs: 3000,
-          retries: 0,
-        )
-        .then((response) => RouterWANStatus.fromMap(response.output))
-        .then((status) {
+    return _getWANStatus().then((status) {
       final wanConnected = status.wanStatus == 'Connected' ||
           status.wanIPv6Status == 'Connected';
       final isRouterRespondingLongEnough =
@@ -222,16 +226,29 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
     final cachedSerialNumber =
         pref.getString(pCurrentSN) ?? pref.getString(pPnpConfiguredSN);
 
-    final routerRepository = ref.read(routerRepositoryProvider);
-    return routerRepository
-        .send(JNAPAction.getDeviceInfo,
-            fetchRemote: true, cacheLevel: CacheLevel.noCache, timeoutMs: 3000)
-        .then((response) => NodeDeviceInfo.fromJson(response.output))
+    return _getDeviceInfo()
         .then((devceInfo) => devceInfo.serialNumber == cachedSerialNumber)
         .then(
             (value) async => (value ? await testRouterFullyBootedUp() : false))
         .onError((error, stackTrace) => false);
   }
+
+  Future<RouterWANStatus> _getWANStatus() => ref
+      .read(routerRepositoryProvider)
+      .send(
+        JNAPAction.getWANStatus,
+        fetchRemote: true,
+        cacheLevel: CacheLevel.noCache,
+        timeoutMs: 3000,
+        retries: 0,
+      )
+      .then((response) => RouterWANStatus.fromMap(response.output));
+
+  Future<NodeDeviceInfo> _getDeviceInfo() => ref
+      .read(routerRepositoryProvider)
+      .send(JNAPAction.getDeviceInfo,
+          fetchRemote: true, cacheLevel: CacheLevel.noCache, timeoutMs: 3000)
+      .then((response) => NodeDeviceInfo.fromJson(response.output));
 
   _updateProgress(
     int currentRetry,
