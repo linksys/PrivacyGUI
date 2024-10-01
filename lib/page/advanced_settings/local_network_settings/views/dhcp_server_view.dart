@@ -94,6 +94,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
             AppSwitchTriggerTile(
               title:
                   AppText.labelLarge(loc(context).dhcpServer.capitalizeWords()),
+              semanticLabel: 'dhcp server',
               value: state.isDHCPEnabled,
               onChanged: (enabled) {
                 setState(() {

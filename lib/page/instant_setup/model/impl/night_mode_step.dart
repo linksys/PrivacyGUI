@@ -66,6 +66,7 @@ class NightModeStep extends PnpStep {
           mainAxisSize: MainAxisSize.min,
           children: [
             AppSwitch(
+              semanticLabel: 'node light',
               value: _isEnabled,
               onChanged: (value) {
                 // update(ref, key: 'isEnabled', value: value);

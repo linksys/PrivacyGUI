@@ -117,6 +117,7 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
               trailing: Padding(
                 padding: const EdgeInsets.only(left: Spacing.medium),
                 child: AppSwitch(
+                  semanticLabel: 'dmz',
                   value: state.settings.isDMZEnabled,
                   onChanged: (value) {
                     ref.read(dmzSettingsProvider.notifier).setSettings(

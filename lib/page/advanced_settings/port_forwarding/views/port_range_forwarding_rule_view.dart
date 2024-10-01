@@ -168,6 +168,7 @@ class _AddRuleContentViewState
       AppListCard(
         title: AppText.labelLarge(loc(context).ruleEnabled),
         trailing: AppSwitch(
+          semanticLabel: 'rule enabled',
           value: _isEnabled,
           onChanged: (value) {
             setState(() {
@@ -248,7 +249,10 @@ class _AddRuleContentViewState
       AppListCard(
         title: AppText.labelLarge(loc(context).protocol),
         description: AppText.bodyLarge(getProtocolTitle(context, _protocol)),
-        trailing: const Icon(LinksysIcons.edit, semanticLabel: 'edit',),
+        trailing: const Icon(
+          LinksysIcons.edit,
+          semanticLabel: 'edit',
+        ),
         onTap: () async {
           String? protocol = await showSelectProtocolModal(
             context,

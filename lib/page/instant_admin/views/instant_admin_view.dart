@@ -119,6 +119,7 @@ class _RouterPasswordContentViewState extends ConsumerState<NetworkAdminView> {
             child: AppSwitchTriggerTile(
               value: isFwAutoUpdate,
               title: AppText.labelLarge(loc(context).autoFirmwareUpdate),
+              semanticLabel: 'auto firmware update',
               onChanged: (value) {},
               event: (value) async {
                 await ref

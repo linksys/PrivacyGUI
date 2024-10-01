@@ -254,6 +254,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
         padding: const EdgeInsets.symmetric(vertical: 8.0),
         title: AppText.labelLarge(loc(context).guest),
         trailing: AppSwitch(
+          semanticLabel: 'guest',
           value: state.isEnabled,
           onChanged: (value) {
             ref.read(wifiListProvider.notifier).setWiFiEnabled(value);
@@ -308,6 +309,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
         title:
             AppText.labelLarge(getWifiRadioBandTitle(context, radio.radioID)),
         trailing: AppSwitch(
+          semanticLabel: getWifiRadioBandTitle(context, radio.radioID),
           value: radio.isEnabled,
           onChanged: (value) {
             ref
