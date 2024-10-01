@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
@@ -59,10 +59,23 @@ class _MACCloneViewState extends ConsumerState<MACCloneView> {
             ref
                 .read(internetSettingsProvider.notifier)
                 .setMacAddressClone(_isEnabled, _valueController.text)
-                .then(
-                    (value) => showSuccessSnackBar(context, loc(context).saved))
-                .onError((error, stackTrace) =>
-                    showFailedSnackBar(context, loc(context).unknownError)),
+                .then((value) {
+              showSuccessSnackBar(context, loc(context).saved);
+              setState(() {
+                state = ref.read(internetSettingsProvider);
+              });
+            }).catchError((error) {
+              final _error = error as JNAPError;
+              final errorMsg = switch (_error.result) {
+                'ErrorInvalidMACAddress' => loc(context).invalidMACAddress,
+                _ => _error.result,
+              };
+
+              showFailedSnackBar(context, errorMsg);
+            }, test: (error) => error is JNAPError).onError(
+                    (error, stackTrace) {
+              showFailedSnackBar(context, loc(context).generalError);
+            }),
           );
         },
       ),
