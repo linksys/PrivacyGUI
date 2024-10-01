@@ -946,6 +946,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
         title: loc(context).ipv6Automatic,
         color: Theme.of(context).colorScheme.background,
         trailing: AppSwitch(
+          semanticLabel: 'ipv6 automatic',
           value: state.ipv6Setting.isIPv6AutomaticEnabled,
           onChanged: (value) {
             setState(() {

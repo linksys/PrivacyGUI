@@ -58,6 +58,7 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
             // AppSwitchTriggerTile(
             //   value: _pushEnabled,
             //   title: AppText.bodyLarge('Enable Push Notification'),
+            //   semanticLabel: 'Enable Push Notification',
             //   subtitle: AppText.bodySmall(
             //     'Experiential',
             //     color: Colors.grey,

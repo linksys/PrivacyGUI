@@ -80,6 +80,11 @@ class DashboardWiFiGrid extends ConsumerWidget {
                         .join('/'),
               ),
               AppSwitch(
+                semanticLabel: item.isGuest
+                    ? 'guest'
+                    : item.radios
+                        .map((e) => e.replaceAll('RADIO_', ''))
+                        .join('/'),
                 value: item.isEnabled,
                 onChanged: (value) async {
                   if (item.isGuest) {

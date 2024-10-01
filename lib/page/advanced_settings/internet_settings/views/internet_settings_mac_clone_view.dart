@@ -90,6 +90,7 @@ class _MACCloneViewState extends ConsumerState<MACCloneView> {
               padding: EdgeInsets.zero,
               title: loc(context).macAddressClone,
               trailing: AppSwitch(
+                semanticLabel: 'mac address clone',
                 value: _isEnabled,
                 onChanged: (value) {
                   setState(() {

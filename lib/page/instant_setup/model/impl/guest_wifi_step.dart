@@ -60,6 +60,7 @@ class GuestWiFiStep extends PnpStep {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppSwitch(
+            semanticLabel: 'pnp guest wifi',
             value: isEnabled,
             onChanged: (value) {
               setState(() {

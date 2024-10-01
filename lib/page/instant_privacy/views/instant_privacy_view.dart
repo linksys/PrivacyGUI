@@ -273,6 +273,7 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView> {
       children: [
         Expanded(child: AppText.labelLarge(loc(context).instantPrivacy)),
         AppSwitch(
+          semanticLabel: 'instant privacy',
           value: state.mode != MacFilterMode.disabled,
           onChanged: (value) {
             _showEnableDialog(value);

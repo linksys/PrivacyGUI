@@ -165,6 +165,7 @@ class _AddRuleContentViewState
       AppListCard(
         title: AppText.labelLarge(loc(context).ruleEnabled),
         trailing: AppSwitch(
+          semanticLabel: 'rule enabled',
           value: _isEnabled,
           onChanged: (value) {
             setState(() {
