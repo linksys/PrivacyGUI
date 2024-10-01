@@ -932,6 +932,8 @@
   "reserveIp": "Reserve IP",
   "reservedIpDescription": "Reserving DHCP means your device will always be assigned to this specific IP address.",
   "releaseReservedIp": "Release Reserved IP",
-  "releaseReservedIpDescription": "Once IP reservation is released your device will obtain a different IP address upon reconnecting."
+  "releaseReservedIpDescription": "Once IP reservation is released your device will obtain a different IP address upon reconnecting.",
+  "cpuUtilization": "CPU Utilization",
+  "memoryUtilization": "Memory Utilization"
   
 }

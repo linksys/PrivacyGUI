@@ -179,6 +179,7 @@ enum JNAPAction {
   getRadioInfo,
   getWPSServerSessionStatus,
   setRadioSettings,
+  clientDeauth,
   // vlanTagging
   getVLANTaggingSettings,
   setVLANTaggingSettings,
