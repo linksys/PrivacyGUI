@@ -128,6 +128,9 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
     final localTime =
         DateTime.fromMillisecondsSinceEpoch(dashboardState.localTime);
     final master = devicesState.masterDevice;
+    final cpuLoad = dashboardState.cpuLoad;
+    final memoryLoad = dashboardState.memoryLoad;
+
     return AppCard(
         key: const ValueKey('deviceInfoCard'),
         padding: const EdgeInsets.symmetric(vertical: Spacing.large2),
@@ -250,6 +253,28 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
                 ],
               ),
             ),
+            if (cpuLoad != null)
+              _appNoBoarderCard(
+                child: Wrap(
+                  direction: Axis.vertical,
+                  children: [
+                    AppText.bodySmall(loc(context).cpuUtilization),
+                    AppText.labelMedium(
+                        '${(double.tryParse(cpuLoad) ?? 0) * 100}%'),
+                  ],
+                ),
+              ),
+            if (memoryLoad != null)
+              _appNoBoarderCard(
+                child: Wrap(
+                  direction: Axis.vertical,
+                  children: [
+                    AppText.bodySmall(loc(context).memoryUtilization),
+                    AppText.labelMedium(
+                        '${(double.tryParse(memoryLoad) ?? 0) * 100}%'),
+                  ],
+                ),
+              ),
           ],
         ));
   }

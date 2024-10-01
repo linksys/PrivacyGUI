@@ -81,7 +81,13 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
 
     if (getSystemStats != null) {
       final uptimeSeconds = getSystemStats['uptimeSeconds'];
-      newState = newState.copyWith(uptimes: uptimeSeconds);
+      final cpuLoad = getSystemStats['CPULoad'];
+      final memoryLoad = getSystemStats['MemoryLoad'];
+      newState = newState.copyWith(
+        uptimes: uptimeSeconds,
+        cpuLoad: cpuLoad,
+        memoryLoad: memoryLoad,
+      );
     }
 
     if (getEthernetPortConnections != null) {

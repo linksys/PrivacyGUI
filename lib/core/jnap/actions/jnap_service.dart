@@ -35,6 +35,7 @@ enum JNAPService {
   diagnostics7(value: 'http://linksys.com/jnap/diagnostics/Diagnostics7'),
   diagnostics8(value: 'http://linksys.com/jnap/diagnostics/Diagnostics8'),
   diagnostics9(value: 'http://linksys.com/jnap/diagnostics/Diagnostics9'),
+  diagnostics10(value: 'http://linksys.com/jnap/diagnostics/Diagnostics10'),
   firewall(value: 'http://linksys.com/jnap/firewall/Firewall'),
   firewall2(value: 'http://linksys.com/jnap/firewall/Firewall2'),
   firmwareUpdate(
@@ -151,6 +152,7 @@ enum JNAPService {
   // 2016-04-19	Consolidated WirelessAP2 and WirelessAP3 into WirelessAP4.
   wirelessAP3(value: 'http://linksys.com/jnap/wirelessap/WirelessAP3'),
   wirelessAP4(value: 'http://linksys.com/jnap/wirelessap/WirelessAP4'),
+  wirelessAP5(value: 'http://linksys.com/jnap/wirelessap/WirelessAP5'),
   wirelessScheduler(
       value: 'http://linksys.com/jnap/wirelessscheduler/WirelessScheduler'),
   wirelessScheduler2(

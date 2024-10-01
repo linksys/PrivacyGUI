@@ -22,6 +22,8 @@ class DashboardManagerState extends Equatable {
   final String? skuModelNumber;
   final int localTime;
   final WanExternal? wanExternal;
+  final String? cpuLoad;
+  final String? memoryLoad;
 
   const DashboardManagerState({
     this.deviceInfo,
@@ -36,6 +38,8 @@ class DashboardManagerState extends Equatable {
     this.skuModelNumber,
     this.localTime = 0,
     this.wanExternal,
+    this.cpuLoad,
+    this.memoryLoad,
   });
 
   @override
@@ -53,6 +57,8 @@ class DashboardManagerState extends Equatable {
       skuModelNumber,
       localTime,
       wanExternal,
+      cpuLoad,
+      memoryLoad,
     ];
   }
 
@@ -69,6 +75,8 @@ class DashboardManagerState extends Equatable {
     String? skuModelNumber,
     int? localTime,
     WanExternal? wanExternal,
+    String? cpuLoad,
+    String? memoryLoad,
   }) {
     return DashboardManagerState(
       deviceInfo: deviceInfo ?? this.deviceInfo,
@@ -84,6 +92,8 @@ class DashboardManagerState extends Equatable {
       skuModelNumber: skuModelNumber ?? this.skuModelNumber,
       localTime: localTime ?? this.localTime,
       wanExternal: wanExternal ?? this.wanExternal,
+      cpuLoad: cpuLoad ?? this.cpuLoad,
+      memoryLoad: memoryLoad ?? this.memoryLoad,
     );
   }
 
@@ -101,6 +111,8 @@ class DashboardManagerState extends Equatable {
       'skuModelNumber': skuModelNumber,
       'localTime': localTime,
       'wanExternal': wanExternal?.toMap(),
+      'cpuLoad': cpuLoad,
+      'memoryLoad': memoryLoad,
     }..removeWhere((key, value) => value == null);
   }
 
@@ -138,6 +150,8 @@ class DashboardManagerState extends Equatable {
       wanExternal: map['wanExternal'] == null
           ? null
           : WanExternal.fromMap(map['wanExternal']),
+      cpuLoad: map['cpuLoad'],
+      memoryLoad: map['memoryLoad'],
     );
   }
 

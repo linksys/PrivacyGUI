@@ -303,6 +303,10 @@ void _updateBetterActions(JNAPService service) {
       _betterActionMap[JNAPAction.setRadioSettings] =
           _JNAPActionValue.setRadioSettings3.value;
       break;
+    case JNAPService.wirelessAP5:
+      _betterActionMap[JNAPAction.clientDeauth] =
+          _JNAPActionValue.clientDeuth.value;
+      break;
     case JNAPService.wirelessScheduler:
       break;
     case JNAPService.wirelessScheduler2:
@@ -350,6 +354,10 @@ void _updateBetterActions(JNAPService service) {
     case JNAPService.diagnostics8:
       break;
     case JNAPService.diagnostics9:
+      break;
+    case JNAPService.diagnostics10:
+      _betterActionMap[JNAPAction.getSystemStats] =
+          _JNAPActionValue.getSystemStats2.value;
       break;
     case JNAPService.settings:
       break;

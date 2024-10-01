@@ -41,15 +41,18 @@ class ServiceHelper {
   bool isSupportAirtimeFairness([List<String>? services]) =>
       isServiceSupport(JNAPService.airtimeFairness, services);
 
+  bool isSupportAdminPasswordAuthStatus([List<String>? services]) =>
+      isServiceSupport(JNAPService.core7, services);
+
   bool isSupportChildReboot([List<String>? services]) =>
       isServiceSupport(JNAPService.core8, services);
 
   bool isSupportChildFactoryReset([List<String>? services]) =>
       isServiceSupport(JNAPService.core9, services);
-      
+
   bool isSupportWANExternal([List<String>? services]) =>
       isServiceSupport(JNAPService.router13);
 
-  bool isSupportAdminPasswordAuthStatus([List<String>? services]) =>
-      isServiceSupport(JNAPService.core7, services);
+  bool isSupportClientDeauth([List<String>? services]) =>
+      isServiceSupport(JNAPService.wirelessAP5);
 }

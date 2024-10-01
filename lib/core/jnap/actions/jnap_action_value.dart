@@ -49,6 +49,7 @@ enum _JNAPActionValue {
   getPinStatus(value: 'http://linksys.com/jnap/diagnostics/GetPingStatus'),
   getSysInfoData(value: 'http://linksys.com/jnap/diagnostics/GetSysinfoData'),
   getSystemStats(value: 'http://linksys.com/jnap/diagnostics/GetSystemStats'),
+  getSystemStats2(value: 'http://linksys.com/jnap/diagnostics/GetSystemStats2'),
   getTracerouteStatus(
       value: 'http://linksys.com/jnap/diagnostics/GetTracerouteStatus'),
   restorePreviousFirmware(
@@ -255,8 +256,7 @@ enum _JNAPActionValue {
       value: 'http://linksys.com/jnap/router/GetExpressForwardingSettings'),
   setExpressForwardingSettings(
       value: 'http://linksys.com/jnap/router/SetExpressForwardingSettings'),
-  getWANExternal(
-      value: 'http://linksys.com/jnap/router/GetWANExternal'),    
+  getWANExternal(value: 'http://linksys.com/jnap/router/GetWANExternal'),
   getManagementSettings(
       value: 'http://linksys.com/jnap/routermanagement/GetManagementSettings'),
   getManagementSettings2(
@@ -293,6 +293,7 @@ enum _JNAPActionValue {
       value: 'http://linksys.com/jnap/wirelessap/GetWPSServerSessionStatus'),
   setRadioSettings(
       value: 'http://linksys.com/jnap/wirelessap/SetRadioSettings'),
+      clientDeuth(value: 'http://linksys.com/jnap/wirelessap/ClientDeauth'),
   // TODO - Checking for the reference
   setRadioSettings2(
       value: 'http://linksys.com/jnap/wirelessap/SetRadioSettings2'),
