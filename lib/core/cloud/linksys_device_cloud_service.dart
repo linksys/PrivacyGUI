@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:privacy_gui/constants/_constants.dart';
+import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/cloud2_service.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/device_service.dart';
 import 'package:privacy_gui/core/http/linksys_http_client.dart';
@@ -42,6 +43,11 @@ class DeviceCloudService {
 
   // geolocation
   Future<Map<String, dynamic>> getGeolocation(LinksysDevice master) async {
+    final cacheData = checkFromCache(kGeoLocation, 36000000);
+    if (cacheData != null) {
+      logger.d('Get $kGeoLocation from cache: $cacheData');
+      return cacheData;
+    }
     final linksysToken = await registerDevice(
         serialNumber: master.unit.serialNumber ?? '',
         modelNumber: master.modelNumber ?? '',
@@ -50,7 +56,11 @@ class DeviceCloudService {
         .geolocation(
             linksysToken: linksysToken,
             serialNumber: master.unit.serialNumber ?? '')
-        .then((response) => jsonDecode(response.body));
+        .then((response) {
+      final result = jsonDecode(utf8.decode(response.bodyBytes));
+      handleDataCache(kGeoLocation, result, master.unit.serialNumber);
+      return result;
+    });
   }
 
   // device registation
@@ -114,5 +124,21 @@ class DeviceCloudService {
       throw error!;
     });
     return linksysToken;
+  }
+
+  Map<String, dynamic>? checkFromCache(String action,
+      [int? expirationOverride]) {
+    final cache = ProviderContainer().read(linksysCacheManagerProvider);
+    final isValidData = cache.checkCacheDataValid(action, expirationOverride);
+    return isValidData ? cache.data[action]["data"] : null;
+  }
+
+  handleDataCache(
+    String action,
+    Map<String, dynamic> data,
+    String? serialNumber,
+  ) {
+    final cache = ProviderContainer().read(linksysCacheManagerProvider);
+    cache.handleJNAPCached(data, action, serialNumber);
   }
 }

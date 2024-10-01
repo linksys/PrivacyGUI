@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_state.d
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 
 final geolocationProvider =
     AsyncNotifierProvider<GeolocationNotifier, GeolocationState>(
@@ -31,8 +32,12 @@ class GeolocationNotifier extends AsyncNotifier<GeolocationState> {
       logger.e('Not able to fetch geolocation!');
       return {};
     });
+    final locale = ref.read(appSettingsProvider).locale;
+    final localeTag = locale?.toLanguageTag() ?? 'en';
     final name = result['org'] ?? '';
-    final region = result['region'] ?? '';
+    final region = result['region']['names'][localeTag] ??
+        result['region']['defaultName'] ??
+        '';
     final countryCode = result['countryCode'] ?? '';
     return GeolocationState(
         name: name, region: region, countryCode: countryCode);
