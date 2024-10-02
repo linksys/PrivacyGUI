@@ -288,10 +288,10 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     final wirelessConnections = state.wirelessConnections;
     final wirelessData = wirelessConnections[device.getMacAddress()];
     final radioID = wirelessData?.radioID;
+
+    /// if connection type is guest just ruturn any one of ssid, because it is all the same
     return device.connectedWifiType == WifiConnectionType.guest
-        ? state.guestRadioSettings?.radios
-            .firstWhereOrNull((element) => element.radioID == radioID)
-            ?.guestSSID
+        ? state.guestRadioSettings?.radios.firstOrNull?.guestSSID
         : state.radioInfos[radioID]?.settings.ssid;
   }
 

@@ -141,7 +141,7 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
                           context,
                           node.signalDecibels ?? 0,
                           isOnline: node.isOnline(),
-                          isWired: !node.isWirelessConnection(),
+                          isWired: node.getConnectionType() == DeviceConnectionType.wired,
                         ));
                   }).expandIndexed((index, element) sync* {
                     yield element;

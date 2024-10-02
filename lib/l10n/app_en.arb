@@ -956,5 +956,7 @@
   "middleEastUnitedArabEmirates": "Middle East - United Arab Emirates",
   "middleEast": "Middle East",
   "transmitRegion": "Transmit Region",
-  "transmitRegionDesc": "WiFi transmission power is set by regional limits. You could be subject to fines and penalties if you choose a region other than where you will use the router."
+  "transmitRegionDesc": "WiFi transmission power is set by regional limits. You could be subject to fines and penalties if you choose a region other than where you will use the router.",
+  "lightsOff": "Lights off",
+  "manualFirmwareUpdate": "Manual firmware update"
 }

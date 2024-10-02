@@ -6,23 +6,31 @@ import 'package:equatable/equatable.dart';
 class GeolocationState extends Equatable {
   final String name;
   final String region;
+  final String country;
   final String countryCode;
+  final String continentCode;
 
   const GeolocationState({
     required this.name,
     required this.region,
+    required this.country,
     required this.countryCode,
+    required this.continentCode,
   });
 
   GeolocationState copyWith({
     String? name,
     String? region,
+    String? country,
     String? countryCode,
+    String? continentCode,
   }) {
     return GeolocationState(
       name: name ?? this.name,
       region: region ?? this.region,
+      country: country ?? this.country,
       countryCode: countryCode ?? this.countryCode,
+      continentCode: continentCode ?? this.continentCode,
     );
   }
 
@@ -30,7 +38,9 @@ class GeolocationState extends Equatable {
     return <String, dynamic>{
       'name': name,
       'region': region,
+      'country': country,
       'countryCode': countryCode,
+      'continentCode': continentCode,
     };
   }
 
@@ -38,17 +48,40 @@ class GeolocationState extends Equatable {
     return GeolocationState(
       name: map['name'] as String,
       region: map['region'] as String,
+      country: map['country'] as String,
       countryCode: map['countryCode'] as String,
+      continentCode: map['continentCode'] as String,
     );
   }
 
   String toJson() => json.encode(toMap());
 
-  factory GeolocationState.fromJson(String source) => GeolocationState.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory GeolocationState.fromJson(String source) =>
+      GeolocationState.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
   bool get stringify => true;
 
   @override
-  List<Object> get props => [name, region, countryCode];
+  List<Object> get props {
+    return [
+      name,
+      region,
+      country,
+      countryCode,
+      continentCode,
+    ];
+  }
+}
+
+extension GeolocationStateExt on GeolocationState {
+  String get displayLocationText {
+    /// Location display rule:
+    /// if has region -> region, countryCode
+    /// else -> country, continentCode
+
+    return region.isEmpty
+        ? '$country, $continentCode'
+        : '$region, $countryCode';
+  }
 }

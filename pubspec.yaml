@@ -80,6 +80,7 @@ dependencies:
   get_it: ^7.7.0
   pdf: ^3.11.1
   web: ^0.5.1
+  file_picker: ^8.0.7
 
 dev_dependencies:
   flutter_test:

@@ -23,7 +23,13 @@ class GeolocationNotifier extends AsyncNotifier<GeolocationState> {
 
   Future<GeolocationState> fetch(LinksysDevice? master) async {
     if (master == null) {
-      return const GeolocationState(name: '', region: '', countryCode: '');
+      return const GeolocationState(
+        name: '',
+        region: '',
+        country: '',
+        countryCode: '',
+        continentCode: '',
+      );
     }
     final result = await ref
         .read(deviceCloudServiceProvider)
@@ -35,11 +41,21 @@ class GeolocationNotifier extends AsyncNotifier<GeolocationState> {
     final locale = ref.read(appSettingsProvider).locale;
     final localeTag = locale?.toLanguageTag() ?? 'en';
     final name = result['org'] ?? '';
+
     final region = result['region']['names'][localeTag] ??
         result['region']['defaultName'] ??
         '';
     final countryCode = result['countryCode'] ?? '';
+    final country = result['country']['names'][localeTag] ??
+        result['country']['defaultName'] ??
+        '';
+    final continentCode = result['continentCode'] ?? '';
     return GeolocationState(
-        name: name, region: region, countryCode: countryCode);
+      name: name,
+      region: region,
+      country: country,
+      countryCode: countryCode,
+      continentCode: continentCode,
+    );
   }
 }
