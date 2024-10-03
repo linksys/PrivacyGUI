@@ -181,29 +181,50 @@ class _NetworkAdminViewState extends ConsumerState<NetworkAdminView> {
               },
             ),
           ],
-          if (dashboardManager.skuModelNumber?.endsWith('AH') != true) ...[
-            const AppGap.small2(),
-            AppListCard(
-              title: AppText.bodyLarge(loc(context).manualFirmwareUpdate),
-              onTap: () async {
-                final result = await FilePicker.platform.pickFiles();
-                if (result != null) {
-                  final file = result.files.single;
-                  logger.d('XXXXX: Manual Firmware update: file: ${file.name}');
-                  ref
-                      .read(firmwareUpdateProvider.notifier)
-                      .manualFirmwareUpdate(file.name, file.bytes ?? [])
-                      .then((value) {
-                    if (value) {
-                      showSuccessSnackBar(context, 'Firmware update success');
-                    } else {
-                      showFailedSnackBar(context, 'Error updating firmware');
-                    }
-                  });
-                }
-              },
-            ),
-          ],
+          // if (dashboardManager.skuModelNumber?.endsWith('AH') != true) ...[
+          //   const AppGap.small2(),
+          //   AppListCard(
+          //     title: AppText.bodyLarge(loc(context).manualFirmwareUpdate),
+          //     onTap: () async {
+          //       final result = await FilePicker.platform.pickFiles();
+          //       if (result != null) {
+          //         final file = result.files.single;
+          //         logger.d('XXXXX: Manual Firmware update: file: ${file.name}');
+          //         ref
+          //             .read(firmwareUpdateProvider.notifier)
+          //             .manualFirmwareUpdate(file.name, file.bytes ?? [])
+          //             .then((value) {
+          //           if (value) {
+          //             showSuccessSnackBar(context, 'Firmware update success');
+          //           } else {
+          //             showFailedSnackBar(context, 'Error updating firmware');
+          //           }
+          //         });
+          //       }
+          //     },
+          //   ),
+          // ],
+          const AppGap.small2(),
+          AppListCard(
+            title: AppText.bodyLarge(loc(context).manualFirmwareUpdate),
+            onTap: () async {
+              final result = await FilePicker.platform.pickFiles();
+              if (result != null) {
+                final file = result.files.single;
+                logger.d('XXXXX: Manual Firmware update: file: ${file.name}');
+                ref
+                    .read(firmwareUpdateProvider.notifier)
+                    .manualFirmwareUpdate(file.name, file.bytes ?? [])
+                    .then((value) {
+                  if (value) {
+                    showSuccessSnackBar(context, 'Firmware update success');
+                  } else {
+                    showFailedSnackBar(context, 'Error updating firmware');
+                  }
+                });
+              }
+            },
+          ),
         ],
       ),
     );
