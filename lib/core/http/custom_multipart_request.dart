@@ -122,7 +122,7 @@ class CustomMultipartRequest extends BaseRequest {
   /// The return value is guaranteed to contain only ASCII characters.
   String _headerForField(String name, String value) {
     var header =
-        'content-disposition: form-data; name="${_browserEncode(name)}"';
+        'Content-Disposition: form-data; name="${_browserEncode(name)}"';
     if (!isPlainAscii(value)) {
       header = '$header\r\n'
           'content-type: text/plain; charset=utf-8\r\n'
@@ -136,7 +136,7 @@ class CustomMultipartRequest extends BaseRequest {
   /// The return value is guaranteed to contain only ASCII characters.
   String _headerForFile(MultipartFile file) {
     var header = 'content-type: ${file.contentType}\r\n'
-        'content-disposition: form-data; name="${_browserEncode(file.field)}"';
+        'Content-Disposition: form-data; name="${_browserEncode(file.field)}"';
 
     if (file.filename != null) {
       header = '$header; filename="${_browserEncode(file.filename!)}"';
