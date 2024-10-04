@@ -282,7 +282,9 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
   }
 
   Future<bool> manualFirmwareUpdate(String filename, List<int> bytes) async {
-    final client = LinksysHttpClient();
+    final client = LinksysHttpClient()
+      ..timeoutMs = 60000
+      ..retries = 0;
     final localPwd = ref.read(authProvider).value?.localPassword ??
         await const FlutterSecureStorage().read(key: pLocalPassword) ??
         '';
@@ -319,9 +321,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
   }
 
   Future waitForRouterBackOnline() {
-    return ref
-        .read(sideEffectProvider.notifier)
-        .manualDeviceRestart();
+    return ref.read(sideEffectProvider.notifier).manualDeviceRestart();
   }
 }
 
