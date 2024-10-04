@@ -130,9 +130,10 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
         if (currentSN != null &&
             ref.read(dashboardManagerProvider).deviceInfo?.serialNumber !=
                 currentSN) {
-          if (mounted) {
-            showRouterNotFoundAlert(context, ref);
-          }
+          // TODO
+          // if (mounted) {
+          //   showRouterNotFoundAlert(context, ref);
+          // }
         } else if (ref.read(authProvider).value?.loginType != LoginType.none &&
             currentSN?.isNotEmpty == true) {
           ref.read(pollingProvider.notifier).startPolling();
