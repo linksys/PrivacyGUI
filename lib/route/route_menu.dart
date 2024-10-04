@@ -69,12 +69,20 @@ final menus = [
       builder: (context, state) => NetworkAdminView(),
       routes: [
         LinksysRoute(
+          name: RouteNamed.manualFirmwareUpdate,
+          path: RoutePath.manualFirmwareUpdate,
+          config: LinksysRouteConfig(
+            column: ColumnGrid(column: 9),
+          ),
+          builder: (context, state) => ManualFirmwareUpdateView(),
+        ),
+        LinksysRoute(
           name: RouteNamed.settingsTimeZone,
           path: RoutePath.settingsTimeZone,
           config: LinksysRouteConfig(
             column: ColumnGrid(column: 9),
           ),
-          builder: (context, state) => TimezoneView(),
+          builder: (context, state) => ManualFirmwareUpdateView(),
         ),
       ]),
   LinksysRoute(

@@ -103,6 +103,27 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
     );
   }
 
+  Future manualDeviceRestart({
+    JNAPSideEffectOverrides? overrides,
+  }) {
+    state = state.copyWith(hasSideEffect: true, reason: 'manual', progress: 0);
+    return poll(
+      pollFunc: testRouterReconnected,
+      maxRetry: overrides?.maxRetry ?? -1,
+      timeDelayStartInSec: overrides?.timeDelayStartInSec ?? 10,
+      retryDelayInSec: overrides?.retryDelayInSec ?? 10,
+      maxPollTimeInSec: overrides?.maxPollTimeInSec ?? 240,
+      condition: overrides?.condition,
+    ).catchError(
+      (error) {
+        throw JNAPSideEffectError();
+      },
+      test: (error) => error is JNAPSideEffectError,
+    ).whenComplete(() {
+      finishSideEffect();
+    });
+  }
+
   Future<JNAPResult> handleSideEffect(
     JNAPResult result, {
     JNAPSideEffectOverrides? overrides,
@@ -161,7 +182,11 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
   }
 
   finishSideEffect() {
-    state = state.copyWith(hasSideEffect: false, reason: null);
+    state = state.copyWith(
+      hasSideEffect: false,
+      reason: null,
+      progress: 0,
+    );
   }
 
   Future<bool> poll({
