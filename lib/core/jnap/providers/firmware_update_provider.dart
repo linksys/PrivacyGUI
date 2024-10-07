@@ -318,13 +318,13 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
       }
       logger.e('[FIRMWARE]: Manual firmware update: Error: $error');
       throw ManualFirmwareUpdateException('UnknownError');
-    }).whenComplete(() {
-      ref.read(pollingProvider.notifier).startPolling();
     });
   }
 
   Future waitForRouterBackOnline() {
-    return ref.read(sideEffectProvider.notifier).manualDeviceRestart();
+    return ref.read(sideEffectProvider.notifier).manualDeviceRestart().whenComplete(() {
+      ref.read(pollingProvider.notifier).startPolling();
+    });
   }
 }
 

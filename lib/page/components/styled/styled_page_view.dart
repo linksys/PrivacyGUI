@@ -172,8 +172,9 @@ class StyledAppPageView extends ConsumerWidget {
             builder: (context, showColumnOverlay, _) {
               return Column(
                 children: [
-                  const PreferredSize(
-                      preferredSize: Size(0, 80), child: TopBar()),
+                  topbar ??
+                      const PreferredSize(
+                          preferredSize: Size(0, 80), child: TopBar()),
                   Expanded(
                     child: AppResponsiveColumnLayout(
                       column: config?.column?.column,

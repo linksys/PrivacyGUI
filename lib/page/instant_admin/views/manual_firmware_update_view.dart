@@ -10,7 +10,6 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/customs/rotating_icon.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
-import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/utils.dart';
@@ -51,7 +50,7 @@ class ManualUpdateInstalling implements ManualUpdateStatus<double> {
       ManualUpdateInstalling(progress ?? this.progress);
 
   @override
-  double get value => progress / 100.0;
+  double get value => (progress % 100) / 100.0;
 }
 
 class ManualUpdateRebooting implements ManualUpdateStatus<String> {
@@ -117,7 +116,7 @@ class _ManualFirmwareUpdateViewState
                   .read(firmwareUpdateProvider.notifier)
                   .waitForRouterBackOnline()
                   .then((_) {
-                setState(() {                                
+                setState(() {
                   _status?.stop();
                   _status = null;
                 });
@@ -125,7 +124,6 @@ class _ManualFirmwareUpdateViewState
               }).catchError((error) {
                 showRouterNotFoundAlert(context, ref);
               }, test: (error) => error is JNAPSideEffectError);
-              
             }, onError: (error, stackTrace) {
               setState(() {
                 _status?.stop();
@@ -185,10 +183,10 @@ class _ManualFirmwareUpdateViewState
   }
 
   Widget _processingView() {
-    return StyledAppPageView(
-      appBarStyle: AppBarStyle.none,
-      child: AppBasicLayout(
-        content: Center(
+    return AppBasicLayout(
+      content: Center(
+        child: SizedBox(
+          width: 6.col,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -207,32 +205,37 @@ class _ManualFirmwareUpdateViewState
             ],
           ),
         ),
-        footer: _status is ManualUpdateInstalling
-            ? Column(
-                children: [
-                  LinearProgressIndicator(
-                      value: _status is ManualUpdateInstalling
-                          ? _status?.value ?? 0
-                          : 1.0,
-                      backgroundColor: Theme.of(context)
-                          .colorSchemeExt
-                          .surfaceContainerHighest),
-                  AppGap.small2(),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      AppText.bodyMedium(
-                          loc(context).manualFirmwareEstimatedTime),
-                      AppText.bodyMedium(DateFormatUtils.formatDuration(
-                          Duration(
-                              seconds:
-                                  (60 * (1 - (_status?.value ?? 1))).round()))),
-                    ],
-                  ),
-                ],
-              )
-            : Center(),
       ),
+      footer: _status is ManualUpdateInstalling
+          ? Center(
+              child: SizedBox(
+                width: 6.col,
+                child: Column(
+                  children: [
+                    LinearProgressIndicator(
+                        value: _status is ManualUpdateInstalling
+                            ? _status?.value ?? 0
+                            : 1.0,
+                        backgroundColor: Theme.of(context)
+                            .colorSchemeExt
+                            .surfaceContainerHighest),
+                    AppGap.small2(),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        AppText.bodyMedium(
+                            loc(context).manualFirmwareEstimatedTime),
+                        AppText.bodyMedium(DateFormatUtils.formatDuration(
+                            Duration(
+                                seconds: (60 * (1 - (_status?.value ?? 1)))
+                                    .round()))),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            )
+          : Center(),
     );
   }
 
