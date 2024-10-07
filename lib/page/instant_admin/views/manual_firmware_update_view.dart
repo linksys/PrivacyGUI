@@ -4,9 +4,11 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/customs/rotating_icon.dart';
+import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
@@ -115,12 +117,15 @@ class _ManualFirmwareUpdateViewState
                   .read(firmwareUpdateProvider.notifier)
                   .waitForRouterBackOnline()
                   .then((_) {
-                setState(() {
+                setState(() {                                
                   _status?.stop();
                   _status = null;
                 });
                 _showSuccessSnackbar();
-              });
+              }).catchError((error) {
+                showRouterNotFoundAlert(context, ref);
+              }, test: (error) => error is JNAPSideEffectError);
+              
             }, onError: (error, stackTrace) {
               setState(() {
                 _status?.stop();

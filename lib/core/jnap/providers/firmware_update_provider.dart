@@ -296,6 +296,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     );
     final log = BenchMarkLogger(name: 'Manual FW update');
     log.start();
+    await ref.read(pollingProvider.notifier).stopPolling();
     return client.upload(Uri.parse('https://${getLocalIp(ref)}/jcgi/'), [
       multiPart,
     ], fields: {
@@ -317,6 +318,8 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
       }
       logger.e('[FIRMWARE]: Manual firmware update: Error: $error');
       throw ManualFirmwareUpdateException('UnknownError');
+    }).whenComplete(() {
+      ref.read(pollingProvider.notifier).startPolling();
     });
   }
 
