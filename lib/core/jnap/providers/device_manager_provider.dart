@@ -437,11 +437,7 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
       state = state.copyWith(
         deviceList: newDeviceList,
       );
-    }).then((value) => routerRepository.send(
-          JNAPAction.getDevices,
-          fetchRemote: true,
-          auth: true,
-        ));
+    }).then((value) => ref.read(pollingProvider.notifier).forcePolling());
   }
 
   Future<void> deauthClient({required String macAddress}) async {
@@ -454,10 +450,6 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
           }..removeWhere((key, value) => value == null),
           auth: true,
         )
-        .then((value) => routerRepository.send(
-              JNAPAction.getDevices,
-              fetchRemote: true,
-              auth: true,
-            ));
+        .then((value) => ref.read(pollingProvider.notifier).forcePolling());
   }
 }
