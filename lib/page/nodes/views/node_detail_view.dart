@@ -71,18 +71,22 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
   Widget build(BuildContext context) {
     final state = ref.watch(nodeDetailProvider);
     final filteredDeviceList = ref.watch(filteredDeviceListProvider);
+    final isOnlineFilter = ref.watch(
+        deviceFilterConfigProvider.select((value) => value.connectionFilter));
     return LayoutBuilder(
       builder: (context, constraint) {
         return ResponsiveLayout(
-          desktop: _desktopLayout(constraint, state, filteredDeviceList),
-          mobile: _mobileLayout(constraint, state, filteredDeviceList),
+          desktop: _desktopLayout(
+              constraint, state, filteredDeviceList, isOnlineFilter),
+          mobile: _mobileLayout(
+              constraint, state, filteredDeviceList, isOnlineFilter),
         );
       },
     );
   }
 
   Widget _desktopLayout(BoxConstraints constraint, NodeDetailState state,
-      List<DeviceListItem> filteredDeviceList) {
+      List<DeviceListItem> filteredDeviceList, bool isOnlineFilter) {
     return StyledAppPageView(
       padding: const EdgeInsets.only(),
       title: state.location,
@@ -118,6 +122,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
                 state.deviceId,
                 filteredDeviceList,
                 constraint.maxHeight - kDefaultToolbarHeight,
+                isOnlineFilter,
               ),
             ),
           ],
@@ -127,7 +132,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
   }
 
   Widget _mobileLayout(BoxConstraints constraint, NodeDetailState state,
-      List<DeviceListItem> filteredDeviceList) {
+      List<DeviceListItem> filteredDeviceList, bool isOnlineFilter) {
     return StyledAppTabPageView(
       title: state.location,
       actions: [
@@ -171,6 +176,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
             state.deviceId,
             filteredDeviceList,
             constraint.maxHeight - kDefaultToolbarHeight,
+            isOnlineFilter,
           ),
         ),
       ],
@@ -196,7 +202,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
   }
 
   Widget deviceTab(String deviceId, List<DeviceListItem> filteredDeviceList,
-      double listHeight) {
+      double listHeight, bool isOnlineFilter) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -262,7 +268,8 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
           height: listHeight,
           child: DeviceListWidget(
             devices: filteredDeviceList,
-            enableDelete: true,
+            enableDeauth: isOnlineFilter,
+            enableDelete: !isOnlineFilter,
             physics: const NeverScrollableScrollPhysics(),
             onItemClick: (item) {
               ref.read(deviceDetailIdProvider.notifier).state = item.deviceId;
@@ -293,6 +300,43 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
                         ref
                             .read(deviceManagerProvider.notifier)
                             .deleteDevices(deviceIds: [device.deviceId]),
+                      );
+                    },
+                  ),
+                ],
+              );
+            },
+            onItemDeauth: (device) {
+              showSimpleAppDialog(
+                context,
+                dismissible: false,
+                title: loc(context).disconnectClient,
+                content: AppText.bodyLarge(''),
+                actions: [
+                  AppTextButton(
+                    loc(context).cancel,
+                    color: Theme.of(context).colorScheme.onSurface,
+                    onTap: () {
+                      context.pop();
+                    },
+                  ),
+                  AppTextButton(
+                    loc(context).disconnect,
+                    color: Theme.of(context).colorScheme.error,
+                    onTap: () {
+                      context.pop();
+                      doSomethingWithSpinner(
+                        context,
+                        ref
+                            .read(deviceManagerProvider.notifier)
+                            .deauthClient(macAddress: device.macAddress)
+                            .then((_) {
+                          showSimpleSnackBar(
+                              context, loc(context).successExclamation);
+                        }).onError((error, stackTrace) {
+                          showFailedSnackBar(
+                              context, loc(context).generalError);
+                        }),
                       );
                     },
                   ),

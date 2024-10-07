@@ -965,5 +965,7 @@
   "start": "Start",
   "errorManualUpdateFailed": "Error manual update failed!",
   "errorManualUpdateSignatureCheckFailed": "Invalid firmware file!",
-  "manualFirmwareEstimatedTime": "Estimated time remaining"
+  "manualFirmwareEstimatedTime": "Estimated time remaining",
+    "disconnect": "Disconnect",
+  "disconnectClient": "Disconnect client"
 }
