@@ -122,6 +122,10 @@ class _ManualFirmwareUpdateViewState
                 });
                 _showSuccessSnackbar();
               }).catchError((error) {
+                setState(() {
+                  _status?.stop();
+                  _status = null;
+                });
                 showRouterNotFoundAlert(context, ref);
               }, test: (error) => error is JNAPSideEffectError);
             }, onError: (error, stackTrace) {

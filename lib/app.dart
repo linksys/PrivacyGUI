@@ -120,28 +120,28 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     logger.i('didChangeAppLifecycleState: ${state.name}');
-    if (state == AppLifecycleState.resumed) {
-      ref
-          .read(connectivityProvider.notifier)
-          .forceUpdate()
-          .then((_) => SharedPreferences.getInstance())
-          .then((prefs) {
-        final currentSN = prefs.getString(pCurrentSN);
-        if (currentSN != null &&
-            ref.read(dashboardManagerProvider).deviceInfo?.serialNumber !=
-                currentSN) {
-          // TODO
-          // if (mounted) {
-          //   showRouterNotFoundAlert(context, ref);
-          // }
-        } else if (ref.read(authProvider).value?.loginType != LoginType.none &&
-            currentSN?.isNotEmpty == true) {
-          ref.read(pollingProvider.notifier).startPolling();
-        }
-      });
-    } else if (state == AppLifecycleState.paused) {
-      ref.read(pollingProvider.notifier).stopPolling();
-    }
+    // if (state == AppLifecycleState.resumed) {
+    //   ref
+    //       .read(connectivityProvider.notifier)
+    //       .forceUpdate()
+    //       .then((_) => SharedPreferences.getInstance())
+    //       .then((prefs) {
+    //     final currentSN = prefs.getString(pCurrentSN);
+    //     if (currentSN != null &&
+    //         ref.read(dashboardManagerProvider).deviceInfo?.serialNumber !=
+    //             currentSN) {
+    //       // TODO
+    //       // if (mounted) {
+    //       //   showRouterNotFoundAlert(context, ref);
+    //       // }
+    //     } else if (ref.read(authProvider).value?.loginType != LoginType.none &&
+    //         currentSN?.isNotEmpty == true) {
+    //       ref.read(pollingProvider.notifier).startPolling();
+    //     }
+    //   });
+    // } else if (state == AppLifecycleState.paused) {
+    //   ref.read(pollingProvider.notifier).stopPolling();
+    // }
   }
 
   _initAuth() {
