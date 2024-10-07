@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -33,7 +34,6 @@ class InstantDeviceView extends ArgumentsConsumerStatefulView {
 }
 
 class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
-  bool _isEdit = false;
   List<String> _selectedList = [];
 
   @override
@@ -51,30 +51,22 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
         deviceFilterConfigProvider.select((value) => value.connectionFilter));
     if (isOnlineFilter) {
       setState(() {
-        _isEdit = false;
         _selectedList.clear();
       });
     }
+
     return StyledAppPageView(
       padding: const EdgeInsets.only(),
       title: loc(context).instantDevices,
-      bottomBar: _isEdit
-          ? InversePageBottomBar(
+      bottomBar: isOnlineFilter
+          ? null
+          : InversePageBottomBar(
               isPositiveEnabled: _selectedList.isNotEmpty,
               positiveLabel: loc(context).delete,
               onPositiveTap: () {
-                _showConfirmDialog(_selectedList);
+                _showConfirmDeleteDialog(_selectedList);
               },
-              isNegitiveEnabled: true,
-              negitiveLable: loc(context).cancel,
-              onNegitiveTap: () {
-                setState(() {
-                  _isEdit = false;
-                  _selectedList.clear();
-                });
-              },
-            )
-          : null,
+            ),
       actions: [
         AnimatedRefreshContainer(
           builder: (controller) {
@@ -130,46 +122,56 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
       bool isOnlineFilter, List<DeviceListItem> filteredDeviceList) {
     return AppBasicLayout(
       header: Padding(
-          padding: const EdgeInsets.only(bottom: Spacing.medium),
-          child: Column(
+        padding: const EdgeInsets.only(bottom: Spacing.medium),
+        child: ResponsiveLayout(
+          desktop: Row(
+            children: [
+              AppText.labelLarge(
+                loc(context).nDevices(filteredDeviceList.length),
+              ),
+              const Spacer(),
+              _editButton(isOnlineFilter, filteredDeviceList),
+            ],
+          ),
+          mobile: Column(
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              AppText.labelLarge(
+                loc(context).nDevices(filteredDeviceList.length),
+              ),
+              const AppGap.medium(),
               Row(
                 children: [
-                  Expanded(
-                    child: AppText.labelLarge(
-                      loc(context).nDevices(filteredDeviceList.length),
-                    ),
+                  _editButton(isOnlineFilter, filteredDeviceList),
+                  const Spacer(),
+                  AppTextButton.noPadding(
+                    loc(context).filters,
+                    icon: LinksysIcons.filter,
+                    color: Theme.of(context).colorScheme.primary,
+                    onTap: () {
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        useRootNavigator: true,
+                        builder: (context) => Container(
+                          padding: const EdgeInsets.all(Spacing.large2),
+                          width: double.infinity,
+                          child: const DevicesFilterWidget(),
+                        ),
+                      );
+                    },
                   ),
-                  if (ResponsiveLayout.isMobileLayout(context)) ...[
-                    const AppGap.medium(),
-                    AppIconButton.noPadding(
-                      icon: LinksysIcons.filter,
-                      color: Theme.of(context).colorScheme.primary,
-                      onTap: () {
-                        showModalBottomSheet(
-                          context: context,
-                          isScrollControlled: true,
-                          useRootNavigator: true,
-                          builder: (context) => Container(
-                            padding: const EdgeInsets.all(Spacing.large2),
-                            width: double.infinity,
-                            child: const DevicesFilterWidget(),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                  const AppGap.medium(),
-                  _editButton(isOnlineFilter, _isEdit, filteredDeviceList),
                 ],
               ),
             ],
-          )),
+          ),
+        ),
+      ),
       content: DeviceListWidget(
         devices: filteredDeviceList,
-        isEdit: _isEdit,
+        isEdit: !isOnlineFilter,
+        enableDeauth: isOnlineFilter && serviceHelper.isSupportClientDeauth(),
         isItemSelected: (item) => _selectedList.contains(item.deviceId),
         onItemSelected: (value, item) {
           setState(() {
@@ -184,23 +186,28 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
           ref.read(deviceDetailIdProvider.notifier).state = item.deviceId;
           context.pushNamed(RouteNamed.deviceDetails);
         },
-        onItemDelete: (item) {
-          _showConfirmDialog([item.deviceId]);
+        onItemDeauth: (item) {
+          _showConfirmDeauthDialog(item.macAddress);
         },
       ),
     );
   }
 
-  Widget _editButton(bool isOnlineFilter, bool isEdit,
-      List<DeviceListItem> filteredDeviceList) {
-    return isEdit
-        ? AppTextButton.noPadding(
-            filteredDeviceList.length == _selectedList.length
-                ? loc(context).deselectAll
-                : loc(context).selectAll,
-            icon: LinksysIcons.checkBox,
-            color: Theme.of(context).colorScheme.primary,
-            onTap: () {
+  Widget _editButton(
+      bool isOnlineFilter, List<DeviceListItem> filteredDeviceList) {
+    return AppTextButton.noPadding(
+      filteredDeviceList.length == _selectedList.length
+          ? loc(context).deselectAll
+          : loc(context).selectAll,
+      icon: filteredDeviceList.length == _selectedList.length
+          ? LinksysIcons.checkBoxOutlineBlank
+          : LinksysIcons.checkBox,
+      color: isOnlineFilter
+          ? Theme.of(context).colorScheme.onSurface.withOpacity(0.12)
+          : Theme.of(context).colorScheme.primary,
+      onTap: isOnlineFilter
+          ? null
+          : () {
               setState(() {
                 _selectedList =
                     filteredDeviceList.length == _selectedList.length
@@ -208,24 +215,10 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
                         : filteredDeviceList.map((e) => e.deviceId).toList();
               });
             },
-          )
-        : AppTextButton.noPadding(
-            loc(context).edit,
-            icon: LinksysIcons.edit,
-            color: isOnlineFilter
-                ? Theme.of(context).colorScheme.onSurface.withOpacity(0.12)
-                : Theme.of(context).colorScheme.primary,
-            onTap: isOnlineFilter
-                ? null
-                : () {
-                    setState(() {
-                      _isEdit = true;
-                    });
-                  },
-          );
+    );
   }
 
-  void _showConfirmDialog(List<String> selectedList) {
+  void _showConfirmDeleteDialog(List<String> selectedList) {
     showSimpleAppDialog(
       context,
       dismissible: false,
@@ -259,16 +252,46 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
           .read(deviceManagerProvider.notifier)
           .deleteDevices(deviceIds: selectedList)
           .then((_) {
-        setState(() {
-          _isEdit = false;
-        });
         showSimpleSnackBar(context, loc(context).deviceDeleted);
       }).onError((error, stackTrace) {
-        setState(() {
-          _isEdit = false;
-        });
         showFailedSnackBar(context, loc(context).generalError);
       }),
+    );
+  }
+
+  void _showConfirmDeauthDialog(String macAddress) {
+    showSimpleAppDialog(
+      context,
+      dismissible: false,
+      title: loc(context).disconnectClient,
+      content: AppText.bodyLarge(''),
+      actions: [
+        AppTextButton(
+          loc(context).cancel,
+          color: Theme.of(context).colorScheme.onSurface,
+          onTap: () {
+            context.pop();
+          },
+        ),
+        AppTextButton(
+          loc(context).disconnect,
+          color: Theme.of(context).colorScheme.error,
+          onTap: () {
+            context.pop();
+            doSomethingWithSpinner(
+              context,
+              ref
+                  .read(deviceManagerProvider.notifier)
+                  .deauthClient(macAddress: macAddress)
+                  .then((_) {
+                showSimpleSnackBar(context, loc(context).successExclamation);
+              }).onError((error, stackTrace) {
+                showFailedSnackBar(context, loc(context).generalError);
+              }),
+            );
+          },
+        ),
+      ],
     );
   }
 }
