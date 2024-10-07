@@ -443,4 +443,21 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
           auth: true,
         ));
   }
+
+  Future<void> deauthClient({required String macAddress}) async {
+    final routerRepository = ref.read(routerRepositoryProvider);
+    await routerRepository
+        .send(
+          JNAPAction.clientDeauth,
+          data: {
+            'macAddress': macAddress,
+          }..removeWhere((key, value) => value == null),
+          auth: true,
+        )
+        .then((value) => routerRepository.send(
+              JNAPAction.getDevices,
+              fetchRemote: true,
+              auth: true,
+            ));
+  }
 }

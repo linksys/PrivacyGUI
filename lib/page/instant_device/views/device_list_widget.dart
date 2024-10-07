@@ -14,10 +14,12 @@ import 'package:privacygui_widgets/widgets/text/app_text.dart';
 class DeviceListWidget extends ConsumerStatefulWidget {
   final List<DeviceListItem> devices;
   final bool isEdit;
+  final bool enableDeauth;
   final bool enableDelete;
   final bool Function(DeviceListItem)? isItemSelected;
   final void Function(DeviceListItem)? onItemClick;
   final void Function(bool, DeviceListItem)? onItemSelected;
+  final void Function(DeviceListItem)? onItemDeauth;
   final void Function(DeviceListItem)? onItemDelete;
   final Widget? Function(BuildContext, int)? itemBuilder;
   final ScrollPhysics? physics;
@@ -26,10 +28,12 @@ class DeviceListWidget extends ConsumerStatefulWidget {
     super.key,
     this.devices = const [],
     this.isEdit = false,
+    this.enableDeauth = false,
     this.enableDelete = false,
     this.isItemSelected,
     this.onItemClick,
     this.onItemSelected,
+    this.onItemDeauth,
     this.onItemDelete,
     this.itemBuilder,
     this.physics,
@@ -89,12 +93,7 @@ class _DeviceListWidgetState extends ConsumerState<DeviceListWidget> {
             }
           : null,
       onTap: () {
-        if (widget.isEdit) {
-          widget.onItemSelected
-              ?.call(!(widget.isItemSelected?.call(item) ?? false), item);
-        } else {
-          widget.onItemClick?.call(item);
-        }
+        widget.onItemClick?.call(item);
       },
     );
   }
@@ -128,7 +127,18 @@ class _DeviceListWidgetState extends ConsumerState<DeviceListWidget> {
           isOnline: device.isOnline,
           isWired: device.isWired,
         ),
-        if (widget.enableDelete && !device.isOnline) ...[
+        if (widget.enableDeauth) ...[
+          const AppGap.medium(),
+          AppIconButton.noPadding(
+            icon: LinksysIcons.bidirectional,
+            semanticLabel: 'deauth',
+            color: Theme.of(context).colorScheme.primary,
+            onTap: () {
+              widget.onItemDeauth?.call(device);
+            },
+          ),
+        ],
+        if (widget.enableDelete) ...[
           const AppGap.medium(),
           AppIconButton.noPadding(
             icon: LinksysIcons.delete,
