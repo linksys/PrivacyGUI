@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
@@ -34,12 +35,30 @@ class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
   @override
   Widget build(BuildContext context) {
     final nodes = ref.watch(deviceManagerProvider).nodeDevices;
-    final radios = ref
-        .watch(dashboardManagerProvider.select((value) => value.mainRadios))
-        .unique((x) => x.band)
-        .map((e) => e.band)
-        .toList()
-      ..add('Ethernet');
+    final deviceUUID = widget.preselectedNodeId?.length == 1
+        ? widget.preselectedNodeId?.first
+        : null;
+    final target =
+        nodes.firstWhereOrNull((device) => device.deviceID == deviceUUID);
+    final additionalRadios = (target == null
+            ? ref.watch(deviceManagerProvider).externalDevices
+            : target.connectedDevices)
+        .fold(<String>{}, (radios, device) {
+      final radio =
+          ref.read(deviceManagerProvider.notifier).getBandConnectedBy(device);
+      if (radio.isNotEmpty) {
+        radios.add(radio);
+      }
+      return radios;
+    });
+    final radios = (ref
+            .watch(dashboardManagerProvider.select((value) => value.mainRadios))
+            .unique((x) => x.band)
+            .map((e) => e.band)
+            .toList()
+          ..addAll(additionalRadios)
+          ..add('Ethernet'))
+        .unique((x) => x);
     final filterConfig = ref.watch(deviceFilterConfigProvider);
     final selectedNodeId = filterConfig.nodeFilter;
     final selectedBand = filterConfig.bandFilter;

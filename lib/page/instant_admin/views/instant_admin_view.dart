@@ -1,8 +1,10 @@
 import 'package:collection/collection.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/models/firmware_update_settings.dart';
+import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -74,6 +76,8 @@ class _NetworkAdminViewState extends ConsumerState<NetworkAdminView> {
             .select((value) => value.settings.updatePolicy)) ==
         FirmwareUpdateSettings.firmwareUpdatePolicyAuto;
     final powerTableState = ref.watch(powerTableProvider);
+    final dashboardManager = ref.watch(dashboardManagerProvider);
+    final firmwareVersion = dashboardManager.deviceInfo?.firmwareVersion;
 
     return StyledAppPageView(
       scrollable: true,
@@ -178,30 +182,20 @@ class _NetworkAdminViewState extends ConsumerState<NetworkAdminView> {
               },
             ),
           ],
-          // AppListCard(
-          //   title: AppText.bodyLarge('Manual Firmware update'),
-          //   trailing: const Icon(LinksysIcons.add),
-          //   onTap: () async {
-          //     final result = await FilePicker.platform.pickFiles();
-          //     if (result != null) {
-          //       final file = result.files.single;
-          //       logger.d(
-          //           'XXXXX: Manual Firmware update: file: ${file.name}');
-          //       ref
-          //           .read(firmwareUpdateProvider.notifier)
-          //           .manualFirmwareUpdate(file.name, file.bytes ?? [])
-          //           .then((value) {
-          //         if (value) {
-          //           showSuccessSnackBar(
-          //               context, 'Firmware update success');
-          //         } else {
-          //           showFailedSnackBar(
-          //               context, 'Error updating firmware');
-          //         }
-          //       });
-          //     }
-          //   },
-          // ),
+          if (dashboardManager.skuModelNumber?.endsWith('AH') != true) ...[
+            const AppGap.small2(),
+            AppListCard(
+            title: AppText.bodyMedium(loc(context).manualFirmwareUpdate),
+            description: AppText.labelLarge(firmwareVersion ?? '--'),
+            trailing: AppTextButton.noPadding(
+              loc(context).manualUpdate,
+              onTap: () {
+            context.goNamed(RouteNamed.manualFirmwareUpdate);
+            
+              },
+            ),
+          ),
+          ],          
         ],
       ),
     );

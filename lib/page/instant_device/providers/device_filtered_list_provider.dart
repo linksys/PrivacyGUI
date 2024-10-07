@@ -1,6 +1,8 @@
+import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_filtered_list_state.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_provider.dart';
 import 'package:privacy_gui/util/extensions.dart';
@@ -45,7 +47,8 @@ class DeviceFilterConfigNotifier extends Notifier<DeviceFilterConfigState> {
   void initFilter({List<String>? preselectedNodeId}) {
     final nodes = preselectedNodeId ?? getNodes();
 
-    final bands = getBands();
+    final bands = getBands(
+        preselectedNodeId?.length == 1 ? preselectedNodeId?.first : null);
     state = state.copyWith(
         connectionFilter: true, nodeFilter: nodes, bandFilter: bands);
   }
@@ -58,13 +61,34 @@ class DeviceFilterConfigNotifier extends Notifier<DeviceFilterConfigState> {
         .toList();
   }
 
-  List<String> getBands() => ref
-      .read(dashboardManagerProvider)
-      .mainRadios
-      .unique((x) => x.band)
-      .map((e) => e.band)
-      .toList()
-    ..add('Ethernet');
+  List<String> getBands([String? deviceUUID]) {
+    final deviceManagerState = ref.read(deviceManagerProvider);
+    final nodes = deviceManagerState.nodeDevices;
+    final target =
+        nodes.firstWhereOrNull((device) => device.deviceID == deviceUUID);
+    final radios = (target == null
+            ? deviceManagerState.externalDevices
+            : target.connectedDevices)
+        .fold(<String>{}, (radios, device) {
+      final radio =
+          ref.read(deviceManagerProvider.notifier).getBandConnectedBy(device);
+      if (radio.isNotEmpty) {
+        radios.add(radio);
+      }
+      return radios;
+    });
+    logger.i(
+        'Filter<$deviceUUID>:: Collect additional radios from connected devices: $radios');
+    return (ref
+            .read(dashboardManagerProvider)
+            .mainRadios
+            .unique((x) => x.band)
+            .map((e) => e.band)
+            .toList()
+          ..addAll(radios)
+          ..add('Ethernet'))
+        .unique((x) => x);
+  }
 
   void updateConnectionFilter(bool value) {
     state = state.copyWith(connectionFilter: value);

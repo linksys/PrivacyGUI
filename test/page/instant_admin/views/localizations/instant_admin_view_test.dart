@@ -81,7 +81,7 @@ void main() {
         firmwareUpdateProvider.overrideWith(() => mockFirmwareUpdateNotifier),
       ],
       locale: locale,
-      child: const TimezoneView(),
+      child: const ManualFirmwareUpdateView(),
     );
     // await tester.pump(const Duration(seconds: 2));
     await tester.pumpWidget(widget);
@@ -98,7 +98,7 @@ void main() {
         firmwareUpdateProvider.overrideWith(() => mockFirmwareUpdateNotifier),
       ],
       locale: locale,
-      child: const TimezoneView(),
+      child: const ManualFirmwareUpdateView(),
     );
     await tester.pumpWidget(widget);
     await tester.pumpAndSettle();
@@ -120,7 +120,7 @@ void main() {
         firmwareUpdateProvider.overrideWith(() => mockFirmwareUpdateNotifier),
       ],
       locale: locale,
-      child: const TimezoneView(),
+      child: const ManualFirmwareUpdateView(),
     );
     await tester.pumpWidget(widget);
     await tester.pumpAndSettle();
@@ -142,7 +142,7 @@ void main() {
         firmwareUpdateProvider.overrideWith(() => mockFirmwareUpdateNotifier),
       ],
       locale: locale,
-      child: const TimezoneView(),
+      child: const ManualFirmwareUpdateView(),
     );
     await tester.pumpWidget(widget);
     await tester.pumpAndSettle();
@@ -155,7 +155,7 @@ void main() {
     await tester.pumpAndSettle();
   }, screens: responsiveMobileScreens);
 
-    testLocalizations('Instant admin view - timezone scroll down 4 - mobile',
+  testLocalizations('Instant admin view - timezone scroll down 4 - mobile',
       (tester, locale) async {
     final widget = testableSingleRoute(
       overrides: [
@@ -164,7 +164,7 @@ void main() {
         firmwareUpdateProvider.overrideWith(() => mockFirmwareUpdateNotifier),
       ],
       locale: locale,
-      child: const TimezoneView(),
+      child: const ManualFirmwareUpdateView(),
     );
     await tester.pumpWidget(widget);
     await tester.pumpAndSettle();
@@ -177,7 +177,7 @@ void main() {
     await tester.pumpAndSettle();
   }, screens: responsiveMobileScreens);
 
-      testLocalizations('Instant admin view - timezone scroll down 5 - mobile',
+  testLocalizations('Instant admin view - timezone scroll down 5 - mobile',
       (tester, locale) async {
     final widget = testableSingleRoute(
       overrides: [
@@ -186,7 +186,7 @@ void main() {
         firmwareUpdateProvider.overrideWith(() => mockFirmwareUpdateNotifier),
       ],
       locale: locale,
-      child: const TimezoneView(),
+      child: const ManualFirmwareUpdateView(),
     );
     await tester.pumpWidget(widget);
     await tester.pumpAndSettle();
@@ -208,7 +208,7 @@ void main() {
         firmwareUpdateProvider.overrideWith(() => mockFirmwareUpdateNotifier),
       ],
       locale: locale,
-      child: const TimezoneView(),
+      child: const ManualFirmwareUpdateView(),
     );
     await tester.pumpWidget(widget);
     await tester.pumpAndSettle();
@@ -231,7 +231,7 @@ void main() {
         firmwareUpdateProvider.overrideWith(() => mockFirmwareUpdateNotifier),
       ],
       locale: locale,
-      child: const TimezoneView(),
+      child: const ManualFirmwareUpdateView(),
     );
     await tester.pumpWidget(widget);
     await tester.pumpAndSettle();
@@ -246,7 +246,7 @@ void main() {
     await tester.pumpAndSettle();
   }, screens: responsiveDesktopScreens);
 
-    testLocalizations('Instant admin view - timezone scroll down 3 - desktop',
+  testLocalizations('Instant admin view - timezone scroll down 3 - desktop',
       (tester, locale) async {
     final widget = testableSingleRoute(
       overrides: [
@@ -255,7 +255,7 @@ void main() {
         firmwareUpdateProvider.overrideWith(() => mockFirmwareUpdateNotifier),
       ],
       locale: locale,
-      child: const TimezoneView(),
+      child: const ManualFirmwareUpdateView(),
     );
     await tester.pumpWidget(widget);
     await tester.pumpAndSettle();
@@ -270,7 +270,7 @@ void main() {
     await tester.pumpAndSettle();
   }, screens: responsiveDesktopScreens);
 
-    testLocalizations('Instant admin view - timezone scroll down 4 - desktop',
+  testLocalizations('Instant admin view - timezone scroll down 4 - desktop',
       (tester, locale) async {
     final widget = testableSingleRoute(
       overrides: [
@@ -279,7 +279,7 @@ void main() {
         firmwareUpdateProvider.overrideWith(() => mockFirmwareUpdateNotifier),
       ],
       locale: locale,
-      child: const TimezoneView(),
+      child: const ManualFirmwareUpdateView(),
     );
     await tester.pumpWidget(widget);
     await tester.pumpAndSettle();
@@ -294,7 +294,7 @@ void main() {
     await tester.pumpAndSettle();
   }, screens: responsiveDesktopScreens);
 
-    testLocalizations('Instant admin view - timezone scroll down 5 - desktop',
+  testLocalizations('Instant admin view - timezone scroll down 5 - desktop',
       (tester, locale) async {
     final widget = testableSingleRoute(
       overrides: [
@@ -303,7 +303,7 @@ void main() {
         firmwareUpdateProvider.overrideWith(() => mockFirmwareUpdateNotifier),
       ],
       locale: locale,
-      child: const TimezoneView(),
+      child: const ManualFirmwareUpdateView(),
     );
     await tester.pumpWidget(widget);
     await tester.pumpAndSettle();

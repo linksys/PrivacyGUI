@@ -957,6 +957,15 @@
   "middleEast": "Middle East",
   "transmitRegion": "Transmit Region",
   "transmitRegionDesc": "WiFi transmission power is set by regional limits. You could be subject to fines and penalties if you choose a region other than where you will use the router.",
-  "disconnect": "Disconnect",
+  "lightsOff": "Lights off",
+  "manualFirmwareUpdate": "Manual firmware update",
+  "manualUpdate": "Manual update",
+  "noFileChosen": "No file chosen",
+  "chooseFile": "Choose file",
+  "start": "Start",
+  "errorManualUpdateFailed": "Error manual update failed!",
+  "errorManualUpdateSignatureCheckFailed": "Invalid firmware file!",
+  "manualFirmwareEstimatedTime": "Estimated time remaining",
+    "disconnect": "Disconnect",
   "disconnectClient": "Disconnect client"
 }

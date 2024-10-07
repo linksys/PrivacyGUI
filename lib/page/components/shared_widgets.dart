@@ -71,8 +71,8 @@ abstract class SharedWidgets {
     );
   }
 
-  static geolocationWidget(BuildContext context, String name, String region, String countryCode) {
-    return AppStyledText.bold('<b>$name</b> • $region, $countryCode',
+  static geolocationWidget(BuildContext context, String name, String location) {
+    return AppStyledText.bold('<b>$name</b> • $location',
         defaultTextStyle: Theme.of(context).textTheme.bodyMedium!, tags: const ['b']);
   }
 }

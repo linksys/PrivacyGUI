@@ -108,18 +108,6 @@ extension LinksysDeviceExt on LinksysDevice {
         : DeviceConnectionType.wired;
   }
 
-  bool isWirelessConnection() {
-    bool ret = false;
-    if (nodeType == 'Slave') {
-      ret = connectionType == 'Wireless' && wirelessConnectionInfo != null;
-    }
-    final interfaces = knownInterfaces;
-    return ret ||
-        interfaces?.firstWhereOrNull(
-                (element) => element.interfaceType == 'Wireless') !=
-            null;
-  }
-
   bool isOnline() {
     return nodeType == 'Master'
         ? connections.isNotEmpty

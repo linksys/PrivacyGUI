@@ -8,6 +8,7 @@ import 'package:http/http.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:privacy_gui/constants/jnap_const.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
+import 'package:privacy_gui/core/cloud/model/error_response.dart';
 import 'package:privacy_gui/core/http/linksys_http_client.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
@@ -15,10 +16,13 @@ import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/models/firmware_update_settings.dart';
 import 'package:privacy_gui/core/jnap/models/firmware_update_status.dart';
 import 'package:privacy_gui/core/jnap/models/firmware_update_status_nodes.dart';
+import 'package:privacy_gui/core/jnap/models/wan_status.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_state.dart';
+import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/bench_mark.dart';
@@ -278,7 +282,9 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
   }
 
   Future<bool> manualFirmwareUpdate(String filename, List<int> bytes) async {
-    final client = LinksysHttpClient();
+    final client = LinksysHttpClient()
+      ..timeoutMs = 60000
+      ..retries = 0;
     final localPwd = ref.read(authProvider).value?.localPassword ??
         await const FlutterSecureStorage().read(key: pLocalPassword) ??
         '';
@@ -288,23 +294,41 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
       filename: filename,
       contentType: MediaType('application', 'octet-stream'),
     );
-    return client
-        .upload(Uri.parse('https://${getLocalIp(ref)}/jcgi/'), [
-          // MultipartFile.fromBytes(kJNAPAction, 'updatefirmware'.codeUnits),
-          // MultipartFile.fromBytes(kJNAPAuthorization,
-          //     'Basic ${Utils.stringBase64Encode('admin:$localPwd')}'.codeUnits),
-          multiPart,
-        ], fields: {
-          kJNAPAction: 'updatefirmware',
-          kJNAPAuthorization:
-              'Basic ${Utils.stringBase64Encode('admin:$localPwd')}'
-        })
-        .then((response) =>
-            response.statusCode == 200 &&
-            jsonDecode(response.body)['result'] == 'OK')
-        .onError((error, stackTrace) {
-          logger.e('[FIRMWARE]: Manual firmware update: Error: $error');
-          return false;
-        });
+    final log = BenchMarkLogger(name: 'Manual FW update');
+    log.start();
+    await ref.read(pollingProvider.notifier).stopPolling();
+    return client.upload(Uri.parse('https://${getLocalIp(ref)}/jcgi/'), [
+      multiPart,
+    ], fields: {
+      kJNAPAction: 'updatefirmware',
+      kJNAPAuthorization: 'Basic ${Utils.stringBase64Encode('admin:$localPwd')}'
+    }).then((response) {
+      final result = jsonDecode(response.body)['result'];
+      log.end();
+      if (result == 'OK') {
+        return true;
+      }
+      // error
+      final error = response.headers['X-Jcgi-Result'];
+      throw ManualFirmwareUpdateException(error);
+    }).onError((error, stackTrace) {
+      log.end();
+      if (error is ErrorResponse && error.code == '500') {
+        return true;
+      }
+      logger.e('[FIRMWARE]: Manual firmware update: Error: $error');
+      throw ManualFirmwareUpdateException('UnknownError');
+    }).whenComplete(() {
+      ref.read(pollingProvider.notifier).startPolling();
+    });
   }
+
+  Future waitForRouterBackOnline() {
+    return ref.read(sideEffectProvider.notifier).manualDeviceRestart();
+  }
+}
+
+class ManualFirmwareUpdateException implements Exception {
+  final String? result;
+  ManualFirmwareUpdateException(this.result);
 }

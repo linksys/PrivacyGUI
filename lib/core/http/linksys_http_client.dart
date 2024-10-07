@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
 import 'package:privacy_gui/constants/_constants.dart';
+import 'package:privacy_gui/core/http/custom_multipart_request.dart';
 import 'package:privacy_gui/core/jnap/jnap_command_executor_mixin.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/command/http/base_http_command.dart';
@@ -245,7 +246,7 @@ class LinksysHttpClient extends http.BaseClient
 
   Future<Response> upload(Uri url, List<MultipartFile> multipartList,
       {Map<String, String>? headers, Map<String, String>? fields}) async {
-    final request = http.MultipartRequest("POST", url);
+    final request = CustomMultipartRequest("POST", url);
     request.headers.addEntries(headers?.entries ?? []);
     request.fields.addAll(fields ?? {});
     request.files.addAll(multipartList);

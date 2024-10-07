@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_provider.dart';
+import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_state.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -10,7 +11,6 @@ import 'package:privacy_gui/page/dashboard/views/components/shimmer.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 
 class InternetConnectionWidget extends ConsumerStatefulWidget {
   const InternetConnectionWidget({super.key});
@@ -82,8 +82,7 @@ class _InternetConnectionWidgetState
                           SharedWidgets.geolocationWidget(
                               context,
                               geolocationState.value?.name ?? '',
-                              geolocationState.value?.region ?? '',
-                              geolocationState.value?.countryCode ?? ''),
+                              geolocationState.value?.displayLocationText ?? ''),
                         ],
                       ],
                     ),

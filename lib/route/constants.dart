@@ -66,6 +66,7 @@ class RoutePath {
   static const nodeLightSettings = 'nodeLightSettings';
   static const addNodes = '/addNodes';
   static const firmwareUpdateDetail = 'firmwareUpdateDetail';
+  static const manualFirmwareUpdate = 'manualFirmwareUpdate';
 
   /// device
   static const deviceDetails = 'deviceDetails';
@@ -211,6 +212,7 @@ class RouteNamed {
   static const nodeLightSettings = 'nodeLightSettings';
   static const addNodes = 'addNodes';
   static const firmwareUpdateDetail = 'firmwareUpdateDetail';
+  static const manualFirmwareUpdate = 'manualFirmwareUpdate';
 
   ///device
   static const deviceDetails = 'deviceDetails';
@@ -251,7 +253,7 @@ class RouteNamed {
 
   /// Explanation
   static const explanation = 'explanation';
-  
+
   /// PnP
   static const pnp = 'pnp';
   static const pnpConfig = 'pnpConfig';

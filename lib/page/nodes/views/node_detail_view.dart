@@ -39,6 +39,7 @@ import 'package:privacygui_widgets/widgets/label/status_label.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
 import 'package:collection/collection.dart';
+import 'package:privacygui_widgets/widgets/panel/switch_trigger_tile.dart';
 import 'package:privacygui_widgets/widgets/radios/radio_list.dart';
 
 import 'blink_node_light_widget.dart';
@@ -660,35 +661,69 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
         ref.read(nodeDetailProvider).nodeLightSettings);
     showSubmitAppDialog(context, title: loc(context).nodeLight,
         contentBuilder: (context, setState, onSubmit) {
+      // return Column(
+      //   mainAxisSize: MainAxisSize.min,
+      //   crossAxisAlignment: CrossAxisAlignment.start,
+      //   children: [
+      //     AppRadioList(
+      //       initial: nodeLightStatus,
+      //       mainAxisSize: MainAxisSize.min,
+      //       itemHeight: 56,
+      //       items: [
+      //         AppRadioListItem(
+      //           title: loc(context).off,
+      //           value: NodeLightStatus.off,
+      //         ),
+      //         AppRadioListItem(
+      //           title: loc(context).nodeDetailsLedNightMode,
+      //           value: NodeLightStatus.night,
+      //         ),
+      //         AppRadioListItem(
+      //           title: loc(context).on,
+      //           value: NodeLightStatus.on,
+      //         ),
+      //       ],
+      //       onChanged: (index, selectedType) {
+      //         setState(() {
+      //           if (selectedType != null) {
+      //             nodeLightStatus = selectedType;
+      //           }
+      //         });
+      //       },
+      //     ),
+      //   ],
+      // );
       return Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppRadioList(
-            initial: nodeLightStatus,
-            mainAxisSize: MainAxisSize.min,
-            itemHeight: 56,
-            items: [
-              AppRadioListItem(
-                title: loc(context).off,
-                value: NodeLightStatus.off,
-              ),
-              AppRadioListItem(
-                title: loc(context).nodeDetailsLedNightMode,
-                value: NodeLightStatus.night,
-              ),
-              AppRadioListItem(
-                title: loc(context).on,
-                value: NodeLightStatus.on,
-              ),
-            ],
-            onChanged: (index, selectedType) {
+          AppSwitchTriggerTile(
+            title: AppText.bodyLarge(
+              loc(context).nodeDetailsLedNightMode,
+            ),
+            value: nodeLightStatus != NodeLightStatus.on,
+            onChanged: (value) {
               setState(() {
-                if (selectedType != null) {
-                  nodeLightStatus = selectedType;
-                }
+                nodeLightStatus =
+                    value ? NodeLightStatus.night : NodeLightStatus.on;
               });
             },
+          ),
+          const Divider(),
+          AppCheckbox(
+            value: nodeLightStatus == NodeLightStatus.off,
+            text: loc(context).lightsOff,
+            onChanged: nodeLightStatus != NodeLightStatus.on
+                ? (value) {
+                    if (value == null) {
+                      return;
+                    }
+                    setState(() {
+                      nodeLightStatus =
+                          value ? NodeLightStatus.off : NodeLightStatus.night;
+                    });
+                  }
+                : null,
           ),
         ],
       );
