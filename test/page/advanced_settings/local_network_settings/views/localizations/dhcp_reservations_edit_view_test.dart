@@ -7,7 +7,6 @@ import '../../../../../test_data/local_network_settings_state.dart';
 void main() {
   testLocalizations('DHCP reservations edit view test - Add DHCP reservation',
       (tester, locale) async {
-
     final widget = testableSingleRoute(
       config: LinksysRouteConfig(column: ColumnGrid(column: 9)),
       locale: locale,
@@ -21,7 +20,7 @@ void main() {
   testLocalizations('DHCP reservations edit view test - Edit DHCP reservation',
       (tester, locale) async {
     final mockState =
-        LocalNetworkSettingsState.fromMap(mocklocalNetworkSettingsState);
+        LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState);
 
     final widget = testableSingleRoute(
       config: LinksysRouteConfig(column: ColumnGrid(column: 9)),

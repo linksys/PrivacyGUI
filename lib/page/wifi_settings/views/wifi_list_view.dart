@@ -91,7 +91,8 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
     });
 
     final isPositiveEnabled = !const ListEquality()
-        .equals(_preservedMainWiFiState?.mainWiFi, state.mainWiFi);
+            .equals(_preservedMainWiFiState?.mainWiFi, state.mainWiFi) ||
+        _preservedMainWiFiState?.guestWiFi != state.guestWiFi;
 
     return StyledAppPageView(
       appBarStyle: AppBarStyle.none,

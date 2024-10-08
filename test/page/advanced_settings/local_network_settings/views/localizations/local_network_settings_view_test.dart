@@ -18,13 +18,13 @@ void main() {
   testLocalizations('Local network settings view test - Overview',
       (tester, locale) async {
     when(mockLocalNetworkSettingsNotifier.build()).thenReturn(
-        LocalNetworkSettingsState.fromMap(mocklocalNetworkSettingsState));
-    when(mockLocalNetworkSettingsNotifier.fetch()).thenAnswer((_) async {
+        LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState));
+    when(mockLocalNetworkSettingsNotifier.fetch(fetchRemote: true)).thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 1));
-      return LocalNetworkSettingsState.fromMap(mocklocalNetworkSettingsState);
+      return LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState);
     });
     when(mockLocalNetworkSettingsNotifier.currentSettings()).thenReturn(
-        LocalNetworkSettingsState.fromMap(mocklocalNetworkSettingsState));
+        LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState));
 
     final widget = testableSingleRoute(
       config: LinksysRouteConfig(column: ColumnGrid(column: 9)),
@@ -36,18 +36,19 @@ void main() {
       child: const LocalNetworkSettingsView(),
     );
     await tester.pumpWidget(widget);
+    await tester.pumpAndSettle();
   });
 
   testLocalizations('Local network settings view test - Tap host name',
       (tester, locale) async {
     when(mockLocalNetworkSettingsNotifier.build()).thenReturn(
-        LocalNetworkSettingsState.fromMap(mocklocalNetworkSettingsState));
-    when(mockLocalNetworkSettingsNotifier.fetch()).thenAnswer((_) async {
+        LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState));
+    when(mockLocalNetworkSettingsNotifier.fetch(fetchRemote: true)).thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 1));
-      return LocalNetworkSettingsState.fromMap(mocklocalNetworkSettingsState);
+      return LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState);
     });
     when(mockLocalNetworkSettingsNotifier.currentSettings()).thenReturn(
-        LocalNetworkSettingsState.fromMap(mocklocalNetworkSettingsState));
+        LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState));
 
     final widget = testableSingleRoute(
       config: LinksysRouteConfig(column: ColumnGrid(column: 9)),
@@ -69,13 +70,13 @@ void main() {
   testLocalizations('Local network settings view test - Tap IP address',
       (tester, locale) async {
     when(mockLocalNetworkSettingsNotifier.build()).thenReturn(
-        LocalNetworkSettingsState.fromMap(mocklocalNetworkSettingsState));
-    when(mockLocalNetworkSettingsNotifier.fetch()).thenAnswer((_) async {
+        LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState));
+    when(mockLocalNetworkSettingsNotifier.fetch(fetchRemote: true)).thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 1));
-      return LocalNetworkSettingsState.fromMap(mocklocalNetworkSettingsState);
+      return LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState);
     });
     when(mockLocalNetworkSettingsNotifier.currentSettings()).thenReturn(
-        LocalNetworkSettingsState.fromMap(mocklocalNetworkSettingsState));
+        LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState));
 
     final widget = testableSingleRoute(
       config: LinksysRouteConfig(column: ColumnGrid(column: 9)),
@@ -97,13 +98,13 @@ void main() {
   testLocalizations('Local network settings view test - Tap subnet mask',
       (tester, locale) async {
     when(mockLocalNetworkSettingsNotifier.build()).thenReturn(
-        LocalNetworkSettingsState.fromMap(mocklocalNetworkSettingsState));
-    when(mockLocalNetworkSettingsNotifier.fetch()).thenAnswer((_) async {
+        LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState));
+    when(mockLocalNetworkSettingsNotifier.fetch(fetchRemote: true)).thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 1));
-      return LocalNetworkSettingsState.fromMap(mocklocalNetworkSettingsState);
+      return LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState);
     });
     when(mockLocalNetworkSettingsNotifier.currentSettings()).thenReturn(
-        LocalNetworkSettingsState.fromMap(mocklocalNetworkSettingsState));
+        LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState));
 
     final widget = testableSingleRoute(
       config: LinksysRouteConfig(column: ColumnGrid(column: 9)),

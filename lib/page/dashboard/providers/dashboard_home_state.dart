@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
 import 'package:privacy_gui/core/jnap/models/radio_info.dart';
 
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_item.dart';
 
 class DashboardWiFiItem extends Equatable {
@@ -85,7 +86,7 @@ class DashboardWiFiItem extends Equatable {
     return DashboardWiFiItem(
       ssid: map['ssid'] as String,
       password: map['password'] as String,
-      radios: List<String>.from((map['radios'] as List<String>)),
+      radios: List<String>.from(map['radios']),
       isGuest: map['isGuest'] as bool,
       isEnabled: map['isEnabled'] as bool,
       numOfConnectedDevices: map['numOfConnectedDevices'] as int,
@@ -201,9 +202,10 @@ class DashboardHomeState extends Equatable {
       masterIcon: map['masterIcon'] as String,
       isAnyNodesOffline: map['isAnyNodesOffline'] as bool,
       uptime: map['uptimes'] != null ? map['uptimes'] as int : null,
-      wanPortConnection: map['wanPortConnection'] as String,
-      lanPortConnections:
-          List<String>.from((map['lanPortConnections'] as List<String>)),
+      wanPortConnection: map['wanPortConnection'] != null
+          ? map['wanPortConnection'] as String
+          : null,
+      lanPortConnections: List<String>.from(map['lanPortConnections']),
       wifis: List<DashboardWiFiItem>.from(
         map['wifis'].map<DashboardWiFiItem>(
           (x) => DashboardWiFiItem.fromMap(x as Map<String, dynamic>),

@@ -25,8 +25,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../common/_index.dart';
 import '../../../../mocks/_index.dart';
+import '../../../../mocks/instant_verify_notifier_mocks.dart';
 import '../../../../mocks/jnap_service_supported_mocks.dart';
-import '../../../../mocks/mockito_specs/instant_verify_notifier_spec_mocks.dart';
 import '../../../../test_data/_index.dart';
 import '../../../../test_data/instant_verify_test_state.dart';
 

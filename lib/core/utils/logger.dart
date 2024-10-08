@@ -61,6 +61,8 @@ class CustomOutput extends LogOutput {
 }
 
 Map<String, List<(int, String)>> _webLogCache = {};
+Map<String, String> _stateLogCache = {};
+
 const _maxLogSizeOfRouteTag = 20;
 const _maxLogSizeOfGeneralTag = 2000;
 const _logTagRegex = r'\[(\w*)\]:(.*)';
@@ -81,11 +83,19 @@ void _addLogWithTag({required String message, String tag = appLogTag}) {
   final logList = _webLogCache[tag] ?? [];
   final maxSize =
       tag == routeLogTag ? _maxLogSizeOfRouteTag : _maxLogSizeOfGeneralTag;
-  if (logList.length + 1 > maxSize) {
+  
+  if (tag == 'State') {
+    final stateMessage = _splitTagAndMessage(message);
+    if (stateMessage != null) {
+      _stateLogCache[stateMessage.$2] = stateMessage.$1;
+    }
+  } else {
+    if (logList.length + 1 > maxSize) {
     logList.removeAt(0);
   }
-  logList.add((DateTime.now().millisecondsSinceEpoch, message));
-  _webLogCache[tag] = logList;
+    logList.add((DateTime.now().millisecondsSinceEpoch, message));
+    _webLogCache[tag] = logList;
+  }
 }
 
 (String, String)? _splitTagAndMessage(String log) {
@@ -121,6 +131,8 @@ ${getScreenInfo(context)}
 ${_getWebLogByTag(tag: routeLogTag)}
 ============================== Custom Tag Summary ==============================
 ${keys.map((e) => '[$e]\n${_getWebLogByTag(tag: e)}').join('\n\n')}
+============================== State Management ==============================
+${_stateLogCache.entries.map((e) => '[${e.key}]\n${e.value}').join('\n\n')}
 =============================== Linksys Manager ================================
 ${await _getLinksysCacheData()}\n
 ================================== Full Logs ===================================

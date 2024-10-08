@@ -17,7 +17,7 @@ void main() {
   testLocalizations('DHCP reservations view test - Overview',
       (tester, locale) async {
     when(mockLocalNetworkSettingsNotifier.build()).thenReturn(
-        LocalNetworkSettingsState.fromMap(mocklocalNetworkSettingsState));
+        LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState));
 
     final widget = testableSingleRoute(
       config: LinksysRouteConfig(column: ColumnGrid(column: 9)),

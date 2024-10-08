@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
@@ -34,7 +35,11 @@ void main() async {
             appSettingsProvider.overrideWith(() => AppSettingsNotifier())
           ],
           router: GoRouter(routes: [
-            LinksysRoute(path: '/', builder: (context, state) => const Center())
+            LinksysRoute(
+                path: '/',
+                builder: (context, state) => const StyledAppPageView(
+                      child: Center(),
+                    ))
           ], initialLocation: '/'),
         ),
       );
@@ -59,11 +64,15 @@ void main() async {
           provider: provider,
           overrides: [
             authProvider.overrideWith(() => mockAuthNotifier),
-            appSettingsProvider.overrideWith(
-                () => MockAppSettingsNotifier(const AppSettings(themeMode: ThemeMode.light))),
+            appSettingsProvider.overrideWith(() => MockAppSettingsNotifier(
+                const AppSettings(themeMode: ThemeMode.light))),
           ],
           router: GoRouter(routes: [
-            LinksysRoute(path: '/', builder: (context, state) => const Center())
+            LinksysRoute(
+                path: '/',
+                builder: (context, state) => const StyledAppPageView(
+                      child: Center(),
+                    ))
           ], initialLocation: '/'),
         ),
       );
@@ -88,11 +97,15 @@ void main() async {
           provider: provider,
           overrides: [
             authProvider.overrideWith(() => mockAuthNotifier),
-            appSettingsProvider.overrideWith(
-                () => MockAppSettingsNotifier(const AppSettings(themeMode: ThemeMode.dark))),
+            appSettingsProvider.overrideWith(() => MockAppSettingsNotifier(
+                const AppSettings(themeMode: ThemeMode.dark))),
           ],
           router: GoRouter(routes: [
-            LinksysRoute(path: '/', builder: (context, state) => const Center())
+            LinksysRoute(
+                path: '/',
+                builder: (context, state) => const StyledAppPageView(
+                      child: Center(),
+                    ))
           ], initialLocation: '/'),
         ),
       );
@@ -117,11 +130,15 @@ void main() async {
           provider: provider,
           overrides: [
             authProvider.overrideWith(() => mockAuthNotifier),
-            appSettingsProvider.overrideWith(
-                () => MockAppSettingsNotifier(const AppSettings(themeMode: ThemeMode.system))),
+            appSettingsProvider.overrideWith(() => MockAppSettingsNotifier(
+                const AppSettings(themeMode: ThemeMode.system))),
           ],
           router: GoRouter(routes: [
-            LinksysRoute(path: '/', builder: (context, state) => const Center())
+            LinksysRoute(
+                path: '/',
+                builder: (context, state) => const StyledAppPageView(
+                      child: Center(),
+                    ))
           ], initialLocation: '/'),
         ),
       );
@@ -146,11 +163,15 @@ void main() async {
           provider: provider,
           overrides: [
             authProvider.overrideWith(() => mockAuthNotifier),
-            appSettingsProvider.overrideWith(
-                () => MockAppSettingsNotifier(const AppSettings(themeMode: ThemeMode.light))),
+            appSettingsProvider.overrideWith(() => MockAppSettingsNotifier(
+                const AppSettings(themeMode: ThemeMode.light))),
           ],
           router: GoRouter(routes: [
-            LinksysRoute(path: '/', builder: (context, state) => const Center())
+            LinksysRoute(
+                path: '/',
+                builder: (context, state) => const StyledAppPageView(
+                      child: Center(),
+                    ))
           ], initialLocation: '/'),
         ),
       );
@@ -175,11 +196,15 @@ void main() async {
           provider: provider,
           overrides: [
             authProvider.overrideWith(() => mockAuthNotifier),
-            appSettingsProvider.overrideWith(
-                () => MockAppSettingsNotifier(const AppSettings(themeMode: ThemeMode.dark))),
+            appSettingsProvider.overrideWith(() => MockAppSettingsNotifier(
+                const AppSettings(themeMode: ThemeMode.dark))),
           ],
           router: GoRouter(routes: [
-            LinksysRoute(path: '/', builder: (context, state) => const Center())
+            LinksysRoute(
+                path: '/',
+                builder: (context, state) => const StyledAppPageView(
+                      child: Center(),
+                    ))
           ], initialLocation: '/'),
         ),
       );
