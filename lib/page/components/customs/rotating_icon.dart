@@ -4,12 +4,14 @@ class RotatingIcon extends StatefulWidget {
   final Duration? duration;
   final Icon icon;
   final bool animate;
+  final bool reverse;
 
   const RotatingIcon(
     this.icon, {
     Key? key,
     this.duration,
     this.animate = true,
+    this.reverse = false,
   }) : super(key: key);
 
   @override
@@ -19,7 +21,10 @@ class RotatingIcon extends StatefulWidget {
 class _RotatingIconState extends State<RotatingIcon>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-
+  late final Animation<double> _animation = CurvedAnimation(
+    parent: _controller,
+    curve: Curves.easeInOut,
+  );
   @override
   void initState() {
     super.initState();
@@ -37,7 +42,7 @@ class _RotatingIconState extends State<RotatingIcon>
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: RotationTransition(
-        turns: _controller,
+        turns: widget.reverse ? ReverseAnimation(_animation) : _animation,
         child: widget.icon,
       ),
     );
