@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -171,7 +170,7 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
       content: DeviceListWidget(
         devices: filteredDeviceList,
         isEdit: !isOnlineFilter,
-        enableDeauth: isOnlineFilter && serviceHelper.isSupportClientDeauth(),
+        enableDeauth: isOnlineFilter,
         isItemSelected: (item) => _selectedList.contains(item.deviceId),
         onItemSelected: (value, item) {
           setState(() {
@@ -252,6 +251,9 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
           .read(deviceManagerProvider.notifier)
           .deleteDevices(deviceIds: selectedList)
           .then((_) {
+            setState(() {
+                _selectedList = [];
+              });
         showSimpleSnackBar(context, loc(context).deviceDeleted);
       }).onError((error, stackTrace) {
         showFailedSnackBar(context, loc(context).generalError);
