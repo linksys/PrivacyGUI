@@ -263,7 +263,9 @@ class DeviceManagerState extends Equatable {
                   RouterRadio.fromMap(e.value),
                 ),
               )),
-      guestRadioSettings: GuestRadioSettings.fromMap(map['guestRadioSettings']),
+      guestRadioSettings: map['guestRadioSettings'] != null
+          ? GuestRadioSettings.fromMap(map['guestRadioSettings'])
+          : null,
       deviceList: List<LinksysDevice>.from(
         map['deviceList'].map<LinksysDevice>(
           (x) => LinksysDevice.fromMap(x as Map<String, dynamic>),

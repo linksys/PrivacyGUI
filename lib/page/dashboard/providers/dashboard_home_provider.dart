@@ -11,7 +11,6 @@ import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
-import 'package:privacy_gui/util/extensions.dart';
 import 'package:privacy_gui/utils.dart';
 
 final dashboardHomeProvider =
@@ -63,7 +62,6 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
     // Guest WiFi
 
     // Get Node list
-    final nodeList = deviceManagerState.nodeDevices;
     final isAnyNodesOffline =
         deviceManagerState.nodeDevices.any((element) => !element.isOnline());
 
@@ -114,7 +112,9 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
       isHealthCheckSupported: isSpeedCheckSupported,
     );
 
-    logger.d('Dashboard home state: ${newState.toJson()}');
+    logger.d('[State]:[dashboardHome]: ${newState.toJson()}');
+    final json = newState.toJson();
+    DashboardHomeState.fromJson(json);
     return newState;
   }
 

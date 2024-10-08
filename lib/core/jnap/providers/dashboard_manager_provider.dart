@@ -14,6 +14,7 @@ import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/bench_mark.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final dashboardManagerProvider =
@@ -121,6 +122,8 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
       final wanExternal = WanExternal.fromMap(wanExternalData.output);
       newState = newState.copyWith(wanExternal: wanExternal);
     }
+
+    logger.d('[State]:[dashboardManager]: ${newState.toJson()}');
 
     return newState;
   }

@@ -1,6 +1,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
+import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_provider.dart';
+import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_state.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
@@ -20,8 +22,10 @@ import '../../../common/config.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
 import '../../../mocks/_index.dart';
+import '../../../mocks/gelocation_notifier_mocks.dart';
 import '../../../mocks/jnap_service_supported_mocks.dart';
 import '../../../test_data/_index.dart';
+import '../../../test_data/geolocation_test_state.dart';
 
 void main() async {
   late DashboardHomeNotifier mockDashboardHomeNotifier;
@@ -29,6 +33,7 @@ void main() async {
   late DeviceManagerNotifier mockDeviceManagerNotifier;
   late InstantPrivacyNotifier mockInstantPrivacyNotifier;
   late InstantTopologyNotifier mockInstantTopologyNotifier;
+  late GeolocationNotifier mockGeolocationNotifer;
 
   ServiceHelper mockServiceHelper = MockServiceHelper();
   getIt.registerSingleton<ServiceHelper>(mockServiceHelper);
@@ -43,6 +48,7 @@ void main() async {
       mockDeviceManagerNotifier = MockDeviceManagerNotifier();
       mockInstantPrivacyNotifier = MockInstantPrivacyNotifier();
       mockInstantTopologyNotifier = MockInstantTopologyNotifier();
+      mockGeolocationNotifer = MockGeolocationNotifier();
 
       when(mockDashboardHomeNotifier.build())
           .thenReturn(DashboardHomeState.fromMap(dashboardHomeStateData));
@@ -54,6 +60,8 @@ void main() async {
           .thenReturn(InstantPrivacyState.fromMap(instantPrivacyTestState));
       when(mockInstantTopologyNotifier.build())
           .thenReturn(testTopology2SlavesDaisyState);
+      when(mockGeolocationNotifer.build()).thenAnswer(
+          (_) async => GeolocationState.fromMap(geolocationTestState));
     });
 
     testLocalizations('Dashboard Home View - 4-ports mobile layout',
@@ -75,6 +83,7 @@ void main() async {
                   .overrideWith(() => mockInstantPrivacyNotifier),
               instantTopologyProvider
                   .overrideWith(() => mockInstantTopologyNotifier),
+              geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             ],
           ),
         );
@@ -112,6 +121,7 @@ void main() async {
                   .overrideWith(() => mockInstantPrivacyNotifier),
               instantTopologyProvider
                   .overrideWith(() => mockInstantTopologyNotifier),
+              geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             ],
           ),
         );
@@ -150,6 +160,7 @@ void main() async {
                   .overrideWith(() => mockInstantPrivacyNotifier),
               instantTopologyProvider
                   .overrideWith(() => mockInstantTopologyNotifier),
+              geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             ],
           ),
         );
@@ -189,6 +200,7 @@ void main() async {
                   .overrideWith(() => mockInstantPrivacyNotifier),
               instantTopologyProvider
                   .overrideWith(() => mockInstantTopologyNotifier),
+              geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             ],
           ),
         );
@@ -229,6 +241,7 @@ void main() async {
                   .overrideWith(() => mockInstantPrivacyNotifier),
               instantTopologyProvider
                   .overrideWith(() => mockInstantTopologyNotifier),
+              geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             ],
           ),
         );
@@ -270,6 +283,7 @@ void main() async {
                   .overrideWith(() => mockInstantPrivacyNotifier),
               instantTopologyProvider
                   .overrideWith(() => mockInstantTopologyNotifier),
+              geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             ],
           ),
         );
@@ -316,6 +330,7 @@ void main() async {
                   .overrideWith(() => mockInstantPrivacyNotifier),
               instantTopologyProvider
                   .overrideWith(() => mockInstantTopologyNotifier),
+              geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             ],
           ),
         );
@@ -356,6 +371,7 @@ void main() async {
                   .overrideWith(() => mockInstantPrivacyNotifier),
               instantTopologyProvider
                   .overrideWith(() => mockInstantTopologyNotifier),
+              geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             ],
           ),
         );
@@ -397,6 +413,7 @@ void main() async {
                   .overrideWith(() => mockInstantPrivacyNotifier),
               instantTopologyProvider
                   .overrideWith(() => mockInstantTopologyNotifier),
+              geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             ],
           ),
         );
@@ -413,7 +430,8 @@ void main() async {
       });
     }, screens: responsiveDesktopScreens);
 
-    testLocalizations('Dashboard Home View - 4-ports mobile layout internet offline',
+    testLocalizations(
+        'Dashboard Home View - 4-ports mobile layout internet offline',
         (tester, locale) async {
       when(mockDashboardHomeNotifier.build()).thenReturn(
           DashboardHomeState.fromMap(dashboardHomeOfflineStateData).copyWith(
@@ -437,6 +455,7 @@ void main() async {
                   .overrideWith(() => mockInstantPrivacyNotifier),
               instantTopologyProvider
                   .overrideWith(() => mockInstantTopologyNotifier),
+              geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             ],
           ),
         );
@@ -453,7 +472,8 @@ void main() async {
       });
     }, screens: responsiveMobileScreens);
 
-    testLocalizations('Dashboard Home View - 4-ports horizontal layout internet offline',
+    testLocalizations(
+        'Dashboard Home View - 4-ports horizontal layout internet offline',
         (tester, locale) async {
       when(mockDashboardHomeNotifier.build()).thenReturn(
           DashboardHomeState.fromMap(dashboardHomeOfflineStateData)
@@ -476,6 +496,7 @@ void main() async {
                   .overrideWith(() => mockInstantPrivacyNotifier),
               instantTopologyProvider
                   .overrideWith(() => mockInstantTopologyNotifier),
+              geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             ],
           ),
         );
@@ -492,7 +513,8 @@ void main() async {
       });
     }, screens: responsiveDesktopScreens);
 
-    testLocalizations('Dashboard Home View - 4-ports vertical layout internet offline',
+    testLocalizations(
+        'Dashboard Home View - 4-ports vertical layout internet offline',
         (tester, locale) async {
       when(mockDashboardHomeNotifier.build()).thenReturn(
           DashboardHomeState.fromMap(dashboardHomeOfflineStateData).copyWith(
@@ -516,6 +538,7 @@ void main() async {
                   .overrideWith(() => mockInstantPrivacyNotifier),
               instantTopologyProvider
                   .overrideWith(() => mockInstantTopologyNotifier),
+              geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             ],
           ),
         );
@@ -560,6 +583,7 @@ void main() async {
                   .overrideWith(() => mockInstantPrivacyNotifier),
               instantTopologyProvider
                   .overrideWith(() => mockInstantTopologyNotifier),
+              geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             ],
           ),
         );
@@ -592,7 +616,7 @@ void main() async {
       mockDeviceManagerNotifier = MockDeviceManagerNotifier();
       mockInstantPrivacyNotifier = MockInstantPrivacyNotifier();
       mockInstantTopologyNotifier = MockInstantTopologyNotifier();
-
+      mockGeolocationNotifer = MockGeolocationNotifier();
       when(mockDashboardHomeNotifier.build()).thenReturn(
           DashboardHomeState.fromMap(dashboardHomeStateData)
               .copyWith(lanPortConnections: ["None", "None"]));
@@ -604,6 +628,8 @@ void main() async {
           .thenReturn(InstantPrivacyState.fromMap(instantPrivacyTestState));
       when(mockInstantTopologyNotifier.build())
           .thenReturn(testTopology2SlavesDaisyState);
+      when(mockGeolocationNotifer.build()).thenAnswer(
+          (_) async => GeolocationState.fromMap(geolocationTestState));
     });
     testLocalizations('Dashboard Home View - 2-ports mobile layout',
         (tester, locale) async {
@@ -624,6 +650,7 @@ void main() async {
                   .overrideWith(() => mockInstantPrivacyNotifier),
               instantTopologyProvider
                   .overrideWith(() => mockInstantTopologyNotifier),
+              geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             ],
           ),
         );
@@ -662,6 +689,7 @@ void main() async {
                   .overrideWith(() => mockInstantPrivacyNotifier),
               instantTopologyProvider
                   .overrideWith(() => mockInstantTopologyNotifier),
+              geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             ],
           ),
         );
@@ -700,6 +728,7 @@ void main() async {
                   .overrideWith(() => mockInstantPrivacyNotifier),
               instantTopologyProvider
                   .overrideWith(() => mockInstantTopologyNotifier),
+              geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             ],
           ),
         );
@@ -741,6 +770,7 @@ void main() async {
                   .overrideWith(() => mockInstantPrivacyNotifier),
               instantTopologyProvider
                   .overrideWith(() => mockInstantTopologyNotifier),
+              geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             ],
           ),
         );
@@ -782,6 +812,7 @@ void main() async {
                   .overrideWith(() => mockInstantPrivacyNotifier),
               instantTopologyProvider
                   .overrideWith(() => mockInstantTopologyNotifier),
+              geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             ],
           ),
         );
@@ -823,6 +854,7 @@ void main() async {
                   .overrideWith(() => mockInstantPrivacyNotifier),
               instantTopologyProvider
                   .overrideWith(() => mockInstantTopologyNotifier),
+              geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             ],
           ),
         );
@@ -868,6 +900,7 @@ void main() async {
                   .overrideWith(() => mockInstantPrivacyNotifier),
               instantTopologyProvider
                   .overrideWith(() => mockInstantTopologyNotifier),
+              geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             ],
           ),
         );
@@ -905,6 +938,7 @@ void main() async {
                   .overrideWith(() => mockInstantPrivacyNotifier),
               instantTopologyProvider
                   .overrideWith(() => mockInstantTopologyNotifier),
+              geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             ],
           ),
         );
@@ -945,6 +979,7 @@ void main() async {
                   .overrideWith(() => mockInstantPrivacyNotifier),
               instantTopologyProvider
                   .overrideWith(() => mockInstantTopologyNotifier),
+              geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             ],
           ),
         );
@@ -986,6 +1021,7 @@ void main() async {
                   .overrideWith(() => mockInstantPrivacyNotifier),
               instantTopologyProvider
                   .overrideWith(() => mockInstantTopologyNotifier),
+              geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             ],
           ),
         );
@@ -1002,7 +1038,8 @@ void main() async {
       });
     }, screens: responsiveDesktopScreens);
 
-    testLocalizations('Dashboard Home View - 2-ports mobile layout internet offline',
+    testLocalizations(
+        'Dashboard Home View - 2-ports mobile layout internet offline',
         (tester, locale) async {
       when(mockDashboardHomeNotifier.build()).thenReturn(
           DashboardHomeState.fromMap(dashboardHomeOfflineStateData).copyWith(
@@ -1025,6 +1062,7 @@ void main() async {
                   .overrideWith(() => mockInstantPrivacyNotifier),
               instantTopologyProvider
                   .overrideWith(() => mockInstantTopologyNotifier),
+              geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             ],
           ),
         );
@@ -1041,7 +1079,8 @@ void main() async {
       });
     }, screens: responsiveMobileScreens);
 
-    testLocalizations('Dashboard Home View - 2-ports horizontal layout internet offline',
+    testLocalizations(
+        'Dashboard Home View - 2-ports horizontal layout internet offline',
         (tester, locale) async {
       when(mockDashboardHomeNotifier.build()).thenReturn(
           DashboardHomeState.fromMap(dashboardHomeOfflineStateData).copyWith(
@@ -1066,6 +1105,7 @@ void main() async {
                   .overrideWith(() => mockInstantPrivacyNotifier),
               instantTopologyProvider
                   .overrideWith(() => mockInstantTopologyNotifier),
+              geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             ],
           ),
         );
@@ -1082,7 +1122,8 @@ void main() async {
       });
     }, screens: responsiveDesktopScreens);
 
-    testLocalizations('Dashboard Home View - 2-ports vertical layout internet offline',
+    testLocalizations(
+        'Dashboard Home View - 2-ports vertical layout internet offline',
         (tester, locale) async {
       when(mockDashboardHomeNotifier.build()).thenReturn(
           DashboardHomeState.fromMap(dashboardHomeOfflineStateData).copyWith(
@@ -1107,6 +1148,7 @@ void main() async {
                   .overrideWith(() => mockInstantPrivacyNotifier),
               instantTopologyProvider
                   .overrideWith(() => mockInstantTopologyNotifier),
+              geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             ],
           ),
         );
