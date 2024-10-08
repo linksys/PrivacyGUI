@@ -199,6 +199,7 @@ class _ManualFirmwareUpdateViewState
                       Icon(_getProcessingIcon(),
                           size: 64,
                           color: Theme.of(context).colorScheme.primary),
+                          reverse: true,
                     )
                   : Icon(_getProcessingIcon(),
                       size: 64, color: Theme.of(context).colorScheme.primary),
