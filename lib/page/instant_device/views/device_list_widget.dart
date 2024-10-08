@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shared_widgets.dart';
 import 'package:privacy_gui/page/instant_device/extensions/icon_device_category_ext.dart';
@@ -127,7 +128,7 @@ class _DeviceListWidgetState extends ConsumerState<DeviceListWidget> {
           isOnline: device.isOnline,
           isWired: device.isWired,
         ),
-        if (widget.enableDeauth) ...[
+        if (widget.enableDeauth  && serviceHelper.isSupportClientDeauth()) ...[
           const AppGap.medium(),
           AppIconButton.noPadding(
             icon: LinksysIcons.bidirectional,
