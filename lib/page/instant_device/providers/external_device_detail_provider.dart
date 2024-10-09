@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 
 final externalDeviceDetailProvider =
@@ -29,6 +30,7 @@ class ExternalDeviceDetailNotifier extends Notifier<ExternalDeviceDetailState> {
     newState = newState.copyWith(
       item: targetItem,
     );
+    logger.d('[State]:[ExternalDeviceDetail]:${newState.toJson()}');
     return newState;
   }
 }

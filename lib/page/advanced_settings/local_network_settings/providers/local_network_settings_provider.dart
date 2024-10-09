@@ -75,6 +75,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     );
     // Update all necessary validators by the current settings
     _updateValidators(state);
+    logger.d('[State]:[LocalNetworkSettings]:${state.toJson()}');
     return state;
   }
 

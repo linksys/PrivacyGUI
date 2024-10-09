@@ -66,7 +66,7 @@ final menus = [
       config: LinksysRouteConfig(
         column: ColumnGrid(column: 9),
       ),
-      builder: (context, state) => NetworkAdminView(),
+      builder: (context, state) => InstantAdminView(),
       routes: [
         LinksysRoute(
           name: RouteNamed.manualFirmwareUpdate,

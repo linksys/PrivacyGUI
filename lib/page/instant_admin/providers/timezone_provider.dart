@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/jnap/models/timezone.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/instant_admin/providers/timezone_state.dart';
 
 final timezoneProvider =
@@ -33,6 +34,7 @@ class TimezoneNotifier extends Notifier<TimezoneState> {
         timezoneId: timezoneId,
         supportedTimezones: supportedTimezones,
         isDaylightSaving: autoAdjustForDST);
+    logger.d('[State]:[Timezone]:${state.toJson()}');
   }
 
   Future save() async {
