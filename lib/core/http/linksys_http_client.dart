@@ -274,13 +274,19 @@ class LinksysHttpClient extends http.BaseClient
 
   _logResponse(http.Response response, {bool ignoreResponse = false}) {
     final request = response.request;
+    String responseBody = '';
+    try {
+      responseBody = utf8.decode(response.bodyBytes);
+    } catch (e) {
+      responseBody = '';
+    }
     if (request != null) {
       logger.i(
           '\nRESPONSE------------------------------------------------------------------------\n'
           'URL: ${request.url}, METHOD: ${request.method}\n'
           'REQUEST HEADERS: ${request.headers}\n'
           'RESPONSE HEADERS: ${response.headers}\n'
-          'RESPONSE: ${response.statusCode}, ${ignoreResponse ? '' : utf8.decode(response.bodyBytes)}\n'
+          'RESPONSE: ${response.statusCode}, ${ignoreResponse ? '' : responseBody}\n'
           '--------------------------------------------------------------------RESPONSE END\n');
     }
   }
