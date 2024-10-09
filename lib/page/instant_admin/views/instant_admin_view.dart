@@ -1,5 +1,4 @@
 import 'package:collection/collection.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -25,17 +24,17 @@ import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/input_field/validator_widget.dart';
 import 'package:privacygui_widgets/widgets/panel/switch_trigger_tile.dart';
 
-class NetworkAdminView extends ArgumentsConsumerStatefulView {
-  const NetworkAdminView({
+class InstantAdminView extends ArgumentsConsumerStatefulView {
+  const InstantAdminView({
     Key? key,
     super.args,
   }) : super(key: key);
 
   @override
-  ConsumerState<NetworkAdminView> createState() => _NetworkAdminViewState();
+  ConsumerState<InstantAdminView> createState() => _InstantAdminViewState();
 }
 
-class _NetworkAdminViewState extends ConsumerState<NetworkAdminView> {
+class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
   late final RouterPasswordNotifier _routerPasswordNotifier;
   late final TimezoneNotifier _timezoneNotifier;
   late final PowerTableNotifier _powerTableNotifier;

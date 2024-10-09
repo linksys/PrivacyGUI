@@ -1,25 +1,25 @@
 const deviceManagerTestData = {
   "wirelessConnections": {
-    "02:27:5B:F0:B5:EF": {
-      "bssid": "80:69:1A:13:16:10",
+    "E2:56:F2:73:C2:38": {
+      "bssid": "80:69:1A:13:16:1C",
       "isGuest": false,
       "radioID": "RADIO_5GHz",
       "band": "5GHz",
-      "signalDecibels": -43
+      "signalDecibels": -84
     },
-    "3C:22:FB:E4:4F:18": {
-      "bssid": "80:69:1A:13:16:10",
+    "A4:83:E7:11:8A:19": {
+      "bssid": "80:69:1A:13:16:1C",
       "isGuest": false,
       "radioID": "RADIO_5GHz",
       "band": "5GHz",
-      "signalDecibels": -35
+      "signalDecibels": -55
     }
   },
   "radioInfos": {
     "RADIO_2.4GHz": {
       "radioID": "RADIO_2.4GHz",
       "physicalRadioID": "ath0",
-      "bssid": "80:69:1A:13:16:0F",
+      "bssid": "80:69:1A:13:16:1B",
       "band": "2.4GHz",
       "supportedModes": ["802.11bg", "802.11bgn", "802.11bgnax"],
       "defaultMixedMode": "802.11bgnax",
@@ -45,18 +45,18 @@ const deviceManagerTestData = {
       "settings": {
         "isEnabled": true,
         "mode": "802.11bgnax",
-        "ssid": "_VelopSetup60E",
+        "ssid": "_VelopSetup61A",
         "broadcastSSID": true,
         "channelWidth": "Auto",
         "channel": 0,
         "security": "WPA2/WPA3-Mixed-Personal",
-        "wpaPersonalSettings": {"passphrase": "05a63mipt3"}
+        "wpaPersonalSettings": {"passphrase": "nj4qnpwanm"}
       }
     },
     "RADIO_5GHz": {
       "radioID": "RADIO_5GHz",
       "physicalRadioID": "ath10",
-      "bssid": "80:69:1A:13:16:10",
+      "bssid": "80:69:1A:13:16:1C",
       "band": "5GHz",
       "supportedModes": [
         "802.11a",
@@ -92,18 +92,18 @@ const deviceManagerTestData = {
       "settings": {
         "isEnabled": true,
         "mode": "802.11anacaxbe",
-        "ssid": "_VelopSetup60E",
+        "ssid": "_VelopSetup61A",
         "broadcastSSID": true,
         "channelWidth": "Auto",
         "channel": 0,
         "security": "WPA2/WPA3-Mixed-Personal",
-        "wpaPersonalSettings": {"passphrase": "05a63mipt3"}
+        "wpaPersonalSettings": {"passphrase": "nj4qnpwanm"}
       }
     },
     "RADIO_6GHz": {
       "radioID": "RADIO_6GHz",
       "physicalRadioID": "ath30",
-      "bssid": "82:69:1A:13:16:11",
+      "bssid": "82:69:1A:13:16:1D",
       "band": "6GHz",
       "supportedModes": ["802.11ax", "802.11axbe"],
       "defaultMixedMode": "802.11axbe",
@@ -430,21 +430,51 @@ const deviceManagerTestData = {
       "settings": {
         "isEnabled": true,
         "mode": "802.11axbe",
-        "ssid": "_VelopSetup60E",
+        "ssid": "_VelopSetup61A",
         "broadcastSSID": true,
         "channelWidth": "Auto",
         "channel": 0,
         "security": "WPA3-Personal",
-        "wpaPersonalSettings": {"passphrase": "05a63mipt3"}
+        "wpaPersonalSettings": {"passphrase": "nj4qnpwanm"}
       }
     }
+  },
+  "guestRadioSettings": {
+    "isGuestNetworkACaptivePortal": false,
+    "isGuestNetworkEnabled": false,
+    "radios": [
+      {
+        "radioID": "RADIO_5GHz",
+        "isEnabled": true,
+        "broadcastGuestSSID": true,
+        "guestSSID": "_VelopSetup61A-guest",
+        "guestWPAPassphrase": "BeMyGuest",
+        "canEnableRadio": true
+      },
+      {
+        "radioID": "RADIO_2.4GHz",
+        "isEnabled": true,
+        "broadcastGuestSSID": true,
+        "guestSSID": "_VelopSetup61A-guest",
+        "guestWPAPassphrase": "BeMyGuest",
+        "canEnableRadio": true
+      },
+      {
+        "radioID": "RADIO_6GHz",
+        "isEnabled": true,
+        "broadcastGuestSSID": true,
+        "guestSSID": "_VelopSetup61A-guest",
+        "guestWPAPassphrase": "BeMyGuest",
+        "canEnableRadio": true
+      }
+    ]
   },
   "deviceList": [
     {
       "connections": [
         {
-          "macAddress": "80:69:1A:13:16:0E",
-          "ipAddress": "10.205.1.1",
+          "macAddress": "80:69:1A:13:16:1A",
+          "ipAddress": "10.110.1.1",
           "ipv6Address": null,
           "parentDeviceID": null,
           "isGuest": null
@@ -452,12 +482,12 @@ const deviceManagerTestData = {
       ],
       "properties": [],
       "unit": {
-        "serialNumber": "59A10M23D00060",
-        "firmwareVersion": "1.0.11.215918",
-        "firmwareDate": "2024-06-14T03:50:41Z",
+        "serialNumber": "59A10M23D00062",
+        "firmwareVersion": "1.0.12.216221",
+        "firmwareDate": "2024-09-30T07:39:28Z",
         "operatingSystem": null
       },
-      "deviceID": "ef07238c-4870-46fb-a524-80691a13160e",
+      "deviceID": "095aca62-3759-4249-88aa-80691a13161a",
       "maxAllowedProperties": 16,
       "model": {
         "deviceType": "Infrastructure",
@@ -467,12 +497,12 @@ const deviceManagerTestData = {
         "modelDescription": null
       },
       "isAuthority": true,
-      "lastChangeRevision": 32,
-      "friendlyName": "Linksys00060",
+      "lastChangeRevision": 298,
+      "friendlyName": "Linksys00062",
       "knownInterfaces": [
         {
-          "macAddress": "80:69:1A:13:16:0E",
-          "interfaceType": "Unknown",
+          "macAddress": "80:69:1A:13:16:1A",
+          "interfaceType": "Wired",
           "band": null
         }
       ],
@@ -481,49 +511,10 @@ const deviceManagerTestData = {
         {
           "connections": [
             {
-              "macAddress": "3C:22:FB:E4:4F:18",
-              "ipAddress": "10.205.1.30",
+              "macAddress": "E2:56:F2:73:C2:38",
+              "ipAddress": "10.110.1.209",
               "ipv6Address": null,
-              "parentDeviceID": "ef07238c-4870-46fb-a524-80691a13160e",
-              "isGuest": null
-            }
-          ],
-          "properties": [],
-          "unit": {
-            "serialNumber": "59A10M23D00060",
-            "firmwareVersion": "1.0.11.215918",
-            "firmwareDate": "2024-06-14T03:50:41Z",
-            "operatingSystem": "macOS"
-          },
-          "deviceID": "28461643-58d4-4a5b-bada-3dc652d93c3e",
-          "maxAllowedProperties": 16,
-          "model": {
-            "deviceType": "Infrastructure",
-            "manufacturer": "Linksys",
-            "modelNumber": "MBE70",
-            "hardwareVersion": "1",
-            "modelDescription": null
-          },
-          "isAuthority": false,
-          "lastChangeRevision": 44,
-          "friendlyName": "ASTWP-29134",
-          "knownInterfaces": [
-            {
-              "macAddress": "3C:22:FB:E4:4F:18",
-              "interfaceType": "Wireless",
-              "band": "5GHz"
-            }
-          ],
-          "connectedDevices": [],
-          "connectedWifiType": "main"
-        },
-        {
-          "connections": [
-            {
-              "macAddress": "02:27:5B:F0:B5:EF",
-              "ipAddress": "10.205.1.223",
-              "ipv6Address": null,
-              "parentDeviceID": "ef07238c-4870-46fb-a524-80691a13160e",
+              "parentDeviceID": "095aca62-3759-4249-88aa-80691a13161a",
               "isGuest": null
             }
           ],
@@ -534,7 +525,7 @@ const deviceManagerTestData = {
             "firmwareDate": null,
             "operatingSystem": "Android"
           },
-          "deviceID": "5c0bd66f-3784-4e61-beca-64a034d2e9fa",
+          "deviceID": "1ac7a1f2-5e29-4881-946b-c3d7ec3ecadd",
           "maxAllowedProperties": 16,
           "model": {
             "deviceType": "Mobile",
@@ -544,66 +535,103 @@ const deviceManagerTestData = {
             "modelDescription": null
           },
           "isAuthority": false,
-          "lastChangeRevision": 58,
-          "friendlyName": "Pixel-8",
+          "lastChangeRevision": 332,
+          "friendlyName": "Pixel-4a",
           "knownInterfaces": [
             {
-              "macAddress": "02:27:5B:F0:B5:EF",
+              "macAddress": "E2:56:F2:73:C2:38",
               "interfaceType": "Wireless",
               "band": "5GHz"
             }
           ],
           "connectedDevices": [],
-          "connectedWifiType": "main"
+          "connectedWifiType": "main",
+          "signalDecibels": -84,
+          "connectionType": "wireless",
+          "speedMbps": "--"
+        },
+        {
+          "connections": [
+            {
+              "macAddress": "A4:83:E7:11:8A:19",
+              "ipAddress": "10.110.1.144",
+              "ipv6Address": null,
+              "parentDeviceID": "095aca62-3759-4249-88aa-80691a13161a",
+              "isGuest": null
+            }
+          ],
+          "properties": [],
+          "unit": {
+            "serialNumber": null,
+            "firmwareVersion": null,
+            "firmwareDate": null,
+            "operatingSystem": "macOS"
+          },
+          "deviceID": "a6d4e519-2eda-48a4-8588-3652394397e8",
+          "maxAllowedProperties": 16,
+          "model": {
+            "deviceType": "Computer",
+            "manufacturer": "Apple Inc.",
+            "modelNumber": "MacBook Pro",
+            "hardwareVersion": null,
+            "modelDescription": null
+          },
+          "isAuthority": false,
+          "lastChangeRevision": 315,
+          "friendlyName": "ASTWP-028279",
+          "knownInterfaces": [
+            {
+              "macAddress": "A4:83:E7:11:8A:19",
+              "interfaceType": "Wireless",
+              "band": "5GHz"
+            }
+          ],
+          "connectedDevices": [],
+          "connectedWifiType": "main",
+          "signalDecibels": -55,
+          "connectionType": "wireless",
+          "speedMbps": "--"
         }
       ],
       "connectedWifiType": "main",
-      "signalDecibels": -1
+      "connectionType": "wireless",
+      "speedMbps": "--"
     },
     {
-      "connections": [
-        {
-          "macAddress": "3C:22:FB:E4:4F:18",
-          "ipAddress": "10.205.1.30",
-          "ipv6Address": null,
-          "parentDeviceID": "ef07238c-4870-46fb-a524-80691a13160e",
-          "isGuest": null
-        }
-      ],
+      "connections": [],
       "properties": [],
       "unit": {
-        "serialNumber": "59A10M23D00060",
-        "firmwareVersion": "1.0.11.215918",
-        "firmwareDate": "2024-06-14T03:50:41Z",
-        "operatingSystem": "macOS"
+        "serialNumber": null,
+        "firmwareVersion": null,
+        "firmwareDate": null,
+        "operatingSystem": "Android"
       },
-      "deviceID": "28461643-58d4-4a5b-bada-3dc652d93c3e",
+      "deviceID": "efa201a1-c8c3-42d7-93e6-00b8fd2b1d41",
       "maxAllowedProperties": 16,
       "model": {
-        "deviceType": "Infrastructure",
-        "manufacturer": "Linksys",
-        "modelNumber": "MBE70",
-        "hardwareVersion": "1",
+        "deviceType": "Mobile",
+        "manufacturer": null,
+        "modelNumber": null,
+        "hardwareVersion": null,
         "modelDescription": null
       },
       "isAuthority": false,
-      "lastChangeRevision": 44,
-      "friendlyName": "ASTWP-29134",
+      "lastChangeRevision": 284,
+      "friendlyName": "Pixel-8",
       "knownInterfaces": [
         {
-          "macAddress": "3C:22:FB:E4:4F:18",
-          "interfaceType": "Wireless",
-          "band": "5GHz"
+          "macAddress": "32:10:A6:A5:4E:A8",
+          "interfaceType": "Unknown",
+          "band": null
         }
       ],
       "connectedDevices": [],
       "connectedWifiType": "main",
-      "signalDecibels": -35,
       "upstream": {
         "connections": [
           {
-            "macAddress": "80:69:1A:13:16:0E",
-            "ipAddress": "10.205.1.1",
+            "macAddress": "80:69:1A:13:16:1A",
+            "ipAddress": "10.110.1.1",
             "ipv6Address": null,
             "parentDeviceID": null,
             "isGuest": null
@@ -611,12 +639,12 @@ const deviceManagerTestData = {
         ],
         "properties": [],
         "unit": {
-          "serialNumber": "59A10M23D00060",
-          "firmwareVersion": "1.0.11.215918",
-          "firmwareDate": "2024-06-14T03:50:41Z",
+          "serialNumber": "59A10M23D00062",
+          "firmwareVersion": "1.0.12.216221",
+          "firmwareDate": "2024-09-30T07:39:28Z",
           "operatingSystem": null
         },
-        "deviceID": "ef07238c-4870-46fb-a524-80691a13160e",
+        "deviceID": "095aca62-3759-4249-88aa-80691a13161a",
         "maxAllowedProperties": 16,
         "model": {
           "deviceType": "Infrastructure",
@@ -626,12 +654,12 @@ const deviceManagerTestData = {
           "modelDescription": null
         },
         "isAuthority": true,
-        "lastChangeRevision": 32,
-        "friendlyName": "Linksys00060",
+        "lastChangeRevision": 298,
+        "friendlyName": "Linksys00062",
         "knownInterfaces": [
           {
-            "macAddress": "80:69:1A:13:16:0E",
-            "interfaceType": "Unknown",
+            "macAddress": "80:69:1A:13:16:1A",
+            "interfaceType": "Wired",
             "band": null
           }
         ],
@@ -640,49 +668,10 @@ const deviceManagerTestData = {
           {
             "connections": [
               {
-                "macAddress": "3C:22:FB:E4:4F:18",
-                "ipAddress": "10.205.1.30",
+                "macAddress": "E2:56:F2:73:C2:38",
+                "ipAddress": "10.110.1.209",
                 "ipv6Address": null,
-                "parentDeviceID": "ef07238c-4870-46fb-a524-80691a13160e",
-                "isGuest": null
-              }
-            ],
-            "properties": [],
-            "unit": {
-              "serialNumber": "59A10M23D00060",
-              "firmwareVersion": "1.0.11.215918",
-              "firmwareDate": "2024-06-14T03:50:41Z",
-              "operatingSystem": "macOS"
-            },
-            "deviceID": "28461643-58d4-4a5b-bada-3dc652d93c3e",
-            "maxAllowedProperties": 16,
-            "model": {
-              "deviceType": "Infrastructure",
-              "manufacturer": "Linksys",
-              "modelNumber": "MBE70",
-              "hardwareVersion": "1",
-              "modelDescription": null
-            },
-            "isAuthority": false,
-            "lastChangeRevision": 44,
-            "friendlyName": "ASTWP-29134",
-            "knownInterfaces": [
-              {
-                "macAddress": "3C:22:FB:E4:4F:18",
-                "interfaceType": "Wireless",
-                "band": "5GHz"
-              }
-            ],
-            "connectedDevices": [],
-            "connectedWifiType": "main"
-          },
-          {
-            "connections": [
-              {
-                "macAddress": "02:27:5B:F0:B5:EF",
-                "ipAddress": "10.205.1.223",
-                "ipv6Address": null,
-                "parentDeviceID": "ef07238c-4870-46fb-a524-80691a13160e",
+                "parentDeviceID": "095aca62-3759-4249-88aa-80691a13161a",
                 "isGuest": null
               }
             ],
@@ -693,7 +682,7 @@ const deviceManagerTestData = {
               "firmwareDate": null,
               "operatingSystem": "Android"
             },
-            "deviceID": "5c0bd66f-3784-4e61-beca-64a034d2e9fa",
+            "deviceID": "1ac7a1f2-5e29-4881-946b-c3d7ec3ecadd",
             "maxAllowedProperties": 16,
             "model": {
               "deviceType": "Mobile",
@@ -703,30 +692,78 @@ const deviceManagerTestData = {
               "modelDescription": null
             },
             "isAuthority": false,
-            "lastChangeRevision": 58,
-            "friendlyName": "Pixel-8",
+            "lastChangeRevision": 332,
+            "friendlyName": "Pixel-4a",
             "knownInterfaces": [
               {
-                "macAddress": "02:27:5B:F0:B5:EF",
+                "macAddress": "E2:56:F2:73:C2:38",
                 "interfaceType": "Wireless",
                 "band": "5GHz"
               }
             ],
             "connectedDevices": [],
-            "connectedWifiType": "main"
+            "connectedWifiType": "main",
+            "signalDecibels": -84,
+            "connectionType": "wireless",
+            "speedMbps": "--"
+          },
+          {
+            "connections": [
+              {
+                "macAddress": "A4:83:E7:11:8A:19",
+                "ipAddress": "10.110.1.144",
+                "ipv6Address": null,
+                "parentDeviceID": "095aca62-3759-4249-88aa-80691a13161a",
+                "isGuest": null
+              }
+            ],
+            "properties": [],
+            "unit": {
+              "serialNumber": null,
+              "firmwareVersion": null,
+              "firmwareDate": null,
+              "operatingSystem": "macOS"
+            },
+            "deviceID": "a6d4e519-2eda-48a4-8588-3652394397e8",
+            "maxAllowedProperties": 16,
+            "model": {
+              "deviceType": "Computer",
+              "manufacturer": "Apple Inc.",
+              "modelNumber": "MacBook Pro",
+              "hardwareVersion": null,
+              "modelDescription": null
+            },
+            "isAuthority": false,
+            "lastChangeRevision": 315,
+            "friendlyName": "ASTWP-028279",
+            "knownInterfaces": [
+              {
+                "macAddress": "A4:83:E7:11:8A:19",
+                "interfaceType": "Wireless",
+                "band": "5GHz"
+              }
+            ],
+            "connectedDevices": [],
+            "connectedWifiType": "main",
+            "signalDecibels": -55,
+            "connectionType": "wireless",
+            "speedMbps": "--"
           }
         ],
         "connectedWifiType": "main",
-        "signalDecibels": -1
-      }
+        "connectionType": "wireless",
+        "speedMbps": "--"
+      },
+      "connectionType": "wireless",
+      "speedMbps": "--"
     },
     {
       "connections": [
         {
-          "macAddress": "02:27:5B:F0:B5:EF",
-          "ipAddress": "10.205.1.223",
+          "macAddress": "E2:56:F2:73:C2:38",
+          "ipAddress": "10.110.1.209",
           "ipv6Address": null,
-          "parentDeviceID": "ef07238c-4870-46fb-a524-80691a13160e",
+          "parentDeviceID": "095aca62-3759-4249-88aa-80691a13161a",
           "isGuest": null
         }
       ],
@@ -737,7 +774,7 @@ const deviceManagerTestData = {
         "firmwareDate": null,
         "operatingSystem": "Android"
       },
-      "deviceID": "5c0bd66f-3784-4e61-beca-64a034d2e9fa",
+      "deviceID": "1ac7a1f2-5e29-4881-946b-c3d7ec3ecadd",
       "maxAllowedProperties": 16,
       "model": {
         "deviceType": "Mobile",
@@ -747,23 +784,23 @@ const deviceManagerTestData = {
         "modelDescription": null
       },
       "isAuthority": false,
-      "lastChangeRevision": 58,
-      "friendlyName": "Pixel-8",
+      "lastChangeRevision": 332,
+      "friendlyName": "Pixel-4a",
       "knownInterfaces": [
         {
-          "macAddress": "02:27:5B:F0:B5:EF",
+          "macAddress": "E2:56:F2:73:C2:38",
           "interfaceType": "Wireless",
           "band": "5GHz"
         }
       ],
       "connectedDevices": [],
       "connectedWifiType": "main",
-      "signalDecibels": -43,
+      "signalDecibels": -84,
       "upstream": {
         "connections": [
           {
-            "macAddress": "80:69:1A:13:16:0E",
-            "ipAddress": "10.205.1.1",
+            "macAddress": "80:69:1A:13:16:1A",
+            "ipAddress": "10.110.1.1",
             "ipv6Address": null,
             "parentDeviceID": null,
             "isGuest": null
@@ -771,12 +808,12 @@ const deviceManagerTestData = {
         ],
         "properties": [],
         "unit": {
-          "serialNumber": "59A10M23D00060",
-          "firmwareVersion": "1.0.11.215918",
-          "firmwareDate": "2024-06-14T03:50:41Z",
+          "serialNumber": "59A10M23D00062",
+          "firmwareVersion": "1.0.12.216221",
+          "firmwareDate": "2024-09-30T07:39:28Z",
           "operatingSystem": null
         },
-        "deviceID": "ef07238c-4870-46fb-a524-80691a13160e",
+        "deviceID": "095aca62-3759-4249-88aa-80691a13161a",
         "maxAllowedProperties": 16,
         "model": {
           "deviceType": "Infrastructure",
@@ -786,12 +823,12 @@ const deviceManagerTestData = {
           "modelDescription": null
         },
         "isAuthority": true,
-        "lastChangeRevision": 32,
-        "friendlyName": "Linksys00060",
+        "lastChangeRevision": 298,
+        "friendlyName": "Linksys00062",
         "knownInterfaces": [
           {
-            "macAddress": "80:69:1A:13:16:0E",
-            "interfaceType": "Unknown",
+            "macAddress": "80:69:1A:13:16:1A",
+            "interfaceType": "Wired",
             "band": null
           }
         ],
@@ -800,49 +837,10 @@ const deviceManagerTestData = {
           {
             "connections": [
               {
-                "macAddress": "3C:22:FB:E4:4F:18",
-                "ipAddress": "10.205.1.30",
+                "macAddress": "E2:56:F2:73:C2:38",
+                "ipAddress": "10.110.1.209",
                 "ipv6Address": null,
-                "parentDeviceID": "ef07238c-4870-46fb-a524-80691a13160e",
-                "isGuest": null
-              }
-            ],
-            "properties": [],
-            "unit": {
-              "serialNumber": "59A10M23D00060",
-              "firmwareVersion": "1.0.11.215918",
-              "firmwareDate": "2024-06-14T03:50:41Z",
-              "operatingSystem": "macOS"
-            },
-            "deviceID": "28461643-58d4-4a5b-bada-3dc652d93c3e",
-            "maxAllowedProperties": 16,
-            "model": {
-              "deviceType": "Infrastructure",
-              "manufacturer": "Linksys",
-              "modelNumber": "MBE70",
-              "hardwareVersion": "1",
-              "modelDescription": null
-            },
-            "isAuthority": false,
-            "lastChangeRevision": 44,
-            "friendlyName": "ASTWP-29134",
-            "knownInterfaces": [
-              {
-                "macAddress": "3C:22:FB:E4:4F:18",
-                "interfaceType": "Wireless",
-                "band": "5GHz"
-              }
-            ],
-            "connectedDevices": [],
-            "connectedWifiType": "main"
-          },
-          {
-            "connections": [
-              {
-                "macAddress": "02:27:5B:F0:B5:EF",
-                "ipAddress": "10.205.1.223",
-                "ipv6Address": null,
-                "parentDeviceID": "ef07238c-4870-46fb-a524-80691a13160e",
+                "parentDeviceID": "095aca62-3759-4249-88aa-80691a13161a",
                 "isGuest": null
               }
             ],
@@ -853,7 +851,7 @@ const deviceManagerTestData = {
               "firmwareDate": null,
               "operatingSystem": "Android"
             },
-            "deviceID": "5c0bd66f-3784-4e61-beca-64a034d2e9fa",
+            "deviceID": "1ac7a1f2-5e29-4881-946b-c3d7ec3ecadd",
             "maxAllowedProperties": 16,
             "model": {
               "deviceType": "Mobile",
@@ -863,32 +861,249 @@ const deviceManagerTestData = {
               "modelDescription": null
             },
             "isAuthority": false,
-            "lastChangeRevision": 58,
-            "friendlyName": "Pixel-8",
+            "lastChangeRevision": 332,
+            "friendlyName": "Pixel-4a",
             "knownInterfaces": [
               {
-                "macAddress": "02:27:5B:F0:B5:EF",
+                "macAddress": "E2:56:F2:73:C2:38",
                 "interfaceType": "Wireless",
                 "band": "5GHz"
               }
             ],
             "connectedDevices": [],
-            "connectedWifiType": "main"
+            "connectedWifiType": "main",
+            "signalDecibels": -84,
+            "connectionType": "wireless",
+            "speedMbps": "--"
+          },
+          {
+            "connections": [
+              {
+                "macAddress": "A4:83:E7:11:8A:19",
+                "ipAddress": "10.110.1.144",
+                "ipv6Address": null,
+                "parentDeviceID": "095aca62-3759-4249-88aa-80691a13161a",
+                "isGuest": null
+              }
+            ],
+            "properties": [],
+            "unit": {
+              "serialNumber": null,
+              "firmwareVersion": null,
+              "firmwareDate": null,
+              "operatingSystem": "macOS"
+            },
+            "deviceID": "a6d4e519-2eda-48a4-8588-3652394397e8",
+            "maxAllowedProperties": 16,
+            "model": {
+              "deviceType": "Computer",
+              "manufacturer": "Apple Inc.",
+              "modelNumber": "MacBook Pro",
+              "hardwareVersion": null,
+              "modelDescription": null
+            },
+            "isAuthority": false,
+            "lastChangeRevision": 315,
+            "friendlyName": "ASTWP-028279",
+            "knownInterfaces": [
+              {
+                "macAddress": "A4:83:E7:11:8A:19",
+                "interfaceType": "Wireless",
+                "band": "5GHz"
+              }
+            ],
+            "connectedDevices": [],
+            "connectedWifiType": "main",
+            "signalDecibels": -55,
+            "connectionType": "wireless",
+            "speedMbps": "--"
           }
         ],
         "connectedWifiType": "main",
-        "signalDecibels": -1
-      }
+        "connectionType": "wireless",
+        "speedMbps": "--"
+      },
+      "connectionType": "wireless",
+      "speedMbps": "--"
+    },
+    {
+      "connections": [
+        {
+          "macAddress": "A4:83:E7:11:8A:19",
+          "ipAddress": "10.110.1.144",
+          "ipv6Address": null,
+          "parentDeviceID": "095aca62-3759-4249-88aa-80691a13161a",
+          "isGuest": null
+        }
+      ],
+      "properties": [],
+      "unit": {
+        "serialNumber": null,
+        "firmwareVersion": null,
+        "firmwareDate": null,
+        "operatingSystem": "macOS"
+      },
+      "deviceID": "a6d4e519-2eda-48a4-8588-3652394397e8",
+      "maxAllowedProperties": 16,
+      "model": {
+        "deviceType": "Computer",
+        "manufacturer": "Apple Inc.",
+        "modelNumber": "MacBook Pro",
+        "hardwareVersion": null,
+        "modelDescription": null
+      },
+      "isAuthority": false,
+      "lastChangeRevision": 315,
+      "friendlyName": "ASTWP-028279",
+      "knownInterfaces": [
+        {
+          "macAddress": "A4:83:E7:11:8A:19",
+          "interfaceType": "Wireless",
+          "band": "5GHz"
+        }
+      ],
+      "connectedDevices": [],
+      "connectedWifiType": "main",
+      "signalDecibels": -55,
+      "upstream": {
+        "connections": [
+          {
+            "macAddress": "80:69:1A:13:16:1A",
+            "ipAddress": "10.110.1.1",
+            "ipv6Address": null,
+            "parentDeviceID": null,
+            "isGuest": null
+          }
+        ],
+        "properties": [],
+        "unit": {
+          "serialNumber": "59A10M23D00062",
+          "firmwareVersion": "1.0.12.216221",
+          "firmwareDate": "2024-09-30T07:39:28Z",
+          "operatingSystem": null
+        },
+        "deviceID": "095aca62-3759-4249-88aa-80691a13161a",
+        "maxAllowedProperties": 16,
+        "model": {
+          "deviceType": "Infrastructure",
+          "manufacturer": "Linksys",
+          "modelNumber": "MBE70",
+          "hardwareVersion": "1",
+          "modelDescription": null
+        },
+        "isAuthority": true,
+        "lastChangeRevision": 298,
+        "friendlyName": "Linksys00062",
+        "knownInterfaces": [
+          {
+            "macAddress": "80:69:1A:13:16:1A",
+            "interfaceType": "Wired",
+            "band": null
+          }
+        ],
+        "nodeType": "Master",
+        "connectedDevices": [
+          {
+            "connections": [
+              {
+                "macAddress": "E2:56:F2:73:C2:38",
+                "ipAddress": "10.110.1.209",
+                "ipv6Address": null,
+                "parentDeviceID": "095aca62-3759-4249-88aa-80691a13161a",
+                "isGuest": null
+              }
+            ],
+            "properties": [],
+            "unit": {
+              "serialNumber": null,
+              "firmwareVersion": null,
+              "firmwareDate": null,
+              "operatingSystem": "Android"
+            },
+            "deviceID": "1ac7a1f2-5e29-4881-946b-c3d7ec3ecadd",
+            "maxAllowedProperties": 16,
+            "model": {
+              "deviceType": "Mobile",
+              "manufacturer": null,
+              "modelNumber": null,
+              "hardwareVersion": null,
+              "modelDescription": null
+            },
+            "isAuthority": false,
+            "lastChangeRevision": 332,
+            "friendlyName": "Pixel-4a",
+            "knownInterfaces": [
+              {
+                "macAddress": "E2:56:F2:73:C2:38",
+                "interfaceType": "Wireless",
+                "band": "5GHz"
+              }
+            ],
+            "connectedDevices": [],
+            "connectedWifiType": "main",
+            "signalDecibels": -84,
+            "connectionType": "wireless",
+            "speedMbps": "--"
+          },
+          {
+            "connections": [
+              {
+                "macAddress": "A4:83:E7:11:8A:19",
+                "ipAddress": "10.110.1.144",
+                "ipv6Address": null,
+                "parentDeviceID": "095aca62-3759-4249-88aa-80691a13161a",
+                "isGuest": null
+              }
+            ],
+            "properties": [],
+            "unit": {
+              "serialNumber": null,
+              "firmwareVersion": null,
+              "firmwareDate": null,
+              "operatingSystem": "macOS"
+            },
+            "deviceID": "a6d4e519-2eda-48a4-8588-3652394397e8",
+            "maxAllowedProperties": 16,
+            "model": {
+              "deviceType": "Computer",
+              "manufacturer": "Apple Inc.",
+              "modelNumber": "MacBook Pro",
+              "hardwareVersion": null,
+              "modelDescription": null
+            },
+            "isAuthority": false,
+            "lastChangeRevision": 315,
+            "friendlyName": "ASTWP-028279",
+            "knownInterfaces": [
+              {
+                "macAddress": "A4:83:E7:11:8A:19",
+                "interfaceType": "Wireless",
+                "band": "5GHz"
+              }
+            ],
+            "connectedDevices": [],
+            "connectedWifiType": "main",
+            "signalDecibels": -55,
+            "connectionType": "wireless",
+            "speedMbps": "--"
+          }
+        ],
+        "connectedWifiType": "main",
+        "connectionType": "wireless",
+        "speedMbps": "--"
+      },
+      "connectionType": "wireless",
+      "speedMbps": "--"
     }
   ],
   "wanStatus": {
-    "macAddress": "80:69:1A:13:16:0E",
+    "macAddress": "80:69:1A:13:16:1A",
     "detectedWANType": "DHCP",
     "wanStatus": "Connected",
     "wanIPv6Status": "Connecting",
     "wanConnection": {
       "wanType": "DHCP",
-      "ipAddress": "192.168.1.98",
+      "ipAddress": "192.168.1.84",
       "networkPrefixLength": 24,
       "gateway": "192.168.1.1",
       "mtu": 0,
@@ -909,5 +1124,5 @@ const deviceManagerTestData = {
     ]
   },
   "backhaulInfoData": [],
-  "lastUpdateTime": 1719382126981
+  "lastUpdateTime": 1728376454469
 };

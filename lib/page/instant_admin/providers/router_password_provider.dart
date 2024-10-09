@@ -7,6 +7,7 @@ import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/extensions/_extensions.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/instant_admin/providers/router_password_state.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 
@@ -44,6 +45,7 @@ class RouterPasswordNotifier extends Notifier<RouterPasswordState> {
         isSetByUser: isSetByUser,
         adminPassword: password ?? '',
         hint: passwordHint);
+    logger.d('[State]:[RouterPassword]:${state.toJson()}');
   }
 
   Future<void> setAdminPasswordWithResetCode(
