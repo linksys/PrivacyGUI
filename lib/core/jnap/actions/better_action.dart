@@ -652,6 +652,10 @@ void initBetterActions() {
       _JNAPActionValue.getBluetoothAutoOnboardingStatus.value;
   _betterActionMap[JNAPAction.startBlueboothAutoOnboarding] =
       _JNAPActionValue.startBluetoothAutoOnboarding.value;
+  _betterActionMap[JNAPAction.setWiredAutoOnboardingSettings] =
+      _JNAPActionValue.setWiredAutoOnboardingSettings.value;
+  _betterActionMap[JNAPAction.getWiredAutoOnboardingSettings] =
+      _JNAPActionValue.getWiredAutoOnboardingSettings.value;
   _betterActionMap[JNAPAction.getVLANTaggingSettings] =
       _JNAPActionValue.getVLANTaggingSettings.value;
   _betterActionMap[JNAPAction.setVLANTaggingSettings] =
