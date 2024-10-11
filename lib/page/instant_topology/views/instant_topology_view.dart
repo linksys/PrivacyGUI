@@ -243,11 +243,16 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
   }
 
   _doInstantPair() {
-    context.pushNamed(RouteNamed.addNodes).then((result) {
+    context.pushNamed(RouteNamed.addWiredNodes).then((result) {
       if (result is bool && result) {
         _showMoveChildNodesModal();
       }
     });
+    // context.pushNamed(RouteNamed.addNodes).then((result) {
+    //   if (result is bool && result) {
+    //     _showMoveChildNodesModal();
+    //   }
+    // });
   }
 
   Widget _buildHeader(

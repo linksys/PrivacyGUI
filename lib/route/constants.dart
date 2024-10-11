@@ -65,6 +65,7 @@ class RoutePath {
   static const changeNodeName = 'changeNodeName';
   static const nodeLightSettings = 'nodeLightSettings';
   static const addNodes = '/addNodes';
+  static const addWiredNodes = '/addWiredNodes';
   static const firmwareUpdateDetail = 'firmwareUpdateDetail';
   static const manualFirmwareUpdate = 'manualFirmwareUpdate';
 
@@ -211,6 +212,7 @@ class RouteNamed {
   static const changeNodeName = 'changeNodeName';
   static const nodeLightSettings = 'nodeLightSettings';
   static const addNodes = 'addNodes';
+  static const addWiredNodes = 'addWiredNodes';
   static const firmwareUpdateDetail = 'firmwareUpdateDetail';
   static const manualFirmwareUpdate = 'manualFirmwareUpdate';
 

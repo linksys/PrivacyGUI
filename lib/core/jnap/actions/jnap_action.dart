@@ -9,6 +9,8 @@ enum JNAPAction {
   getBluetoothAutoOnboardingStatus,
   getBluetoothAutoOnboardingSettings,
   setBluetoothAutoOnboardingSettings,
+  setWiredAutoOnboardingSettings,
+  getWiredAutoOnboardingSettings,
   // bluetooth
   btGetScanUnconfiguredResult,
   btRequestScanUnconfigured,
