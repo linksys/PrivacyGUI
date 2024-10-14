@@ -59,6 +59,7 @@ class TopologyModel extends Equatable {
   final String fwVersion;
   final bool fwUpToDate;
   final String ipAddress;
+  final String hardwareVersion;
 
   const TopologyModel({
     this.deviceId = '',
@@ -76,6 +77,7 @@ class TopologyModel extends Equatable {
     this.fwVersion = '',
     this.fwUpToDate = true,
     this.ipAddress = '',
+    this.hardwareVersion = '1',
   });
 
   TopologyModel copyWith({
@@ -94,6 +96,7 @@ class TopologyModel extends Equatable {
     String? fwVersion,
     bool? fwUpToDate,
     String? ipAddress,
+    String? hardwareVersion,
   }) {
     return TopologyModel(
       deviceId: deviceId ?? this.deviceId,
@@ -111,6 +114,7 @@ class TopologyModel extends Equatable {
       fwVersion: fwVersion ?? this.fwVersion,
       fwUpToDate: fwUpToDate ?? this.fwUpToDate,
       ipAddress: ipAddress ?? this.ipAddress,
+      hardwareVersion: hardwareVersion ?? this.hardwareVersion,
     );
   }
 
@@ -131,6 +135,7 @@ class TopologyModel extends Equatable {
       'fwVersion': fwVersion,
       'fwUpToDate': fwUpToDate,
       'ipAddress': ipAddress,
+      'hardwareVersion': hardwareVersion,
     };
   }
 
@@ -151,6 +156,7 @@ class TopologyModel extends Equatable {
       fwVersion: map['fwVersion'] as String,
       fwUpToDate: map['fwUpToDate'] as bool,
       ipAddress: map['ipAddress'] as String,
+      hardwareVersion: map['hardwareVersion'] as String,
     );
   }
 
@@ -177,10 +183,10 @@ class TopologyModel extends Equatable {
       fwVersion,
       fwUpToDate,
       ipAddress,
+      hardwareVersion,
     ];
   }
 
   @override
   bool get stringify => true;
 }
-

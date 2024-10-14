@@ -153,6 +153,7 @@ class InstantTopologyNotifier extends Notifier<InstantTopologyState> {
     String serialNumber = device.unit.serialNumber ?? '';
     String fwVersion = device.unit.firmwareVersion ?? '';
     String ipAddress = device.connections.firstOrNull?.ipAddress ?? '';
+    String hardwareVersion = device.model.hardwareVersion ?? '1';
 
     int? signalStrength = device.signalDecibels;
     final data = TopologyModel(
@@ -171,6 +172,7 @@ class InstantTopologyNotifier extends Notifier<InstantTopologyState> {
       serialNumber: serialNumber,
       fwVersion: fwVersion,
       ipAddress: ipAddress,
+      hardwareVersion: hardwareVersion,
     );
     return RouterTopologyNode(
       data: data,
