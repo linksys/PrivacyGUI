@@ -89,7 +89,8 @@ Future<T?> showSubmitAppDialog<T>(
   BuildContext context, {
   Widget? icon,
   String? title,
-  required Widget Function(BuildContext, StateSetter,  void Function()) contentBuilder,
+  required Widget Function(BuildContext, StateSetter, void Function())
+      contentBuilder,
   Widget? loadingWidget,
   double? width,
   String? negitiveLabel,
@@ -324,7 +325,7 @@ Future showRouterNotFoundAlert(BuildContext context, WidgetRef ref) {
       ]);
 }
 
-Future<bool?> showFactoryResetModal(BuildContext context) {
+Future<bool?> showFactoryResetModal(BuildContext context, bool isParent) {
   return showMessageAppDialog<bool>(context,
       icon: Icon(
         LinksysIcons.resetWrench,
@@ -332,7 +333,9 @@ Future<bool?> showFactoryResetModal(BuildContext context) {
         size: 42,
       ),
       message: loc(context).factoryResetDesc,
-      title: loc(context).factoryResetTitle,
+      title: isParent
+          ? loc(context).factoryResetParentTitle
+          : loc(context).factoryResetTitle,
       actions: [
         AppTextButton(
           loc(context).cancel,
@@ -350,7 +353,7 @@ Future<bool?> showFactoryResetModal(BuildContext context) {
       ]);
 }
 
-Future<bool?> showRebootModal(BuildContext context) {
+Future<bool?> showRebootModal(BuildContext context, bool isParent) {
   return showMessageAppDialog<bool>(context,
       icon: Icon(
         LinksysIcons.restartAlt,
@@ -358,7 +361,8 @@ Future<bool?> showRebootModal(BuildContext context) {
         size: 42,
       ),
       message: loc(context).menuRestartNetworkMessage,
-      title: loc(context).rebootTitle,
+      title:
+          isParent ? loc(context).rebootParentTitle : loc(context).rebootUnit,
       actions: [
         AppTextButton(
           loc(context).cancel,

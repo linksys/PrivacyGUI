@@ -229,8 +229,10 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
                     const Divider(),
                     _advancedWiFiNameCard(radio),
                     const Divider(),
-                    _advancedWiFiPasswordCard(radio),
-                    const Divider(),
+                    if (!radio.securityType.isOpenVariant) ...[
+                      _advancedWiFiPasswordCard(radio),
+                      const Divider(),
+                    ],
                     _advancedWiFiSecurityTypeCard(radio),
                     const Divider(),
                     _advanvedWiFiWirelessModeCard(radio),

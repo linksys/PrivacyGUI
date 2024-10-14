@@ -9,6 +9,7 @@ import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
+import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/customs/animated_refresh_container.dart';
@@ -391,7 +392,10 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
 
   Widget _lightCard(NodeDetailState state) {
     bool isSupportNodeLight = serviceHelper.isSupportLedMode();
-    if (!isSupportNodeLight) {
+
+    bool isCognitive = isCognitiveMeshRouter(
+        modelNumber: state.modelNumber, hardwareVersion: state.hardwareVersion);
+    if (!isSupportNodeLight && !isCognitive) {
       return const Center();
     }
     return _nodeDetailBackgroundCard(
@@ -586,6 +590,8 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
   void _showEditNodeNameDialog(NodeDetailState state) {
     final textController = TextEditingController()..text = state.location;
     final hasBlinkFunction = serviceHelper.isSupportLedBlinking();
+    final isCognitive = isCognitiveMeshRouter(
+        modelNumber: state.modelNumber, hardwareVersion: state.hardwareVersion);
     bool isEmpty = false;
     showSubmitAppDialog(context,
         title: loc(context).nodeName,
@@ -609,7 +615,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
                   });
                 },
               ),
-              if (hasBlinkFunction) ...[
+              if (isCognitive && hasBlinkFunction) ...[
                 const AppGap.medium(),
                 const BlinkNodeLightWidget(),
               ],
