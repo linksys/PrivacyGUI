@@ -395,7 +395,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
 
     bool isCognitive = isCognitiveMeshRouter(
         modelNumber: state.modelNumber, hardwareVersion: state.hardwareVersion);
-    if (!isSupportNodeLight && !isCognitive) {
+    if (!isSupportNodeLight || !isCognitive) {
       return const Center();
     }
     return _nodeDetailBackgroundCard(
