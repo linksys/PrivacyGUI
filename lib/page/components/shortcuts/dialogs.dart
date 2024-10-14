@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
@@ -8,9 +7,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/bullet_list/bullet_list.dart';
-import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
-import 'package:privacygui_widgets/widgets/text/app_text.dart';
 
 const kDefaultDialogWidth = 328.0;
 
@@ -21,7 +18,7 @@ Future<T?> doSomethingWithSpinner<T>(
   String? title,
   List<String>? messages,
   Duration? period,
-}) {
+}) async {
   Future.delayed(
       Duration.zero,
       () => showAppSpinnerDialog(
@@ -31,6 +28,7 @@ Future<T?> doSomethingWithSpinner<T>(
             messages: messages ?? [loc(context).processing],
             period: period,
           ));
+  await Future.delayed(Duration(milliseconds: 100));
   return task.then((value) {
     context.pop();
     return value;
