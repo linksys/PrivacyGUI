@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
@@ -198,22 +200,28 @@ class _InstantSafetyViewState extends ConsumerState<InstantSafetyView> {
           context,
           loc(context).settingsSaved,
         );
-      }).onError((error, stackTrace) {
-        final errorMsg = switch (error) {
-          SafeBrowsingError => (error as SafeBrowsingError).message,
-          _ => 'Unknown error',
-        };
-        showFailedSnackBar(
-          context,
-          errorMsg ?? '',
-        );
-      }).whenComplete(
-        () {
-          setState(() {
-            loadingDesc = '';
-          });
-        },
-      ),
+      }),
+    ).catchError((error) {
+      logger.d('[XXXXX] Router not found!!!');
+      showRouterNotFoundAlert(context, ref);
+    }, test: (error) => error is JNAPSideEffectError).onError(
+        (error, stackTrace) {
+      logger.d('[XXXXX] error: $error');
+
+      final errorMsg = switch (error) {
+        SafeBrowsingError => (error as SafeBrowsingError).message,
+        _ => 'Unknown error',
+      };
+      showFailedSnackBar(
+        context,
+        errorMsg ?? '',
+      );
+    }).whenComplete(
+      () {
+        setState(() {
+          loadingDesc = '';
+        });
+      },
     );
   }
 
