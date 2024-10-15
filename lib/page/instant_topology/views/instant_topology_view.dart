@@ -8,6 +8,7 @@ import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
@@ -152,13 +153,21 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
       node: node,
       actions: node.data.isMaster
           ? [
-              if (hasBlinkFunction) NodeInstantActions.blink,
+              if (hasBlinkFunction &&
+                  isCognitiveMeshRouter(
+                      modelNumber: node.data.model,
+                      hardwareVersion: node.data.hardwareVersion))
+                NodeInstantActions.blink,
               NodeInstantActions.reboot,
               if (autoOnboarding) NodeInstantActions.pair,
               NodeInstantActions.reset,
             ]
           : [
-              if (hasBlinkFunction) NodeInstantActions.blink,
+              if (hasBlinkFunction &&
+                  isCognitiveMeshRouter(
+                      modelNumber: node.data.model,
+                      hardwareVersion: node.data.hardwareVersion))
+                NodeInstantActions.blink,
               if (supportChildReboot) NodeInstantActions.reboot,
               if (supportChildFactoryReset) NodeInstantActions.reset,
             ],
@@ -188,7 +197,7 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
   }
 
   _doReboot(RouterTreeNode? node) {
-    showRebootModal(context).then((result) {
+    showRebootModal(context, (node?.data.isMaster ?? true)).then((result) {
       if (result == true) {
         final reboot = Future.sync(
                 () => ref.read(pollingProvider.notifier).stopPolling())
@@ -216,7 +225,8 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
   }
 
   _doFactoryReset(RouterTreeNode? node) {
-    showFactoryResetModal(context).then((result) {
+    showFactoryResetModal(context, (node?.data.isMaster ?? true))
+        .then((result) {
       if (result == true) {
         doSomethingWithSpinner(
             context,

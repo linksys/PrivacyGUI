@@ -135,24 +135,35 @@ class WifiListNotifier extends Notifier<WiFiState> {
     final newSettings = SetRadioSettings(radios: result);
     // build guest wifi settings
     final guestRadioInfo = await routerRepository
-        .send(JNAPAction.getGuestRadioSettings, auth: true)
+        .send(JNAPAction.getGuestRadioSettings, fetchRemote: true, auth: true)
         .then((response) => GuestRadioSettings.fromMap(response.output));
     final setGuestRadioSettings =
         SetGuestRadioSettings.fromGuestRadioSettings(guestRadioInfo);
+    final isGuestChanged = state.guestWiFi.isEnabled !=
+        setGuestRadioSettings.isGuestNetworkEnabled;
     final newGuestRadios = setGuestRadioSettings.radios
-        .map((e) => e.copyWith(
-            isEnabled: state.guestWiFi.isEnabled,
+        .map(
+          (e) => e.copyWith(
+            isEnabled: state.mainWiFi
+                    .firstWhereOrNull(
+                        (mainRadio) => e.radioID == mainRadio.radioID.value)
+                    ?.isEnabled ??
+                state.guestWiFi.isEnabled,
             guestSSID: state.guestWiFi.ssid,
-            guestWPAPassphrase: state.guestWiFi.password))
+            guestWPAPassphrase: state.guestWiFi.password,
+            canEnableRadio: state.guestWiFi.isEnabled,
+          ),
+        )
         .toList();
     final newSetGuestRadioSettings = setGuestRadioSettings.copyWith(
         isGuestNetworkEnabled: state.guestWiFi.isEnabled,
         radios: newGuestRadios);
 
     final builder = JNAPTransactionBuilder(auth: true, commands: [
-      MapEntry(JNAPAction.setRadioSettings, newSettings.toMap()),
+      // if (isGuestChanged)
       MapEntry(
           JNAPAction.setGuestRadioSettings, newSetGuestRadioSettings.toMap()),
+      MapEntry(JNAPAction.setRadioSettings, newSettings.toMap()),
     ]);
     return routerRepository
         .transaction(

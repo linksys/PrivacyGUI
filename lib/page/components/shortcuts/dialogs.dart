@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
@@ -8,9 +7,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/bullet_list/bullet_list.dart';
-import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
-import 'package:privacygui_widgets/widgets/text/app_text.dart';
 
 const kDefaultDialogWidth = 328.0;
 
@@ -21,7 +18,7 @@ Future<T?> doSomethingWithSpinner<T>(
   String? title,
   List<String>? messages,
   Duration? period,
-}) {
+}) async {
   Future.delayed(
       Duration.zero,
       () => showAppSpinnerDialog(
@@ -31,6 +28,7 @@ Future<T?> doSomethingWithSpinner<T>(
             messages: messages ?? [loc(context).processing],
             period: period,
           ));
+  await Future.delayed(Duration(milliseconds: 100));
   return task.then((value) {
     context.pop();
     return value;
@@ -89,7 +87,8 @@ Future<T?> showSubmitAppDialog<T>(
   BuildContext context, {
   Widget? icon,
   String? title,
-  required Widget Function(BuildContext, StateSetter,  void Function()) contentBuilder,
+  required Widget Function(BuildContext, StateSetter, void Function())
+      contentBuilder,
   Widget? loadingWidget,
   double? width,
   String? negitiveLabel,
@@ -324,7 +323,7 @@ Future showRouterNotFoundAlert(BuildContext context, WidgetRef ref) {
       ]);
 }
 
-Future<bool?> showFactoryResetModal(BuildContext context) {
+Future<bool?> showFactoryResetModal(BuildContext context, bool isParent) {
   return showMessageAppDialog<bool>(context,
       icon: Icon(
         LinksysIcons.resetWrench,
@@ -332,7 +331,9 @@ Future<bool?> showFactoryResetModal(BuildContext context) {
         size: 42,
       ),
       message: loc(context).factoryResetDesc,
-      title: loc(context).factoryResetTitle,
+      title: isParent
+          ? loc(context).factoryResetParentTitle
+          : loc(context).factoryResetTitle,
       actions: [
         AppTextButton(
           loc(context).cancel,
@@ -350,7 +351,7 @@ Future<bool?> showFactoryResetModal(BuildContext context) {
       ]);
 }
 
-Future<bool?> showRebootModal(BuildContext context) {
+Future<bool?> showRebootModal(BuildContext context, bool isParent) {
   return showMessageAppDialog<bool>(context,
       icon: Icon(
         LinksysIcons.restartAlt,
@@ -358,7 +359,8 @@ Future<bool?> showRebootModal(BuildContext context) {
         size: 42,
       ),
       message: loc(context).menuRestartNetworkMessage,
-      title: loc(context).rebootTitle,
+      title:
+          isParent ? loc(context).rebootParentTitle : loc(context).rebootUnit,
       actions: [
         AppTextButton(
           loc(context).cancel,

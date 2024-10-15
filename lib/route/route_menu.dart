@@ -82,7 +82,7 @@ final menus = [
           config: LinksysRouteConfig(
             column: ColumnGrid(column: 9),
           ),
-          builder: (context, state) => ManualFirmwareUpdateView(),
+          builder: (context, state) => TimezoneView(),
         ),
       ]),
   LinksysRoute(
