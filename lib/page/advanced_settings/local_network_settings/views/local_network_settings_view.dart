@@ -346,7 +346,9 @@ class _LocalNetworkSettingsViewState
       context,
       ref.read(localNetworkSettingProvider.notifier).saveSettings(state).then(
         (value) {
-          originalSettings = state;
+          setState(() {
+            originalSettings = state;
+          });
           showSuccessSnackBar(context, loc(context).changesSaved);
         },
       ).catchError(

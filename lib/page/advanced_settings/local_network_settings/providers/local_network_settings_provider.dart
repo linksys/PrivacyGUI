@@ -80,7 +80,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
   }
 
   Future<void> saveSettings(LocalNetworkSettingsState settings) {
-    final currentIPAddress = state.ipAddress;
+    final previousIPAddress = state.ipAddress;
     final newSettings = SetRouterLANSettings(
       ipAddress: settings.ipAddress,
       networkPrefixLength:
@@ -111,7 +111,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
       await fetch(fetchRemote: true);
     }).catchError(
       (error) {
-        if (kIsWeb) {
+        if (kIsWeb && previousIPAddress != newSettings.ipAddress) {
           ref.read(redirectionProvider.notifier).state =
               'https://${newSettings.ipAddress}';
         }
