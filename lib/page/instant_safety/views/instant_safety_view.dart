@@ -45,6 +45,14 @@ class _InstantSafetyViewState extends ConsumerState<InstantSafetyView> {
     return StyledAppPageView(
       scrollable: true,
       title: loc(context).instantSafety,
+      onBackTap: _edited(state.safeBrowsingType)
+          ? () async {
+              final goBack = await showUnsavedAlert(context);
+              if (goBack == true) {
+                context.pop();
+              }
+            }
+          : null,
       bottomBar: PageBottomBar(
         isPositiveEnabled: _edited(state.safeBrowsingType),
         onPositiveTap: _showRestartAlert,
