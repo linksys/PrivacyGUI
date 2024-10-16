@@ -287,6 +287,9 @@ enum _JNAPActionValue {
   verifyRouterResetCode(
       value: 'http://linksys.com/jnap/nodes/setup/VerifyRouterResetCode'),
   getVersionInfo(value: 'http://linksys.com/jnap/nodes/setup/GetVersionInfo'),
+    // SmartConnect
+  getSmartConnectPin(value: 'http://linksys.com/jnap/nodes/smartconnect/GetSmartConnectPIN'),
+  getSmartConnectStatus(value: 'http://linksys.com/jnap/nodes/smartconnect/GetSmartConnectStatus'),
   getDeviceMode(value: 'http://linksys.com/jnap/nodes/smartmode/GetDeviceMode'),
   getSupportedDeviceModes(
       value: 'http://linksys.com/jnap/nodes/smartmode/GetSupportedDeviceModes'),

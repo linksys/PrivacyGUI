@@ -9,10 +9,8 @@ import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/components/shared_widgets.dart';
-import 'package:privacy_gui/page/nodes/providers/add_nodes_state.dart';
 import 'package:privacy_gui/page/nodes/providers/add_wired_nodes_provider.dart';
 import 'package:privacy_gui/page/nodes/providers/add_wired_nodes_state.dart';
-import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/hook/icon_hooks.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -23,7 +21,6 @@ import 'package:privacygui_widgets/widgets/dialogs/multiple_page_alert_dialog.da
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
-import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
@@ -46,7 +43,6 @@ class _AddWiredNodesViewState extends ConsumerState<AddWiredNodesView> {
   @override
   void initState() {
     super.initState();
-    ref.read(addNodesProvider.notifier).getAutoOnboardingSettings();
   }
 
   @override
@@ -94,81 +90,75 @@ class _AddWiredNodesViewState extends ConsumerState<AddWiredNodesView> {
           content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Row(
-          //   children: [
-          //     AppText.bodyMedium(loc(context).pnpYourNetworkDesc),
-          //     const AppGap.small1(),
-          //     AppTextButton.noPadding(
-          //       loc(context).refresh,
-          //       onTap: () {
-          //         logger.d('[AddNodes]: Start to refresh the children list');
-          //         ref.read(addNodesProvider.notifier).startRefresh();
-          //       },
-          //     ),
-          //   ],
-          // ),
-          // const AppGap.medium(),
-          // if (state?.addedNodes?.isEmpty == true)
-          //   AppStyledText.link(
-          //     loc(context).addNodesNoNodesFound,
-          //     key: const ValueKey('troubleshoot'),
-          //     defaultTextStyle: Theme.of(context)
-          //         .textTheme
-          //         .bodyMedium!
-          //         .copyWith(color: Theme.of(context).colorScheme.error),
-          //     color: Theme.of(context).colorScheme.primary,
-          //     tags: const ['l'],
-          //     callbackTags: {
-          //       'l': (String? text, Map<String?, String?> attrs) {
-          //         _showTroubleshootNoNodesFoundModal();
-          //       }
-          //     },
-          //   ),
-          // const AppGap.medium(),
-          // Column(
-          //   children: [
-          //     ...state?.childNodes?.map((e) {
-          //           final node = LinksysDevice.fromMap(e.toMap());
-          //           return AppNodeListCard(
-          //               leading: CustomTheme.of(context)
-          //                   .images
-          //                   .devices
-          //                   .getByName(routerIconTest(e.toMap())),
-          //               title: e.getDeviceLocation(),
-          //               trailing: SharedWidgets.resolveSignalStrengthIcon(
-          //                 context,
-          //                 node.signalDecibels ?? 0,
-          //                 isOnline: node.isOnline(),
-          //                 isWired: node.getConnectionType() == DeviceConnectionType.wired,
-          //               ));
-          //         }).expandIndexed((index, element) sync* {
-          //           yield element;
-          //           yield const AppGap.medium();
-          //         }).toList() ??
-          //         []
-          //   ],
-          // ),
-          // const AppGap.medium(),
-          // AppTextButton.noPadding(
-          //   loc(context).tryAgain,
-          //   onTap: () {
-          //     logger.d('[AddNodes]: Retry to search for more nodes');
-          //     ref.read(addNodesProvider.notifier).startAutoOnboarding();
-          //   },
-          // ),
-          // const AppGap.large3(),
-          // AppFilledButton(
-          //   loc(context).next,
-          //   onTap: () {
-          //     final callback = widget.args['callback'] as VoidCallback?;
-          //     if (callback != null) {
-          //       callback.call();
-          //       context.pop(state?.addedNodes?.isNotEmpty ?? false);
-          //     } else {
-          //       context.pop(state?.addedNodes?.isNotEmpty ?? false);
-          //     }
-          //   },
-          // )
+          Row(
+            children: [
+              AppText.bodyMedium(loc(context).pnpYourNetworkDesc),
+              const AppGap.small1(),
+              AppTextButton.noPadding(
+                loc(context).refresh,
+                onTap: () {
+                  logger
+                      .d('[AddWiredNode]: Start to refresh the children list');
+                  ref.read(addWiredNodesProvider.notifier).startRefresh();
+                },
+              ),
+            ],
+          ),
+          const AppGap.medium(),
+          if (state?.nodes?.isEmpty == true)
+            AppStyledText.link(
+              loc(context).addNodesNoNodesFound,
+              key: const ValueKey('troubleshoot'),
+              defaultTextStyle: Theme.of(context)
+                  .textTheme
+                  .bodyMedium!
+                  .copyWith(color: Theme.of(context).colorScheme.error),
+              color: Theme.of(context).colorScheme.primary,
+              tags: const ['l'],
+              callbackTags: {
+                'l': (String? text, Map<String?, String?> attrs) {
+                  _showTroubleshootNoNodesFoundModal();
+                }
+              },
+            ),
+          const AppGap.medium(),
+          Column(
+            children: [
+              ...state?.nodes?.map((e) {
+                    final node = LinksysDevice.fromMap(e.toMap());
+                    return AppNodeListCard(
+                        leading: CustomTheme.of(context)
+                            .images
+                            .devices
+                            .getByName(routerIconTest(e.toMap())),
+                        title: e.getDeviceLocation(),
+                        trailing: SharedWidgets.resolveSignalStrengthIcon(
+                          context,
+                          node.signalDecibels ?? 0,
+                          isOnline: node.isOnline(),
+                          isWired: node.getConnectionType() ==
+                              DeviceConnectionType.wired,
+                        ));
+                  }).expandIndexed((index, element) sync* {
+                    yield element;
+                    yield const AppGap.medium();
+                  }).toList() ??
+                  []
+            ],
+          ),
+          const AppGap.large3(),
+          AppFilledButton(
+            loc(context).next,
+            onTap: () {
+              final callback = widget.args['callback'] as VoidCallback?;
+              if (callback != null) {
+                callback.call();
+                context.pop(state?.nodes?.isNotEmpty ?? false);
+              } else {
+                context.pop(state?.nodes?.isNotEmpty ?? false);
+              }
+            },
+          )
         ],
       )),
     );

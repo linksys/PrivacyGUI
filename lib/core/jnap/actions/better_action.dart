@@ -602,6 +602,10 @@ void initBetterActions() {
       _JNAPActionValue.verifyRouterResetCode.value;
   _betterActionMap[JNAPAction.getVersionInfo] =
       _JNAPActionValue.getVersionInfo.value;
+  _betterActionMap[JNAPAction.getSmartConnectPin] =
+      _JNAPActionValue.getSmartConnectPin.value;
+  _betterActionMap[JNAPAction.getSmartConnectStatus] =
+      _JNAPActionValue.getSmartConnectStatus.value;
   _betterActionMap[JNAPAction.getDeviceMode] =
       _JNAPActionValue.getDeviceMode.value;
   _betterActionMap[JNAPAction.getSupportedDeviceMode] =

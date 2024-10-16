@@ -177,6 +177,9 @@ enum JNAPAction {
   startBlinkNodeLed,
   stopBlinkNodeLed,
   setUserAcknowledgedAutoConfiguration,
+  // SmartConnect
+  getSmartConnectPin,
+  getSmartConnectStatus,
   // smartMode
   getDeviceMode,
   getSupportedDeviceMode,
