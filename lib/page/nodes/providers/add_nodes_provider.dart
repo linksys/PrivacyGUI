@@ -224,7 +224,7 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
     await for (final result
         in pollForNodesOnline(state.onboardedMACList ?? [], refreshing: true)) {
       childNodes =
-          result.where((element) => element.nodeType == 'Slave').toList();
+          result.where((element) => element.nodeType != null).toList();
     }
 
     state = state.copyWith(
