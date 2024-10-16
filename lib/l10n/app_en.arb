@@ -967,6 +967,7 @@
   "errorManualUpdateFailed": "Error manual update failed!",
   "errorManualUpdateSignatureCheckFailed": "Invalid firmware file!",
   "manualFirmwareEstimatedTime": "Estimated time remaining",
-    "disconnect": "Disconnect",
-  "disconnectClient": "Disconnect client"
+  "disconnect": "Disconnect",
+  "disconnectClient": "Disconnect client",
+  "ipv6FirewallRule": "IPv6 Firewall Rule"
 }

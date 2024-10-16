@@ -18,16 +18,17 @@ class StyledAppTabPageView extends ConsumerWidget {
   final VoidCallback? onBackTap;
   final StyledBackState backState;
   final List<Widget>? actions;
-  final List<Widget> tabs;
+  final List<AppTab> tabs;
   final Widget? headerContent;
   final List<Widget> tabContentViews;
   final bool pinned;
   final bool snap;
   final bool floating;
-  final bool isCloseStyle;
+  final AppBarStyle appBarStyle;
   final double? expandedHeight;
   final ScrollController? scrollController;
   final bool useMainPadding;
+  final EdgeInsets? padding;
 
   const StyledAppTabPageView({
     super.key,
@@ -36,7 +37,7 @@ class StyledAppTabPageView extends ConsumerWidget {
     this.onBackTap,
     this.backState = StyledBackState.enabled,
     this.actions,
-    this.isCloseStyle = false,
+    this.appBarStyle = AppBarStyle.back,
     required this.tabs,
     this.headerContent,
     this.tabContentViews = const [],
@@ -46,6 +47,7 @@ class StyledAppTabPageView extends ConsumerWidget {
     this.expandedHeight,
     this.scrollController,
     this.useMainPadding = true,
+    this.padding,
   });
 
   @override
@@ -84,13 +86,16 @@ class StyledAppTabPageView extends ConsumerWidget {
   Widget buildMainContent(BuildContext context, WidgetRef ref) {
     return AppPageView(
       // appBar: _buildAppBar(context, ref),
+      padding: padding,
+      background: Theme.of(context).colorScheme.background,
       child: AppTabLayout(
         flexibleSpace: FlexibleSpaceBar(
           background: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildAppBar(context, ref),
-              headerContent ?? Container(),
+              if (appBarStyle != AppBarStyle.none)
+                _buildAppBar(context, ref) ?? SizedBox(height: 0),
+              headerContent ?? SizedBox(height: 0),
             ],
           ),
         ),
@@ -107,33 +112,47 @@ class StyledAppTabPageView extends ConsumerWidget {
 
   bool isBackEnabled() => backState == StyledBackState.enabled;
 
-  LinksysAppBar _buildAppBar(BuildContext context, WidgetRef ref) {
+  LinksysAppBar? _buildAppBar(BuildContext context, WidgetRef ref) {
     final title = this.title;
-    return isCloseStyle
-        ? LinksysAppBar.withClose(
-            context: context,
-            title: title == null ? null : AppText.titleLarge(title),
-            toolbarHeight: toolbarHeight,
-            onBackTap: isBackEnabled()
-                ? (onBackTap ??
-                    () {
-                      context.pop();
-                    })
-                : null,
-            showBack: backState != StyledBackState.none,
-          )
-        : LinksysAppBar.withBack(
-            context: context,
-            title: title == null ? null : AppText.titleLarge(title),
-            toolbarHeight: toolbarHeight,
-            onBackTap: isBackEnabled()
-                ? (onBackTap ??
-                    () {
-                      context.pop();
-                    })
-                : null,
-            showBack: backState != StyledBackState.none,
-            trailing: actions,
-          );
+    switch (appBarStyle) {
+      case AppBarStyle.back:
+        return LinksysAppBar.withBack(
+          context: context,
+          title: title == null
+              ? null
+              : AppText.titleLarge(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.fade,
+                ),
+          toolbarHeight: toolbarHeight,
+          onBackTap: isBackEnabled()
+              ? (onBackTap ??
+                  () {
+                    // ref.read(navigationsProvider.notifier).pop();
+                    context.pop();
+                  })
+              : null,
+          showBack: backState != StyledBackState.none,
+          // trailing: _buildActions(context),
+        );
+      case AppBarStyle.close:
+        return LinksysAppBar.withClose(
+          context: context,
+          title: title == null ? null : AppText.titleLarge(title),
+          toolbarHeight: toolbarHeight,
+          onBackTap: isBackEnabled()
+              ? (onBackTap ??
+                  () {
+                    // ref.read(navigationsProvider.notifier).pop();
+                    context.pop();
+                  })
+              : null,
+          showBack: backState != StyledBackState.none,
+          // trailing: _buildActions(context),
+        );
+      case AppBarStyle.none:
+        return null;
+    }
   }
 }
