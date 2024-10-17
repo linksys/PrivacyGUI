@@ -9,6 +9,7 @@ import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart'
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/wan_external_provider.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
@@ -48,6 +49,12 @@ class InstantVerifyView extends ArgumentsConsumerStatefulView {
 }
 
 class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
+  @override
+  void initState() {
+    super.initState();
+    ref.read(wanExternalProvider.notifier).fetch();
+  }
+
   @override
   Widget build(BuildContext context) {
     final tabs = [loc(context).instantInfo, loc(context).instantTopology];
