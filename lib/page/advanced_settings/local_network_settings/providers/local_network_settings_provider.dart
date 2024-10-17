@@ -7,6 +7,7 @@ import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_state.dart';
+import 'package:privacy_gui/page/instant_safety/providers/instant_safety_provider.dart';
 import 'package:privacy_gui/providers/redirection/redirection_provider.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacy_gui/validator_rules/input_validators.dart';
@@ -109,6 +110,8 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
         .then((result) async {
       // Update the state
       await fetch(fetchRemote: true);
+      // Update instant safety
+      await ref.read(instantSafetyProvider.notifier).fetchLANSettings();
     }).catchError(
       (error) {
         if (kIsWeb) {
