@@ -64,9 +64,9 @@ class _InstantSafetyViewState extends ConsumerState<InstantSafetyView> {
             AppText.bodyLarge(loc(context).safeBrowsingDesc),
             const AppGap.large3(),
             AppSettingCard(
-              title: loc(context).safeBrowsing,
+              title: loc(context).instantSafety,
               trailing: AppSwitch(
-                semanticLabel: 'safe browsing',
+                semanticLabel: 'instant safety',
                 value: enableSafeBrowsing,
                 onChanged: (enable) {
                   setState(() {
