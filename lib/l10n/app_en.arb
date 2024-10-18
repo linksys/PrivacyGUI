@@ -968,5 +968,15 @@
   "errorManualUpdateSignatureCheckFailed": "Invalid firmware file!",
   "manualFirmwareEstimatedTime": "Estimated time remaining",
     "disconnect": "Disconnect",
-  "disconnectClient": "Disconnect client"
+  "disconnectClient": "Disconnect client",
+  "disableBandWarning": "Disabling the {radio} band will also disable the {radio} guest access",
+  "@disableBandWarning": {
+    "description": "radio",
+    "placeholders": {
+      "radio": {
+        "type": "String",
+        "example": "radio"
+      }
+    }
+  }
 }

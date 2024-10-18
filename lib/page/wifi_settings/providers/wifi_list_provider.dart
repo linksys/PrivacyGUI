@@ -161,9 +161,9 @@ class WifiListNotifier extends Notifier<WiFiState> {
 
     final builder = JNAPTransactionBuilder(auth: true, commands: [
       // if (isGuestChanged)
+      MapEntry(JNAPAction.setRadioSettings, newSettings.toMap()),
       MapEntry(
           JNAPAction.setGuestRadioSettings, newSetGuestRadioSettings.toMap()),
-      MapEntry(JNAPAction.setRadioSettings, newSettings.toMap()),
     ]);
     return routerRepository
         .transaction(

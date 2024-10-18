@@ -140,6 +140,24 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
     state = const DashboardManagerState();
   }
 
+  Future<NodeDeviceInfo> checkRouterIsBack() async {
+    NodeDeviceInfo? nodeDeviceInfo;
+    final routerRepository = ref.read(routerRepositoryProvider);
+    final result = await routerRepository.send(
+      JNAPAction.getDeviceInfo,
+      fetchRemote: true,
+    );
+    nodeDeviceInfo = NodeDeviceInfo.fromJson(result.output);
+    final prefs = await SharedPreferences.getInstance();
+    final currentSN = prefs.getString(pCurrentSN);
+    if (currentSN == nodeDeviceInfo.serialNumber) {
+      return nodeDeviceInfo;
+    } else {
+      logger.d('[CheckRouterBack]: SN not match');
+      throw Exception('[CheckRouterBack]: SN not match');
+    }
+  }
+
   Future<NodeDeviceInfo> checkDeviceInfo(String? serialNumber) async {
     final benchMark = BenchMarkLogger(name: 'checkDeviceInfo');
     benchMark.start();
