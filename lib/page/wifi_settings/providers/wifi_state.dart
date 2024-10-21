@@ -9,19 +9,23 @@ import 'package:privacy_gui/page/wifi_settings/providers/guest_wifi_item.dart';
 class WiFiState extends Equatable {
   final List<WiFiItem> mainWiFi;
   final GuestWiFiItem guestWiFi;
+  final bool canDisableMainWiFi;
 
   const WiFiState({
     required this.mainWiFi,
     required this.guestWiFi,
+    this.canDisableMainWiFi = true,
   });
 
   WiFiState copyWith({
     List<WiFiItem>? mainWiFi,
     GuestWiFiItem? guestWiFi,
+    bool? canDisableMainWiFi,
   }) {
     return WiFiState(
       mainWiFi: mainWiFi ?? this.mainWiFi,
       guestWiFi: guestWiFi ?? this.guestWiFi,
+      canDisableMainWiFi: canDisableMainWiFi ?? this.canDisableMainWiFi,
     );
   }
 
@@ -29,12 +33,14 @@ class WiFiState extends Equatable {
   List<Object> get props => [
         mainWiFi,
         guestWiFi,
+        canDisableMainWiFi,
       ];
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'mainWiFi': mainWiFi.map((x) => x.toMap()).toList(),
       'guestWiFi': guestWiFi.toMap(),
+      'canDisableMainWiFi': canDisableMainWiFi,
     };
   }
 
@@ -46,6 +52,7 @@ class WiFiState extends Equatable {
         ),
       ),
       guestWiFi: GuestWiFiItem.fromMap(map['guestWiFi']),
+      canDisableMainWiFi: map['canDisableMainWiFi'],
     );
   }
 
