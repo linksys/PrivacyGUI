@@ -203,6 +203,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
   }
 
   Widget _mainWiFiCard(WiFiItem radio, [bool lastInRow = false]) {
+    final canDisableMainWiFi = ref.watch(wifiListProvider).canDisableMainWiFi;
     return Padding(
       padding: EdgeInsets.only(
         right: lastInRow ? 0 : ResponsiveLayout.columnPadding(context),
@@ -215,7 +216,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
                   vertical: Spacing.small2, horizontal: Spacing.large2),
               child: Column(
                 children: [
-                  _advancedWiFiBandCard(radio),
+                  _advancedWiFiBandCard(radio, canDisableMainWiFi),
                   if (radio.isEnabled) ...[
                     const Divider(),
                     _advancedWiFiNameCard(radio),
@@ -307,48 +308,49 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
   ///
   /// Advanced Cards
   ///
-  Widget _advancedWiFiBandCard(WiFiItem radio) => AppListCard(
+  Widget _advancedWiFiBandCard(WiFiItem radio, [bool enabled = true]) =>
+      AppListCard(
         showBorder: false,
         padding: const EdgeInsets.symmetric(vertical: 8.0),
         title:
             AppText.labelLarge(getWifiRadioBandTitle(context, radio.radioID)),
-        trailing: AppSwitch(
-          semanticLabel: getWifiRadioBandTitle(context, radio.radioID),
-          value: radio.isEnabled,
-          onChanged: (value) {
-            ref
-                .read(wifiListProvider.notifier)
-                .setWiFiEnabled(value, radio.radioID);
+        trailing: enabled
+            ? AppSwitch(
+                semanticLabel: getWifiRadioBandTitle(context, radio.radioID),
+                value: radio.isEnabled,
+                onChanged: (value) {
+                  ref
+                      .read(wifiListProvider.notifier)
+                      .setWiFiEnabled(value, radio.radioID);
 
-            final preservedMainWiFiState = _preservedMainWiFiState;
-            final mainWifi = preservedMainWiFiState?.mainWiFi
-                .firstWhereOrNull((e) => e.radioID == radio.radioID);
-            // if disabled, reset the settings
-            if (!value && mainWifi != null) {
-              ref
-                  .read(wifiListProvider.notifier)
-                  .setWiFiSSID(mainWifi.ssid, radio.radioID);
-              ref
-                  .read(wifiListProvider.notifier)
-                  .setWiFiPassword(mainWifi.password, radio.radioID);
-              ref
-                  .read(wifiListProvider.notifier)
-                  .setWiFiSecurityType(mainWifi.securityType, radio.radioID);
-              ref
-                  .read(wifiListProvider.notifier)
-                  .setWiFiMode(mainWifi.wirelessMode, radio.radioID);
-              ref
-                  .read(wifiListProvider.notifier)
-                  .setEnableBoardcast(mainWifi.isBroadcast, radio.radioID);
-              ref
-                  .read(wifiListProvider.notifier)
-                  .setChannelWidth(mainWifi.channelWidth, radio.radioID);
-              ref
-                  .read(wifiListProvider.notifier)
-                  .setChannel(mainWifi.channel, radio.radioID);
-            }
-          },
-        ),
+                  final preservedMainWiFiState = _preservedMainWiFiState;
+                  final mainWifi = preservedMainWiFiState?.mainWiFi
+                      .firstWhereOrNull((e) => e.radioID == radio.radioID);
+                  // if disabled, reset the settings
+                  if (!value && mainWifi != null) {
+                    ref
+                        .read(wifiListProvider.notifier)
+                        .setWiFiSSID(mainWifi.ssid, radio.radioID);
+                    ref
+                        .read(wifiListProvider.notifier)
+                        .setWiFiPassword(mainWifi.password, radio.radioID);
+                    ref.read(wifiListProvider.notifier).setWiFiSecurityType(
+                        mainWifi.securityType, radio.radioID);
+                    ref
+                        .read(wifiListProvider.notifier)
+                        .setWiFiMode(mainWifi.wirelessMode, radio.radioID);
+                    ref.read(wifiListProvider.notifier).setEnableBoardcast(
+                        mainWifi.isBroadcast, radio.radioID);
+                    ref
+                        .read(wifiListProvider.notifier)
+                        .setChannelWidth(mainWifi.channelWidth, radio.radioID);
+                    ref
+                        .read(wifiListProvider.notifier)
+                        .setChannel(mainWifi.channel, radio.radioID);
+                  }
+                },
+              )
+            : null,
       );
   Widget _advancedWiFiNameCard(WiFiItem radio) => AppSettingCard.noBorder(
         title: loc(context).wifiName,

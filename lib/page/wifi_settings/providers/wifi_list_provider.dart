@@ -15,6 +15,7 @@ import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/_providers.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/guest_wifi_item.dart';
@@ -29,10 +30,11 @@ class WifiListNotifier extends Notifier<WiFiState> {
   WiFiState build() {
     final dashboardManagerState = ref.read(dashboardManagerProvider);
     final deviceManagerState = ref.read(deviceManagerProvider);
+    final homeState = ref.read(dashboardHomeProvider);
     return _getWifiList(
       deviceManagerState,
       dashboardManagerState,
-    );
+    ).copyWith(canDisableMainWiFi: homeState.lanPortConnections.isNotEmpty);
   }
 
   Future<WiFiState> fetch([bool force = false]) async {

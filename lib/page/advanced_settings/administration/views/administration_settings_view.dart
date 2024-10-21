@@ -65,7 +65,8 @@ class _AdministrationSettingsViewState
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (state.managementSettings.isManageWirelesslySupported) ...[
+            if (state.managementSettings.isManageWirelesslySupported &&
+                state.canDisAllowLocalMangementWirelessly) ...[
               AppCard(
                 child: AppSwitchTriggerTile(
                   semanticLabel: 'allow local management wirelessly',

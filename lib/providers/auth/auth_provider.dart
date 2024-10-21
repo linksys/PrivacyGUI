@@ -378,7 +378,6 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     });
     ref.read(pollingProvider.notifier).stopPolling();
     ref.read(selectedNetworkIdProvider.notifier).state = null;
-    //TODO: XXXXXX Clear state of managers
   }
 
   bool isCloudLogin() => state.value?.loginType == LoginType.remote;
