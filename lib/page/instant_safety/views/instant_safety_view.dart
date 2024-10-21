@@ -210,12 +210,9 @@ class _InstantSafetyViewState extends ConsumerState<InstantSafetyView> {
         );
       }),
     ).catchError((error) {
-      logger.d('[XXXXX] Router not found!!!');
       showRouterNotFoundAlert(context, ref);
     }, test: (error) => error is JNAPSideEffectError).onError(
         (error, stackTrace) {
-      logger.d('[XXXXX] error: $error');
-
       final errorMsg = switch (error) {
         SafeBrowsingError => (error as SafeBrowsingError).message,
         _ => 'Unknown error',

@@ -63,6 +63,8 @@ class DashboardWiFiGrid extends ConsumerWidget {
 
   Widget _wifiCard(
       BuildContext context, WidgetRef ref, DashboardWiFiItem item, int index) {
+    final hasLanPort =
+        ref.read(dashboardHomeProvider).lanPortConnections.isNotEmpty;
     return AppCard(
       padding: const EdgeInsets.symmetric(
           vertical: Spacing.large2, horizontal: Spacing.large2),
@@ -79,6 +81,7 @@ class DashboardWiFiGrid extends ConsumerWidget {
                         .map((e) => e.replaceAll('RADIO_', ''))
                         .join('/'),
               ),
+              if (item.isGuest || hasLanPort)
               AppSwitch(
                 semanticLabel: item.isGuest
                     ? 'guest'
