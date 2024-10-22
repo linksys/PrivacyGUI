@@ -74,7 +74,8 @@ class _AddRuleContentViewState
       _notifier.goAdd(_rules).then((_) {
         final prefixIp =
             NetworkUtils.getIpPrefix(_notifier.ipAddress, _notifier.subnetMask);
-        _deviceIpAddressController.text = prefixIp;
+        _deviceIpAddressController.text = prefixIp.replaceAll('.0', '');
+
         setState(() {
           _isEnabled = true;
         });

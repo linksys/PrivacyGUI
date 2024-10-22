@@ -172,10 +172,10 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
   }
 
   void _updateValidators(LocalNetworkSettingsState currentSettings) {
-    _routerIpAddressValidator = IpAddressAsNewRouterIpValidator(
-      currentSettings.ipAddress,
-      currentSettings.subnetMask,
-    );
+    _routerIpAddressValidator = IpAddressRequiredValidator(
+        // currentSettings.ipAddress,
+        // currentSettings.subnetMask,
+        );
     _subnetMaskValidator = SubnetMaskValidator(
       min: currentSettings.minNetworkPrefixLength,
       max: currentSettings.maxNetworkPrefixLength,
@@ -202,7 +202,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
       final routerIpSplit = newRouterIpAddress.split('.');
       final firstIpSplit = settings.firstIPAddress.split('.');
       final newFirstIp =
-          '${routerIpSplit[0]}.${routerIpSplit[1]}.${firstIpSplit[2]}.${firstIpSplit[3]}';
+          '${routerIpSplit[0]}.${routerIpSplit[1]}.${routerIpSplit[2]}.${firstIpSplit[3]}';
       // Calculate the new last Ip
       final newLastIp = NetworkUtils.getEndingIpAddress(
         newRouterIpAddress,
