@@ -146,8 +146,11 @@ class RouterNotifier extends ChangeNotifier {
         _ref.read(connectivityProvider).connectivityInfo.routerType;
     if (BuildConfig.forceCommandType == ForceCommand.local ||
         (routerType != RouterType.others && loginType != LoginType.remote)) {
-      shouldGoPnp = await pnp.fetchDeviceInfo().then((_) async =>
-          await pnp.pnpCheck() || !(await pnp.isRouterPasswordSet()));
+      shouldGoPnp = await pnp
+          .fetchDeviceInfo()
+          .then((_) async =>
+              await pnp.pnpCheck() || !(await pnp.isRouterPasswordSet()))
+          .onError((_, __) => false);
     } else {
       shouldGoPnp = false;
     }
