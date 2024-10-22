@@ -284,7 +284,7 @@ class _AddRuleContentViewState
       }
       final firstPort = int.tryParse(_firstExternalPortController.text) ?? 0;
       final lastPort = int.tryParse(_lastExternalPortController.text) ?? 0;
-      bool isValidPortRange = lastPort - firstPort > 0;
+      bool isValidPortRange = lastPort - firstPort >= 0;
       bool isRuleOverlap =
           _notifier.isPortConflict(firstPort, lastPort, _protocol);
       _portError = !isValidPortRange

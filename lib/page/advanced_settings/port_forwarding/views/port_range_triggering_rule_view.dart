@@ -271,7 +271,7 @@ class _AddRuleContentViewState
       }
       final firstPort = int.tryParse(_firstForwardedPortController.text) ?? 0;
       final lastPort = int.tryParse(_lastForwardedPortController.text) ?? 0;
-      bool isValidPortRange = lastPort - firstPort > 0;
+      bool isValidPortRange = lastPort - firstPort >= 0;
       bool isRuleOverlap =
           _notifier.isForwardedPortConflict(firstPort, lastPort);
       _forwardedPortError = !isValidPortRange
@@ -291,7 +291,7 @@ class _AddRuleContentViewState
       }
       final firstPort = int.tryParse(_firstTriggerPortController.text) ?? 0;
       final lastPort = int.tryParse(_lastTriggerPortController.text) ?? 0;
-      bool isValidPortRange = lastPort - firstPort > 0;
+      bool isValidPortRange = lastPort - firstPort >= 0;
       bool isRuleOverlap =
           _notifier.isTriggeredPortConflict(firstPort, lastPort);
       _triggeredPortError = !isValidPortRange

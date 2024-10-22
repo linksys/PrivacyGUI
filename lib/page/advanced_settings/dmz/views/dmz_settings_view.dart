@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/models/dmz_settings.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/dmz/providers/dmz_settings_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/dmz/providers/dmz_settings_state.dart';
@@ -239,6 +238,11 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                 _sourceLastIPController.text = '';
                 _sourceError = null;
               });
+              ref.read(dmzSettingsProvider.notifier).setSettings(DMZSettings(
+                    isDMZEnabled: state.settings.isDMZEnabled,
+                    destinationIPAddress: state.settings.destinationIPAddress,
+                    destinationMACAddress: state.settings.destinationMACAddress,
+                  ));
             } else {
               _sourceFirstIPController.text =
                   _preservedState?.settings.sourceRestriction?.firstIPAddress ??
@@ -246,6 +250,15 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
               _sourceLastIPController.text =
                   _preservedState?.settings.sourceRestriction?.lastIPAddress ??
                       '';
+              ref.read(dmzSettingsProvider.notifier).setSettings(DMZSettings(
+                    isDMZEnabled: state.settings.isDMZEnabled,
+                    sourceRestriction: DMZSourceRestriction(
+                        firstIPAddress: _sourceFirstIPController.text,
+                        lastIPAddress: _sourceLastIPController.text),
+                    destinationIPAddress: state.settings.destinationIPAddress,
+                    destinationMACAddress: state.settings.destinationMACAddress,
+                  ));
+              _checkSourceIPRange();
             }
           },
         ));
@@ -339,11 +352,13 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                             .read(dmzSettingsProvider.notifier)
                             .ipAddress
                             .replaceAll('.0', '');
+                _checkDestinationIPAdress();
               } else {
                 _destinationError = null;
                 _destinationIPController.text = '';
                 _destinationMACController.text =
                     state.settings.destinationMACAddress ?? '';
+                _checkDestinationMACAddress();
               }
             },
           ),
@@ -361,8 +376,22 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
               if (result != null) {
                 if (state.destinationType == DMZDestinationType.ip) {
                   _destinationIPController.text = result.first.ipv4Address;
+                  ref.read(dmzSettingsProvider.notifier).setSettings(
+                      DMZSettings(
+                          isDMZEnabled: state.settings.isDMZEnabled,
+                          sourceRestriction: state.settings.sourceRestriction,
+                          destinationIPAddress: result.first.ipv4Address));
+                  _checkDestinationIPAdress();
                 } else {
                   _destinationMACController.text = result.first.macAddress;
+                  ref
+                      .read(dmzSettingsProvider.notifier)
+                      .setSettings(DMZSettings(
+                        isDMZEnabled: state.settings.isDMZEnabled,
+                        sourceRestriction: state.settings.sourceRestriction,
+                        destinationMACAddress: result.first.macAddress,
+                      ));
+                  _checkDestinationMACAddress();
                 }
               }
             },
