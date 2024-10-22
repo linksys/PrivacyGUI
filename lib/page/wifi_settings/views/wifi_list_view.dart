@@ -128,41 +128,46 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
                 FixedColumnWidth(
                     fixedWidth + ResponsiveLayout.columnPadding(context)))));
 
+    final enabledWiFiCount = state.mainWiFi.where((e) => e.isEnabled).length;
+    final canDisableAllMainWiFi =
+        ref.watch(wifiListProvider).canDisableMainWiFi;
+    final canBeDisabled = enabledWiFiCount > 1 || canDisableAllMainWiFi;
     final children = [
       columnCount > state.mainWiFi.length
           ? TableRow(children: [
               ...state.mainWiFi
-                  .mapIndexed(
-                      (index, e) => _mainWiFiCard(e, index == columnCount - 1))
+                  .mapIndexed((index, e) =>
+                      _mainWiFiCard(e, canBeDisabled, index == columnCount - 1))
                   .toList(),
               _guestWiFiCard(state.guestWiFi, true),
             ])
           : columnCount == state.mainWiFi.length
               ? TableRow(children: [
                   ...state.mainWiFi
-                      .mapIndexed((index, e) =>
-                          _mainWiFiCard(e, index == columnCount - 1))
+                      .mapIndexed((index, e) => _mainWiFiCard(
+                          e, canBeDisabled, index == columnCount - 1))
                       .toList(),
                 ])
               : TableRow(children: [
                   ...state.mainWiFi
                       .take(columnCount)
-                      .mapIndexed((index, e) =>
-                          _mainWiFiCard(e, index == columnCount - 1))
+                      .mapIndexed((index, e) => _mainWiFiCard(
+                          e, canBeDisabled, index == columnCount - 1))
                       .toList(),
                 ]),
       if (columnCount <= state.mainWiFi.length)
         columnCount == state.mainWiFi.length
             ? TableRow(children: [
                 _guestWiFiCard(state.guestWiFi, false),
-                const SizedBox.shrink(),
-                const SizedBox.shrink()
+                ...List.filled(columnCount - 1, 0).map(
+                  (_) => const SizedBox.shrink(),
+                ),
               ])
             : TableRow(children: [
                 ...state.mainWiFi
                     .getRange(columnCount, state.mainWiFi.length)
-                    .mapIndexed((index, e) =>
-                        _mainWiFiCard(e, index == columnCount - 1))
+                    .mapIndexed((index, e) => _mainWiFiCard(
+                        e, canBeDisabled, index == columnCount - 1))
                     .toList(),
                 _guestWiFiCard(state.guestWiFi, true),
               ])
@@ -202,8 +207,8 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
     );
   }
 
-  Widget _mainWiFiCard(WiFiItem radio, [bool lastInRow = false]) {
-    final canDisableMainWiFi = ref.watch(wifiListProvider).canDisableMainWiFi;
+  Widget _mainWiFiCard(WiFiItem radio, bool canBeDisable,
+      [bool lastInRow = false]) {
     return Padding(
       padding: EdgeInsets.only(
         right: lastInRow ? 0 : ResponsiveLayout.columnPadding(context),
@@ -216,7 +221,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
                   vertical: Spacing.small2, horizontal: Spacing.large2),
               child: Column(
                 children: [
-                  _advancedWiFiBandCard(radio, canDisableMainWiFi),
+                  _advancedWiFiBandCard(radio, canBeDisable),
                   if (radio.isEnabled) ...[
                     const Divider(),
                     _advancedWiFiNameCard(radio),
@@ -308,17 +313,17 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
   ///
   /// Advanced Cards
   ///
-  Widget _advancedWiFiBandCard(WiFiItem radio, [bool enabled = true]) =>
+  Widget _advancedWiFiBandCard(WiFiItem radio, [bool canBeDisable = true]) =>
       AppListCard(
         showBorder: false,
         padding: const EdgeInsets.symmetric(vertical: 8.0),
         title:
             AppText.labelLarge(getWifiRadioBandTitle(context, radio.radioID)),
-        trailing: enabled
-            ? AppSwitch(
-                semanticLabel: getWifiRadioBandTitle(context, radio.radioID),
-                value: radio.isEnabled,
-                onChanged: (value) {
+        trailing: AppSwitch(
+          semanticLabel: getWifiRadioBandTitle(context, radio.radioID),
+          value: radio.isEnabled,
+          onChanged: !radio.isEnabled || canBeDisable
+              ? (value) {
                   ref
                       .read(wifiListProvider.notifier)
                       .setWiFiEnabled(value, radio.radioID);
@@ -348,9 +353,9 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
                         .read(wifiListProvider.notifier)
                         .setChannel(mainWifi.channel, radio.radioID);
                   }
-                },
-              )
-            : null,
+                }
+              : null,
+        ),
       );
   Widget _advancedWiFiNameCard(WiFiItem radio) => AppSettingCard.noBorder(
         title: loc(context).wifiName,

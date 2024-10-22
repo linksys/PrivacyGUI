@@ -25,8 +25,10 @@ class GeolocationNotifier extends AsyncNotifier<GeolocationState> {
     if (master == null) {
       return const GeolocationState(
         name: '',
+        city: '',
         region: '',
         country: '',
+        regionCode: '',
         countryCode: '',
         continentCode: '',
       );
@@ -41,19 +43,24 @@ class GeolocationNotifier extends AsyncNotifier<GeolocationState> {
     final locale = ref.read(appSettingsProvider).locale;
     final localeTag = locale?.toLanguageTag() ?? 'en';
     final name = result['org'] ?? '';
-
+    final city = result['city']['names'][localeTag] ??
+        result['city']['defaultName'] ??
+        '';
     final region = result['region']['names'][localeTag] ??
         result['region']['defaultName'] ??
         '';
-    final countryCode = result['countryCode'] ?? '';
+    final regionCode = result['regionCode'] ?? '';
     final country = result['country']['names'][localeTag] ??
         result['country']['defaultName'] ??
         '';
+    final countryCode = result['countryCode'] ?? '';
     final continentCode = result['continentCode'] ?? '';
     return GeolocationState(
       name: name,
+      city: city,
       region: region,
       country: country,
+      regionCode: regionCode,
       countryCode: countryCode,
       continentCode: continentCode,
     );
