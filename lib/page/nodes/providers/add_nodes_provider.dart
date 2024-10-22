@@ -133,6 +133,7 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
       childNodes =
           nodeSnapshot.where((element) => element.nodeType != null).toList();
     }
+    childNodes.sort((a, b) => a.isAuthority ? -1 : 1);
     final polling = ref.read(pollingProvider.notifier);
     await polling.forcePolling().then((value) => polling.startPolling());
     logger.d('[AddNodes]: Update state: nodesSnapshot = $nodeSnapshot');
@@ -208,7 +209,7 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
               result.output['devices'],
             )
                 .map((e) => LinksysDevice.fromMap(e))
-                .where((device) => device.isAuthority == false)
+                .where((device) => device.nodeType != null)
                 .toList();
             sink.add(deviceList);
           }
@@ -224,9 +225,9 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
     await for (final result
         in pollForNodesOnline(state.onboardedMACList ?? [], refreshing: true)) {
       childNodes =
-          result.where((element) => element.nodeType == 'Slave').toList();
+          result.where((element) => element.nodeType != null).toList();
     }
-
+    childNodes.sort((a, b) => a.isAuthority ? -1 : 1);
     state = state.copyWith(
       childNodes: childNodes,
       isLoading: false,
