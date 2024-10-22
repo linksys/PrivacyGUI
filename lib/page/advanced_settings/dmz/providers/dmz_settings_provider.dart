@@ -98,4 +98,12 @@ class DMZSettingNotifier extends Notifier<DMZSettingsState> {
   void setDestinationType(DMZDestinationType type) {
     state = state.copyWith(destinationType: type);
   }
+
+  void clearDestinations() {
+    state = state.copyWith(
+        settings: DMZSettings(
+      isDMZEnabled: state.settings.isDMZEnabled,
+      sourceRestriction: state.settings.sourceRestriction,
+    ));
+  }
 }
