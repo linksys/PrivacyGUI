@@ -7,7 +7,6 @@ import 'package:privacy_gui/page/wifi_settings/providers/wifi_state.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_view_provider.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/tab_bar/linksys_tab.dart';
 
 import '../../../../common/test_responsive_widget.dart';
 import '../../../../common/testable_router.dart';
@@ -332,7 +331,7 @@ void main() {
         await tester.pumpWidget(widget);
         await tester.pumpAndSettle();
 
-        final topologyTabFinder = find.byType(AppTab).last;
+        final topologyTabFinder = find.byType(Tab).last;
         await tester.tap(topologyTabFinder);
 
         await tester.pumpAndSettle();
@@ -358,7 +357,7 @@ void main() {
       await tester.pumpWidget(widget);
       await tester.pumpAndSettle();
 
-      final topologyTabFinder = find.byType(AppTab).last;
+      final topologyTabFinder = find.byType(Tab).last;
       await tester.tap(topologyTabFinder);
 
       await tester.pumpAndSettle();

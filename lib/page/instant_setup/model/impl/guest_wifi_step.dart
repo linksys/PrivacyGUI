@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
 import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
 import 'package:privacy_gui/page/instant_setup/widgets/wifi_password_widget.dart';
 import 'package:privacy_gui/page/instant_setup/widgets/wifi_ssid_widget.dart';
@@ -12,7 +11,10 @@ class GuestWiFiStep extends PnpStep {
   TextEditingController? _passwordEditController;
   bool isEnabled = false;
 
-  GuestWiFiStep({required super.index});
+  GuestWiFiStep({
+    required super.index,
+    super.saveChanges,
+  });
 
   @override
   Future<void> onInit(WidgetRef ref) async {
@@ -134,7 +136,11 @@ class GuestWiFiStep extends PnpStep {
   void _check(WidgetRef ref) {
     final ssid = _ssidEditController?.text ?? '';
     final password = _passwordEditController?.text ?? '';
-    if (!isEnabled || ssid.isNotEmpty && password.isNotEmpty) {
+    if (!isEnabled ||
+        ssid.isNotEmpty &&
+            password.isNotEmpty &&
+            password.length >= 8 &&
+            password.length <= 64) {
       pnp.setStepStatus(index, status: StepViewStatus.data);
     } else {
       pnp.setStepStatus(index, status: StepViewStatus.error);

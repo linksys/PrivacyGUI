@@ -64,12 +64,20 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
             pnp.setAttachedPassword(_password!);
           }
         })
-        .then((_) => pnp.checkInternetConnection())
         .then((_) {
-          logger.i('[PnP]: Check the Internet connection - OK');
-          setState(() {
-            _internetConnected = true;
-          });
+          if (!ref.read(pnpProvider).forceLogin) {
+            return pnp.checkInternetConnection();
+          } else {
+            logger.i('[PnP]: Force login SKIP Internet connection');
+          }
+        })
+        .then((_) {
+          if (!ref.read(pnpProvider).forceLogin) {
+            logger.i('[PnP]: Check the Internet connection - OK');
+            setState(() {
+              _internetConnected = true;
+            });
+          }
         })
         .then((_) {
           final routeFrom = ref.read(pnpTroubleshooterProvider).enterRouteName;
@@ -242,6 +250,11 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
                       : 'Password should not be empty';
             });
           },
+          onSubmitted: (_) {
+            if (_inputError == null && !_processing) {
+              _doLogin();
+            }
+          },
         ),
         ..._checkError(context, _error),
         const AppGap.large3(),
@@ -256,23 +269,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
           loc(context).login,
           onTap: _inputError == null && !_processing
               ? () {
-                  setState(() {
-                    _processing = true;
-                  });
-                  _examineAdminPassword(_textEditController.text).then((_) {
-                    logger.i(
-                        '[PnP]: Logged in successfully by tapping Login, go to Setup page');
-                    context.goNamed(RouteNamed.pnpConfig);
-                  }).onError((error, stackTrace) {
-                    logger.e('[PnP]: The input admin password is invalid');
-                    setState(() {
-                      _error = error;
-                    });
-                  }).whenComplete(() {
-                    setState(() {
-                      _processing = false;
-                    });
-                  });
+                  _doLogin();
                 }
               : null,
         ),
@@ -315,6 +312,26 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
         ),
       ),
     );
+  }
+
+  void _doLogin() {
+    setState(() {
+      _processing = true;
+    });
+    _examineAdminPassword(_textEditController.text).then((_) {
+      logger.i(
+          '[PnP]: Logged in successfully by tapping Login, go to Setup page');
+      context.goNamed(RouteNamed.pnpConfig);
+    }).onError((error, stackTrace) {
+      logger.e('[PnP]: The input admin password is invalid');
+      setState(() {
+        _error = error;
+      });
+    }).whenComplete(() {
+      setState(() {
+        _processing = false;
+      });
+    });
   }
 
   List<Widget> _checkError(BuildContext context, Object? error) {

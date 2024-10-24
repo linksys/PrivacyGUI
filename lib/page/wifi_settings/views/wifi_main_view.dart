@@ -69,8 +69,8 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView> {
       //       );
       //     }),
       tabs: tabs
-          .map((e) => AppTab(
-                title: e,
+          .map((e) => Tab(
+                text: e,
               ))
           .toList(),
       tabContentViews: tabContents,

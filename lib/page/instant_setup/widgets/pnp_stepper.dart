@@ -36,6 +36,8 @@ class _PnpStepperState extends ConsumerState<PnpStepper> {
 
     Future.doWhile(() => !mounted).then((value) async {
       await widget.steps[0].onInit(ref);
+      widget.onStepChanged?.call(_index, widget.steps[_index],
+          (stepCancel: onStepCancel, stepContinue: onStepContinue));
     });
   }
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -290,7 +292,7 @@ Future<bool?> showUnsavedAlert(BuildContext context,
 }
 
 Future<T?> showRouterNotFoundAlert<T>(BuildContext context, WidgetRef ref,
-    {Future<T?> Function()? onComplete}) {
+    {FutureOr<T?> Function()? onComplete}) {
   return showSimpleAppDialog<T>(context,
       dismissible: false,
       title: loc(context).routerNotFound,

@@ -978,5 +978,9 @@
         "example": "radio"
       }
     }
-  }
+  },
+  "logIntoRouter": "Log into router",
+  "wifiPasswordLimit": "8 - 64 characters",
+  "wifiSSIDLengthLimit": "Must less than 32 character",
+  "connectedSpeed": "Connected Speed"
 }
