@@ -102,7 +102,7 @@ void main() {
             CustomTheme.of(context).images.devices.routerMr7500, context);
         await tester.pumpAndSettle();
       });
-      final topologyTabFinder = find.byType(AppTab).last;
+      final topologyTabFinder = find.byType(Tab).last;
 
       await tester.tap(topologyTabFinder);
 

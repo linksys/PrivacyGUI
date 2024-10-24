@@ -2,25 +2,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/constants/_constants.dart';
-import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dart';
-import 'package:privacy_gui/page/components/styled/top_bar.dart';
-import 'package:privacy_gui/page/dashboard/views/dashboard_navigation_rail.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
-import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/page/components/styled/consts.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacy_gui/util/debug_mixin.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 
 class DashboardShell extends ArgumentsConsumerStatefulView {
   const DashboardShell({
@@ -76,17 +68,21 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
       bottomNavigationBar: MenuHolder(
         builder: (context, controller) {
           return controller.displayType == MenuDisplay.bottom
-              ? NavigationBar(
-                  selectedIndex: controller.items.indexOf(controller.selected),
-                  destinations: _dashboardNaviItems
-                      .map((e) => _bottomSheetIconView(e))
-                      .toList(),
-                  onDestinationSelected: (index) {
-                    final selected = controller.items[index];
-                    controller.select(selected);
-                  },
-                  indicatorColor: Theme.of(context).colorScheme.primary,
-                  elevation: 0,
+              ? Theme(
+                  data: linksysDarkThemeData,
+                  child: NavigationBar(
+                    selectedIndex:
+                        controller.items.indexOf(controller.selected),
+                    destinations: _dashboardNaviItems
+                        .map((e) => _bottomSheetIconView(e))
+                        .toList(),
+                    onDestinationSelected: (index) {
+                      final selected = controller.items[index];
+                      controller.select(selected);
+                    },
+                    indicatorColor: Theme.of(context).colorScheme.primary,
+                    elevation: 0,
+                  ),
                 )
               : const SizedBox();
         },

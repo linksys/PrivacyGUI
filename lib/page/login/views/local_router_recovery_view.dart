@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/bottom_bar.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
@@ -77,7 +77,7 @@ class _LocalRouterRecoveryViewState
                       appContext: context,
                       controller: _otpController,
                       keyboardType: TextInputType.number,
-                      autoDismissKeyboard: true,
+                      autoDismissKeyboard: false,
                       cursorColor: Theme.of(context).colorScheme.onSurface,
                       pinTheme: PinTheme(
                         shape: PinCodeFieldShape.box,
@@ -92,6 +92,11 @@ class _LocalRouterRecoveryViewState
                         selectedColor: Theme.of(context).colorScheme.outline,
                         inactiveColor: Theme.of(context).colorScheme.outline,
                       ),
+                      onSubmitted: (_) {
+                        if (userInputCode.length == 5) {
+                          _validateCode(userInputCode);
+                        }
+                      },
                     ),
                   ),
                   if (state.remainingErrorAttempts != null)

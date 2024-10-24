@@ -47,6 +47,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
   String _loadingMessageSub = '';
   bool _isUnconfigured = false;
   bool _needToReconnect = false;
+  bool _forceLogin = false;
   PnpStep? _currentStep;
   ({void Function() stepCancel, void Function() stepContinue})? _stepController;
 
@@ -63,16 +64,10 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
       await ref.read(pnpProvider.notifier).fetchData();
     }).then((_) {
       _isUnconfigured = ref.read(pnpProvider).isUnconfigured;
-      int index = 0;
-      steps = [
-        PersonalWiFiStep(index: index++),
-        GuestWiFiStep(index: index++),
-        NightModeStep(
-            index: index++, saveChanges: _isUnconfigured ? _saveChanges : null),
-        if (_isUnconfigured)
-          YourNetworkStep(index: index++, saveChanges: _confirmAddedNodes),
-      ];
-      logger.d('[PnP]: Prescribed setup steps=$steps');
+      _forceLogin = ref.read(pnpProvider).forceLogin;
+      steps = buildSteps();
+      logger.d(
+          '[PnP]: Prescribed setup steps=${steps.map((e) => e.title(context))}');
       setState(() {
         _setupStep = _PnpSetupStep.config;
         logger.d('[PnP]: Settle configuration. Setup step = config');
@@ -106,6 +101,30 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
         ),
       ),
     );
+  }
+
+  List<PnpStep> buildSteps() {
+    int index = 0;
+    return switch ((_forceLogin, _isUnconfigured)) {
+      (false, true) => [
+          PersonalWiFiStep(index: index++),
+          GuestWiFiStep(index: index++),
+          NightModeStep(index: index++, saveChanges: _saveChanges),
+          YourNetworkStep(index: index++, saveChanges: _confirmAddedNodes),
+        ],
+      (true, false) => [
+          PersonalWiFiStep(index: index++),
+        ],
+      (true, true) => [
+          PersonalWiFiStep(index: index++, saveChanges: _saveChanges),
+          YourNetworkStep(index: index++, saveChanges: _confirmAddedNodes),
+        ],
+      _ => [
+          PersonalWiFiStep(index: index++),
+          GuestWiFiStep(index: index++),
+          NightModeStep(index: index++),
+        ],
+    };
   }
 
   Widget _buildPnpSetupView() {
