@@ -150,6 +150,7 @@ Future<String> getPackageInfo() async {
     'App Version: ${packageInfo.version}',
     if (!kIsWeb) 'Platform OS: ${Platform.operatingSystem}',
     if (!kIsWeb) 'OS version: ${Platform.operatingSystemVersion}',
+    'OS: ${defaultTargetPlatform.name}',
   ];
 
   if (!kIsWeb) {
