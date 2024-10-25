@@ -41,7 +41,7 @@ enum JNAPAction {
   deleteDevice,
   // diagnostics
   execSysCommand,
-  getPinStatus,
+  getPingStatus,
   getSysInfoData,
   getSystemStats,
   getTracerouteStatus,

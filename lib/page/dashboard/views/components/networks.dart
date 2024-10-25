@@ -7,7 +7,6 @@ import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
-import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
 import 'package:privacy_gui/page/dashboard/views/components/shimmer.dart';
 import 'package:privacy_gui/page/nodes/providers/node_detail_id_provider.dart';
 import 'package:privacy_gui/page/instant_topology/providers/_providers.dart';
@@ -65,7 +64,7 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
     treeController.expandAll();
     final nodeTopologyHeight =
         (topologyState.root.children.firstOrNull?.toFlatList().length ?? 1) *
-            108.0;
+            116.0;
     return Container(
       constraints: BoxConstraints(minHeight: 200 + nodeTopologyHeight),
       child: ShimmerContainer(

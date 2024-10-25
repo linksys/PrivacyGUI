@@ -569,7 +569,12 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
     return AppListCard(
       showBorder: false,
       color: Theme.of(context).colorScheme.background,
-      title: AppText.bodySmall(loc(context).signalStrength),
+      padding: const EdgeInsets.all(Spacing.medium),
+      title: AppText.bodySmall(
+        loc(context).signalStrength,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      ),
       description: Row(children: [
         AppText.labelLarge(
           getWifiSignalLevel(state.signalStrength).resolveLabel(context),

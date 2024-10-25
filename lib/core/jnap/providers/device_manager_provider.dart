@@ -449,6 +449,8 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
             'macAddress': macAddress,
           }..removeWhere((key, value) => value == null),
           auth: true,
+          cacheLevel: CacheLevel.noCache,
+          fetchRemote: true,
         )
         .then((value) => ref.read(pollingProvider.notifier).forcePolling());
   }
