@@ -707,7 +707,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
     showSimpleAppDialog(
       context,
       dismissible: false,
-      title: 'Ping Network',
+      title: loc(context).pingNetwork,
       content: const PingNetworkModal(),
     );
   }
@@ -716,7 +716,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
     showSimpleAppDialog(
       context,
       dismissible: false,
-      title: 'Traceroute',
+      title: loc(context).traceroute,
       content: const TracerouteModal(),
     );
   }

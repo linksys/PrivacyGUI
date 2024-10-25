@@ -982,5 +982,7 @@
   "logIntoRouter": "Log into router",
   "wifiPasswordLimit": "8 - 64 characters",
   "wifiSSIDLengthLimit": "Must less than 32 character",
-  "connectedSpeed": "Connected Speed"
+  "connectedSpeed": "Connected Speed",
+  "dnsIpAddress": "DNS IP address",
+  "pingNetwork": "Ping Network"
 }

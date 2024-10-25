@@ -420,8 +420,8 @@ void initBetterActions() {
       _JNAPActionValue.deleteDevice.value;
   _betterActionMap[JNAPAction.execSysCommand] =
       _JNAPActionValue.execSysCommand.value;
-  _betterActionMap[JNAPAction.getPinStatus] =
-      _JNAPActionValue.getPinStatus.value;
+  _betterActionMap[JNAPAction.getPingStatus] =
+      _JNAPActionValue.getPingStatus.value;
   _betterActionMap[JNAPAction.getSysInfoData] =
       _JNAPActionValue.getSysInfoData.value;
   _betterActionMap[JNAPAction.getSystemStats] =

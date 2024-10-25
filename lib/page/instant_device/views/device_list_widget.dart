@@ -128,7 +128,9 @@ class _DeviceListWidgetState extends ConsumerState<DeviceListWidget> {
           isOnline: device.isOnline,
           isWired: device.isWired,
         ),
-        if (widget.enableDeauth  && serviceHelper.isSupportClientDeauth()) ...[
+        if (widget.enableDeauth &&
+            !device.isWired &&
+            serviceHelper.isSupportClientDeauth()) ...[
           const AppGap.medium(),
           AppIconButton.noPadding(
             icon: LinksysIcons.bidirectional,
