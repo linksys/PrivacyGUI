@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:privacy_gui/validator_rules/input_validators.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -10,6 +11,7 @@ class WiFiPasswordField extends ConsumerStatefulWidget {
   final String? hint;
   final TextEditingController? controller;
   final void Function(bool isValid, String input)? onCheckInput;
+  final void Function(String value)? onSubmitted;
 
   const WiFiPasswordField({
     super.key,
@@ -17,6 +19,7 @@ class WiFiPasswordField extends ConsumerStatefulWidget {
     this.hint,
     this.controller,
     this.onCheckInput,
+    this.onSubmitted,
   });
 
   @override
@@ -48,15 +51,15 @@ class _WiFiPasswordFieldState extends ConsumerState<WiFiPasswordField> {
           return null;
         } else if (errorKeys.keys.first ==
             (NoSurroundWhitespaceRule).toString()) {
-          return 'Can\'t start and/or end with a space';
+          return loc(context).routerPasswordRuleStartEndWithSpace;
         } else if (errorKeys.keys.first == (WiFiPasswordRule).toString()) {
-          return 'Use letters, numbers, and common symbols';
+          return loc(context).routerPasswordRuleUnsupportSpecialChar;
         }
       }(),
       validations: [
         Validation(
-            description: '8 characters minimum',
-            validator: LengthRule(min: 8).validate)
+            description: loc(context).wifiPasswordLimit,
+            validator: LengthRule(min: 8, max: 64).validate)
       ],
       controller: widget.controller,
       onChanged: (value) {
@@ -68,6 +71,7 @@ class _WiFiPasswordFieldState extends ConsumerState<WiFiPasswordField> {
           widget.onCheckInput?.call(true, value);
         }
       },
+      onSubmitted: widget.onSubmitted,
     );
   }
 }

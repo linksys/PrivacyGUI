@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
 import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
 import 'package:privacy_gui/page/instant_setup/widgets/wifi_password_widget.dart';
 import 'package:privacy_gui/page/instant_setup/widgets/wifi_ssid_widget.dart';
@@ -30,6 +29,7 @@ class PersonalWiFiStep extends PnpStep {
     _passwordEditController?.text = wifi.password;
 
     _check(ref);
+    canGoNext(saveChanges == null);
   }
 
   @override
@@ -125,7 +125,10 @@ class PersonalWiFiStep extends PnpStep {
     // final password = state?.data['password'] as String? ?? '';
     final ssid = _ssidEditController?.text ?? '';
     final password = _passwordEditController?.text ?? '';
-    if (ssid.isNotEmpty && password.isNotEmpty) {
+    if (ssid.isNotEmpty &&
+        password.isNotEmpty &&
+        password.length >= 8 &&
+        password.length <= 64) {
       pnp.setStepStatus(index, status: StepViewStatus.data);
     } else {
       pnp.setStepStatus(index, status: StepViewStatus.error);

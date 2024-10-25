@@ -73,7 +73,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
           },
         )
       ],
-      tabs: tabs.map((e) => AppTab(title: e)).toList(),
+      tabs: tabs.map((e) => Tab(text: e)).toList(),
       tabContentViews: tabContents,
       expandedHeight: 120,
     );
@@ -393,7 +393,28 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
             height: 40,
           ),
         ),
-        if (connection != null) AppText.bodySmall(connection),
+        if (connection != null)
+          Column(
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    LinksysIcons.bidirectional,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  AppText.bodySmall(connection),
+                ],
+              ),
+              SizedBox(
+                width: 70,
+                child: AppText.bodySmall(
+                  loc(context).connectedSpeed,
+                  textAlign: TextAlign.center,
+                ),
+              )
+            ],
+          ),
         if (isWan) AppText.labelMedium(loc(context).internet),
         Container(
           constraints: const BoxConstraints(maxWidth: 120),

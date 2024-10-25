@@ -84,6 +84,8 @@ class StyledAppTabPageView extends ConsumerWidget {
   Widget buildMainContent(BuildContext context, WidgetRef ref) {
     return AppPageView(
       // appBar: _buildAppBar(context, ref),
+      background: Theme.of(context).colorScheme.background,
+
       child: AppTabLayout(
         flexibleSpace: FlexibleSpaceBar(
           background: Column(

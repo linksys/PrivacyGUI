@@ -14,6 +14,7 @@ class PnpState extends Equatable {
   final bool isUnconfigured;
   final Map<JNAPAction, JNAPResult> data;
   final List<RawDevice> childNodes;
+  final bool forceLogin;
 
   const PnpState({
     required this.deviceInfo,
@@ -22,6 +23,7 @@ class PnpState extends Equatable {
     this.isUnconfigured = false,
     this.data = const {},
     this.childNodes = const [],
+    this.forceLogin = false,
   });
 
   PnpState copyWith({
@@ -31,6 +33,7 @@ class PnpState extends Equatable {
     bool? isUnconfigured,
     Map<JNAPAction, JNAPResult>? data,
     List<RawDevice>? childNodes,
+    bool? forceLogin,
   }) {
     return PnpState(
       deviceInfo: deviceInfo ?? this.deviceInfo,
@@ -39,6 +42,7 @@ class PnpState extends Equatable {
       isUnconfigured: isUnconfigured ?? this.isUnconfigured,
       data: data ?? this.data,
       childNodes: childNodes ?? this.childNodes,
+      forceLogin: forceLogin ?? this.forceLogin,
     );
   }
 
@@ -50,5 +54,6 @@ class PnpState extends Equatable {
         isUnconfigured,
         data,
         childNodes,
+        forceLogin,
       ];
 }

@@ -1,6 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
+import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/theme/custom_theme.dart';
 import 'package:privacygui_widgets/theme/material/color_tonal_palettes.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -78,24 +79,28 @@ class _NavigationMenuState extends State<NavigationMenu> {
     //     ),
     //   ),
     // );
-    return ChoiceChip(
-      avatar: Icon(type.resolveIcon(), color: Color(neutralTonal.get(100))),
-      label: AppText.labelMedium(
-        type.resloveLabel(context),
-        color: Color(neutralTonal.get(100)),
+    return Theme(
+      data: linksysDarkThemeData.copyWith(),
+      child: ChoiceChip(
+        avatar: Icon(type.resolveIcon(), color: Color(neutralTonal.get(100))),
+        label: AppText.labelMedium(
+          type.resloveLabel(context),
+          color: Color(neutralTonal.get(100)),
+        ),
+        selected: widget.selected == type,
+        showCheckmark: false,
+        onSelected: (value) {
+          widget.onItemClick?.call(widget.items.indexOf(type));
+        },
+        backgroundColor: Color(neutralTonal.get(6)),
+        selectedColor: Color(primaryTonal.get(40)),
+        side: BorderSide(color: Color(neutralTonal.get(6)), width: 0),
+        clipBehavior: Clip.hardEdge,
+        shape: RoundedRectangleBorder(
+            borderRadius:
+                CustomTheme.of(context).radius.asBorderRadius().large),
+        elevation: 0,
       ),
-      selected: widget.selected == type,
-      showCheckmark: false,
-      onSelected: (value) {
-
-        widget.onItemClick?.call(widget.items.indexOf(type));
-      },
-      selectedColor: Color(primaryTonal.get(40)),
-      backgroundColor: Color(neutralTonal.get(6)),
-      side: BorderSide(color: Color(neutralTonal.get(6)), width: 0),
-      shape: RoundedRectangleBorder(
-          borderRadius: CustomTheme.of(context).radius.asBorderRadius().large),
-      elevation: 0,
     );
   }
 }
