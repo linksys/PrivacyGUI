@@ -155,11 +155,9 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
       tabs: [
         Tab(
           text: loc(context).info,
-          height: 24,
         ),
         Tab(
           text: loc(context).devices,
-          height: 24,
         ),
       ],
       tabContentViews: [

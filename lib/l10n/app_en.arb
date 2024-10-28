@@ -967,8 +967,9 @@
   "errorManualUpdateFailed": "Error manual update failed!",
   "errorManualUpdateSignatureCheckFailed": "Invalid firmware file!",
   "manualFirmwareEstimatedTime": "Estimated time remaining",
-    "disconnect": "Disconnect",
+  "disconnect": "Disconnect",
   "disconnectClient": "Disconnect client",
+  "ipv6FirewallRule": "IPv6 Firewall Rule",
   "disableBandWarning": "Disabling the {radio} band will also disable the {radio} guest access",
   "@disableBandWarning": {
     "description": "radio",
