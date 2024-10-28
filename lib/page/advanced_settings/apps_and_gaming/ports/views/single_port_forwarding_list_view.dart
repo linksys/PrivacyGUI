@@ -2,46 +2,49 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/advanced_settings/port_forwarding/_port_forwarding.dart';
-import 'package:privacy_gui/page/advanced_settings/port_forwarding/views/widgets/_widgets.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/_ports.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/views/widgets/_widgets.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
+
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
-class PortRangeTriggeringListView extends ArgumentsConsumerStatelessView {
-  const PortRangeTriggeringListView({super.key, super.args});
+class SinglePortForwardingListView extends ArgumentsConsumerStatelessView {
+  const SinglePortForwardingListView({super.key, super.args});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return PortRangeTriggeringListContentView(
+    return SinglePortForwardingListContentView(
       args: super.args,
     );
   }
 }
 
-class PortRangeTriggeringListContentView extends ArgumentsConsumerStatefulView {
-  const PortRangeTriggeringListContentView({super.key, super.args});
+class SinglePortForwardingListContentView
+    extends ArgumentsConsumerStatefulView {
+  const SinglePortForwardingListContentView({super.key, super.args});
 
   @override
-  ConsumerState<PortRangeTriggeringListContentView> createState() =>
-      _PortRangeTriggeringContentViewState();
+  ConsumerState<SinglePortForwardingListContentView> createState() =>
+      _SinglePortForwardingContentViewState();
 }
 
-class _PortRangeTriggeringContentViewState
-    extends ConsumerState<PortRangeTriggeringListContentView> {
-  late final PortRangeTriggeringListNotifier _notifier;
+class _SinglePortForwardingContentViewState
+    extends ConsumerState<SinglePortForwardingListContentView> {
+  late final SinglePortForwardingListNotifier _notifier;
 
   @override
   void initState() {
-    super.initState();
-    _notifier = ref.read(portRangeTriggeringListProvider.notifier);
+    _notifier = ref.read(singlePortForwardingListProvider.notifier);
     doSomethingWithSpinner(
       context,
       _notifier.fetch(),
     );
+
+    super.initState();
   }
 
   @override
@@ -51,21 +54,21 @@ class _PortRangeTriggeringContentViewState
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(portRangeTriggeringListProvider);
+    final state = ref.watch(singlePortForwardingListProvider);
     return StyledAppPageView(
+      title: loc(context).singlePortForwarding,
       scrollable: true,
-      title: loc(context).portRangeTriggering,
       child: AppBasicLayout(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const AppGap.large2(),
-            AppText.bodyLarge(loc(context).portRangeForwardingDescription),
+            AppText.bodyLarge(loc(context).singlePortForwardingDescription),
             if (!_notifier.isExceedMax()) ...[
               const AppGap.large2(),
               AddRuleCard(
                 onTap: () {
-                  context.pushNamed<bool?>(RouteNamed.protRangeTriggeringRule,
+                  context.pushNamed<bool?>(RouteNamed.singlePortForwardingRule,
                       extra: {'rules': state.rules}).then((value) {
                     if (value ?? false) {
                       _notifier.fetch();
@@ -88,7 +91,7 @@ class _PortRangeTriggeringContentViewState
                       isEnabled: e.isEnabled,
                       onTap: () {
                         context.pushNamed<bool?>(
-                            RouteNamed.protRangeTriggeringRule,
+                            RouteNamed.singlePortForwardingRule,
                             extra: {
                               'rules': state.rules,
                               'edit': e

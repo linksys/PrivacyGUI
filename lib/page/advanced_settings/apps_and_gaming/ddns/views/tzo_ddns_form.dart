@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/core/jnap/models/tzo_settings.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacygui_widgets/widgets/input_field/app_text_field.dart';
 
 class TzoDNSForm extends StatefulWidget {
-  final TZOSettings? initialValue;
+  final TZOSettings? value;
   final void Function(TZOSettings?) onFormChanged;
 
   const TzoDNSForm({
     super.key,
-    this.initialValue,
+    this.value,
     required this.onFormChanged,
   });
 
@@ -25,11 +26,11 @@ class _TzoDNSFormState extends State<TzoDNSForm> {
   void initState() {
     super.initState();
     _usernameController = TextEditingController()
-      ..text = widget.initialValue?.username ?? '';
+      ..text = widget.value?.username ?? '';
     _passwordController = TextEditingController()
-      ..text = widget.initialValue?.password ?? '';
+      ..text = widget.value?.password ?? '';
     _hostnameController = TextEditingController()
-      ..text = widget.initialValue?.hostName ?? '';
+      ..text = widget.value?.hostName ?? '';
   }
 
   @override
@@ -45,27 +46,24 @@ class _TzoDNSFormState extends State<TzoDNSForm> {
     return Column(
       children: [
         AppTextField(
-          headerText: 'User Name',
+          headerText: loc(context).username,
           controller: _usernameController,
           onChanged: (value) {
-            widget.onFormChanged
-                .call(widget.initialValue?.copyWith(username: value));
+            widget.onFormChanged.call(widget.value?.copyWith(username: value));
           },
         ),
         AppTextField(
-          headerText: 'No-IP Password',
+          headerText: loc(context).password,
           controller: _passwordController,
           onChanged: (value) {
-            widget.onFormChanged
-                .call(widget.initialValue?.copyWith(password: value));
+            widget.onFormChanged.call(widget.value?.copyWith(password: value));
           },
         ),
         AppTextField(
-          headerText: 'Host name',
+          headerText: loc(context).hostName,
           controller: _hostnameController,
           onChanged: (value) {
-            widget.onFormChanged
-                .call(widget.initialValue?.copyWith(hostName: value));
+            widget.onFormChanged.call(widget.value?.copyWith(hostName: value));
           },
         )
       ],

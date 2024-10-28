@@ -1,31 +1,30 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
-import 'package:privacy_gui/core/jnap/models/single_port_forwarding_rule.dart';
+import 'package:privacy_gui/core/jnap/models/port_range_triggering_rule.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
-import 'package:privacy_gui/page/advanced_settings/port_forwarding/_port_forwarding.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/_ports.dart';
 
-final singlePortForwardingListProvider = NotifierProvider<
-    SinglePortForwardingListNotifier,
-    SinglePortForwardingListState>(() => SinglePortForwardingListNotifier());
+final portRangeTriggeringListProvider = NotifierProvider<
+    PortRangeTriggeringListNotifier,
+    PortRangeTriggeringListState>(() => PortRangeTriggeringListNotifier());
 
-class SinglePortForwardingListNotifier
-    extends Notifier<SinglePortForwardingListState> {
+class PortRangeTriggeringListNotifier
+    extends Notifier<PortRangeTriggeringListState> {
   @override
-  SinglePortForwardingListState build() =>
-      const SinglePortForwardingListState();
+  PortRangeTriggeringListState build() => const PortRangeTriggeringListState();
 
-  fetch() async {
+  Future fetch() async {
     final repo = ref.read(routerRepositoryProvider);
     await repo
         .send(
-      JNAPAction.getSinglePortForwardingRules,
+      JNAPAction.getPortRangeTriggeringRules,
       fetchRemote: true,
       auth: true,
     )
         .then<JNAPSuccess?>((value) {
       final rules = List.from(value.output['rules'])
-          .map((e) => SinglePortForwardingRule.fromMap(e))
+          .map((e) => PortRangeTriggeringRule.fromMap(e))
           .toList();
       final int maxRules = value.output['maxRules'] ?? 50;
       final int maxDesc = value.output['maxDescriptionLength'] ?? 32;

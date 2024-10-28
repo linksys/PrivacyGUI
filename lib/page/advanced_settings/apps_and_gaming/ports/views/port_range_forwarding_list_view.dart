@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/advanced_settings/port_forwarding/_port_forwarding.dart';
-import 'package:privacy_gui/page/advanced_settings/port_forwarding/views/widgets/_widgets.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/_ports.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/views/widgets/_widgets.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
@@ -12,33 +12,32 @@ import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
-class SinglePortForwardingListView extends ArgumentsConsumerStatelessView {
-  const SinglePortForwardingListView({super.key, super.args});
+class PortRangeForwardingListView extends ArgumentsConsumerStatelessView {
+  const PortRangeForwardingListView({super.key, super.args});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return SinglePortForwardingListContentView(
+    return PortRangeForwardingListContentView(
       args: super.args,
     );
   }
 }
 
-class SinglePortForwardingListContentView
-    extends ArgumentsConsumerStatefulView {
-  const SinglePortForwardingListContentView({super.key, super.args});
+class PortRangeForwardingListContentView extends ArgumentsConsumerStatefulView {
+  const PortRangeForwardingListContentView({super.key, super.args});
 
   @override
-  ConsumerState<SinglePortForwardingListContentView> createState() =>
-      _SinglePortForwardingContentViewState();
+  ConsumerState<PortRangeForwardingListContentView> createState() =>
+      _PortRangeForwardingContentViewState();
 }
 
-class _SinglePortForwardingContentViewState
-    extends ConsumerState<SinglePortForwardingListContentView> {
-  late final SinglePortForwardingListNotifier _notifier;
+class _PortRangeForwardingContentViewState
+    extends ConsumerState<PortRangeForwardingListContentView> {
+  late final PortRangeForwardingListNotifier _notifier;
 
   @override
   void initState() {
-    _notifier = ref.read(singlePortForwardingListProvider.notifier);
+    _notifier = ref.read(portRangeForwardingListProvider.notifier);
     doSomethingWithSpinner(
       context,
       _notifier.fetch(),
@@ -54,21 +53,21 @@ class _SinglePortForwardingContentViewState
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(singlePortForwardingListProvider);
+    final state = ref.watch(portRangeForwardingListProvider);
     return StyledAppPageView(
-      title: loc(context).singlePortForwarding,
       scrollable: true,
+      title: loc(context).portRangeForwarding,
       child: AppBasicLayout(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const AppGap.large2(),
-            AppText.bodyLarge(loc(context).singlePortForwardingDescription),
+            AppText.bodyLarge(loc(context).portRangeForwardingDescription),
             if (!_notifier.isExceedMax()) ...[
               const AppGap.large2(),
               AddRuleCard(
                 onTap: () {
-                  context.pushNamed<bool?>(RouteNamed.singlePortForwardingRule,
+                  context.pushNamed<bool?>(RouteNamed.portRangeForwardingRule,
                       extra: {'rules': state.rules}).then((value) {
                     if (value ?? false) {
                       _notifier.fetch();
@@ -91,7 +90,7 @@ class _SinglePortForwardingContentViewState
                       isEnabled: e.isEnabled,
                       onTap: () {
                         context.pushNamed<bool?>(
-                            RouteNamed.singlePortForwardingRule,
+                            RouteNamed.portRangeForwardingRule,
                             extra: {
                               'rules': state.rules,
                               'edit': e

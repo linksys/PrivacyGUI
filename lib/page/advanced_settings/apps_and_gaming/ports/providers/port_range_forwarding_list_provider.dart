@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/models/port_range_forwarding_rule.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
-import 'package:privacy_gui/page/advanced_settings/port_forwarding/_port_forwarding.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/_ports.dart';
 
 final portRangeForwardingListProvider = NotifierProvider<
     PortRangeForwardingListNotifier,

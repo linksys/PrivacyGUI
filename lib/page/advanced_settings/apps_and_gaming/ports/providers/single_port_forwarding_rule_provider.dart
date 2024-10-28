@@ -1,34 +1,34 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
-import 'package:privacy_gui/core/jnap/models/port_range_triggering_rule.dart';
+import 'package:privacy_gui/core/jnap/models/single_port_forwarding_rule.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
-import 'package:privacy_gui/page/advanced_settings/port_forwarding/_port_forwarding.dart';
-import 'package:privacy_gui/page/advanced_settings/port_forwarding/providers/consts.dart';
-import 'package:privacy_gui/page/advanced_settings/port_forwarding/providers/port_util_mixin.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/_ports.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/providers/consts.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacy_gui/validator_rules/input_validators.dart';
 
-final portRangeTriggeringRuleProvider = NotifierProvider<
-    PortRangeTriggeringRuleNotifier,
-    PortRangeTriggeringRuleState>(() => PortRangeTriggeringRuleNotifier());
+final singlePortForwardingRuleProvider = NotifierProvider<
+    SinglePortForwardingRuleNotifier,
+    SinglePortForwardingRuleState>(() => SinglePortForwardingRuleNotifier());
 
-class PortRangeTriggeringRuleNotifier
-    extends Notifier<PortRangeTriggeringRuleState> with PortUtilMixin {
-  late InputValidator _localIpValidator;
+class SinglePortForwardingRuleNotifier
+    extends Notifier<SinglePortForwardingRuleState> {
+  InputValidator? _localIpValidator;
   String _subnetMask = '255.255.0.0';
   String _ipAddress = '192.168.1.1';
 
   @override
-  PortRangeTriggeringRuleState build() => const PortRangeTriggeringRuleState();
+  SinglePortForwardingRuleState build() =>
+      const SinglePortForwardingRuleState();
 
-  Future goAdd(List<PortRangeTriggeringRule> rules) {
+  Future goAdd(List<SinglePortForwardingRule> rules) {
     return fetch().then(
         (value) => state = state.copyWith(mode: RuleMode.adding, rules: rules));
   }
 
   Future goEdit(
-      List<PortRangeTriggeringRule> rules, PortRangeTriggeringRule rule) {
+      List<SinglePortForwardingRule> rules, SinglePortForwardingRule rule) {
     return fetch().then((value) => state =
         state.copyWith(mode: RuleMode.editing, rules: rules, rule: rule));
   }
@@ -47,9 +47,9 @@ class PortRangeTriggeringRuleNotifier
     _localIpValidator = IpAddressAsLocalIpValidator(ipAddress, subnetMask);
   }
 
-  Future<bool> save(PortRangeTriggeringRule rule) async {
+  Future<bool> save(SinglePortForwardingRule rule) async {
     final mode = state.mode;
-    final rules = List<PortRangeTriggeringRule>.from(state.rules);
+    final rules = List<SinglePortForwardingRule>.from(state.rules);
     if (mode == RuleMode.adding) {
       rules.add(rule);
     } else if (mode == RuleMode.editing) {
@@ -57,29 +57,28 @@ class PortRangeTriggeringRuleNotifier
       rules.replaceRange(index, index + 1, [rule]);
     }
     final repo = ref.read(routerRepositoryProvider);
-    final result = await repo.send(
-      JNAPAction.setPortRangeTriggeringRules,
-      auth: true,
-      data: {
-        'rules': rules.map((e) => e.toMap()).toList(),
-      },
-    ).then((value) => true);
+    final result = await repo
+        .send(
+          JNAPAction.setSinglePortForwardingRules,
+          data: {'rules': rules.map((e) => e.toMap()).toList()},
+          auth: true,
+        )
+        .then((value) => true)
+        .onError((error, stackTrace) => false);
     return result;
   }
 
   Future<bool> delete() async {
     final mode = state.mode;
     if (mode == RuleMode.editing) {
-      final rules = List<PortRangeTriggeringRule>.from(state.rules)
+      final rules = List<SinglePortForwardingRule>.from(state.rules)
         ..removeWhere((element) => element == state.rule);
       final repo = ref.read(routerRepositoryProvider);
       final result = await repo
           .send(
-            JNAPAction.setPortRangeTriggeringRules,
+            JNAPAction.setSinglePortForwardingRules,
+            data: {'rules': rules.map((e) => e.toMap()).toList()},
             auth: true,
-            data: {
-              'rules': rules.map((e) => e.toMap()).toList(),
-            },
           )
           .then((value) => true)
           .onError((error, stackTrace) => false);
@@ -89,26 +88,17 @@ class PortRangeTriggeringRuleNotifier
     }
   }
 
-  bool isTriggeredPortConflict(int firstPort, int lastPort) {
-    return state.rules.any((rule) => doesRangeOverlap(
-          rule.firstTriggerPort,
-          rule.lastTriggerPort,
-          firstPort,
-          lastPort,
-        ));
-  }
-
-  bool isForwardedPortConflict(int firstPort, int lastPort) {
-    return state.rules.any((rule) => doesRangeOverlap(
-          rule.firstForwardedPort,
-          rule.lastForwardedPort,
-          firstPort,
-          lastPort,
-        ));
-  }
-
   bool isDeviceIpValidate(String ipAddress) {
-    return _localIpValidator.validate(ipAddress);
+    final localIpValidator = _localIpValidator;
+    return localIpValidator != null
+        ? localIpValidator.validate(ipAddress)
+        : false;
+  }
+
+  bool isPortConflict(int externalPort, String protocol) {
+    return state.rules.any((rule) =>
+        rule.externalPort == externalPort &&
+        (protocol == rule.protocol || protocol == 'Both'));
   }
 
   bool isEdit() {

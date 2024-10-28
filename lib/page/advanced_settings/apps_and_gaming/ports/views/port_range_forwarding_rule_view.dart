@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/core/jnap/models/single_port_forwarding_rule.dart';
-import 'package:privacy_gui/page/advanced_settings/port_forwarding/_port_forwarding.dart';
-import 'package:privacy_gui/page/advanced_settings/port_forwarding/providers/consts.dart';
-import 'package:privacy_gui/page/advanced_settings/port_forwarding/views/widgets/protocol_utils.dart';
+import 'package:privacy_gui/core/jnap/models/port_range_forwarding_rule.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/_ports.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/providers/consts.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/views/widgets/protocol_utils.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
@@ -19,51 +19,52 @@ import 'package:privacygui_widgets/widgets/card/list_card.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
-class SinglePortForwardingRuleView extends ArgumentsConsumerStatelessView {
-  const SinglePortForwardingRuleView({super.key, super.args});
+class PortRangeForwardingRuleView extends ArgumentsConsumerStatelessView {
+  const PortRangeForwardingRuleView({super.key, super.args});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return SinglePortForwardingRuleContentView(
+    return PortRangeForwardingRuleContentView(
       args: super.args,
     );
   }
 }
 
-class SinglePortForwardingRuleContentView
-    extends ArgumentsConsumerStatefulView {
-  const SinglePortForwardingRuleContentView({super.key, super.args});
+class PortRangeForwardingRuleContentView extends ArgumentsConsumerStatefulView {
+  const PortRangeForwardingRuleContentView({super.key, super.args});
 
   @override
-  ConsumerState<SinglePortForwardingRuleContentView> createState() =>
+  ConsumerState<PortRangeForwardingRuleContentView> createState() =>
       _AddRuleContentViewState();
 }
 
 class _AddRuleContentViewState
-    extends ConsumerState<SinglePortForwardingRuleContentView> {
-  late final SinglePortForwardingRuleNotifier _notifier;
+    extends ConsumerState<PortRangeForwardingRuleContentView> {
+  late final PortRangeForwardingRuleNotifier _notifier;
 
   final TextEditingController _ruleNameController = TextEditingController();
-  final TextEditingController _externalPortController = TextEditingController();
-  final TextEditingController _internalPortController = TextEditingController();
+  final TextEditingController _firstExternalPortController =
+      TextEditingController();
+  final TextEditingController _lastExternalPortController =
+      TextEditingController();
   final TextEditingController _deviceIpAddressController =
       TextEditingController();
   String _protocol = 'Both';
   bool _isEnabled = false;
-  List<SinglePortForwardingRule> _rules = [];
+  List<PortRangeForwardingRule> _rules = [];
   String? _ipError;
   String? _portError;
 
   @override
   void initState() {
-    _notifier = ref.read(singlePortForwardingRuleProvider.notifier);
-    _rules = widget.args['rules'] as List<SinglePortForwardingRule>? ?? [];
-    final rule = widget.args['edit'] as SinglePortForwardingRule?;
+    _notifier = ref.read(portRangeForwardingRuleProvider.notifier);
+    _rules = widget.args['rules'] ?? [];
+    final rule = widget.args['edit'] as PortRangeForwardingRule?;
     if (rule != null) {
       _notifier.goEdit(_rules, rule).then((_) {
         _ruleNameController.text = rule.description;
-        _externalPortController.text = '${rule.externalPort}';
-        _internalPortController.text = '${rule.internalPort}';
+        _firstExternalPortController.text = '${rule.firstExternalPort}';
+        _lastExternalPortController.text = '${rule.lastExternalPort}';
         _deviceIpAddressController.text = rule.internalServerIPAddress;
         setState(() {
           _isEnabled = rule.isEnabled;
@@ -74,6 +75,7 @@ class _AddRuleContentViewState
         final prefixIp =
             NetworkUtils.getIpPrefix(_notifier.ipAddress, _notifier.subnetMask);
         _deviceIpAddressController.text = prefixIp.replaceAll('.0', '');
+
         setState(() {
           _isEnabled = true;
         });
@@ -87,29 +89,29 @@ class _AddRuleContentViewState
     super.dispose();
 
     _ruleNameController.dispose();
-    _externalPortController.dispose();
-    _internalPortController.dispose();
+    _firstExternalPortController.dispose();
+    _lastExternalPortController.dispose();
     _deviceIpAddressController.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(singlePortForwardingRuleProvider);
+    final state = ref.watch(portRangeForwardingRuleProvider);
     return StyledAppPageView(
-      title: loc(context).singlePortForwarding,
+      scrollable: true,
+      title: loc(context).portRangeForwarding,
       bottomBar: PageBottomBar(
         isPositiveEnabled: _isSaveEnable(),
         isNegitiveEnabled: state.mode == RuleMode.editing ? true : null,
         negitiveLable: loc(context).delete,
         onPositiveTap: () {
-          final rule = SinglePortForwardingRule(
+          final rule = PortRangeForwardingRule(
               isEnabled: _isEnabled,
-              externalPort: int.parse(_externalPortController.text),
+              firstExternalPort: int.parse(_firstExternalPortController.text),
               protocol: _protocol,
               internalServerIPAddress: _deviceIpAddressController.text,
-              internalPort: int.parse(_internalPortController.text),
+              lastExternalPort: int.parse(_lastExternalPortController.text),
               description: _ruleNameController.text);
-          final thisContext = context;
           doSomethingWithSpinner(
             context,
             _notifier.save(rule),
@@ -122,7 +124,7 @@ class _AddRuleContentViewState
                         ? loc(context).ruleUpdated
                         : loc(context).ruleAdded);
 
-                thisContext.pop(true);
+                context.pop(true);
               } else {
                 showFailedSnackBar(context, loc(context).failedExclamation);
               }
@@ -143,7 +145,6 @@ class _AddRuleContentViewState
           });
         },
       ),
-      scrollable: true,
       child: AppBasicLayout(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -159,11 +160,11 @@ class _AddRuleContentViewState
     );
   }
 
-  List<Widget> _buildAddContents(SinglePortForwardingRuleState state) {
+  List<Widget> _buildAddContents(PortRangeForwardingRuleState state) {
     return buildInputForms();
   }
 
-  List<Widget> _buildEditContents(SinglePortForwardingRuleState state) {
+  List<Widget> _buildEditContents(PortRangeForwardingRuleState state) {
     return [
       AppListCard(
         title: AppText.labelLarge(loc(context).ruleEnabled),
@@ -184,33 +185,30 @@ class _AddRuleContentViewState
 
   List<Widget> buildInputForms() {
     final submaskToken = _notifier.subnetMask.split('.');
+
     return [
-      AppTextField(
+      AppTextField.outline(
         headerText: loc(context).ruleName,
-        border: const OutlineInputBorder(),
         controller: _ruleNameController,
         onFocusChanged: _onFocusChange,
       ),
       const AppGap.large2(),
       AppTextField.minMaxNumber(
-        headerText: loc(context).externalPort,
-        inputType: TextInputType.number,
         border: const OutlineInputBorder(),
-        controller: _externalPortController,
+        headerText: loc(context).startPort,
+        controller: _firstExternalPortController,
         max: 65535,
-        min: 0,
         onFocusChanged: _onPortFocusChange,
-        errorText: _portError,
+        errorText: _portError != null ? '' : null,
       ),
       const AppGap.large2(),
       AppTextField.minMaxNumber(
-        headerText: loc(context).internalPort,
-        inputType: TextInputType.number,
         border: const OutlineInputBorder(),
-        controller: _internalPortController,
+        headerText: loc(context).endPort,
+        controller: _lastExternalPortController,
         max: 65535,
-        min: 0,
-        onFocusChanged: _onFocusChange,
+        onFocusChanged: _onPortFocusChange,
+        errorText: _portError,
       ),
       const AppGap.large2(),
       AppText.labelMedium(loc(context).ipAddress),
@@ -273,20 +271,28 @@ class _AddRuleContentViewState
 
   bool _isSaveEnable() {
     return _ruleNameController.text.isNotEmpty &&
-        _externalPortController.text.isNotEmpty &&
-        _internalPortController.text.isNotEmpty &&
+        _firstExternalPortController.text.isNotEmpty &&
+        _lastExternalPortController.text.isNotEmpty &&
         _notifier.isDeviceIpValidate(_deviceIpAddressController.text) &&
         _portError == null;
   }
 
   void _onPortFocusChange(bool focus) {
     if (!focus) {
-      if (_externalPortController.text.isEmpty) {
+      if (_firstExternalPortController.text.isEmpty ||
+          _lastExternalPortController.text.isEmpty) {
         return;
       }
-      final externalPort = int.tryParse(_externalPortController.text) ?? 0;
-      bool isRuleOverlap = _notifier.isPortConflict(externalPort, _protocol);
-      _portError = isRuleOverlap ? loc(context).rulesOverlapError : null;
+      final firstPort = int.tryParse(_firstExternalPortController.text) ?? 0;
+      final lastPort = int.tryParse(_lastExternalPortController.text) ?? 0;
+      bool isValidPortRange = lastPort - firstPort >= 0;
+      bool isRuleOverlap =
+          _notifier.isPortConflict(firstPort, lastPort, _protocol);
+      _portError = !isValidPortRange
+          ? loc(context).portRangeError
+          : isRuleOverlap
+              ? loc(context).rulesOverlapError
+              : null;
       _onFocusChange(focus);
     }
   }

@@ -12,11 +12,11 @@ const String noIPDNSProviderName = 'No-IP';
 const String tzoDNSProviderName = 'TZO';
 const String noDNSProviderName = 'disabled';
 
-sealed class DDNSProvider<T> {
+sealed class DDNSProvider<T> extends Equatable {
   final String name;
   final T settings;
 
-  DDNSProvider({
+  const DDNSProvider({
     required this.name,
     required this.settings,
   });
@@ -59,10 +59,16 @@ sealed class DDNSProvider<T> {
       return NoDDNSProvider();
     }
   }
+
+  @override
+  List<Object?> get props => [
+        name,
+        settings,
+      ];
 }
 
 class DynDNSProvider extends DDNSProvider<DynDNSSettings> {
-  DynDNSProvider({
+  const DynDNSProvider({
     required super.settings,
   }) : super(name: dynDNSProviderName);
 

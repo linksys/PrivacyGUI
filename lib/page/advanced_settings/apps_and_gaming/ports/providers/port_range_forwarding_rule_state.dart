@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:equatable/equatable.dart';
 
 import 'package:privacy_gui/core/jnap/models/port_range_forwarding_rule.dart';
-import 'package:privacy_gui/page/advanced_settings/port_forwarding/providers/consts.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/providers/consts.dart';
 
 class PortRangeForwardingRuleState extends Equatable {
   final RuleMode mode;

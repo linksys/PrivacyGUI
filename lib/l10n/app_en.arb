@@ -982,5 +982,18 @@
   "logIntoRouter": "Log into router",
   "wifiPasswordLimit": "8 - 64 characters",
   "wifiSSIDLengthLimit": "Must less than 32 character",
-  "connectedSpeed": "Connected Speed"
+  "connectedSpeed": "Connected Speed",
+  "ddns": "DDNS",
+  "appsGaming": "Apps & Gaming",
+  "selectAProvider": "Select a provider",
+  "system": "System",
+  "mailExchangeOptional": "Mail Exchange (Optional)",
+  "backupMX": "Backup MX",
+  "wildcard": "Wildcard",
+  "internetConnectionType": "Internet connection type",
+  "internetIPAddress": "Internet IP Address",
+  "status": "Status",
+  "systemDynamic": "Dynamic",
+  "systemStatic": "Static",
+  "systemCustom": "Custom"
 }

@@ -7,7 +7,7 @@ import 'dart:async' as _i4;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:privacy_gui/page/advanced_settings/port_forwarding/_port_forwarding.dart'
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/_ports.dart'
     as _i3;
 
 // ignore_for_file: type=lint

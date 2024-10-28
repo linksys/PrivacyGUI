@@ -2,48 +2,46 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/advanced_settings/port_forwarding/_port_forwarding.dart';
-import 'package:privacy_gui/page/advanced_settings/port_forwarding/views/widgets/_widgets.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/_ports.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/views/widgets/_widgets.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
-class PortRangeForwardingListView extends ArgumentsConsumerStatelessView {
-  const PortRangeForwardingListView({super.key, super.args});
+class PortRangeTriggeringListView extends ArgumentsConsumerStatelessView {
+  const PortRangeTriggeringListView({super.key, super.args});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return PortRangeForwardingListContentView(
+    return PortRangeTriggeringListContentView(
       args: super.args,
     );
   }
 }
 
-class PortRangeForwardingListContentView extends ArgumentsConsumerStatefulView {
-  const PortRangeForwardingListContentView({super.key, super.args});
+class PortRangeTriggeringListContentView extends ArgumentsConsumerStatefulView {
+  const PortRangeTriggeringListContentView({super.key, super.args});
 
   @override
-  ConsumerState<PortRangeForwardingListContentView> createState() =>
-      _PortRangeForwardingContentViewState();
+  ConsumerState<PortRangeTriggeringListContentView> createState() =>
+      _PortRangeTriggeringContentViewState();
 }
 
-class _PortRangeForwardingContentViewState
-    extends ConsumerState<PortRangeForwardingListContentView> {
-  late final PortRangeForwardingListNotifier _notifier;
+class _PortRangeTriggeringContentViewState
+    extends ConsumerState<PortRangeTriggeringListContentView> {
+  late final PortRangeTriggeringListNotifier _notifier;
 
   @override
   void initState() {
-    _notifier = ref.read(portRangeForwardingListProvider.notifier);
+    super.initState();
+    _notifier = ref.read(portRangeTriggeringListProvider.notifier);
     doSomethingWithSpinner(
       context,
       _notifier.fetch(),
     );
-
-    super.initState();
   }
 
   @override
@@ -53,10 +51,10 @@ class _PortRangeForwardingContentViewState
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(portRangeForwardingListProvider);
+    final state = ref.watch(portRangeTriggeringListProvider);
     return StyledAppPageView(
       scrollable: true,
-      title: loc(context).portRangeForwarding,
+      title: loc(context).portRangeTriggering,
       child: AppBasicLayout(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -67,7 +65,7 @@ class _PortRangeForwardingContentViewState
               const AppGap.large2(),
               AddRuleCard(
                 onTap: () {
-                  context.pushNamed<bool?>(RouteNamed.portRangeForwardingRule,
+                  context.pushNamed<bool?>(RouteNamed.protRangeTriggeringRule,
                       extra: {'rules': state.rules}).then((value) {
                     if (value ?? false) {
                       _notifier.fetch();
@@ -90,7 +88,7 @@ class _PortRangeForwardingContentViewState
                       isEnabled: e.isEnabled,
                       onTap: () {
                         context.pushNamed<bool?>(
-                            RouteNamed.portRangeForwardingRule,
+                            RouteNamed.protRangeTriggeringRule,
                             extra: {
                               'rules': state.rules,
                               'edit': e

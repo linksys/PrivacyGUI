@@ -13,7 +13,7 @@ import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing
 import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_view.dart';
 import 'package:privacy_gui/page/components/picker/region_picker_view.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
-import 'package:privacy_gui/page/ddns/_ddns.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/_ddns.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacy_gui/page/instant_device/views/select_device_view.dart';
 import 'package:privacy_gui/page/firmware_update/_firmware_update.dart';
