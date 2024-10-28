@@ -46,7 +46,7 @@ enum _JNAPActionValue {
 
   ///
   execSysCommand(value: 'http://linksys.com/jnap/diagnostics/ExecSysCommand'),
-  getPinStatus(value: 'http://linksys.com/jnap/diagnostics/GetPingStatus'),
+  getPingStatus(value: 'http://linksys.com/jnap/diagnostics/GetPingStatus'),
   getSysInfoData(value: 'http://linksys.com/jnap/diagnostics/GetSysinfoData'),
   getSystemStats(value: 'http://linksys.com/jnap/diagnostics/GetSystemStats'),
   getSystemStats2(value: 'http://linksys.com/jnap/diagnostics/GetSystemStats2'),

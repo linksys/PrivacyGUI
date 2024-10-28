@@ -13,12 +13,14 @@ class InstantVerifyState extends Equatable {
   final GetRadioInfo radioInfo;
   final GuestRadioSettings guestRadioSettings;
   final WanExternal? wanExternal;
+  final bool isRunning;
 
   const InstantVerifyState({
     this.wanConnection,
     required this.radioInfo,
     required this.guestRadioSettings,
     this.wanExternal,
+    this.isRunning = false,
   });
 
   InstantVerifyState copyWith({
@@ -26,12 +28,14 @@ class InstantVerifyState extends Equatable {
     GetRadioInfo? radioInfo,
     GuestRadioSettings? guestRadioSettings,
     WanExternal? wanExternal,
+    bool? isRunning,
   }) {
     return InstantVerifyState(
       wanConnection: wanConnection ?? this.wanConnection,
       radioInfo: radioInfo ?? this.radioInfo,
       guestRadioSettings: guestRadioSettings ?? this.guestRadioSettings,
       wanExternal: wanExternal ?? this.wanExternal,
+      isRunning: isRunning ?? this.isRunning,
     );
   }
 
@@ -41,6 +45,7 @@ class InstantVerifyState extends Equatable {
       'radioInfo': radioInfo.toMap(),
       'guestRadioSettings': guestRadioSettings.toMap(),
       'wanExternal': wanExternal?.toMap(),
+      'isRunning': isRunning,
     }..removeWhere((key, value) => value == null);
   }
 
@@ -55,6 +60,7 @@ class InstantVerifyState extends Equatable {
       wanExternal: map['wanExternal'] == null
           ? null
           : WanExternal.fromMap(map['wanExternal']),
+      isRunning: map['isRunning'] ?? false,
     );
   }
 

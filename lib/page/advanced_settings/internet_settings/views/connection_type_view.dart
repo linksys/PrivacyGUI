@@ -266,6 +266,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
                   setState(() {
                     isEditing = false;
                     state = ref.read(internetSettingsProvider).copyWith();
+                    initUI();
                   });
                 }
               : () {

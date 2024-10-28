@@ -241,7 +241,6 @@ class RouterRepository {
     int retry = 0;
     while (++retry <= maxRetry || maxRetry == -1) {
       logger.d('SCHEDULED COMMAND: publish command {$action}: $retry times');
-
       if (retry <= 1) {
         await Future.delayed(Duration(milliseconds: firstDelayInMilliSec));
       }
