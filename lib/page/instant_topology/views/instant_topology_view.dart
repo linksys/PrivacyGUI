@@ -305,53 +305,58 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
       title: loc(context).modalOfflineNodeTitle,
       okLabel: loc(context).close,
       width: 400,
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: AbsorbPointer(
-              child: _buildNode(context, ref, node),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: AbsorbPointer(
+                child: _buildNode(context, ref, node),
+              ),
             ),
-          ),
-          AppBulletList(
-            style: AppBulletStyle.number,
-            itemSpacing: 24,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AppText.labelLarge(loc(context).modalOfflineNodeCheckTitle1),
-                  AppText.bodyMedium(loc(context).modalOfflineNodeCheckDesc1),
-                ],
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AppText.labelLarge(loc(context).modalOfflineNodeCheckTitle2),
-                  AppText.bodyMedium(loc(context).modalOfflineNodeCheckDesc2),
-                ],
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AppText.labelLarge(loc(context).modalOfflineNodeCheckTitle3),
-                  AppText.bodyMedium(loc(context).modalOfflineNodeCheckDesc3),
-                ],
-              ),
-            ],
-          ),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: AppTextButton(
-              loc(context).modalOfflineRemoveNodeFromNetwork,
-              color: Theme.of(context).colorScheme.error,
-              onTap: () {
-                context.pop('remove');
-              },
+            AppBulletList(
+              style: AppBulletStyle.number,
+              itemSpacing: 24,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppText.labelLarge(
+                        loc(context).modalOfflineNodeCheckTitle1),
+                    AppText.bodyMedium(loc(context).modalOfflineNodeCheckDesc1),
+                  ],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppText.labelLarge(
+                        loc(context).modalOfflineNodeCheckTitle2),
+                    AppText.bodyMedium(loc(context).modalOfflineNodeCheckDesc2),
+                  ],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppText.labelLarge(
+                        loc(context).modalOfflineNodeCheckTitle3),
+                    AppText.bodyMedium(loc(context).modalOfflineNodeCheckDesc3),
+                  ],
+                ),
+              ],
             ),
-          ),
-        ],
+            Align(
+              alignment: Alignment.centerLeft,
+              child: AppTextButton(
+                loc(context).modalOfflineRemoveNodeFromNetwork,
+                color: Theme.of(context).colorScheme.error,
+                onTap: () {
+                  context.pop('remove');
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

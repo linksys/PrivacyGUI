@@ -2,6 +2,8 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
@@ -12,6 +14,7 @@ import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/guest_wifi_item.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_state.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_view_provider.dart';
+import 'package:privacy_gui/validator_rules/_validator_rules.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
@@ -52,19 +55,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
           ref.read(wifiViewProvider.notifier).setChanged(false);
           setState(
             () {
-              final wifiState = state;
-              _preservedMainWiFiState = wifiState;
-
-              for (var wifi in wifiState.mainWiFi) {
-                final controller = TextEditingController()
-                  ..text = wifi.password;
-                _advancedPasswordController.putIfAbsent(
-                    wifi.radioID.value, () => controller);
-              }
-              _advancedPasswordController.putIfAbsent(
-                  'guest',
-                  () =>
-                      TextEditingController()..text = state.guestWiFi.password);
+              update(state);
             },
           );
         },
@@ -90,9 +81,10 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
           .setChanged(next != _preservedMainWiFiState);
     });
 
-    final isPositiveEnabled = !const ListEquality()
-            .equals(_preservedMainWiFiState?.mainWiFi, state.mainWiFi) ||
-        _preservedMainWiFiState?.guestWiFi != state.guestWiFi;
+    final isPositiveEnabled = (!const ListEquality()
+                .equals(_preservedMainWiFiState?.mainWiFi, state.mainWiFi) ||
+            _preservedMainWiFiState?.guestWiFi != state.guestWiFi) &&
+        _dataVerify(state);
 
     return StyledAppPageView(
       appBarStyle: AppBarStyle.none,
@@ -137,41 +129,46 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
                 FixedColumnWidth(
                     fixedWidth + ResponsiveLayout.columnPadding(context)))));
 
+    final enabledWiFiCount = state.mainWiFi.where((e) => e.isEnabled).length;
+    final canDisableAllMainWiFi =
+        ref.watch(wifiListProvider).canDisableMainWiFi;
+    final canBeDisabled = enabledWiFiCount > 1 || canDisableAllMainWiFi;
     final children = [
       columnCount > state.mainWiFi.length
           ? TableRow(children: [
               ...state.mainWiFi
-                  .mapIndexed(
-                      (index, e) => _mainWiFiCard(e, index == columnCount - 1))
+                  .mapIndexed((index, e) =>
+                      _mainWiFiCard(e, canBeDisabled, index == columnCount - 1))
                   .toList(),
               _guestWiFiCard(state.guestWiFi, true),
             ])
           : columnCount == state.mainWiFi.length
               ? TableRow(children: [
                   ...state.mainWiFi
-                      .mapIndexed((index, e) =>
-                          _mainWiFiCard(e, index == columnCount - 1))
+                      .mapIndexed((index, e) => _mainWiFiCard(
+                          e, canBeDisabled, index == columnCount - 1))
                       .toList(),
                 ])
               : TableRow(children: [
                   ...state.mainWiFi
                       .take(columnCount)
-                      .mapIndexed((index, e) =>
-                          _mainWiFiCard(e, index == columnCount - 1))
+                      .mapIndexed((index, e) => _mainWiFiCard(
+                          e, canBeDisabled, index == columnCount - 1))
                       .toList(),
                 ]),
       if (columnCount <= state.mainWiFi.length)
         columnCount == state.mainWiFi.length
             ? TableRow(children: [
                 _guestWiFiCard(state.guestWiFi, false),
-                const SizedBox.shrink(),
-                const SizedBox.shrink()
+                ...List.filled(columnCount - 1, 0).map(
+                  (_) => const SizedBox.shrink(),
+                ),
               ])
             : TableRow(children: [
                 ...state.mainWiFi
                     .getRange(columnCount, state.mainWiFi.length)
-                    .mapIndexed((index, e) =>
-                        _mainWiFiCard(e, index == columnCount - 1))
+                    .mapIndexed((index, e) => _mainWiFiCard(
+                        e, canBeDisabled, index == columnCount - 1))
                     .toList(),
                 _guestWiFiCard(state.guestWiFi, true),
               ])
@@ -211,7 +208,8 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
     );
   }
 
-  Widget _mainWiFiCard(WiFiItem radio, [bool lastInRow = false]) {
+  Widget _mainWiFiCard(WiFiItem radio, bool canBeDisable,
+      [bool lastInRow = false]) {
     return Padding(
       padding: EdgeInsets.only(
         right: lastInRow ? 0 : ResponsiveLayout.columnPadding(context),
@@ -224,15 +222,13 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
                   vertical: Spacing.small2, horizontal: Spacing.large2),
               child: Column(
                 children: [
-                  _advancedWiFiBandCard(radio),
+                  _advancedWiFiBandCard(radio, canBeDisable),
                   if (radio.isEnabled) ...[
                     const Divider(),
                     _advancedWiFiNameCard(radio),
                     const Divider(),
-                    if (!radio.securityType.isOpenVariant) ...[
-                      _advancedWiFiPasswordCard(radio),
-                      const Divider(),
-                    ],
+                    _advancedWiFiPasswordCard(radio),
+                    const Divider(),
                     _advancedWiFiSecurityTypeCard(radio),
                     const Divider(),
                     _advanvedWiFiWirelessModeCard(radio),
@@ -261,6 +257,16 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
           value: state.isEnabled,
           onChanged: (value) {
             ref.read(wifiListProvider.notifier).setWiFiEnabled(value);
+            final preservedMainWiFiState = _preservedMainWiFiState;
+            // if disabled, reset the guest ssid and password
+            if (!value && preservedMainWiFiState != null) {
+              final guestWifi = preservedMainWiFiState.guestWiFi;
+              ref.read(wifiListProvider.notifier).setWiFiSSID(guestWifi.ssid);
+              ref
+                  .read(wifiListProvider.notifier)
+                  .setWiFiPassword(guestWifi.password);
+              update(preservedMainWiFiState);
+            }
           },
         ),
       );
@@ -306,7 +312,8 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
   ///
   /// Advanced Cards
   ///
-  Widget _advancedWiFiBandCard(WiFiItem radio) => AppListCard(
+  Widget _advancedWiFiBandCard(WiFiItem radio, [bool canBeDisable = true]) =>
+      AppListCard(
         showBorder: false,
         padding: const EdgeInsets.symmetric(vertical: 8.0),
         title:
@@ -314,11 +321,39 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
         trailing: AppSwitch(
           semanticLabel: getWifiRadioBandTitle(context, radio.radioID),
           value: radio.isEnabled,
-          onChanged: (value) {
-            ref
-                .read(wifiListProvider.notifier)
-                .setWiFiEnabled(value, radio.radioID);
-          },
+          onChanged: !radio.isEnabled || canBeDisable
+              ? (value) {
+                  ref
+                      .read(wifiListProvider.notifier)
+                      .setWiFiEnabled(value, radio.radioID);
+
+                  final preservedMainWiFiState = _preservedMainWiFiState;
+                  final mainWifi = preservedMainWiFiState?.mainWiFi
+                      .firstWhereOrNull((e) => e.radioID == radio.radioID);
+                  // if disabled, reset the settings
+                  if (!value && mainWifi != null) {
+                    ref
+                        .read(wifiListProvider.notifier)
+                        .setWiFiSSID(mainWifi.ssid, radio.radioID);
+                    ref
+                        .read(wifiListProvider.notifier)
+                        .setWiFiPassword(mainWifi.password, radio.radioID);
+                    ref.read(wifiListProvider.notifier).setWiFiSecurityType(
+                        mainWifi.securityType, radio.radioID);
+                    ref
+                        .read(wifiListProvider.notifier)
+                        .setWiFiMode(mainWifi.wirelessMode, radio.radioID);
+                    ref.read(wifiListProvider.notifier).setEnableBoardcast(
+                        mainWifi.isBroadcast, radio.radioID);
+                    ref
+                        .read(wifiListProvider.notifier)
+                        .setChannelWidth(mainWifi.channelWidth, radio.radioID);
+                    ref
+                        .read(wifiListProvider.notifier)
+                        .setChannel(mainWifi.channel, radio.radioID);
+                  }
+                }
+              : null,
         ),
       );
   Widget _advancedWiFiNameCard(WiFiItem radio) => AppSettingCard.noBorder(
@@ -338,51 +373,60 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
         },
       );
 
-  Widget _advancedWiFiPasswordCard(WiFiItem radio) => AppListCard(
-        showBorder: false,
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
-        title: AppText.bodyMedium(loc(context).wifiPassword),
-        description: IntrinsicWidth(
-            child: Theme(
-                data: Theme.of(context).copyWith(
-                    inputDecorationTheme: const InputDecorationTheme(
-                        isDense: true, contentPadding: EdgeInsets.zero)),
-                child: AppPasswordField(
-                  semanticLabel: 'wifi password',
-                  readOnly: true,
-                  border: InputBorder.none,
-                  controller: _advancedPasswordController[radio.radioID.value],
-                  suffixIconConstraints: const BoxConstraints(),
-                ))),
-        trailing: const Icon(LinksysIcons.edit),
-        onTap: () {
-          _showWifiPasswordModal(radio.password, (value) {
-            ref
-                .read(wifiListProvider.notifier)
-                .setWiFiPassword(value, radio.radioID);
-            _advancedPasswordController[radio.radioID.value]?.text = value;
-          });
-        },
+  Widget _advancedWiFiPasswordCard(WiFiItem radio) => Opacity(
+        opacity: radio.securityType.isOpenVariant ? .5 : 1,
+        child: IgnorePointer(
+          ignoring: radio.securityType.isOpenVariant ? true : false,
+          child: AppListCard(
+            showBorder: false,
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            title: AppText.bodyMedium(loc(context).wifiPassword),
+            description: IntrinsicWidth(
+                child: Theme(
+                    data: Theme.of(context).copyWith(
+                        inputDecorationTheme: const InputDecorationTheme(
+                            isDense: true, contentPadding: EdgeInsets.zero)),
+                    child: AppPasswordField(
+                      semanticLabel: 'wifi password',
+                      readOnly: true,
+                      border: InputBorder.none,
+                      controller:
+                          _advancedPasswordController[radio.radioID.value],
+                      suffixIconConstraints: const BoxConstraints(),
+                    ))),
+            trailing: const Icon(LinksysIcons.edit),
+            onTap: () {
+              _showWifiPasswordModal(radio.password, (value) {
+                ref
+                    .read(wifiListProvider.notifier)
+                    .setWiFiPassword(value, radio.radioID);
+                _advancedPasswordController[radio.radioID.value]?.text = value;
+              });
+            },
+          ),
+        ),
       );
 
-  Widget _advancedWiFiSecurityTypeCard(WiFiItem radio) =>
-      AppSettingCard.noBorder(
-        title: loc(context).securityMode,
-        description: getWifiSecurityTypeTitle(context, radio.securityType),
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
-        trailing: const Icon(
-          LinksysIcons.edit,
-          semanticLabel: 'edit',
-        ),
-        onTap: () {
-          _showSecurityModeModal(
-              radio.securityType, radio.availableSecurityTypes, (value) {
-            ref
-                .read(wifiListProvider.notifier)
-                .setWiFiSecurityType(value, radio.radioID);
-          });
-        },
-      );
+  Widget _advancedWiFiSecurityTypeCard(WiFiItem radio) {
+    final securityType = getWifiSecurityTypeTitle(context, radio.securityType);
+    return AppSettingCard.noBorder(
+      title: loc(context).securityMode,
+      description: '$securityType${securityType.length > 22 ? '' : '\n'}',
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      trailing: const Icon(
+        LinksysIcons.edit,
+        semanticLabel: 'edit',
+      ),
+      onTap: () {
+        _showSecurityModeModal(radio.securityType, radio.availableSecurityTypes,
+            (value) {
+          ref
+              .read(wifiListProvider.notifier)
+              .setWiFiSecurityType(value, radio.radioID);
+        });
+      },
+    );
+  }
 
   Widget _advanvedWiFiWirelessModeCard(WiFiItem radio) =>
       AppSettingCard.noBorder(
@@ -478,6 +522,12 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
     TextEditingController controller = TextEditingController()
       ..text = initValue;
     bool isEmpty = initValue.isEmpty;
+    final InputValidator wifiSSIDValidator = InputValidator([
+      RequiredRule(),
+      NoSurroundWhitespaceRule(),
+      LengthRule(min: 1, max: 32),
+      WiFiSsidRule(),
+    ]);
     final result = await showSubmitAppDialog<String>(
       context,
       title: loc(context).wifiName,
@@ -493,14 +543,35 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
                 isEmpty = value.isEmpty;
               });
             },
+            errorText: () {
+              if (controller.text.isEmpty == true) {
+                return null;
+              }
+              final errorKeys = wifiSSIDValidator
+                  .validateDetail(controller.text, onlyFailed: true);
+              if (errorKeys.isEmpty) {
+                return null;
+              } else if (errorKeys.keys.first ==
+                  (NoSurroundWhitespaceRule).toString()) {
+                return loc(context).routerPasswordRuleStartEndWithSpace;
+              } else if (errorKeys.keys.first == (WiFiSsidRule).toString()) {
+                return loc(context).theNameMustNotBeEmpty;
+              } else if (errorKeys.keys.first == (LengthRule).toString()) {
+                return loc(context).wifiSSIDLengthLimit;
+              } else {
+                return null;
+              }
+            }(),
             onSubmitted: (_) {
-              context.pop(controller.text);
+              if (wifiSSIDValidator.validate(controller.text)) {
+                context.pop(controller.text);
+              }
             },
           )
         ],
       ),
       event: () async => controller.text,
-      checkPositiveEnabled: () => !isEmpty,
+      checkPositiveEnabled: () => wifiSSIDValidator.validate(controller.text),
     );
 
     if (result != null) {
@@ -514,6 +585,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
     TextEditingController controller = TextEditingController()
       ..text = initValue;
     bool isPasswordValid = true;
+
     final result = await showSubmitAppDialog<String>(
       context,
       title: loc(context).wifiPassword,
@@ -527,9 +599,19 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
             border: const OutlineInputBorder(),
             validations: [
               Validation(
-                description: '8 - 64 characters',
+                description: loc(context).wifiPasswordLimit,
                 validator: ((text) =>
                     LengthRule(min: 8, max: 64).validate(text)),
+              ),
+              Validation(
+                description: loc(context).routerPasswordRuleStartEndWithSpace,
+                validator: ((text) =>
+                    NoSurroundWhitespaceRule().validate(text)),
+              ),
+              Validation(
+                description:
+                    loc(context).routerPasswordRuleUnsupportSpecialChar,
+                validator: ((text) => AsciiRule().validate(text)),
               ),
             ],
             onValidationChanged: (isValid) => setState(() {
@@ -766,34 +848,94 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
 
   _showSaveConfirmModal() async {
     final newState = ref.read(wifiListProvider);
-    final result = await showSubmitAppDialog(
-      context,
-      title: loc(context).wifiListSaveModalTitle,
-      contentBuilder: (context, setState, onSubmit) => SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AppText.bodyMedium(loc(context).wifiListSaveModalDesc),
-            ..._mloWarning(newState),
-            const AppGap.medium(),
-            ..._buildNewSettings(newState),
-            const AppGap.medium(),
-            AppText.bodyMedium(loc(context).doYouWantToContinue),
-          ],
+    final result = await showSimpleAppDialog(context,
+        title: loc(context).wifiListSaveModalTitle,
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AppText.bodyMedium(loc(context).wifiListSaveModalDesc),
+              ..._mloWarning(newState),
+              ..._disableBandWarning(newState),
+              const AppGap.medium(),
+              ..._buildNewSettings(newState),
+              const AppGap.medium(),
+              AppText.bodyMedium(loc(context).doYouWantToContinue),
+            ],
+          ),
         ),
-      ),
-      event: () async {
-        await ref.read(wifiListProvider.notifier).save().then((state) {
+        actions: [
+          AppTextButton(
+            loc(context).cancel,
+            onTap: () {
+              context.pop();
+            },
+          ),
+          AppTextButton(loc(context).ok, onTap: () {
+            context.pop(true);
+          })
+        ]);
+    if (result) {
+      doSomethingWithSpinner(
+              context, ref.read(wifiListProvider.notifier).save())
+          .then((state) {
+        ref.read(wifiViewProvider.notifier).setChanged(false);
+        update(state);
+        showSuccessSnackBar(context, loc(context).saved);
+      }).catchError((error, stackTrace) {
+        showRouterNotFoundAlert(context, ref,
+                onComplete: () => ref.read(wifiListProvider.notifier).fetch())
+            .then((state) {
           ref.read(wifiViewProvider.notifier).setChanged(false);
-          setState(() {
-            _preservedMainWiFiState = state;
-          });
+          update(state);
           showSuccessSnackBar(context, loc(context).saved);
-        }).onError((error, stackTrace) =>
-            showFailedSnackBar(context, loc(context).generalError));
-      },
-    );
+        });
+      }, test: (error) => error is JNAPSideEffectError).onError(
+              (error, stackTrace) =>
+                  showFailedSnackBar(context, loc(context).generalError));
+    }
+  }
+
+  bool _dataVerify(WiFiState state) {
+    // Password verify
+    final hasEmptyPassword = state.mainWiFi
+        .any((e) => !e.securityType.isOpenVariant && e.password.isEmpty);
+    return !hasEmptyPassword;
+  }
+
+  void update(WiFiState? state) {
+    if (state == null) {
+      return;
+    }
+    setState(() {
+      _preservedMainWiFiState = state;
+    });
+    for (var wifi in state.mainWiFi) {
+      final controller = TextEditingController()..text = wifi.password;
+      _advancedPasswordController.putIfAbsent(
+          wifi.radioID.value, () => controller);
+    }
+    _advancedPasswordController.putIfAbsent('guest',
+        () => TextEditingController()..text = state.guestWiFi.password);
+  }
+
+  List<Widget> _disableBandWarning(WiFiState state) {
+    final disabledWiFiBands =
+        state.mainWiFi.where((e) => !e.isEnabled).toList();
+    final isGuestEnabled = state.guestWiFi.isEnabled;
+    return isGuestEnabled
+        ? [
+            AppGap.small2(),
+            ...disabledWiFiBands
+                .map((e) => AppText.labelMedium(
+                      loc(context).disableBandWarning(
+                          getWifiRadioBandTitle(context, e.radioID)),
+                      color: Theme.of(context).colorScheme.error,
+                    ))
+                .toList()
+          ]
+        : [];
   }
 
   List<Widget> _mloWarning(WiFiState state) {

@@ -37,7 +37,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
   @override
   void initState() {
     super.initState();
-    state = ref.read(localNetworkSettingProvider.notifier).currentSettings();
+    state = ref.read(localNetworkSettingProvider);
     _startIpAddressController.text = state.firstIPAddress;
     _maxUserAllowedController.text = '${state.maxUserAllowed}';
     _clientLeaseTimeController.text = '${state.clientLeaseTime}';

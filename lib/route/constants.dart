@@ -39,7 +39,7 @@ class RoutePath {
   static const settingsTimeZone = 'timeZone';
   static const settingsInternet = 'internetSettings';
   static const settingsLocalNetwork = 'localNetworkSettings';
-  static const settingsPort = 'portSettings';
+  static const settingsAppsGaming = 'portSettings';
   static const settingsFirewall = 'firewall';
   static const settingsDMZ = 'dmz';
   static const settingsAdministration = "administration";
@@ -185,7 +185,7 @@ class RouteNamed {
   static const settingsTimeZone = 'timeZone';
   static const settingsInternet = 'internetSettings';
   static const settingsLocalNetwork = 'localNetworkSettings';
-  static const settingsPort = 'portSettings';
+  static const settingsAppsGaming = 'portSettings';
   static const settingsFirewall = 'firewall';
   static const settingsDMZ = 'dmz';
   static const settingsAdministration = "administration";

@@ -91,12 +91,12 @@ final advancedSettings = [
     ],
   ),
   LinksysRoute(
-    name: RouteNamed.settingsPort,
-    path: RoutePath.settingsPort,
+    name: RouteNamed.settingsAppsGaming,
+    path: RoutePath.settingsAppsGaming,
     config: LinksysRouteConfig(
-      column: ColumnGrid(column: 9),
+      column: ColumnGrid(column: 12),
     ),
-    builder: (context, state) => PortForwardingView(),
+    builder: (context, state) => AppsGamingSettingsView(),
     routes: [
       LinksysRoute(
         name: RouteNamed.singlePortForwardingList,

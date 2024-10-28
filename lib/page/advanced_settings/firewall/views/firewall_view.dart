@@ -60,8 +60,8 @@ class _FirewallViewState extends ConsumerState<FirewallView> {
     return StyledAppTabPageView(
       title: loc(context).firewall,
       tabs: tabs
-          .map((e) => AppTab(
-                title: e,
+          .map((e) => Tab(
+                text: e,
               ))
           .toList(),
       tabContentViews: tabContents,
@@ -105,8 +105,8 @@ class _FirewallViewState extends ConsumerState<FirewallView> {
           useMainPadding: false,
           title: loc(context).firewall,
           tabs: tabs
-              .map((e) => AppTab(
-                    title: e,
+              .map((e) => Tab(
+                    text: e,
                   ))
               .toList(),
           tabContentViews: tabContents,

@@ -116,17 +116,15 @@ class _ManualFirmwareUpdateViewState
                   .read(firmwareUpdateProvider.notifier)
                   .waitForRouterBackOnline()
                   .then((_) {
-                setState(() {
-                  _status?.stop();
-                  _status = null;
-                });
-                _showSuccessSnackbar();
+                handleSuccessUpdated();
               }).catchError((error) {
                 setState(() {
                   _status?.stop();
                   _status = null;
                 });
-                showRouterNotFoundAlert(context, ref);
+                showRouterNotFoundAlert(context, ref, onComplete: () async {
+                  handleSuccessUpdated();
+                });
               }, test: (error) => error is JNAPSideEffectError);
             }, onError: (error, stackTrace) {
               setState(() {
@@ -199,7 +197,7 @@ class _ManualFirmwareUpdateViewState
                       Icon(_getProcessingIcon(),
                           size: 64,
                           color: Theme.of(context).colorScheme.primary),
-                          reverse: true,
+                      reverse: true,
                     )
                   : Icon(_getProcessingIcon(),
                       size: 64, color: Theme.of(context).colorScheme.primary),
@@ -242,6 +240,15 @@ class _ManualFirmwareUpdateViewState
             )
           : Center(),
     );
+  }
+
+  void handleSuccessUpdated() {
+    setState(() {
+      _status?.stop();
+      _status = null;
+      _file = null;
+    });
+    _showSuccessSnackbar();
   }
 
   IconData _getProcessingIcon() => _status is ManualUpdateInstalling

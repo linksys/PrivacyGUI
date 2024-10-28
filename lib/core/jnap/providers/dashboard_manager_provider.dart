@@ -8,7 +8,6 @@ import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
 import 'package:privacy_gui/core/jnap/models/health_check_result.dart';
 import 'package:privacy_gui/core/jnap/models/radio_info.dart';
 import 'package:privacy_gui/core/jnap/models/soft_sku_settings.dart';
-import 'package:privacy_gui/core/jnap/models/wan_external.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
@@ -116,12 +115,6 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
       final settings = SoftSKUSettings.fromMap(softSKUSettings.output);
       newState = newState.copyWith(skuModelNumber: settings.modelNumber);
     }
-    final wanExternalData = JNAPTransactionSuccessWrap.getResult(
-        JNAPAction.getWANExternal, result ?? {});
-    if (wanExternalData != null) {
-      final wanExternal = WanExternal.fromMap(wanExternalData.output);
-      newState = newState.copyWith(wanExternal: wanExternal);
-    }
 
     logger.d('[State]:[dashboardManager]: ${newState.toJson()}');
 
@@ -138,6 +131,24 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
     // Update provider
     ref.read(selectedNetworkIdProvider.notifier).state = networkId;
     state = const DashboardManagerState();
+  }
+
+  Future<NodeDeviceInfo> checkRouterIsBack() async {
+    NodeDeviceInfo? nodeDeviceInfo;
+    final routerRepository = ref.read(routerRepositoryProvider);
+    final result = await routerRepository.send(
+      JNAPAction.getDeviceInfo,
+      fetchRemote: true,
+    );
+    nodeDeviceInfo = NodeDeviceInfo.fromJson(result.output);
+    final prefs = await SharedPreferences.getInstance();
+    final currentSN = prefs.getString(pCurrentSN);
+    if (currentSN == nodeDeviceInfo.serialNumber) {
+      return nodeDeviceInfo;
+    } else {
+      logger.d('[CheckRouterBack]: SN not match');
+      throw Exception('[CheckRouterBack]: SN not match');
+    }
   }
 
   Future<NodeDeviceInfo> checkDeviceInfo(String? serialNumber) async {

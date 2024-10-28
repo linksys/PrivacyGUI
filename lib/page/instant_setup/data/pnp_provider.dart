@@ -19,7 +19,6 @@ import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
-import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_step_state.dart';
 import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
@@ -90,6 +89,7 @@ abstract class BasePnpNotifier extends Notifier<PnpState> {
   Future save();
   Future testConnectionReconnected();
   Future fetchDevices();
+  void setForceLogin(bool force);
   void setAttachedPassword(String? password);
 
   // Personal WiFi
@@ -180,6 +180,11 @@ class MockPnpNotifier extends BasePnpNotifier {
   @override
   void setAttachedPassword(String? password) {
     state = state.copyWith(attachedPassword: password);
+  }
+
+  @override
+  void setForceLogin(bool force) {
+    state = state.copyWith(forceLogin: force);
   }
 }
 
@@ -544,5 +549,10 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
   @override
   void setAttachedPassword(String? password) {
     state = state.copyWith(attachedPassword: password);
+  }
+
+  @override
+  void setForceLogin(bool force) {
+    state = state.copyWith(forceLogin: force);
   }
 }

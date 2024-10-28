@@ -83,9 +83,9 @@ class _DashboardAdvancedSettingsViewState
         onTap: () => context.goNamed(RouteNamed.settingsDMZ),
       ),
       AppSectionItemData(
-        title: loc(context).portSettings,
+        title: loc(context).appsGaming,
         // iconData: getCharactersIcons(context).nodesDefault,
-        onTap: () => context.goNamed(RouteNamed.settingsPort),
+        onTap: () => context.goNamed(RouteNamed.settingsAppsGaming),
       ),
     ];
   }

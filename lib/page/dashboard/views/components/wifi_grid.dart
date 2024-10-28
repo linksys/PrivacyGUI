@@ -20,8 +20,6 @@ class DashboardWiFiGrid extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isHorizontal = ref.watch(
-        dashboardHomeProvider.select((value) => value.isHorizontalLayout));
     final items =
         ref.watch(dashboardHomeProvider.select((value) => value.wifis));
     final isLoading = ref.watch(deviceManagerProvider).deviceList.isEmpty;
@@ -30,6 +28,13 @@ class DashboardWiFiGrid extends ConsumerWidget {
     final mainSpacing = ResponsiveLayout.columnPadding(context);
     const itemHeight = 176.0;
     final mainAxisCount = (items.length / crossAxisCount);
+
+    final enabledWiFiCount =
+        items.where((e) => !e.isGuest && e.isEnabled).length;
+    final hasLanPort =
+        ref.read(dashboardHomeProvider).lanPortConnections.isNotEmpty;
+    final canBeDisabled = enabledWiFiCount > 1 || hasLanPort;
+
     return SizedBox(
       height: isLoading
           ? itemHeight * 2 + mainSpacing * 1
@@ -55,14 +60,14 @@ class DashboardWiFiGrid extends ConsumerWidget {
                   height: itemHeight,
                   child: item == null
                       ? Container()
-                      : _wifiCard(context, ref, item, index)));
+                      : _wifiCard(context, ref, item, index, canBeDisabled)));
         },
       ),
     );
   }
 
-  Widget _wifiCard(
-      BuildContext context, WidgetRef ref, DashboardWiFiItem item, int index) {
+  Widget _wifiCard(BuildContext context, WidgetRef ref, DashboardWiFiItem item,
+      int index, bool canBeDisabled) {
     return AppCard(
       padding: const EdgeInsets.symmetric(
           vertical: Spacing.large2, horizontal: Spacing.large2),
@@ -86,22 +91,29 @@ class DashboardWiFiGrid extends ConsumerWidget {
                         .map((e) => e.replaceAll('RADIO_', ''))
                         .join('/'),
                 value: item.isEnabled,
-                onChanged: (value) async {
-                  if (item.isGuest) {
-                    showSpinnerDialog(context);
-                    final wifiProvider = ref.read(wifiListProvider.notifier);
-                    await wifiProvider.fetch();
-                    wifiProvider.setWiFiEnabled(value);
-                    await wifiProvider.save().then((value) => context.pop());
-                  } else {
-                    showSpinnerDialog(context);
-                    final wifiProvider = ref.read(wifiListProvider.notifier);
-                    await wifiProvider.fetch();
-                    await wifiProvider
-                        .saveToggleEnabled(radios: item.radios, enabled: value)
-                        .then((value) => context.pop());
-                  }
-                },
+                onChanged: item.isGuest || !item.isEnabled || canBeDisabled
+                    ? (value) async {
+                        if (item.isGuest) {
+                          showSpinnerDialog(context);
+                          final wifiProvider =
+                              ref.read(wifiListProvider.notifier);
+                          await wifiProvider.fetch();
+                          wifiProvider.setWiFiEnabled(value);
+                          await wifiProvider
+                              .save()
+                              .then((value) => context.pop());
+                        } else {
+                          showSpinnerDialog(context);
+                          final wifiProvider =
+                              ref.read(wifiListProvider.notifier);
+                          await wifiProvider.fetch();
+                          await wifiProvider
+                              .saveToggleEnabled(
+                                  radios: item.radios, enabled: value)
+                              .then((value) => context.pop());
+                        }
+                      }
+                    : null,
               ),
             ],
           ),

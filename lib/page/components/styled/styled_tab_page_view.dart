@@ -18,7 +18,7 @@ class StyledAppTabPageView extends ConsumerWidget {
   final VoidCallback? onBackTap;
   final StyledBackState backState;
   final List<Widget>? actions;
-  final List<AppTab> tabs;
+  final List<Tab> tabs;
   final Widget? headerContent;
   final List<Widget> tabContentViews;
   final bool pinned;

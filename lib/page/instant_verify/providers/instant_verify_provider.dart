@@ -5,9 +5,9 @@ import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
 import 'package:privacy_gui/core/jnap/models/ping_status.dart';
 import 'package:privacy_gui/core/jnap/models/radio_info.dart';
 import 'package:privacy_gui/core/jnap/models/traceroute_status.dart';
-import 'package:privacy_gui/core/jnap/models/wan_external.dart';
 import 'package:privacy_gui/core/jnap/models/wan_status.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/wan_external_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_state.dart';
@@ -36,12 +36,8 @@ class InstantVerifyNotifier extends Notifier<InstantVerifyState> {
         ? null
         : GuestRadioSettings.fromMap(guestRadioSettingsResult.output);
 
-    final wanExternalData = JNAPTransactionSuccessWrap.getResult(
-        JNAPAction.getWANExternal, pollingData);
-
-    final wanExternal = wanExternalData == null
-        ? null
-        : WanExternal.fromMap(wanExternalData.output);
+    final wanExternal =
+        ref.watch(wanExternalProvider.select((state) => state.wanExternal));
     final state = InstantVerifyState(
       wanConnection: wanStatus?.wanConnection,
       radioInfo: radioInfo ??
@@ -58,6 +54,7 @@ class InstantVerifyNotifier extends Notifier<InstantVerifyState> {
   }
 
   Future ping({required String host, required int? pingCount}) {
+    state = state.copyWith(isRunning: true);
     return ref.read(routerRepositoryProvider).send(JNAPAction.startPing,
         fetchRemote: true,
         cacheLevel: CacheLevel.noCache,
@@ -67,6 +64,7 @@ class InstantVerifyNotifier extends Notifier<InstantVerifyState> {
   }
 
   Future stopPing() {
+    state = state.copyWith(isRunning: false);
     return ref.read(routerRepositoryProvider).send(
           JNAPAction.stopPing,
           fetchRemote: true,
@@ -79,8 +77,9 @@ class InstantVerifyNotifier extends Notifier<InstantVerifyState> {
     return ref
         .read(routerRepositoryProvider)
         .scheduledCommand(
-          action: JNAPAction.getPinStatus,
-          retryDelayInMilliSec: 100,
+          action: JNAPAction.getPingStatus,
+          retryDelayInMilliSec: 1000,
+          maxRetry: 30,
           condition: (result) {
             if (result is JNAPSuccess) {
               final status = PingStatus.fromMap(result.output);
@@ -90,6 +89,9 @@ class InstantVerifyNotifier extends Notifier<InstantVerifyState> {
             }
           },
           auth: true,
+          onCompleted: () {
+            state = state.copyWith(isRunning: false);
+          },
         )
         .map((event) {
       if (event is JNAPSuccess) {
@@ -101,6 +103,7 @@ class InstantVerifyNotifier extends Notifier<InstantVerifyState> {
   }
 
   Future traceroute({required String host, required int? pingCount}) {
+    state = state.copyWith(isRunning: true);
     return ref.read(routerRepositoryProvider).send(JNAPAction.startTracroute,
         fetchRemote: true,
         cacheLevel: CacheLevel.noCache,
@@ -109,6 +112,7 @@ class InstantVerifyNotifier extends Notifier<InstantVerifyState> {
   }
 
   Future stopTraceroute() {
+    state = state.copyWith(isRunning: false);
     return ref.read(routerRepositoryProvider).send(
           JNAPAction.stopTracroute,
           fetchRemote: true,
@@ -122,7 +126,8 @@ class InstantVerifyNotifier extends Notifier<InstantVerifyState> {
         .read(routerRepositoryProvider)
         .scheduledCommand(
           action: JNAPAction.getTracerouteStatus,
-          retryDelayInMilliSec: 100,
+          retryDelayInMilliSec: 1000,
+          maxRetry: 30,
           condition: (result) {
             if (result is JNAPSuccess) {
               final status = TracerouteStatus.fromMap(result.output);
@@ -132,6 +137,9 @@ class InstantVerifyNotifier extends Notifier<InstantVerifyState> {
             }
           },
           auth: true,
+          onCompleted: () {
+            state = state.copyWith(isRunning: false);
+          },
         )
         .map((event) {
       if (event is JNAPSuccess) {

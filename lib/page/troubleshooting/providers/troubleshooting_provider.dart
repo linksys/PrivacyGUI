@@ -171,8 +171,9 @@ class TroubleshootingNotifier extends Notifier<TroubleshootingState> {
     return ref
         .read(routerRepositoryProvider)
         .scheduledCommand(
-          action: JNAPAction.getPinStatus,
-          retryDelayInMilliSec: 100,
+          action: JNAPAction.getPingStatus,
+          retryDelayInMilliSec: 1000,
+          maxRetry: 30,
           condition: (result) {
             if (result is JNAPSuccess) {
               final status = PingStatus.fromMap(result.output);

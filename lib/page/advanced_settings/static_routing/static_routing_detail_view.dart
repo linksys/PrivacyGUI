@@ -51,6 +51,9 @@ class _StaticRoutingDetailViewState
       _gatewayController.text = _currentSetting!.settings.gateway!;
       _destinationIpController.text = _currentSetting!.settings.destinationLAN;
     }
+    selectedInterface = RoutingSettingInterface.resolve(
+      _currentSetting?.settings.interface,
+    );
     super.initState();
   }
 
@@ -65,9 +68,6 @@ class _StaticRoutingDetailViewState
 
   @override
   Widget build(BuildContext context) {
-    selectedInterface = RoutingSettingInterface.resolve(
-      _currentSetting?.settings.interface,
-    );
     return StyledAppPageView(
       scrollable: true,
       title: _currentSetting == null
@@ -100,7 +100,9 @@ class _StaticRoutingDetailViewState
             initial: selectedInterface,
             label: (item) => getInterfaceTitle(item.value),
             onChanged: (value) {
-              selectedInterface = value;
+              setState(() {
+                selectedInterface = value;
+              });
             },
           ),
           const AppGap.large2(),
@@ -254,7 +256,7 @@ class _StaticRoutingDetailViewState
           .read(staticRoutingProvider.notifier)
           .saveRoutingSettingList(settingList)
           .then((value) {
-            // Succeeded, update the list to the state
+        // Succeeded, update the list to the state
         ref.read(staticRoutingProvider).setting.copyWith(entries: settingList);
         showSuccessSnackBar(context, loc(context).saved);
         context.pop();

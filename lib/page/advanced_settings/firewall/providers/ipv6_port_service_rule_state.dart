@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/core/jnap/models/ipv6_firewall_rule.dart';
-import 'package:privacy_gui/page/advanced_settings/port_forwarding/providers/consts.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/providers/consts.dart';
 
 class Ipv6PortServiceRuleState extends Equatable {
   final RuleMode mode;

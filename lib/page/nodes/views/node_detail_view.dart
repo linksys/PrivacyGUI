@@ -153,11 +153,11 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
         ),
       ],
       tabs: [
-        AppTab(
-          title: loc(context).info,
+        Tab(
+          text: loc(context).info,
         ),
-        AppTab(
-          title: loc(context).devices,
+        Tab(
+          text: loc(context).devices,
         ),
       ],
       tabContentViews: [
@@ -567,7 +567,12 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
     return AppListCard(
       showBorder: false,
       color: Theme.of(context).colorScheme.background,
-      title: AppText.bodySmall(loc(context).signalStrength),
+      padding: const EdgeInsets.all(Spacing.medium),
+      title: AppText.bodySmall(
+        loc(context).signalStrength,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      ),
       description: Row(children: [
         AppText.labelLarge(
           getWifiSignalLevel(state.signalStrength).resolveLabel(context),

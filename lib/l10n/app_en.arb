@@ -83,7 +83,7 @@
   "provider": "Provider",
   "restart": "Restart",
   "restarting": "Restarting...",
-  "safeBrowsingDesc": "Protect your family and block pre-determined adult , illegal and malicious content with a single tap. Safe Browsing applies to all devices on your network.",
+  "safeBrowsingDesc": "Protect your family and block pre-determined adult , illegal and malicious content with a single tap. Instant-Safety applies to all devices on your network.",
   "save": "Save",
   "sms": "SMS",
   "successExclamation": "Success!",
@@ -969,5 +969,35 @@
   "manualFirmwareEstimatedTime": "Estimated time remaining",
   "disconnect": "Disconnect",
   "disconnectClient": "Disconnect client",
-  "ipv6FirewallRule": "IPv6 Firewall Rule"
+  "ipv6FirewallRule": "IPv6 Firewall Rule",
+  "disableBandWarning": "Disabling the {radio} band will also disable the {radio} guest access",
+  "@disableBandWarning": {
+    "description": "radio",
+    "placeholders": {
+      "radio": {
+        "type": "String",
+        "example": "radio"
+      }
+    }
+  },
+  "logIntoRouter": "Log into router",
+  "wifiPasswordLimit": "8 - 64 characters",
+  "wifiSSIDLengthLimit": "Must less than 32 character",
+  "connectedSpeed": "Connected Speed",
+  "dnsIpAddress": "DNS IP address",
+  "pingNetwork": "Ping Network",
+  "connectedSpeed": "Connected Speed",
+  "ddns": "DDNS",
+  "appsGaming": "Apps & Gaming",
+  "selectAProvider": "Select a provider",
+  "system": "System",
+  "mailExchangeOptional": "Mail Exchange (Optional)",
+  "backupMX": "Backup MX",
+  "wildcard": "Wildcard",
+  "internetConnectionType": "Internet connection type",
+  "internetIPAddress": "Internet IP Address",
+  "status": "Status",
+  "systemDynamic": "Dynamic",
+  "systemStatic": "Static",
+  "systemCustom": "Custom"
 }

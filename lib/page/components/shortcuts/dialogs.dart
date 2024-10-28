@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -289,8 +291,9 @@ Future<bool?> showUnsavedAlert(BuildContext context,
   );
 }
 
-Future showRouterNotFoundAlert(BuildContext context, WidgetRef ref) {
-  return showSimpleAppDialog(context,
+Future<T?> showRouterNotFoundAlert<T>(BuildContext context, WidgetRef ref,
+    {FutureOr<T?> Function()? onComplete}) {
+  return showSimpleAppDialog<T>(context,
       dismissible: false,
       title: loc(context).routerNotFound,
       content: Column(
@@ -312,11 +315,12 @@ Future showRouterNotFoundAlert(BuildContext context, WidgetRef ref) {
           onTap: () {
             ref
                 .read(dashboardManagerProvider.notifier)
-                .checkDeviceInfo(null)
-                .then((value) {
+                .checkRouterIsBack()
+                .then((_) {
+              return onComplete?.call();
+            }).then((value) {
               ref.read(pollingProvider.notifier).startPolling();
-
-              context.pop();
+              context.pop(value);
             });
           },
         ),

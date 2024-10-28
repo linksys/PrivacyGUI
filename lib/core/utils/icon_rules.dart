@@ -132,6 +132,13 @@ const List<Map<String, dynamic>> iconRules = [
     'iconClass': 'routerMx5600'
   },
   {
+    'description': 'Linksys MX5700 (MX57/Palm 1.5 Variants; "MX5700 Series")',
+    'test': {
+      'model': {'manufacturer': 'Linksys|Belkin', 'modelNumber': '^mx57'}
+    },
+    'iconClass': 'routerMx5700'
+  },
+  {
     'description': 'Linksys MX6200 (MX62/Maple Variants; "MX6200 Series")',
     'test': {
       'model': {
@@ -658,6 +665,7 @@ String _iconMapping(String iconClass, {String? fallback}) {
     case 'routerWhw03':
     case 'routerMx5500':
     case 'routerMx5600':
+    case 'routerMx5700':
     case 'routerMx2000':
       return 'routerWhw03';
     //

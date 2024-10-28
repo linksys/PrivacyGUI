@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_troubleshooter_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
@@ -34,6 +35,9 @@ class _PnpNoInternetConnectionState
   void initState() {
     _ssid = widget.args['ssid'] as String?;
     super.initState();
+    Future.doWhile(() => !mounted).then((_) {
+      ref.read(pnpProvider.notifier).setForceLogin(false);
+    });
   }
 
   @override
@@ -88,7 +92,8 @@ class _PnpNoInternetConnectionState
                             ),
                             const AppGap.small3(),
                             AppText.bodyMedium(
-                              loc(context).pnpNoInternetConnectionContactSupport,
+                              loc(context)
+                                  .pnpNoInternetConnectionContactSupport,
                             ),
                           ],
                         ),
@@ -146,6 +151,14 @@ class _PnpNoInternetConnectionState
                   const Icon(LinksysIcons.chevronRight),
                 ],
               ),
+            ),
+            const AppGap.large3(),
+            AppTextButton.noPadding(
+              loc(context).logIntoRouter,
+              onTap: () {
+                ref.read(pnpProvider.notifier).setForceLogin(true);
+                context.goNamed(RouteNamed.pnp);
+              },
             ),
             const AppGap.large3(),
             AppFilledButton(

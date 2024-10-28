@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -18,57 +20,79 @@ class PingNetworkModal extends ConsumerStatefulWidget {
 }
 
 class _PingNetworkModalState extends ConsumerState<PingNetworkModal> {
-  bool _isRunning = false;
   final TextEditingController _controller = TextEditingController();
+  String _pingLog = '';
+  StreamSubscription<PingStatus>? _subscription;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _pingLog = '';
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+
+    _subscription?.cancel();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<PingStatus>(
-        stream: _isRunning
-            ? ref.read(instantVerifyProvider.notifier).getPingStatus()
-            : null,
-        builder: (context, snapshot) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AppText.bodySmall('DNS IP address'),
-              const AppGap.small2(),
-              AppIPFormField(
-                semanticLabel: 'dns ip address',
-                border: const OutlineInputBorder(),
-                controller: _controller,
-              ),
-              const AppGap.large1(),
-              if (snapshot.hasData)
-                SingleChildScrollView(
-                  child: AppText.bodySmall(snapshot.data?.pingLog ?? ''),
-                ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  AppTextButton(
-                    loc(context).close,
-                    onTap: () {
-                      ref.read(instantVerifyProvider.notifier).stopPing();
-                      context.pop();
-                    },
-                  ),
-                  AppTextButton(
-                    'Ping',
-                    onTap: () {
+    final isRunning = ref.watch(instantVerifyProvider).isRunning;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AppText.bodySmall(loc(context).dnsIpAddress),
+        const AppGap.small2(),
+        AppIPFormField(
+          semanticLabel: 'dns ip address',
+          border: const OutlineInputBorder(),
+          controller: _controller,
+        ),
+        const AppGap.large1(),
+        if (_pingLog.isNotEmpty)
+          SingleChildScrollView(
+            child: AppText.bodySmall(_pingLog),
+          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            AppTextButton(
+              loc(context).close,
+              onTap: () {
+                ref.read(instantVerifyProvider.notifier).stopPing();
+                context.pop();
+              },
+            ),
+            AppTextButton(
+              loc(context).ping,
+              onTap: isRunning
+                  ? null
+                  : () {
                       ref
                           .read(instantVerifyProvider.notifier)
                           .ping(host: _controller.text, pingCount: 5);
-                      setState(() {
-                        _isRunning = true;
-                      });
+                      _getPingStatus();
                     },
-                  )
-                ],
-              ),
-            ],
-          );
-        });
+            )
+          ],
+        ),
+      ],
+    );
+  }
+
+  void _getPingStatus() {
+    _subscription?.cancel();
+    _subscription = ref
+        .read(instantVerifyProvider.notifier)
+        .getPingStatus()
+        .listen((pingStatus) {
+      setState(() {
+        _pingLog = pingStatus.pingLog;
+      });
+    });
   }
 }

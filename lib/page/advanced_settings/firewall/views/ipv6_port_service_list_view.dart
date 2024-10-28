@@ -9,7 +9,7 @@ import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
-import '../../port_forwarding/views/widgets/_widgets.dart';
+import '../../apps_and_gaming/ports/views/widgets/_widgets.dart';
 
 class Ipv6PortServiceListView extends ArgumentsConsumerStatefulView {
   const Ipv6PortServiceListView({super.key, super.args});

@@ -9,6 +9,7 @@ import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart'
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/wan_external_provider.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
@@ -49,6 +50,12 @@ class InstantVerifyView extends ArgumentsConsumerStatefulView {
 
 class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
   @override
+  void initState() {
+    super.initState();
+    ref.read(wanExternalProvider.notifier).fetch();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final tabs = [loc(context).instantInfo, loc(context).instantTopology];
     final tabContents = [
@@ -66,7 +73,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
           },
         )
       ],
-      tabs: tabs.map((e) => AppTab(title: e)).toList(),
+      tabs: tabs.map((e) => Tab(text: e)).toList(),
       tabContentViews: tabContents,
       expandedHeight: 120,
     );
@@ -386,7 +393,28 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
             height: 40,
           ),
         ),
-        if (connection != null) AppText.bodySmall(connection),
+        if (connection != null)
+          Column(
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    LinksysIcons.bidirectional,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  AppText.bodySmall(connection),
+                ],
+              ),
+              SizedBox(
+                width: 70,
+                child: AppText.bodySmall(
+                  loc(context).connectedSpeed,
+                  textAlign: TextAlign.center,
+                ),
+              )
+            ],
+          ),
         if (isWan) AppText.labelMedium(loc(context).internet),
         Container(
           constraints: const BoxConstraints(maxWidth: 120),
@@ -679,7 +707,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
     showSimpleAppDialog(
       context,
       dismissible: false,
-      title: 'Ping Network',
+      title: loc(context).pingNetwork,
       content: const PingNetworkModal(),
     );
   }
@@ -688,7 +716,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
     showSimpleAppDialog(
       context,
       dismissible: false,
-      title: 'Traceroute',
+      title: loc(context).traceroute,
       content: const TracerouteModal(),
     );
   }
