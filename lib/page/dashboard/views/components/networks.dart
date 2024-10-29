@@ -84,6 +84,8 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
                   height: nodeTopologyHeight + 48,
                   child: TreeView<RouterTreeNode>(
                     treeController: treeController,
+                    physics: NeverScrollableScrollPhysics(),
+                    shrinkWrap: true,
                     nodeBuilder: (BuildContext context,
                         TreeEntry<RouterTreeNode> entry) {
                       return TreeIndentation(

@@ -210,7 +210,7 @@ class _PnpIspSettingsAuthViewState
                   child: AppTextButton.noPadding(
                     loc(context).pnpRouterLoginWhereIsIt,
                     onTap: () {
-                      //TODO: Where is it?
+                      _showRouterPasswordModal();
                     },
                   ),
                 ),
@@ -226,5 +226,28 @@ class _PnpIspSettingsAuthViewState
               ],
             ),
           );
+  }
+
+  _showRouterPasswordModal() {
+    return showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: AppText.titleLarge(loc(context).routerPassword),
+            actions: [
+              AppTextButton(
+                loc(context).close,
+                onTap: () {
+                  context.pop();
+                },
+              )
+            ],
+            content: SizedBox(
+              width: 312,
+              child:
+                  AppText.bodyMedium(loc(context).modalRouterPasswordLocation),
+            ),
+          );
+        });
   }
 }

@@ -15,7 +15,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacy_gui/util/error_code_handler.dart';
+import 'package:privacy_gui/util/error_code_helper.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
@@ -114,13 +114,13 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
       } else {
         // Older check admin password jnaps or other error types
         setState(() {
-          _errorMessage = generalErrorCodeHandler(context, error.result);
+          _errorMessage = errorCodeHelper(context, error.result);
         });
       }
     } else {
       // Should not be here
       setState(() {
-        _errorMessage = generalErrorCodeHandler(context, '');
+        _errorMessage = errorCodeHelper(context, '');
       });
     }
   }

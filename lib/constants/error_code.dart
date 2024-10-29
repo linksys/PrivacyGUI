@@ -24,6 +24,7 @@ const errorInvalidAdminPassword = 'ErrorInvalidAdminPassword';
 const errorPasswordCheckDelayed = 'ErrorPasswordCheckDelayed';
 const errorInvalidGateway = 'ErrorInvalidGateway';
 const errorUnexpected = '_ErrorUnexpected';
+const errorInvalidDestinationMACAddress = 'ErrorInvalidDestinationMACAddress';
 
 // JNAP retry list
 const errorJNAPRetryList = [errorUnexpected];

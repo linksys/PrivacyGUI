@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/_providers.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -56,8 +58,8 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
             AppTextButton(
               loc(context).ok,
               onTap: () {
-                _saveToDHCP();
                 context.pop();
+                _saveToDHCP();
               },
             ),
           ],
@@ -66,7 +68,7 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
     );
   }
 
-  void _saveToDHCP() {
+  void _saveToDHCP() async {
     logger.i('[PnP Troubleshooter]: Set the router into DHCP mode');
     var newState = ref.read(internetSettingsProvider).copyWith();
     newState = newState.copyWith(
@@ -74,6 +76,18 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
         ipv4ConnectionType: WanType.dhcp.type,
       ),
     );
+    // ALT, check router is configured and ignore the exception, check only
+    await ref
+        .read(pnpProvider.notifier)
+        .checkRouterConfigured()
+        .onError((_, __) {});
+    if (ref.read(pnpProvider).isUnconfigured) {
+      // ALT, check router admin password is default one and ignore the exception, check only
+      await ref
+          .read(pnpProvider.notifier)
+          .checkAdminPassword(defaultAdminPassword)
+          .onError((_, __) {});
+    }
     context.pushNamed(
       RouteNamed.pnpIspSettingsAuth,
       extra: {'newSettings': newState},
@@ -89,46 +103,45 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
         : StyledAppPageView(
             title: loc(context).pnpIspTypeSelectionTitle,
             child: ListView(
-                shrinkWrap: true,
-                children: [
-                  ISPTypeCard(
-                    title: loc(context).dhcpDefault,
-                    description: loc(context).pnpIspTypeSelectionDhcpDesc,
-                    isCurrentlyApplying: wanType == WanType.dhcp,
-                    tapAction: wanType == WanType.dhcp ? null : _showDHCPAlert,
-                  ),
-                  const AppGap.small1(),
-                  ISPTypeCard(
-                    title: loc(context).connectionTypeStatic,
-                    description: loc(context).pnpIspTypeSelectionStaticDesc,
-                    isCurrentlyApplying: wanType == WanType.static,
-                    tapAction: () {
-                      context.goNamed(RouteNamed.pnpStaticIp);
-                    },
-                  ),
-                  const AppGap.small1(),
-                  ISPTypeCard(
-                    title: loc(context).connectionTypePppoe,
-                    description: loc(context).pnpIspTypeSelectionPppoeDesc,
-                    isCurrentlyApplying:
-                        (wanType == WanType.pppoe && !_hasVLan),
-                    tapAction: () {
-                      context.goNamed(RouteNamed.pnpPPPOE,
-                          extra: {'needVlanId': false});
-                    },
-                  ),
-                  const AppGap.small1(),
-                  ISPTypeCard(
-                    title: loc(context).pppoeVlan,
-                    description: loc(context).pnpIspTypeSelectionPppoeVlanDesc,
-                    isCurrentlyApplying: (wanType == WanType.pppoe && _hasVLan),
-                    tapAction: () {
-                      context.goNamed(RouteNamed.pnpPPPOE,
-                          extra: {'needVlanId': true});
-                    },
-                  ),
-                ],
-              ),
+              shrinkWrap: true,
+              children: [
+                ISPTypeCard(
+                  title: loc(context).dhcpDefault,
+                  description: loc(context).pnpIspTypeSelectionDhcpDesc,
+                  isCurrentlyApplying: wanType == WanType.dhcp,
+                  tapAction: wanType == WanType.dhcp ? null : _showDHCPAlert,
+                ),
+                const AppGap.small1(),
+                ISPTypeCard(
+                  title: loc(context).connectionTypeStatic,
+                  description: loc(context).pnpIspTypeSelectionStaticDesc,
+                  isCurrentlyApplying: wanType == WanType.static,
+                  tapAction: () {
+                    context.goNamed(RouteNamed.pnpStaticIp);
+                  },
+                ),
+                const AppGap.small1(),
+                ISPTypeCard(
+                  title: loc(context).connectionTypePppoe,
+                  description: loc(context).pnpIspTypeSelectionPppoeDesc,
+                  isCurrentlyApplying: (wanType == WanType.pppoe && !_hasVLan),
+                  tapAction: () {
+                    context.goNamed(RouteNamed.pnpPPPOE,
+                        extra: {'needVlanId': false});
+                  },
+                ),
+                const AppGap.small1(),
+                ISPTypeCard(
+                  title: loc(context).pppoeVlan,
+                  description: loc(context).pnpIspTypeSelectionPppoeVlanDesc,
+                  isCurrentlyApplying: (wanType == WanType.pppoe && _hasVLan),
+                  tapAction: () {
+                    context.goNamed(RouteNamed.pnpPPPOE,
+                        extra: {'needVlanId': true});
+                  },
+                ),
+              ],
+            ),
           );
   }
 }
