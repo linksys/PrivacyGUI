@@ -126,7 +126,13 @@ class StyledAppTabPageView extends ConsumerWidget {
           )
         : LinksysAppBar.withBack(
             context: context,
-            title: title == null ? null : AppText.titleLarge(title),
+            title: title == null
+                ? null
+                : AppText.titleLarge(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
             toolbarHeight: toolbarHeight,
             onBackTap: isBackEnabled()
                 ? (onBackTap ??

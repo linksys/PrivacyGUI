@@ -10,7 +10,7 @@ import 'package:privacy_gui/core/cloud/model/error_response.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_communication_method.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
-import 'package:privacy_gui/util/error_code_handler.dart';
+import 'package:privacy_gui/util/error_code_helper.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -135,7 +135,7 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4.0),
                 child: AppText.headlineMedium(
-                  generalErrorCodeHandler(context, _errorCode) ?? '',
+                  errorCodeHelper(context, _errorCode) ?? '',
                 ),
               ),
             const Spacer(),

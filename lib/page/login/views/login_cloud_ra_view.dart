@@ -15,7 +15,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/providers/auth/ra_session_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacy_gui/util/error_code_handler.dart';
+import 'package:privacy_gui/util/error_code_helper.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/validator_rules/input_validators.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
@@ -128,7 +128,7 @@ class _LoginCloudRAViewState extends ConsumerState<LoginCloudRAView> {
                       border: const OutlineInputBorder(),
                       controller: _serialController,
                       hintText: getAppLocalizations(context).serialNumber,
-                      errorText: generalErrorCodeHandler(context, _error),
+                      errorText: errorCodeHelper(context, _error),
                       onSubmitted: (_) {
                         _cloudLogin();
                       },
