@@ -986,5 +986,6 @@
   "dnsIpAddress": "DNS IP address",
   "pingNetwork": "Ping Network",
   "invalidDestinationMacAddress": "Invalid destination MAC address",
-  "deviceNameExceedMaxSize": "Name can be only less than 256"
+  "deviceNameExceedMaxSize": "Name can be only less than 256",
+  "invalidDns": "Invalid DNS"
 }

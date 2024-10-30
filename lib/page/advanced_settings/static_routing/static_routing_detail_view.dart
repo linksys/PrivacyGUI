@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/jnap/models/get_routing_settings.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -11,6 +10,7 @@ import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacy_gui/util/error_code_helper.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/widgets/dropdown/dropdown_menu.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -264,9 +264,8 @@ class _StaticRoutingDetailViewState
         // Failed, show the error message
         var jnapError = loc(context).unknownError;
         if (error is JNAPError) {
-          if (error.result == errorInvalidGateway) {
-            jnapError = loc(context).invalidGatewayIpAddress;
-          }
+          jnapError = errorCodeHelper(context, error.result) ??
+              loc(context).unknownError;
         }
         showFailedSnackBar(context, jnapError);
       }),
