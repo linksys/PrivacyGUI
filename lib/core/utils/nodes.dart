@@ -228,6 +228,20 @@ const List<Map<String, dynamic>> _velopModelMap = [
     'pattern': '^mx20'
   },
   {
+    'model': 'MX5600',
+    'baseModel': 'MX5600',
+    'seriesModel': 'MX5600',
+    'isMeshRouter': false,
+    'pattern': 'mx56'
+  },
+  {
+    'model': 'MX5700',
+    'baseModel': 'MX5700',
+    'seriesModel': 'MX5700',
+    'isMeshRouter': false,
+    'pattern': '^mx57'
+  },
+  {
     'model': 'MX6200',
     'baseModel': 'MX6200',
     'seriesModel': 'MX6200',

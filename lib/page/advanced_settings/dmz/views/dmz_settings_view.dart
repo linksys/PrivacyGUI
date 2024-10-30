@@ -155,7 +155,7 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
         padding: EdgeInsets.zero,
         title: AppText.labelLarge(loc(context).dmzSourceIPAddress),
         description: AppRadioList(
-          initial: state.sourceType,
+          selected: state.sourceType,
           itemHeight: 56,
           items: [
             AppRadioListItem(
