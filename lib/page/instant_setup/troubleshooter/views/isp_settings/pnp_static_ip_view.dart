@@ -144,14 +144,14 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
     newState = newState.copyWith(
       ipv4Setting: newState.ipv4Setting.copyWith(
         ipv4ConnectionType: WanType.static.type,
-        staticIpAddress: _ipController.text,
-        networkPrefixLength: NetworkUtils.subnetMaskToPrefixLength(
+        staticIpAddress: () => _ipController.text,
+        networkPrefixLength: () => NetworkUtils.subnetMaskToPrefixLength(
           _subnetController.text,
         ),
-        staticGateway: _gatewayController.text,
-        staticDns1: _dns1Controller.text,
+        staticGateway: () => _gatewayController.text,
+        staticDns1: () => _dns1Controller.text,
         staticDns2:
-            _dns2Controller.text.isNotEmpty ? _dns2Controller.text : null,
+            () => _dns2Controller.text.isNotEmpty ? _dns2Controller.text : null,
       ),
     );
 

@@ -14,6 +14,7 @@ import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_troubleshooter_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/util/error_code_helper.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
@@ -162,7 +163,13 @@ class _PnpIspSettingsAuthViewState
         logger.e(
             '[PnP]: Troubleshooter - Failed to save the new settings - $error');
         // Saving new settings failed
-        context.pop('Failed to save the new settings');
+        if (error is JNAPError) {
+          context.pop(errorCodeHelper(context, error.result) ?? loc(context).unknownError);
+        } else if (error is TimeoutException) {
+          context.pop(loc(context).generalError);
+        } else {
+          context.pop(loc(context).unknownError);
+        }
       },
       test: (error) => (error is JNAPError ||
           error is TimeoutException ||

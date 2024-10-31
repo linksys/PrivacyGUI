@@ -133,9 +133,9 @@ class _PnpPPPOEViewState extends ConsumerState<PnpPPPOEView> {
     newState = newState.copyWith(
       ipv4Setting: newState.ipv4Setting.copyWith(
         ipv4ConnectionType: WanType.pppoe.type,
-        username: _accountNameController.text,
-        password: _passwordController.text,
-        vlanId: (hasVlanID && _vlanController.text.isNotEmpty)
+        username: () => _accountNameController.text,
+        password: () => _passwordController.text,
+        vlanId: () => (hasVlanID && _vlanController.text.isNotEmpty)
             ? int.parse(_vlanController.text)
             : null,
       ),

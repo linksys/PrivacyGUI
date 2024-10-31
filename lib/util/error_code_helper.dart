@@ -4,7 +4,6 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 
 String? errorCodeHelper(BuildContext context, String? code) {
-  
   String unknownHandle(String code) {
     logger.d('Unknown error: $code');
     return loc(context).unknownErrorCode(code);
@@ -28,6 +27,11 @@ String? errorCodeHelper(BuildContext context, String? code) {
     errorAdminAccountLocked => loc(context).localLoginTooManyAttemptsTitle,
     errorInvalidDestinationMACAddress =>
       loc(context).invalidDestinationMacAddress,
+    errorInvalidGateway => loc(context).invalidGatewayIpAddress,
+    errorInvalidIPAddress => loc(context).invalidIpAddress,
+    errorInvalidPrimaryDNSServer => loc(context).invalidDns,
+    errorInvalidSecondaryDNSServer => loc(context).invalidDns,
+    errorInvalidTertiaryDNSServer => loc(context).invalidDns,
     _ => unknownHandle(code),
   };
 }
