@@ -387,7 +387,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
   ) {
     // Due to the UI limit, the value input from users should always be valid
     final isValid = _serverIpAddressValidator.validate(winsIp);
-    if (isValid) {
+    if (isValid || winsIp.isEmpty) {
       settings = settings.copyWith(
         wins: winsIp,
       );
