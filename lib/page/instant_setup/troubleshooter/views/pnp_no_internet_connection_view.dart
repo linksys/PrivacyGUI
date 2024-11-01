@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
@@ -79,7 +82,7 @@ class _PnpNoInternetConnectionState
                 padding: const EdgeInsets.only(bottom: Spacing.small2),
                 child: AppCard(
                   onTap: () {
-                    context.pushNamed(RouteNamed.callSupportMainRegion);
+                    goRoute(RouteNamed.callSupportMainRegion);
                   },
                   child: Row(
                     children: [
@@ -105,7 +108,7 @@ class _PnpNoInternetConnectionState
               ),
             AppCard(
               onTap: () {
-                context.pushNamed(RouteNamed.pnpUnplugModem);
+                goRoute(RouteNamed.pnpUnplugModem);
               },
               child: Row(
                 children: [
@@ -129,8 +132,37 @@ class _PnpNoInternetConnectionState
             ),
             const AppGap.small2(),
             AppCard(
-              onTap: () {
-                context.pushNamed(RouteNamed.pnpIspTypeSelection);
+              onTap: () async {
+                // Fetch device info and update better actions before start.
+                await ref.read(pnpProvider.notifier).fetchDeviceInfo();
+                // ALT, check router is configured and ignore the exception, check only
+                await ref
+                    .read(pnpProvider.notifier)
+                    .checkRouterConfigured()
+                    .onError((_, __) {});
+                final attachedPassword = ref.read(pnpProvider).attachedPassword;
+                if (ref.read(pnpProvider).isUnconfigured) {
+                  // ALT, check router admin password is default one and ignore the exception, check only
+                  await ref
+                      .read(pnpProvider.notifier)
+                      .checkAdminPassword(defaultAdminPassword)
+                      .onError((_, __) {});
+                } else if (attachedPassword != null &&
+                    attachedPassword.isNotEmpty) {
+                  // ALT, check router admin password is attached one and ignore the exception, check only
+                  await ref
+                      .read(pnpProvider.notifier)
+                      .checkAdminPassword(attachedPassword)
+                      .onError((_, __) {});
+                }
+                if (ref.read(routerRepositoryProvider).isLoggedIn()) {
+                  goRoute(RouteNamed.pnpIspTypeSelection);
+                } else {
+                  final isLoggedIn = await goRoute(RouteNamed.pnpIspAuth);
+                  if (isLoggedIn) {
+                    goRoute(RouteNamed.pnpIspTypeSelection);
+                  }
+                }
               },
               child: Row(
                 children: [
@@ -157,7 +189,7 @@ class _PnpNoInternetConnectionState
               loc(context).logIntoRouter,
               onTap: () {
                 ref.read(pnpProvider.notifier).setForceLogin(true);
-                context.goNamed(RouteNamed.pnp);
+                goRoute(RouteNamed.pnp, true);
               },
             ),
             const AppGap.large3(),
@@ -165,7 +197,7 @@ class _PnpNoInternetConnectionState
               loc(context).tryAgain,
               onTap: () {
                 logger.d('[PnP Troubleshooter]: Try again internet connection');
-                context.goNamed(RouteNamed.pnp);
+                goRoute(RouteNamed.pnp, true);
               },
             )
           ],
@@ -179,5 +211,13 @@ class _PnpNoInternetConnectionState
         ? loc(context).noInternetConnectionWithSSIDTitle(_ssid!)
         : loc(context).noInternetConnectionTitle;
     return AppText.headlineSmall(titleString);
+  }
+
+  FutureOr goRoute(String name, [bool push = true]) {
+    if (push) {
+      return context.pushNamed(name);
+    } else {
+      context.goNamed(name);
+    }
   }
 }

@@ -152,7 +152,7 @@ class _PnpPPPOEViewState extends ConsumerState<PnpPPPOEView> {
           .checkAdminPassword(defaultAdminPassword).onError((_, __) {});
     }
     context.pushNamed(
-      RouteNamed.pnpIspSettingsAuth,
+      RouteNamed.pnpIspSaveSettings,
       extra: {'newSettings': newState},
     ).then((error) {
       if (error is String) {

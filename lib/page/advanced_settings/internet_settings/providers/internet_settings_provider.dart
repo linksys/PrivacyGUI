@@ -34,7 +34,7 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
 
   Future<InternetSettingsState> fetch({bool fetchRemote = false}) async {
     final repo = ref.read(routerRepositoryProvider);
-    final results = await repo.fetchInternetSettings(fetchRemote: true);
+    final results = await repo.fetchInternetSettings(fetchRemote: fetchRemote);
     // Wan Settings
     final wanSettingsResult = JNAPTransactionSuccessWrap.getResult(
         JNAPAction.getWANSettings, Map.fromEntries(results));

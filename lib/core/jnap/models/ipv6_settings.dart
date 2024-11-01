@@ -5,12 +5,12 @@ import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/core/jnap/models/ipv6_automatic_settings.dart';
 
 class GetIPv6Settings extends Equatable {
-  final String wanType;
+  final String? wanType;
   final IPv6AutomaticSettings? ipv6AutomaticSettings;
   final String duid;
 
   const GetIPv6Settings({
-    required this.wanType,
+    this.wanType,
     this.ipv6AutomaticSettings,
     required this.duid,
   });
@@ -41,7 +41,7 @@ class GetIPv6Settings extends Equatable {
 
   factory GetIPv6Settings.fromJson(Map<String, dynamic> map) {
     return GetIPv6Settings(
-      wanType: map['wanType'] as String,
+      wanType: map['wanType'] as String?,
       ipv6AutomaticSettings: map['ipv6AutomaticSettings'] != null
           ? IPv6AutomaticSettings.fromJson(
               map['ipv6AutomaticSettings'] as Map<String, dynamic>)
