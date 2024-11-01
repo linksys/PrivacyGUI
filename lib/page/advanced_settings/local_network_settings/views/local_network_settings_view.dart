@@ -276,13 +276,13 @@ class _LocalNetworkSettingsViewState
     bool enableButton = false;
     showSubmitAppDialog(
       context,
-      title: loc(context).ipAddress.capitalizeWords(),
+      title: loc(context).subnetMask.capitalizeWords(),
       contentBuilder: (context, setState, onSubmit) {
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             AppIPFormField(
-              semanticLabel: 'ip address',
+              semanticLabel: 'subnet mask',
               octet1ReadOnly: true,
               octet2ReadOnly: true,
               controller: textController,

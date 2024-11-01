@@ -8,89 +8,43 @@ import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/_providers.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_troubleshooter_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/error_code_helper.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
-class PnpIspSettingsAuthView extends ArgumentsConsumerStatefulView {
-  const PnpIspSettingsAuthView({
+class PnpIspSaveSettingsView extends ArgumentsConsumerStatefulView {
+  const PnpIspSaveSettingsView({
     Key? key,
     super.args,
   }) : super(key: key);
 
   @override
-  ConsumerState<PnpIspSettingsAuthView> createState() =>
-      _PnpIspSettingsAuthViewState();
+  ConsumerState<PnpIspSaveSettingsView> createState() =>
+      _PnpIspSaveSettingsViewState();
 }
 
-class _PnpIspSettingsAuthViewState
-    extends ConsumerState<PnpIspSettingsAuthView> {
+class _PnpIspSaveSettingsViewState
+    extends ConsumerState<PnpIspSaveSettingsView> {
   final _passwordController = TextEditingController();
   late final InternetSettingsState newSettings;
-  bool _isLoading = true;
   String? _spinnerText; //TODO: all spinner text is not confirmed
-  String? _inputPasswordError;
   StreamSubscription? subscription;
 
   @override
   void initState() {
-    //First check if the admin password is available (from QRCode/URL)
-    newSettings = widget.args['newSettings'] as InternetSettingsState;
-    final isLoggedIn = ref.read(routerRepositoryProvider).isLoggedIn();
-    final attachedPassword = ref.read(pnpProvider).attachedPassword;
-    if (isLoggedIn) {
-      logger.i('[PnP]: Troubleshooter - Now is already logged in');
-      // Credencials already exist, now save the settings
-      _saveNewSettings();
-    } else if (!isLoggedIn &&
-        attachedPassword != null &&
-        attachedPassword.isNotEmpty) {
-      logger.i(
-          '[PnP]: Troubleshooter - Not logged in yet but has credential attached');
-      // Use the attached password to log in
-      _loginAndSaveNewSettings(attachedPassword);
-    } else {
-      logger
-          .i('[PnP]: Troubleshooter - No credential at all, need manual input');
-      // Not logged in and no attached password
-      _isLoading = false;
-    }
     super.initState();
+    newSettings = widget.args['newSettings'] as InternetSettingsState;
+    _saveNewSettings();
   }
 
   @override
   void dispose() {
     _passwordController.dispose();
     super.dispose();
-  }
-
-  Future<void> _loginAndSaveNewSettings(String password) {
-    setState(() {
-      _spinnerText = 'Verifying the attached credential...';
-    });
-    return ref
-        .read(pnpProvider.notifier)
-        .checkAdminPassword(password)
-        .then((value) {
-      logger.i('[PnP]: Troubleshooter - Login succeeded');
-      // Login succeeded
-      _saveNewSettings();
-    }).catchError((error) {
-      logger
-          .e('[PnP]: Troubleshooter - Login failed - Invalid admin password!');
-      // Login failed, show password input form with an error
-      setState(() {
-        _inputPasswordError = loc(context).errorIncorrectPassword;
-        _isLoading = false;
-      });
-    }, test: (error) => error is ExceptionInvalidAdminPassword);
   }
 
   Future<void> _saveNewSettings() {
@@ -164,7 +118,8 @@ class _PnpIspSettingsAuthViewState
             '[PnP]: Troubleshooter - Failed to save the new settings - $error');
         // Saving new settings failed
         if (error is JNAPError) {
-          context.pop(errorCodeHelper(context, error.result) ?? loc(context).unknownError);
+          context.pop(errorCodeHelper(context, error.result) ??
+              loc(context).unknownError);
         } else if (error is TimeoutException) {
           context.pop(loc(context).generalError);
         } else {
@@ -188,73 +143,6 @@ class _PnpIspSettingsAuthViewState
 
   @override
   Widget build(BuildContext context) {
-    return _isLoading
-        ? AppFullScreenSpinner(text: _spinnerText)
-        : StyledAppPageView(
-            title: loc(context).pnpIspSettingsAuthTitle,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AppTextField.outline(
-                  secured: true,
-                  headerText: loc(context).password,
-                  controller: _passwordController,
-                ),
-                if (_inputPasswordError != null)
-                  Padding(
-                    padding: const EdgeInsets.only(
-                      top: Spacing.medium,
-                    ),
-                    child: AppText.bodyLarge(
-                      _inputPasswordError!,
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                  ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: Spacing.large3 + Spacing.small2,
-                  ),
-                  child: AppTextButton.noPadding(
-                    loc(context).pnpRouterLoginWhereIsIt,
-                    onTap: () {
-                      _showRouterPasswordModal();
-                    },
-                  ),
-                ),
-                AppFilledButton(
-                  loc(context).next,
-                  onTap: () {
-                    setState(() {
-                      _isLoading = true;
-                    });
-                    _loginAndSaveNewSettings(_passwordController.text);
-                  },
-                ),
-              ],
-            ),
-          );
-  }
-
-  _showRouterPasswordModal() {
-    return showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: AppText.titleLarge(loc(context).routerPassword),
-            actions: [
-              AppTextButton(
-                loc(context).close,
-                onTap: () {
-                  context.pop();
-                },
-              )
-            ],
-            content: SizedBox(
-              width: 312,
-              child:
-                  AppText.bodyMedium(loc(context).modalRouterPasswordLocation),
-            ),
-          );
-        });
+    return AppFullScreenSpinner(text: _spinnerText);
   }
 }

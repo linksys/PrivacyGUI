@@ -29,7 +29,10 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
 
   @override
   void initState() {
-    ref.read(internetSettingsProvider.notifier).fetch().then((state) {
+    ref
+        .read(internetSettingsProvider.notifier)
+        .fetch(fetchRemote: true)
+        .then((state) {
       setState(() {
         _hasVLan = state.ipv4Setting.wanTaggingSettingsEnable ?? false;
         _isLoading = false;
@@ -89,7 +92,7 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
           .onError((_, __) {});
     }
     context.pushNamed(
-      RouteNamed.pnpIspSettingsAuth,
+      RouteNamed.pnpIspSaveSettings,
       extra: {'newSettings': newState},
     );
   }
