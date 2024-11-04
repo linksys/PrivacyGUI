@@ -123,18 +123,16 @@ class StyledAppTabPageView extends ConsumerWidget {
               : AppText.titleLarge(
                   title,
                   maxLines: 2,
-                  overflow: TextOverflow.fade,
+                  overflow: TextOverflow.ellipsis,
                 ),
           toolbarHeight: toolbarHeight,
           onBackTap: isBackEnabled()
               ? (onBackTap ??
                   () {
-                    // ref.read(navigationsProvider.notifier).pop();
                     context.pop();
                   })
               : null,
           showBack: backState != StyledBackState.none,
-          // trailing: _buildActions(context),
         );
       case AppBarStyle.close:
         return LinksysAppBar.withClose(
@@ -144,12 +142,10 @@ class StyledAppTabPageView extends ConsumerWidget {
           onBackTap: isBackEnabled()
               ? (onBackTap ??
                   () {
-                    // ref.read(navigationsProvider.notifier).pop();
                     context.pop();
                   })
               : null,
           showBack: backState != StyledBackState.none,
-          // trailing: _buildActions(context),
         );
       case AppBarStyle.none:
         return null;

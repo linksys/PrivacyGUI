@@ -18,6 +18,7 @@ import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_step_state.dart';
@@ -228,17 +229,18 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
   /// check internet connection within 30 seconds
   @override
   Future checkInternetConnection() async {
-    // final isOnline = (await testCloudAvailability()).isCloudOk;
-    // final wanStatus = await ref
-    //     .read(routerRepositoryProvider)
-    //     .send(JNAPAction.getWANStatus,
-    //         auth: true, fetchRemote: true, cacheLevel: CacheLevel.noCache)
-    //     .then<RouterWANStatus?>(
-    //         (response) => RouterWANStatus.fromJson(response.output))
-    //     .onError((error, stackTrace) => null);
-    // final isOnline = wanStatus?.wanStatus == 'Connected';
-
-    final isOnline = await ref.read(cloudRepositoryProvider).testPingPng();
+    final isNode = isNodeModel(
+        modelNumber: state.deviceInfo?.modelNumber ?? '',
+        hardwareVersion: state.deviceInfo?.hardwareVersion ?? '1');
+    // getInternetConnectionStatus for Node router
+    Future<bool> isInternetConnected() => ref
+            .read(routerRepositoryProvider)
+            .send(JNAPAction.getInternetConnectionStatus, auth: true)
+            .then((result) {
+          return result.output['connectionStatus'] == 'InternetConnected';
+        });
+    Future<bool> testPing() => ref.read(cloudRepositoryProvider).testPingPng();
+    final isOnline = isNode ? await isInternetConnected() : await testPing();
     if (!isOnline) {
       throw ExceptionNoInternetConnection();
     }

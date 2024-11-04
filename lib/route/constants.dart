@@ -117,7 +117,8 @@ class RoutePath {
   static const pnpPPPOE = 'pnpPPPOE';
   static const pnpIspTypeSelection = 'pnpIspTypeSelection';
   static const pnpStaticIp = 'pnpStaticIp';
-  static const pnpIspSettingsAuth = 'pnpIspSettingsAuth';
+  static const pnpIspAuth = 'pnpIspAuth';
+  static const pnpIspSaveSettings = 'pnpIspSaveSettings';
 
   /// Safe Browsing
   static const safeBrowsing = 'safeBrowsing';
@@ -264,7 +265,8 @@ class RouteNamed {
   static const pnpPPPOE = 'pnpPPPOE';
   static const pnpIspTypeSelection = 'pnpIspTypeSelection';
   static const pnpStaticIp = 'pnpStaticIp';
-  static const pnpIspSettingsAuth = 'pnpIspSettingsAuth';
+  static const pnpIspAuth = 'pnpIspAuth';
+  static const pnpIspSaveSettings = 'pnpIspSaveSettings';
 
   /// Troubleshooting
   static const troubleshooting = 'troubleshooting';

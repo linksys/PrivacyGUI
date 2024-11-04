@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -596,6 +598,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
     final isCognitive = isCognitiveMeshRouter(
         modelNumber: state.modelNumber, hardwareVersion: state.hardwareVersion);
     bool isEmpty = false;
+    bool overMaxSize = false;
     showSubmitAppDialog(context,
         title: loc(context).nodeName,
         contentBuilder: (context, setState, onSubmit) {
@@ -607,14 +610,17 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
                 headerText: loc(context).nodeName,
                 border: const OutlineInputBorder(),
                 controller: textController,
+                errorText:
+                    overMaxSize ? loc(context).deviceNameExceedMaxSize : null,
                 onSubmitted: (_) {
-                  if (!isEmpty) {
+                  if (!isEmpty && !overMaxSize) {
                     onSubmit();
                   }
                 },
                 onChanged: (value) {
                   setState(() {
                     isEmpty = value.isEmpty;
+                    overMaxSize = utf8.encoder.convert(value).length >= 256;
                   });
                 },
               ),
@@ -628,7 +634,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
         event: () async {
           await _saveName(textController.text);
         },
-        checkPositiveEnabled: () => !isEmpty);
+        checkPositiveEnabled: () => !isEmpty && !overMaxSize);
   }
 
   Future _saveName(String name) {

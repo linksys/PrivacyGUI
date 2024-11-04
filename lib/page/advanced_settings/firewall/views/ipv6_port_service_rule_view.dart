@@ -66,6 +66,7 @@ class _AddRuleContentViewState
         _ipAddressController.text = rule.ipv6Address;
         setState(() {
           _isEnabled = rule.isEnabled;
+          _protocol = rule.portRanges.firstOrNull?.protocol ?? 'Both';
         });
       });
     } else {

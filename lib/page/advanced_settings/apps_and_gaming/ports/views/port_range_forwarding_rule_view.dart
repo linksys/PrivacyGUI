@@ -68,6 +68,7 @@ class _AddRuleContentViewState
         _deviceIpAddressController.text = rule.internalServerIPAddress;
         setState(() {
           _isEnabled = rule.isEnabled;
+          _protocol = rule.protocol;
         });
       });
     } else {

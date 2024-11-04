@@ -287,12 +287,16 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       final routerRepository = ref.read(routerRepositoryProvider);
       final response = await routerRepository.send(
         pnp ? JNAPAction.pnpCheckAdminPassword : JNAPAction.checkAdminPassword,
-        extraHeaders: pnp
-            ? {
-                kJNAPAuthorization:
-                    'Basic ${Utils.stringBase64Encode('admin:$password')}'
-              }
-            : {},
+        // extraHeaders: pnp
+        //     ? {
+        //         kJNAPAuthorization:
+        //             'Basic ${Utils.stringBase64Encode('admin:$password')}'
+        //       }
+        //     : {},
+        extraHeaders: {
+          kJNAPAuthorization:
+              'Basic ${Utils.stringBase64Encode('admin:$password')}'
+        },
         data: {
           'adminPassword': password,
         },
@@ -330,7 +334,8 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     }
   }
 
-  Future<Map<String, dynamic>?> getAdminPasswordAuthStatus(List<String> services) async {
+  Future<Map<String, dynamic>?> getAdminPasswordAuthStatus(
+      List<String> services) async {
     if (serviceHelper.isSupportAdminPasswordAuthStatus(services) != true) {
       return null;
     }

@@ -342,6 +342,7 @@
   "middleEast": "Μέση Ανατολή",
   "transmitRegion": "Περιοχή εκπομπής",
   "start": "Έναρξη",
+  "invalidDns": "Μη έγκυρο DNS",
   "administration": "Διαχείριση",
   "advanced": "Για προχωρημένους",
   "duid": "DUID:",

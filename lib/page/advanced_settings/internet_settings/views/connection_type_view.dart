@@ -16,6 +16,7 @@ import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/providers/redirection/redirection_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/util/error_code_helper.dart';
 import 'package:privacy_gui/util/url_helper/url_helper.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacy_gui/validator_rules/_validator_rules.dart';
@@ -427,7 +428,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
               setState(() {
                 state = state.copyWith(
                   ipv4Setting: state.ipv4Setting
-                      .copyWith(username: _pppoeUsernameController.text),
+                      .copyWith(username: () => _pppoeUsernameController.text),
                 );
               });
             }
@@ -447,7 +448,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
               setState(() {
                 state = state.copyWith(
                   ipv4Setting: state.ipv4Setting
-                      .copyWith(password: _pppoePasswordController.text),
+                      .copyWith(password: () => _pppoePasswordController.text),
                 );
               });
             }
@@ -467,8 +468,8 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
             if (!focused) {
               setState(() {
                 state = state.copyWith(
-                  ipv4Setting: state.ipv4Setting
-                      .copyWith(vlanId: int.parse(_pppoeVLANIDController.text)),
+                  ipv4Setting: state.ipv4Setting.copyWith(
+                      vlanId: () => int.parse(_pppoeVLANIDController.text)),
                 );
               });
             }
@@ -486,8 +487,8 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
             if (!focused) {
               setState(() {
                 state = state.copyWith(
-                  ipv4Setting: state.ipv4Setting
-                      .copyWith(serviceName: _pppoeServiceNameController.text),
+                  ipv4Setting: state.ipv4Setting.copyWith(
+                      serviceName: () => _pppoeServiceNameController.text),
                 );
               });
             }
@@ -517,7 +518,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
               setState(() {
                 state = state.copyWith(
                   ipv4Setting: state.ipv4Setting.copyWith(
-                      staticIpAddress: _staticIpAddressController.text),
+                      staticIpAddress: () => _staticIpAddressController.text),
                 );
               });
             }
@@ -543,7 +544,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
                 setState(() {
                   state = state.copyWith(
                     ipv4Setting: state.ipv4Setting.copyWith(
-                        networkPrefixLength:
+                        networkPrefixLength: () =>
                             NetworkUtils.subnetMaskToPrefixLength(
                                 _staticSubnetController.text)),
                   );
@@ -566,8 +567,8 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
             if (!focused) {
               setState(() {
                 state = state.copyWith(
-                  ipv4Setting: state.ipv4Setting
-                      .copyWith(staticGateway: _staticGatewayController.text),
+                  ipv4Setting: state.ipv4Setting.copyWith(
+                      staticGateway: () => _staticGatewayController.text),
                 );
               });
             }
@@ -588,7 +589,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
               setState(() {
                 state = state.copyWith(
                   ipv4Setting: state.ipv4Setting
-                      .copyWith(staticDns1: _staticDns1Controller.text),
+                      .copyWith(staticDns1: () => _staticDns1Controller.text),
                 );
               });
             }
@@ -608,8 +609,10 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
             if (!focused) {
               setState(() {
                 state = state.copyWith(
-                  ipv4Setting: state.ipv4Setting
-                      .copyWith(staticDns2: _staticDns2Controller.text),
+                  ipv4Setting: state.ipv4Setting.copyWith(
+                      staticDns2: () => _staticDns2Controller.text.isEmpty
+                          ? null
+                          : _staticDns2Controller.text),
                 );
               });
             }
@@ -629,8 +632,10 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
             if (!focused) {
               setState(() {
                 state = state.copyWith(
-                  ipv4Setting: state.ipv4Setting
-                      .copyWith(staticDns3: _staticDns3Controller.text),
+                  ipv4Setting: state.ipv4Setting.copyWith(
+                      staticDns3: () => _staticDns3Controller.text.isEmpty
+                          ? null
+                          : _staticDns3Controller.text),
                 );
               });
             }
@@ -656,7 +661,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
               setState(() {
                 state = state.copyWith(
                   ipv4Setting: state.ipv4Setting
-                      .copyWith(username: _pptpUsernameController.text),
+                      .copyWith(username: () => _pptpUsernameController.text),
                 );
               });
             }
@@ -675,7 +680,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
               setState(() {
                 state = state.copyWith(
                   ipv4Setting: state.ipv4Setting
-                      .copyWith(password: _pptpPasswordController.text),
+                      .copyWith(password: () => _pptpPasswordController.text),
                 );
               });
             }
@@ -695,7 +700,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
               setState(() {
                 state = state.copyWith(
                   ipv4Setting: state.ipv4Setting
-                      .copyWith(serverIp: _pptpServerIpController.text),
+                      .copyWith(serverIp: () => _pptpServerIpController.text),
                 );
               });
             }
@@ -726,7 +731,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
               setState(() {
                 state = state.copyWith(
                   ipv4Setting: state.ipv4Setting
-                      .copyWith(username: _l2tpUsernameController.text),
+                      .copyWith(username: () => _l2tpUsernameController.text),
                 );
               });
             }
@@ -745,7 +750,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
               setState(() {
                 state = state.copyWith(
                   ipv4Setting: state.ipv4Setting
-                      .copyWith(password: _l2tpPasswordController.text),
+                      .copyWith(password: () => _l2tpPasswordController.text),
                 );
               });
             }
@@ -766,7 +771,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
               setState(() {
                 state = state.copyWith(
                   ipv4Setting: state.ipv4Setting
-                      .copyWith(serverIp: _l2tpServerIpController.text),
+                      .copyWith(serverIp: () => _l2tpServerIpController.text),
                 );
               });
             }
@@ -814,9 +819,9 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
                                   setState(() {
                                     state = state.copyWith(
                                       ipv4Setting: state.ipv4Setting.copyWith(
-                                          behavior: PPPConnectionBehavior
+                                          behavior: () => PPPConnectionBehavior
                                               .connectOnDemand,
-                                          maxIdleMinutes: int.parse(
+                                          maxIdleMinutes: () => int.parse(
                                               _idleTimeController.text)),
                                     );
                                   });
@@ -857,10 +862,11 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
                                   setState(() {
                                     state = state.copyWith(
                                       ipv4Setting: state.ipv4Setting.copyWith(
-                                          behavior:
+                                          behavior: () =>
                                               PPPConnectionBehavior.keepAlive,
-                                          reconnectAfterSeconds: int.parse(
-                                              _redialPeriodController.text)),
+                                          reconnectAfterSeconds: () =>
+                                              int.parse(_redialPeriodController
+                                                  .text)),
                                     );
                                   });
                                 }
@@ -880,7 +886,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
           setState(() {
             if (type != null) {
               state = state.copyWith(
-                ipv4Setting: state.ipv4Setting.copyWith(behavior: type),
+                ipv4Setting: state.ipv4Setting.copyWith(behavior: () => type),
               );
             }
           });
@@ -915,7 +921,8 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
               if (type != null) {
                 state = state.copyWith(
                   ipv4Setting: state.ipv4Setting.copyWith(
-                      useStaticSettings: type == PPTPIpAddressMode.specify),
+                      useStaticSettings: () =>
+                          type == PPTPIpAddressMode.specify),
                 );
               }
             });
@@ -986,7 +993,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
               setState(() {
                 state = state.copyWith(
                   ipv6Setting:
-                      state.ipv6Setting.copyWith(ipv6rdTunnelMode: value),
+                      state.ipv6Setting.copyWith(ipv6rdTunnelMode: () => value),
                 );
               });
             },
@@ -1013,7 +1020,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
                 setState(() {
                   state = state.copyWith(
                     ipv6Setting: state.ipv6Setting
-                        .copyWith(ipv6Prefix: _ipv6PrefixController.text),
+                        .copyWith(ipv6Prefix: () => _ipv6PrefixController.text),
                   );
                 });
               }
@@ -1033,7 +1040,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
                 setState(() {
                   state = state.copyWith(
                     ipv6Setting: state.ipv6Setting.copyWith(
-                        ipv6PrefixLength:
+                        ipv6PrefixLength: () =>
                             int.parse(_ipv6PrefixLengthController.text)),
                   );
                 });
@@ -1055,7 +1062,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
                 setState(() {
                   state = state.copyWith(
                     ipv6Setting: state.ipv6Setting.copyWith(
-                        ipv6BorderRelay: _ipv6BorderRelayController.text),
+                        ipv6BorderRelay: () => _ipv6BorderRelayController.text),
                   );
                 });
               }
@@ -1076,7 +1083,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
                 setState(() {
                   state = state.copyWith(
                     ipv6Setting: state.ipv6Setting.copyWith(
-                        ipv6BorderRelayPrefixLength: int.parse(
+                        ipv6BorderRelayPrefixLength: () => int.parse(
                             _ipv6BorderRelayPrefixLengthController.text)),
                   );
                 });
@@ -1337,10 +1344,10 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
         );
       }).catchError(
         (error, stackTrace) {
-          final errorMsg = (error as JNAPError).result;
+          final errorMsg = errorCodeHelper(context, (error as JNAPError).result);
           showFailedSnackBar(
             context,
-            errorMsg,
+            errorMsg ?? loc(context).unknownErrorCode((error as JNAPError).result),
           );
         },
         test: (error) => error is JNAPError,

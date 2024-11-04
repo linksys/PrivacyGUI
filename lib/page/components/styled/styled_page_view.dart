@@ -268,7 +268,7 @@ class StyledAppPageView extends ConsumerWidget {
               : AppText.titleLarge(
                   title,
                   maxLines: 2,
-                  overflow: TextOverflow.fade,
+                  overflow: TextOverflow.ellipsis,
                 ),
           toolbarHeight: toolbarHeight,
           onBackTap: isBackEnabled()
