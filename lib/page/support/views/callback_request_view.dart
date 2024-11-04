@@ -154,6 +154,7 @@ class _CallbackRequestViewState extends ConsumerState<CallbackRequestView> {
                         },
                         child: AbsorbPointer(
                           child: AppTextField.outline(
+                            semanticLabel: 'phone region code',
                             controller: regionCodeController
                               ..text = '+${currentRegion.countryCallingCode}',
                             readOnly: true,

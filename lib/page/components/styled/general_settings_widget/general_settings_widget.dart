@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/build_config.dart';
+import 'package:privacy_gui/constants/url_links.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/general_settings_widget/language_tile.dart';
 import 'package:privacy_gui/page/components/styled/general_settings_widget/theme_tile.dart';
@@ -8,11 +10,10 @@ import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/theme/material/color_tonal_palettes.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/buttons/popup_button.dart';
-import 'package:privacy_gui/util/url_helper/url_helper.dart'
-    if (dart.library.io) 'package:privacy_gui/util/url_helper/url_helper_mobile.dart'
-    if (dart.library.html) 'package:privacy_gui/util/url_helper/url_helper_web.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 
 class GeneralSettingsWidget extends ConsumerStatefulWidget {
   const GeneralSettingsWidget({super.key});
@@ -31,55 +32,70 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
 
     return AppPopupButton(
       parent: shellNavigatorKey.currentContext,
-      button: const Icon(
-        LinksysIcons.person,
-        size: 20,
+      button: Semantics(
+        identifier: 'now-topbar-icon-general-settings',
+        label: 'general settings',
+        child: Icon(LinksysIcons.person,
+            size: 20,
+            color: Color(
+              neutralTonal.get(100),
+            )),
       ),
       borderRadius: const BorderRadius.all(Radius.circular(10)),
-      backgroundColor: Theme.of(context).colorScheme.background,
       builder: (controller) {
         final locale =
             ref.watch(appSettingsProvider.select((value) => value.locale));
-        return Container(
-          constraints: const BoxConstraints(minWidth: 200, maxWidth: 240),
-          padding: const EdgeInsets.all(8.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: LanguageTile(
-                  locale: locale ?? const Locale('en'),
-                  onTap: () {
-                    controller.close();
-                  },
-                  onSelected: (locale) {
-                    final appSettings = ref.read(appSettingsProvider);
+        return Semantics(
+          explicitChildNodes: true,
+          child: Container(
+            constraints: const BoxConstraints(minWidth: 200, maxWidth: 240),
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: LanguageTile(
+                    locale: locale ?? const Locale('en'),
+                    onTap: () {
+                      controller.close();
+                    },
+                    onSelected: (locale) {
+                      final appSettings = ref.read(appSettingsProvider);
 
-                    ref
-                        .read(appSettingsProvider.notifier)
-                        .update(appSettings.copyWith(locale: locale));
-                  },
+                      ref
+                          .read(appSettingsProvider.notifier)
+                          .update(appSettings.copyWith(locale: locale));
+                    },
+                  ),
                 ),
-              ),
-              const AppGap.medium(),
-              const Padding(
-                padding: EdgeInsets.all(8.0),
-                child: ThemeTile(),
-              ),
-              const AppGap.medium(),
-              ..._displayAdditional(loginType),
-              FutureBuilder(
-                  future: getVersion(full: true),
-                  initialData: '-',
-                  builder: (context, data) {
-                    return AppText.bodySmall(
-                      'version ${data.data}',
-                    );
-                  }),
-            ],
+                const AppGap.medium(),
+                Padding(
+                  padding: const EdgeInsets.all(Spacing.small2),
+                  child: Semantics(
+                    identifier: 'now-general-settings-theme',
+                    label: 'theme',
+                    child: const ThemeTile(),
+                  ),
+                ),
+                const AppGap.medium(),
+                ..._displayAdditional(loginType),
+                FutureBuilder(
+                    future: getVersion(),
+                    initialData: '-',
+                    builder: (context, data) {
+                      return Semantics(
+                        identifier: 'now-general-text-version',
+                        label: 'version',
+                        child: AppText.bodySmall(
+                          'version ${data.data}',
+                        ),
+                      );
+                    }),
+              ],
+            ),
           ),
         );
       },
@@ -89,21 +105,23 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
   List<Widget> _displayAdditional(LoginType loginType) {
     if (loginType != LoginType.none) {
       return [
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: AppTextButton(
-            loc(context).endUserLicenseAgreement,
-            onTap: () {
-              openUrl('https://www.linksys.com/EULA.html');
-            },
-          ),
-        ),
+        // Padding(
+        //   padding: const EdgeInsets.all(8.0),
+        //   child: AppTextButton(
+        //     loc(context).endUserLicenseAgreement,
+        //     onTap: () {
+        //       gotoOfficialWebUrl(linkEULA,
+        //           locale: ref.read(appSettingsProvider).locale);
+        //     },
+        //   ),
+        // ),
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: AppTextButton(
             loc(context).termsOfService,
             onTap: () {
-              openUrl('https://www.linksys.com/terms.html');
+              gotoOfficialWebUrl(linkTerms,
+                  locale: ref.read(appSettingsProvider).locale);
             },
           ),
         ),
@@ -112,8 +130,8 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
           child: AppTextButton(
             loc(context).thirdPartyLicenses,
             onTap: () {
-              openUrl(
-                  'https://www.linksys.com/support-article?articleNum=47763');
+              gotoOfficialWebUrl(linkThirdParty,
+                  locale: ref.read(appSettingsProvider).locale);
             },
           ),
         ),
@@ -122,7 +140,8 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
           child: AppTextButton(
             loc(context).privacyAndSecurity,
             onTap: () {
-              openUrl('https://www.linksys.com/privacy-and-security.html');
+              gotoOfficialWebUrl(linkPrivacy,
+                  locale: ref.read(appSettingsProvider).locale);
             },
           ),
         ),
@@ -134,7 +153,9 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
           padding: const EdgeInsets.all(8.0),
           child: AppTextButton(
             loc(context).logout,
+            color: Theme.of(context).colorScheme.error,
             onTap: () {
+              logger.i('[Auth]: The user manually logs out');
               ref.read(authProvider.notifier).logout();
             },
           ),

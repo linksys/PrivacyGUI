@@ -8,8 +8,10 @@ import 'package:http/http.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:privacy_gui/constants/jnap_const.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
+import 'package:privacy_gui/core/cloud/model/error_response.dart';
 import 'package:privacy_gui/core/http/linksys_http_client.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/models/firmware_update_settings.dart';
 import 'package:privacy_gui/core/jnap/models/firmware_update_status.dart';
@@ -18,11 +20,11 @@ import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_state.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/bench_mark.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/ip_getter/get_local_ip.dart'
     if (dart.library.io) 'package:privacy_gui/core/jnap/providers/ip_getter/mobile_get_local_ip.dart'
@@ -54,7 +56,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     }
 
     List<FirmwareUpdateStatus>? fwUpdateStatusList =
-        switch (isServiceSupport(JNAPService.nodesFirmwareUpdate)) {
+        switch (serviceHelper.isSupportNodeFirmwareUpdate()) {
       true when nodesFwUpdateCheckRaw is JNAPSuccess =>
         List.from(nodesFwUpdateCheckRaw.output['firmwareUpdateStatus'])
             .map((e) => NodesFirmwareUpdateStatus.fromMap(e))
@@ -72,6 +74,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
               autoUpdateWindow: FirmwareAutoUpdateWindow.simple()),
       nodesStatus: fwUpdateStatusList,
     );
+    logger.d('[State]:[FirmwareUpdate]:${state.toJson()}');
     return state;
   }
 
@@ -104,7 +107,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
           '[FIRMWARE]: Skip checking firmware update avaliable: last check time {${DateTime.fromMillisecondsSinceEpoch(lastCheckTime)}}');
       yield [];
     } else {
-      final action = isServiceSupport(JNAPService.nodesFirmwareUpdate)
+      final action = serviceHelper.isSupportNodeFirmwareUpdate()
           ? JNAPAction.updateFirmwareNow
           : JNAPAction.nodesUpdateFirmwareNow;
       await ref
@@ -131,11 +134,11 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
   }
 
   Future updateFirmware() async {
-    logger.i('[FIRMWARE]: update firmware START!');
+    logger.i('[FIRMWARE]: Update firmware: Start');
     final benchmark = BenchMarkLogger(name: 'FirmwareUpdate');
     benchmark.start();
     state = state.copyWith(isUpdating: true);
-    final action = isServiceSupport(JNAPService.nodesFirmwareUpdate)
+    final action = serviceHelper.isSupportNodeFirmwareUpdate()
         ? JNAPAction.updateFirmwareNow
         : JNAPAction.nodesUpdateFirmwareNow;
     await ref.read(routerRepositoryProvider).send(
@@ -152,7 +155,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
       stopCondition: (result) =>
           _checkFirmwareUpdateComplete(result, state.nodesStatus ?? []),
       onCompleted: () {
-        logger.i('[FIRMWARE]: update firmware COMPLETED!');
+        logger.i('[FIRMWARE]: Update firmware: Done!');
         final polling = ref.read(pollingProvider.notifier);
         polling
             .forcePolling()
@@ -174,8 +177,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     List<FirmwareUpdateStatus> records,
   ) {
     if (result is JNAPSuccess) {
-      final statusList =
-          switch (isServiceSupport(JNAPService.nodesFirmwareUpdate)) {
+      final statusList = switch (serviceHelper.isSupportNodeFirmwareUpdate()) {
         false => [FirmwareUpdateStatus.fromMap(result.output)],
         true => List.from(result.output['firmwareUpdateStatus'])
             .map((e) => NodesFirmwareUpdateStatus.fromMap(e))
@@ -185,11 +187,11 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
       final isSatisfied =
           !statusList.any((status) => status.pendingOperation != null);
       final isDataConsitent = _isRecordConsistent(statusList, records);
-      logger.i(
-          '[FIRMWARE]: check if updates are all finished: $statusList, $isSatisfied, $isDataConsitent');
-      return isSatisfied && isDataConsitent;
+      final isDone = isSatisfied && isDataConsitent;
+      logger.i('[FIRMWARE]: Check if all updates are finished: $isDone');
+      return isDone;
     } else {
-      logger.i('[FIRMWARE]: error: $result, maybe reboot');
+      logger.e('[FIRMWARE]: Error: $result - Maybe rebooting');
       return false;
     }
   }
@@ -248,7 +250,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     bool Function(JNAPResult)? stopCondition,
     Function()? onCompleted,
   }) {
-    final action = isServiceSupport(JNAPService.nodesFirmwareUpdate)
+    final action = serviceHelper.isSupportNodeFirmwareUpdate()
         ? JNAPAction.getNodesFirmwareUpdateStatus
         : JNAPAction.getFirmwareUpdateStatus;
     return ref
@@ -261,7 +263,6 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
             onCompleted: onCompleted,
             auth: true)
         .map((result) {
-      logger.i('[FIRMWARE]: check firmware update status: $result');
       if (result is! JNAPSuccess) {
         throw result;
       }
@@ -279,7 +280,9 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
   }
 
   Future<bool> manualFirmwareUpdate(String filename, List<int> bytes) async {
-    final client = LinksysHttpClient();
+    final client = LinksysHttpClient()
+      ..timeoutMs = 60000
+      ..retries = 0;
     final localPwd = ref.read(authProvider).value?.localPassword ??
         await const FlutterSecureStorage().read(key: pLocalPassword) ??
         '';
@@ -289,23 +292,41 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
       filename: filename,
       contentType: MediaType('application', 'octet-stream'),
     );
-    return client
-        .upload(Uri.parse('https://${getLocalIp(ref)}/jcgi/'), [
-          // MultipartFile.fromBytes(kJNAPAction, 'updatefirmware'.codeUnits),
-          // MultipartFile.fromBytes(kJNAPAuthorization,
-          //     'Basic ${Utils.stringBase64Encode('admin:$localPwd')}'.codeUnits),
-          multiPart,
-        ], fields: {
-          kJNAPAction: 'updatefirmware',
-          kJNAPAuthorization:
-              'Basic ${Utils.stringBase64Encode('admin:$localPwd')}'
-        })
-        .then((response) =>
-            response.statusCode == 200 &&
-            jsonDecode(response.body)['result'] == 'OK')
-        .onError((error, stackTrace) {
-          logger.d('Manual Firmware update error: $error');
-          return false;
-        });
+    final log = BenchMarkLogger(name: 'Manual FW update');
+    log.start();
+    await ref.read(pollingProvider.notifier).stopPolling();
+    return client.upload(Uri.parse('https://${getLocalIp(ref)}/jcgi/'), [
+      multiPart,
+    ], fields: {
+      kJNAPAction: 'updatefirmware',
+      kJNAPAuthorization: 'Basic ${Utils.stringBase64Encode('admin:$localPwd')}'
+    }).then((response) {
+      final result = jsonDecode(response.body)['result'];
+      log.end();
+      if (result == 'OK') {
+        return true;
+      }
+      // error
+      final error = response.headers['X-Jcgi-Result'];
+      throw ManualFirmwareUpdateException(error);
+    }).onError((error, stackTrace) {
+      log.end();
+      if (error is ErrorResponse && error.code == '500') {
+        return true;
+      }
+      logger.e('[FIRMWARE]: Manual firmware update: Error: $error');
+      throw ManualFirmwareUpdateException('UnknownError');
+    });
   }
+
+  Future waitForRouterBackOnline() {
+    return ref.read(sideEffectProvider.notifier).manualDeviceRestart().whenComplete(() {
+      ref.read(pollingProvider.notifier).startPolling();
+    });
+  }
+}
+
+class ManualFirmwareUpdateException implements Exception {
+  final String? result;
+  ManualFirmwareUpdateException(this.result);
 }

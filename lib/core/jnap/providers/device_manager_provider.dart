@@ -1,10 +1,12 @@
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_provider.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/extensions/_extensions.dart';
 import 'package:privacy_gui/core/jnap/models/back_haul_info.dart';
 import 'package:privacy_gui/core/jnap/models/device.dart';
+import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
 import 'package:privacy_gui/core/jnap/models/layer2_connection.dart';
 import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
 import 'package:privacy_gui/core/jnap/models/node_wireless_connection.dart';
@@ -17,7 +19,6 @@ import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/icon_device_category.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 
 final deviceManagerProvider =
     NotifierProvider<DeviceManagerNotifier, DeviceManagerState>(
@@ -35,7 +36,7 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     Map<String, dynamic>? getNetworkConnectionsData;
     Map<String, dynamic>? getNodesWirelessNetworkConnectionsData;
     Map<String, dynamic>? getRadioInfo;
-
+    Map<String, dynamic>? guestRadioSettings;
     Map<String, dynamic>? getDevicesData;
     Map<String, dynamic>? getWANStatusData;
     Map<String, dynamic>? getBackHaulInfoData;
@@ -54,6 +55,8 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
           (result[JNAPAction.getWANStatus] as JNAPSuccess?)?.output;
       getBackHaulInfoData =
           (result[JNAPAction.getBackhaulInfo] as JNAPSuccess?)?.output;
+      guestRadioSettings =
+          (result[JNAPAction.getGuestRadioSettings] as JNAPSuccess?)?.output;
     }
     final List<Layer2Connection> connectionData;
     if (getNodesWirelessNetworkConnectionsData != null) {
@@ -88,6 +91,10 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     newState = _getWANStatusModel(newState, getWANStatusData);
     newState = _getBackhaukInfoData(newState, getBackHaulInfoData);
     newState = newState.copyWith(radioInfos: radioMap);
+    newState = newState.copyWith(
+        guestRadioSettings: guestRadioSettings == null
+            ? null
+            : GuestRadioSettings.fromMap(guestRadioSettings));
     newState = _checkUpstream(newState);
 
     newState = newState.copyWith(
@@ -151,7 +158,7 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     nodes = nodes.fold(<LinksysDevice>[], (list, node) {
       final connectedDevices = externalDevices.where((device) {
         // Make sure the external device is online
-        if (device.connections.isNotEmpty) {
+        if (device.isOnline()) {
           // There usually be only one item
           final parentDeviceId = device.connections.firstOrNull?.parentDeviceID;
           // Count it if this item's parentId is the target node,
@@ -205,7 +212,7 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
         final deviceId = device.deviceID;
         final backhaulInfo = newState.backhaulInfoData
             .firstWhereOrNull((backhaul) => backhaul.deviceUUID == deviceId);
-        if (backhaulInfo != null && device.connections.isNotEmpty) {
+        if (backhaulInfo != null && device.isOnline()) {
           // Replace the IP in Devices with the one from BackhaulInfo
           final updatedConnections = device.connections
               .map(
@@ -235,13 +242,13 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
       final rssi = element.wirelessConnectionInfo?.stationRSSI;
       final band = element.wirelessConnectionInfo?.radioID;
       final bssid = element.wirelessConnectionInfo?.apBSSID;
-      if (mac != null) {
+      if (mac != null && rssi != null) {
         wireleeConnectionInfo[mac] = WirelessConnection(
           bssid: bssid ?? '',
           isGuest: false,
           radioID: 'RADIO_${band}z',
           band: '${band}z',
-          signalDecibels: rssi ?? -1,
+          signalDecibels: rssi,
         );
       }
     });
@@ -276,20 +283,24 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
   // Used in cases where the watched DeviceManager is still empty at very beginning stage
   bool isEmptyState() => state.deviceList.isEmpty;
 
-  String? getSsidConnectedBy(RawDevice device) {
+  String? getSsidConnectedBy(LinksysDevice device) {
     // Get the SSID to the RadioID connected by the given device
     final wirelessConnections = state.wirelessConnections;
     final wirelessData = wirelessConnections[device.getMacAddress()];
     final radioID = wirelessData?.radioID;
-    return state.radioInfos[radioID]?.settings.ssid;
+
+    /// if connection type is guest just ruturn any one of ssid, because it is all the same
+    return device.connectedWifiType == WifiConnectionType.guest
+        ? state.guestRadioSettings?.radios.firstOrNull?.guestSSID
+        : state.radioInfos[radioID]?.settings.ssid;
   }
 
-  int _getWirelessSignalOf(RawDevice device,
+  int? _getWirelessSignalOf(RawDevice device,
       [DeviceManagerState? currentState]) {
     final wirelessConnections = (currentState ?? state).wirelessConnections;
     final wirelessData = wirelessConnections[device.getMacAddress()];
     final signalDecibels = wirelessData?.signalDecibels;
-    return signalDecibels ?? -1;
+    return signalDecibels;
   }
 
   String getBandConnectedBy(LinksysDevice device) {
@@ -298,7 +309,10 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     // If the band data is absent in (NodesWireless)NetworkConnection,
     // check the knownInterface in GetDevices
     final band = wirelessData?.band ?? _getBandFromKnownInterfacesOf(device);
-    return band ?? (!device.isWirelessConnection() ? 'Ethernet' : '');
+    return band ??
+        (device.getConnectionType() == DeviceConnectionType.wired
+            ? 'Ethernet'
+            : '');
   }
 
   String? _getBandFromKnownInterfacesOf(RawDevice device) {
@@ -308,7 +322,7 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
         ?.band;
   }
 
-  LinksysDevice findParent(String deviceID, [DeviceManagerState? current]) {
+  LinksysDevice? findParent(String deviceID, [DeviceManagerState? current]) {
     final currentState = current ?? state;
     final master = currentState.masterDevice;
     final device = currentState.deviceList
@@ -316,7 +330,7 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     if (device == null) {
       return master;
     }
-    if (device.connections.isEmpty) {
+    if (!device.isOnline()) {
       return master;
     }
     String? parentIpAddr;
@@ -423,10 +437,21 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
       state = state.copyWith(
         deviceList: newDeviceList,
       );
-    }).then((value) => routerRepository.send(
-          JNAPAction.getDevices,
-          fetchRemote: true,
+    }).then((value) => ref.read(pollingProvider.notifier).forcePolling());
+  }
+
+  Future<void> deauthClient({required String macAddress}) async {
+    final routerRepository = ref.read(routerRepositoryProvider);
+    await routerRepository
+        .send(
+          JNAPAction.clientDeauth,
+          data: {
+            'macAddress': macAddress,
+          }..removeWhere((key, value) => value == null),
           auth: true,
-        ));
+          cacheLevel: CacheLevel.noCache,
+          fetchRemote: true,
+        )
+        .then((value) => ref.read(pollingProvider.notifier).forcePolling());
   }
 }

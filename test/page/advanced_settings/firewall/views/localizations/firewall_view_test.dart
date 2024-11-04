@@ -1,6 +1,5 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
@@ -10,11 +9,8 @@ import 'package:privacygui_widgets/widgets/card/card.dart';
 import '../../../../../common/test_responsive_widget.dart';
 import '../../../../../common/testable_router.dart';
 import '../../../../../test_data/firewall_settings_test_state.dart';
-import '../../firewall_view_test_mocks.dart';
+import '../../../../../mocks/firewall_notifier_mocks.dart';
 
-@GenerateNiceMocks([
-  MockSpec<FirewallNotifier>(),
-])
 void main() {
   late FirewallNotifier mockFirewallNotifier;
 

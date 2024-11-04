@@ -9,7 +9,6 @@ import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/panel/switch_trigger_tile.dart';
@@ -38,7 +37,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
   @override
   void initState() {
     super.initState();
-    state = ref.read(localNetworkSettingProvider.notifier).currentSettings();
+    state = ref.read(localNetworkSettingProvider);
     _startIpAddressController.text = state.firstIPAddress;
     _maxUserAllowedController.text = '${state.maxUserAllowed}';
     _clientLeaseTimeController.text = '${state.clientLeaseTime}';
@@ -95,6 +94,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
             AppSwitchTriggerTile(
               title:
                   AppText.labelLarge(loc(context).dhcpServer.capitalizeWords()),
+              semanticLabel: 'dhcp server',
               value: state.isDHCPEnabled,
               onChanged: (enabled) {
                 setState(() {
@@ -133,6 +133,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppIPFormField(
+          semanticLabel: 'start Ip Address',
           header: AppText.bodySmall(
             loc(context).startIpAddress,
           ),
@@ -246,13 +247,14 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppIPFormField(
+          semanticLabel: 'static Dns 1',
           header: AppText.bodySmall(
             loc(context).staticDns1,
           ),
           controller: _dns1Controller,
           border: const OutlineInputBorder(),
           onFocusChanged: (focused) {
-            if (!focused && _dns1Controller.text.isNotEmpty) {
+            if (!focused) {
               // DNS1 input finishes
               final result = ref
                   .read(localNetworkSettingProvider.notifier)
@@ -272,13 +274,14 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
         ),
         const AppGap.medium(),
         AppIPFormField(
+          semanticLabel: 'static Dns 2',
           header: AppText.bodySmall(
             loc(context).staticDns2,
           ),
           controller: _dns2Controller,
           border: const OutlineInputBorder(),
           onFocusChanged: (focused) {
-            if (!focused && _dns2Controller.text.isNotEmpty) {
+            if (!focused) {
               // DNS2 input finishes
               final result = ref
                   .read(localNetworkSettingProvider.notifier)
@@ -298,13 +301,14 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
         ),
         const AppGap.medium(),
         AppIPFormField(
+          semanticLabel: 'static Dns 3',
           header: AppText.bodySmall(
             loc(context).staticDns3,
           ),
           controller: _dns3Controller,
           border: const OutlineInputBorder(),
           onFocusChanged: (focused) {
-            if (!focused && _dns3Controller.text.isNotEmpty) {
+            if (!focused) {
               // DNS3 input finishes
               final result = ref
                   .read(localNetworkSettingProvider.notifier)
@@ -324,13 +328,14 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
         ),
         const AppGap.medium(),
         AppIPFormField(
+          semanticLabel: 'wins',
           header: AppText.bodySmall(
             loc(context).wins,
           ),
           controller: _winsController,
           border: const OutlineInputBorder(),
           onFocusChanged: (focused) {
-            if (!focused && _winsController.text.isNotEmpty) {
+            if (!focused) {
               // WINS server input finishes
               final result = ref
                   .read(localNetworkSettingProvider.notifier)

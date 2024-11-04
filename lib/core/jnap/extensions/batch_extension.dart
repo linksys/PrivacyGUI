@@ -1,4 +1,5 @@
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
@@ -107,7 +108,7 @@ extension BatchCommands on RouterRepository {
       // Firmware updates info
       const MapEntry(JNAPAction.getFirmwareUpdateSettings, {}),
     ];
-    if (isServiceSupport(JNAPService.nodesFirmwareUpdate)) {
+    if (serviceHelper.isSupportNodeFirmwareUpdate()) {
       commands.add(
         const MapEntry(JNAPAction.getNodesFirmwareUpdateStatus, {}),
       );

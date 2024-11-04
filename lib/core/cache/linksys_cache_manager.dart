@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/constants/build_config.dart';
 import 'cache_manager_base.dart'
     if (dart.library.io) 'cache_manager_mobile.dart'
     if (dart.library.html) 'cache_manager_web.dart';
@@ -25,27 +26,28 @@ class LinksysCacheManager {
   /// cache is plain text for data that used for saving in file.
   String lastSerialNumber = "";
   late int defaultCacheExpiration;
-  Map<String, dynamic> data = {};
-  String cache = "";
+  Map<String, dynamic> _data = {};
+  Map<String, dynamic> get data => _data;
+  String _cache = "";
   late FlutterCacheManager cacheManager;
 
   void init() async {
     logger.d('Starting to init linksys cache manager');
-    defaultCacheExpiration = 110000;
+    defaultCacheExpiration = (BuildConfig.refreshTimeInterval * 1000) - 10000;
     cacheManager = FlutterCacheManager();
-    cache = await cacheManager.get() ?? "";
-    logger.d('[CacheManager] init cache data: $cache');
+    _cache = await cacheManager.get() ?? "";
+    logger.d('[CacheManager] init cache data: $_cache');
   }
 
   void clearCache(String action) {
     if (action.isNotEmpty) {
       if (data.isNotEmpty && data.keys.contains(action)) {
         logger.d('[CacheManager] remove cache data: $action');
-        data.remove(action);
+        _data.remove(action);
       }
     } else {
       logger.d('[CacheManager] remove all cache data');
-      data = {};
+      _data = {};
     }
 
     if (lastSerialNumber.isNotEmpty) {
@@ -57,17 +59,17 @@ class LinksysCacheManager {
     logger.d("[CacheManager] Starting to load cache");
     if (serialNumber != lastSerialNumber) {
       final value = await cacheManager.get();
-      cache = value ?? "";
-      if (cache.isEmpty) {
-        data = {};
+      _cache = value ?? "";
+      if (_cache.isEmpty) {
+        _data = {};
         return false;
       }
-      final allCaches = jsonDecode(cache);
+      final allCaches = jsonDecode(_cache);
       if (allCaches[serialNumber] == null) {
-        data = {};
+        _data = {};
         return false;
       }
-      data = allCaches[serialNumber];
+      _data = allCaches[serialNumber];
       lastSerialNumber = serialNumber;
       logger.d(
           "[CacheManager] Load cache success for $serialNumber : ${data.toString()}");
@@ -83,17 +85,17 @@ class LinksysCacheManager {
     if (serialNumber.isEmpty) {
       return;
     }
-    if (cache.isEmpty) {
+    if (_cache.isEmpty) {
       cacheManager.get().then((value) {
-        cache = value ?? "";
+        _cache = value ?? "";
       });
     }
-    if (cache.isEmpty) {
+    if (_cache.isEmpty) {
       Map<String, dynamic> cache = {serialNumber: data};
       cacheManager.set(jsonEncode(cache));
       return;
     }
-    Map<String, dynamic> cacheModel = jsonDecode(cache);
+    Map<String, dynamic> cacheModel = jsonDecode(_cache);
     // has no serial number, init it
     if (cacheModel[serialNumber] == null) {
       cacheModel[serialNumber] = {};
@@ -101,8 +103,8 @@ class LinksysCacheManager {
     data.forEach((key, value) {
       cacheModel[serialNumber][key] = value;
     });
-    cache = jsonEncode(cacheModel);
-    cacheManager.set(cache);
+    _cache = jsonEncode(cacheModel);
+    cacheManager.set(_cache);
   }
 
   Future<Map<String, dynamic>?> getCache(String? serialNumber) async {
@@ -118,16 +120,16 @@ class LinksysCacheManager {
 
   String? getAllCaches() {
     cacheManager.get().then((value) {
-      cache = value ?? "";
+      _cache = value ?? "";
     });
-    return cache;
+    return _cache;
   }
 
-  bool didCacheExpire(String action) {
+  bool didCacheExpire(String action, [int? expirationOverride]) {
     if (data[action] == null ||
         data[action]["cachedAt"] == null ||
         DateTime.now().millisecondsSinceEpoch - data[action]["cachedAt"] >=
-            defaultCacheExpiration) {
+            (expirationOverride ?? defaultCacheExpiration)) {
       return true;
     } else {
       return false;
@@ -150,10 +152,10 @@ class LinksysCacheManager {
     }
   }
 
-  bool checkCacheDataValid(String action) {
+  bool checkCacheDataValid(String action, [int? expirationOverride]) {
     if (data.containsKey(action) &&
         data[action] != null &&
-        !didCacheExpire(action)) {
+        !didCacheExpire(action, expirationOverride)) {
       return true;
     } else {
       return false;

@@ -84,10 +84,10 @@ class SelectNetworkNotifier extends AsyncNotifier<SelectNetworkState> {
     }
   }
 
-  Future<void> saveSelectedNetwork(CloudNetworkModel network) async {
-    final pref = await SharedPreferences.getInstance();
-    await pref.setString(pSelectedNetworkId, network.network.networkId);
-  }
+  // Future<void> saveSelectedNetwork(CloudNetworkModel network) async {
+  //   final pref = await SharedPreferences.getInstance();
+  //   await pref.setString(pSelectedNetworkId, network.network.networkId);
+  // }
 
   Future<void> deleteNetworks() async {
     //TODO: Delete function

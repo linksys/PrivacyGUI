@@ -81,6 +81,7 @@ class _DHCPReservationsEditViewState
             const AppGap.large3(),
             AppIPFormField(
               header: AppText.bodySmall(loc(context).assignIpAddress),
+              semanticLabel: 'assign ip address',
               controller: _ipController,
               border: const OutlineInputBorder(),
               onChanged: (value) {
@@ -92,6 +93,7 @@ class _DHCPReservationsEditViewState
             const AppGap.large3(),
             AppTextField.macAddress(
               headerText: loc(context).macAddress,
+              semanticLabel: 'mac address',
               controller: _macController,
               border: const OutlineInputBorder(),
               onChanged: (value) {

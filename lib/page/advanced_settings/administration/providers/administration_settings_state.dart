@@ -14,6 +14,7 @@ class AdministrationSettingsState extends Equatable {
   final bool isUPnPEnabled;
   final bool canUsersConfigure;
   final bool canUsersDisableWANAccess;
+  final bool canDisAllowLocalMangementWirelessly;
   const AdministrationSettingsState({
     required this.managementSettings,
     required this.enabledALG,
@@ -22,8 +23,8 @@ class AdministrationSettingsState extends Equatable {
     required this.isUPnPEnabled,
     required this.canUsersConfigure,
     required this.canUsersDisableWANAccess,
+    this.canDisAllowLocalMangementWirelessly = true,
   });
-  
 
   AdministrationSettingsState copyWith({
     ManagementSettings? managementSettings,
@@ -33,15 +34,22 @@ class AdministrationSettingsState extends Equatable {
     bool? isUPnPEnabled,
     bool? canUsersConfigure,
     bool? canUsersDisableWANAccess,
+    bool? canDisAllowLocalMangementWirelessly,
   }) {
     return AdministrationSettingsState(
       managementSettings: managementSettings ?? this.managementSettings,
       enabledALG: enabledALG ?? this.enabledALG,
-      isExpressForwardingSupported: isExpressForwardingSupported ?? this.isExpressForwardingSupported,
-      enabledExpressForwarfing: enabledExpressForwarfing ?? this.enabledExpressForwarfing,
+      isExpressForwardingSupported:
+          isExpressForwardingSupported ?? this.isExpressForwardingSupported,
+      enabledExpressForwarfing:
+          enabledExpressForwarfing ?? this.enabledExpressForwarfing,
       isUPnPEnabled: isUPnPEnabled ?? this.isUPnPEnabled,
       canUsersConfigure: canUsersConfigure ?? this.canUsersConfigure,
-      canUsersDisableWANAccess: canUsersDisableWANAccess ?? this.canUsersDisableWANAccess,
+      canUsersDisableWANAccess:
+          canUsersDisableWANAccess ?? this.canUsersDisableWANAccess,
+      canDisAllowLocalMangementWirelessly:
+          canDisAllowLocalMangementWirelessly ??
+              this.canDisAllowLocalMangementWirelessly,
     );
   }
 
@@ -54,24 +62,31 @@ class AdministrationSettingsState extends Equatable {
       'isUPnPEnabled': isUPnPEnabled,
       'canUsersConfigure': canUsersConfigure,
       'canUsersDisableWANAccess': canUsersDisableWANAccess,
+      'canDisAllowLocalMangementWirelessly':
+          canDisAllowLocalMangementWirelessly,
     };
   }
 
   factory AdministrationSettingsState.fromMap(Map<String, dynamic> map) {
     return AdministrationSettingsState(
-      managementSettings: ManagementSettings.fromMap(map['managementSettings'] as Map<String,dynamic>),
+      managementSettings: ManagementSettings.fromMap(
+          map['managementSettings'] as Map<String, dynamic>),
       enabledALG: map['enabledALG'] as bool,
       isExpressForwardingSupported: map['isExpressForwardingSupported'] as bool,
       enabledExpressForwarfing: map['enabledExpressForwarfing'] as bool,
       isUPnPEnabled: map['isUPnPEnabled'] as bool,
       canUsersConfigure: map['canUsersConfigure'] as bool,
       canUsersDisableWANAccess: map['canUsersDisableWANAccess'] as bool,
+      canDisAllowLocalMangementWirelessly:
+          map['canDisAllowLocalMangementWirelessly'] as bool,
     );
   }
 
   String toJson() => json.encode(toMap());
 
-  factory AdministrationSettingsState.fromJson(String source) => AdministrationSettingsState.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory AdministrationSettingsState.fromJson(String source) =>
+      AdministrationSettingsState.fromMap(
+          json.decode(source) as Map<String, dynamic>);
 
   @override
   bool get stringify => true;
@@ -86,6 +101,7 @@ class AdministrationSettingsState extends Equatable {
       isUPnPEnabled,
       canUsersConfigure,
       canUsersDisableWANAccess,
+      canDisAllowLocalMangementWirelessly,
     ];
   }
 }

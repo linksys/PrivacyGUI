@@ -1,6 +1,9 @@
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
+import 'package:privacy_gui/core/jnap/command/base_command.dart';
+import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
 import 'package:privacy_gui/core/jnap/models/radio_info.dart';
 import 'package:privacy_gui/core/jnap/models/set_radio_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
@@ -8,11 +11,15 @@ import 'package:privacy_gui/core/jnap/providers/dashboard_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
+import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/core/utils/devices.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/_providers.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/guest_wifi_item.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_state.dart';
-import 'package:privacy_gui/page/wifi_settings/views/wifi_list_view.dart';
 
 final wifiListProvider = NotifierProvider<WifiListNotifier, WiFiState>(
   () => WifiListNotifier(),
@@ -23,35 +30,59 @@ class WifiListNotifier extends Notifier<WiFiState> {
   WiFiState build() {
     final dashboardManagerState = ref.read(dashboardManagerProvider);
     final deviceManagerState = ref.read(deviceManagerProvider);
+    final homeState = ref.read(dashboardHomeProvider);
     return _getWifiList(
       deviceManagerState,
       dashboardManagerState,
-    );
+    ).copyWith(canDisableMainWiFi: homeState.lanPortConnections.isNotEmpty);
   }
 
   Future<WiFiState> fetch([bool force = false]) async {
-    final radioInfo = await ref
-        .read(routerRepositoryProvider)
-        .send(JNAPAction.getRadioInfo, fetchRemote: force, auth: true)
-        .then((result) => GetRadioInfo.fromMap(result.output));
+    final commands = JNAPTransactionBuilder(auth: true, commands: [
+      const MapEntry(JNAPAction.getRadioInfo, {}),
+      const MapEntry(JNAPAction.getGuestRadioSettings, {}),
+    ]);
     await ref.read(wifiAdvancedProvider.notifier).fetch();
     final deviceManagerState = ref.read(deviceManagerProvider);
-    final wifiItems = radioInfo.radios
+    final results = await ref
+        .read(routerRepositoryProvider)
+        .transaction(commands, fetchRemote: force);
+    final resultMap = Map.fromEntries(results.data);
+
+    final radioInfoJson = JNAPTransactionSuccessWrap.getResult(
+        JNAPAction.getRadioInfo, resultMap);
+    final radioInfo = radioInfoJson != null
+        ? GetRadioInfo.fromMap(radioInfoJson.output)
+        : null;
+    final wifiItems = radioInfo?.radios
         .map(
           (radio) => WiFiItem.fromRadio(radio,
               numOfDevices: deviceManagerState.mainWifiDevices.where((device) {
                 final deviceBand = ref
                     .read(deviceManagerProvider.notifier)
                     .getBandConnectedBy(device);
-                return device.connections.isNotEmpty &&
-                    deviceBand == radio.band;
+                return device.isOnline() && deviceBand == radio.band;
               }).length),
         )
         .toList();
+    final guestRadioSettingsJson = JNAPTransactionSuccessWrap.getResult(
+        JNAPAction.getGuestRadioSettings, resultMap);
+    final guestRadioInfo = guestRadioSettingsJson != null
+        ? GuestRadioSettings.fromMap(guestRadioSettingsJson.output)
+        : null;
+
+    final guestWiFi = GuestWiFiItem(
+      isEnabled: guestRadioInfo?.isGuestNetworkEnabled ?? false,
+      ssid: guestRadioInfo?.radios.firstOrNull?.guestSSID ?? '',
+      password: guestRadioInfo?.radios.firstOrNull?.guestWPAPassphrase ?? '',
+      numOfDevices: deviceManagerState.guestWifiDevices.length,
+    );
     state = state.copyWith(
       mainWiFi: wifiItems,
-      simpleWiFi: wifiItems.first.copyWith(),
+      guestWiFi: guestWiFi,
     );
+
+    logger.d('[State]:[wiFiList]: ${state.toJson()}');
     return state;
   }
 
@@ -66,25 +97,26 @@ class WifiListNotifier extends Notifier<WiFiState> {
                 final deviceBand = ref
                     .read(deviceManagerProvider.notifier)
                     .getBandConnectedBy(device);
-                return device.connections.isNotEmpty &&
-                    deviceBand == radio.band;
+                return device.isOnline() && deviceBand == radio.band;
               }).length),
         )
         .toList();
     return WiFiState(
-      mainWiFi: wifiItems,
-      simpleWiFi: wifiItems.first.copyWith(),
-    );
+        mainWiFi: wifiItems,
+        guestWiFi: GuestWiFiItem(
+            isEnabled: dashboardManagerState.isGuestNetworkEnabled,
+            ssid:
+                dashboardManagerState.guestRadios.firstOrNull?.guestSSID ?? '',
+            password: dashboardManagerState
+                    .guestRadios.firstOrNull?.guestWPAPassphrase ??
+                '',
+            numOfDevices: deviceManagerState.guestWifiDevices.length));
   }
 
-  Future<WiFiState> save(WiFiListViewMode mode) {
-    final result = switch (mode) {
-      WiFiListViewMode.simple => state.mainWiFi
-          .map((e) => e.copyWith(
-              ssid: state.simpleWiFi.ssid, password: state.simpleWiFi.password))
-          .toList(),
-      WiFiListViewMode.advanced => state.mainWiFi,
-    }
+  Future<WiFiState> save() async {
+    final routerRepository = ref.read(routerRepositoryProvider);
+    // build main wifi settings
+    final result = state.mainWiFi
         .map((wifiItem) => NewRadioSettings(
               radioID: wifiItem.radioID.value,
               settings: RouterRadioSettings(
@@ -103,49 +135,109 @@ class WifiListNotifier extends Notifier<WiFiState> {
         .toList();
 
     final newSettings = SetRadioSettings(radios: result);
+    // build guest wifi settings
+    final guestRadioInfo = await routerRepository
+        .send(JNAPAction.getGuestRadioSettings, fetchRemote: true, auth: true)
+        .then((response) => GuestRadioSettings.fromMap(response.output));
+    final setGuestRadioSettings =
+        SetGuestRadioSettings.fromGuestRadioSettings(guestRadioInfo);
+    final isGuestChanged = state.guestWiFi.isEnabled !=
+        setGuestRadioSettings.isGuestNetworkEnabled;
+    final newGuestRadios = setGuestRadioSettings.radios
+        .map(
+          (e) => e.copyWith(
+            isEnabled: state.mainWiFi
+                    .firstWhereOrNull(
+                        (mainRadio) => e.radioID == mainRadio.radioID.value)
+                    ?.isEnabled ??
+                state.guestWiFi.isEnabled,
+            guestSSID: state.guestWiFi.ssid,
+            guestWPAPassphrase: state.guestWiFi.password,
+            canEnableRadio: state.guestWiFi.isEnabled,
+          ),
+        )
+        .toList();
+    final newSetGuestRadioSettings = setGuestRadioSettings.copyWith(
+        isGuestNetworkEnabled: state.guestWiFi.isEnabled,
+        radios: newGuestRadios);
 
-    final routerRepository = ref.read(routerRepositoryProvider);
+    final builder = JNAPTransactionBuilder(auth: true, commands: [
+      // if (isGuestChanged)
+      MapEntry(JNAPAction.setRadioSettings, newSettings.toMap()),
+      MapEntry(
+          JNAPAction.setGuestRadioSettings, newSetGuestRadioSettings.toMap()),
+    ]);
     return routerRepository
-        .send(
-          JNAPAction.setRadioSettings,
-          auth: true,
-          data: newSettings.toMap(),
+        .transaction(
+          builder,
+          fetchRemote: true,
+          cacheLevel: CacheLevel.noCache,
         )
         .then((_) => ref.read(pollingProvider.notifier).forcePolling())
         .then((_) => fetch(true));
   }
 
   Future<void> saveToggleEnabled(
-      {required List<String> radios, required bool enabled}) async {
-    final settings = state.mainWiFi
-        .map((wifiItem) => NewRadioSettings(
-              radioID: wifiItem.radioID.value,
-              settings: RouterRadioSettings(
-                isEnabled: radios.contains(wifiItem.radioID.value)
-                    ? enabled
-                    : wifiItem.isEnabled,
-                mode: wifiItem.wirelessMode.value,
-                ssid: wifiItem.ssid,
-                broadcastSSID: wifiItem.isBroadcast,
-                channelWidth: wifiItem.channelWidth.value,
-                channel: wifiItem.channel,
-                security: wifiItem.securityType.value,
-                wepSettings: _getWepSettings(wifiItem),
-                wpaPersonalSettings: _getWpaPersonalSettings(wifiItem),
-                wpaEnterpriseSettings: _getWpaEnterpriseSettings(wifiItem),
-              ),
-            ))
-        .toList();
-    final newSettings = SetRadioSettings(radios: settings);
+      {required List<String>? radios, required bool enabled}) async {
+    if (radios == null) {
+      final guestRadioInfo = await ref
+          .read(routerRepositoryProvider)
+          .send(JNAPAction.getGuestRadioSettings, auth: true)
+          .then((response) => GuestRadioSettings.fromMap(response.output));
+      final setGuestRadioSettings =
+          SetGuestRadioSettings.fromGuestRadioSettings(guestRadioInfo);
+      final newGuestRadios = setGuestRadioSettings.radios
+          .map((e) => e.copyWith(
+              isEnabled: state.guestWiFi.isEnabled,
+              guestSSID: state.guestWiFi.ssid,
+              guestWPAPassphrase: state.guestWiFi.password))
+          .toList();
+      final newSetGuestRadioSettings = setGuestRadioSettings.copyWith(
+          isGuestNetworkEnabled: state.guestWiFi.isEnabled,
+          radios: newGuestRadios);
+      await ref
+          .read(routerRepositoryProvider)
+          .send(
+            JNAPAction.setGuestRadioSettings,
+            data: newSetGuestRadioSettings.toMap(),
+            fetchRemote: true,
+            cacheLevel: CacheLevel.noCache,
+            auth: true,
+          )
+          .then((_) => fetch(true))
+          .then((_) => ref.read(pollingProvider.notifier).forcePolling());
+    } else {
+      final settings = state.mainWiFi
+          .map((wifiItem) => NewRadioSettings(
+                radioID: wifiItem.radioID.value,
+                settings: RouterRadioSettings(
+                  isEnabled: radios.contains(wifiItem.radioID.value)
+                      ? enabled
+                      : wifiItem.isEnabled,
+                  mode: wifiItem.wirelessMode.value,
+                  ssid: wifiItem.ssid,
+                  broadcastSSID: wifiItem.isBroadcast,
+                  channelWidth: wifiItem.channelWidth.value,
+                  channel: wifiItem.channel,
+                  security: wifiItem.securityType.value,
+                  wepSettings: _getWepSettings(wifiItem),
+                  wpaPersonalSettings: _getWpaPersonalSettings(wifiItem),
+                  wpaEnterpriseSettings: _getWpaEnterpriseSettings(wifiItem),
+                ),
+              ))
+          .toList();
+      final newSettings = SetRadioSettings(radios: settings);
 
-    final routerRepository = ref.read(routerRepositoryProvider);
-    return routerRepository
-        .send(
-          JNAPAction.setRadioSettings,
-          auth: true,
-          data: newSettings.toMap(),
-        )
-        .then((_) => fetch(true));
+      final routerRepository = ref.read(routerRepositoryProvider);
+      return routerRepository
+          .send(
+            JNAPAction.setRadioSettings,
+            auth: true,
+            data: newSettings.toMap(),
+          )
+          .then((_) => fetch(true))
+          .then((_) => ref.read(pollingProvider.notifier).forcePolling());
+    }
   }
 
   WepSettings? _getWepSettings(WiFiItem wifiItem) {
@@ -184,6 +276,9 @@ class WifiListNotifier extends Notifier<WiFiState> {
     if (radios.isEmpty) {
       return false;
     }
+    if (isMloEnabled == false) {
+      return false;
+    }
     // Bands do not have the same main settings (SSID/PW/Security Type)
     final first = radios.values.first;
     final isMainSettingsInconsitent = radios.values.any((element) =>
@@ -201,17 +296,10 @@ class WifiListNotifier extends Notifier<WiFiState> {
         .where((e) => e.key != WifiRadioBand.radio_24)
         .map((e) => e.value)
         .any((element) => !element.wirelessMode.isIncludeBeMixedMode);
-    return (isMloEnabled ?? false) ||
-        isMainSettingsInconsitent ||
+    return isMainSettingsInconsitent ||
         hasNonWPA3SecurityType ||
         hasDisabled5G6GBand ||
         has5G6GModeNotMixed;
-  }
-
-  bool isAllBandsConsistent() {
-    return !state.mainWiFi.any((element) =>
-        element.ssid != state.simpleWiFi.ssid ||
-        element.password != state.simpleWiFi.password);
   }
 
   int? checkIfChannelLegalWithWidth(
@@ -228,10 +316,10 @@ class WifiListNotifier extends Notifier<WiFiState> {
   ///
   /// Setter
   ///
-  void setWiFiSSID(String ssid, WifiRadioBand? band) {
+  void setWiFiSSID(String ssid, [WifiRadioBand? band]) {
     if (band == null) {
-      final current = state.simpleWiFi;
-      state = state.copyWith(simpleWiFi: current.copyWith(ssid: ssid));
+      final current = state.guestWiFi;
+      state = state.copyWith(guestWiFi: current.copyWith(ssid: ssid));
     } else {
       final current =
           state.mainWiFi.firstWhereOrNull((element) => element.radioID == band);
@@ -244,10 +332,10 @@ class WifiListNotifier extends Notifier<WiFiState> {
     }
   }
 
-  void setWiFiPassword(String password, WifiRadioBand? band) {
+  void setWiFiPassword(String password, [WifiRadioBand? band]) {
     if (band == null) {
-      final current = state.simpleWiFi;
-      state = state.copyWith(simpleWiFi: current.copyWith(password: password));
+      final current = state.guestWiFi;
+      state = state.copyWith(guestWiFi: current.copyWith(password: password));
     } else {
       final current =
           state.mainWiFi.firstWhereOrNull((element) => element.radioID == band);
@@ -260,11 +348,10 @@ class WifiListNotifier extends Notifier<WiFiState> {
     }
   }
 
-  void setWiFiEnabled(bool isEnabled, WifiRadioBand? band) {
+  void setWiFiEnabled(bool isEnabled, [WifiRadioBand? band]) {
     if (band == null) {
-      final current = state.simpleWiFi;
-      state =
-          state.copyWith(simpleWiFi: current.copyWith(isEnabled: isEnabled));
+      final current = state.guestWiFi;
+      state = state.copyWith(guestWiFi: current.copyWith(isEnabled: isEnabled));
     } else {
       final current =
           state.mainWiFi.firstWhereOrNull((element) => element.radioID == band);
@@ -277,97 +364,64 @@ class WifiListNotifier extends Notifier<WiFiState> {
     }
   }
 
-  void setWiFiSecurityType(WifiSecurityType type, WifiRadioBand? band) {
-    if (band == null) {
-      final current = state.simpleWiFi;
-      state = state.copyWith(simpleWiFi: current.copyWith(securityType: type));
-    } else {
-      final current =
-          state.mainWiFi.firstWhereOrNull((element) => element.radioID == band);
-      if (current != null) {
-        final index = state.mainWiFi.indexOf(current);
-        final newOne = current.copyWith(securityType: type);
-        state = state.copyWith(
-            mainWiFi: List.from(state.mainWiFi)..[index] = newOne);
-      }
-    }
-  }
-
-  void setWiFiMode(WifiWirelessMode mode, WifiRadioBand? band) {
-    if (band == null) {
-      final current = state.simpleWiFi;
-      state = state.copyWith(simpleWiFi: current.copyWith(wirelessMode: mode));
-    } else {
-      final current =
-          state.mainWiFi.firstWhereOrNull((element) => element.radioID == band);
-      if (current != null) {
-        final index = state.mainWiFi.indexOf(current);
-        final newOne = current.copyWith(wirelessMode: mode);
-        state = state.copyWith(
-            mainWiFi: List.from(state.mainWiFi)..[index] = newOne);
-      }
-    }
-  }
-
-  void setEnableBoardcast(bool isEnabled, WifiRadioBand? band) {
-    if (band == null) {
-      final current = state.simpleWiFi;
+  void setWiFiSecurityType(WifiSecurityType type, WifiRadioBand band) {
+    final current =
+        state.mainWiFi.firstWhereOrNull((element) => element.radioID == band);
+    if (current != null) {
+      final index = state.mainWiFi.indexOf(current);
+      final newOne = current.copyWith(securityType: type);
       state =
-          state.copyWith(simpleWiFi: current.copyWith(isBroadcast: isEnabled));
-    } else {
-      final current =
-          state.mainWiFi.firstWhereOrNull((element) => element.radioID == band);
-      if (current != null) {
-        final index = state.mainWiFi.indexOf(current);
-        final newOne = current.copyWith(isBroadcast: isEnabled);
-        state = state.copyWith(
-            mainWiFi: List.from(state.mainWiFi)..[index] = newOne);
-      }
+          state.copyWith(mainWiFi: List.from(state.mainWiFi)..[index] = newOne);
     }
   }
 
-  void setChannelWidth(WifiChannelWidth channelWidth, WifiRadioBand? band) {
-    if (band == null) {
-      final current = state.simpleWiFi;
-      state = state.copyWith(
-          simpleWiFi: current.copyWith(
-              channelWidth: channelWidth,
-              channel: checkIfChannelLegalWithWidth(
-                      channel: current.channel,
-                      channelWidth: channelWidth,
-                      band: current.radioID) ??
-                  current.channel));
-    } else {
-      final current =
-          state.mainWiFi.firstWhereOrNull((element) => element.radioID == band);
-      if (current != null) {
-        final index = state.mainWiFi.indexOf(current);
-        final newOne = current.copyWith(
-            channelWidth: channelWidth,
-            channel: checkIfChannelLegalWithWidth(
-                    channel: current.channel,
-                    channelWidth: channelWidth,
-                    band: band) ??
-                current.channel);
-        state = state.copyWith(
-            mainWiFi: List.from(state.mainWiFi)..[index] = newOne);
-      }
+  void setWiFiMode(WifiWirelessMode mode, WifiRadioBand band) {
+    final current =
+        state.mainWiFi.firstWhereOrNull((element) => element.radioID == band);
+    if (current != null) {
+      final index = state.mainWiFi.indexOf(current);
+      final newOne = current.copyWith(wirelessMode: mode);
+      state =
+          state.copyWith(mainWiFi: List.from(state.mainWiFi)..[index] = newOne);
     }
   }
 
-  void setChannel(int channel, WifiRadioBand? band) {
-    if (band == null) {
-      final current = state.simpleWiFi;
-      state = state.copyWith(simpleWiFi: current.copyWith(channel: channel));
-    } else {
-      final current =
-          state.mainWiFi.firstWhereOrNull((element) => element.radioID == band);
-      if (current != null) {
-        final index = state.mainWiFi.indexOf(current);
-        final newOne = current.copyWith(channel: channel);
-        state = state.copyWith(
-            mainWiFi: List.from(state.mainWiFi)..[index] = newOne);
-      }
+  void setEnableBoardcast(bool isEnabled, WifiRadioBand band) {
+    final current =
+        state.mainWiFi.firstWhereOrNull((element) => element.radioID == band);
+    if (current != null) {
+      final index = state.mainWiFi.indexOf(current);
+      final newOne = current.copyWith(isBroadcast: isEnabled);
+      state =
+          state.copyWith(mainWiFi: List.from(state.mainWiFi)..[index] = newOne);
+    }
+  }
+
+  void setChannelWidth(WifiChannelWidth channelWidth, WifiRadioBand band) {
+    final current =
+        state.mainWiFi.firstWhereOrNull((element) => element.radioID == band);
+    if (current != null) {
+      final index = state.mainWiFi.indexOf(current);
+      final newOne = current.copyWith(
+          channelWidth: channelWidth,
+          channel: checkIfChannelLegalWithWidth(
+                  channel: current.channel,
+                  channelWidth: channelWidth,
+                  band: band) ??
+              current.channel);
+      state =
+          state.copyWith(mainWiFi: List.from(state.mainWiFi)..[index] = newOne);
+    }
+  }
+
+  void setChannel(int channel, WifiRadioBand band) {
+    final current =
+        state.mainWiFi.firstWhereOrNull((element) => element.radioID == band);
+    if (current != null) {
+      final index = state.mainWiFi.indexOf(current);
+      final newOne = current.copyWith(channel: channel);
+      state =
+          state.copyWith(mainWiFi: List.from(state.mainWiFi)..[index] = newOne);
     }
   }
 }

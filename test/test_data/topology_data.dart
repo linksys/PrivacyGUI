@@ -1,4 +1,4 @@
-import 'package:privacy_gui/page/topology/_topology.dart';
+import 'package:privacy_gui/page/instant_topology/_instant_topology.dart';
 
 final _onlineRoot = OnlineTopologyNode(
   data: const TopologyModel(isOnline: true, location: 'Internet'),
@@ -171,24 +171,27 @@ final _slaveOfflineNode5 = RouterTopologyNode(
 );
 
 /// State
+final testTopologyMasterOnlyState = InstantTopologyState(
+  root: _onlineRoot
+    ..children.add(
+      _masterNode
+        ..children.clear()
+        ..parent = _onlineRoot,
+    ),
+);
 
-final testTopologyState1 = TopologyState(
-  nodesCount: 1,
-  onlineRoot: _onlineRoot
+final testTopology1SlaveState = InstantTopologyState(
+  root: _onlineRoot
     ..children.add(
       _masterNode
         ..children.clear()
         ..parent = _onlineRoot
         ..children.add(_slaveNode1..parent = _masterNode),
     ),
-  offlineRoot: OfflineTopologyNode(
-      data: const TopologyModel(isOnline: true, location: 'Offline'),
-      children: []),
 );
 
-final testTopologyState2 = TopologyState(
-  nodesCount: 1,
-  onlineRoot: _onlineRoot
+final testTopology2SlavesStarState = InstantTopologyState(
+  root: _onlineRoot
     ..children.clear()
     ..children.add(_masterNode
       ..parent = _onlineRoot
@@ -201,14 +204,10 @@ final testTopologyState2 = TopologyState(
           ..children.clear()
           ..parent = _masterNode
       ])),
-  offlineRoot: OfflineTopologyNode(
-      data: const TopologyModel(isOnline: true, location: 'Offline'),
-      children: []),
 );
 
-final testTopologyState3 = TopologyState(
-  nodesCount: 1,
-  onlineRoot: _onlineRoot
+final testTopology2SlavesDaisyState = InstantTopologyState(
+  root: _onlineRoot
     ..children.clear()
     ..children.add(_masterNode
       ..parent = _onlineRoot
@@ -223,14 +222,10 @@ final testTopologyState3 = TopologyState(
               ..parent = _slaveNode1
           ]),
       ])),
-  offlineRoot: OfflineTopologyNode(
-      data: const TopologyModel(isOnline: true, location: 'Offline'),
-      children: []),
 );
 
-final testTopologyState4 = TopologyState(
-  nodesCount: 1,
-  onlineRoot: _onlineRoot
+final testTopology5SlavesStarState = InstantTopologyState(
+  root: _onlineRoot
     ..children.clear()
     ..children.add(_masterNode
       ..parent = _onlineRoot
@@ -252,14 +247,10 @@ final testTopologyState4 = TopologyState(
           ..children.clear()
           ..parent = _masterNode,
       ])),
-  offlineRoot: OfflineTopologyNode(
-      data: const TopologyModel(isOnline: true, location: 'Offline'),
-      children: []),
 );
 
-final testTopologyState5 = TopologyState(
-  nodesCount: 1,
-  onlineRoot: _onlineRoot
+final testTopology5SlavesDaisyState = InstantTopologyState(
+  root: _onlineRoot
     ..children.clear()
     ..children.add(_masterNode
       ..parent = _onlineRoot
@@ -289,14 +280,10 @@ final testTopologyState5 = TopologyState(
               ]),
           ]),
       ])),
-  offlineRoot: OfflineTopologyNode(
-      data: const TopologyModel(isOnline: true, location: 'Offline'),
-      children: []),
 );
 
-final testTopologyState6 = TopologyState(
-  nodesCount: 1,
-  onlineRoot: _onlineRoot
+final testTopology5SlavesMixedState = InstantTopologyState(
+  root: _onlineRoot
     ..children.clear()
     ..children.add(_masterNode
       ..parent = _onlineRoot
@@ -322,43 +309,41 @@ final testTopologyState6 = TopologyState(
               ]),
           ]),
       ])),
-  offlineRoot: OfflineTopologyNode(
-      data: const TopologyModel(isOnline: true, location: 'Offline'),
-      children: []),
 );
 
-final testTopologyStateOffline1 = TopologyState(
-  nodesCount: 1,
-  onlineRoot: _onlineRoot
+final testTopology1OfflineState = InstantTopologyState(
+  root: _onlineRoot
     ..children.clear()
     ..children.add(
       _masterNode
         ..children.clear()
-        ..parent = _onlineRoot,
+        ..parent = _onlineRoot
+        ..children.add(
+          _slaveOfflineNode1
+            ..children.clear()
+            ..parent = _masterNode,
+        ),
     ),
-  offlineRoot: OfflineTopologyNode(
-      data: const TopologyModel(isOnline: false, location: 'Offline'),
-      children: [_slaveOfflineNode1..children.clear()]),
 );
 
-final testTopologyStateOffline2 = TopologyState(
-  nodesCount: 1,
-  onlineRoot: _onlineRoot
+final testTopology2OfflineState = InstantTopologyState(
+  root: _onlineRoot
     ..children.clear()
-    ..children.add(_masterNode
-      ..parent = _onlineRoot
-      ..children.clear()),
-  offlineRoot: OfflineTopologyNode(
-      data: const TopologyModel(isOnline: false, location: 'Offline'),
-      children: [
-        _slaveOfflineNode1..children.clear(),
-        _slaveOfflineNode2..children.clear()
-      ]),
+    ..children.add(
+      _masterNode
+        ..children.clear()
+        ..parent = _onlineRoot
+        ..children.add(_slaveOfflineNode1
+          ..children.clear()
+          ..parent = _masterNode)
+        ..children.add(_slaveOfflineNode2
+          ..children.clear()
+          ..parent = _masterNode),
+    ),
 );
 
-final testTopologyStateOffline3 = TopologyState(
-  nodesCount: 1,
-  onlineRoot: _onlineRoot
+final testTopology3OfflineState = InstantTopologyState(
+  root: _onlineRoot
     ..children.clear()
     ..children.add(_masterNode
       ..parent = _onlineRoot
@@ -370,19 +355,20 @@ final testTopologyStateOffline3 = TopologyState(
         _slaveNode2
           ..children.clear()
           ..parent = _masterNode,
+        _slaveOfflineNode1
+          ..children.clear()
+          ..parent = _masterNode,
+        _slaveOfflineNode2
+          ..children.clear()
+          ..parent = _masterNode,
+        _slaveOfflineNode3
+          ..children.clear()
+          ..parent = _masterNode,
       ])),
-  offlineRoot: OfflineTopologyNode(
-      data: const TopologyModel(isOnline: false, location: 'Offline'),
-      children: [
-        _slaveOfflineNode3..children.clear(),
-        _slaveOfflineNode4..children.clear(),
-        _slaveOfflineNode5..children.clear(),
-      ]),
 );
 
-final testTopologyStateOffline4 = TopologyState(
-  nodesCount: 1,
-  onlineRoot: _onlineRoot
+final testTopology4OfflineState = InstantTopologyState(
+  root: _onlineRoot
     ..children.clear()
     ..children.add(_masterNode
       ..parent = _onlineRoot
@@ -391,31 +377,42 @@ final testTopologyStateOffline4 = TopologyState(
         _slaveNode1
           ..children.clear()
           ..parent = _masterNode,
+        _slaveOfflineNode1
+          ..children.clear()
+          ..parent = _masterNode,
+        _slaveOfflineNode2
+          ..children.clear()
+          ..parent = _masterNode,
+        _slaveOfflineNode3
+          ..children.clear()
+          ..parent = _masterNode,
+        _slaveOfflineNode4
+          ..children.clear()
+          ..parent = _masterNode,
       ])),
-  offlineRoot: OfflineTopologyNode(
-      data: const TopologyModel(isOnline: false, location: 'Offline'),
-      children: [
-        _slaveOfflineNode2..children.clear(),
-        _slaveOfflineNode3..children.clear(),
-        _slaveOfflineNode4..children.clear(),
-        _slaveOfflineNode5..children.clear(),
-      ]),
 );
 
-final testTopologyStateOffline5 = TopologyState(
-  nodesCount: 1,
-  onlineRoot: _onlineRoot
+final testTopology5OfflineState = InstantTopologyState(
+  root: _onlineRoot
     ..children.clear()
     ..children.add(_masterNode
       ..parent = _onlineRoot
-      ..children.clear()),
-  offlineRoot: OfflineTopologyNode(
-      data: const TopologyModel(isOnline: false, location: 'Offline'),
-      children: [
-        _slaveOfflineNode1..children.clear(),
-        _slaveOfflineNode2..children.clear(),
-        _slaveOfflineNode3..children.clear(),
-        _slaveOfflineNode4..children.clear(),
-        _slaveOfflineNode5..children.clear(),
-      ]),
+      ..children.clear()
+      ..children.addAll([
+        _slaveOfflineNode1
+          ..children.clear()
+          ..parent = _masterNode,
+        _slaveOfflineNode2
+          ..children.clear()
+          ..parent = _masterNode,
+        _slaveOfflineNode3
+          ..children.clear()
+          ..parent = _masterNode,
+        _slaveOfflineNode4
+          ..children.clear()
+          ..parent = _masterNode,
+        _slaveOfflineNode5
+          ..children.clear()
+          ..parent = _masterNode,
+      ])),
 );

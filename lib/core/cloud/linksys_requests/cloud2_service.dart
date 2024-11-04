@@ -70,4 +70,22 @@ extension Cloud2Service on LinksysHttpClient {
     return this.post(Uri.parse(endpoint),
         headers: header, body: jsonEncode({'fcmToken': fcmToken}));
   }
+
+  Future<Response> geolocation({
+    required String linksysToken,
+    required String serialNumber,
+  }) {
+    final endpoint = combineUrl(kGeoLocation);
+    Map<String, String> header = defaultHeader;
+
+    header.addAll({
+      kHeaderLinksysToken: linksysToken,
+      kHeaderSerialNumber: serialNumber,
+      'cache-control': 'max-age=3600',
+    });
+    return this.get(
+      Uri.parse(endpoint),
+      headers: header,
+    );
+  }
 }

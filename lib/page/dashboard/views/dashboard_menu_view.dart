@@ -3,13 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
-import 'package:privacy_gui/page/components/shortcuts/spinners.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
-import 'package:privacy_gui/page/topology/providers/topology_provider.dart';
+import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
+import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
+import 'package:privacy_gui/page/instant_safety/providers/_providers.dart';
+import 'package:privacy_gui/page/instant_topology/providers/instant_topology_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
@@ -17,6 +20,8 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
+import 'package:privacy_gui/core/utils/extension.dart';
+import 'package:privacygui_widgets/widgets/label/status_label.dart';
 
 import 'package:privacygui_widgets/widgets/panel/general_section.dart';
 
@@ -46,8 +51,12 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
             onTap: () {
               _restartNetwork();
             }),
-        // PageMenuItem(
-        //     label: loc(context).menuSetupANewProduct, icon: LinksysIcons.add)
+        PageMenuItem(
+            label: loc(context).menuSetupANewProduct,
+            icon: LinksysIcons.add,
+            onTap: () {
+              context.pushNamed(RouteNamed.addNodes);
+            })
       ]),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
@@ -86,6 +95,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
       iconData: item.iconData,
       title: item.title,
       description: item.description,
+      status: item.status,
       onTap: item.onTap,
     );
   }
@@ -93,55 +103,68 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
   List<AppSectionItemData> createMenuItems() {
     // final isCloudLogin =
     //     ref.watch(authProvider).value?.loginType == LoginType.remote;
+    final safetyState = ref.watch(instantSafetyProvider);
+    final privacyState = ref.watch(instantPrivacyProvider);
     return [
       AppSectionItemData(
-          title: loc(context).wifi,
-          description: loc(context).menuWifiDesc,
+          title: loc(context).incredibleWiFi,
+          description: loc(context).incredibleWiFiDesc,
           iconData: LinksysIcons.wifi,
           onTap: () {
-            _navigateTo(RouteNamed.settingsWifi);
+            _navigateTo(RouteNamed.menuIncredibleWiFi);
           }),
       AppSectionItemData(
-          title: loc(context).networkAdmin,
-          description: loc(context).menuNetworkAdminDesc,
+          title: loc(context).instantAdmin,
+          description: loc(context).instantAdminDesc,
           iconData: LinksysIcons.accountCircle,
           onTap: () {
-            _navigateTo(RouteNamed.settingsNetworkAdmin);
+            _navigateTo(RouteNamed.menuInstantAdmin);
           }),
       AppSectionItemData(
-          title: loc(context).menuRouterAndNodes,
-          description: loc(context).menuRouterAndNodesDesc,
+          title: loc(context).instantTopology,
+          description: loc(context).instantTopologyDesc,
           iconData: LinksysIcons.router,
           onTap: () {
-            _navigateTo(RouteNamed.settingsNodes);
+            _navigateTo(RouteNamed.menuInstantTopology);
           }),
       AppSectionItemData(
-          title: loc(context).speedTest,
-          description: loc(context).menuSpeedTestDesc,
-          iconData: LinksysIcons.networkCheck,
-          onTap: () {
-            _navigateTo(RouteNamed.speedTestSelection);
-          }),
-      AppSectionItemData(
-          title: loc(context).safeBrowsing,
-          description: loc(context).menuSafeBrowsingDesc,
+          title: loc(context).instantSafety,
+          description: loc(context).instantSafetyDesc,
           iconData: LinksysIcons.encrypted,
+          status: safetyState.safeBrowsingType == InstantSafetyType.off,
           onTap: () {
-            _navigateTo(RouteNamed.safeBrowsing);
+            _navigateTo(RouteNamed.menuInstantSafety);
           }),
+      AppSectionItemData(
+          title: loc(context).instantPrivacy,
+          description: loc(context).instantPrivacyDesc,
+          iconData: LinksysIcons.smartLock,
+          status: privacyState.mode != MacFilterMode.allow,
+          onTap: () {
+            _navigateTo(RouteNamed.menuInstantPrivacy);
+          }),
+      AppSectionItemData(
+          title: loc(context).instantDevices,
+          description: loc(context).instantDevicesDesc,
+          iconData: LinksysIcons.devices,
+          onTap: () {
+            _navigateTo(RouteNamed.menuInstantDevices);
+          }),
+
       AppSectionItemData(
           title: loc(context).advancedSettings,
           iconData: LinksysIcons.settings,
           onTap: () {
-            _navigateTo(RouteNamed.dashboardAdvancedSettings);
+            _navigateTo(RouteNamed.menuAdvancedSettings);
           }),
-      // AppSectionItemData(
-      //     title: 'Settings',
-      //     description: 'This is a description for this tile',
-      //     iconData: LinksysIcons.settings,
-      //     onTap: () {
-      //       _navigateTo(RouteNamed.dashboardSettings);
-      //     }),
+
+      AppSectionItemData(
+          title: loc(context).instantVerify,
+          description: loc(context).instantVerifyDesc,
+          iconData: LinksysIcons.technician,
+          onTap: () {
+            _navigateTo(RouteNamed.menuInstantVerify);
+          }),
       // if (isCloudLogin)
       //   AppSectionItemData(
       //       title: loc(context).account,
@@ -188,23 +211,18 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
 
             final reboot = Future.sync(
                     () => ref.read(pollingProvider.notifier).stopPolling())
-                .then((_) => ref
-                    .read(topologyProvider.notifier)
-                    .reboot()
-                    .then((value) {
-                      showSuccessSnackBar(
-                          context, loc(context).successExclamation);
-                    })
-                    .onError((error, stackTrace) => showFailedSnackBar(
-                        context, loc(context).unknownErrorCode(error ?? '')))
-                    .whenComplete(() {
-                      ref.read(pollingProvider.notifier).startPolling();
-                    }));
+                .then(
+                    (_) => ref.read(instantTopologyProvider.notifier).reboot());
             doSomethingWithSpinner(context, reboot, messages: [
               '${loc(context).restarting}.',
               '${loc(context).restarting}..',
               '${loc(context).restarting}...'
-            ]);
+            ]).then((value) {
+              ref.read(pollingProvider.notifier).startPolling();
+              showSuccessSnackBar(context, loc(context).successExclamation);
+            }).catchError((error) {
+              showRouterNotFoundAlert(context, ref);
+            }, test: (error) => error is JNAPSideEffectError);
           },
         ),
         AppOutlinedButton(
@@ -227,6 +245,7 @@ class AppMenuCard extends StatelessWidget {
     this.onTap,
     this.color,
     this.borderColor,
+    this.status,
   });
 
   final IconData? iconData;
@@ -235,6 +254,7 @@ class AppMenuCard extends StatelessWidget {
   final VoidCallback? onTap;
   final Color? color;
   final Color? borderColor;
+  final bool? status;
 
   @override
   Widget build(BuildContext context) {
@@ -242,20 +262,27 @@ class AppMenuCard extends StatelessWidget {
       onTap: onTap,
       color: color,
       borderColor: borderColor,
+      explicitChildNodes: false,
+      identifier: 'now-menu-${title?.kebab()}',
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Tooltip(
-            message: title ?? '',
-            waitDuration: const Duration(milliseconds: 500),
-            child: FittedBox(
-              fit: BoxFit.fill,
-              child: Icon(
-                iconData,
-                size: 24,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              FittedBox(
+                fit: BoxFit.fill,
+                child: Icon(
+                  iconData,
+                  size: 24,
+                ),
               ),
-            ),
+              if (status != null)
+                AppStatusLabel(
+                  isOff: status!,
+                )
+            ],
           ),
           if (title != null)
             Padding(

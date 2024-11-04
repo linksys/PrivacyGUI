@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class IndeterminateProgressBar extends ConsumerStatefulWidget {
-  const IndeterminateProgressBar({Key? key}) : super(key: key);
+  final String? semanticLabel;
+
+  const IndeterminateProgressBar({this.semanticLabel, Key? key})
+      : super(key: key);
 
   @override
   ConsumerState<IndeterminateProgressBar> createState() =>
@@ -42,6 +45,7 @@ class _IndeterminateProgressBarState
         backgroundColor: Theme.of(context).colorScheme.primaryContainer,
         color: Theme.of(context).colorScheme.onPrimaryContainer,
         minHeight: 14,
+        semanticsLabel: widget.semanticLabel,
       ),
     );
   }

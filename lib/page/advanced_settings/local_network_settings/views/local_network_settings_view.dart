@@ -19,7 +19,6 @@ import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'package:privacy_gui/core/jnap/providers/assign_ip/base_assign_ip.dart'
     if (dart.library.html) 'package:privacy_gui/core/jnap/providers/assign_ip/web_assign_ip.dart';
 
@@ -43,7 +42,10 @@ class _LocalNetworkSettingsViewState
     super.initState();
     doSomethingWithSpinner(
       context,
-      ref.read(localNetworkSettingProvider.notifier).fetch().then(
+      ref
+          .read(localNetworkSettingProvider.notifier)
+          .fetch(fetchRemote: true)
+          .then(
         (value) {
           setState(
             () {
@@ -159,7 +161,7 @@ class _LocalNetworkSettingsViewState
     showSubmitAppDialog(
       context,
       title: loc(context).hostName.capitalizeWords(),
-      contentBuilder: (context, setState) {
+      contentBuilder: (context, setState, onSubmit) {
         return AppTextField(
           headerText: loc(context).hostName.capitalizeWords(),
           controller: textController,
@@ -202,11 +204,12 @@ class _LocalNetworkSettingsViewState
     showSubmitAppDialog(
       context,
       title: loc(context).ipAddress.capitalizeWords(),
-      contentBuilder: (context, setState) {
+      contentBuilder: (context, setState, onSubmit) {
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             AppIPFormField(
+              semanticLabel: 'ip address',
               controller: textController,
               errorText: errorDesc,
               border: const OutlineInputBorder(),
@@ -273,12 +276,13 @@ class _LocalNetworkSettingsViewState
     bool enableButton = false;
     showSubmitAppDialog(
       context,
-      title: loc(context).ipAddress.capitalizeWords(),
-      contentBuilder: (context, setState) {
+      title: loc(context).subnetMask.capitalizeWords(),
+      contentBuilder: (context, setState, onSubmit) {
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             AppIPFormField(
+              semanticLabel: 'subnet mask',
               octet1ReadOnly: true,
               octet2ReadOnly: true,
               controller: textController,
@@ -342,7 +346,9 @@ class _LocalNetworkSettingsViewState
       context,
       ref.read(localNetworkSettingProvider.notifier).saveSettings(state).then(
         (value) {
-          originalSettings = state;
+          setState(() {
+            originalSettings = state;
+          });
           showSuccessSnackBar(context, loc(context).changesSaved);
         },
       ).catchError(

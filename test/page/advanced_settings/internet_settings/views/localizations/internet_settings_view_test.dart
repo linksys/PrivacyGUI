@@ -8,7 +8,7 @@ import 'package:privacy_gui/route/route_model.dart';
 import '../../../../../common/test_responsive_widget.dart';
 import '../../../../../common/testable_router.dart';
 import '../../../../../test_data/internet_settings_state_data.dart';
-import '../../../../pnp/pnp_isp_type_selection_view_test_mocks.dart';
+import '../../../../../mocks/internet_settings_notifier_mocks.dart';
 
 Future<void> main() async {
   late InternetSettingsNotifier mockInternetSettingsNotifier;
@@ -18,10 +18,17 @@ Future<void> main() async {
   });
 
   group('InternetSettings - init', () {
-    testLocalizations('InternetSettings - mac address clone on', (tester, locale) async {
+    testLocalizations('InternetSettings - mac address clone on',
+        (tester, locale) async {
       when(mockInternetSettingsNotifier.build()).thenReturn(
-          InternetSettingsState.fromJson(internetSettingsStateData).copyWith(macClone: true));
-
+          InternetSettingsState.fromJson(internetSettingsStateData)
+              .copyWith(macClone: true));
+      when(mockInternetSettingsNotifier.fetch())
+          .thenAnswer((realInvocation) async {
+        await Future.delayed(const Duration(seconds: 1));
+        return InternetSettingsState.fromJson(internetSettingsStateData)
+            .copyWith(macClone: true);
+      });
       final widget = testableSingleRoute(
         config: LinksysRouteConfig(column: ColumnGrid(column: 9)),
         overrides: [
@@ -34,10 +41,15 @@ Future<void> main() async {
       await tester.pumpWidget(widget);
     });
 
-    testLocalizations('InternetSettings - mac address clone off', (tester, locale) async {
+    testLocalizations('InternetSettings - mac address clone off',
+        (tester, locale) async {
       when(mockInternetSettingsNotifier.build()).thenReturn(
           InternetSettingsState.fromJson(internetSettingsStateData));
-
+      when(mockInternetSettingsNotifier.fetch())
+          .thenAnswer((realInvocation) async {
+        await Future.delayed(const Duration(seconds: 1));
+        return InternetSettingsState.fromJson(internetSettingsStateData);
+      });
       final widget = testableSingleRoute(
         config: LinksysRouteConfig(column: ColumnGrid(column: 9)),
         overrides: [

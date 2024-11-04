@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/core/jnap/models/port_range_triggering_rule.dart';
 import 'package:privacy_gui/page/advanced_settings/port_forwarding/_port_forwarding.dart';
@@ -49,6 +50,8 @@ class _AddRuleContentViewState
 
   bool _isEnabled = false;
   List<PortRangeTriggeringRule> _rules = [];
+  String? _triggeredPortError;
+  String? _forwardedPortError;
 
   @override
   void initState() {
@@ -94,7 +97,7 @@ class _AddRuleContentViewState
       scrollable: true,
       title: loc(context).portRangeTriggering,
       bottomBar: PageBottomBar(
-        isPositiveEnabled: true,
+        isPositiveEnabled: _isSaveEnable(),
         isNegitiveEnabled: state.mode == RuleMode.editing ? true : null,
         negitiveLable: loc(context).delete,
         onPositiveTap: () {
@@ -107,27 +110,39 @@ class _AddRuleContentViewState
               description: _ruleNameController.text);
           doSomethingWithSpinner(
             context,
-            _notifier.save(rule).then(
-              (value) {
-                if (value) {
-                  showSuccessSnackBar(
-                      context,
-                      _notifier.isEdit()
-                          ? loc(context).ruleUpdated
-                          : loc(context).ruleAdded);
-
-                  context.pop(true);
-                }
-              },
-            ),
-          );
+            _notifier.save(rule),
+          ).then(
+            (value) {
+              if (value == true) {
+                showSuccessSnackBar(
+                    context,
+                    _notifier.isEdit()
+                        ? loc(context).ruleUpdated
+                        : loc(context).ruleAdded);
+                context.pop(true);
+              } else {
+                showFailedSnackBar(context, loc(context).failedExclamation);
+              }
+            },
+          ).onError((error, stackTrace) {
+            if (error is JNAPError) {
+              return;
+            }
+            showFailedSnackBar(
+                context, loc(context).unknownErrorCode(error ?? ''));
+          });
         },
         onNegitiveTap: () {
-          _notifier.delete().then((value) {
-            if (value) {
+          doSomethingWithSpinner(
+            context,
+            _notifier.delete(),
+          ).then((value) {
+            if (value == true) {
               showSimpleSnackBar(context, loc(context).ruleDeleted);
+              context.pop(true);
+            } else {
+              showFailedSnackBar(context, loc(context).failedExclamation);
             }
-            context.pop(true);
           });
         },
       ),
@@ -155,6 +170,7 @@ class _AddRuleContentViewState
       AppListCard(
         title: AppText.labelLarge(loc(context).ruleEnabled),
         trailing: AppSwitch(
+          semanticLabel: 'rule enabled',
           value: _isEnabled,
           onChanged: (value) {
             setState(() {
@@ -171,7 +187,10 @@ class _AddRuleContentViewState
   List<Widget> buildInputForms() {
     return [
       AppTextField.outline(
-          headerText: loc(context).ruleName, controller: _ruleNameController),
+        headerText: loc(context).ruleName,
+        controller: _ruleNameController,
+        onFocusChanged: _onFocusChange,
+      ),
       const AppGap.large2(),
       AppSection.withLabel(
         title: loc(context).triggeredRange,
@@ -185,6 +204,8 @@ class _AddRuleContentViewState
               inputType: TextInputType.number,
               controller: _firstTriggerPortController,
               max: 65535,
+              onFocusChanged: _onTriggeredPortFocusChange,
+              errorText: _triggeredPortError != null ? '' : null,
             ),
             const AppGap.medium(),
             AppTextField.minMaxNumber(
@@ -193,6 +214,8 @@ class _AddRuleContentViewState
               inputType: TextInputType.number,
               controller: _lastTriggerPortController,
               max: 65535,
+              onFocusChanged: _onTriggeredPortFocusChange,
+              errorText: _triggeredPortError,
             ),
             const AppGap.medium(),
           ],
@@ -210,6 +233,8 @@ class _AddRuleContentViewState
               inputType: TextInputType.number,
               controller: _firstForwardedPortController,
               max: 65535,
+              onFocusChanged: _onForwardedPortFocusChange,
+              errorText: _forwardedPortError != null ? '' : null,
             ),
             const AppGap.medium(),
             AppTextField.minMaxNumber(
@@ -218,11 +243,69 @@ class _AddRuleContentViewState
               inputType: TextInputType.number,
               controller: _lastForwardedPortController,
               max: 65535,
+              onFocusChanged: _onForwardedPortFocusChange,
+              errorText: _forwardedPortError,
             ),
             const AppGap.medium(),
           ],
         ),
       ),
     ];
+  }
+
+  bool _isSaveEnable() {
+    return _ruleNameController.text.isNotEmpty &&
+        _firstTriggerPortController.text.isNotEmpty &&
+        _lastTriggerPortController.text.isNotEmpty &&
+        _firstForwardedPortController.text.isNotEmpty &&
+        _lastForwardedPortController.text.isNotEmpty &&
+        _forwardedPortError == null &&
+        _triggeredPortError == null;
+  }
+
+  void _onForwardedPortFocusChange(bool focus) {
+    if (!focus) {
+      if (_firstForwardedPortController.text.isEmpty ||
+          _lastForwardedPortController.text.isEmpty) {
+        return;
+      }
+      final firstPort = int.tryParse(_firstForwardedPortController.text) ?? 0;
+      final lastPort = int.tryParse(_lastForwardedPortController.text) ?? 0;
+      bool isValidPortRange = lastPort - firstPort >= 0;
+      bool isRuleOverlap =
+          _notifier.isForwardedPortConflict(firstPort, lastPort);
+      _forwardedPortError = !isValidPortRange
+          ? loc(context).portRangeError
+          : isRuleOverlap
+              ? loc(context).rulesOverlapError
+              : null;
+      _onFocusChange(focus);
+    }
+  }
+
+  void _onTriggeredPortFocusChange(bool focus) {
+    if (!focus) {
+      if (_firstTriggerPortController.text.isEmpty ||
+          _lastTriggerPortController.text.isEmpty) {
+        return;
+      }
+      final firstPort = int.tryParse(_firstTriggerPortController.text) ?? 0;
+      final lastPort = int.tryParse(_lastTriggerPortController.text) ?? 0;
+      bool isValidPortRange = lastPort - firstPort >= 0;
+      bool isRuleOverlap =
+          _notifier.isTriggeredPortConflict(firstPort, lastPort);
+      _triggeredPortError = !isValidPortRange
+          ? loc(context).portRangeError
+          : isRuleOverlap
+              ? loc(context).rulesOverlapError
+              : null;
+      _onFocusChange(focus);
+    }
+  }
+
+  void _onFocusChange(bool focus) {
+    if (!focus) {
+      setState(() {});
+    }
   }
 }

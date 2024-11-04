@@ -7,6 +7,8 @@ import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
+// TODO: Unused page
+
 class NodeRestartView extends ConsumerStatefulWidget {
   const NodeRestartView({Key? key}) : super(key: key);
 

@@ -3,16 +3,16 @@ import 'dart:async';
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/models/device.dart';
 import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
-import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/core/utils/nodes.dart';
+import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacy_gui/page/nodes/_nodes.dart';
 import 'package:privacy_gui/page/nodes/providers/node_detail_id_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -43,14 +43,14 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
       return newState;
     }
 
-    if (isServiceSupport(JNAPService.routerLEDs3)) {
+    if (serviceHelper.isSupportLedMode()) {
       getLEDLight();
     }
     // Details of the specific device
     var location = '';
     var isMaster = false;
     var isOnline = false;
-    var connectedDevices = <LinksysDevice>[];
+    var connectedDevices = <DeviceListItem>[];
     var upstreamDevice = '';
     var isWired = false;
     var signalStrength = 0;
@@ -69,13 +69,13 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
       if (device.deviceID == targetId) {
         location = device.getDeviceLocation();
         isMaster = (targetId == master?.deviceID);
-        isOnline = device.connections.isNotEmpty;
+        isOnline = device.isOnline();
         upstreamDevice = isMaster
             ? 'INTERNET'
             : (device.upstream?.getDeviceLocation() ??
                 master?.getDeviceLocation() ??
                 '');
-        isWired = !device.isWirelessConnection();
+        isWired = device.getConnectionType() == DeviceConnectionType.wired;
         signalStrength = device.signalDecibels ?? 0;
         serialNumber = device.unit.serialNumber ?? '';
         modelNumber = device.model.modelNumber ?? '';
@@ -84,7 +84,9 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
         lanIpAddress = device.connections.firstOrNull?.ipAddress ?? '';
         final wanStatusModel = deviceManagerState.wanStatus;
         wanIpAddress = wanStatusModel?.wanConnection?.ipAddress ?? '';
-        connectedDevices = device.connectedDevices;
+        connectedDevices = device.connectedDevices
+            .map((e) => ref.read(deviceListProvider.notifier).createItem(e))
+            .toList();
       }
     }
 
@@ -108,9 +110,6 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
     return state;
   }
 
-  bool isSupportLedBlinking() => isServiceSupport(JNAPService.setup9);
-  bool isSupportLedMode() => isServiceSupport(JNAPService.routerLEDs4);
-
   Future<void> getLEDLight() async {
     return ref.read(deviceManagerProvider.notifier).getLEDLight().then((value) {
       state = state.copyWith(nodeLightSettings: value);
@@ -127,7 +126,7 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
     });
   }
 
-  Future<JNAPResult> startBlinkNodeLED(String deviceId) async {
+  Future startBlinkNodeLED(String deviceId) async {
     final repository = ref.read(routerRepositoryProvider);
     return repository.send(
       JNAPAction.startBlinkNodeLed,
@@ -138,7 +137,7 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
     );
   }
 
-  Future<JNAPResult> stopBlinkNodeLED() async {
+  Future stopBlinkNodeLED() async {
     final repository = ref.read(routerRepositoryProvider);
     return repository.send(
       JNAPAction.stopBlinkNodeLed,
@@ -148,11 +147,11 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
     );
   }
 
-  Future<void> toggleBlinkNode() async {
+  Future<void> toggleBlinkNode([bool stopOnly = false]) async {
     final prefs = await SharedPreferences.getInstance();
     final blinkDevice = prefs.get(blinkingDeviceId);
     final deviceId = ref.read(nodeDetailIdProvider);
-    if (blinkDevice == null) {
+    if (!stopOnly && blinkDevice == null) {
       state = state.copyWith(blinkingStatus: BlinkingStatus.blinking);
       startBlinkNodeLED(deviceId).then((response) {
         prefs.setString(blinkingDeviceId, deviceId);

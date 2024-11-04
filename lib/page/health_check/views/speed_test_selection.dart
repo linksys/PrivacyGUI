@@ -71,6 +71,7 @@ class SpeedTestSelectionView extends ConsumerWidget {
                 const AppGap.large3(),
                 SvgPicture(
                   CustomTheme.of(context).images.internetToRouter,
+                  semanticsLabel: 'internet To Router image',
                   width: 192,
                   height: 40,
                 ),

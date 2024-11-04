@@ -1,12 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:privacy_gui/core/cache/utility.dart';
-import 'package:privacy_gui/core/jnap/command/http/jnap_retry_options.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
@@ -48,6 +46,8 @@ class CommandWrap {
   final bool needAuth;
   Map<String, dynamic> data;
 }
+
+const defaultAdminPassword = 'admin';
 
 final routerRepositoryProvider = Provider((ref) {
   return RouterRepository(ref);
@@ -116,6 +116,10 @@ class RouterRepository {
     int retries = 1,
     JNAPSideEffectOverrides? sideEffectOverrides,
   }) async {
+    cacheLevel =
+        builder.commands.any((entry) => isMatchedJNAPNoCachePolicy(entry.key))
+            ? CacheLevel.noCache
+            : CacheLevel.localCached;
     final payload = builder.commands
         .map((entry) => {
               'action': builder.overrides[entry.key] ?? entry.key.actionValue,
@@ -237,7 +241,6 @@ class RouterRepository {
     int retry = 0;
     while (++retry <= maxRetry || maxRetry == -1) {
       logger.d('SCHEDULED COMMAND: publish command {$action}: $retry times');
-
       if (retry <= 1) {
         await Future.delayed(Duration(milliseconds: firstDelayInMilliSec));
       }
@@ -360,7 +363,7 @@ class RouterRepository {
             cloudLogin ? HttpHeaders.authorizationHeader : kJNAPAuthorization;
         final authValue = cloudLogin
             ? 'LinksysUserAuth session_token=$cloudToken'
-            : 'Basic ${Utils.stringBase64Encode('admin:${loginType == LoginType.none ? 'admin' : await getLocalPassword()}')}';
+            : 'Basic ${Utils.stringBase64Encode('admin:${loginType == LoginType.none ? defaultAdminPassword : await getLocalPassword()}')}';
         header = {
           authKey: authValue,
           if (cloudLogin) kJNAPNetworkId: _getNetworkId(),
@@ -378,7 +381,7 @@ class RouterRepository {
         final authKey = cloudLogin ? kJNAPSession : kJNAPAuthorization;
         final authValue = cloudLogin
             ? await getCloudToken()
-            : 'Basic ${Utils.stringBase64Encode('admin:${loginType == LoginType.none ? 'admin' : await getLocalPassword()}')}';
+            : 'Basic ${Utils.stringBase64Encode('admin:${loginType == LoginType.none ? defaultAdminPassword : await getLocalPassword()}')}';
         header = {
           authKey: (needAuth | isCloudLogin()) ? authValue : '',
         };

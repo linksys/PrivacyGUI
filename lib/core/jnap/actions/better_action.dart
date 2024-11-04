@@ -44,6 +44,10 @@ void _updateBetterActions(JNAPService service) {
       _betterActionMap[JNAPAction.coreSetAdminPassword] =
           _JNAPActionValue.coreSetAdminPassword3.value;
       break;
+    case JNAPService.core8:
+      break;
+    case JNAPService.core9:
+      break;
     case JNAPService.ddns:
       break;
     case JNAPService.ddns2:
@@ -199,6 +203,9 @@ void _updateBetterActions(JNAPService service) {
     case JNAPService.router6:
       _betterActionMap[JNAPAction.getExpressForwardingSettings] =
           _JNAPActionValue.getExpressForwardingSettings.value;
+      _betterActionMap[JNAPAction.setExpressForwardingSettings] =
+          _JNAPActionValue.setExpressForwardingSettings.value;
+
       break;
     case JNAPService.router7:
       _betterActionMap[JNAPAction.getWANSettings] =
@@ -219,6 +226,12 @@ void _updateBetterActions(JNAPService service) {
           _JNAPActionValue.getWANSettings5.value;
       break;
     case JNAPService.router11:
+      break;
+    case JNAPService.router12:
+      break;
+    case JNAPService.router13:
+      _betterActionMap[JNAPAction.getWANExternal] =
+          _JNAPActionValue.getWANExternal.value;
       break;
     case JNAPService.routerManagement:
       break;
@@ -290,6 +303,10 @@ void _updateBetterActions(JNAPService service) {
       _betterActionMap[JNAPAction.setRadioSettings] =
           _JNAPActionValue.setRadioSettings3.value;
       break;
+    case JNAPService.wirelessAP5:
+      _betterActionMap[JNAPAction.clientDeauth] =
+          _JNAPActionValue.clientDeuth.value;
+      break;
     case JNAPService.wirelessScheduler:
       break;
     case JNAPService.wirelessScheduler2:
@@ -338,6 +355,10 @@ void _updateBetterActions(JNAPService service) {
       break;
     case JNAPService.diagnostics9:
       break;
+    case JNAPService.diagnostics10:
+      _betterActionMap[JNAPAction.getSystemStats] =
+          _JNAPActionValue.getSystemStats2.value;
+      break;
     case JNAPService.settings:
       break;
     case JNAPService.settings2:
@@ -377,8 +398,11 @@ void initBetterActions() {
   _betterActionMap[JNAPAction.isServiceSupported] =
       _JNAPActionValue.isServiceSupported.value;
   _betterActionMap[JNAPAction.reboot] = _JNAPActionValue.reboot.value;
+  _betterActionMap[JNAPAction.reboot2] = _JNAPActionValue.reboot2.value;
   _betterActionMap[JNAPAction.factoryReset] =
       _JNAPActionValue.factoryReset.value;
+  _betterActionMap[JNAPAction.factoryReset2] =
+      _JNAPActionValue.factoryReset2.value;
   _betterActionMap[JNAPAction.getDDNSSettings] =
       _JNAPActionValue.getDDNSSettings.value;
   _betterActionMap[JNAPAction.getDDNSStatus] =
@@ -396,8 +420,8 @@ void initBetterActions() {
       _JNAPActionValue.deleteDevice.value;
   _betterActionMap[JNAPAction.execSysCommand] =
       _JNAPActionValue.execSysCommand.value;
-  _betterActionMap[JNAPAction.getPinStatus] =
-      _JNAPActionValue.getPinStatus.value;
+  _betterActionMap[JNAPAction.getPingStatus] =
+      _JNAPActionValue.getPingStatus.value;
   _betterActionMap[JNAPAction.getSysInfoData] =
       _JNAPActionValue.getSysInfoData.value;
   _betterActionMap[JNAPAction.getSystemStats] =
@@ -518,6 +542,8 @@ void initBetterActions() {
       _JNAPActionValue.getParentalControlSettings.value;
   _betterActionMap[JNAPAction.getPowerTableSettings] =
       _JNAPActionValue.getPowerTableSettings.value;
+  _betterActionMap[JNAPAction.setPowerTableSettings] =
+      _JNAPActionValue.setPowerTableSettings.value;
   _betterActionMap[JNAPAction.getSoftSKUSettings] =
       _JNAPActionValue.getSoftSKUSettings.value;
   _betterActionMap[JNAPAction.getQoSSettings] =

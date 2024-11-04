@@ -11,7 +11,6 @@ import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
-import 'package:privacy_gui/util/extensions.dart';
 import 'package:privacy_gui/utils.dart';
 
 final dashboardHomeProvider =
@@ -36,8 +35,9 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
     final wifiList = dashboardManagerState.mainRadios
         .groupFoldBy<String, List<RouterRadio>>(
             (element) =>
-                element.settings.ssid +
-                (element.settings.wpaPersonalSettings?.passphrase ?? ''),
+                // element.settings.ssid +
+                // (element.settings.wpaPersonalSettings?.passphrase ?? ''),
+                element.band,
             (previous, element) => [...(previous ?? []), element])
         .entries
         .map((e) => DashboardWiFiItem.fromMainRadios(
@@ -46,7 +46,8 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
               final deviceBand = ref
                   .read(deviceManagerProvider.notifier)
                   .getBandConnectedBy(device);
-              return device.connections.isNotEmpty &&
+              return device.nodeType == null &&
+                  device.isOnline() &&
                   e.value.any((element) => element.band == deviceBand);
             }).length))
         .toList();
@@ -54,14 +55,13 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
       wifiList.add(DashboardWiFiItem.fromGuestRadios(
               dashboardManagerState.guestRadios,
               deviceManagerState.guestWifiDevices
-                  .where((device) => device.connections.isNotEmpty)
+                  .where((device) => device.isOnline())
                   .length)
           .copyWith(isEnabled: dashboardManagerState.isGuestNetworkEnabled));
     }
     // Guest WiFi
 
     // Get Node list
-    final nodeList = deviceManagerState.nodeDevices;
     final isAnyNodesOffline =
         deviceManagerState.nodeDevices.any((element) => !element.isOnline());
 
@@ -98,7 +98,6 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
 
     newState = newState.copyWith(
       wifis: wifiList,
-      nodes: nodeList,
       uptime: dashboardManagerState.uptimes,
       wanPortConnection: dashboardManagerState.wanConnection,
       lanPortConnections: dashboardManagerState.lanConnections,
@@ -112,13 +111,17 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
       isHorizontalLayout: horizontalPortLayout,
       isHealthCheckSupported: isSpeedCheckSupported,
     );
+
+    logger.d('[State]:[dashboardHome]: ${newState.toJson()}');
+    final json = newState.toJson();
+    DashboardHomeState.fromJson(json);
     return newState;
   }
 
   ({String value, String unit}) _formatHealthCheckResult({required int speed}) {
     if (speed == 0) {
       return (
-        value: '-',
+        value: '--',
         unit: '',
       );
     }

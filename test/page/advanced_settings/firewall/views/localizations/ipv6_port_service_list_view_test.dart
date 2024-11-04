@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/route/route_model.dart';
@@ -7,11 +6,8 @@ import 'package:privacy_gui/route/route_model.dart';
 import '../../../../../common/test_responsive_widget.dart';
 import '../../../../../common/testable_router.dart';
 import '../../../../../test_data/ipv6_port_service_list_test_state.dart';
-import '../../ipv6_port_service_list_view_test_mocks.dart';
+import '../../../../../mocks/ipv6_port_service_list_notifier_mocks.dart';
 
-@GenerateNiceMocks([
-  MockSpec<Ipv6PortServiceListNotifier>(),
-])
 void main() {
   late Ipv6PortServiceListNotifier mockIpv6PortServiceListNotifier;
 

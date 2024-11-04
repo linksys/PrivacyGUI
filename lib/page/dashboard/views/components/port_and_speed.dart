@@ -1,13 +1,10 @@
 import 'package:collection/collection.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
@@ -43,7 +40,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
       bool isOnline, bool isLoading) {
     return Container(
       width: double.infinity,
-      constraints: const BoxConstraints(minHeight: 150),
+      constraints: const BoxConstraints(minHeight: 400),
       child: ShimmerContainer(
         isLoading: isLoading,
         child: AppCard(
@@ -81,8 +78,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                     ],
                   ),
                 ),
-                const AppGap.large2(),
-                // if (!isLoading && !isOnline) _troubleshooting(context),
+                // const AppGap.large2(),
                 _speedCheckWidget(context, ref, state),
               ],
             )),
@@ -93,12 +89,13 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
   Widget _desktopVertical(BuildContext context, WidgetRef ref,
       DashboardHomeState state, bool isOnline, bool isLoading) {
     return Container(
-      constraints: const BoxConstraints(minWidth: 150, minHeight: 250),
+      constraints: const BoxConstraints(minWidth: 150, minHeight: 520),
       child: ShimmerContainer(
         isLoading: isLoading,
         child: AppCard(
             padding: EdgeInsets.zero,
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Padding(
                   padding: const EdgeInsets.symmetric(
@@ -125,7 +122,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                               ? null
                               : state.wanPortConnection,
                           loc(context).wan,
-                          true)
+                          true),
                     ],
                   ),
                 ),
@@ -156,7 +153,6 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                     vertical: Spacing.large3,
                   ),
                   child: Row(
-                    // mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -201,103 +197,124 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
     final dateTimeStr = dateTime == null
         ? ''
         : loc(context).speedCheckLatestTime(dateTime, dateTime);
-    return state.isHealthCheckSupported
-        ? Container(
-            key: const ValueKey('speedCheck'),
-            color: Theme.of(context).colorSchemeExt.surfaceContainerLow,
-            padding: const EdgeInsets.all(48.0),
-            child: Column(
-              children: [
-                AppText.bodySmall(dateTimeStr),
-                const AppGap.large2(),
-                ResponsiveLayout(
-                    desktop: horizontalLayout
-                        ? Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Opacity(
-                                  opacity: isLegacy ? 0.6 : 1,
-                                  child: _downloadSpeedResult(
-                                      context,
-                                      state.downloadResult?.value ?? '--',
-                                      state.downloadResult?.unit,
-                                      isLegacy),
-                                ),
-                              ),
-                              Expanded(
-                                child: Opacity(
-                                  opacity: isLegacy ? 0.6 : 1,
-                                  child: _uploadSpeedResult(
-                                      context,
-                                      state.uploadResult?.value ?? '--',
-                                      state.uploadResult?.unit,
-                                      isLegacy),
-                                ),
-                              ),
-                              Expanded(
-                                child: _speedTestButton(context),
-                              )
-                            ],
+    return Opacity(
+      opacity: state.isHealthCheckSupported ? 1 : .5,
+      child: AbsorbPointer(
+        absorbing: !state.isHealthCheckSupported,
+        child: Container(
+          key: const ValueKey('speedCheck'),
+          color: Theme.of(context).colorSchemeExt.surfaceContainerLow,
+          padding: const EdgeInsets.symmetric(
+              vertical: Spacing.large2, horizontal: Spacing.large4),
+          child: Column(
+            crossAxisAlignment: horizontalLayout
+                ? CrossAxisAlignment.start
+                : CrossAxisAlignment.center,
+            children: [
+              AppText.bodySmall(dateTimeStr),
+              const AppGap.small2(),
+              ResponsiveLayout(
+                desktop: horizontalLayout
+                    ? Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Opacity(
+                              opacity: isLegacy ? 0.6 : 1,
+                              child: _downloadSpeedResult(
+                                  context,
+                                  state.downloadResult?.value ?? '--',
+                                  state.downloadResult?.unit,
+                                  isLegacy),
+                            ),
+                          ),
+                          Expanded(
+                            child: Opacity(
+                              opacity: isLegacy ? 0.6 : 1,
+                              child: _uploadSpeedResult(
+                                  context,
+                                  state.uploadResult?.value ?? '--',
+                                  state.uploadResult?.unit,
+                                  isLegacy),
+                            ),
+                          ),
+                          Expanded(
+                            child: _speedTestButton(context),
                           )
-                        : Column(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            children: [
-                                _downloadSpeedResult(
-                                    context,
-                                    state.downloadResult?.value ?? '--',
-                                    state.downloadResult?.unit,
-                                    isLegacy),
-                                const AppGap.large2(),
-                                _uploadSpeedResult(
-                                    context,
-                                    state.uploadResult?.value ?? '--',
-                                    state.uploadResult?.unit,
-                                    isLegacy),
-                                const AppGap.large2(),
-                                _speedTestButton(context),
-                              ]),
-                    mobile: Column(
+                        ],
+                      )
+                    : Column(
                         mainAxisAlignment: MainAxisAlignment.start,
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: _downloadSpeedResult(
-                                    context,
-                                    state.downloadResult?.value ?? '--',
-                                    state.downloadResult?.unit,
-                                    isLegacy,
-                                    WrapAlignment.center),
-                              ),
-                              const AppGap.large2(),
-                              Expanded(
-                                child: _uploadSpeedResult(
-                                    context,
-                                    state.uploadResult?.value ?? '--',
-                                    state.uploadResult?.unit,
-                                    isLegacy,
-                                    WrapAlignment.center),
-                              ),
-                            ],
-                          ),
-                          const AppGap.large2(),
-                          _speedTestButton(context),
-                        ]))
-              ],
-            ),
-          )
-        : const Center();
+                            _downloadSpeedResult(
+                                context,
+                                state.downloadResult?.value ?? '--',
+                                state.downloadResult?.unit,
+                                isLegacy),
+                            const AppGap.large2(),
+                            _uploadSpeedResult(
+                                context,
+                                state.uploadResult?.value ?? '--',
+                                state.uploadResult?.unit,
+                                isLegacy),
+                            const AppGap.large2(),
+                            _speedTestButton(context),
+                          ]),
+                mobile: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: _downloadSpeedResult(
+                              context,
+                              state.downloadResult?.value ?? '--',
+                              state.downloadResult?.unit,
+                              !state.isHealthCheckSupported || isLegacy,
+                              WrapAlignment.center),
+                        ),
+                        const AppGap.large2(),
+                        Expanded(
+                          child: _uploadSpeedResult(
+                              context,
+                              state.uploadResult?.value ?? '--',
+                              state.uploadResult?.unit,
+                              !state.isHealthCheckSupported || isLegacy,
+                              WrapAlignment.center),
+                        ),
+                        const AppGap.large2(),
+                        _speedTestButton(context),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _speedTestButton(BuildContext context) {
-    return AppTextButton.noPadding(
-      loc(context).speedTest,
-      icon: LinksysIcons.networkCheck,
+    // return AppTextButton.noPadding(
+    //   loc(context).speedTest,
+    //   icon: LinksysIcons.networkCheck,
+    //   onTap: () {
+    //     context.pushNamed(RouteNamed.dashboardSpeedTest);
+    //   },
+    // );
+    return InkResponse(
       onTap: () {
         context.pushNamed(RouteNamed.dashboardSpeedTest);
       },
+      child: SvgPicture(
+        CustomTheme.of(context).images.btnCheckSpeeds,
+        width: 64,
+        height: 64,
+      ),
     );
   }
 
@@ -310,7 +327,10 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
       children: [
         Icon(
           LinksysIcons.arrowDownward,
-          color: Theme.of(context).colorScheme.primary,
+          semanticLabel: 'arrow Downward',
+          color: isLegacy
+              ? Theme.of(context).colorScheme.outline
+              : Theme.of(context).colorScheme.primary,
         ),
         AppText.titleLarge(
           value,
@@ -318,13 +338,15 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
               ? Theme.of(context).colorScheme.outline
               : Theme.of(context).colorScheme.onSurface,
         ),
-        if (unit != null)
+        if (unit != null && unit.isNotEmpty) ...[
+          const AppGap.small1(),
           AppText.bodySmall(
             '${unit}ps',
             color: isLegacy
                 ? Theme.of(context).colorScheme.outline
                 : Theme.of(context).colorScheme.onSurface,
           )
+        ]
       ],
     );
   }
@@ -338,7 +360,10 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
       children: [
         Icon(
           LinksysIcons.arrowUpward,
-          color: Theme.of(context).colorScheme.primary,
+          semanticLabel: 'arrow upward',
+          color: isLegacy
+              ? Theme.of(context).colorScheme.outline
+              : Theme.of(context).colorScheme.primary,
         ),
         AppText.titleLarge(
           value,
@@ -346,13 +371,15 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
               ? Theme.of(context).colorScheme.outline
               : Theme.of(context).colorScheme.onSurface,
         ),
-        if (unit != null)
+        if (unit != null && unit.isNotEmpty) ...[
+          const AppGap.small1(),
           AppText.bodySmall(
             '${unit}ps',
             color: isLegacy
                 ? Theme.of(context).colorScheme.outline
                 : Theme.of(context).colorScheme.onSurface,
           )
+        ]
       ],
     );
   }
@@ -368,6 +395,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
         color: connection == null
             ? Theme.of(context).colorScheme.surfaceVariant
             : Theme.of(context).colorSchemeExt.green,
+        semanticLabel: 'port icon',
       ),
       const AppGap.small2(),
       AppText.labelMedium(label),
@@ -397,11 +425,34 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
             connection == null
                 ? CustomTheme.of(context).images.imgPortOff
                 : CustomTheme.of(context).images.imgPortOn,
+            semanticsLabel: 'port status image',
             width: 40,
             height: 40,
           ),
         ),
-        if (connection != null) AppText.bodySmall(connection),
+        if (connection != null)
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    LinksysIcons.bidirectional,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  AppText.bodySmall(connection),
+                ],
+              ),
+              SizedBox(
+                width: 70,
+                child: AppText.bodySmall(
+                  loc(context).connectedSpeed,
+                  textAlign: TextAlign.center,
+                ),
+              )
+            ],
+          ),
         if (isWan) AppText.labelMedium(loc(context).internet),
         Container(
           constraints: const BoxConstraints(maxWidth: 60),

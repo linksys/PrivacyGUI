@@ -1,12 +1,16 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/page/components/shared_widgets.dart';
 import 'package:privacy_gui/page/nodes/providers/add_nodes_state.dart';
+import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/hook/icon_hooks.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -53,11 +57,7 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(addNodesProvider);
-    if (state.error != null) {
-      // error handling
-      logger.e(state.error);
-      return _resultView(state);
-    } else if (state.isLoading) {
+    if (state.isLoading) {
       final message = _getLoadingMessages(state.loadingMessage ?? '');
       return AppFullScreenSpinner(
         title: message.$1,
@@ -103,6 +103,7 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
               AppTextButton.noPadding(
                 loc(context).refresh,
                 onTap: () {
+                  logger.d('[AddNodes]: Start to refresh the children list');
                   ref.read(addNodesProvider.notifier).startRefresh();
                 },
               ),
@@ -125,17 +126,27 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
                 }
               },
             ),
+          const AppGap.medium(),
           Column(
             children: [
-              ...state?.childNodes
-                      ?.map((e) => AppNodeListCard(
-                          leading: CustomTheme.of(context)
-                              .images
-                              .devices
-                              .getByName(routerIconTest(e.toMap())),
-                          title: e.getDeviceLocation(),
-                          trailing: null))
-                      .toList() ??
+              ...state?.childNodes?.map((e) {
+                    final node = LinksysDevice.fromMap(e.toMap());
+                    return AppNodeListCard(
+                        leading: CustomTheme.of(context)
+                            .images
+                            .devices
+                            .getByName(routerIconTest(e.toMap())),
+                        title: e.getDeviceLocation(),
+                        trailing: SharedWidgets.resolveSignalStrengthIcon(
+                          context,
+                          node.signalDecibels ?? 0,
+                          isOnline: node.isOnline(),
+                          isWired: node.getConnectionType() == DeviceConnectionType.wired,
+                        ));
+                  }).expandIndexed((index, element) sync* {
+                    yield element;
+                    yield const AppGap.medium();
+                  }).toList() ??
                   []
             ],
           ),
@@ -143,6 +154,7 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
           AppTextButton.noPadding(
             loc(context).tryAgain,
             onTap: () {
+              logger.d('[AddNodes]: Retry to search for more nodes');
               ref.read(addNodesProvider.notifier).startAutoOnboarding();
             },
           ),
@@ -176,9 +188,13 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
               defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
               tags: const ['b']),
           const AppGap.large2(),
-          SvgPicture(CustomTheme.of(context).images.imgAddNodes),
-          LightInfoTile(
-              color: ledBlue,
+          SvgPicture(
+            CustomTheme.of(context).images.imgAddNodes,
+            semanticsLabel: 'add nodes image',
+          ),
+          LightInfoImageTile(
+              image:
+                  SvgPicture(CustomTheme.of(context).images.nodeLightSolidBlue),
               content: AppStyledText.bold(loc(context).addNodesSolidBlueDesc,
                   defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
                   tags: const ['b'])),
@@ -193,6 +209,7 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
           AppFilledButton(
             loc(context).next,
             onTap: () {
+              logger.d('[AddNodes]: Start to search for more nodes');
               ref.read(addNodesProvider.notifier).startAutoOnboarding();
             },
           )

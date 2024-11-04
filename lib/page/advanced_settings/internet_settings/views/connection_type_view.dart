@@ -16,6 +16,7 @@ import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/providers/redirection/redirection_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/util/error_code_helper.dart';
 import 'package:privacy_gui/util/url_helper/url_helper.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacy_gui/validator_rules/_validator_rules.dart';
@@ -266,6 +267,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
                   setState(() {
                     isEditing = false;
                     state = ref.read(internetSettingsProvider).copyWith();
+                    initUI();
                   });
                 }
               : () {
@@ -426,7 +428,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
               setState(() {
                 state = state.copyWith(
                   ipv4Setting: state.ipv4Setting
-                      .copyWith(username: _pppoeUsernameController.text),
+                      .copyWith(username: () => _pppoeUsernameController.text),
                 );
               });
             }
@@ -446,7 +448,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
               setState(() {
                 state = state.copyWith(
                   ipv4Setting: state.ipv4Setting
-                      .copyWith(password: _pppoePasswordController.text),
+                      .copyWith(password: () => _pppoePasswordController.text),
                 );
               });
             }
@@ -466,8 +468,8 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
             if (!focused) {
               setState(() {
                 state = state.copyWith(
-                  ipv4Setting: state.ipv4Setting
-                      .copyWith(vlanId: int.parse(_pppoeVLANIDController.text)),
+                  ipv4Setting: state.ipv4Setting.copyWith(
+                      vlanId: () => int.parse(_pppoeVLANIDController.text)),
                 );
               });
             }
@@ -485,8 +487,8 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
             if (!focused) {
               setState(() {
                 state = state.copyWith(
-                  ipv4Setting: state.ipv4Setting
-                      .copyWith(serviceName: _pppoeServiceNameController.text),
+                  ipv4Setting: state.ipv4Setting.copyWith(
+                      serviceName: () => _pppoeServiceNameController.text),
                 );
               });
             }
@@ -505,6 +507,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       Padding(
         padding: inputPadding,
         child: AppIPFormField(
+          semanticLabel: 'ip address',
           header: AppText.bodySmall(
             loc(context).internetIpv4Address,
           ),
@@ -515,7 +518,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
               setState(() {
                 state = state.copyWith(
                   ipv4Setting: state.ipv4Setting.copyWith(
-                      staticIpAddress: _staticIpAddressController.text),
+                      staticIpAddress: () => _staticIpAddressController.text),
                 );
               });
             }
@@ -526,6 +529,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
         padding: inputPadding,
         child: AppIPFormField(
           key: const Key('staticSubnet'),
+          semanticLabel: 'subnet mask',
           header: AppText.bodySmall(
             loc(context).subnetMask.capitalizeWords(),
           ),
@@ -540,7 +544,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
                 setState(() {
                   state = state.copyWith(
                     ipv4Setting: state.ipv4Setting.copyWith(
-                        networkPrefixLength:
+                        networkPrefixLength: () =>
                             NetworkUtils.subnetMaskToPrefixLength(
                                 _staticSubnetController.text)),
                   );
@@ -553,6 +557,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       Padding(
         padding: inputPadding,
         child: AppIPFormField(
+          semanticLabel: 'default gateway',
           header: AppText.bodySmall(
             loc(context).defaultGateway,
           ),
@@ -562,8 +567,8 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
             if (!focused) {
               setState(() {
                 state = state.copyWith(
-                  ipv4Setting: state.ipv4Setting
-                      .copyWith(staticGateway: _staticGatewayController.text),
+                  ipv4Setting: state.ipv4Setting.copyWith(
+                      staticGateway: () => _staticGatewayController.text),
                 );
               });
             }
@@ -573,6 +578,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       Padding(
         padding: inputPadding,
         child: AppIPFormField(
+          semanticLabel: 'dns 1',
           header: AppText.bodySmall(
             loc(context).dns1,
           ),
@@ -583,7 +589,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
               setState(() {
                 state = state.copyWith(
                   ipv4Setting: state.ipv4Setting
-                      .copyWith(staticDns1: _staticDns1Controller.text),
+                      .copyWith(staticDns1: () => _staticDns1Controller.text),
                 );
               });
             }
@@ -593,6 +599,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       Padding(
         padding: inputPadding,
         child: AppIPFormField(
+          semanticLabel: 'dns 2 optional',
           header: AppText.bodySmall(
             loc(context).dns2Optional,
           ),
@@ -602,8 +609,10 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
             if (!focused) {
               setState(() {
                 state = state.copyWith(
-                  ipv4Setting: state.ipv4Setting
-                      .copyWith(staticDns2: _staticDns2Controller.text),
+                  ipv4Setting: state.ipv4Setting.copyWith(
+                      staticDns2: () => _staticDns2Controller.text.isEmpty
+                          ? null
+                          : _staticDns2Controller.text),
                 );
               });
             }
@@ -613,6 +622,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       Padding(
         padding: inputPadding,
         child: AppIPFormField(
+          semanticLabel: 'dns 3 optional',
           header: AppText.bodySmall(
             loc(context).dns3Optional,
           ),
@@ -622,8 +632,10 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
             if (!focused) {
               setState(() {
                 state = state.copyWith(
-                  ipv4Setting: state.ipv4Setting
-                      .copyWith(staticDns3: _staticDns3Controller.text),
+                  ipv4Setting: state.ipv4Setting.copyWith(
+                      staticDns3: () => _staticDns3Controller.text.isEmpty
+                          ? null
+                          : _staticDns3Controller.text),
                 );
               });
             }
@@ -649,7 +661,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
               setState(() {
                 state = state.copyWith(
                   ipv4Setting: state.ipv4Setting
-                      .copyWith(username: _pptpUsernameController.text),
+                      .copyWith(username: () => _pptpUsernameController.text),
                 );
               });
             }
@@ -668,7 +680,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
               setState(() {
                 state = state.copyWith(
                   ipv4Setting: state.ipv4Setting
-                      .copyWith(password: _pptpPasswordController.text),
+                      .copyWith(password: () => _pptpPasswordController.text),
                 );
               });
             }
@@ -688,7 +700,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
               setState(() {
                 state = state.copyWith(
                   ipv4Setting: state.ipv4Setting
-                      .copyWith(serverIp: _pptpServerIpController.text),
+                      .copyWith(serverIp: () => _pptpServerIpController.text),
                 );
               });
             }
@@ -719,7 +731,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
               setState(() {
                 state = state.copyWith(
                   ipv4Setting: state.ipv4Setting
-                      .copyWith(username: _l2tpUsernameController.text),
+                      .copyWith(username: () => _l2tpUsernameController.text),
                 );
               });
             }
@@ -738,7 +750,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
               setState(() {
                 state = state.copyWith(
                   ipv4Setting: state.ipv4Setting
-                      .copyWith(password: _l2tpPasswordController.text),
+                      .copyWith(password: () => _l2tpPasswordController.text),
                 );
               });
             }
@@ -748,6 +760,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
       Padding(
         padding: inputPadding,
         child: AppIPFormField(
+          semanticLabel: 'ip address',
           header: AppText.bodySmall(
             loc(context).serverIpv4Address,
           ),
@@ -758,7 +771,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
               setState(() {
                 state = state.copyWith(
                   ipv4Setting: state.ipv4Setting
-                      .copyWith(serverIp: _l2tpServerIpController.text),
+                      .copyWith(serverIp: () => _l2tpServerIpController.text),
                 );
               });
             }
@@ -776,98 +789,108 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
         state.ipv4Setting.behavior ?? PPPConnectionBehavior.keepAlive;
     return AppSection(
       header: AppText.titleSmall(loc(context).connectionMode),
-      child: SizedBox(
-        height: 200,
-        child: AppRadioList(
-          mainAxisSize: MainAxisSize.min,
-          itemHeight: 56,
-          initial: behavior,
-          items: [
-            AppRadioListItem(
-              title: loc(context).connectOnDemand,
-              value: PPPConnectionBehavior.connectOnDemand,
-              expandedWidget: behavior == PPPConnectionBehavior.connectOnDemand
-                  ? Row(
-                      children: [
-                        AppText.bodyMedium(loc(context).maxIdleTime),
-                        const AppGap.medium(),
-                        SizedBox(
-                          width: 70,
-                          height: 56,
-                          child: AppTextField.minMaxNumber(
-                            max: 9999,
-                            min: 1,
-                            controller: _idleTimeController,
-                            border: const OutlineInputBorder(),
-                            onFocusChanged: (focused) {
-                              if (!focused) {
-                                setState(() {
-                                  state = state.copyWith(
-                                    ipv4Setting: state.ipv4Setting.copyWith(
-                                        behavior: PPPConnectionBehavior
-                                            .connectOnDemand,
-                                        maxIdleMinutes: int.parse(
-                                            _idleTimeController.text)),
-                                  );
-                                });
-                              }
-                            },
+      child: AppRadioList(
+        mainAxisSize: MainAxisSize.min,
+        itemHeight: 56,
+        initial: behavior,
+        items: [
+          AppRadioListItem(
+            title: loc(context).connectOnDemand,
+            value: PPPConnectionBehavior.connectOnDemand,
+            expandedWidget: behavior == PPPConnectionBehavior.connectOnDemand
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AppText.bodyMedium(loc(context).maxIdleTime),
+                      const AppGap.medium(),
+                      Row(
+                        children: [
+                          SizedBox(
+                            width: 70,
+                            height: 56,
+                            child: AppTextField.minMaxNumber(
+                              semanticLabel: 'max idle time',
+                              max: 9999,
+                              min: 1,
+                              controller: _idleTimeController,
+                              border: const OutlineInputBorder(),
+                              onFocusChanged: (focused) {
+                                if (!focused) {
+                                  setState(() {
+                                    state = state.copyWith(
+                                      ipv4Setting: state.ipv4Setting.copyWith(
+                                          behavior: () => PPPConnectionBehavior
+                                              .connectOnDemand,
+                                          maxIdleMinutes: () => int.parse(
+                                              _idleTimeController.text)),
+                                    );
+                                  });
+                                }
+                              },
+                            ),
                           ),
-                        ),
-                        const AppGap.medium(),
-                        AppText.bodyMedium(loc(context).minutes),
-                      ],
-                    )
-                  : null,
-            ),
-            AppRadioListItem(
-              title: loc(context).keepAlive,
-              value: PPPConnectionBehavior.keepAlive,
-              expandedWidget: behavior == PPPConnectionBehavior.keepAlive
-                  ? Row(
-                      children: [
-                        AppText.bodyMedium(loc(context).redialPeriod),
-                        const AppGap.medium(),
-                        SizedBox(
-                          width: 70,
-                          height: 56,
-                          child: AppTextField.minMaxNumber(
-                            max: 180,
-                            min: 20,
-                            controller: _redialPeriodController,
-                            border: const OutlineInputBorder(),
-                            onFocusChanged: (focused) {
-                              if (!focused) {
-                                setState(() {
-                                  state = state.copyWith(
-                                    ipv4Setting: state.ipv4Setting.copyWith(
-                                        behavior:
-                                            PPPConnectionBehavior.keepAlive,
-                                        reconnectAfterSeconds: int.parse(
-                                            _redialPeriodController.text)),
-                                  );
-                                });
-                              }
-                            },
+                          const AppGap.medium(),
+                          AppText.bodyMedium(loc(context).minutes),
+                        ],
+                      ),
+                    ],
+                  )
+                : null,
+          ),
+          AppRadioListItem(
+            title: loc(context).keepAlive,
+            value: PPPConnectionBehavior.keepAlive,
+            expandedWidget: behavior == PPPConnectionBehavior.keepAlive
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AppText.bodyMedium(loc(context).redialPeriod),
+                      const AppGap.medium(),
+                      Row(
+                        children: [
+                          SizedBox(
+                            width: 70,
+                            height: 56,
+                            child: AppTextField.minMaxNumber(
+                              semanticLabel: 'redial period',
+                              max: 180,
+                              min: 20,
+                              controller: _redialPeriodController,
+                              border: const OutlineInputBorder(),
+                              onFocusChanged: (focused) {
+                                if (!focused) {
+                                  setState(() {
+                                    state = state.copyWith(
+                                      ipv4Setting: state.ipv4Setting.copyWith(
+                                          behavior: () =>
+                                              PPPConnectionBehavior.keepAlive,
+                                          reconnectAfterSeconds: () =>
+                                              int.parse(_redialPeriodController
+                                                  .text)),
+                                    );
+                                  });
+                                }
+                              },
+                            ),
                           ),
-                        ),
-                        const AppGap.medium(),
-                        AppText.bodyMedium(loc(context).seconds),
-                      ],
-                    )
-                  : null,
-            ),
-          ],
-          onChanged: (index, type) {
-            setState(() {
-              if (type != null) {
-                state = state.copyWith(
-                  ipv4Setting: state.ipv4Setting.copyWith(behavior: type),
-                );
-              }
-            });
-          },
-        ),
+                          const AppGap.medium(),
+                          AppText.bodyMedium(loc(context).seconds),
+                        ],
+                      ),
+                    ],
+                  )
+                : null,
+          ),
+        ],
+        onChanged: (index, type) {
+          setState(() {
+            if (type != null) {
+              state = state.copyWith(
+                ipv4Setting: state.ipv4Setting.copyWith(behavior: () => type),
+              );
+            }
+          });
+        },
       ),
     );
   }
@@ -898,7 +921,8 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
               if (type != null) {
                 state = state.copyWith(
                   ipv4Setting: state.ipv4Setting.copyWith(
-                      useStaticSettings: type == PPTPIpAddressMode.specify),
+                      useStaticSettings: () =>
+                          type == PPTPIpAddressMode.specify),
                 );
               }
             });
@@ -930,6 +954,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
         title: loc(context).ipv6Automatic,
         color: Theme.of(context).colorScheme.background,
         trailing: AppSwitch(
+          semanticLabel: 'ipv6 automatic',
           value: state.ipv6Setting.isIPv6AutomaticEnabled,
           onChanged: (value) {
             setState(() {
@@ -968,7 +993,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
               setState(() {
                 state = state.copyWith(
                   ipv6Setting:
-                      state.ipv6Setting.copyWith(ipv6rdTunnelMode: value),
+                      state.ipv6Setting.copyWith(ipv6rdTunnelMode: () => value),
                 );
               });
             },
@@ -995,7 +1020,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
                 setState(() {
                   state = state.copyWith(
                     ipv6Setting: state.ipv6Setting
-                        .copyWith(ipv6Prefix: _ipv6PrefixController.text),
+                        .copyWith(ipv6Prefix: () => _ipv6PrefixController.text),
                   );
                 });
               }
@@ -1015,7 +1040,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
                 setState(() {
                   state = state.copyWith(
                     ipv6Setting: state.ipv6Setting.copyWith(
-                        ipv6PrefixLength:
+                        ipv6PrefixLength: () =>
                             int.parse(_ipv6PrefixLengthController.text)),
                   );
                 });
@@ -1026,6 +1051,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
         Padding(
           padding: inputPadding,
           child: AppIPFormField(
+            semanticLabel: 'border relay',
             header: AppText.bodySmall(
               loc(context).borderRelay,
             ),
@@ -1036,7 +1062,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
                 setState(() {
                   state = state.copyWith(
                     ipv6Setting: state.ipv6Setting.copyWith(
-                        ipv6BorderRelay: _ipv6BorderRelayController.text),
+                        ipv6BorderRelay: () => _ipv6BorderRelayController.text),
                   );
                 });
               }
@@ -1057,7 +1083,7 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
                 setState(() {
                   state = state.copyWith(
                     ipv6Setting: state.ipv6Setting.copyWith(
-                        ipv6BorderRelayPrefixLength: int.parse(
+                        ipv6BorderRelayPrefixLength: () => int.parse(
                             _ipv6BorderRelayPrefixLengthController.text)),
                   );
                 });
@@ -1318,10 +1344,10 @@ class _ConnectionTypeViewState extends ConsumerState<ConnectionTypeView> {
         );
       }).catchError(
         (error, stackTrace) {
-          final errorMsg = (error as JNAPError).result;
+          final errorMsg = errorCodeHelper(context, (error as JNAPError).result);
           showFailedSnackBar(
             context,
-            errorMsg,
+            errorMsg ?? loc(context).unknownErrorCode((error as JNAPError).result),
           );
         },
         test: (error) => error is JNAPError,

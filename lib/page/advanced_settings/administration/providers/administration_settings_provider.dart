@@ -7,6 +7,7 @@ import 'package:privacy_gui/core/jnap/models/management_settings.dart';
 import 'package:privacy_gui/core/jnap/models/unpn_settings.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 
 import 'administration_settings_state.dart';
 
@@ -83,21 +84,52 @@ class AdministrationSettingsNotifier
         ? ExpressForwardingSettings.fromMap(expressForwardingSettingsResult)
         : null;
 
+    final hasLanPort =
+        ref.read(dashboardHomeProvider).lanPortConnections.isNotEmpty;
     state = state.copyWith(
-        managementSettings: managementSettings,
-        isUPnPEnabled: upnpSettings?.isUPnPEnabled,
-        canUsersConfigure: upnpSettings?.canUsersConfigure,
-        canUsersDisableWANAccess: upnpSettings?.canUsersDisableWANAccess,
-        enabledALG: algSettings?.isSIPEnabled,
-        isExpressForwardingSupported:
-            expressForwardingSettings?.isExpressForwardingSupported,
-        enabledExpressForwarfing:
-            expressForwardingSettings?.isExpressForwardingEnabled);
+      managementSettings: managementSettings,
+      isUPnPEnabled: upnpSettings?.isUPnPEnabled,
+      canUsersConfigure: upnpSettings?.canUsersConfigure,
+      canUsersDisableWANAccess: upnpSettings?.canUsersDisableWANAccess,
+      enabledALG: algSettings?.isSIPEnabled,
+      isExpressForwardingSupported:
+          expressForwardingSettings?.isExpressForwardingSupported,
+      enabledExpressForwarfing:
+          expressForwardingSettings?.isExpressForwardingEnabled,
+      canDisAllowLocalMangementWirelessly: hasLanPort,
+    );
     return state;
   }
 
   Future<AdministrationSettingsState> save() async {
-    return fetch(true);
+    final repo = ref.read(routerRepositoryProvider);
+    await repo.transaction(
+      JNAPTransactionBuilder(commands: [
+        MapEntry(
+          JNAPAction.setManagementSettings,
+          state.managementSettings.toMap()
+            ..remove('isManageWirelesslySupported'),
+        ),
+        MapEntry(
+          JNAPAction.setUPnPSettings,
+          {
+            'isUPnPEnabled': state.isUPnPEnabled,
+            'canUsersConfigure': state.canUsersConfigure,
+            'canUsersDisableWANAccess': state.canUsersDisableWANAccess,
+          },
+        ),
+        MapEntry(
+          JNAPAction.setALGSettings,
+          {'isSIPEnabled': state.enabledALG},
+        ),
+        MapEntry(
+          JNAPAction.setExpressForwardingSettings,
+          {'isExpressForwardingEnabled': state.enabledExpressForwarfing},
+        ),
+      ], auth: true),
+    );
+    await fetch(true);
+    return state;
   }
 
   void setManagementSettings(bool value) {

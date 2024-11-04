@@ -13,7 +13,7 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import '../../../../../common/test_responsive_widget.dart';
 import '../../../../../common/testable_router.dart';
 import '../../../../../test_data/internet_settings_state_data.dart';
-import '../../../../pnp/pnp_isp_type_selection_view_test_mocks.dart';
+import '../../../../../mocks/internet_settings_notifier_mocks.dart';
 
 Future<void> main() async {
   late InternetSettingsNotifier mockInternetSettingsNotifier;
@@ -292,7 +292,7 @@ Future<void> main() async {
       final state = InternetSettingsState.fromMap(internetSettingsStatePppoe);
       when(mockInternetSettingsNotifier.build()).thenReturn(state.copyWith(
           ipv4Setting: state.ipv4Setting
-              .copyWith(behavior: PPPConnectionBehavior.connectOnDemand)));
+              .copyWith(behavior: () => PPPConnectionBehavior.connectOnDemand)));
 
       final widget = testableSingleRoute(
         config: LinksysRouteConfig(column: ColumnGrid(column: 9)),
@@ -735,7 +735,7 @@ Future<void> main() async {
       when(mockInternetSettingsNotifier.build()).thenReturn(state.copyWith(
           ipv6Setting: state.ipv6Setting.copyWith(
               isIPv6AutomaticEnabled: false,
-              ipv6rdTunnelMode: IPv6rdTunnelMode.automatic)));
+              ipv6rdTunnelMode: () => IPv6rdTunnelMode.automatic)));
 
       final widget = testableSingleRoute(
         config: LinksysRouteConfig(column: ColumnGrid(column: 9)),
@@ -762,7 +762,7 @@ Future<void> main() async {
       when(mockInternetSettingsNotifier.build()).thenReturn(state.copyWith(
           ipv6Setting: state.ipv6Setting.copyWith(
               isIPv6AutomaticEnabled: false,
-              ipv6rdTunnelMode: IPv6rdTunnelMode.automatic)));
+              ipv6rdTunnelMode: () => IPv6rdTunnelMode.automatic)));
 
       final widget = testableSingleRoute(
         config: LinksysRouteConfig(column: ColumnGrid(column: 9)),
@@ -792,7 +792,7 @@ Future<void> main() async {
       when(mockInternetSettingsNotifier.build()).thenReturn(state.copyWith(
           ipv6Setting: state.ipv6Setting.copyWith(
               isIPv6AutomaticEnabled: false,
-              ipv6rdTunnelMode: IPv6rdTunnelMode.manual)));
+              ipv6rdTunnelMode: () => IPv6rdTunnelMode.manual)));
 
       final widget = testableSingleRoute(
         config: LinksysRouteConfig(column: ColumnGrid(column: 9)),
@@ -819,7 +819,7 @@ Future<void> main() async {
       when(mockInternetSettingsNotifier.build()).thenReturn(state.copyWith(
           ipv6Setting: state.ipv6Setting.copyWith(
               isIPv6AutomaticEnabled: false,
-              ipv6rdTunnelMode: IPv6rdTunnelMode.manual)));
+              ipv6rdTunnelMode: () => IPv6rdTunnelMode.manual)));
 
       final widget = testableSingleRoute(
         config: LinksysRouteConfig(column: ColumnGrid(column: 9)),

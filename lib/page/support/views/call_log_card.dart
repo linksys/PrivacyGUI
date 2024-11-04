@@ -159,7 +159,10 @@ class _CallLogCardState extends State<CallLogCard> {
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               const AppGap.large2(),
-              const Icon(LinksysIcons.confirmationNumber),
+              const Icon(
+                LinksysIcons.confirmationNumber,
+                semanticLabel: 'confirmation Number icon',
+              ),
               const AppGap.small2(),
               AppText.bodyMedium(
                 '#${ticket.salesforceCaseNumber}',
@@ -182,6 +185,7 @@ class _CallLogCardState extends State<CallLogCard> {
                 icon: expanded
                     ? LinksysIcons.arrowDropUp
                     : LinksysIcons.arrowDropDown,
+                semanticLabel: expanded ? 'arrow Drop Up' : 'arrow Drop Down',
                 onTap: () {
                   setState(() {
                     expanded = !expanded;

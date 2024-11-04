@@ -1,4 +1,4 @@
-final mocklocalNetworkSettingsState = {
+final mockLocalNetworkSettingsState = {
   "hostName": "Linksys00062",
   "ipAddress": "10.11.1.1",
   "subnetMask": "255.255.255.0",

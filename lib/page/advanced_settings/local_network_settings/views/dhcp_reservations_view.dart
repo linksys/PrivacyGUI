@@ -7,7 +7,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
-import 'package:privacy_gui/page/devices/providers/device_list_state.dart';
+import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
@@ -63,7 +63,7 @@ class _DHCPReservationsContentViewState
             const AppGap.large2(),
             AppSettingCard(
               title: loc(context).selectFromMyDHCPList,
-              trailing: const Icon(LinksysIcons.add),
+              trailing: const Icon(LinksysIcons.add, semanticLabel: 'add',),
               onTap: () async {
                 final result = await context.pushNamed<List<DeviceListItem>?>(
                     RouteNamed.devicePicker,
@@ -89,7 +89,7 @@ class _DHCPReservationsContentViewState
             const AppGap.small2(),
             AppSettingCard(
               title: loc(context).manuallyAddReservation,
-              trailing: const Icon(LinksysIcons.add),
+              trailing: const Icon(LinksysIcons.add, semanticLabel: 'add',),
               onTap: () async {
                 final result = await context.pushNamed<DHCPReservation?>(
                     RouteNamed.dhcpReservationEdit,
@@ -150,6 +150,7 @@ class _DHCPReservationsContentViewState
                     "IP: ${item.ipAddress}\nMAC: ${item.macAddress}"),
                 trailing: AppIconButton(
                   icon: LinksysIcons.edit,
+                  semanticLabel: 'edit',
                   onTap: () {
                     goDHCPReservationEdit(item, index);
                   },

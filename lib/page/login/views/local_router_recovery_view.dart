@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/bottom_bar.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
-import 'package:privacy_gui/page/network_admin/providers/_providers.dart';
+import 'package:privacy_gui/page/instant_admin/providers/_providers.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
@@ -50,9 +51,9 @@ class _LocalRouterRecoveryViewState
       scrollable: true,
       child: AppBasicLayout(
         content: Center(
-          child: AppCard(
-            child: SizedBox(
-              width: 289,
+          child: SizedBox(
+            width: 4.col,
+            child: AppCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
@@ -62,35 +63,47 @@ class _LocalRouterRecoveryViewState
                   AppText.bodyMedium(
                       loc(context).localRouterRecoveryDescription),
                   const AppGap.large3(),
-                  PinCodeTextField(
-                    errorTextSpace: 0,
-                    onChanged: (String value) {
-                      setState(() {
-                        userInputCode = value;
-                      });
-                    },
-                    length: 5,
-                    appContext: context,
-                    controller: _otpController,
-                    keyboardType: TextInputType.number,
-                    autoDismissKeyboard: true,
-                    pinTheme: PinTheme(
-                      shape: PinCodeFieldShape.box,
-                      borderRadius:
-                          CustomTheme.of(context).radius.asBorderRadius().small,
-                      borderWidth: 1,
-                      fieldHeight: 56,
-                      fieldWidth: 40,
-                      activeColor: Theme.of(context).colorScheme.outline,
-                      selectedColor: Theme.of(context).colorScheme.outline,
-                      inactiveColor: Theme.of(context).colorScheme.outline,
+                  Semantics(
+                    label: 'pin code text field',
+                    textField: true,
+                    child: PinCodeTextField(
+                      errorTextSpace: 0,
+                      onChanged: (String value) {
+                        setState(() {
+                          userInputCode = value;
+                        });
+                      },
+                      length: 5,
+                      appContext: context,
+                      controller: _otpController,
+                      keyboardType: TextInputType.number,
+                      autoDismissKeyboard: false,
+                      cursorColor: Theme.of(context).colorScheme.onSurface,
+                      pinTheme: PinTheme(
+                        shape: PinCodeFieldShape.box,
+                        borderRadius: CustomTheme.of(context)
+                            .radius
+                            .asBorderRadius()
+                            .small,
+                        borderWidth: 1,
+                        fieldHeight: 56,
+                        fieldWidth: 40,
+                        activeColor: Theme.of(context).colorScheme.outline,
+                        selectedColor: Theme.of(context).colorScheme.outline,
+                        inactiveColor: Theme.of(context).colorScheme.outline,
+                      ),
+                      onSubmitted: (_) {
+                        if (userInputCode.length == 5) {
+                          _validateCode(userInputCode);
+                        }
+                      },
                     ),
                   ),
                   if (state.remainingErrorAttempts != null)
                     Padding(
                       padding: const EdgeInsets.only(top: Spacing.small2),
                       child: AppText.bodyMedium(
-                        '${loc(context).localRouterRecoveryKeyErorr}\n${loc(context).localLoginRemainingAttempts(state.remainingErrorAttempts!)}',
+                        _getErrorString(state.remainingErrorAttempts!),
                         color: Theme.of(context).colorScheme.error,
                       ),
                     ),
@@ -125,5 +138,16 @@ class _LocalRouterRecoveryViewState
         );
       }
     });
+  }
+
+  String _getErrorString(int remaining) {
+    switch (remaining) {
+      case 1:
+        return '${loc(context).localRouterRecoveryKeyErorr}\n${loc(context).localRouterRecoveryKeyLastChance}';
+      case 0:
+        return '${loc(context).localRouterRecoveryKeyErorr}\n${loc(context).localRouterRecoveryKeyLocked}';
+      default:
+        return '${loc(context).localRouterRecoveryKeyErorr}\n${loc(context).localLoginRemainingAttempts(remaining)}';
+    }
   }
 }
