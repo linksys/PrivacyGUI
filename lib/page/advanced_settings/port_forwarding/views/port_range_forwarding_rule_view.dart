@@ -10,7 +10,7 @@ import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
-import 'package:privacy_gui/page/devices/_devices.dart';
+import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
@@ -52,6 +52,8 @@ class _AddRuleContentViewState
   String _protocol = 'Both';
   bool _isEnabled = false;
   List<PortRangeForwardingRule> _rules = [];
+  String? _ipError;
+  String? _portError;
 
   @override
   void initState() {
@@ -66,13 +68,15 @@ class _AddRuleContentViewState
         _deviceIpAddressController.text = rule.internalServerIPAddress;
         setState(() {
           _isEnabled = rule.isEnabled;
+          _protocol = rule.protocol;
         });
       });
     } else {
       _notifier.goAdd(_rules).then((_) {
         final prefixIp =
             NetworkUtils.getIpPrefix(_notifier.ipAddress, _notifier.subnetMask);
-        _deviceIpAddressController.text = prefixIp;
+        _deviceIpAddressController.text = prefixIp.replaceAll('.0', '');
+
         setState(() {
           _isEnabled = true;
         });
@@ -98,7 +102,7 @@ class _AddRuleContentViewState
       scrollable: true,
       title: loc(context).portRangeForwarding,
       bottomBar: PageBottomBar(
-        isPositiveEnabled: true,
+        isPositiveEnabled: _isSaveEnable(),
         isNegitiveEnabled: state.mode == RuleMode.editing ? true : null,
         negitiveLable: loc(context).delete,
         onPositiveTap: () {
@@ -111,27 +115,34 @@ class _AddRuleContentViewState
               description: _ruleNameController.text);
           doSomethingWithSpinner(
             context,
-            _notifier.save(rule).then(
-              (value) {
-                if (value) {
-                  showSuccessSnackBar(
-                      context,
-                      _notifier.isEdit()
-                          ? loc(context).ruleUpdated
-                          : loc(context).ruleAdded);
+            _notifier.save(rule),
+          ).then(
+            (value) {
+              if (value == true) {
+                showSuccessSnackBar(
+                    context,
+                    _notifier.isEdit()
+                        ? loc(context).ruleUpdated
+                        : loc(context).ruleAdded);
 
-                  context.pop(true);
-                }
-              },
-            ),
+                context.pop(true);
+              } else {
+                showFailedSnackBar(context, loc(context).failedExclamation);
+              }
+            },
           );
         },
         onNegitiveTap: () {
-          _notifier.delete().then((value) {
-            if (value) {
+          doSomethingWithSpinner(
+            context,
+            _notifier.delete(),
+          ).then((value) {
+            if (value == true) {
               showSimpleSnackBar(context, loc(context).ruleDeleted);
+              context.pop(true);
+            } else {
+              showFailedSnackBar(context, loc(context).failedExclamation);
             }
-            context.pop(true);
           });
         },
       ),
@@ -159,6 +170,7 @@ class _AddRuleContentViewState
       AppListCard(
         title: AppText.labelLarge(loc(context).ruleEnabled),
         trailing: AppSwitch(
+          semanticLabel: 'rule enabled',
           value: _isEnabled,
           onChanged: (value) {
             setState(() {
@@ -177,13 +189,18 @@ class _AddRuleContentViewState
 
     return [
       AppTextField.outline(
-          headerText: loc(context).ruleName, controller: _ruleNameController),
+        headerText: loc(context).ruleName,
+        controller: _ruleNameController,
+        onFocusChanged: _onFocusChange,
+      ),
       const AppGap.large2(),
       AppTextField.minMaxNumber(
         border: const OutlineInputBorder(),
         headerText: loc(context).startPort,
         controller: _firstExternalPortController,
         max: 65535,
+        onFocusChanged: _onPortFocusChange,
+        errorText: _portError != null ? '' : null,
       ),
       const AppGap.large2(),
       AppTextField.minMaxNumber(
@@ -191,17 +208,30 @@ class _AddRuleContentViewState
         headerText: loc(context).endPort,
         controller: _lastExternalPortController,
         max: 65535,
+        onFocusChanged: _onPortFocusChange,
+        errorText: _portError,
       ),
       const AppGap.large2(),
       AppText.labelMedium(loc(context).ipAddress),
       const AppGap.medium(),
       AppIPFormField(
+        semanticLabel: 'ip address',
         controller: _deviceIpAddressController,
         border: const OutlineInputBorder(),
         octet1ReadOnly: submaskToken[0] == '255',
         octet2ReadOnly: submaskToken[1] == '255',
         octet3ReadOnly: submaskToken[2] == '255',
         octet4ReadOnly: submaskToken[3] == '255',
+        onFocusChanged: (focus) {
+          if (!focus) {
+            _ipError =
+                !_notifier.isDeviceIpValidate(_deviceIpAddressController.text)
+                    ? loc(context).invalidIpAddress
+                    : null;
+            _onFocusChange(focus);
+          }
+        },
+        errorText: _ipError,
       ),
       const AppGap.large2(),
       AppTextButton(
@@ -221,7 +251,10 @@ class _AddRuleContentViewState
       AppListCard(
         title: AppText.labelLarge(loc(context).protocol),
         description: AppText.bodyLarge(getProtocolTitle(context, _protocol)),
-        trailing: const Icon(LinksysIcons.edit),
+        trailing: const Icon(
+          LinksysIcons.edit,
+          semanticLabel: 'edit',
+        ),
         onTap: () async {
           String? protocol = await showSelectProtocolModal(
             context,
@@ -235,5 +268,39 @@ class _AddRuleContentViewState
         },
       ),
     ];
+  }
+
+  bool _isSaveEnable() {
+    return _ruleNameController.text.isNotEmpty &&
+        _firstExternalPortController.text.isNotEmpty &&
+        _lastExternalPortController.text.isNotEmpty &&
+        _notifier.isDeviceIpValidate(_deviceIpAddressController.text) &&
+        _portError == null;
+  }
+
+  void _onPortFocusChange(bool focus) {
+    if (!focus) {
+      if (_firstExternalPortController.text.isEmpty ||
+          _lastExternalPortController.text.isEmpty) {
+        return;
+      }
+      final firstPort = int.tryParse(_firstExternalPortController.text) ?? 0;
+      final lastPort = int.tryParse(_lastExternalPortController.text) ?? 0;
+      bool isValidPortRange = lastPort - firstPort >= 0;
+      bool isRuleOverlap =
+          _notifier.isPortConflict(firstPort, lastPort, _protocol);
+      _portError = !isValidPortRange
+          ? loc(context).portRangeError
+          : isRuleOverlap
+              ? loc(context).rulesOverlapError
+              : null;
+      _onFocusChange(focus);
+    }
+  }
+
+  void _onFocusChange(bool focus) {
+    if (!focus) {
+      setState(() {});
+    }
   }
 }

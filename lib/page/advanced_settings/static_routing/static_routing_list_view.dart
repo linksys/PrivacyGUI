@@ -43,7 +43,7 @@ class _StaticRoutingListViewState extends ConsumerState<StaticRoutingListView> {
             title: AppText.labelLarge(
               loc(context).addStaticRoute,
             ),
-            trailing: const Icon(LinksysIcons.add),
+            trailing: const Icon(LinksysIcons.add, semanticLabel: 'add',),
             onTap: () {
               context.pushNamed(RouteNamed.settingsStaticRoutingDetail);
             },
@@ -107,7 +107,7 @@ class _StaticRoutingListViewState extends ConsumerState<StaticRoutingListView> {
         AppText.bodyLarge(setting.settings.interface),
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: Spacing.medium),
-          child: Icon(LinksysIcons.ethernet),
+          child: Icon(LinksysIcons.ethernet, semanticLabel: 'ethernet',),
         ),
         AppIconButton.noPadding(
           icon: LinksysIcons.edit,

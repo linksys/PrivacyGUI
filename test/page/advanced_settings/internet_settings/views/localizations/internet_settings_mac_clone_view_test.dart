@@ -9,7 +9,7 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import '../../../../../common/test_responsive_widget.dart';
 import '../../../../../common/testable_router.dart';
 import '../../../../../test_data/internet_settings_state_data.dart';
-import '../../../../pnp/pnp_isp_type_selection_view_test_mocks.dart';
+import '../../../../../mocks/internet_settings_notifier_mocks.dart';
 
 Future<void> main() async {
   late InternetSettingsNotifier mockInternetSettingsNotifier;
@@ -55,7 +55,7 @@ Future<void> main() async {
       (tester, locale) async {
     when(mockInternetSettingsNotifier.build()).thenReturn(
         InternetSettingsState.fromJson(internetSettingsStateData)
-            .copyWith(macClone: true, macCloneAddress: 'A4:83:E7:11:8A:19'));
+            .copyWith(macClone: true, macCloneAddress: () => 'A4:83:E7:11:8A:19'));
 
     final widget = testableSingleRoute(
       config: LinksysRouteConfig(column: ColumnGrid(column: 9)),
@@ -73,7 +73,7 @@ Future<void> main() async {
       (tester, locale) async {
     when(mockInternetSettingsNotifier.build()).thenReturn(
         InternetSettingsState.fromJson(internetSettingsStateData)
-            .copyWith(macCloneAddress: 'A4:83:E7:11:8A:19'));
+            .copyWith(macCloneAddress: () => 'A4:83:E7:11:8A:19'));
 
     final widget = testableSingleRoute(
       config: LinksysRouteConfig(column: ColumnGrid(column: 9)),
@@ -94,7 +94,7 @@ Future<void> main() async {
   testLocalizations('MAC address clone - save success', (tester, locale) async {
     when(mockInternetSettingsNotifier.build()).thenReturn(
         InternetSettingsState.fromJson(internetSettingsStateData)
-            .copyWith(macCloneAddress: 'A4:83:E7:11:8A:19'));
+            .copyWith(macCloneAddress: () => 'A4:83:E7:11:8A:19'));
     when(mockInternetSettingsNotifier.setMacAddressClone(true, 'A4:83:E7:11:8A:19'))
         .thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 1));
@@ -123,7 +123,7 @@ Future<void> main() async {
   testLocalizations('MAC address clone - save failed', (tester, locale) async {
     when(mockInternetSettingsNotifier.build()).thenReturn(
         InternetSettingsState.fromJson(internetSettingsStateData)
-            .copyWith(macCloneAddress: 'A4:83:E7:11:8A:19'));
+            .copyWith(macCloneAddress: () => 'A4:83:E7:11:8A:19'));
     when(mockInternetSettingsNotifier.setMacAddressClone(true, 'A4:83:E7:11:8A:19'))
         .thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 1));

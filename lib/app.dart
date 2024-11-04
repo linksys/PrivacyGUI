@@ -6,17 +6,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:privacy_gui/constants/_constants.dart';
+import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/layouts/root_container.dart';
+import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_provider.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_provider.dart';
+import 'package:privacy_gui/util/debug_mixin.dart';
 import 'package:privacy_gui/util/languages.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -28,36 +32,36 @@ class LinksysApp extends ConsumerStatefulWidget {
 }
 
 class _LinksysAppState extends ConsumerState<LinksysApp>
-    with WidgetsBindingObserver {
+    with DebugObserver, WidgetsBindingObserver {
   LinksysRoute? _currentRoute;
+  late ConnectivityNotifier _connectivityNotifier;
+  late GoRouterDelegate _routerDelegate;
+
   @override
   void initState() {
     WidgetsBinding.instance.addObserver(this);
 
     super.initState();
 
-    final connectivity = ref.read(connectivityProvider.notifier);
-    connectivity.start();
-    connectivity.forceUpdate().then((value) => _initAuth());
-
+    _connectivityNotifier = ref.read(connectivityProvider.notifier);
+    _connectivityNotifier.start();
+    _connectivityNotifier.forceUpdate().then((value) => _initAuth());
+    _routerDelegate = ref.read(routerProvider).routerDelegate;
     ref.read(appSettingsProvider.notifier).load();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    ref.read(connectivityProvider.notifier).stop();
-    ref
-        .read(routerProvider)
-        .routerDelegate
-        .removeListener(_onReceiveRouteChanged);
+    _connectivityNotifier.stop();
+    _routerDelegate.removeListener(_onReceiveRouteChanged);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     logger.d('App:: build: $_currentRoute');
-    
+
     final appSettings = ref.watch(appSettingsProvider);
     final systemLocaleStr = Intl.getCurrentLocale();
     final systemLocale = Locale(getLanguageData(systemLocaleStr)['value']);
@@ -79,14 +83,23 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
         child: Shortcuts(
           shortcuts: {
             LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyO):
-                ToggleDisplayColumnOverlayIntent()
+                ToggleDisplayColumnOverlayIntent(),
+            LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.shift,
+                LogicalKeyboardKey.keyL): ToggleDownloadLogIntent()
           },
           child: Actions(
             dispatcher: AppGlobalActionDispatcher(),
             actions: {
               ToggleDisplayColumnOverlayIntent: CallbackAction(
                   onInvoke: (intent) => showColumnOverlayNotifier.value =
-                      !showColumnOverlayNotifier.value)
+                      !showColumnOverlayNotifier.value),
+              ToggleDownloadLogIntent: CallbackAction(onInvoke: (intent) {
+                if (increase()) {
+                  // context.pushNamed(RouteNamed.debug);
+                  Utils.exportLogFile(context);
+                  return;
+                }
+              }),
             },
             child: CustomResponsive(
               child: AppRootContainer(
@@ -106,22 +119,29 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    logger.v('didChangeAppLifecycleState: ${state.name}');
-    if (state == AppLifecycleState.resumed) {
-      ref
-          .read(connectivityProvider.notifier)
-          .forceUpdate()
-          .then((_) => SharedPreferences.getInstance())
-          .then((prefs) {
-        final currentSN = prefs.getString(pCurrentSN);
-        if (ref.read(authProvider).value?.loginType != LoginType.none &&
-            currentSN?.isNotEmpty == true) {
-          ref.read(pollingProvider.notifier).startPolling();
-        }
-      });
-    } else if (state == AppLifecycleState.paused) {
-      ref.read(pollingProvider.notifier).stopPolling();
-    }
+    logger.i('didChangeAppLifecycleState: ${state.name}');
+    // if (state == AppLifecycleState.resumed) {
+    //   ref
+    //       .read(connectivityProvider.notifier)
+    //       .forceUpdate()
+    //       .then((_) => SharedPreferences.getInstance())
+    //       .then((prefs) {
+    //     final currentSN = prefs.getString(pCurrentSN);
+    //     if (currentSN != null &&
+    //         ref.read(dashboardManagerProvider).deviceInfo?.serialNumber !=
+    //             currentSN) {
+    //       // TODO
+    //       // if (mounted) {
+    //       //   showRouterNotFoundAlert(context, ref);
+    //       // }
+    //     } else if (ref.read(authProvider).value?.loginType != LoginType.none &&
+    //         currentSN?.isNotEmpty == true) {
+    //       ref.read(pollingProvider.notifier).startPolling();
+    //     }
+    //   });
+    // } else if (state == AppLifecycleState.paused) {
+    //   ref.read(pollingProvider.notifier).stopPolling();
+    // }
   }
 
   _initAuth() {
@@ -140,12 +160,11 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
               .routerDelegate.currentConfiguration.isNotEmpty
           ? router.routerDelegate.currentConfiguration.last.route as GoRoute?
           : null;
-      logger.d('Router Delegate Changed! ${page?.name},');
+      logger.d('[$routeLogTag]:<${page?.name}>');
       if (page is LinksysRoute) {
         setState(() {
           _currentRoute = page;
         });
-        logger.d('Router Delegate Changed! $_currentRoute');
       } else if (_currentRoute != null) {
         // setState(() {
         //   _currentRoute = null;
@@ -221,6 +240,8 @@ class NoTransitionsBuilder extends PageTransitionsBuilder {
 }
 
 class ToggleDisplayColumnOverlayIntent extends Intent {}
+
+class ToggleDownloadLogIntent extends Intent {}
 
 class AppGlobalActionDispatcher extends ActionDispatcher {
   @override

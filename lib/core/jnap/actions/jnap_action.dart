@@ -26,7 +26,9 @@ enum JNAPAction {
   isAdminPasswordDefault,
   isServiceSupported,
   reboot,
+  reboot2,
   factoryReset,
+  factoryReset2,
   // ddns
   getDDNSSettings,
   getDDNSStatus,
@@ -39,7 +41,7 @@ enum JNAPAction {
   deleteDevice,
   // diagnostics
   execSysCommand,
-  getPinStatus,
+  getPingStatus,
   getSysInfoData,
   getSystemStats,
   getTracerouteStatus,
@@ -122,6 +124,7 @@ enum JNAPAction {
   getParentalControlSettings,
   // powerTable
   getPowerTableSettings,
+  setPowerTableSettings,
   // product
   getSoftSKUSettings,
   // qos
@@ -142,7 +145,9 @@ enum JNAPAction {
   renewDHCPWANLease,
   renewDHCPIPv6WANLease,
   getEthernetPortConnections,
-  getExpressForwardingSettings,  
+  getExpressForwardingSettings,
+  setExpressForwardingSettings, 
+  getWANExternal,
   // routerManagement
   getManagementSettings,
   setManagementSettings,
@@ -175,6 +180,7 @@ enum JNAPAction {
   getRadioInfo,
   getWPSServerSessionStatus,
   setRadioSettings,
+  clientDeauth,
   // vlanTagging
   getVLANTaggingSettings,
   setVLANTaggingSettings,

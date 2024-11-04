@@ -4,6 +4,7 @@ import 'dart:convert';
 
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/widgets.dart';
 
 import 'package:privacy_gui/core/jnap/models/wan_status.dart';
 
@@ -137,20 +138,6 @@ class InternetSettingsState extends Equatable {
     );
   }
 
-  InternetSettingsState copyWith({
-    Ipv4Setting? ipv4Setting,
-    Ipv6Setting? ipv6Setting,
-    bool? macClone,
-    String? macCloneAddress,
-  }) {
-    return InternetSettingsState(
-      ipv4Setting: ipv4Setting ?? this.ipv4Setting,
-      ipv6Setting: ipv6Setting ?? this.ipv6Setting,
-      macClone: macClone ?? this.macClone,
-      macCloneAddress: macCloneAddress ?? this.macCloneAddress,
-    );
-  }
-
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'ipv4Setting': ipv4Setting.toMap(),
@@ -181,6 +168,21 @@ class InternetSettingsState extends Equatable {
 
   @override
   bool get stringify => true;
+
+  InternetSettingsState copyWith({
+    Ipv4Setting? ipv4Setting,
+    Ipv6Setting? ipv6Setting,
+    bool? macClone,
+    ValueGetter<String?>? macCloneAddress,
+  }) {
+    return InternetSettingsState(
+      ipv4Setting: ipv4Setting ?? this.ipv4Setting,
+      ipv6Setting: ipv6Setting ?? this.ipv6Setting,
+      macClone: macClone ?? this.macClone,
+      macCloneAddress:
+          macCloneAddress != null ? macCloneAddress() : this.macCloneAddress,
+    );
+  }
 }
 
 class Ipv4Setting extends Equatable {
@@ -260,58 +262,6 @@ class Ipv4Setting extends Equatable {
       wanTaggingSettingsEnable,
       vlanId,
     ];
-  }
-
-  Ipv4Setting copyWith({
-    String? ipv4ConnectionType,
-    List<String>? supportedIPv4ConnectionType,
-    List<SupportedWANCombination>? supportedWANCombinations,
-    int? mtu,
-    PPPConnectionBehavior? behavior,
-    int? maxIdleMinutes,
-    int? reconnectAfterSeconds,
-    String? staticIpAddress,
-    String? staticGateway,
-    String? staticDns1,
-    String? staticDns2,
-    String? staticDns3,
-    int? networkPrefixLength,
-    String? username,
-    String? password,
-    String? serviceName,
-    String? serverIp,
-    bool? useStaticSettings,
-    String? redirection,
-    bool? wanTaggingSettingsEnable,
-    int? vlanId,
-  }) {
-    return Ipv4Setting(
-      ipv4ConnectionType: ipv4ConnectionType ?? this.ipv4ConnectionType,
-      supportedIPv4ConnectionType:
-          supportedIPv4ConnectionType ?? this.supportedIPv4ConnectionType,
-      supportedWANCombinations:
-          supportedWANCombinations ?? this.supportedWANCombinations,
-      mtu: mtu ?? this.mtu,
-      behavior: behavior ?? this.behavior,
-      maxIdleMinutes: maxIdleMinutes ?? this.maxIdleMinutes,
-      reconnectAfterSeconds:
-          reconnectAfterSeconds ?? this.reconnectAfterSeconds,
-      staticIpAddress: staticIpAddress ?? this.staticIpAddress,
-      staticGateway: staticGateway ?? this.staticGateway,
-      staticDns1: staticDns1 ?? this.staticDns1,
-      staticDns2: staticDns2 ?? this.staticDns2,
-      staticDns3: staticDns3 ?? this.staticDns3,
-      networkPrefixLength: networkPrefixLength ?? this.networkPrefixLength,
-      username: username ?? this.username,
-      password: password ?? this.password,
-      serviceName: serviceName ?? this.serviceName,
-      serverIp: serverIp ?? this.serverIp,
-      useStaticSettings: useStaticSettings ?? this.useStaticSettings,
-      redirection: redirection ?? this.redirection,
-      wanTaggingSettingsEnable:
-          wanTaggingSettingsEnable ?? this.wanTaggingSettingsEnable,
-      vlanId: vlanId ?? this.vlanId,
-    );
   }
 
   Map<String, dynamic> toMap() {
@@ -394,6 +344,67 @@ class Ipv4Setting extends Equatable {
 
   @override
   bool get stringify => true;
+
+  Ipv4Setting copyWith({
+    String? ipv4ConnectionType,
+    List<String>? supportedIPv4ConnectionType,
+    List<SupportedWANCombination>? supportedWANCombinations,
+    int? mtu,
+    ValueGetter<PPPConnectionBehavior?>? behavior,
+    ValueGetter<int?>? maxIdleMinutes,
+    ValueGetter<int?>? reconnectAfterSeconds,
+    ValueGetter<String?>? staticIpAddress,
+    ValueGetter<String?>? staticGateway,
+    ValueGetter<String?>? staticDns1,
+    ValueGetter<String?>? staticDns2,
+    ValueGetter<String?>? staticDns3,
+    ValueGetter<int?>? networkPrefixLength,
+    ValueGetter<String?>? username,
+    ValueGetter<String?>? password,
+    ValueGetter<String?>? serviceName,
+    ValueGetter<String?>? serverIp,
+    ValueGetter<bool?>? useStaticSettings,
+    ValueGetter<String?>? redirection,
+    ValueGetter<bool?>? wanTaggingSettingsEnable,
+    ValueGetter<int?>? vlanId,
+  }) {
+    return Ipv4Setting(
+      ipv4ConnectionType: ipv4ConnectionType ?? this.ipv4ConnectionType,
+      supportedIPv4ConnectionType:
+          supportedIPv4ConnectionType ?? this.supportedIPv4ConnectionType,
+      supportedWANCombinations:
+          supportedWANCombinations ?? this.supportedWANCombinations,
+      mtu: mtu ?? this.mtu,
+      behavior: behavior != null ? behavior() : this.behavior,
+      maxIdleMinutes:
+          maxIdleMinutes != null ? maxIdleMinutes() : this.maxIdleMinutes,
+      reconnectAfterSeconds: reconnectAfterSeconds != null
+          ? reconnectAfterSeconds()
+          : this.reconnectAfterSeconds,
+      staticIpAddress:
+          staticIpAddress != null ? staticIpAddress() : this.staticIpAddress,
+      staticGateway:
+          staticGateway != null ? staticGateway() : this.staticGateway,
+      staticDns1: staticDns1 != null ? staticDns1() : this.staticDns1,
+      staticDns2: staticDns2 != null ? staticDns2() : this.staticDns2,
+      staticDns3: staticDns3 != null ? staticDns3() : this.staticDns3,
+      networkPrefixLength: networkPrefixLength != null
+          ? networkPrefixLength()
+          : this.networkPrefixLength,
+      username: username != null ? username() : this.username,
+      password: password != null ? password() : this.password,
+      serviceName: serviceName != null ? serviceName() : this.serviceName,
+      serverIp: serverIp != null ? serverIp() : this.serverIp,
+      useStaticSettings: useStaticSettings != null
+          ? useStaticSettings()
+          : this.useStaticSettings,
+      redirection: redirection != null ? redirection() : this.redirection,
+      wanTaggingSettingsEnable: wanTaggingSettingsEnable != null
+          ? wanTaggingSettingsEnable()
+          : this.wanTaggingSettingsEnable,
+      vlanId: vlanId != null ? vlanId() : this.vlanId,
+    );
+  }
 }
 
 class Ipv6Setting extends Equatable {
@@ -419,33 +430,6 @@ class Ipv6Setting extends Equatable {
     this.ipv6BorderRelay,
     this.ipv6BorderRelayPrefixLength,
   });
-
-  Ipv6Setting copyWith({
-    String? ipv6ConnectionType,
-    List<String>? supportedIPv6ConnectionType,
-    String? duid,
-    bool? isIPv6AutomaticEnabled,
-    IPv6rdTunnelMode? ipv6rdTunnelMode,
-    String? ipv6Prefix,
-    int? ipv6PrefixLength,
-    String? ipv6BorderRelay,
-    int? ipv6BorderRelayPrefixLength,
-  }) {
-    return Ipv6Setting(
-      ipv6ConnectionType: ipv6ConnectionType ?? this.ipv6ConnectionType,
-      supportedIPv6ConnectionType:
-          supportedIPv6ConnectionType ?? this.supportedIPv6ConnectionType,
-      duid: duid ?? this.duid,
-      isIPv6AutomaticEnabled:
-          isIPv6AutomaticEnabled ?? this.isIPv6AutomaticEnabled,
-      ipv6rdTunnelMode: ipv6rdTunnelMode ?? this.ipv6rdTunnelMode,
-      ipv6Prefix: ipv6Prefix ?? this.ipv6Prefix,
-      ipv6PrefixLength: ipv6PrefixLength ?? this.ipv6PrefixLength,
-      ipv6BorderRelay: ipv6BorderRelay ?? this.ipv6BorderRelay,
-      ipv6BorderRelayPrefixLength:
-          ipv6BorderRelayPrefixLength ?? this.ipv6BorderRelayPrefixLength,
-    );
-  }
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
@@ -506,5 +490,36 @@ class Ipv6Setting extends Equatable {
       ipv6BorderRelay,
       ipv6BorderRelayPrefixLength,
     ];
+  }
+
+  Ipv6Setting copyWith({
+    String? ipv6ConnectionType,
+    List<String>? supportedIPv6ConnectionType,
+    String? duid,
+    bool? isIPv6AutomaticEnabled,
+    ValueGetter<IPv6rdTunnelMode?>? ipv6rdTunnelMode,
+    ValueGetter<String?>? ipv6Prefix,
+    ValueGetter<int?>? ipv6PrefixLength,
+    ValueGetter<String?>? ipv6BorderRelay,
+    ValueGetter<int?>? ipv6BorderRelayPrefixLength,
+  }) {
+    return Ipv6Setting(
+      ipv6ConnectionType: ipv6ConnectionType ?? this.ipv6ConnectionType,
+      supportedIPv6ConnectionType:
+          supportedIPv6ConnectionType ?? this.supportedIPv6ConnectionType,
+      duid: duid ?? this.duid,
+      isIPv6AutomaticEnabled:
+          isIPv6AutomaticEnabled ?? this.isIPv6AutomaticEnabled,
+      ipv6rdTunnelMode:
+          ipv6rdTunnelMode != null ? ipv6rdTunnelMode() : this.ipv6rdTunnelMode,
+      ipv6Prefix: ipv6Prefix != null ? ipv6Prefix() : this.ipv6Prefix,
+      ipv6PrefixLength:
+          ipv6PrefixLength != null ? ipv6PrefixLength() : this.ipv6PrefixLength,
+      ipv6BorderRelay:
+          ipv6BorderRelay != null ? ipv6BorderRelay() : this.ipv6BorderRelay,
+      ipv6BorderRelayPrefixLength: ipv6BorderRelayPrefixLength != null
+          ? ipv6BorderRelayPrefixLength()
+          : this.ipv6BorderRelayPrefixLength,
+    );
   }
 }

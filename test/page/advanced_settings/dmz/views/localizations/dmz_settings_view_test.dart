@@ -1,14 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/models/dmz_settings.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/page/advanced_settings/dmz/providers/dmz_settings_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/dmz/providers/dmz_settings_state.dart';
 import 'package:privacy_gui/page/advanced_settings/dmz/views/dmz_settings_view.dart';
-import 'package:privacy_gui/page/devices/providers/device_list_provider.dart';
-import 'package:privacy_gui/page/devices/providers/device_list_state.dart';
-import 'package:privacy_gui/page/devices/views/select_device_view.dart';
+import 'package:privacy_gui/page/instant_device/providers/device_list_provider.dart';
+import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
+import 'package:privacy_gui/page/instant_device/views/select_device_view.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
@@ -16,12 +15,9 @@ import '../../../../../common/test_responsive_widget.dart';
 import '../../../../../common/testable_router.dart';
 import '../../../../../test_data/device_list_test_state.dart';
 import '../../../../../test_data/dmz_settings_test_state.dart';
-import '../../../../wifi_settings/mock_spec_mocks.dart';
-import '../../dmz_settings_view_test_mocks.dart';
+import '../../../../../mocks/device_list_notifier_mock.dart';
+import '../../../../../mocks/dmz_setting_notifier_mocks.dart';
 
-@GenerateNiceMocks([
-  MockSpec<DMZSettingNotifier>(),
-])
 void main() {
   late DMZSettingNotifier mockDMZSettingNotifier;
 
@@ -144,7 +140,7 @@ void main() {
     await tester.pumpAndSettle();
   });
 
-    testLocalizations('DMZ settings view - Saved', (tester, locale) async {
+  testLocalizations('DMZ settings view - Saved', (tester, locale) async {
     final state = DMZSettingsState.fromMap(dmzSettingsTestState)
         .copyWith(settings: const DMZSettings(isDMZEnabled: true));
     when(mockDMZSettingNotifier.build()).thenReturn(state);

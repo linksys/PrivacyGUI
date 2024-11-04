@@ -2,25 +2,19 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
-import 'package:privacy_gui/page/components/styled/consts.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/storage.dart';
 import 'package:privacy_gui/util/wifi_credential.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/card/info_card.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
@@ -151,6 +145,7 @@ class _WiFiShareDetailViewState extends ConsumerState<WiFiShareDetailView> {
                   inputDecorationTheme: const InputDecorationTheme(
                       isDense: true, contentPadding: EdgeInsets.zero)),
               child: AppPasswordField(
+                semanticLabel: 'wifi password',
                 readOnly: true,
                 border: InputBorder.none,
                 controller: TextEditingController()..text = widget.password,
@@ -160,6 +155,7 @@ class _WiFiShareDetailViewState extends ConsumerState<WiFiShareDetailView> {
           ),
           trailing: AppIconButton(
             icon: LinksysIcons.fileCopy,
+            semanticLabel: 'file copy',
             onTap: () {
               Clipboard.setData(ClipboardData(text: widget.password)).then(
                   (value) =>

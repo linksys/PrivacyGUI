@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
 import 'package:privacy_gui/core/jnap/models/radio_info.dart';
 
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_item.dart';
 
 class DashboardWiFiItem extends Equatable {
@@ -43,7 +44,7 @@ class DashboardWiFiItem extends Equatable {
     final radio = radios.first;
     return DashboardWiFiItem(
       ssid: radio.guestSSID,
-      password: radio.guestPassword ?? '',
+      password: radio.guestWPAPassphrase ?? '',
       radios: radios.map((e) => e.radioID).toList(),
       isGuest: true,
       isEnabled: radio.isEnabled,
@@ -85,7 +86,7 @@ class DashboardWiFiItem extends Equatable {
     return DashboardWiFiItem(
       ssid: map['ssid'] as String,
       password: map['password'] as String,
-      radios: List<String>.from((map['radios'] as List<String>)),
+      radios: List<String>.from(map['radios']),
       isGuest: map['isGuest'] as bool,
       isEnabled: map['isEnabled'] as bool,
       numOfConnectedDevices: map['numOfConnectedDevices'] as int,
@@ -126,7 +127,6 @@ class DashboardHomeState extends Equatable {
   final int? uptime;
   final String? wanPortConnection;
   final List<String> lanPortConnections;
-  final List<LinksysDevice> nodes;
   final List<DashboardWiFiItem> wifis;
 
   const DashboardHomeState({
@@ -142,7 +142,6 @@ class DashboardHomeState extends Equatable {
     this.uptime,
     this.wanPortConnection,
     this.lanPortConnections = const [],
-    this.nodes = const [],
     this.wifis = const [],
   });
 
@@ -159,7 +158,6 @@ class DashboardHomeState extends Equatable {
     int? uptime,
     String? wanPortConnection,
     List<String>? lanPortConnections,
-    List<LinksysDevice>? nodes,
     List<DashboardWiFiItem>? wifis,
   }) {
     return DashboardHomeState(
@@ -176,7 +174,6 @@ class DashboardHomeState extends Equatable {
       uptime: uptime ?? this.uptime,
       wanPortConnection: wanPortConnection ?? this.wanPortConnection,
       lanPortConnections: lanPortConnections ?? this.lanPortConnections,
-      nodes: nodes ?? this.nodes,
       wifis: wifis ?? this.wifis,
     );
   }
@@ -192,7 +189,6 @@ class DashboardHomeState extends Equatable {
       'uptimes': uptime,
       'wanPortConnection': wanPortConnection,
       'lanPortConnections': lanPortConnections,
-      'nodes': nodes.map((x) => x.toMap()).toList(),
       'wifis': wifis.map((x) => x.toMap()).toList(),
     };
   }
@@ -206,14 +202,10 @@ class DashboardHomeState extends Equatable {
       masterIcon: map['masterIcon'] as String,
       isAnyNodesOffline: map['isAnyNodesOffline'] as bool,
       uptime: map['uptimes'] != null ? map['uptimes'] as int : null,
-      wanPortConnection: map['wanPortConnection'] as String,
-      lanPortConnections:
-          List<String>.from((map['lanPortConnections'] as List<String>)),
-      nodes: List<LinksysDevice>.from(
-        map['nodes'].map<LinksysDevice>(
-          (x) => LinksysDevice.fromMap(x as Map<String, dynamic>),
-        ),
-      ),
+      wanPortConnection: map['wanPortConnection'] != null
+          ? map['wanPortConnection'] as String
+          : null,
+      lanPortConnections: List<String>.from(map['lanPortConnections']),
       wifis: List<DashboardWiFiItem>.from(
         map['wifis'].map<DashboardWiFiItem>(
           (x) => DashboardWiFiItem.fromMap(x as Map<String, dynamic>),
@@ -242,7 +234,6 @@ class DashboardHomeState extends Equatable {
       uptime,
       wanPortConnection,
       lanPortConnections,
-      nodes,
       wifis,
     ];
   }

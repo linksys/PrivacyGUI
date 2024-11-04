@@ -15,7 +15,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacy_gui/util/error_code_handler.dart';
+import 'package:privacy_gui/util/error_code_helper.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
@@ -50,11 +50,14 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
     //Use this to prevent errors from modifying the state during the init stage
     Future.doWhile(() => !mounted).then((value) {
       _getAdminPasswordHint();
+      ref
+          .read(dashboardManagerProvider.notifier)
+          .checkDeviceInfo(null)
+          .then((value) {
+        buildBetterActions(value.services);
+        _getAdminPasswordAuthStatus(value.services);
+      });
     });
-    ref
-        .read(dashboardManagerProvider.notifier)
-        .checkDeviceInfo(null)
-        .then((value) => buildBetterActions(value.services));
   }
 
   @override
@@ -88,7 +91,8 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
   void setErrorMessage(JNAPError? error) {
     if (error != null) {
       // Check if it's the invalid admin password error from CheckAdminPassword3
-      if (error.result == errorInvalidAdminPassword) {
+      if (error.result == errorInvalidAdminPassword ||
+          error.result == errorPasswordCheckDelayed) {
         // Do not re-assign the error data while the timer is still running
         if (!_isTimerRunning()) {
           final errorContent =
@@ -97,33 +101,43 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
           _remainingAttempts = errorContent?['attemptsRemaining'] as int?;
           if (_delayTime != null) {
             // Trigger the timer as long as there is delay time
-            _errorMessage = getCountdownPrompt();
-            _startTimer();
-          } else {
+            _errorMessage = getCountdownPrompt(errorResult: error.result);
+            _startTimer(errorResult: error.result);
+          } else if (_remainingAttempts == 0) {
             // delay time will be absent if remaining attempts reach to 0
             // No need to count down
-            _errorMessage = loc(context).localLoginTooManyAttemptsTitle;
+            setState(() {
+              _errorMessage = loc(context).localLoginTooManyAttemptsTitle;
+            });
           }
         }
       } else {
         // Older check admin password jnaps or other error types
-        _errorMessage = generalErrorCodeHandler(context, error.result);
+        setState(() {
+          _errorMessage = errorCodeHelper(context, error.result);
+        });
       }
     } else {
       // Should not be here
-      _errorMessage = generalErrorCodeHandler(context, '');
+      setState(() {
+        _errorMessage = errorCodeHelper(context, '');
+      });
     }
   }
 
-  String getCountdownPrompt() {
+  String getCountdownPrompt({String? errorResult}) {
+    final result = switch (errorResult) {
+      errorPasswordCheckDelayed => '',
+      _ => '${loc(context).localLoginIncorrectRouterPassword}\n',
+    };
     if (_remainingAttempts != null && _delayTime != null) {
-      return '${loc(context).localLoginIncorrectRouterPassword}\n${loc(context).localLoginTryAgainIn(_delayTime!)}\n${loc(context).localLoginRemainingAttempts(_remainingAttempts!)}';
+      return '$result${loc(context).localLoginTryAgainIn(_delayTime!)}\n${loc(context).localLoginRemainingAttempts(_remainingAttempts!)}';
     } else {
       return loc(context).localLoginIncorrectRouterPassword;
     }
   }
 
-  void _startTimer() {
+  void _startTimer({String? errorResult}) {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_delayTime! < 1) {
         // Countdown has finished, clear the error message and refresh the view
@@ -139,7 +153,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
         setState(() {
           // Keep count down the delay time and update the error message
           _delayTime = _delayTime! - 1;
-          _errorMessage = getCountdownPrompt();
+          _errorMessage = getCountdownPrompt(errorResult: errorResult);
         });
       }
     });
@@ -157,6 +171,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
           child: SizedBox(
             width: 4.col,
             child: AppCard(
+              excludeSemantics: false,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -174,6 +189,12 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
                         setState(() {
                           _shouldEnableLoginButton();
                         });
+                      },
+                      onSubmitted: (_) {
+                        if (_passwordController.text.isEmpty) {
+                          return;
+                        }
+                        _doLogin();
                       },
                       errorText: _errorMessage,
                     ),
@@ -210,7 +231,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
                     loc(context).login,
                     onTap: _shouldEnableLoginButton()
                         ? () {
-                            _localLogin();
+                            _doLogin();
                           }
                         : null,
                   ),
@@ -231,7 +252,20 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
     auth.getPasswordHint();
   }
 
-  _localLogin() {
+  void _getAdminPasswordAuthStatus(List<String> services) {
+    auth.getAdminPasswordAuthStatus(services).then((result) {
+      if (result != null && !isCountdownJustFinished) {
+        // Create the error and the countdown has yet to be triggered
+        final JNAPError jnapError = JNAPError(
+          result: errorPasswordCheckDelayed,
+          error: jsonEncode(result),
+        );
+        setErrorMessage(jnapError);
+      }
+    });
+  }
+
+  _doLogin() {
     isCountdownJustFinished = false;
     auth.localLogin(_passwordController.text);
   }

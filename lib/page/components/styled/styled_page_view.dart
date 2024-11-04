@@ -1,16 +1,21 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/page/components/styled/top_bar.dart';
+import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:privacygui_widgets/widgets/container/responsive_column_layout.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/page/base_page_view.dart';
 import 'package:collection/collection.dart';
+import 'package:privacy_gui/core/utils/extension.dart';
 
 import 'package:privacy_gui/localization/localization_hook.dart';
 
@@ -123,6 +128,8 @@ class StyledAppPageView extends ConsumerWidget {
   final PageBottomBar? bottomBar;
   final bool menuOnRight;
   final bool largeMenu;
+  final Widget? topbar;
+  final bool useMainPadding;
 
   const StyledAppPageView({
     super.key,
@@ -147,10 +154,63 @@ class StyledAppPageView extends ConsumerWidget {
     this.bottomBar,
     this.menuOnRight = false,
     this.largeMenu = false,
+    this.topbar,
+    this.useMainPadding = true,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final pageRoute = GoRouter.of(context)
+        .routerDelegate
+        .currentConfiguration
+        .routes
+        .last as LinksysRoute?;
+    final config = pageRoute?.config;
+    return useMainPadding
+        ? ValueListenableBuilder<bool>(
+            valueListenable: showColumnOverlayNotifier,
+            builder: (context, showColumnOverlay, _) {
+              return Column(
+                children: [
+                  topbar ??
+                      const PreferredSize(
+                          preferredSize: Size(0, 80), child: TopBar()),
+                  Expanded(
+                    child: AppResponsiveColumnLayout(
+                      column: config?.column?.column,
+                      centered: config?.column?.centered ?? false,
+                      isShowNaviRail:
+                          LinksysRoute.isShowNaviRail(context, config),
+                      builder: () => buildMainContent(context, ref),
+                      showColumnOverlay: !kReleaseMode && showColumnOverlay,
+                    ),
+                  ),
+                ],
+              );
+            })
+        : buildMainContent(context, ref);
+    // return buildMainContent(context, ref);
+  }
+
+  Widget buildPageView(BuildContext context, WidgetRef ref) {
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints viewportConstraints) {
+        return SingleChildScrollView(
+          controller: controller,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: viewportConstraints.maxHeight,
+            ),
+            child: IntrinsicHeight(
+              child: buildMainContent(context, ref),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget buildMainContent(BuildContext context, WidgetRef ref) {
     final views = [
       if (!ResponsiveLayout.isMobileLayout(context) && hasMenu()) ...[
         SizedBox(
@@ -208,7 +268,7 @@ class StyledAppPageView extends ConsumerWidget {
               : AppText.titleLarge(
                   title,
                   maxLines: 2,
-                  overflow: TextOverflow.fade,
+                  overflow: TextOverflow.ellipsis,
                 ),
           toolbarHeight: toolbarHeight,
           onBackTap: isBackEnabled()
@@ -270,26 +330,59 @@ class StyledAppPageView extends ConsumerWidget {
                   const Divider(height: 1),
                   Padding(
                     padding: const EdgeInsets.only(top: 16.0),
-                    child: Row(
-                      children: [
-                        if (ResponsiveLayout.isMobileLayout(context)) ...[
-                          if (bottomBar?.isNegitiveEnabled != null) ...[
+                    child: Semantics(
+                      identifier: 'now-page-bottom-container',
+                      child: Row(
+                        children: [
+                          if (ResponsiveLayout.isMobileLayout(context)) ...[
+                            if (bottomBar?.isNegitiveEnabled != null) ...[
+                              Expanded(
+                                child: AppOutlinedButton.fillWidth(
+                                  bottomBar?.negitiveLable ??
+                                      loc(context).cancel,
+                                  onTap: bottomBar?.isNegitiveEnabled == true
+                                      ? () {
+                                          bottomBar?.onNegitiveTap?.call();
+                                        }
+                                      : null,
+                                  color: Theme.of(context).colorScheme.outline,
+                                  identifier: 'now-page-bottom-button-negitive',
+                                ),
+                              ),
+                              const AppGap.medium(),
+                            ],
                             Expanded(
-                              child: AppOutlinedButton.fillWidth(
+                              child: AppFilledButton.fillWidth(
+                                bottomBar?.positiveLabel ?? loc(context).save,
+                                onTap: bottomBar?.isPositiveEnabled == true
+                                    ? () {
+                                        bottomBar?.onPositiveTap.call();
+                                      }
+                                    : null,
+                                color: bottomBar is InversePageBottomBar
+                                    ? Theme.of(context).colorScheme.error
+                                    : null,
+                                identifier: 'now-page-bottom-button-positive',
+                              ),
+                            ),
+                          ],
+                          if (!ResponsiveLayout.isMobileLayout(context)) ...[
+                            if (bottomBar?.isNegitiveEnabled != null) ...[
+                              AppOutlinedButton(
                                 bottomBar?.negitiveLable ?? loc(context).cancel,
+                                color: Theme.of(context).colorScheme.outline,
+                                identifier: 'now-page-bottom-button-negitice',
                                 onTap: bottomBar?.isNegitiveEnabled == true
                                     ? () {
                                         bottomBar?.onNegitiveTap?.call();
                                       }
                                     : null,
-                                color: Theme.of(context).colorScheme.outline,
                               ),
-                            ),
-                            const AppGap.medium(),
-                          ],
-                          Expanded(
-                            child: AppFilledButton.fillWidth(
+                              const AppGap.medium(),
+                            ],
+                            AppFilledButton(
                               bottomBar?.positiveLabel ?? loc(context).save,
+                              identifier: 'now-page-bottom-button-positive',
                               onTap: bottomBar?.isPositiveEnabled == true
                                   ? () {
                                       bottomBar?.onPositiveTap.call();
@@ -299,34 +392,9 @@ class StyledAppPageView extends ConsumerWidget {
                                   ? Theme.of(context).colorScheme.error
                                   : null,
                             ),
-                          ),
-                        ],
-                        if (!ResponsiveLayout.isMobileLayout(context)) ...[
-                          if (bottomBar?.isNegitiveEnabled != null) ...[
-                            AppOutlinedButton(
-                              bottomBar?.negitiveLable ?? loc(context).cancel,
-                              color: Theme.of(context).colorScheme.outline,
-                              onTap: bottomBar?.isNegitiveEnabled == true
-                                  ? () {
-                                      bottomBar?.onNegitiveTap?.call();
-                                    }
-                                  : null,
-                            ),
-                            const AppGap.medium(),
                           ],
-                          AppFilledButton(
-                            bottomBar?.positiveLabel ?? loc(context).save,
-                            onTap: bottomBar?.isPositiveEnabled == true
-                                ? () {
-                                    bottomBar?.onPositiveTap.call();
-                                  }
-                                : null,
-                            color: bottomBar is InversePageBottomBar
-                                ? Theme.of(context).colorScheme.error
-                                : null,
-                          ),
                         ],
-                      ],
+                      ),
                     ),
                   )
                 ],
@@ -354,29 +422,40 @@ class StyledAppPageView extends ConsumerWidget {
   }
 
   Widget _createMenuWidget(BuildContext context, [double? maxWidth]) {
-    return Container(
-      constraints: maxWidth != null ? BoxConstraints(maxWidth: maxWidth) : null,
-      child: menuWidget ??
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(
-                    left: 24.0, right: 24.0, top: 24.0, bottom: 0.0),
-                child: AppText.titleSmall(menu?.title ?? ''),
-              ),
-              const AppGap.medium(),
-              ...(menu?.items ?? []).map((e) => ListTile(
-                    shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(100))),
-                    leading: e.icon != null ? Icon(e.icon) : null,
-                    title: AppText.bodySmall(e.label),
-                    onTap: e.onTap,
-                  ))
-            ],
-          ),
+    return Semantics(
+      explicitChildNodes: true,
+      identifier: 'now-page-menu-container',
+      child: Container(
+        constraints:
+            maxWidth != null ? BoxConstraints(maxWidth: maxWidth) : null,
+        child: menuWidget ??
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(
+                      left: 24.0, right: 24.0, top: 24.0, bottom: 0.0),
+                  child: Semantics(
+                      identifier: 'now-page-menu-title',
+                      child: AppText.titleSmall(menu?.title ?? '')),
+                ),
+                const AppGap.medium(),
+                ...(menu?.items ?? []).map((e) => ListTile(
+                      shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(100))),
+                      leading: e.icon != null ? Icon(e.icon) : null,
+                      title: Semantics(
+                        // excludeSemantics: true,
+                        identifier: 'now-page-menu-${e.label.kebab()}',
+                        child: AppText.bodySmall(e.label),
+                      ),
+                      onTap: e.onTap,
+                    ))
+              ],
+            ),
+      ),
     );
   }
 }

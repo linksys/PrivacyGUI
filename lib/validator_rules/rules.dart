@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:privacy_gui/utils.dart';
 
 abstract class ValidationRule {
@@ -37,7 +39,11 @@ class SpecialCharCheckRule extends RegExValidationRule {
 
 class WiFiPasswordRule extends RegExValidationRule {
   final bool ignoreLength;
-  WiFiPasswordRule({this.ignoreLength = false});
+  final bool ignoreWhiteSpaceSurround;
+  WiFiPasswordRule({
+    this.ignoreLength = false,
+    this.ignoreWhiteSpaceSurround = false,
+  });
   @override
   RegExp get _rule => RegExp(ignoreLength
       ? r"^(?! )[\x20-\x7e]+(?<! )$"
@@ -74,6 +80,11 @@ class AsciiRule extends RegExValidationRule {
   RegExp get _rule => RegExp(r'^[\x20-\x7E]+$');
 }
 
+class ConsecutiveCharRule extends RegExValidationRule {
+  @override
+  RegExp get _rule => RegExp(r'(.)\1{1}');
+}
+
 class MACAddressRule extends RegExValidationRule {
   @override
   RegExp get _rule => RegExp(r"^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$");
@@ -87,9 +98,10 @@ class LengthRule extends ValidationRule {
 
   @override
   bool validate(String input) {
+    final encoded = utf8.encode(input);
     return max > 0
-        ? input.length >= min && input.length <= max
-        : input.length >= min;
+        ? encoded.length >= min && encoded.length <= max
+        : encoded.length >= min;
   }
 }
 
@@ -116,11 +128,15 @@ class SubnetMaskRule extends ValidationRule {
 
   @override
   bool validate(String input) {
-    return NetworkUtils.isValidSubnetMask(
-      input,
-      minNetworkPrefixLength: minNetworkPrefixLength,
-      maxNetworkPrefixLength: maxNetworkPrefixLength,
-    );
+    try {
+      return NetworkUtils.isValidSubnetMask(
+        input,
+        minNetworkPrefixLength: minNetworkPrefixLength,
+        maxNetworkPrefixLength: maxNetworkPrefixLength,
+      );
+    } catch (e) {
+      return false;
+    }
   }
 }
 

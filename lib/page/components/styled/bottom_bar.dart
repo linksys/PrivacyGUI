@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/constants/url_links.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacy_gui/util/url_helper/url_helper.dart'
-    if (dart.library.io) 'package:privacy_gui/util/url_helper/url_helper_mobile.dart'
-    if (dart.library.html) 'package:privacy_gui/util/url_helper/url_helper_web.dart';
 
 class BottomBar extends ConsumerStatefulWidget {
   const BottomBar({super.key});
@@ -39,13 +38,17 @@ class _BottomBarState extends ConsumerState<BottomBar> {
                       children: [
                         Padding(
                           padding: const EdgeInsets.only(right: 8.0),
-                          child: AppText.bodySmall(
-                              '© 2024 Linksys Holdings, Inc. and/or its affiliates. All rights reserved.'),
+                          child: Semantics(
+                              identifier: 'now-bottom-text-copyright',
+                              child: AppText.bodySmall(
+                                  loc(context).copyRight(2024))),
                         ),
                         AppTextButton.noPadding(
                           loc(context).endUserLicenseAgreement,
+                          identifier: 'now-bottom-text-button-eula',
                           onTap: () {
-                            openUrl('https://www.linksys.com/EULA.html');
+                            gotoOfficialWebUrl(linkEULA,
+                                locale: ref.read(appSettingsProvider).locale);
                           },
                         ),
                         const Padding(
@@ -54,8 +57,10 @@ class _BottomBarState extends ConsumerState<BottomBar> {
                         ),
                         AppTextButton.noPadding(
                           loc(context).termsOfService,
+                          identifier: 'now-bottom-text-button-terms',
                           onTap: () {
-                            openUrl('https://www.linksys.com/terms.html');
+                            gotoOfficialWebUrl(linkTerms,
+                                locale: ref.read(appSettingsProvider).locale);
                           },
                         ),
                         const Padding(
@@ -64,10 +69,10 @@ class _BottomBarState extends ConsumerState<BottomBar> {
                         ),
                         AppTextButton.noPadding(
                           loc(context).privacyAndSecurity,
+                          identifier: 'now-bottom-text-button-privacy',
                           onTap: () {
-                            // TODO languages?
-                            openUrl(
-                                'https://www.linksys.com/support-article?articleNum=47763');
+                            gotoOfficialWebUrl(linkPrivacy,
+                                locale: ref.read(appSettingsProvider).locale);
                           },
                         ),
                         const Padding(
@@ -76,9 +81,10 @@ class _BottomBarState extends ConsumerState<BottomBar> {
                         ),
                         AppTextButton.noPadding(
                           loc(context).thirdPartyLicenses,
+                          identifier: 'now-bottom-text-button-third-party',
                           onTap: () {
-                            openUrl(
-                                'https://www.linksys.com/privacy-and-security.html');
+                            gotoOfficialWebUrl(linkThirdParty,
+                                locale: ref.read(appSettingsProvider).locale);
                           },
                         ),
                       ],

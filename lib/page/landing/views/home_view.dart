@@ -68,6 +68,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
     return Column(children: [
       AppFilledButton.fillWidth(
         getAppLocalizations(context).login,
+        identifier: 'now-home-button-login',
         key: const Key('home_view_button_login'),
         onTap: () {
           if (BuildConfig.forceCommandType == ForceCommand.local) {

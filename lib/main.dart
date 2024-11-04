@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -9,6 +10,7 @@ import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/app.dart';
+import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/providers/logger_observer.dart';
 
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -20,10 +22,19 @@ void main() async {
   //   usePathUrlStrategy();
   // }
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
-  // SemanticsBinding.instance.ensureSemantics();
+
+  // TODO Revisit again until Flutter SDK 3.27.x
+  // https://github.com/flutter/engine/commit/35af5fe80e0212caff4b34b583232d833b5a2596
+  // 
+  if (defaultTargetPlatform != TargetPlatform.iOS &&
+      defaultTargetPlatform != TargetPlatform.android) {
+    SemanticsBinding.instance.ensureSemantics();
+  }
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   await Storage.init();
-  await initLog();
+  if (kDebugMode) {
+    print(await getPackageInfo());
+  }
 
   checkFirstLaunch();
 
@@ -37,7 +48,11 @@ void main() async {
   if (!kIsWeb) {
     HttpOverrides.global = MyHTTPOverrides();
   }
-  runApp(_app());
+
+  // GetIt
+  dependencySetup();
+
+  runApp(app());
 }
 
 checkFirstLaunch() {
@@ -66,7 +81,7 @@ initErrorHandler() {
 
 final container = ProviderContainer();
 
-Widget _app() {
+Widget app() {
   return ProviderScope(
     observers: [
       ProviderLogger(),

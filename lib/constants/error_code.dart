@@ -18,8 +18,17 @@ const errorInvalidCredentials = 'invalid_credentials';
 const errorJNAPUnauthorized = '_ErrorUnauthorized';
 const errorAdminAccountLocked = 'ErrorAdminAccountLocked';
 const errorInvalidResetCode = 'ErrorInvalidResetCode';
+const errorConsecutiveInvalidResetCodeEntered =
+    'ErrorConsecutiveInvalidResetCodeEntered';
 const errorInvalidAdminPassword = 'ErrorInvalidAdminPassword';
+const errorPasswordCheckDelayed = 'ErrorPasswordCheckDelayed';
+const errorInvalidGateway = 'ErrorInvalidGateway';
 const errorUnexpected = '_ErrorUnexpected';
+const errorInvalidDestinationMACAddress = 'ErrorInvalidDestinationMACAddress';
+const errorInvalidIPAddress = "ErrorInvalidIPAddress";
+const errorInvalidPrimaryDNSServer = "ErrorInvalidPrimaryDNSServer";
+const errorInvalidSecondaryDNSServer = "ErrorInvalidSecondaryDNSServer";
+const errorInvalidTertiaryDNSServer = "ErrorInvalidTertiaryDNSServer";
 
 // JNAP retry list
 const errorJNAPRetryList = [errorUnexpected];

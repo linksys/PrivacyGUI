@@ -17,9 +17,9 @@ String getWifiRadioBandTitle(BuildContext context, WifiRadioBand value) {
     case WifiRadioBand.radio_24:
       return '2.4 GHz band';
     case WifiRadioBand.radio_5_1:
-      return '5 GHz_1 band';
+      return '5 GHz band';
     case WifiRadioBand.radio_5_2:
-      return '5 GHz_2 band';
+      return '5 GHz band';
     case WifiRadioBand.radio_6:
       return '6 GHz band';
     default:

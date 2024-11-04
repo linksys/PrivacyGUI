@@ -45,6 +45,10 @@ class BuildConfig {
       const String.fromEnvironment('force', defaultValue: 'none'));
   static bool showColumnOverlay =
       const bool.fromEnvironment('overlay', defaultValue: false);
+  static const bool caLogin = bool.fromEnvironment('ca', defaultValue: false);
+
+  static const int refreshTimeInterval =
+      int.fromEnvironment('refresh_time', defaultValue: 60);
 
   static load() async {
     logger.d('load build configuration');
@@ -62,24 +66,20 @@ CloudEnvironment cloudEnvTarget = CloudEnvironment.values
 Map<String, dynamic> get cloudEnvironmentConfig =>
     kCloudEnvironmentMap[cloudEnvTarget];
 
-Future<String> getVersion({bool full = false}) async {
-  final version =
+Future<String> getVersion() async {
+  final version = await getBuildNumber() ;
+  return version ??
       await PackageInfo.fromPlatform().then((value) => value.version);
-  if (!full) {
-    return version;
-  }
-  final build = await getBuildNumber().then((value) => '.$value');
-  return '$version$build';
 }
 
-Future<int> getBuildNumber() async {
-  int buildNumber = 0;
+Future<String?> getBuildNumber() async {
+  String? buildNumber;
   final json = await rootBundle
       .loadString('assets/resources/versions.json')
       .then((value) => jsonDecode(value))
       .onError((error, stackTrace) => null);
   if (json != null) {
-    buildNumber = json['build_number'] as int? ?? 0;
+    buildNumber = json['version'] as String?;
   }
   return buildNumber;
 }

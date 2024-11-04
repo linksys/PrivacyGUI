@@ -66,7 +66,7 @@ class TroubleshootingNotifier extends Notifier<TroubleshootingState> {
           .where((device) =>
               !device.isAuthority &&
               device.nodeType == null &&
-              device.connections.isNotEmpty)
+              device.isOnline())
           .toList();
       final deviceStatusList = [...slaves, ...externals]
           .fold<List<DeviceStatusModel>>([], (previousValue, device) {
@@ -74,7 +74,8 @@ class TroubleshootingNotifier extends Notifier<TroubleshootingState> {
         final ipv4 = device.connections.firstOrNull?.ipAddress;
         final ipv6 = device.connections.firstOrNull?.ipv6Address;
         final mac = device.getMacAddress();
-        final isWired = !device.isWirelessConnection();
+        final isWired =
+            device.getConnectionType() == DeviceConnectionType.wired;
         if (ipv4 != null) {
           previousValue.add(DeviceStatusModel.ipv4(
               name: name,
@@ -103,10 +104,11 @@ class TroubleshootingNotifier extends Notifier<TroubleshootingState> {
         final ip = e.ipAddress;
         final mac = e.macAddress;
         final interface = (devices
-                    .firstWhereOrNull(
-                        (element) => element.getMacAddress() == mac)
-                    ?.isWirelessConnection() ??
-                false)
+                        .firstWhereOrNull(
+                            (element) => element.getMacAddress() == mac)
+                        ?.getConnectionType() ==
+                    DeviceConnectionType.wired) ==
+                true
             ? 'LAN'
             : 'Wireless';
         final isOnline = devices
@@ -169,8 +171,9 @@ class TroubleshootingNotifier extends Notifier<TroubleshootingState> {
     return ref
         .read(routerRepositoryProvider)
         .scheduledCommand(
-          action: JNAPAction.getPinStatus,
-          retryDelayInMilliSec: 100,
+          action: JNAPAction.getPingStatus,
+          retryDelayInMilliSec: 1000,
+          maxRetry: 30,
           condition: (result) {
             if (result is JNAPSuccess) {
               final status = PingStatus.fromMap(result.output);

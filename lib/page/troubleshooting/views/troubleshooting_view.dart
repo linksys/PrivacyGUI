@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/build_config.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
@@ -60,6 +61,7 @@ class _TroubleshootingViewState extends ConsumerState<TroubleshootingView> {
             actions: [
               AppIconButton.noPadding(
                 icon: LinksysIcons.refresh,
+                semanticLabel: 'refresh',
                 onTap: () {
                   ref.read(troubleshootingProvider.notifier).fetch(force: true);
                 },
@@ -192,6 +194,7 @@ class _TroubleshootingViewState extends ConsumerState<TroubleshootingView> {
                                 .read(troubleshootingProvider.notifier)
                                 .factoryReset()
                                 .then((value) {
+                                  logger.i('[Auth]: Force to log out because the user choose to factory reset');
                               ref.read(authProvider.notifier).logout();
                             });
                           } else {}
@@ -224,6 +227,7 @@ class _TroubleshootingViewState extends ConsumerState<TroubleshootingView> {
               alignment: Alignment.centerRight,
               child: AppIconButton.noPadding(
                 icon: LinksysIcons.close,
+                semanticLabel: 'close',
                 onTap: () {
                   context.pop();
                 },

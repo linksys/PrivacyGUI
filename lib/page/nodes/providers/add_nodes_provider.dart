@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
@@ -58,51 +57,48 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
             return false;
           },
           onCompleted: () {
-            // Complete
-            logger.d(
-                '[AddNodes]: [pollAutoOnboardingStatus]getAutoOnboardingStatus complete!');
+            logger.d('[AddNodes]: GetAutoOnboardingStatus Done!');
           },
           auth: true,
         );
   }
 
   Future startAutoOnboarding() async {
-    logger.d('[AddNodes]: startAutoOnboarding');
+    logger.d('[AddNodes]: Start Bluetooth auto-onboarding process');
     final benchMark = BenchMarkLogger(name: 'AutoOnboarding');
     benchMark.start();
 
     ref.read(pollingProvider.notifier).stopPolling();
     final nodeSnapshot =
         List<LinksysDevice>.from(ref.read(deviceManagerProvider).deviceList)
-            .where((device) => device.isAuthority == false)
             .toList();
-
+    // Commence the auto-onboarding process
     final repo = ref.read(routerRepositoryProvider);
     await repo.send(JNAPAction.startBlueboothAutoOnboarding, auth: true);
 
+    bool onboardingProceed = false;
     // For AutoOnboarding 2 service, there has no deviceOnboardingStatus
     // only AutoOnboarding 3 service has deviceOnboardingStatus.
-    bool onboardingProceed = false;
     bool anyOnboarded = false;
     var deviceOnboardingStatus = [];
 
     state = state.copyWith(isLoading: true, loadingMessage: 'searching');
 
     await for (final result in pollAutoOnboardingStatus()) {
+      logger.d('[AddNodes]: GetAutoOnboardingStatus result: $result');
       // Update onboarding status
-      logger.d(
-          '[AddNodes]: [pollAutoOnboardingStatus] getAutoOnboardingStatus: $result');
-
       if (result is JNAPSuccess) {
         if (result.output['autoOnboardingStatus'] == 'Onboarding') {
           onboardingProceed = true;
         }
-        //deviceOnboardingStatus
+        // Set deviceOnboardingStatus data
         deviceOnboardingStatus = result.output['deviceOnboardingStatus'] ?? [];
       }
     }
+    // Get onboarded device data
     anyOnboarded = List.from(deviceOnboardingStatus)
         .any((element) => element['onboardingStatus'] == 'Onboarded');
+    // Get the MAC address list of these onboarded devices
     List<String> onboardedMACList = [];
     if (anyOnboarded) {
       onboardedMACList = List.from(deviceOnboardingStatus)
@@ -111,6 +107,8 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
           .whereNotNull()
           .toList();
     }
+    logger.d(
+        '[AddNodes]: Number of onboarded MAC addresses = ${onboardedMACList.length}');
     List<RawDevice> addedDevices = [];
     List<RawDevice> childNodes = [];
 
@@ -118,7 +116,7 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
     if (onboardingProceed && anyOnboarded) {
       await for (final result in pollForNodesOnline(onboardedMACList)) {
         childNodes =
-            result.where((element) => element.nodeType == 'Slave').toList();
+            result.where((element) => element.nodeType != null).toList();
         addedDevices = result
             .where(
               (element) =>
@@ -133,12 +131,15 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
     } else {
       // put original slave nodes
       childNodes =
-          nodeSnapshot.where((element) => element.nodeType == 'Slave').toList();
+          nodeSnapshot.where((element) => element.nodeType != null).toList();
     }
+    childNodes.sort((a, b) => a.isAuthority ? -1 : 1);
     final polling = ref.read(pollingProvider.notifier);
     await polling.forcePolling().then((value) => polling.startPolling());
+    logger.d('[AddNodes]: Update state: nodesSnapshot = $nodeSnapshot');
+    logger.d('[AddNodes]: Update state: addedDevices = $addedDevices');
     logger.d(
-        '[AddNodes]: add nodes state: nodesSnapshot: $nodeSnapshot, onboardingProceed: $onboardingProceed, anyOnboarded: $anyOnboarded, addedDevices: $addedDevices');
+        '[AddNodes]: Update state: onboardingProceed = $onboardingProceed, anyOnboarded=$anyOnboarded');
     benchMark.end();
 
     state = state.copyWith(
@@ -154,8 +155,8 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
 
   Stream<List<RawDevice>> pollForNodesOnline(List<String> onboardedMACList,
       {bool refreshing = false}) {
-    logger.d(
-        '[AddNodes]: [pollForNodesOnline] start, onboardedMACList: $onboardedMACList');
+    logger
+        .d('[AddNodes]: [pollForNodesOnline] Start by MACs: $onboardedMACList');
     final repo = ref.read(routerRepositoryProvider);
     return repo
         .scheduledCommand(
@@ -188,19 +189,17 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
                                 .contains(knownInterface.macAddress)) ??
                         false)
                     .every((device) {
-                  final hasConnections = device.connections.isNotEmpty;
+                  final hasConnections = device.isOnline();
                   logger.d(
                       '[AddNodes]: [pollForNodesOnline] <${device.getDeviceLocation()}> has connections: $hasConnections');
                   return hasConnections;
                 });
-                logger.d(
-                    '[AddNodes]: [pollForNodesOnline] are all onboarded nodes has connections? $ret');
                 return allFound && ret;
               }
               return false;
             },
             onCompleted: () {
-              logger.d('[AddNodes]: [pollForNodesOnline] complete');
+              logger.d('[AddNodes]: [pollForNodesOnline] Done!');
             })
         .transform(
       StreamTransformer<JNAPResult, List<RawDevice>>.fromHandlers(
@@ -210,7 +209,7 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
               result.output['devices'],
             )
                 .map((e) => LinksysDevice.fromMap(e))
-                .where((device) => device.isAuthority == false)
+                .where((device) => device.nodeType != null)
                 .toList();
             sink.add(deviceList);
           }
@@ -226,9 +225,9 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
     await for (final result
         in pollForNodesOnline(state.onboardedMACList ?? [], refreshing: true)) {
       childNodes =
-          result.where((element) => element.nodeType == 'Slave').toList();
+          result.where((element) => element.nodeType != null).toList();
     }
-
+    childNodes.sort((a, b) => a.isAuthority ? -1 : 1);
     state = state.copyWith(
       childNodes: childNodes,
       isLoading: false,

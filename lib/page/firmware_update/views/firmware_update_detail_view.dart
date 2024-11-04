@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacygui_widgets/hook/icon_hooks.dart';
@@ -38,7 +39,9 @@ class _FirmwareUpdateDetailViewState
     }).map((record) {
       return record.$1.deviceID;
     }).toList();
-
+    logger.i('[FIRMWARE]: Nodes and firmware maps: ${statusRecords.map((e) {
+      return (e.$1.friendlyName, e.$2);
+    })}');
     super.initState();
   }
 
@@ -57,6 +60,11 @@ class _FirmwareUpdateDetailViewState
     final isUpdateAvailable =
         ref.read(firmwareUpdateProvider.notifier).getAvailableUpdateNumber() >
             0;
+    logger.i(
+        '[FIRMWARE]: Any update available: $isUpdateAvailable, isUpdating: $isUpdating');
+    logger.i('[FIRMWARE]: Ongoing process: ${ongoingList.map((e) {
+      return (e.$1.friendlyName, e.$2);
+    })}');
     return isUpdating
         ? _updatingProgressView(ongoingList)
         : StyledAppPageView(
@@ -130,9 +138,11 @@ class _FirmwareUpdateDetailViewState
           : GridView.builder(
               shrinkWrap: true,
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                mainAxisExtent: ResponsiveLayout.isMobileLayout(context) ? 4.col : 3.col,
+                mainAxisExtent:
+                    ResponsiveLayout.isMobileLayout(context) ? 4.col : 3.col,
                 childAspectRatio: 1,
-                crossAxisCount: ResponsiveLayout.isMobileLayout(context) ? 1 : 2,
+                crossAxisCount:
+                    ResponsiveLayout.isMobileLayout(context) ? 1 : 2,
                 mainAxisSpacing: ResponsiveLayout.columnPadding(context),
                 crossAxisSpacing: Spacing.large4,
               ),
@@ -156,6 +166,7 @@ class _FirmwareUpdateDetailViewState
           width: 240,
           height: 240,
           child: CircularProgressIndicator(
+            semanticsLabel: '$operationType spinner',
             value: progressPercent / 100,
             color: Theme.of(context).colorScheme.primary,
             strokeWidth: 8,

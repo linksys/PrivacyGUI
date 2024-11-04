@@ -36,11 +36,17 @@ class _LanguageTileState extends ConsumerState<LanguageTile> {
           context,
           content: _localeList(),
         ).then((locale) {
+          if (locale == null) {
+            return;
+          }
           widget.onSelected?.call(locale);
         });
         widget.onTap?.call();
       },
-      child: _displayLocale(widget.locale),
+      child: Semantics(
+          identifier: 'now-general-settings-locale',
+          label: 'locale',
+          child: _displayLocale(widget.locale)),
     );
   }
 
@@ -63,19 +69,32 @@ class _LanguageTileState extends ConsumerState<LanguageTile> {
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
-      child: ListView.builder(
-          itemCount: localeList.length,
-          itemBuilder: (context, index) {
-            final locale = localeList[index];
-            return ListTile(
-              hoverColor:
-                  Theme.of(context).colorScheme.background.withOpacity(.5),
-              title: AppText.labelLarge(locale.displayText),
-              onTap: () {
-                context.pop(locale);
-              },
-            );
-          }),
+      child: Semantics(
+        identifier: 'now-locale-list',
+        label: 'locale list',
+        explicitChildNodes: true,
+        child: ListView.builder(
+            itemCount: localeList.length,
+            itemBuilder: (context, index) {
+              final locale = localeList[index];
+              return ListTile(
+                hoverColor:
+                    Theme.of(context).colorScheme.background.withOpacity(.5),
+                title: Semantics(
+                    identifier: 'now-locale-item-${locale.toLanguageTag()}',
+                    child: AppText.labelLarge(locale.displayText)),
+                trailing: widget.locale == locale
+                    ? Semantics(
+                        identifier: 'now-locale-item-checked',
+                        label: 'checked',
+                        child: const Icon(LinksysIcons.check))
+                    : null,
+                onTap: () {
+                  context.pop(locale);
+                },
+              );
+            }),
+      ),
     );
   }
 }

@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/jnap/models/port_range_forwarding_rule.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/advanced_settings/port_forwarding/_port_forwarding.dart';
 import 'package:privacy_gui/page/advanced_settings/port_forwarding/providers/consts.dart';
+import 'package:privacy_gui/page/advanced_settings/port_forwarding/providers/port_util_mixin.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacy_gui/validator_rules/input_validators.dart';
 
@@ -13,7 +14,7 @@ final portRangeForwardingRuleProvider = NotifierProvider<
     PortRangeForwardingRuleState>(() => PortRangeForwardingRuleNotifier());
 
 class PortRangeForwardingRuleNotifier
-    extends Notifier<PortRangeForwardingRuleState> {
+    extends Notifier<PortRangeForwardingRuleState> with PortUtilMixin {
   InputValidator? _localIpValidator;
   String _subnetMask = '255.255.0.0';
   String _ipAddress = '192.168.1.1';
@@ -35,7 +36,10 @@ class PortRangeForwardingRuleNotifier
   Future fetch() async {
     final repo = ref.read(routerRepositoryProvider);
     final lanSettings = await repo
-        .send(JNAPAction.getLANSettings)
+        .send(
+          JNAPAction.getLANSettings,
+          auth: true,
+        )
         .then((value) => RouterLANSettings.fromMap(value.output));
     _ipAddress = lanSettings.ipAddress;
     _subnetMask =
@@ -90,6 +94,17 @@ class PortRangeForwardingRuleNotifier
 
   bool isDeviceIpValidate(String ipAddress) {
     return _localIpValidator?.validate(ipAddress) ?? false;
+  }
+
+  bool isPortConflict(int firstPort, int lastPort, String protocol) {
+    return state.rules.any((rule) =>
+        doesRangeOverlap(
+          rule.firstExternalPort,
+          rule.lastExternalPort,
+          firstPort,
+          lastPort,
+        ) &&
+        (protocol == rule.protocol || protocol == 'Both'));
   }
 
   bool isEdit() {

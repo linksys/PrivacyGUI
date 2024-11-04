@@ -11,14 +11,23 @@ class RoutePath {
   static const localLoginPassword = '/localLoginPassword';
   static const localRouterRecovery = 'localRouterRecovery';
   static const localPasswordReset = 'localPasswordReset';
+  static const cloudRALogin = 'cloudRALogin';
+  static const cloudRAPin = 'cloudRAPin';
 
   /// dashboard
   static const dashboardHome = '/dashboardHome';
   static const dashboardMenu = '/dashboardMenu';
   static const dashboardSupport = '/dashboardSupport';
-  static const dashboardDevices = 'dashboardDevices';
-  static const dashboardSettings = 'dashboardSettings';
-  static const dashboardAdvancedSettings = 'dashboardAdvancedSettings';
+
+  /// menu
+  static const menuInstantVerify = 'menuInstantVerify';
+  static const menuInstantDevices = 'menuInstantDevices';
+  static const menuIncredibleWiFi = 'menuIncredibleWiFi';
+  static const menuInstantTopology = 'menuInstantTopology';
+  static const menuInstantAdmin = 'menuInstantAdmin';
+  static const menuInstantSafety = 'menuInstantSafety';
+  static const menuInstantPrivacy = 'menuInstantPrivacy';
+  static const menuAdvancedSettings = 'dashboardAdvancedSettings';
 
   /// speed test
   static const dashboardSpeedTest = 'dashboardSpeedTest';
@@ -27,13 +36,9 @@ class RoutePath {
 
   /// settings
   static const settingsNotification = 'notificationSettings';
-  static const settingsWifi = 'wifiSettings';
-  static const settingsNodes = 'nodes';
-  static const settingsNetworkAdmin = 'routerAdmin';
   static const settingsTimeZone = 'timeZone';
   static const settingsInternet = 'internetSettings';
   static const settingsLocalNetwork = 'localNetworkSettings';
-  static const settingsMacFiltering = 'macFilteringSettings';
   static const settingsPort = 'portSettings';
   static const settingsFirewall = 'firewall';
   static const settingsDMZ = 'dmz';
@@ -61,6 +66,7 @@ class RoutePath {
   static const nodeLightSettings = 'nodeLightSettings';
   static const addNodes = '/addNodes';
   static const firmwareUpdateDetail = 'firmwareUpdateDetail';
+  static const manualFirmwareUpdate = 'manualFirmwareUpdate';
 
   /// device
   static const deviceDetails = 'deviceDetails';
@@ -98,6 +104,9 @@ class RoutePath {
   /// linkup
   static const linkup = 'linkup';
 
+  /// Explanation
+  static const explanation = '/explanation';
+
   /// PnP
   static const pnp = '/pnp';
   static const pnpConfig = 'pnpConfig';
@@ -108,7 +117,8 @@ class RoutePath {
   static const pnpPPPOE = 'pnpPPPOE';
   static const pnpIspTypeSelection = 'pnpIspTypeSelection';
   static const pnpStaticIp = 'pnpStaticIp';
-  static const pnpIspSettingsAuth = 'pnpIspSettingsAuth';
+  static const pnpIspAuth = 'pnpIspAuth';
+  static const pnpIspSaveSettings = 'pnpIspSaveSettings';
 
   /// Safe Browsing
   static const safeBrowsing = 'safeBrowsing';
@@ -149,14 +159,22 @@ class RouteNamed {
   static const localLoginPassword = 'localLoginPassword';
   static const localRouterRecovery = 'localRouterRecovery';
   static const localPasswordReset = 'localPasswordReset';
+  static const cloudRALogin = 'cloudRALogin';
+  static const cloudRAPin = 'cloudRAPin';
 
   /// dashboard
   static const dashboardMenu = 'dashboardMenu';
   static const dashboardHome = 'dashboardHome';
   static const dashboardSupport = 'dashboardSupport';
-  static const dashboardDevices = 'dashboardDevices';
-  static const dashboardSettings = 'dashboardSettings';
-  static const dashboardAdvancedSettings = 'dashboardAdvancedSettings';
+
+  static const menuInstantVerify = 'menuInstantVerify';
+  static const menuInstantDevices = 'menuInstantDevices';
+  static const menuIncredibleWiFi = 'menuIncredibleWiFi';
+  static const menuInstantTopology = 'menuInstantTopology';
+  static const menuInstantAdmin = 'menuInstantAdmin';
+  static const menuInstantSafety = 'menuInstantSafety';
+  static const menuInstantPrivacy = 'menuInstantPrivacy';
+  static const menuAdvancedSettings = 'menuAdvancedSettings';
 
   /// speed test
   static const dashboardSpeedTest = 'dashboardSpeedTest';
@@ -165,13 +183,9 @@ class RouteNamed {
 
   /// settings
   static const settingsNotification = 'notificationSettings';
-  static const settingsWifi = 'wifiSettings';
-  static const settingsNodes = 'nodes';
-  static const settingsNetworkAdmin = 'networkAdmin';
   static const settingsTimeZone = 'timeZone';
   static const settingsInternet = 'internetSettings';
   static const settingsLocalNetwork = 'localNetworkSettings';
-  static const settingsMacFiltering = 'macFilteringSettings';
   static const settingsPort = 'portSettings';
   static const settingsFirewall = 'firewall';
   static const settingsDMZ = 'dmz';
@@ -199,6 +213,7 @@ class RouteNamed {
   static const nodeLightSettings = 'nodeLightSettings';
   static const addNodes = 'addNodes';
   static const firmwareUpdateDetail = 'firmwareUpdateDetail';
+  static const manualFirmwareUpdate = 'manualFirmwareUpdate';
 
   ///device
   static const deviceDetails = 'deviceDetails';
@@ -237,6 +252,9 @@ class RouteNamed {
   /// linkup
   static const linkup = 'linkup';
 
+  /// Explanation
+  static const explanation = 'explanation';
+
   /// PnP
   static const pnp = 'pnp';
   static const pnpConfig = 'pnpConfig';
@@ -247,10 +265,8 @@ class RouteNamed {
   static const pnpPPPOE = 'pnpPPPOE';
   static const pnpIspTypeSelection = 'pnpIspTypeSelection';
   static const pnpStaticIp = 'pnpStaticIp';
-  static const pnpIspSettingsAuth = 'pnpIspSettingsAuth';
-
-  /// Safe Browsing
-  static const safeBrowsing = 'safeBrowsing';
+  static const pnpIspAuth = 'pnpIspAuth';
+  static const pnpIspSaveSettings = 'pnpIspSaveSettings';
 
   /// Troubleshooting
   static const troubleshooting = 'troubleshooting';

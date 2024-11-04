@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/jnap/models/port_range_triggering_rule.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/advanced_settings/port_forwarding/_port_forwarding.dart';
 import 'package:privacy_gui/page/advanced_settings/port_forwarding/providers/consts.dart';
+import 'package:privacy_gui/page/advanced_settings/port_forwarding/providers/port_util_mixin.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacy_gui/validator_rules/input_validators.dart';
 
@@ -13,7 +14,7 @@ final portRangeTriggeringRuleProvider = NotifierProvider<
     PortRangeTriggeringRuleState>(() => PortRangeTriggeringRuleNotifier());
 
 class PortRangeTriggeringRuleNotifier
-    extends Notifier<PortRangeTriggeringRuleState> {
+    extends Notifier<PortRangeTriggeringRuleState> with PortUtilMixin {
   late InputValidator _localIpValidator;
   String _subnetMask = '255.255.0.0';
   String _ipAddress = '192.168.1.1';
@@ -35,7 +36,10 @@ class PortRangeTriggeringRuleNotifier
   Future fetch() async {
     final repo = ref.read(routerRepositoryProvider);
     final lanSettings = await repo
-        .send(JNAPAction.getLANSettings)
+        .send(
+          JNAPAction.getLANSettings,
+          auth: true,
+        )
         .then((value) => RouterLANSettings.fromMap(value.output));
     _ipAddress = lanSettings.ipAddress;
     _subnetMask =
@@ -53,16 +57,13 @@ class PortRangeTriggeringRuleNotifier
       rules.replaceRange(index, index + 1, [rule]);
     }
     final repo = ref.read(routerRepositoryProvider);
-    final result = await repo
-        .send(
-          JNAPAction.setPortRangeTriggeringRules,
-          auth: true,
-          data: {
-            'rules': rules.map((e) => e.toMap()).toList(),
-          },
-        )
-        .then((value) => true)
-        .onError((error, stackTrace) => false);
+    final result = await repo.send(
+      JNAPAction.setPortRangeTriggeringRules,
+      auth: true,
+      data: {
+        'rules': rules.map((e) => e.toMap()).toList(),
+      },
+    ).then((value) => true);
     return result;
   }
 
@@ -86,6 +87,24 @@ class PortRangeTriggeringRuleNotifier
     } else {
       return false;
     }
+  }
+
+  bool isTriggeredPortConflict(int firstPort, int lastPort) {
+    return state.rules.any((rule) => doesRangeOverlap(
+          rule.firstTriggerPort,
+          rule.lastTriggerPort,
+          firstPort,
+          lastPort,
+        ));
+  }
+
+  bool isForwardedPortConflict(int firstPort, int lastPort) {
+    return state.rules.any((rule) => doesRangeOverlap(
+          rule.firstForwardedPort,
+          rule.lastForwardedPort,
+          firstPort,
+          lastPort,
+        ));
   }
 
   bool isDeviceIpValidate(String ipAddress) {

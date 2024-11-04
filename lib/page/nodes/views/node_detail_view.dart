@@ -1,35 +1,48 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/models/firmware_update_status_nodes.dart';
 import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
+import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/customs/animated_refresh_container.dart';
+import 'package:privacy_gui/page/components/shared_widgets.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/styled/styled_tab_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
-import 'package:privacy_gui/page/devices/_devices.dart';
+import 'package:privacy_gui/page/instant_device/_instant_device.dart';
+import 'package:privacy_gui/page/instant_device/views/device_list_widget.dart';
+import 'package:privacy_gui/page/instant_device/views/devices_filter_widget.dart';
 import 'package:privacy_gui/page/nodes/_nodes.dart';
-import 'package:privacy_gui/page/nodes/views/connected_device_widget.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/hook/icon_hooks.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/buttons/popup_button.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:privacygui_widgets/widgets/card/list_card.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/label/status_label.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
 import 'package:collection/collection.dart';
+import 'package:privacygui_widgets/widgets/panel/switch_trigger_tile.dart';
 import 'package:privacygui_widgets/widgets/radios/radio_list.dart';
 
 import 'blink_node_light_widget.dart';
@@ -48,27 +61,55 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
   @override
   void initState() {
     super.initState();
+
+    Future.doWhile(() => !mounted).then((value) {
+      final state = ref.read(nodeDetailProvider);
+      return ref
+          .read(deviceFilterConfigProvider.notifier)
+          .initFilter(preselectedNodeId: [state.deviceId]);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(nodeDetailProvider);
-
+    final filteredDeviceList = ref.watch(filteredDeviceListProvider);
+    final isOnlineFilter = ref.watch(
+        deviceFilterConfigProvider.select((value) => value.connectionFilter));
     return LayoutBuilder(
       builder: (context, constraint) {
         return ResponsiveLayout(
-          desktop: _desktopLayout(constraint, state),
-          mobile: _mobileLayout(constraint, state),
+          desktop: _desktopLayout(
+              constraint, state, filteredDeviceList, isOnlineFilter),
+          mobile: _mobileLayout(
+              constraint, state, filteredDeviceList, isOnlineFilter),
         );
       },
     );
   }
 
-  Widget _desktopLayout(BoxConstraints constraint, NodeDetailState state) {
+  Widget _desktopLayout(BoxConstraints constraint, NodeDetailState state,
+      List<DeviceListItem> filteredDeviceList, bool isOnlineFilter) {
     return StyledAppPageView(
       padding: const EdgeInsets.only(),
-      title: loc(context).router,
+      title: state.location,
       scrollable: true,
+      actions: [
+        AnimatedRefreshContainer(
+          builder: (controller) {
+            return AppTextButton.noPadding(
+              loc(context).refresh,
+              icon: LinksysIcons.refresh,
+              onTap: () {
+                controller.repeat();
+                ref.read(pollingProvider.notifier).forcePolling().then((value) {
+                  controller.stop();
+                });
+              },
+            );
+          },
+        ),
+      ],
       child: AppBasicLayout(
         content: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -79,18 +120,40 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
             ),
             const AppGap.gutter(),
             SizedBox(
-                width: 8.col,
-                child: deviceTab(
-                    state, constraint.maxHeight - kDefaultToolbarHeight))
+              width: 8.col,
+              child: deviceTab(
+                state.deviceId,
+                filteredDeviceList,
+                constraint.maxHeight - kDefaultToolbarHeight,
+                isOnlineFilter,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _mobileLayout(BoxConstraints constraint, NodeDetailState state) {
+  Widget _mobileLayout(BoxConstraints constraint, NodeDetailState state,
+      List<DeviceListItem> filteredDeviceList, bool isOnlineFilter) {
     return StyledAppTabPageView(
-      title: loc(context).router,
+      title: state.location,
+      actions: [
+        AnimatedRefreshContainer(
+          builder: (controller) {
+            return AppTextButton.noPadding(
+              loc(context).refresh,
+              icon: LinksysIcons.refresh,
+              onTap: () {
+                controller.repeat();
+                ref.read(pollingProvider.notifier).forcePolling().then((value) {
+                  controller.stop();
+                });
+              },
+            );
+          },
+        ),
+      ],
       tabs: [
         Tab(
           text: loc(context).info,
@@ -103,15 +166,22 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
       ],
       tabContentViews: [
         StyledAppPageView(
+          useMainPadding: false,
           appBarStyle: AppBarStyle.none,
           scrollable: true,
           child: infoTab(state),
         ),
         StyledAppPageView(
-            appBarStyle: AppBarStyle.none,
-            scrollable: true,
-            child:
-                deviceTab(state, constraint.maxHeight - kDefaultToolbarHeight))
+          useMainPadding: false,
+          appBarStyle: AppBarStyle.none,
+          scrollable: true,
+          child: deviceTab(
+            state.deviceId,
+            filteredDeviceList,
+            constraint.maxHeight - kDefaultToolbarHeight,
+            isOnlineFilter,
+          ),
+        ),
       ],
       expandedHeight: 120,
     );
@@ -134,23 +204,147 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
     );
   }
 
-  Widget deviceTab(NodeDetailState state, double listHeight) {
+  Widget deviceTab(String deviceId, List<DeviceListItem> filteredDeviceList,
+      double listHeight, bool isOnlineFilter) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const AppGap.small2(),
-        AppText.labelLarge(
-            loc(context).nDevices(state.connectedDevices.length)),
-        const AppGap.small2(),
+        Row(
+          children: [
+            Expanded(
+              child: AppText.labelLarge(
+                  loc(context).nDevices(filteredDeviceList.length)),
+            ),
+            const AppGap.medium(),
+            ResponsiveLayout(
+              desktop: AppPopupButton(
+                button: Row(
+                  children: [
+                    Icon(
+                      LinksysIcons.filter,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const AppGap.small2(),
+                    AppText.labelLarge(
+                      loc(context).filters,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ],
+                ),
+                borderRadius: const BorderRadius.all(Radius.circular(10)),
+                backgroundColor: Theme.of(context).colorScheme.background,
+                builder: (controller) {
+                  return Container(
+                    constraints:
+                        BoxConstraints(minWidth: 3.col, maxWidth: 7.col),
+                    child: DevicesFilterWidget(
+                      preselectedNodeId: [deviceId],
+                    ),
+                  );
+                },
+              ),
+              mobile: AppIconButton.noPadding(
+                icon: LinksysIcons.filter,
+                color: Theme.of(context).colorScheme.primary,
+                onTap: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    useRootNavigator: true,
+                    builder: (context) => Container(
+                      padding: const EdgeInsets.all(Spacing.large2),
+                      width: double.infinity,
+                      child: DevicesFilterWidget(
+                        preselectedNodeId: [deviceId],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+        const AppGap.medium(),
         SizedBox(
           height: listHeight,
-          child: ConnectedDeviceListWidget(
-            devices: state.connectedDevices,
+          child: DeviceListWidget(
+            devices: filteredDeviceList,
+            enableDeauth: isOnlineFilter,
+            enableDelete: !isOnlineFilter,
             physics: const NeverScrollableScrollPhysics(),
             onItemClick: (item) {
-              ref.read(deviceDetailIdProvider.notifier).state = item.deviceID;
+              ref.read(deviceDetailIdProvider.notifier).state = item.deviceId;
               context.pushNamed(RouteNamed.deviceDetails);
+            },
+            onItemDelete: (device) {
+              showSimpleAppDialog(
+                context,
+                dismissible: false,
+                title: loc(context).nDevicesDeleteDevicesTitle(1),
+                content: AppText.bodyMedium(
+                    loc(context).nDevicesDeleteDevicesDescription(1)),
+                actions: [
+                  AppTextButton(
+                    loc(context).cancel,
+                    color: Theme.of(context).colorScheme.onSurface,
+                    onTap: () {
+                      context.pop();
+                    },
+                  ),
+                  AppTextButton(
+                    loc(context).delete,
+                    color: Theme.of(context).colorScheme.error,
+                    onTap: () {
+                      context.pop();
+                      doSomethingWithSpinner(
+                        context,
+                        ref
+                            .read(deviceManagerProvider.notifier)
+                            .deleteDevices(deviceIds: [device.deviceId]),
+                      );
+                    },
+                  ),
+                ],
+              );
+            },
+            onItemDeauth: (device) {
+              showSimpleAppDialog(
+                context,
+                dismissible: false,
+                title: loc(context).disconnectClient,
+                content: AppText.bodyLarge(''),
+                actions: [
+                  AppTextButton(
+                    loc(context).cancel,
+                    color: Theme.of(context).colorScheme.onSurface,
+                    onTap: () {
+                      context.pop();
+                    },
+                  ),
+                  AppTextButton(
+                    loc(context).disconnect,
+                    color: Theme.of(context).colorScheme.error,
+                    onTap: () {
+                      context.pop();
+                      doSomethingWithSpinner(
+                        context,
+                        ref
+                            .read(deviceManagerProvider.notifier)
+                            .deauthClient(macAddress: device.macAddress)
+                            .then((_) {
+                          showSimpleSnackBar(
+                              context, loc(context).successExclamation);
+                        }).onError((error, stackTrace) {
+                          showFailedSnackBar(
+                              context, loc(context).generalError);
+                        }),
+                      );
+                    },
+                  ),
+                ],
+              );
             },
           ),
         ),
@@ -159,8 +353,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
   }
 
   Widget _avatarCard(NodeDetailState state) {
-    return AppCard(
-      padding: const EdgeInsets.all(Spacing.small2),
+    return _nodeDetailBackgroundCard(
       child: SizedBox(
         // height: 160,
         child: Column(
@@ -168,9 +361,10 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: Spacing.large2),
+              padding: const EdgeInsets.symmetric(vertical: Spacing.large4),
               child: Center(
                 child: Image(
+                  semanticLabel: 'device image',
                   height: 120,
                   image: CustomTheme.of(context).images.devices.getByName(
                         routerIconTestByModel(modelNumber: state.modelNumber),
@@ -178,45 +372,20 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
                 ),
               ),
             ),
-            AppCard(
-              showBorder: false,
-              padding: const EdgeInsets.all(Spacing.medium),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: AppText.labelLarge(
-                      state.location,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  AppIconButton(
-                    icon: LinksysIcons.edit,
-                    onTap: () {
-                      _showEditNodeNameDialog(state);
-                    },
-                  ),
-                ],
+            _avatarInfoCard(
+              title: state.location,
+              trailing: AppIconButton(
+                icon: LinksysIcons.edit,
+                semanticLabel: 'edit',
+                onTap: () {
+                  _showEditNodeNameDialog(state);
+                },
               ),
             ),
-            // const AppGap.medium(),
-            AppSettingCard(
+            _avatarInfoCard(
               title: loc(context).connectTo,
               description: _checkEmptyValue(state.upstreamDevice),
-              showBorder: false,
-              padding: const EdgeInsets.all(Spacing.medium),
             ),
-            if (!state.isMaster)
-              AppSettingCard.noBorder(
-                padding: const EdgeInsets.all(Spacing.medium),
-                title: loc(context).signalStrength,
-                description: _checkEmptyValue('${state.signalStrength} dBM'),
-                trailing: Icon(getWifiSignalIconData(
-                  context,
-                  state.isWiredConnection ? null : state.signalStrength,
-                )),
-              ),
           ],
         ),
       ),
@@ -224,31 +393,21 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
   }
 
   Widget _lightCard(NodeDetailState state) {
-    final hasBlinkFunction =
-        ref.read(nodeDetailProvider.notifier).isSupportLedBlinking();
-    bool isSupportNodeLight =
-        ref.read(nodeDetailProvider.notifier).isSupportLedMode();
-    if (!hasBlinkFunction && !isSupportNodeLight) {
+    bool isSupportNodeLight = serviceHelper.isSupportLedMode();
+
+    bool isCognitive = isCognitiveMeshRouter(
+        modelNumber: state.modelNumber, hardwareVersion: state.hardwareVersion);
+    if (!isSupportNodeLight || !isCognitive) {
       return const Center();
     }
-    return AppCard(
-        padding: const EdgeInsets.all(Spacing.small2),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ..._createNodeLightTile(state.nodeLightSettings),
-            ...hasBlinkFunction
-                ? [
-                    const Padding(
-                      padding: EdgeInsets.all(Spacing.medium),
-                      child: BlinkNodeLightWidget(),
-                    ),
-                  ]
-                : [],
-          ],
-        ));
+    return _nodeDetailBackgroundCard(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: _createNodeLightTile(state.nodeLightSettings),
+      ),
+    );
   }
 
   String _checkEmptyValue(String? value) {
@@ -262,21 +421,33 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
   }
 
   List<Widget> _createNodeLightTile(NodeLightSettings? nodeLightSettings) {
-    bool isSupportNodeLight =
-        ref.read(nodeDetailProvider.notifier).isSupportLedMode();
-    if (!isSupportNodeLight) {
+    if (!serviceHelper.isSupportLedMode()) {
       return [];
     } else {
       final title = loc(context).nodeLight;
+      final nodeLightStatus = NodeLightStatus.getStatus(nodeLightSettings);
       return [
         AppSettingCard(
           key: const ValueKey('nodeLightSettings'),
           title: title,
           showBorder: false,
+          color: Theme.of(context).colorScheme.background,
           padding: const EdgeInsets.all(Spacing.medium),
-          trailing: AppText.bodySmall(
-            NodeLightStatus.getStatus(nodeLightSettings).resolveString(context),
-          ),
+          trailing: nodeLightStatus != NodeLightStatus.night
+              ? AppStatusLabel(
+                  isOff: nodeLightStatus == NodeLightStatus.off,
+                  label: loc(context).on,
+                  offLabel: loc(context).off,
+                )
+              : const Row(
+                  children: [
+                    Icon(
+                      LinksysIcons.darkMode,
+                      size: 16,
+                    ),
+                    AppText.bodyMedium('8AM - 8PM')
+                  ],
+                ),
           onTap: () {
             // context.pushNamed(RouteNamed.nodeLightSettings);
             _showNodeLightSelectionDialog();
@@ -297,95 +468,182 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
         : ref.watch(firmwareUpdateProvider
             .select((value) => value.nodesStatus?.firstOrNull));
     final isFwUpToDate = updateInfo?.availableUpdate == null;
-    return AppCard(
-      padding: const EdgeInsets.all(Spacing.small2),
+    return _nodeDetailBackgroundCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppSettingCard(
-            showBorder: false,
-            padding: const EdgeInsets.all(Spacing.medium),
-            title: loc(context).lanIPAddress,
-            description: state.lanIpAddress,
-          ),
-          if (state.isMaster) ...[
-            const AppGap.small2(),
-            AppSettingCard(
-              showBorder: false,
-              padding: const EdgeInsets.all(Spacing.medium),
+          if (!state.isWiredConnection) _signalStrengthCard(state),
+          if (state.isMaster)
+            _detailIndoCard(
               title: loc(context).wanIPAddress,
               description: state.wanIpAddress,
             ),
-          ],
-          // AppDeviceInfoCard(
-          //   title: loc(context).serialNumber,
-          //   description: _checkEmptyValue(state.serialNumber),
-          // ),
-          // AppDeviceInfoCard(
-          //   title: loc(context).modelNumber,
-          //   description: _checkEmptyValue(state.modelNumber),
-          // ),
-
-          AppSettingCard(
-            showBorder: false,
-            padding: const EdgeInsets.all(Spacing.medium),
+          _detailIndoCard(
+            title: loc(context).lanIPAddress,
+            description: state.lanIpAddress,
+          ),
+          _detailIndoCard(
             title: loc(context).firmwareVersion,
             description: _checkEmptyValue(state.firmwareVersion),
-            trailing: Visibility(
-                visible: isFwUpToDate,
-                replacement: InkWell(
-                  child: AppText.labelSmall(
-                    loc(context).update,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  onTap: () {
-                    context.pushNamed(RouteNamed.firmwareUpdateDetail);
-                  },
-                ),
-                child: AppText.labelSmall(
-                  loc(context).upToDate,
-                  color: Theme.of(context).colorSchemeExt.green,
-                )),
+            trailing: SharedWidgets.nodeFirmwareStatusWidget(
+                context, !isFwUpToDate, () {
+              context.pushNamed(RouteNamed.firmwareUpdateDetail);
+            }),
           ),
-          AppTextButton(
-            loc(context).moreInfo,
-            padding: const EdgeInsets.all(Spacing.medium),
-            onTap: () {
-              _showMoreRouterInfoModal(state);
-            },
-          )
+          _detailIndoCard(
+            title: loc(context).modelNumber,
+            description: _checkEmptyValue(state.modelNumber),
+          ),
+          _detailIndoCard(
+            title: loc(context).serialNumber,
+            description: _checkEmptyValue(state.serialNumber),
+          ),
         ],
       ),
     );
   }
 
+  Widget _nodeDetailBackgroundCard({required Widget child}) {
+    return AppCard(
+      padding: const EdgeInsets.all(Spacing.small2),
+      color: Theme.of(context).colorScheme.background,
+      child: child,
+    );
+  }
+
+  Widget _nodeDetailInfoCard({required Widget child}) {
+    return AppCard(
+      showBorder: false,
+      color: Theme.of(context).colorScheme.background,
+      child: child,
+    );
+  }
+
+  Widget _avatarInfoCard(
+      {String? title, String? description, Widget? trailing}) {
+    return _nodeDetailInfoCard(
+      child: Row(
+        children: [
+          Expanded(
+              child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (title != null)
+                AppText.labelLarge(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              if (description != null) AppText.bodyMedium(description),
+            ],
+          )),
+          if (trailing != null) trailing,
+        ],
+      ),
+    );
+  }
+
+  Widget _detailIndoCard(
+      {String? title, String? description, Widget? trailing}) {
+    return _nodeDetailInfoCard(
+      child: Row(
+        children: [
+          Expanded(
+              child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (title != null)
+                AppText.bodySmall(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              if (description != null) AppText.labelLarge(description),
+            ],
+          )),
+          if (trailing != null) trailing,
+        ],
+      ),
+    );
+  }
+
+  Widget _signalStrengthCard(NodeDetailState state) {
+    return AppListCard(
+      showBorder: false,
+      color: Theme.of(context).colorScheme.background,
+      padding: const EdgeInsets.all(Spacing.medium),
+      title: AppText.bodySmall(
+        loc(context).signalStrength,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      ),
+      description: Row(children: [
+        AppText.labelLarge(
+          getWifiSignalLevel(state.signalStrength).resolveLabel(context),
+          color: getWifiSignalLevel(state.signalStrength).resolveColor(context),
+        ),
+        const AppText.labelLarge(' • '),
+        AppText.labelLarge(
+          state.isWiredConnection
+              ? ''
+              : _checkEmptyValue('${state.signalStrength} dBM'),
+        ),
+      ]),
+      trailing: SharedWidgets.resolveSignalStrengthIcon(
+          context, state.signalStrength),
+    );
+  }
+
   void _showEditNodeNameDialog(NodeDetailState state) {
     final textController = TextEditingController()..text = state.location;
-    final hasBlinkFunction =
-        ref.read(nodeDetailProvider.notifier).isSupportLedBlinking();
-    showSubmitAppDialog(context, title: loc(context).nodeName,
-        contentBuilder: (context, setState) {
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppTextField(
-            headerText: loc(context).nodeName,
-            border: const OutlineInputBorder(),
-            controller: textController,
-          ),
-          if (hasBlinkFunction) ...[
-            const AppGap.medium(),
-            const BlinkNodeLightWidget(),
-          ],
-        ],
-      );
-    }, event: () async {
-      await ref
-          .read(nodeDetailProvider.notifier)
-          .updateDeviceName(textController.text)
-          .then((_) => showSuccessSnackBar(context, loc(context).saved));
-    });
+    final hasBlinkFunction = serviceHelper.isSupportLedBlinking();
+    final isCognitive = isCognitiveMeshRouter(
+        modelNumber: state.modelNumber, hardwareVersion: state.hardwareVersion);
+    bool isEmpty = false;
+    bool overMaxSize = false;
+    showSubmitAppDialog(context,
+        title: loc(context).nodeName,
+        contentBuilder: (context, setState, onSubmit) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AppTextField(
+                headerText: loc(context).nodeName,
+                border: const OutlineInputBorder(),
+                controller: textController,
+                errorText:
+                    overMaxSize ? loc(context).deviceNameExceedMaxSize : null,
+                onSubmitted: (_) {
+                  if (!isEmpty && !overMaxSize) {
+                    onSubmit();
+                  }
+                },
+                onChanged: (value) {
+                  setState(() {
+                    isEmpty = value.isEmpty;
+                    overMaxSize = utf8.encoder.convert(value).length >= 256;
+                  });
+                },
+              ),
+              if (isCognitive && hasBlinkFunction) ...[
+                const AppGap.medium(),
+                const BlinkNodeLightWidget(),
+              ],
+            ],
+          );
+        },
+        event: () async {
+          await _saveName(textController.text);
+        },
+        checkPositiveEnabled: () => !isEmpty && !overMaxSize);
+  }
+
+  Future _saveName(String name) {
+    return ref
+        .read(nodeDetailProvider.notifier)
+        .updateDeviceName(name)
+        .then((_) => showSuccessSnackBar(context, loc(context).saved));
   }
 
   void _showMoreRouterInfoModal(NodeDetailState state) {
@@ -419,36 +677,70 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
     var nodeLightStatus = NodeLightStatus.getStatus(
         ref.read(nodeDetailProvider).nodeLightSettings);
     showSubmitAppDialog(context, title: loc(context).nodeLight,
-        contentBuilder: (context, setState) {
+        contentBuilder: (context, setState, onSubmit) {
+      // return Column(
+      //   mainAxisSize: MainAxisSize.min,
+      //   crossAxisAlignment: CrossAxisAlignment.start,
+      //   children: [
+      //     AppRadioList(
+      //       initial: nodeLightStatus,
+      //       mainAxisSize: MainAxisSize.min,
+      //       itemHeight: 56,
+      //       items: [
+      //         AppRadioListItem(
+      //           title: loc(context).off,
+      //           value: NodeLightStatus.off,
+      //         ),
+      //         AppRadioListItem(
+      //           title: loc(context).nodeDetailsLedNightMode,
+      //           value: NodeLightStatus.night,
+      //         ),
+      //         AppRadioListItem(
+      //           title: loc(context).on,
+      //           value: NodeLightStatus.on,
+      //         ),
+      //       ],
+      //       onChanged: (index, selectedType) {
+      //         setState(() {
+      //           if (selectedType != null) {
+      //             nodeLightStatus = selectedType;
+      //           }
+      //         });
+      //       },
+      //     ),
+      //   ],
+      // );
       return Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppRadioList(
-            initial: nodeLightStatus,
-            mainAxisSize: MainAxisSize.min,
-            itemHeight: 56,
-            items: [
-              AppRadioListItem(
-                title: loc(context).off,
-                value: NodeLightStatus.off,
-              ),
-              AppRadioListItem(
-                title: loc(context).nodeDetailsLedNightMode,
-                value: NodeLightStatus.night,
-              ),
-              AppRadioListItem(
-                title: loc(context).on,
-                value: NodeLightStatus.on,
-              ),
-            ],
-            onChanged: (index, selectedType) {
+          AppSwitchTriggerTile(
+            title: AppText.bodyLarge(
+              loc(context).nodeDetailsLedNightMode,
+            ),
+            value: nodeLightStatus != NodeLightStatus.on,
+            onChanged: (value) {
               setState(() {
-                if (selectedType != null) {
-                  nodeLightStatus = selectedType;
-                }
+                nodeLightStatus =
+                    value ? NodeLightStatus.night : NodeLightStatus.on;
               });
             },
+          ),
+          const Divider(),
+          AppCheckbox(
+            value: nodeLightStatus == NodeLightStatus.off,
+            text: loc(context).lightsOff,
+            onChanged: nodeLightStatus != NodeLightStatus.on
+                ? (value) {
+                    if (value == null) {
+                      return;
+                    }
+                    setState(() {
+                      nodeLightStatus =
+                          value ? NodeLightStatus.off : NodeLightStatus.night;
+                    });
+                  }
+                : null,
           ),
         ],
       );

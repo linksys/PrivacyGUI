@@ -1,5 +1,18 @@
 part of 'router_provider.dart';
 
+final explanationRoute = LinksysRoute(
+  name: RouteNamed.explanation,
+  path: RoutePath.explanation,
+  config: LinksysRouteConfig(
+    column: ColumnGrid(
+      column: 12,
+    ),
+  ),
+  builder: (context, state) => ExplanationView(
+    args: state.uri.queryParameters,
+  ),
+);
+
 final pnpRoute = LinksysRoute(
   name: RouteNamed.pnp,
   path: RoutePath.pnp,
@@ -81,6 +94,26 @@ final pnpTroubleshootingRoute = LinksysRoute(
       ],
     ),
     LinksysRoute(
+      name: RouteNamed.pnpIspAuth,
+      path: RoutePath.pnpIspAuth,
+      config: LinksysRouteConfig(
+        column: ColumnGrid(column: 6, centered: true),
+      ),
+      builder: (context, state) => PnpIspAuthView(
+        args: state.extra as Map<String, dynamic>? ?? {},
+      ),
+    ),
+    LinksysRoute(
+      name: RouteNamed.pnpIspSaveSettings,
+      path: RoutePath.pnpIspSaveSettings,
+      config: LinksysRouteConfig(
+        column: ColumnGrid(column: 6, centered: true),
+      ),
+      builder: (context, state) => PnpIspSaveSettingsView(
+        args: state.extra as Map<String, dynamic>? ?? {},
+      ),
+    ),
+    LinksysRoute(
       name: RouteNamed.pnpIspTypeSelection,
       path: RoutePath.pnpIspTypeSelection,
       config: LinksysRouteConfig(
@@ -95,18 +128,6 @@ final pnpTroubleshootingRoute = LinksysRoute(
             column: ColumnGrid(column: 6, centered: true),
           ),
           builder: (context, state) => const PnpStaticIpView(),
-          routes: [
-            LinksysRoute(
-              name: RouteNamed.pnpIspSettingsAuth,
-              path: RoutePath.pnpIspSettingsAuth,
-              config: LinksysRouteConfig(
-                column: ColumnGrid(column: 6, centered: true),
-              ),
-              builder: (context, state) => PnpIspSettingsAuthView(
-                args: state.extra as Map<String, dynamic>? ?? {},
-              ),
-            )
-          ],
         ),
         LinksysRoute(
           name: RouteNamed.pnpPPPOE,

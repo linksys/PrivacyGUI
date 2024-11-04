@@ -13,7 +13,6 @@ class AddNodesState extends Equatable {
   final List<RawDevice>? childNodes;
   final bool isLoading;
   final String? loadingMessage;
-  final Object? error;
   final List<String>? onboardedMACList;
 
   const AddNodesState({
@@ -24,7 +23,6 @@ class AddNodesState extends Equatable {
     this.childNodes,
     this.isLoading = false,
     this.loadingMessage,
-    this.error,
     this.onboardedMACList,
   });
 
@@ -38,7 +36,6 @@ class AddNodesState extends Equatable {
       childNodes,
       isLoading,
       loadingMessage,
-      error,
       onboardedMACList,
     ];
   }
@@ -51,7 +48,6 @@ class AddNodesState extends Equatable {
     List<RawDevice>? childNodes,
     bool? isLoading,
     String? loadingMessage,
-    Object? error,
     List<String>? onboardedMACList,
   }) {
     return AddNodesState(
@@ -62,7 +58,6 @@ class AddNodesState extends Equatable {
       childNodes: childNodes ?? this.childNodes,
       isLoading: isLoading ?? this.isLoading,
       loadingMessage: loadingMessage ?? this.loadingMessage,
-      error: error ?? this.error,
       onboardedMACList: onboardedMACList ?? this.onboardedMACList,
     );
   }

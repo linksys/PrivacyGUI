@@ -19,6 +19,9 @@ class DashboardManagerState extends Equatable {
   final String? wanConnection;
   final List<String> lanConnections;
   final String? skuModelNumber;
+  final int localTime;
+  final String? cpuLoad;
+  final String? memoryLoad;
 
   const DashboardManagerState({
     this.deviceInfo,
@@ -31,6 +34,9 @@ class DashboardManagerState extends Equatable {
     this.wanConnection,
     this.lanConnections = const [],
     this.skuModelNumber,
+    this.localTime = 0,
+    this.cpuLoad,
+    this.memoryLoad,
   });
 
   @override
@@ -46,6 +52,9 @@ class DashboardManagerState extends Equatable {
       wanConnection,
       lanConnections,
       skuModelNumber,
+      localTime,
+      cpuLoad,
+      memoryLoad,
     ];
   }
 
@@ -60,6 +69,9 @@ class DashboardManagerState extends Equatable {
     String? wanConnection,
     List<String>? lanConnections,
     String? skuModelNumber,
+    int? localTime,
+    String? cpuLoad,
+    String? memoryLoad,
   }) {
     return DashboardManagerState(
       deviceInfo: deviceInfo ?? this.deviceInfo,
@@ -73,6 +85,9 @@ class DashboardManagerState extends Equatable {
       wanConnection: wanConnection ?? this.wanConnection,
       lanConnections: lanConnections ?? this.lanConnections,
       skuModelNumber: skuModelNumber ?? this.skuModelNumber,
+      localTime: localTime ?? this.localTime,
+      cpuLoad: cpuLoad ?? this.cpuLoad,
+      memoryLoad: memoryLoad ?? this.memoryLoad,
     );
   }
 
@@ -88,6 +103,9 @@ class DashboardManagerState extends Equatable {
       'wanConnection': wanConnection,
       'lanConnections': lanConnections,
       'skuModelNumber': skuModelNumber,
+      'localTime': localTime,
+      'cpuLoad': cpuLoad,
+      'memoryLoad': memoryLoad,
     }..removeWhere((key, value) => value == null);
   }
 
@@ -121,6 +139,9 @@ class DashboardManagerState extends Equatable {
         map['lanConnections'],
       ),
       skuModelNumber: map['skuModelNumber'],
+      localTime: map['localTime'],
+      cpuLoad: map['cpuLoad'],
+      memoryLoad: map['memoryLoad'],
     );
   }
 

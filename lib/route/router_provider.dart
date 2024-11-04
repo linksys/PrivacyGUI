@@ -14,45 +14,50 @@ import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing
 import 'package:privacy_gui/page/components/picker/region_picker_view.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/ddns/_ddns.dart';
-import 'package:privacy_gui/page/devices/_devices.dart';
-import 'package:privacy_gui/page/devices/views/select_device_view.dart';
+import 'package:privacy_gui/page/instant_device/_instant_device.dart';
+import 'package:privacy_gui/page/instant_device/views/select_device_view.dart';
 import 'package:privacy_gui/page/firmware_update/_firmware_update.dart';
 import 'package:privacy_gui/page/health_check/_health_check.dart';
+import 'package:privacy_gui/page/instant_privacy/views/instant_privacy_view.dart';
+import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_isp_auth_view.dart';
 import 'package:privacy_gui/page/landing/_landing.dart';
 
 import 'package:privacy_gui/page/linkup/views/linkup_view.dart';
 import 'package:privacy_gui/page/login/views/_views.dart';
 import 'package:privacy_gui/page/login/views/local_reset_router_password_view.dart';
-import 'package:privacy_gui/page/network_admin/_network_admin.dart';
+import 'package:privacy_gui/page/login/views/login_cloud_ra_pin_view.dart';
+import 'package:privacy_gui/page/login/views/login_cloud_ra_view.dart';
+import 'package:privacy_gui/page/instant_admin/_instant_admin.dart';
 import 'package:privacy_gui/page/nodes/_nodes.dart';
 import 'package:privacy_gui/page/nodes/views/add_nodes_view.dart';
 import 'package:privacy_gui/page/otp_flow/providers/_providers.dart';
 import 'package:privacy_gui/page/otp_flow/views/_views.dart';
-import 'package:privacy_gui/page/pnp/troubleshooter/views/call_support/call_support_main_region_view.dart';
-import 'package:privacy_gui/page/pnp/troubleshooter/views/call_support/call_support_more_region_view.dart';
-import 'package:privacy_gui/page/pnp/data/pnp_provider.dart';
-import 'package:privacy_gui/page/pnp/pnp_admin_view.dart';
-import 'package:privacy_gui/page/pnp/pnp_setup_view.dart';
-import 'package:privacy_gui/page/pnp/troubleshooter/views/isp_settings/pnp_isp_settings_auth_view.dart';
-import 'package:privacy_gui/page/pnp/troubleshooter/views/isp_settings/pnp_pppoe_view.dart';
-import 'package:privacy_gui/page/pnp/troubleshooter/views/isp_settings/pnp_isp_type_selection_view.dart';
-import 'package:privacy_gui/page/pnp/troubleshooter/views/isp_settings/pnp_static_ip_view.dart';
-import 'package:privacy_gui/page/pnp/troubleshooter/views/pnp_modem_lights_off_view.dart';
-import 'package:privacy_gui/page/pnp/troubleshooter/views/pnp_unplug_modem_view.dart';
-import 'package:privacy_gui/page/pnp/troubleshooter/views/pnp_waiting_modem_view.dart';
-import 'package:privacy_gui/page/safe_browsing/views/safe_browsing_view.dart';
-import 'package:privacy_gui/page/pnp/troubleshooter/views/pnp_no_internet_connection_view.dart';
+import 'package:privacy_gui/page/instant_setup/explanation_view.dart';
+import 'package:privacy_gui/page/instant_setup/troubleshooter/views/call_support/call_support_main_region_view.dart';
+import 'package:privacy_gui/page/instant_setup/troubleshooter/views/call_support/call_support_more_region_view.dart';
+import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
+import 'package:privacy_gui/page/instant_setup/pnp_admin_view.dart';
+import 'package:privacy_gui/page/instant_setup/pnp_setup_view.dart';
+import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_isp_save_settings_view.dart';
+import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_pppoe_view.dart';
+import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_isp_type_selection_view.dart';
+import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_static_ip_view.dart';
+import 'package:privacy_gui/page/instant_setup/troubleshooter/views/pnp_modem_lights_off_view.dart';
+import 'package:privacy_gui/page/instant_setup/troubleshooter/views/pnp_unplug_modem_view.dart';
+import 'package:privacy_gui/page/instant_setup/troubleshooter/views/pnp_waiting_modem_view.dart';
+import 'package:privacy_gui/page/instant_safety/views/instant_safety_view.dart';
+import 'package:privacy_gui/page/instant_setup/troubleshooter/views/pnp_no_internet_connection_view.dart';
 import 'package:privacy_gui/page/select_network/_select_network.dart';
+import 'package:privacy_gui/page/instant_verify/views/instant_verify_view.dart';
 import 'package:privacy_gui/page/support/views/callback_view.dart';
 import 'package:privacy_gui/page/support/faq_list_view.dart';
-import 'package:privacy_gui/page/topology/_topology.dart';
+import 'package:privacy_gui/page/instant_topology/views/instant_topology_view.dart';
 import 'package:privacy_gui/page/troubleshooting/_troubleshooting.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_logger.dart';
-import '../page/advanced_settings/local_network_settings/_local_network_settings.dart';
 import 'constants.dart';
 
 part 'route_home.dart';
@@ -64,6 +69,7 @@ part 'route_advanced_settings.dart';
 part 'route_otp.dart';
 part 'route_pnp.dart';
 part 'route_add_nodes.dart';
+part 'route_menu.dart';
 
 final routerKey = GlobalKey<NavigatorState>();
 final routerProvider = Provider<GoRouter>((ref) {
@@ -141,12 +147,15 @@ class RouterNotifier extends ChangeNotifier {
         _ref.read(connectivityProvider).connectivityInfo.routerType;
     if (BuildConfig.forceCommandType == ForceCommand.local ||
         (routerType != RouterType.others && loginType != LoginType.remote)) {
-      shouldGoPnp = await pnp.fetchDeviceInfo().then((_) async =>
-          await pnp.pnpCheck() || !(await pnp.isRouterPasswordSet()));
+      shouldGoPnp = await pnp
+          .fetchDeviceInfo()
+          .then((_) async =>
+              await pnp.pnpCheck() || !(await pnp.isRouterPasswordSet()))
+          .onError((_, __) => false);
     } else {
       shouldGoPnp = false;
     }
-    logger.d('go pnp? $shouldGoPnp, state uri: <${state.uri}>');
+
     if (shouldGoPnp) {
       return _goPnp(state.uri.query);
     } else {
@@ -164,14 +173,14 @@ class RouterNotifier extends ChangeNotifier {
         managedNetworkId == null &&
         state.matchedLocation != RoutePath.selectNetwork) {
       FlutterNativeSplash.remove();
-
-      logger.d('empty network');
+      logger.d('[Route]: Remote: there is no managed network ID');
       return RoutePath.prepareDashboard;
     }
 
-    // if have no login type and navigate inot dashboard, then back to home
+    // if have no login type and navigate into dashboard, then back to home
     if ((loginType == null || loginType == LoginType.none) &&
         state.matchedLocation.startsWith('/dashboard')) {
+      logger.d('[Route]: No login type but intend to dashboard, lead to Home');
       return _home();
     }
 
@@ -181,13 +190,14 @@ class RouterNotifier extends ChangeNotifier {
   FutureOr<String?> _goPnp(String? query) {
     FlutterNativeSplash.remove();
     final path = '${RoutePath.pnp}?${query ?? ''}';
-    logger.d('pnp uri : $path');
+    logger.i('[Route]: Go to PnP, URI=$path');
     return path;
   }
 
   Future<String?> _authCheck() {
     return _ref.read(authProvider.notifier).init().then((state) {
-      logger.d('init auth finish');
+      logger.i(
+          '[Route]: Check credentials done: Login type = ${state?.loginType}');
       FlutterNativeSplash.remove();
       return switch (state?.loginType ?? LoginType.none) {
         LoginType.remote => RoutePath.prepareDashboard,

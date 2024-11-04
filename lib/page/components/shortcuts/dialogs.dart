@@ -1,10 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacygui_widgets/widgets/buttons/button.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/bullet_list/bullet_list.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
-import 'package:privacygui_widgets/widgets/text/app_text.dart';
 
 const kDefaultDialogWidth = 328.0;
 
@@ -15,7 +20,7 @@ Future<T?> doSomethingWithSpinner<T>(
   String? title,
   List<String>? messages,
   Duration? period,
-}) {
+}) async {
   Future.delayed(
       Duration.zero,
       () => showAppSpinnerDialog(
@@ -25,9 +30,13 @@ Future<T?> doSomethingWithSpinner<T>(
             messages: messages ?? [loc(context).processing],
             period: period,
           ));
+  await Future.delayed(Duration(milliseconds: 100));
   return task.then((value) {
     context.pop();
     return value;
+  }).onError((error, stackTrace) {
+    context.pop();
+    throw error ?? '';
   });
 }
 
@@ -80,13 +89,15 @@ Future<T?> showSubmitAppDialog<T>(
   BuildContext context, {
   Widget? icon,
   String? title,
-  required Widget Function(BuildContext, StateSetter) contentBuilder,
+  required Widget Function(BuildContext, StateSetter, void Function())
+      contentBuilder,
   Widget? loadingWidget,
   double? width,
   String? negitiveLabel,
   String? positiveLabel,
   bool Function()? checkPositiveEnabled,
   required Future<T> Function() event,
+  void Function(Object? error, StackTrace stackTrace)? onError,
 }) {
   bool isLoading = false;
   return showDialog<T?>(
@@ -94,6 +105,23 @@ Future<T?> showSubmitAppDialog<T>(
     barrierDismissible: false,
     builder: (context) {
       return StatefulBuilder(builder: (context, setState) {
+        void onSubmit() {
+          setState(() {
+            isLoading = true;
+          });
+          event.call().then((value) {
+            setState(() {
+              isLoading = false;
+            });
+            context.pop(value);
+          }).onError((error, stackTrace) {
+            setState(() {
+              isLoading = false;
+            });
+            onError?.call(error, stackTrace);
+          });
+        }
+
         return AlertDialog(
           icon: icon,
           title: title != null
@@ -105,7 +133,7 @@ Future<T?> showSubmitAppDialog<T>(
               width: width ?? kDefaultDialogWidth,
               child: switch (isLoading) {
                 true => loadingWidget ?? const AppSpinner(),
-                false => contentBuilder(context, setState),
+                false => contentBuilder(context, setState, onSubmit),
               }),
           actions: isLoading
               ? []
@@ -121,15 +149,7 @@ Future<T?> showSubmitAppDialog<T>(
                     positiveLabel ?? loc(context).save,
                     onTap: checkPositiveEnabled?.call() ?? true
                         ? () {
-                            setState(() {
-                              isLoading = true;
-                            });
-                            event.call().then((value) {
-                              setState(() {
-                                isLoading = false;
-                              });
-                              context.pop(value);
-                            });
+                            onSubmit();
                           }
                         : null,
                   )
@@ -154,6 +174,7 @@ Future<T?> showSimpleAppDialog<T>(
     barrierDismissible: dismissible,
     builder: (context) {
       return AlertDialog(
+        semanticLabel: title,
         icon: icon,
         title: title != null
             ? SizedBox(
@@ -206,6 +227,7 @@ Future<T?> showMessageAppDialog<T>(
   return showSimpleAppDialog<T?>(
     context,
     dismissible: dismissible,
+    icon: icon,
     title: title,
     content: AppText.bodyMedium(message),
     actions: actions,
@@ -267,4 +289,95 @@ Future<bool?> showUnsavedAlert(BuildContext context,
       ),
     ],
   );
+}
+
+Future<T?> showRouterNotFoundAlert<T>(BuildContext context, WidgetRef ref,
+    {FutureOr<T?> Function()? onComplete}) {
+  return showSimpleAppDialog<T>(context,
+      dismissible: false,
+      title: loc(context).routerNotFound,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppText.bodyLarge(loc(context).notConnectedToRouter),
+          const AppGap.medium(),
+          AppBulletList(children: [
+            AppText.bodySmall(loc(context).routerNotFoundDesc1),
+            AppText.bodySmall(loc(context).routerNotFoundDesc2),
+            AppText.bodySmall(loc(context).routerNotFoundDesc3),
+          ])
+        ],
+      ),
+      actions: [
+        AppFilledButton(
+          loc(context).tryAgain,
+          onTap: () {
+            ref
+                .read(dashboardManagerProvider.notifier)
+                .checkRouterIsBack()
+                .then((_) {
+              return onComplete?.call();
+            }).then((value) {
+              ref.read(pollingProvider.notifier).startPolling();
+              context.pop(value);
+            });
+          },
+        ),
+      ]);
+}
+
+Future<bool?> showFactoryResetModal(BuildContext context, bool isParent) {
+  return showMessageAppDialog<bool>(context,
+      icon: Icon(
+        LinksysIcons.resetWrench,
+        color: Theme.of(context).colorScheme.error,
+        size: 42,
+      ),
+      message: loc(context).factoryResetDesc,
+      title: isParent
+          ? loc(context).factoryResetParentTitle
+          : loc(context).factoryResetTitle,
+      actions: [
+        AppTextButton(
+          loc(context).cancel,
+          onTap: () {
+            context.pop();
+          },
+        ),
+        AppTextButton(
+          loc(context).factoryResetOk,
+          color: Theme.of(context).colorScheme.error,
+          onTap: () {
+            context.pop(true);
+          },
+        ),
+      ]);
+}
+
+Future<bool?> showRebootModal(BuildContext context, bool isParent) {
+  return showMessageAppDialog<bool>(context,
+      icon: Icon(
+        LinksysIcons.restartAlt,
+        color: Theme.of(context).colorScheme.error,
+        size: 42,
+      ),
+      message: loc(context).menuRestartNetworkMessage,
+      title:
+          isParent ? loc(context).rebootParentTitle : loc(context).rebootUnit,
+      actions: [
+        AppTextButton(
+          loc(context).cancel,
+          onTap: () {
+            context.pop();
+          },
+        ),
+        AppTextButton(
+          loc(context).rebootOk,
+          color: Theme.of(context).colorScheme.error,
+          onTap: () {
+            context.pop(true);
+          },
+        ),
+      ]);
 }

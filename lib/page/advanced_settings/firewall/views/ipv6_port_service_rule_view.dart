@@ -10,7 +10,7 @@ import 'package:privacy_gui/page/advanced_settings/port_forwarding/views/widgets
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
-import 'package:privacy_gui/page/devices/_devices.dart';
+import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -66,6 +66,7 @@ class _AddRuleContentViewState
         _ipAddressController.text = rule.ipv6Address;
         setState(() {
           _isEnabled = rule.isEnabled;
+          _protocol = rule.portRanges.firstOrNull?.protocol ?? 'Both';
         });
       });
     } else {
@@ -165,6 +166,7 @@ class _AddRuleContentViewState
       AppListCard(
         title: AppText.labelLarge(loc(context).ruleEnabled),
         trailing: AppSwitch(
+          semanticLabel: 'rule enabled',
           value: _isEnabled,
           onChanged: (value) {
             setState(() {
@@ -202,6 +204,7 @@ class _AddRuleContentViewState
       AppText.labelMedium(loc(context).ipAddress),
       const AppGap.medium(),
       AppIPv6FormField(
+        semanticLabel: 'ip address',
         controller: _ipAddressController,
         border: const OutlineInputBorder(),
       ),

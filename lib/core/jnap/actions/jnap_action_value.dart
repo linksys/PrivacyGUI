@@ -28,7 +28,9 @@ enum _JNAPActionValue {
       value: 'http://linksys.com/jnap/core/IsAdminPasswordDefault'),
   isServiceSupported(value: 'http://linksys.com/jnap/core/IsServiceSupported'),
   reboot(value: 'http://linksys.com/jnap/core/Reboot'),
+  reboot2(value: 'http://linksys.com/jnap/core/Reboot2'),
   factoryReset(value: 'http://linksys.com/jnap/core/FactoryReset'),
+  factoryReset2(value: 'http://linksys.com/jnap/core/FactoryReset2'),
   getDDNSSettings(value: 'http://linksys.com/jnap/ddns/GetDDNSSettings'),
   getDDNSStatus(value: 'http://linksys.com/jnap/ddns/GetDDNSStatus'),
   getDDNSStatus2(value: 'http://linksys.com/jnap/ddns/GetDDNSStatus2'),
@@ -44,9 +46,10 @@ enum _JNAPActionValue {
 
   ///
   execSysCommand(value: 'http://linksys.com/jnap/diagnostics/ExecSysCommand'),
-  getPinStatus(value: 'http://linksys.com/jnap/diagnostics/GetPingStatus'),
+  getPingStatus(value: 'http://linksys.com/jnap/diagnostics/GetPingStatus'),
   getSysInfoData(value: 'http://linksys.com/jnap/diagnostics/GetSysinfoData'),
   getSystemStats(value: 'http://linksys.com/jnap/diagnostics/GetSystemStats'),
+  getSystemStats2(value: 'http://linksys.com/jnap/diagnostics/GetSystemStats2'),
   getTracerouteStatus(
       value: 'http://linksys.com/jnap/diagnostics/GetTracerouteStatus'),
   restorePreviousFirmware(
@@ -207,7 +210,10 @@ enum _JNAPActionValue {
           'http://linksys.com/jnap/parentalcontrol/GetParentalControlSettings'),
   getPowerTableSettings(
       value: 'http://linksys.com/jnap/powertable/GetPowerTableSettings'),
-  getSoftSKUSettings(value: 'http://linksys.com/jnap/product/GetSoftSKUSettings'),
+  setPowerTableSettings(
+      value: 'http://linksys.com/jnap/powertable/SetPowerTableSettings'),
+  getSoftSKUSettings(
+      value: 'http://linksys.com/jnap/product/GetSoftSKUSettings'),
   getQoSSettings(value: 'http://linksys.com/jnap/qos/GetQoSSettings'),
   getQoSSettings2(value: 'http://linksys.com/jnap/qos/GetQoSSettings2'),
   getDHCPClientLeases(
@@ -227,7 +233,8 @@ enum _JNAPActionValue {
   // TODO - Checking for the reference
   getWANStatus2(value: 'http://linksys.com/jnap/router/GetWANStatus2'),
   getWANStatus3(value: 'http://linksys.com/jnap/router/GetWANStatus3'),
-  getRoutingSettings(value: 'http://linksys.com/jnap/router/GetRoutingSettings'),
+  getRoutingSettings(
+      value: 'http://linksys.com/jnap/router/GetRoutingSettings'),
   getWANDetectionStatus(
       value: 'http://linksys.com/jnap/nodes/setup/GetWANDetectionStatus'),
   setIPv6Settings(value: 'http://linksys.com/jnap/router/SetIPv6Settings'),
@@ -240,7 +247,8 @@ enum _JNAPActionValue {
   setWANSettings3(value: 'http://linksys.com/jnap/router/SetWANSettings3'),
   setWANSettings4(value: 'http://linksys.com/jnap/router/SetWANSettings4'),
   setLANSettings(value: 'http://linksys.com/jnap/router/SetLANSettings'),
-  setRoutingSettings(value: 'http://linksys.com/jnap/router/SetRoutingSettings'),
+  setRoutingSettings(
+      value: 'http://linksys.com/jnap/router/SetRoutingSettings'),
   renewDHCPWANLease(value: 'http://linksys.com/jnap/router/RenewDHCPWANLease'),
   renewDHCPIPv6Lease(
       value: 'http://linksys.com/jnap/router/RenewDHCPIPv6WANLease'),
@@ -248,6 +256,9 @@ enum _JNAPActionValue {
       value: 'http://linksys.com/jnap/router/GetEthernetPortConnections'),
   getExpressForwardingSettings(
       value: 'http://linksys.com/jnap/router/GetExpressForwardingSettings'),
+  setExpressForwardingSettings(
+      value: 'http://linksys.com/jnap/router/SetExpressForwardingSettings'),
+  getWANExternal(value: 'http://linksys.com/jnap/router/GetWANExternal'),
   getManagementSettings(
       value: 'http://linksys.com/jnap/routermanagement/GetManagementSettings'),
   getManagementSettings2(
@@ -284,6 +295,7 @@ enum _JNAPActionValue {
       value: 'http://linksys.com/jnap/wirelessap/GetWPSServerSessionStatus'),
   setRadioSettings(
       value: 'http://linksys.com/jnap/wirelessap/SetRadioSettings'),
+  clientDeuth(value: 'http://linksys.com/jnap/wirelessap/ClientDeauth'),
   // TODO - Checking for the reference
   setRadioSettings2(
       value: 'http://linksys.com/jnap/wirelessap/SetRadioSettings2'),

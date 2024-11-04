@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
 import 'package:privacy_gui/constants/_constants.dart';
+import 'package:privacy_gui/core/http/custom_multipart_request.dart';
 import 'package:privacy_gui/core/jnap/jnap_command_executor_mixin.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/command/http/base_http_command.dart';
@@ -245,7 +246,7 @@ class LinksysHttpClient extends http.BaseClient
 
   Future<Response> upload(Uri url, List<MultipartFile> multipartList,
       {Map<String, String>? headers, Map<String, String>? fields}) async {
-    final request = http.MultipartRequest("POST", url);
+    final request = CustomMultipartRequest("POST", url);
     request.headers.addEntries(headers?.entries ?? []);
     request.fields.addAll(fields ?? {});
     request.files.addAll(multipartList);
@@ -262,23 +263,31 @@ class LinksysHttpClient extends http.BaseClient
   }
 
   _logRequest(http.BaseRequest request, {int retry = 0}) {
-    logger.i('\nREQUEST---------------------------------------------------\n'
+    logger.i(
+        '\nREQUEST-------------------------------------------------------------------------\n'
         '${retry == 0 ? '' : 'RETRY: $retry\n'}'
         'URL: ${request.url}, METHOD: ${request.method}\n'
         'HEADERS: ${request.headers}\n'
         '${request is http.Request ? 'BODY: ${request.body}' : request is http.MultipartRequest ? 'Content-Length: ${request.contentLength}' : ''}\n'
-        '---------------------------------------------------REQUEST END\n');
+        '---------------------------------------------------------------------REQUEST END\n');
   }
 
   _logResponse(http.Response response, {bool ignoreResponse = false}) {
     final request = response.request;
+    String responseBody = '';
+    try {
+      responseBody = utf8.decode(response.bodyBytes);
+    } catch (e) {
+      responseBody = '';
+    }
     if (request != null) {
-      logger.i('\nRESPONSE---------------------------------------------------\n'
+      logger.i(
+          '\nRESPONSE------------------------------------------------------------------------\n'
           'URL: ${request.url}, METHOD: ${request.method}\n'
           'REQUEST HEADERS: ${request.headers}\n'
           'RESPONSE HEADERS: ${response.headers}\n'
-          'RESPONSE: ${response.statusCode}, ${ignoreResponse ? '' : response.body}\n'
-          '---------------------------------------------------RESPONSE END\n');
+          'RESPONSE: ${response.statusCode}, ${ignoreResponse ? '' : responseBody}\n'
+          '--------------------------------------------------------------------RESPONSE END\n');
     }
   }
 

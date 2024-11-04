@@ -2,16 +2,20 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
-import 'dart:typed_data';
 
 import 'package:collection/collection.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
+import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/util/uuid.dart';
+import 'package:privacygui_widgets/hook/icon_hooks.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:share_plus/share_plus.dart';
 import 'core/utils/logger.dart';
 import 'core/utils/storage.dart';
@@ -38,12 +42,30 @@ class Utils {
         Storage.deleteFile(Storage.logFileUri);
         Storage.createLoggerFile();
       }
-      showSnackBar(context, content: Text("Share result: ${result?.status}"));
+      showSnackBar(context, content: Text("Log exported - $shareLogFilename"));
     });
   }
 
   static String maskJsonValue(String raw, List<String> keys) {
     final pattern = '"?(${keys.join('|')})"?\\s*:\\s*"?([\\s\\S]*?)"?(?=,|})';
+    RegExp regex = RegExp(pattern, multiLine: true);
+    String result = raw;
+
+    regex.allMatches(raw).forEach((element) {
+      for (final key in keys) {
+        if (element.groupCount == 2 &&
+            element.group(1)!.toLowerCase() == key.toLowerCase()) {
+          final target = element.group(2)!;
+          result = result.replaceFirst(target, '************');
+        }
+      }
+    });
+    return result;
+  }
+
+  static String maskUsernamePasswordBodyValue(String raw) {
+    List<String> keys = ['username', 'password'];
+    final pattern = '(${keys.join('|')})\\s*=\\s*([\\S]*?)(?=&|\\n)';
     RegExp regex = RegExp(pattern, multiLine: true);
     String result = raw;
 
@@ -116,7 +138,8 @@ class Utils {
 }
 
 extension DateFormatUtils on Utils {
-  static String formatDuration(Duration d, [BuildContext? context]) {
+  static String formatDuration(Duration d,
+      [BuildContext? context, bool excludeSecs = false]) {
     var seconds = d.inSeconds;
     final days = seconds ~/ Duration.secondsPerDay;
     seconds -= days * Duration.secondsPerDay;
@@ -139,8 +162,11 @@ extension DateFormatUtils on Utils {
           context == null ? '${minutes}m' : loc(context).nMinutes(minutes);
       tokens.add(token);
     }
-    final token = context == null ? '${seconds}s' : loc(context).nSeconds(seconds);
-    tokens.add(token);
+    if (!excludeSecs) {
+      final token =
+          context == null ? '${seconds}s' : loc(context).nSeconds(seconds);
+      tokens.add(token);
+    }
 
     return tokens.join(' ');
   }
@@ -343,31 +369,35 @@ extension NetworkUtils on Utils {
     }
 
     if (minNetworkPrefixLength < 1 || minNetworkPrefixLength > 31) {
-      throw Exception(
-          'Invalid minNetworkPrefixLength passed, must be between 1 and 31');
+      throw const FormatException(
+        'Invalid minNetworkPrefixLength passed, must be between 1 and 31',
+      );
     }
     if (maxNetworkPrefixLength < 1 || maxNetworkPrefixLength > 31) {
-      throw Exception(
-          'Invalid maxNetworkPrefixLength passed, must be between 1 and 31');
+      throw const FormatException(
+        'Invalid maxNetworkPrefixLength passed, must be between 1 and 31',
+      );
     }
     if (maxNetworkPrefixLength < minNetworkPrefixLength) {
-      throw Exception(
-          'maxNetworkPrefixLength cannot be less than minNetworkPrefixLength');
+      throw const FormatException(
+        'maxNetworkPrefixLength cannot be less than minNetworkPrefixLength',
+      );
     }
 
     var subnetMaskBits = ipToNum(subnetMask).toRadixString(2);
     var prefixLength = subnetMaskBits.indexOf('0');
-    if (prefixLength == -1) {
-      return false;
+    if (prefixLength == -1 ||
+        prefixLength < minNetworkPrefixLength ||
+        prefixLength > maxNetworkPrefixLength) {
+      throw FormatException(
+        'Invalid network prefix length, must be between $minNetworkPrefixLength and $maxNetworkPrefixLength',
+      );
     }
     final subnetMaskTestBits =
         List.filled(prefixLength, '1').join().padRight(32, '0');
-    if (subnetMaskBits != subnetMaskTestBits ||
-        prefixLength < minNetworkPrefixLength ||
-        prefixLength > maxNetworkPrefixLength) {
+    if (subnetMaskBits != subnetMaskTestBits) {
       return false;
     }
-
     return true;
   }
 
@@ -513,5 +543,50 @@ extension NetworkUtils on Utils {
     }
 
     return maxUserLimit - startingIPAddress - 1;
+  }
+}
+
+extension WiFiUtils on Utils {
+  static IconData getWifiSignalIconData(
+      BuildContext context, int? signalStrength) {
+    switch (getWifiSignalLevel(signalStrength)) {
+      case NodeSignalLevel.excellent:
+        return LinksysIcons.signalWifi4Bar;
+      case NodeSignalLevel.good:
+        return LinksysIcons.networkWifi3Bar;
+      case NodeSignalLevel.fair:
+        return LinksysIcons.networkWifi2Bar;
+      case NodeSignalLevel.poor:
+        return LinksysIcons.networkWifi1Bar;
+      case NodeSignalLevel.none:
+        return LinksysIcons.signalWifi0Bar;
+// Default
+      case NodeSignalLevel.wired:
+        return LinksysIcons.ethernet;
+    }
+  }
+}
+
+extension NodeSignalLevelExt on NodeSignalLevel {
+  String resolveLabel(BuildContext context) {
+    return switch (this) {
+      NodeSignalLevel.excellent => loc(context).excellent,
+      NodeSignalLevel.good => loc(context).good,
+      NodeSignalLevel.poor => loc(context).poor,
+      NodeSignalLevel.fair => loc(context).fair,
+      NodeSignalLevel.wired => loc(context).wired,
+      NodeSignalLevel.none => '',
+    };
+  }
+
+  Color? resolveColor(BuildContext context) {
+    return switch (this) {
+      NodeSignalLevel.excellent => Theme.of(context).colorSchemeExt.green,
+      NodeSignalLevel.good => Theme.of(context).colorSchemeExt.orange,
+      NodeSignalLevel.poor => Theme.of(context).colorScheme.error,
+      NodeSignalLevel.fair => Theme.of(context).colorScheme.error,
+      NodeSignalLevel.wired => Theme.of(context).colorScheme.onSurface,
+      NodeSignalLevel.none => Colors.black,
+    };
   }
 }

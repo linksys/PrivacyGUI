@@ -28,19 +28,15 @@ class _WifiAdvancedSettingsViewState
   void initState() {
     super.initState();
 
-    doSomethingWithSpinner(
-      context,
-      ref.read(wifiAdvancedProvider.notifier).fetch().then(
-        (value) {
-          ref.read(wifiViewProvider.notifier).setChanged(false);
-          final state = ref.read(wifiAdvancedProvider);
-          setState(
-            () {
-              _preservedState = state;
-            },
-          );
-        },
-      ),
+    ref.read(wifiAdvancedProvider.notifier).fetch().then(
+      (state) {
+        ref.read(wifiViewProvider.notifier).setChanged(false);
+        setState(
+          () {
+            _preservedState = state;
+          },
+        );
+      },
     );
   }
 
@@ -52,15 +48,17 @@ class _WifiAdvancedSettingsViewState
     return StyledAppPageView(
       appBarStyle: AppBarStyle.none,
       padding: EdgeInsets.zero,
+      useMainPadding: false,
       bottomBar: PageBottomBar(
           isPositiveEnabled: _preservedState != ref.read(wifiAdvancedProvider),
           onPositiveTap: () {
             doSomethingWithSpinner(
               context,
               ref.read(wifiAdvancedProvider.notifier).save().then(
-                (_) {
+                (state) {
                   setState(() {
                     ref.read(wifiViewProvider.notifier).setChanged(false);
+                    _preservedState = state;
                   });
                 },
               ),
@@ -90,6 +88,7 @@ class _WifiAdvancedSettingsViewState
               padding: const EdgeInsets.all(Spacing.large2),
               child: AppSwitchTriggerTile(
                 title: AppText.labelLarge(loc(context).clientSteering),
+                semanticLabel: 'client steering',
                 description:
                     AppText.bodyMedium(loc(context).clientSteeringDesc),
                 value: value,
@@ -113,6 +112,7 @@ class _WifiAdvancedSettingsViewState
               padding: const EdgeInsets.all(Spacing.large2),
               child: AppSwitchTriggerTile(
                 title: AppText.labelLarge(loc(context).nodeSteering),
+                semanticLabel: 'node steering',
                 description: AppText.bodyMedium(loc(context).nodeSteeringDesc),
                 value: value,
                 toggleInCenter: true,
@@ -135,6 +135,7 @@ class _WifiAdvancedSettingsViewState
               padding: const EdgeInsets.all(Spacing.large2),
               child: AppSwitchTriggerTile(
                 title: const AppText.labelLarge('IPTV'),
+                semanticLabel: 'IPTV',
                 subtitle: const AppText.labelSmall(
                     'Please check with your ISP if IPTV service is compatible with this router.'),
                 description: const AppText.bodySmall(
@@ -158,6 +159,7 @@ class _WifiAdvancedSettingsViewState
               padding: const EdgeInsets.all(Spacing.large2),
               child: AppSwitchTriggerTile(
                 title: AppText.labelLarge(loc(context).dfs),
+                semanticLabel: 'dfs',
                 description: AppStyledText.bold(
                   loc(context).dfsDesc,
                   defaultTextStyle: Theme.of(context).textTheme.bodyLarge!,
@@ -193,6 +195,7 @@ class _WifiAdvancedSettingsViewState
               padding: const EdgeInsets.all(Spacing.large2),
               child: AppSwitchTriggerTile(
                 title: AppText.labelLarge(loc(context).mlo),
+                semanticLabel: 'mlo',
                 description: Column(
                   children: [
                     AppText.bodyMedium(loc(context).mloDesc),

@@ -1,9 +1,9 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/build_config.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_column_layout.dart';
 
 import 'package:privacy_gui/page/components/styled/top_bar.dart';
 
@@ -55,18 +55,7 @@ class LinksysRoute extends GoRoute {
     this.config,
     super.routes = const <RouteBase>[],
   }) : super(builder: (context, state) {
-          return ValueListenableBuilder<bool>(
-              valueListenable: showColumnOverlayNotifier,
-              builder: (context, showColumnOverlay, _) {
-                return AppResponsiveColumnLayout(
-                  column: config?.column?.column,
-                  centered: config?.column?.centered ?? false,
-                  isShowNaviRail: isShowNaviRail(context, config),
-                  topWidget: const TopBar(),
-                  builder: () => builder(context, state),
-                  showColumnOverlay: showColumnOverlay,
-                );
-              });
+          return builder(context, state);
         });
 
   static bool isShowNaviRail(

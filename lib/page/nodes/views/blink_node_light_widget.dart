@@ -58,7 +58,7 @@ class _BlinkNodeLightWidgetState extends ConsumerState<BlinkNodeLightWidget> {
               },
             )
           : AppTextButton.noPadding(
-            key: const ValueKey('blinkNodeButton'),
+              key: const ValueKey('blinkNodeButton'),
               loc(context).nodeDetailBlinkNodeLightBtn,
               onTap: () {
                 _startBlink();
@@ -84,7 +84,7 @@ class _BlinkNodeLightWidgetState extends ConsumerState<BlinkNodeLightWidget> {
   }
 
   _stopBlink() async {
-    await _notifier.toggleBlinkNode();
+    await _notifier.toggleBlinkNode(true);
     if (mounted) {
       setState(() {
         _isBlinking = false;

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/dashboard/views/dashboard_shell.dart';
 import 'package:privacy_gui/route/route_model.dart';
+import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacygui_widgets/theme/custom_responsive.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
@@ -51,7 +52,7 @@ Widget testableSingleRoute({
   Locale? locale,
 }) {
   final router = GoRouter(
-    navigatorKey: globalKey,
+    navigatorKey: shellNavigatorKey,
     initialLocation: '/',
     routes: [
       LinksysRoute(
@@ -82,7 +83,7 @@ Widget testableRouteShellWidget({
   Locale? locale,
 }) {
   final router = GoRouter(
-    navigatorKey: globalKey,
+    navigatorKey: shellNavigatorKey,
     initialLocation: '/',
     routes: [
       ShellRoute(

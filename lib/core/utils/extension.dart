@@ -16,8 +16,7 @@ extension MapExt on Map {
 
 extension StringExt on String {
   /// Capitalize ONE word
-  String capitalize() =>
-      '${this[0].toUpperCase()}${substring(1)}';
+  String capitalize() => '${this[0].toUpperCase()}${substring(1)}';
 
   /// Camel capitalize words
   String camelCapitalize() {
@@ -35,6 +34,15 @@ extension StringExt on String {
   /// Capitalize sentences
   String capitalizeSentence() {
     return split('. ').map((element) => element.capitalize()).join('. ');
+  }
+
+  String kebab() {
+    // Replace uppercase letters with a hyphen and the lowercase letter
+    final pattern = RegExp(r'(?=[A-Z])');
+    return '${this[0].toLowerCase()}${substring(1)}'
+        .replaceAll(' ', '')
+        .replaceAllMapped(pattern, (match) => '-')
+        .toLowerCase();
   }
 
   bool isJsonFormat() {
