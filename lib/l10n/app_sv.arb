@@ -342,6 +342,7 @@
   "middleEast": "Mellanöstern",
   "transmitRegion": "Sändningsregion",
   "start": "Start",
+  "invalidDns": "Ogiltig DNS",
   "administration": "Administration",
   "advanced": "Avancerat",
   "duid": "DUID:",

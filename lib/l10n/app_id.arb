@@ -342,6 +342,7 @@
   "middleEast": "Timur Tengah",
   "transmitRegion": "Pancarkan Wilayah",
   "start": "Mulai",
+  "invalidDns": "DNS Tidak Valid",
   "administration": "Administrasi",
   "advanced": "Tingkat Lanjut",
   "duid": "DUID:",

@@ -342,6 +342,7 @@
   "middleEast": "中东地区",
   "transmitRegion": "传输地区",
   "start": "开始",
+  "invalidDns": "无效的DNS",
   "administration": "管理",
   "advanced": "高级设置",
   "duid": "DUID：",

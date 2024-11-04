@@ -342,6 +342,7 @@
   "middleEast": "ตะวันออกกลาง",
   "transmitRegion": "ส่งภูมิภาค",
   "start": "เริ่ม",
+  "invalidDns": "DNS ไม่ถูกต้อง",
   "administration": "การดูแลระบบ",
   "advanced": "ขั้นสูง",
   "duid": "DUID:",
