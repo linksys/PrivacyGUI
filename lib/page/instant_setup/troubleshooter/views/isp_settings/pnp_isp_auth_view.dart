@@ -61,16 +61,15 @@ class _PnpIspAuthViewState extends ConsumerState<PnpIspAuthView> {
         _inputPasswordError = loc(context).errorIncorrectPassword;
         _isLoading = false;
       });
-    }, test: (error) => error is ExceptionInvalidAdminPassword);
-  }
-
-  String _getErrorMessage(WanType wanType) {
-    if (wanType == WanType.static || wanType == WanType.dhcp) {
-      return loc(context).pnpErrorForStaticIpAndDhcp;
-    } else {
-      // This case must be PPPOE
-      return loc(context).pnpErrorForPppoe;
-    }
+    }, test: (error) => error is ExceptionInvalidAdminPassword).onError((error, stackTrace) {
+      logger
+          .e('[PnP]: Troubleshooter - Login failed - Invalid admin password!');
+      // Unexcept error, show password input form with an error
+      setState(() {
+        _inputPasswordError = loc(context).generalError;
+        _isLoading = false;
+      });
+    });
   }
 
   @override

@@ -112,24 +112,19 @@ class _PnpIspSaveSettingsViewState
           // Keep the error record until the check loop is fulfilled or runs out of the re-try quota
         }
       });
-    }).catchError(
-      (error) {
-        logger.e(
-            '[PnP]: Troubleshooter - Failed to save the new settings - $error');
-        // Saving new settings failed
-        if (error is JNAPError) {
-          context.pop(errorCodeHelper(context, error.result) ??
-              loc(context).unknownError);
-        } else if (error is TimeoutException) {
-          context.pop(loc(context).generalError);
-        } else {
-          context.pop(loc(context).unknownError);
-        }
-      },
-      test: (error) => (error is JNAPError ||
-          error is TimeoutException ||
-          error is ClientException),
-    );
+    }).onError((error, stackTrace) {
+      logger.e(
+          '[PnP]: Troubleshooter - Failed to save the new settings - $error');
+      // Saving new settings failed
+      if (error is JNAPError) {
+        context.pop(errorCodeHelper(context, error.result) ??
+            loc(context).unknownError);
+      } else if (error is TimeoutException) {
+        context.pop(loc(context).generalError);
+      } else {
+        context.pop(loc(context).unknownError);
+      }
+    });
   }
 
   String _getErrorMessage(WanType wanType) {
