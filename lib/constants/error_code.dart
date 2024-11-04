@@ -24,6 +24,11 @@ const errorInvalidAdminPassword = 'ErrorInvalidAdminPassword';
 const errorPasswordCheckDelayed = 'ErrorPasswordCheckDelayed';
 const errorInvalidGateway = 'ErrorInvalidGateway';
 const errorUnexpected = '_ErrorUnexpected';
+const errorInvalidDestinationMACAddress = 'ErrorInvalidDestinationMACAddress';
+const errorInvalidIPAddress = "ErrorInvalidIPAddress";
+const errorInvalidPrimaryDNSServer = "ErrorInvalidPrimaryDNSServer";
+const errorInvalidSecondaryDNSServer = "ErrorInvalidSecondaryDNSServer";
+const errorInvalidTertiaryDNSServer = "ErrorInvalidTertiaryDNSServer";
 
 // JNAP retry list
 const errorJNAPRetryList = [errorUnexpected];

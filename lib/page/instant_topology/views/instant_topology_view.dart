@@ -300,10 +300,24 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
   }
 
   Future<String?> _showOfflineNodeModal(RouterTreeNode node) {
-    return showSimpleAppOkDialog(
+    return showSimpleAppDialog(
       context,
       title: loc(context).modalOfflineNodeTitle,
-      okLabel: loc(context).close,
+      actions: [
+        AppTextButton(
+          loc(context).modalOfflineRemoveNodeFromNetwork,
+          color: Theme.of(context).colorScheme.error,
+          onTap: () {
+            context.pop('remove');
+          },
+        ),
+        AppTextButton(
+          loc(context).close,
+          onTap: () {
+            context.pop();
+          },
+        )
+      ],
       width: 400,
       content: SingleChildScrollView(
         child: Column(
@@ -344,16 +358,6 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
                   ],
                 ),
               ],
-            ),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: AppTextButton(
-                loc(context).modalOfflineRemoveNodeFromNetwork,
-                color: Theme.of(context).colorScheme.error,
-                onTap: () {
-                  context.pop('remove');
-                },
-              ),
             ),
           ],
         ),

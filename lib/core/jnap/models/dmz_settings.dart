@@ -2,6 +2,7 @@
 import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
+import 'package:flutter/widgets.dart';
 
 class DMZSettings extends Equatable {
   final bool isDMZEnabled;
@@ -15,20 +16,20 @@ class DMZSettings extends Equatable {
     this.destinationMACAddress,
   });
 
-  DMZSettings copyWith({
-    bool? isDMZEnabled,
-    DMZSourceRestriction? sourceRestriction,
-    String? destinationIPAddress,
-    String? destinationMACAddress,
-  }) {
-    return DMZSettings(
-      isDMZEnabled: isDMZEnabled ?? this.isDMZEnabled,
-      sourceRestriction: sourceRestriction ?? this.sourceRestriction,
-      destinationIPAddress: destinationIPAddress ?? this.destinationIPAddress,
-      destinationMACAddress:
-          destinationMACAddress ?? this.destinationMACAddress,
-    );
-  }
+  // DMZSettings copyWith({
+  //   bool? isDMZEnabled,
+  //   DMZSourceRestriction? sourceRestriction,
+  //   String? destinationIPAddress,
+  //   String? destinationMACAddress,
+  // }) {
+  //   return DMZSettings(
+  //     isDMZEnabled: isDMZEnabled ?? this.isDMZEnabled,
+  //     sourceRestriction: sourceRestriction ?? this.sourceRestriction,
+  //     destinationIPAddress: destinationIPAddress ?? this.destinationIPAddress,
+  //     destinationMACAddress:
+  //         destinationMACAddress ?? this.destinationMACAddress,
+  //   );
+  // }
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
@@ -70,6 +71,20 @@ class DMZSettings extends Equatable {
         destinationIPAddress,
         destinationMACAddress,
       ];
+
+  DMZSettings copyWith({
+    bool? isDMZEnabled,
+    ValueGetter<DMZSourceRestriction?>? sourceRestriction,
+    ValueGetter<String?>? destinationIPAddress,
+    ValueGetter<String?>? destinationMACAddress,
+  }) {
+    return DMZSettings(
+      isDMZEnabled: isDMZEnabled ?? this.isDMZEnabled,
+      sourceRestriction: sourceRestriction != null ? sourceRestriction() : this.sourceRestriction,
+      destinationIPAddress: destinationIPAddress != null ? destinationIPAddress() : this.destinationIPAddress,
+      destinationMACAddress: destinationMACAddress != null ? destinationMACAddress() : this.destinationMACAddress,
+    );
+  }
 }
 
 class DMZSourceRestriction extends Equatable {

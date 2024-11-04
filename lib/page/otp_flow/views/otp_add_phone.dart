@@ -14,7 +14,7 @@ import 'package:privacy_gui/page/components/layouts/basic_header.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacy_gui/util/error_code_handler.dart';
+import 'package:privacy_gui/util/error_code_helper.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -213,7 +213,7 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
             Offstage(
               offstage: !isInputInvalid,
               child: AppText.bodyLarge(
-                generalErrorCodeHandler(context, errorInvalidPhone) ?? '',
+                errorCodeHelper(context, errorInvalidPhone) ?? '',
                 color: Theme.of(context).colorScheme.error,
               ),
             ),

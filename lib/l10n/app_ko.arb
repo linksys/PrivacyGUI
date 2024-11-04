@@ -342,6 +342,7 @@
   "middleEast": "중동",
   "transmitRegion": "전송 지역",
   "start": "시작",
+  "invalidDns": "잘못된 DNS",
   "administration": "관리",
   "advanced": "고급",
   "duid": "DUID:",

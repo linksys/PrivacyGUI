@@ -15,11 +15,7 @@ void main() {
     mockPortRangeForwardingRuleNotifier =
         MockPortRangeForwardingRuleNotifier();
     when(mockPortRangeForwardingRuleNotifier.build())
-        .thenReturn(const PortRangeForwardingRuleState());
-    when(mockPortRangeForwardingRuleNotifier.subnetMask)
-        .thenReturn('255.255.0.0');
-    when(mockPortRangeForwardingRuleNotifier.ipAddress)
-        .thenReturn('192.168.1.1');
+        .thenReturn(const PortRangeForwardingRuleState(routerIp: '255.255.255.0', subnetMask: '192.168.1.1'));
   });
 
   testLocalizations('Port range forwarding rule view', (tester, locale) async {

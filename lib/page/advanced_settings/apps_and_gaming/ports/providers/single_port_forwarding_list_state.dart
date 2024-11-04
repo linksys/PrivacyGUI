@@ -10,24 +10,38 @@ class SinglePortForwardingListState extends Equatable {
     this.rules = const [],
     this.maxRules = 50,
     this.maxDescriptionLength = 32,
+    this.routerIp = '192.168.1.1',
+    this.subnetMask = '255.255.255.0',
   });
 
   final List<SinglePortForwardingRule> rules;
   final int maxRules;
   final int maxDescriptionLength;
+  final String routerIp;
+  final String subnetMask;
 
   @override
-  List<Object> get props => [rules, maxRules, maxDescriptionLength];
+  List<Object> get props => [
+        rules,
+        maxRules,
+        maxDescriptionLength,
+        routerIp,
+        subnetMask,
+      ];
 
   SinglePortForwardingListState copyWith({
     List<SinglePortForwardingRule>? rules,
     int? maxRules,
     int? maxDescriptionLength,
+    String? routerIp,
+    String? subnetMask,
   }) {
     return SinglePortForwardingListState(
       rules: rules ?? this.rules,
       maxRules: maxRules ?? this.maxRules,
       maxDescriptionLength: maxDescriptionLength ?? this.maxDescriptionLength,
+      routerIp: routerIp ?? this.routerIp,
+      subnetMask: subnetMask ?? this.subnetMask,
     );
   }
 
@@ -36,6 +50,8 @@ class SinglePortForwardingListState extends Equatable {
       'rules': rules.map((x) => x.toMap()).toList(),
       'maxRules': maxRules,
       'maxDescriptionLength': maxDescriptionLength,
+      'routerIp': routerIp,
+      'subnetMask': subnetMask,
     };
   }
 
@@ -50,6 +66,8 @@ class SinglePortForwardingListState extends Equatable {
       maxDescriptionLength: map['maxDescriptionLength'] != null
           ? map['maxDescriptionLength'] as int
           : 32,
+      routerIp: map['routerIp'] ?? '192.168.1.1',
+      subnetMask: map['subnetMask'] ?? '255.255.255.0',
     );
   }
 

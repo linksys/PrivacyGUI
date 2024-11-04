@@ -342,6 +342,7 @@
   "middleEast": "Orta Doğu",
   "transmitRegion": "İletim Bölgesi",
   "start": "Başlat",
+  "invalidDns": "Geçersiz DNS",
   "administration": "Yönetim",
   "advanced": "İleri Düzey",
   "duid": "DUID:",

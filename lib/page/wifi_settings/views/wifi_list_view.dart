@@ -380,20 +380,45 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
           child: AppListCard(
             showBorder: false,
             padding: const EdgeInsets.symmetric(vertical: 8.0),
-            title: AppText.bodyMedium(loc(context).wifiPassword),
+            title: AppText.bodyMedium(
+              loc(context).wifiPassword,
+              color: !radio.securityType.isOpenVariant &&
+                      _advancedPasswordController[radio.radioID.value]
+                              ?.text
+                              .isEmpty ==
+                          true
+                  ? Theme.of(context).colorScheme.error
+                  : Theme.of(context).colorScheme.onSurface,
+            ),
             description: IntrinsicWidth(
                 child: Theme(
                     data: Theme.of(context).copyWith(
                         inputDecorationTheme: const InputDecorationTheme(
                             isDense: true, contentPadding: EdgeInsets.zero)),
-                    child: AppPasswordField(
-                      semanticLabel: 'wifi password',
-                      readOnly: true,
-                      border: InputBorder.none,
-                      controller:
-                          _advancedPasswordController[radio.radioID.value],
-                      suffixIconConstraints: const BoxConstraints(),
-                    ))),
+                    child: (_advancedPasswordController[radio.radioID.value]
+                                ?.text
+                                .isEmpty ==
+                            true)
+                        ? AppTextField(
+                            readOnly: true,
+                            border: InputBorder.none,
+                            controller:
+                                _advancedPasswordController[radio.radioID.value]
+                                  ?..text = (radio.securityType.isOpenVariant
+                                      ? ''
+                                      : radio.password),
+                          )
+                        : AppPasswordField(
+                            semanticLabel: 'wifi password',
+                            readOnly: true,
+                            border: InputBorder.none,
+                            controller:
+                                _advancedPasswordController[radio.radioID.value]
+                                  ?..text = (radio.securityType.isOpenVariant
+                                      ? ''
+                                      : radio.password),
+                            suffixIconConstraints: const BoxConstraints(),
+                          ))),
             trailing: const Icon(LinksysIcons.edit),
             onTap: () {
               _showWifiPasswordModal(radio.password, (value) {
@@ -910,14 +935,14 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
     }
     setState(() {
       _preservedMainWiFiState = state;
+      for (var wifi in state.mainWiFi) {
+        final controller = TextEditingController()..text = wifi.password;
+        _advancedPasswordController.putIfAbsent(
+            wifi.radioID.value, () => controller);
+      }
+      _advancedPasswordController.putIfAbsent('guest',
+          () => TextEditingController()..text = state.guestWiFi.password);
     });
-    for (var wifi in state.mainWiFi) {
-      final controller = TextEditingController()..text = wifi.password;
-      _advancedPasswordController.putIfAbsent(
-          wifi.radioID.value, () => controller);
-    }
-    _advancedPasswordController.putIfAbsent('guest',
-        () => TextEditingController()..text = state.guestWiFi.password);
   }
 
   List<Widget> _disableBandWarning(WiFiState state) {
@@ -969,8 +994,9 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       AppText.bodyMedium('${loc(context).wifiName}: ${e.ssid}'),
-                      AppText.bodyMedium(
-                          '${loc(context).wifiPassword}: ${e.password}'),
+                      if (!e.securityType.isOpenVariant)
+                        AppText.bodyMedium(
+                            '${loc(context).wifiPassword}: ${e.password}'),
                       AppText.bodyMedium(
                           '${loc(context).securityMode}: ${e.securityType.value}'),
                     ],

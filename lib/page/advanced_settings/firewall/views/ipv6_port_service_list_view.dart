@@ -64,7 +64,7 @@ class _Ipv6PortServiceListViewState
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AppText.labelLarge(loc(context).rules),
+                AppText.labelLarge(loc(context).noIPv6PortService),
                 const AppGap.medium(),
                 if (state.rules.isNotEmpty)
                   ...state.rules

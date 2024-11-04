@@ -2,56 +2,59 @@
 import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
+import 'package:flutter/widgets.dart';
 
 import 'package:privacy_gui/core/jnap/models/port_range_triggering_rule.dart';
-import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/providers/consts.dart';
 
 class PortRangeTriggeringRuleState extends Equatable {
-  final RuleMode mode;
   final List<PortRangeTriggeringRule> rules;
   final PortRangeTriggeringRule? rule;
+  final int? editIndex;
 
   const PortRangeTriggeringRuleState({
-    this.mode = RuleMode.init,
     this.rules = const [],
     this.rule,
+    this.editIndex,
   });
 
   @override
-  List<Object?> get props => [mode, rules, rule];
+  List<Object?> get props => [rules, rule, editIndex];
 
   PortRangeTriggeringRuleState copyWith({
-    RuleMode? mode,
     List<PortRangeTriggeringRule>? rules,
-    PortRangeTriggeringRule? rule,
+    ValueGetter<PortRangeTriggeringRule?>? rule,
+    ValueGetter<int?>? editIndex,
   }) {
     return PortRangeTriggeringRuleState(
-      mode: mode ?? this.mode,
       rules: rules ?? this.rules,
-      rule: rule ?? this.rule,
+      rule: rule != null ? rule() : this.rule,
+      editIndex: editIndex != null ? editIndex() : this.editIndex,
     );
   }
 
   Map<String, dynamic> toMap() {
-    return <String, dynamic>{
-      'mode': mode.name,
+    return {
       'rules': rules.map((x) => x.toMap()).toList(),
       'rule': rule?.toMap(),
+      'editIndex': editIndex,
     };
   }
 
   factory PortRangeTriggeringRuleState.fromMap(Map<String, dynamic> map) {
     return PortRangeTriggeringRuleState(
-      mode: map['mode'] != null ? RuleMode.reslove(map['mode']) : RuleMode.init,
-      rules: List<PortRangeTriggeringRule>.from((map['rules'] as List<int>).map<PortRangeTriggeringRule>((x) => PortRangeTriggeringRule.fromMap(x as Map<String,dynamic>),),),
-      rule: map['rule'] != null ? PortRangeTriggeringRule.fromMap(map['rule'] as Map<String,dynamic>) : null,
+      rules: List<PortRangeTriggeringRule>.from(map['rules']?.map((x) => PortRangeTriggeringRule.fromMap(x))),
+      rule: map['rule'] != null ? PortRangeTriggeringRule.fromMap(map['rule']) : null,
+      editIndex: map['editIndex']?.toInt(),
     );
   }
 
   String toJson() => json.encode(toMap());
 
-  factory PortRangeTriggeringRuleState.fromJson(String source) => PortRangeTriggeringRuleState.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory PortRangeTriggeringRuleState.fromJson(String source) => PortRangeTriggeringRuleState.fromMap(json.decode(source));
 
   @override
   bool get stringify => true;
+
+  @override
+  String toString() => 'PortRangeTriggeringRuleState(rules: $rules, rule: $rule, editIndex: $editIndex)';
 }

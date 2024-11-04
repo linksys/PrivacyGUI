@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -323,11 +325,18 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
             errorText: _errorMessage,
             onChanged: (text) {
               setState(() {
-                _errorMessage = text.isEmpty ? 'empty' : null;
+                final overMaxSize = utf8.encoder.convert(text).length >= 256;
+                _errorMessage = text.isEmpty
+                    ? loc(context).theNameMustNotBeEmpty
+                    : overMaxSize
+                        ? loc(context).deviceNameExceedMaxSize
+                        : null;
               });
             },
             onSubmitted: (_) {
-              onSubmit();
+              if (_errorMessage != null) {
+                onSubmit();
+              }
             },
           ),
           const AppGap.large3(),

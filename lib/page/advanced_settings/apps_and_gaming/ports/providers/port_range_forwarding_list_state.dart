@@ -10,55 +10,74 @@ class PortRangeForwardingListState extends Equatable {
     this.rules = const [],
     this.maxRules = 50,
     this.maxDescriptionLength = 32,
+    this.routerIp = '192.168.1.1',
+    this.subnetMask = '255.255.255.0',
   });
 
   final List<PortRangeForwardingRule> rules;
   final int maxRules;
   final int maxDescriptionLength;
+  final String routerIp;
+  final String subnetMask;
 
   @override
-  List<Object> get props => [rules, maxRules, maxDescriptionLength];
+  List<Object> get props {
+    return [
+      rules,
+      maxRules,
+      maxDescriptionLength,
+      routerIp,
+      subnetMask,
+    ];
+  }
 
   PortRangeForwardingListState copyWith({
     List<PortRangeForwardingRule>? rules,
     int? maxRules,
     int? maxDescriptionLength,
+    String? routerIp,
+    String? subnetMask,
   }) {
     return PortRangeForwardingListState(
       rules: rules ?? this.rules,
       maxRules: maxRules ?? this.maxRules,
       maxDescriptionLength: maxDescriptionLength ?? this.maxDescriptionLength,
+      routerIp: routerIp ?? this.routerIp,
+      subnetMask: subnetMask ?? this.subnetMask,
     );
   }
 
   Map<String, dynamic> toMap() {
-    return <String, dynamic>{
+    return {
       'rules': rules.map((x) => x.toMap()).toList(),
       'maxRules': maxRules,
       'maxDescriptionLength': maxDescriptionLength,
+      'routerIp': routerIp,
+      'subnetMask': subnetMask,
     };
   }
 
   factory PortRangeForwardingListState.fromMap(Map<String, dynamic> map) {
     return PortRangeForwardingListState(
       rules: List<PortRangeForwardingRule>.from(
-        map['rules'].map<PortRangeForwardingRule>(
-          (x) => PortRangeForwardingRule.fromMap(x as Map<String, dynamic>),
-        ),
-      ),
-      maxRules: map['maxRules'] != null ? map['maxRules'] as int : 50,
-      maxDescriptionLength: map['maxDescriptionLength'] != null
-          ? map['maxDescriptionLength'] as int
-          : 32,
+          map['rules']?.map((x) => PortRangeForwardingRule.fromMap(x))),
+      maxRules: map['maxRules']?.toInt() ?? 0,
+      maxDescriptionLength: map['maxDescriptionLength']?.toInt() ?? 0,
+      routerIp: map['routerIp'] ?? '',
+      subnetMask: map['subnetMask'] ?? '',
     );
   }
 
   String toJson() => json.encode(toMap());
 
   factory PortRangeForwardingListState.fromJson(String source) =>
-      PortRangeForwardingListState.fromMap(
-          json.decode(source) as Map<String, dynamic>);
+      PortRangeForwardingListState.fromMap(json.decode(source));
 
   @override
   bool get stringify => true;
+
+  @override
+  String toString() {
+    return 'PortRangeForwardingListState(rules: $rules, maxRules: $maxRules, maxDescriptionLength: $maxDescriptionLength, routerIp: $routerIp, subnetMask: $subnetMask)';
+  }
 }

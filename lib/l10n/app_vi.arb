@@ -342,6 +342,7 @@
   "middleEast": "Trung Đông",
   "transmitRegion": "Khu vực phát",
   "start": "Bắt đầu",
+  "invalidDns": "DNS không hợp lệ",
   "administration": "Quản trị",
   "advanced": "Nâng cao",
   "duid": "DUID:",

@@ -117,7 +117,8 @@ class RoutePath {
   static const pnpPPPOE = 'pnpPPPOE';
   static const pnpIspTypeSelection = 'pnpIspTypeSelection';
   static const pnpStaticIp = 'pnpStaticIp';
-  static const pnpIspSettingsAuth = 'pnpIspSettingsAuth';
+  static const pnpIspAuth = 'pnpIspAuth';
+  static const pnpIspSaveSettings = 'pnpIspSaveSettings';
 
   /// Safe Browsing
   static const safeBrowsing = 'safeBrowsing';
@@ -140,6 +141,9 @@ class RoutePath {
 
   /// Device picker
   static const devicePicker = 'devicePicker';
+
+  /// Card List edit
+  static const cardListEdit = 'cardListEdit';
 
   /// debug
   static const debug = 'debug';
@@ -241,7 +245,7 @@ class RouteNamed {
   static const portRangeForwardingList = 'portRangeForwardingList';
   static const portRangeForwardingRule = 'portRangeForwardingRule';
   static const portRangeTriggeringList = 'portRangeTriggeringList';
-  static const protRangeTriggeringRule = 'portRangeTriggeringRule';
+  static const portRangeTriggeringRule = 'portRangeTriggeringRule';
   static const selectProtocol = 'selectProtocol';
 
   /// Ipv6 port service
@@ -264,7 +268,8 @@ class RouteNamed {
   static const pnpPPPOE = 'pnpPPPOE';
   static const pnpIspTypeSelection = 'pnpIspTypeSelection';
   static const pnpStaticIp = 'pnpStaticIp';
-  static const pnpIspSettingsAuth = 'pnpIspSettingsAuth';
+  static const pnpIspAuth = 'pnpIspAuth';
+  static const pnpIspSaveSettings = 'pnpIspSaveSettings';
 
   /// Troubleshooting
   static const troubleshooting = 'troubleshooting';
@@ -284,6 +289,9 @@ class RouteNamed {
 
   /// Device picker
   static const devicePicker = 'devicePicker';
+
+  /// Card List edit
+  static const cardListEdit = 'cardListEdit';
 
   /// debug
   static const debug = 'debug';
