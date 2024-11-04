@@ -342,6 +342,7 @@
   "middleEast": "中東",
   "transmitRegion": "トランスミッション領域",
   "start": "スタート",
+  "invalidDns": "無効な DNS",
   "administration": "管理",
   "advanced": "高度",
   "duid": "DUID:",

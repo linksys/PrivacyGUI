@@ -342,6 +342,7 @@
   "middleEast": "Ближний Восток",
   "transmitRegion": "Регион передачи",
   "start": "Пуск",
+  "invalidDns": "Недопустимый DNS-сервер",
   "administration": "Администрирование",
   "advanced": "Расширенные настройки",
   "duid": "DUID:",

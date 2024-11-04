@@ -342,6 +342,7 @@
   "middleEast": "الشرق الأوسط",
   "transmitRegion": "منطقة الإرسال",
   "start": "البدء",
+  "invalidDns": "DNS غير صالح",
   "administration": "الإدارة",
   "advanced": "متقدم",
   "duid": "DUID:",

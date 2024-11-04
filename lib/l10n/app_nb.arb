@@ -342,6 +342,7 @@
   "middleEast": "Midtøsten",
   "transmitRegion": "Overføringsregion",
   "start": "Start-menyen",
+  "invalidDns": "Ugyldig DNS",
   "administration": "Administrasjon",
   "advanced": "Avansert",
   "duid": "DUID:",

@@ -342,6 +342,7 @@
   "middleEast": "Oriente Médio",
   "transmitRegion": "Transmitir região",
   "start": "Iniciar",
+  "invalidDns": "DNS inválido",
   "administration": "Administração",
   "advanced": "Avançado",
   "duid": "DUID:",

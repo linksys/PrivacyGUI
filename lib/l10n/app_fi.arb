@@ -342,6 +342,7 @@
   "middleEast": "Lähi-itä",
   "transmitRegion": "Siirtoalue",
   "start": "Käynnistä",
+  "invalidDns": "Virheellinen DNS",
   "administration": "Valvonta",
   "advanced": "Lisäasetukset",
   "duid": "DUID:",
