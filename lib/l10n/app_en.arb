@@ -267,7 +267,7 @@
   "modalPnpWiFiDefaultsInfoDesc4": "To reinstate these default settings, factory reset your router.",
   "pnpGuestWiFiDesc": "Turn on guest network to create separate WiFi network for guests and maintain the privacy of your main network.",
   "guestWiFiName": "Guest WiFi Name",
-  "guestWiFiPassword": "Gueat WiFi Password",
+  "guestWiFiPassword": "Guest WiFi Password",
   "guestNetwork": "Guest Network",
   "nightModeOnDesc": "Enable Night Mode to turn off node lights automatically from 8PM - 8AM",
   "nightModeOffDesc": "Node lights are always on",
