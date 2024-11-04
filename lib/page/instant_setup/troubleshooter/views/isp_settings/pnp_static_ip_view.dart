@@ -155,17 +155,6 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
       ),
     );
 
-    // ALT, check router is configured and ignore the exception, check only
-    await ref
-        .read(pnpProvider.notifier)
-        .checkRouterConfigured()
-        .onError((_, __) {});
-    if (ref.read(pnpProvider).isUnconfigured) {
-      // ALT, check router admin password is default one and ignore the exception, check only
-      await ref
-          .read(pnpProvider.notifier)
-          .checkAdminPassword(defaultAdminPassword).onError((_, __) {});
-    }
     context.pushNamed(
       RouteNamed.pnpIspSaveSettings,
       extra: {'newSettings': newState},
