@@ -229,18 +229,19 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
   /// check internet connection within 30 seconds
   @override
   Future checkInternetConnection() async {
-    final isNode = isNodeModel(
-        modelNumber: state.deviceInfo?.modelNumber ?? '',
-        hardwareVersion: state.deviceInfo?.hardwareVersion ?? '1');
-    // getInternetConnectionStatus for Node router
-    Future<bool> isInternetConnected() => ref
-            .read(routerRepositoryProvider)
-            .send(JNAPAction.getInternetConnectionStatus, auth: true)
-            .then((result) {
-          return result.output['connectionStatus'] == 'InternetConnected';
-        });
+    // final isNode = isNodeModel(
+    //     modelNumber: state.deviceInfo?.modelNumber ?? '',
+    //     hardwareVersion: state.deviceInfo?.hardwareVersion ?? '1');
+    // // getInternetConnectionStatus for Node router
+    // Future<bool> isInternetConnected() => ref
+    //         .read(routerRepositoryProvider)
+    //         .send(JNAPAction.getInternetConnectionStatus, auth: true)
+    //         .then((result) {
+    //       return result.output['connectionStatus'] == 'InternetConnected';
+    //     });
     Future<bool> testPing() => ref.read(cloudRepositoryProvider).testPingPng();
-    final isOnline = isNode ? await isInternetConnected() : await testPing();
+    // final isOnline = isNode ? await isInternetConnected() : await testPing();
+    final isOnline = await testPing();
     if (!isOnline) {
       throw ExceptionNoInternetConnection();
     }

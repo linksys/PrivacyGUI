@@ -88,7 +88,10 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
         .then((_) => pnp.checkRouterConfigured())
         .then((_) {
           logger.i('[PnP]: The router has already configured');
-          return _examineAdminPassword(_password);
+          final isLoggedIn = ref.read(routerRepositoryProvider).isLoggedIn();
+          if (!isLoggedIn) {
+            return _examineAdminPassword(_password);
+          }
         })
         .then((_) {
           logger.i('[PnP]: Auto-login successfully, go to Setup page');

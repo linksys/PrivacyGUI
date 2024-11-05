@@ -324,10 +324,10 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
       password: ipv4Setting.password ?? '',
       behavior: behavior.value,
       maxIdleMinutes: behavior == PPPConnectionBehavior.connectOnDemand
-          ? ipv4Setting.maxIdleMinutes
+          ? ipv4Setting.maxIdleMinutes ?? 15
           : null,
       reconnectAfterSeconds: behavior == PPPConnectionBehavior.keepAlive
-          ? ipv4Setting.reconnectAfterSeconds
+          ? ipv4Setting.reconnectAfterSeconds ?? 30
           : null,
     );
   }
