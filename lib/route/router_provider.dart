@@ -157,6 +157,7 @@ class RouterNotifier extends ChangeNotifier {
     }
 
     if (shouldGoPnp) {
+      await _ref.read(authProvider.notifier).logout();
       return _goPnp(state.uri.query);
     } else {
       return _authCheck();
