@@ -6,6 +6,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacy_gui/utils.dart';
 import 'package:privacy_gui/validator_rules/input_validators.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:privacygui_widgets/widgets/gap/gap.dart';
@@ -32,13 +33,22 @@ class _DHCPReservationsEditViewState
   late final DHCPReservation _item;
   bool enableSave = false;
   bool isMacValid = false;
+  bool isIpValid = false;
+  bool isMacFocused = false;
+  bool isIpFocused = false;
   final InputValidator _macValidator = InputValidator([MACAddressRule()]);
+  late final InputValidator _localIpValidator;
+  late final String _routerIp;
+  late final String _subnetMask;
 
   @override
   void initState() {
     super.initState();
 
     _viewType = widget.args['viewType'] ?? 'add';
+    _routerIp = widget.args['routerIp'] ?? '';
+    _subnetMask = widget.args['subnetMask'] ?? '';
+
     _item = widget.args['item'] ??
         const DHCPReservation(
           description: '',
@@ -46,8 +56,14 @@ class _DHCPReservationsEditViewState
           macAddress: '',
         );
     _deviceNameController.text = _item.description;
-    _ipController.text = _item.ipAddress;
+    final ipPrefix = NetworkUtils.getIpPrefix(_routerIp, _subnetMask);
+    _ipController.text = _viewType == 'add' ? ipPrefix : _item.ipAddress;
     _macController.text = _item.macAddress;
+
+    _localIpValidator = InputValidator([
+      HostValidForGivenRouterIPAddressAndSubnetMaskRule(_routerIp, _subnetMask)
+    ]);
+    _updateEnableSave();
   }
 
   @override
@@ -61,6 +77,7 @@ class _DHCPReservationsEditViewState
 
   @override
   Widget build(BuildContext context) {
+    final subnetToken = _subnetMask.split('.');
     return StyledAppPageView(
       scrollable: true,
       title: viewTitle(_viewType),
@@ -83,11 +100,25 @@ class _DHCPReservationsEditViewState
               header: AppText.bodySmall(loc(context).assignIpAddress),
               semanticLabel: 'assign ip address',
               controller: _ipController,
+              errorText: (isIpValid | !isIpFocused)
+                  ? null
+                  : loc(context).invalidIpAddress,
               border: const OutlineInputBorder(),
+              octet1ReadOnly: subnetToken[0] == '255',
+              octet2ReadOnly: subnetToken[1] == '255',
+              octet3ReadOnly: subnetToken[2] == '255',
+              octet4ReadOnly: subnetToken[3] == '255',
               onChanged: (value) {
                 setState(() {
                   enableSave = _updateEnableSave();
                 });
+              },
+              onFocusChanged: (value) {
+                if (value) {
+                  setState(() {
+                    isIpFocused = value;
+                  });
+                }
               },
             ),
             const AppGap.large3(),
@@ -95,11 +126,21 @@ class _DHCPReservationsEditViewState
               headerText: loc(context).macAddress,
               semanticLabel: 'mac address',
               controller: _macController,
+              errorText: (isMacValid | !isMacFocused)
+                  ? null
+                  : loc(context).invalidMACAddress,
               border: const OutlineInputBorder(),
               onChanged: (value) {
                 setState(() {
                   enableSave = _updateEnableSave();
                 });
+              },
+              onFocusChanged: (value) {
+                if (value) {
+                  setState(() {
+                    isMacFocused = value;
+                  });
+                }
               },
             ),
           ],
@@ -156,7 +197,8 @@ class _DHCPReservationsEditViewState
         ip != _item.ipAddress ||
         mac != _item.macAddress;
     isMacValid = _macValidator.validate(mac);
-    return allFilled && edited && isMacValid;
+    isIpValid = _localIpValidator.validate(ip);
+    return allFilled && edited && isMacValid && isIpValid;
   }
 
   _showDeleteAlert() {

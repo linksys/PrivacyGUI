@@ -52,6 +52,8 @@ class _DHCPReservationsContentViewState
   Widget build(BuildContext context) {
     final dhcpReservedList = ref.watch(localNetworkSettingProvider
         .select((value) => value.dhcpReservationList));
+    final routerIp = ref.watch(localNetworkSettingProvider).ipAddress;
+    final subnetMask = ref.watch(localNetworkSettingProvider).subnetMask;
     return StyledAppPageView(
       scrollable: true,
       title: loc(context).dhcpReservations.capitalizeWords(),
@@ -63,7 +65,10 @@ class _DHCPReservationsContentViewState
             const AppGap.large2(),
             AppSettingCard(
               title: loc(context).selectFromMyDHCPList,
-              trailing: const Icon(LinksysIcons.add, semanticLabel: 'add',),
+              trailing: const Icon(
+                LinksysIcons.add,
+                semanticLabel: 'add',
+              ),
               onTap: () async {
                 final result = await context.pushNamed<List<DeviceListItem>?>(
                     RouteNamed.devicePicker,
@@ -89,12 +94,17 @@ class _DHCPReservationsContentViewState
             const AppGap.small2(),
             AppSettingCard(
               title: loc(context).manuallyAddReservation,
-              trailing: const Icon(LinksysIcons.add, semanticLabel: 'add',),
+              trailing: const Icon(
+                LinksysIcons.add,
+                semanticLabel: 'add',
+              ),
               onTap: () async {
                 final result = await context.pushNamed<DHCPReservation?>(
                     RouteNamed.dhcpReservationEdit,
                     extra: {
                       'viewType': 'add',
+                      'routerIp': routerIp,
+                      'subnetMask': subnetMask,
                     });
                 if (result != null) {
                   final isReservationOverlap = ref
@@ -170,9 +180,13 @@ class _DHCPReservationsContentViewState
   }
 
   void goDHCPReservationEdit(DHCPReservation item, int index) async {
+    final routerIp = ref.watch(localNetworkSettingProvider).ipAddress;
+    final subnetMask = ref.watch(localNetworkSettingProvider).subnetMask;
     final result = await context
         .pushNamed<DHCPReservation?>(RouteNamed.dhcpReservationEdit, extra: {
       'viewType': 'edit',
+      'routerIp': routerIp,
+      'subnetMask': subnetMask,
       'item': item,
     });
     if (result != null) {
