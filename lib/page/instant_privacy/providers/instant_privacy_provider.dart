@@ -8,6 +8,7 @@ import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
 import 'package:privacy_gui/util/extensions.dart';
 
@@ -46,6 +47,19 @@ class InstantPrivacyNotifier extends Notifier<InstantPrivacyState> {
   Future save() async {
     var macAddresses = [];
     if (state.mode == MacFilterMode.allow) {
+      final List<String> staBSSIDS = await ref
+          .read(routerRepositoryProvider)
+          .send(
+            JNAPAction.getSTABSSIDs,
+            fetchRemote: true,
+            auth: true,
+          )
+          .then((result) {
+        return List<String>.from(result.output['staBSSIDS']);
+      }).onError((error, _) {
+        logger.d('Not able to get STA BSSIDs');
+        return [];
+      });
       final nodesMacAddresses = ref
           .read(deviceManagerProvider)
           .nodeDevices
@@ -54,6 +68,7 @@ class InstantPrivacyNotifier extends Notifier<InstantPrivacyState> {
       macAddresses = [
         ...state.macAddresses,
         ...nodesMacAddresses,
+        ...staBSSIDS,
       ].unique();
     }
     await ref.read(routerRepositoryProvider).send(

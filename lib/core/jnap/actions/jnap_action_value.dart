@@ -149,6 +149,7 @@ enum _JNAPActionValue {
       value: 'http://linksys.com/jnap/macfilter/GetMACFilterSettings'),
   setMACFilterSettings(
       value: 'http://linksys.com/jnap/macfilter/SetMACFilterSettings'),
+  getSTABSSIDs(value: 'http://linksys.com/jnap/macfilter/GetSTABSSIDS'),
   getActiveMotionSensingBots(
       value:
           'http://linksys.com/jnap/motionsensing/GetActiveMotionSensingBots'),
