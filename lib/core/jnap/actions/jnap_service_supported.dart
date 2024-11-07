@@ -54,5 +54,8 @@ class ServiceHelper {
       isServiceSupport(JNAPService.router13);
 
   bool isSupportClientDeauth([List<String>? services]) =>
-      isServiceSupport(JNAPService.wirelessAP5);
+      isServiceSupport(JNAPService.wirelessAP5, services);
+
+  bool isSupportGetSTABSSID([List<String>? services]) =>
+      isServiceSupport(JNAPService.macFilter2, services);
 }

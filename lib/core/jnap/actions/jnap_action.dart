@@ -98,6 +98,7 @@ enum JNAPAction {
   // macFilter
   getMACFilterSettings,
   setMACFilterSettings,
+  getSTABSSIDs,
   // motionSensing
   getActiveMotionSensingBots,
   getMotionSensingSettings,

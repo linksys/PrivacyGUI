@@ -122,6 +122,8 @@ void _updateBetterActions(JNAPService service) {
       break;
     case JNAPService.macFilter:
       break;
+    case JNAPService.macFilter2:
+      break;
     case JNAPService.motionSensing:
       break;
     case JNAPService.motionSensing2:
@@ -512,6 +514,8 @@ void initBetterActions() {
       _JNAPActionValue.getMACFilterSettings.value;
   _betterActionMap[JNAPAction.setMACFilterSettings] =
       _JNAPActionValue.setMACFilterSettings.value;
+  _betterActionMap[JNAPAction.getSTABSSIDs] =
+      _JNAPActionValue.getSTABSSIDs.value;
   _betterActionMap[JNAPAction.getActiveMotionSensingBots] =
       _JNAPActionValue.getActiveMotionSensingBots.value;
   _betterActionMap[JNAPAction.getMotionSensingSettings] =
