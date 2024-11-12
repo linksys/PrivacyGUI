@@ -113,7 +113,7 @@ class _PortRangeForwardingContentViewState
     return EditableCardListsettingsView<PortRangeForwardingRule>(
         title: loc(context).portRangeForwarding,
         emptyMessage: loc(context).noPortRangeForwarding,
-        addEnabled: _notifier.isExceedMax(),
+        addEnabled: !_notifier.isExceedMax(),
         addLabel: loc(context).add,
         itemCardBuilder: (context, rule) => EditableListItem(
               title: rule.description,
@@ -168,7 +168,7 @@ class _PortRangeForwardingContentViewState
       List<String> submaskToken, String prefixIP) {
     return AppEditableTableSettingsView<PortRangeForwardingRule>(
       title: loc(context).portRangeForwarding,
-      addEnabled: _notifier.isExceedMax(),
+      addEnabled: !_notifier.isExceedMax(),
       emptyMessage: loc(context).noPortRangeForwarding,
       onStartEdit: (index, rule) {
         ref

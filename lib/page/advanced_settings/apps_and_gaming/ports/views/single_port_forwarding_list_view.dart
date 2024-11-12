@@ -120,7 +120,7 @@ class _SinglePortForwardingContentViewState
         title: loc(context).singlePortForwarding,
         emptyMessage: loc(context).noSinglePortForwarding,
         addLabel: loc(context).add,
-        addEnabled: _notifier.isExceedMax(),
+        addEnabled: !_notifier.isExceedMax(),
         itemCardBuilder: (context, rule) => EditableListItem(
               title: rule.description,
               content: Table(
@@ -175,7 +175,7 @@ class _SinglePortForwardingContentViewState
     return AppEditableTableSettingsView<SinglePortForwardingRule>(
       title: loc(context).singlePortForwarding,
       emptyMessage: loc(context).noSinglePortForwarding,
-      addEnabled: _notifier.isExceedMax(),
+      addEnabled: !_notifier.isExceedMax(),
       onStartEdit: (index, rule) {
         ref
             .read(singlePortForwardingRuleProvider.notifier)

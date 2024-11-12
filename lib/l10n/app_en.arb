@@ -1008,5 +1008,7 @@
   "noPortRangeForwarding": "You have no Port Range Forwarding",
   "noPortRangeTriggering": "You have no Port Range Triggering",
   "noIPv6PortService": "You have no IPv6 Port Service",
-  "startEndPorts": "Start - End Ports"
+  "noAdvancedRouting": "You have no Advanced Routing",
+  "startEndPorts": "Start - End Ports",
+  "labelInterface": "Interface"
 }

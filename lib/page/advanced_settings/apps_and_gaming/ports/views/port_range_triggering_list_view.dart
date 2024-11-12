@@ -129,7 +129,7 @@ class _PortRangeTriggeringContentViewState
     return EditableCardListsettingsView<PortRangeTriggeringRule>(
         title: loc(context).portRangeTriggering,
         addLabel: loc(context).add,
-        addEnabled: _notifier.isExceedMax(),
+        addEnabled: !_notifier.isExceedMax(),
         emptyMessage: loc(context).noPortRangeTriggering,
         itemCardBuilder: (context, rule) => EditableListItem(
               title: rule.description,
@@ -176,7 +176,7 @@ class _PortRangeTriggeringContentViewState
     return AppEditableTableSettingsView<PortRangeTriggeringRule>(
       title: loc(context).portRangeTriggering,
       emptyMessage: loc(context).noPortRangeTriggering,
-      addEnabled: _notifier.isExceedMax(),
+      addEnabled: !_notifier.isExceedMax(),
       onStartEdit: (index, rule) {
         ref
             .read(portRangeTriggeringRuleProvider.notifier)
