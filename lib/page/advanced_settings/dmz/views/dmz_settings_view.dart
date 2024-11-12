@@ -139,9 +139,13 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                 child: Column(
                   children: [
                     _sourceIPWidget(state),
-                    const AppGap.large4(),
-                    _destinationIPWidget(state)
                   ],
+                ),
+              ),
+              const AppGap.medium(),
+              AppCard(
+                child: Column(
+                  children: [_destinationIPWidget(state)],
                 ),
               ),
             ]
