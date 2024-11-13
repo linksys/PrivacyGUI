@@ -42,8 +42,8 @@ final compatibilityMap = [
   ),
   const CompatibilityItem(modelRegExp: '^LN14'),
   const CompatibilityItem(modelRegExp: '^LN15'),
-  const CompatibilityItem(modelRegExp: '^LN16'),
-  const CompatibilityItem(modelRegExp: '^MX57'),
+  // const CompatibilityItem(modelRegExp: '^LN16'),
+  // const CompatibilityItem(modelRegExp: '^MX57'),
 ];
 
 class InstantSafetyNotifier extends Notifier<InstantSafetyState> {

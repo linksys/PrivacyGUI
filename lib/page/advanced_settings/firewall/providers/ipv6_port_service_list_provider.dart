@@ -12,8 +12,8 @@ class Ipv6PortServiceListNotifier extends Notifier<Ipv6PortServiceListState> {
   @override
   Ipv6PortServiceListState build() => const Ipv6PortServiceListState();
 
-  Future fetch([bool force = false]) {
-    return ref
+  Future<Ipv6PortServiceListState> fetch([bool force = false]) async {
+    await ref
         .read(routerRepositoryProvider)
         .send(JNAPAction.getIPv6FirewallRules, auth: true, fetchRemote: force)
         .then((value) {
@@ -25,9 +25,42 @@ class Ipv6PortServiceListNotifier extends Notifier<Ipv6PortServiceListState> {
       state = state.copyWith(
           rules: rules, maxRules: maxRules, maxDescriptionLength: maxDesc);
     });
+    return state;
+  }
+
+  Future<Ipv6PortServiceListState> save() async {
+    final rules = List<IPv6FirewallRule>.from(state.rules);
+
+    final repo = ref.read(routerRepositoryProvider);
+    await repo
+        .send(
+          JNAPAction.setIPv6FirewallRules,
+          auth: true,
+          data: {
+            'rules': rules.map((e) => e.toMap()).toList(),
+          },
+        )
+        .then((value) => true)
+        .onError((error, stackTrace) => false);
+
+    await fetch(true);
+    return state;
   }
 
   bool isExceedMax() {
     return state.maxRules == state.rules.length;
+  }
+
+  void addRule(IPv6FirewallRule rule) {
+    state = state.copyWith(rules: List.from(state.rules)..add(rule));
+  }
+
+  void editRule(int index, IPv6FirewallRule rule) {
+    state = state.copyWith(
+        rules: List.from(state.rules)..replaceRange(index, index + 1, [rule]));
+  }
+
+  void deleteRule(IPv6FirewallRule rule) {
+    state = state.copyWith(rules: List.from(state.rules)..remove(rule));
   }
 }

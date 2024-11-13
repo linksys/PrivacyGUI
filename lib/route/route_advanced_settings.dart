@@ -174,7 +174,7 @@ final advancedSettings = [
             name: RouteNamed.ipv6PortServiceList,
             path: RoutePath.ipv6PortServiceList,
             config: LinksysRouteConfig(
-              column: ColumnGrid(column: 9),
+              column: ColumnGrid(column: 12),
             ),
             builder: (context, state) => Ipv6PortServiceListView(
                   args: state.extra as Map<String, dynamic>? ?? {},

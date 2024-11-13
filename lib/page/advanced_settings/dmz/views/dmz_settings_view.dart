@@ -65,7 +65,13 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
           _destinationMACController.text =
               value.settings.destinationMACAddress ?? '';
           return value;
-        })).then((value) => null);
+        })).then((state) {
+      if (state?.destinationType == DMZDestinationType.ip) {
+        _checkDestinationIPAdress();
+      } else {
+        _checkDestinationMACAddress();
+      }
+    });
   }
 
   @override

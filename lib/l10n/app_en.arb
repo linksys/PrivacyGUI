@@ -366,8 +366,8 @@
   "generalError": "Oops, something wrong here! Please try again later",
   "passwwordUpdated": "Router password updated",
   "networkAdmin": "Network Administration",
-  "routerPasswordHint": "Router password hint",
-  "routerPasswordNew": "New router password",
+  "routerPasswordHint": "Router Password Hint",
+  "routerPasswordNew": "New Router Password",
   "autoFirmwareUpdate": "Automatic Firmware Update",
   "routerPasswordRuleTenChars": "At least 10 characters",
   "routerPasswordRuleLowerUpper": "Upper and lowercase letters",
@@ -999,6 +999,7 @@
   "systemStatic": "Static",
   "systemCustom": "Custom",
   "invalidDestinationMacAddress": "Invalid destination MAC address",
+  "invalidDestinationIpAddress": "Invalid destination IP address",
   "deviceNameExceedMaxSize": "Name can be only less than 256",
   "invalidDns": "Invalid DNS",
   "deviceIP": "Device IP#",
@@ -1010,5 +1011,6 @@
   "noIPv6PortService": "You have no IPv6 Port Service",
   "noAdvancedRouting": "You have no Advanced Routing",
   "startEndPorts": "Start - End Ports",
-  "labelInterface": "Interface"
+  "labelInterface": "Interface",
+  "retypeRouterPassword": "Retype Router Password"
 }

@@ -27,11 +27,14 @@ String? errorCodeHelper(BuildContext context, String? code) {
     errorAdminAccountLocked => loc(context).localLoginTooManyAttemptsTitle,
     errorInvalidDestinationMACAddress =>
       loc(context).invalidDestinationMacAddress,
+    errorInvalidDestinationIpAddress =>
+      loc(context).invalidDestinationIpAddress,
     errorInvalidGateway => loc(context).invalidGatewayIpAddress,
     errorInvalidIPAddress => loc(context).invalidIpAddress,
     errorInvalidPrimaryDNSServer => loc(context).invalidDns,
     errorInvalidSecondaryDNSServer => loc(context).invalidDns,
     errorInvalidTertiaryDNSServer => loc(context).invalidDns,
+    errorMissingDestination => loc(context).invalidDestinationIpAddress,
     _ => unknownHandle(code),
   };
 }

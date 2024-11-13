@@ -84,7 +84,7 @@ class _AppEditableTableSettingsViewState<T>
           height: 120,
           child: Center(child: AppText.bodyLarge(widget.emptyMessage ?? ''))),
       cellBuilder: (context, index, data) => index == lastIndex
-          ? Row(
+          ? Wrap(
               children: [
                 AppIconButton(
                     icon: LinksysIcons.edit,
@@ -102,7 +102,7 @@ class _AppEditableTableSettingsViewState<T>
             )
           : widget.cellBuilder(context, ref, index, data),
       editCellBuilder: (context, index, data) => index == lastIndex
-          ? Row(
+          ? Wrap(
               children: [
                 AppIconButton(
                   icon: LinksysIcons.check,
