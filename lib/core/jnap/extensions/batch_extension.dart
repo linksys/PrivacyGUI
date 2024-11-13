@@ -4,21 +4,8 @@ import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
-import 'package:privacy_gui/core/utils/nodes.dart';
 
 extension BatchCommands on RouterRepository {
-  Future<List<MapEntry<JNAPAction, JNAPResult>>> doTransaction(
-      List<MapEntry<JNAPAction, Map<String, dynamic>>> transactionList,
-      {bool fetchRemote = false}) async {
-    return transaction(
-      fetchRemote: fetchRemote,
-      JNAPTransactionBuilder(
-        commands: transactionList,
-        auth: true,
-      ),
-    ).then((successWrap) => successWrap.data);
-  }
-
   Future<List<MapEntry<JNAPAction, JNAPResult>>> fetchIsConfigured() async {
     return transaction(
       JNAPTransactionBuilder(commands: [

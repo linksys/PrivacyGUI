@@ -32,6 +32,9 @@ String? errorCodeHelper(BuildContext context, String? code) {
     errorInvalidPrimaryDNSServer => loc(context).invalidDns,
     errorInvalidSecondaryDNSServer => loc(context).invalidDns,
     errorInvalidTertiaryDNSServer => loc(context).invalidDns,
+    errorInvalidMACAddress => loc(context).invalidMACAddress,
+    errorInvalidInput => loc(context).invalidInput,
+    errorInvalidServer => loc(context).errorInvalidServer,
     _ => unknownHandle(code),
   };
 }

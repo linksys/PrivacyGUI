@@ -8,18 +8,20 @@ import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
+import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/panel/general_section.dart';
 
-class DashboardAdvancedSettingsView extends ConsumerStatefulWidget {
-  const DashboardAdvancedSettingsView({Key? key}) : super(key: key);
+class AdvancedSettingsView extends ConsumerStatefulWidget {
+  const AdvancedSettingsView({Key? key}) : super(key: key);
 
   @override
-  ConsumerState<DashboardAdvancedSettingsView> createState() =>
-      _DashboardAdvancedSettingsViewState();
+  ConsumerState<AdvancedSettingsView> createState() =>
+      _AdvancedSettingsViewState();
 }
 
-class _DashboardAdvancedSettingsViewState
-    extends ConsumerState<DashboardAdvancedSettingsView> {
+class _AdvancedSettingsViewState
+    extends ConsumerState<AdvancedSettingsView> {
   List<AppSectionItemData> advancedSettings = [];
   @override
   void initState() {
@@ -33,20 +35,32 @@ class _DashboardAdvancedSettingsViewState
     }
     return StyledAppPageView(
       title: loc(context).advancedSettings,
-      child: ListView.separated(
-        itemCount: advancedSettings.length,
-        shrinkWrap: true,
-        itemBuilder: (context, index) {
-          return AppSettingCard(
-            title: advancedSettings[index].title,
-            trailing: const Icon(LinksysIcons.chevronRight),
-            onTap: advancedSettings[index].onTap,
-          );
-        },
-        separatorBuilder: (BuildContext context, int index) {
-          return const AppGap.small2();
-        },
-      ),
+      child: ResponsiveLayout(
+          desktop: GridView.builder(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              mainAxisSpacing: Spacing.medium,
+              crossAxisSpacing: ResponsiveLayout.columnPadding(context),
+              childAspectRatio: (430 / 56),
+              mainAxisExtent: 56,
+            ),
+            physics: const ScrollPhysics(),
+            itemCount: advancedSettings.length,
+            itemBuilder: (context, index) {
+              return _advancedSettingCard(index);
+            },
+            shrinkWrap: true,
+          ),
+          mobile: ListView.separated(
+            itemCount: advancedSettings.length,
+            shrinkWrap: true,
+            itemBuilder: (context, index) {
+              return _advancedSettingCard(index);
+            },
+            separatorBuilder: (BuildContext context, int index) {
+              return const AppGap.small2();
+            },
+          )),
     );
   }
 
@@ -55,7 +69,7 @@ class _DashboardAdvancedSettingsViewState
       AppSectionItemData(
         title: loc(context).internetSettings.capitalizeWords(),
         // iconData: getCharactersIcons(context).profileDefault,
-        onTap: () => context.goNamed(RouteNamed.settingsInternet),
+        onTap: () => context.goNamed(RouteNamed.internetSettings),
       ),
       AppSectionItemData(
         title: loc(context).localNetwork,
@@ -88,5 +102,13 @@ class _DashboardAdvancedSettingsViewState
         onTap: () => context.goNamed(RouteNamed.settingsAppsGaming),
       ),
     ];
+  }
+
+  Widget _advancedSettingCard(int index) {
+    return AppSettingCard(
+      title: advancedSettings[index].title,
+      trailing: const Icon(LinksysIcons.chevronRight),
+      onTap: advancedSettings[index].onTap,
+    );
   }
 }

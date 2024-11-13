@@ -31,9 +31,9 @@ final menus = [
     name: RouteNamed.menuAdvancedSettings,
     path: RoutePath.menuAdvancedSettings,
     config: LinksysRouteConfig(
-      column: ColumnGrid(column: 9),
+      column: ColumnGrid(column: 12),
     ),
-    builder: (context, state) => const DashboardAdvancedSettingsView(),
+    builder: (context, state) => const AdvancedSettingsView(),
     routes: advancedSettings,
   ),
   LinksysRoute(

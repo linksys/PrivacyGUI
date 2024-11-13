@@ -27,7 +27,7 @@ class RoutePath {
   static const menuInstantAdmin = 'menuInstantAdmin';
   static const menuInstantSafety = 'menuInstantSafety';
   static const menuInstantPrivacy = 'menuInstantPrivacy';
-  static const menuAdvancedSettings = 'dashboardAdvancedSettings';
+  static const menuAdvancedSettings = 'menuAdvancedSettings';
 
   /// speed test
   static const dashboardSpeedTest = 'dashboardSpeedTest';
@@ -37,7 +37,6 @@ class RoutePath {
   /// settings
   static const settingsNotification = 'notificationSettings';
   static const settingsTimeZone = 'timeZone';
-  static const settingsInternet = 'internetSettings';
   static const settingsLocalNetwork = 'localNetworkSettings';
   static const settingsAppsGaming = 'portSettings';
   static const settingsFirewall = 'firewall';
@@ -76,10 +75,7 @@ class RoutePath {
   static const twoStepVerification = 'twoStepVerification';
 
   /// Internet Setting
-  static const mtuPicker = 'mtuPicker';
-  static const macClone = 'macClone';
-  static const connectionType = 'connectionType';
-  static const connectionTypeSelection = 'connectionTypeSelection';
+  static const internetSettings = 'internetSettings';
 
   /// Local Network
   static const dhcpReservation = 'dhcpReservation';
@@ -184,7 +180,6 @@ class RouteNamed {
   /// settings
   static const settingsNotification = 'notificationSettings';
   static const settingsTimeZone = 'timeZone';
-  static const settingsInternet = 'internetSettings';
   static const settingsLocalNetwork = 'localNetworkSettings';
   static const settingsAppsGaming = 'portSettings';
   static const settingsFirewall = 'firewall';
@@ -223,10 +218,7 @@ class RouteNamed {
   static const twoStepVerification = 'twoStepVerification';
 
   /// Internet Setting
-  static const mtuPicker = 'mtuPicker';
-  static const macClone = 'macClone';
-  static const connectionType = 'connectionType';
-  static const connectionTypeSelection = 'connectionTypeSelection';
+  static const internetSettings = 'internetSettings';
 
   /// Local Network
   static const dhcpReservation = 'dhcpReservation';

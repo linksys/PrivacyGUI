@@ -8,10 +8,8 @@ import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_safety/providers/_providers.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/list_expand_card.dart';
-import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/radios/radio_list.dart';
 
@@ -173,7 +171,7 @@ class _InstantSafetyViewState extends ConsumerState<InstantSafetyView> {
       });
     }, test: (error) => error is JNAPSideEffectError).onError(
         (error, stackTrace) {
-      final errorMsg = switch (error) {
+      final errorMsg = switch (error.runtimeType) {
         SafeBrowsingError => (error as SafeBrowsingError).message,
         _ => 'Unknown error',
       };

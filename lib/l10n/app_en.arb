@@ -398,8 +398,8 @@
   "connectionMode": "Connection Mode",
   "connectOnDemand": "Connect on demand",
   "keepAlive": "Keep alive",
-  "redialPeriod": "Redial Period:",
-  "maxIdleTime": "Max Idle Time:",
+  "redialPeriod": "Redial period",
+  "maxIdleTime": "Max idle time",
   "seconds": "seconds",
   "serverIpv4Address": "Server Ipv4 Address",
   "obtainIPv4AddressAutomatically": "Obtain an IPv4 address automatically (DHCP)",
@@ -1002,5 +1002,16 @@
   "status": "Status",
   "systemDynamic": "Dynamic",
   "systemStatic": "Static",
-  "systemCustom": "Custom"
+  "systemCustom": "Custom",
+  "releaseAndRenew": "Release & Renew",
+  "releaseAndRenewIpAddress": "Release and Renew IP address",
+  "releaseAndRenewIpAddressDescription": "When you release and renew your IP address, all connected devices will lose their connection to the internet. All devices will be reconnected when the process is complete.\n\nDo you want to continue?",
+  "currentIPv6ConnectionTypeIsNotAutomatic": "The current WAN IPv6 connection type is not automatic.",
+  "currentWanTypeIsNotDhcp": "The current WAN type is not DHCP.",
+  "optional": "Optional",
+  "domainName": "Domain name",
+  "error": "Error",
+  "selectedCombinationNotValid": "Selected IPv4/IPv6 combination is not valid. Please select",
+  "invalidInput": "Invalid input",
+  "errorInvalidServer": "The specified server IP address is not valid."
 }

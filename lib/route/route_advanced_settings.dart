@@ -2,54 +2,14 @@ part of 'router_provider.dart';
 
 final advancedSettings = [
   LinksysRoute(
-      name: RouteNamed.settingsInternet,
-      path: RoutePath.settingsInternet,
-      config: LinksysRouteConfig(
-        column: ColumnGrid(column: 9),
-      ),
-      builder: (context, state) => const InternetSettingsView(),
-      routes: [
-        LinksysRoute(
-          name: RouteNamed.mtuPicker,
-          path: RoutePath.mtuPicker,
-          config: LinksysRouteConfig(
-            column: ColumnGrid(column: 9),
-          ),
-          builder: (context, state) => MTUPickerView(
-            args: state.extra as Map<String, dynamic>? ?? {},
-          ),
-        ),
-        LinksysRoute(
-          name: RouteNamed.macClone,
-          path: RoutePath.macClone,
-          config: LinksysRouteConfig(
-            column: ColumnGrid(column: 9),
-          ),
-          builder: (context, state) => MACCloneView(
-            args: state.extra as Map<String, dynamic>? ?? {},
-          ),
-        ),
-        LinksysRoute(
-          name: RouteNamed.connectionType,
-          path: RoutePath.connectionType,
-          config: LinksysRouteConfig(
-            column: ColumnGrid(column: 9),
-          ),
-          builder: (context, state) => ConnectionTypeView(
-            args: state.extra as Map<String, dynamic>? ?? {},
-          ),
-        ),
-        LinksysRoute(
-          name: RouteNamed.connectionTypeSelection,
-          path: RoutePath.connectionTypeSelection,
-          config: LinksysRouteConfig(
-            column: ColumnGrid(column: 9),
-          ),
-          builder: (context, state) => ConnectionTypeSelectionView(
-            args: state.extra as Map<String, dynamic>? ?? {},
-          ),
-        ),
-      ]),
+    name: RouteNamed.internetSettings,
+    path: RoutePath.internetSettings,
+    config: LinksysRouteConfig(
+      column: ColumnGrid(column: 12),
+    ),
+    builder: (context, state) => const InternetSettingsView(),
+    routes: const [],
+  ),
   LinksysRoute(
     name: RouteNamed.settingsLocalNetwork,
     path: RoutePath.settingsLocalNetwork,

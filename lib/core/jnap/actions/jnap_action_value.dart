@@ -249,8 +249,12 @@ enum _JNAPActionValue {
   setLANSettings(value: 'http://linksys.com/jnap/router/SetLANSettings'),
   setRoutingSettings(
       value: 'http://linksys.com/jnap/router/SetRoutingSettings'),
+  releaseDHCPWANLease(
+      value: 'http://linksys.com/jnap/router/ReleaseDHCPWANLease'),
+  releaseDHCPIPv6WANLease(
+      value: 'http://linksys.com/jnap/router/ReleaseDHCPIPv6WANLease'),
   renewDHCPWANLease(value: 'http://linksys.com/jnap/router/RenewDHCPWANLease'),
-  renewDHCPIPv6Lease(
+  renewDHCPIPv6WANLease(
       value: 'http://linksys.com/jnap/router/RenewDHCPIPv6WANLease'),
   getEthernetPortConnections(
       value: 'http://linksys.com/jnap/router/GetEthernetPortConnections'),

@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -13,8 +16,10 @@ import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_state.dart';
+import 'package:privacy_gui/page/instant_safety/providers/instant_safety_provider.dart';
 import 'package:privacy_gui/providers/redirection/redirection_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/util/error_code_helper.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
@@ -351,13 +356,32 @@ class _LocalNetworkSettingsViewState
           });
           showSuccessSnackBar(context, loc(context).changesSaved);
         },
-      ).catchError(
-        (error, stackTrace) {
-          final err = error as JNAPError;
-          showFailedSnackBar(context, err.result);
-        },
-        test: (error) => error is JNAPError,
-      ),
+      ).catchError((error) {
+        showRouterNotFoundAlert(context, ref, onComplete: () async {
+          // Update the state
+          await ref
+              .read(localNetworkSettingProvider.notifier)
+              .fetch(fetchRemote: true);
+          // Update instant safety
+          await ref.read(instantSafetyProvider.notifier).fetchLANSettings();
+          setState(() {
+            originalSettings = state;
+          });
+          showSuccessSnackBar(context, loc(context).changesSaved);
+        });
+      }, test: (error) => error is JNAPSideEffectError).onError(
+          (error, stackTrace) {
+        final errorMsg = switch (error.runtimeType) {
+          JNAPError => errorCodeHelper(context, (error as JNAPError).result),
+          TimeoutException => loc(context).generalError,
+          _ => loc(context).unknownError,
+        };
+        showFailedSnackBar(
+          context,
+          errorMsg ??
+              loc(context).unknownErrorCode((error as JNAPError).result),
+        );
+      }),
     );
   }
 }
