@@ -10,7 +10,7 @@ import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i4;
 import 'package:privacy_gui/core/jnap/models/port_range_triggering_rule.dart'
     as _i6;
-import 'package:privacy_gui/page/advanced_settings/port_forwarding/_port_forwarding.dart'
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/_ports.dart'
     as _i3;
 
 // ignore_for_file: type=lint

@@ -3,7 +3,7 @@ import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/models/ipv6_firewall_rule.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/advanced_settings/firewall/providers/ipv6_port_service_rule_state.dart';
-import 'package:privacy_gui/page/advanced_settings/port_forwarding/providers/consts.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/providers/consts.dart';
 
 final ipv6PortServiceRuleProvider =
     NotifierProvider<Ipv6PortServiceRuleNotifier, Ipv6PortServiceRuleState>(

@@ -179,8 +179,7 @@ class InternetSettingsState extends Equatable {
       ipv4Setting: ipv4Setting ?? this.ipv4Setting,
       ipv6Setting: ipv6Setting ?? this.ipv6Setting,
       macClone: macClone ?? this.macClone,
-      macCloneAddress:
-          macCloneAddress != null ? macCloneAddress() : this.macCloneAddress,
+      macCloneAddress: macCloneAddress != null ? macCloneAddress() : this.macCloneAddress,
     );
   }
 }
@@ -201,6 +200,7 @@ class Ipv4Setting extends Equatable {
   final String? staticDns2;
   final String? staticDns3;
   final int? networkPrefixLength;
+  final String? domainName;
   // PPPoE & TP (PPTP/L2TP) Settings
   final String? username;
   final String? password;
@@ -227,6 +227,7 @@ class Ipv4Setting extends Equatable {
     this.staticDns2,
     this.staticDns3,
     this.networkPrefixLength,
+    this.domainName,
     this.username,
     this.password,
     this.serviceName,
@@ -253,6 +254,7 @@ class Ipv4Setting extends Equatable {
       staticDns2,
       staticDns3,
       networkPrefixLength,
+      domainName,
       username,
       password,
       serviceName,
@@ -280,6 +282,7 @@ class Ipv4Setting extends Equatable {
       'staticDns2': staticDns2,
       'staticDns3': staticDns3,
       'networkPrefixLength': networkPrefixLength,
+      'domainName': domainName,
       'username': username,
       'password': password,
       'serviceName': serviceName,
@@ -320,6 +323,7 @@ class Ipv4Setting extends Equatable {
       staticDns3:
           map['staticDns3'] != null ? map['staticDns3'] as String : null,
       networkPrefixLength: map['networkPrefixLength'],
+      domainName: map['domainName'],
       username: map['username'] != null ? map['username'] as String : null,
       password: map['password'] != null ? map['password'] as String : null,
       serviceName:
@@ -359,6 +363,7 @@ class Ipv4Setting extends Equatable {
     ValueGetter<String?>? staticDns2,
     ValueGetter<String?>? staticDns3,
     ValueGetter<int?>? networkPrefixLength,
+    ValueGetter<String?>? domainName,
     ValueGetter<String?>? username,
     ValueGetter<String?>? password,
     ValueGetter<String?>? serviceName,
@@ -391,6 +396,7 @@ class Ipv4Setting extends Equatable {
       networkPrefixLength: networkPrefixLength != null
           ? networkPrefixLength()
           : this.networkPrefixLength,
+      domainName: domainName != null ? domainName() : this.domainName,
       username: username != null ? username() : this.username,
       password: password != null ? password() : this.password,
       serviceName: serviceName != null ? serviceName() : this.serviceName,

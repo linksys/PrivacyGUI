@@ -117,6 +117,8 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
         if (kIsWeb && previousIPAddress != newSettings.ipAddress) {
           ref.read(redirectionProvider.notifier).state =
               'https://${newSettings.ipAddress}';
+        } else {
+          throw error;
         }
       },
       test: (error) => error is JNAPSideEffectError,

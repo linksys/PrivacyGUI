@@ -29,6 +29,9 @@ const errorInvalidIPAddress = "ErrorInvalidIPAddress";
 const errorInvalidPrimaryDNSServer = "ErrorInvalidPrimaryDNSServer";
 const errorInvalidSecondaryDNSServer = "ErrorInvalidSecondaryDNSServer";
 const errorInvalidTertiaryDNSServer = "ErrorInvalidTertiaryDNSServer";
+const errorInvalidMACAddress = "ErrorInvalidMACAddress";
+const errorInvalidInput = "_ErrorInvalidInput";
+const errorInvalidServer = "ErrorInvalidServer";
 
 // JNAP retry list
 const errorJNAPRetryList = [errorUnexpected];

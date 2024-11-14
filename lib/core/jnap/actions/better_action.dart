@@ -616,10 +616,14 @@ void initBetterActions() {
       _JNAPActionValue.setSimpleWiFiSettings.value;
   _betterActionMap[JNAPAction.getMACAddress] =
       _JNAPActionValue.getMACAddress.value;
+  _betterActionMap[JNAPAction.releaseDHCPWANLease] =
+      _JNAPActionValue.releaseDHCPWANLease.value;
+  _betterActionMap[JNAPAction.releaseDHCPIPv6WANLease] =
+      _JNAPActionValue.releaseDHCPIPv6WANLease.value;
   _betterActionMap[JNAPAction.renewDHCPWANLease] =
       _JNAPActionValue.renewDHCPWANLease.value;
   _betterActionMap[JNAPAction.renewDHCPIPv6WANLease] =
-      _JNAPActionValue.renewDHCPIPv6Lease.value;
+      _JNAPActionValue.renewDHCPIPv6WANLease.value;
   _betterActionMap[JNAPAction.getEthernetPortConnections] =
       _JNAPActionValue.getEthernetPortConnections.value;
   _betterActionMap[JNAPAction.btGetScanUnconfiguredResult] =
