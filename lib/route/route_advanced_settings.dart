@@ -62,7 +62,7 @@ final advancedSettings = [
         name: RouteNamed.dhcpReservation,
         path: RoutePath.dhcpReservation,
         config: LinksysRouteConfig(
-          column: ColumnGrid(column: 9),
+          column: ColumnGrid(column: 12),
         ),
         builder: (context, state) => DHCPReservationsView(
           args: state.extra as Map<String, dynamic>? ?? {},

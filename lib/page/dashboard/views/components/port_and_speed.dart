@@ -197,105 +197,101 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
     final dateTimeStr = dateTime == null
         ? ''
         : loc(context).speedCheckLatestTime(dateTime, dateTime);
-    return Opacity(
-      opacity: state.isHealthCheckSupported ? 1 : .5,
-      child: AbsorbPointer(
-        absorbing: !state.isHealthCheckSupported,
-        child: Container(
-          key: const ValueKey('speedCheck'),
-          color: Theme.of(context).colorSchemeExt.surfaceContainerLow,
-          padding: const EdgeInsets.symmetric(
-              vertical: Spacing.large2, horizontal: Spacing.large4),
-          child: Column(
-            crossAxisAlignment: horizontalLayout
-                ? CrossAxisAlignment.start
-                : CrossAxisAlignment.center,
-            children: [
-              AppText.bodySmall(dateTimeStr),
-              const AppGap.small2(),
-              ResponsiveLayout(
-                desktop: horizontalLayout
-                    ? Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Opacity(
-                              opacity: isLegacy ? 0.6 : 1,
-                              child: _downloadSpeedResult(
+    return state.isHealthCheckSupported
+        ? Container(
+            key: const ValueKey('speedCheck'),
+            color: Theme.of(context).colorSchemeExt.surfaceContainerLow,
+            padding: const EdgeInsets.symmetric(
+                vertical: Spacing.large2, horizontal: Spacing.large4),
+            child: Column(
+              crossAxisAlignment: horizontalLayout
+                  ? CrossAxisAlignment.start
+                  : CrossAxisAlignment.center,
+              children: [
+                AppText.bodySmall(dateTimeStr),
+                const AppGap.small2(),
+                ResponsiveLayout(
+                  desktop: horizontalLayout
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Opacity(
+                                opacity: isLegacy ? 0.6 : 1,
+                                child: _downloadSpeedResult(
+                                    context,
+                                    state.downloadResult?.value ?? '--',
+                                    state.downloadResult?.unit,
+                                    isLegacy),
+                              ),
+                            ),
+                            Expanded(
+                              child: Opacity(
+                                opacity: isLegacy ? 0.6 : 1,
+                                child: _uploadSpeedResult(
+                                    context,
+                                    state.uploadResult?.value ?? '--',
+                                    state.uploadResult?.unit,
+                                    isLegacy),
+                              ),
+                            ),
+                            Expanded(
+                              child: _speedTestButton(context),
+                            )
+                          ],
+                        )
+                      : Column(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                              _downloadSpeedResult(
                                   context,
                                   state.downloadResult?.value ?? '--',
                                   state.downloadResult?.unit,
                                   isLegacy),
-                            ),
-                          ),
-                          Expanded(
-                            child: Opacity(
-                              opacity: isLegacy ? 0.6 : 1,
-                              child: _uploadSpeedResult(
+                              const AppGap.large2(),
+                              _uploadSpeedResult(
                                   context,
                                   state.uploadResult?.value ?? '--',
                                   state.uploadResult?.unit,
                                   isLegacy),
-                            ),
-                          ),
-                          Expanded(
-                            child: _speedTestButton(context),
-                          )
-                        ],
-                      )
-                    : Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
+                              const AppGap.large2(),
+                              _speedTestButton(context),
+                            ]),
+                  mobile: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                            _downloadSpeedResult(
+                          Expanded(
+                            child: _downloadSpeedResult(
                                 context,
                                 state.downloadResult?.value ?? '--',
                                 state.downloadResult?.unit,
-                                isLegacy),
-                            const AppGap.large2(),
-                            _uploadSpeedResult(
+                                !state.isHealthCheckSupported || isLegacy,
+                                WrapAlignment.center),
+                          ),
+                          const AppGap.large2(),
+                          Expanded(
+                            child: _uploadSpeedResult(
                                 context,
                                 state.uploadResult?.value ?? '--',
                                 state.uploadResult?.unit,
-                                isLegacy),
-                            const AppGap.large2(),
-                            _speedTestButton(context),
-                          ]),
-                mobile: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          child: _downloadSpeedResult(
-                              context,
-                              state.downloadResult?.value ?? '--',
-                              state.downloadResult?.unit,
-                              !state.isHealthCheckSupported || isLegacy,
-                              WrapAlignment.center),
-                        ),
-                        const AppGap.large2(),
-                        Expanded(
-                          child: _uploadSpeedResult(
-                              context,
-                              state.uploadResult?.value ?? '--',
-                              state.uploadResult?.unit,
-                              !state.isHealthCheckSupported || isLegacy,
-                              WrapAlignment.center),
-                        ),
-                        const AppGap.large2(),
-                        _speedTestButton(context),
-                      ],
-                    ),
-                  ],
+                                !state.isHealthCheckSupported || isLegacy,
+                                WrapAlignment.center),
+                          ),
+                          const AppGap.large2(),
+                          _speedTestButton(context),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+              ],
+            ),
+          )
+        : SizedBox.shrink();
   }
 
   Widget _speedTestButton(BuildContext context) {

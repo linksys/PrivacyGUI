@@ -512,7 +512,16 @@
   "noInternetConnectionTitle": "No internet connection",
   "noInternetConnectionDescription": "Your internet might be down because of a local power outage or issue with your ISP.",
   "deviceDetailEditDialogTitle": "Device Name and Icon",
-  "reservedAddresses": "Reserved addresses",
+  "nReservedAddresses": "{count, plural, zero{You don’t have any Reserved Address. Select devices below to start reserving.} one{{count} Reserved address} other{{count} Reserved addresses}}",
+  "@nReservedAddresses":{
+    "description": "number of reserved addresses",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "1"
+      }
+    }
+  },
   "staticDns2Optional": "Static DNS 2 (optional)",
   "staticDns3Optional": "Static DNS 3 (optional)",
   "staticIPAddress": "Static IP Address",
@@ -592,7 +601,7 @@
   "passwordAndAccess": "Password & Access",
   "hardware": "Hardware",
   "upToDate": "Up to date",
-  "dhcpReservationDescption": "Use DHCP reservations to make a device use the same IP address",
+  "dhcpReservationDescption": "Use DHCP reservations in order to ensure consistent network access and configuration by assigning the same IP address to a specific device.",
   "selectFromMyDHCPList": "Select from my DHCP list",
   "manuallyAddReservation": "Manually add reservation",
   "youHaveNoDHCPReservations": "You have no DHCP reservations",
@@ -1012,5 +1021,7 @@
   "noAdvancedRouting": "You have no Advanced Routing",
   "startEndPorts": "Start - End Ports",
   "labelInterface": "Interface",
-  "retypeRouterPassword": "Retype Router Password"
+  "retypeRouterPassword": "Retype Router Password",
+  "externalSpeedText": "External speed test",
+  "hideHint": "Hide hint"
 }

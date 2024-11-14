@@ -123,6 +123,11 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     );
   }
 
+  Future<List<DHCPReservation>> saveReservations(List<DHCPReservation> list) async {
+    await saveSettings(state.copyWith(dhcpReservationList: list));
+    return fetch(fetchRemote: true).then((state) => state.dhcpReservationList);
+  }
+
   void updateHostName(String hostName) {
     state = state.copyWith(hostName: hostName);
   }

@@ -5,6 +5,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
 import 'package:privacy_gui/page/instant_setup/widgets/wifi_password_widget.dart';
 import 'package:privacy_gui/page/instant_setup/widgets/wifi_ssid_widget.dart';
+import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
@@ -125,10 +126,14 @@ class PersonalWiFiStep extends PnpStep {
     // final password = state?.data['password'] as String? ?? '';
     final ssid = _ssidEditController?.text ?? '';
     final password = _passwordEditController?.text ?? '';
+    final noSurroundSpace = NoSurroundWhitespaceRule().validate(password);
+    final noUseUnsupportChar = AsciiRule().validate(password);
     if (ssid.isNotEmpty &&
         password.isNotEmpty &&
         password.length >= 8 &&
-        password.length <= 64) {
+        password.length <= 64 &&
+        noSurroundSpace &&
+        noUseUnsupportChar) {
       pnp.setStepStatus(index, status: StepViewStatus.data);
     } else {
       pnp.setStepStatus(index, status: StepViewStatus.error);
