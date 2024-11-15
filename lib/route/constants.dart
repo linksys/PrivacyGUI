@@ -27,7 +27,7 @@ class RoutePath {
   static const menuInstantAdmin = 'menuInstantAdmin';
   static const menuInstantSafety = 'menuInstantSafety';
   static const menuInstantPrivacy = 'menuInstantPrivacy';
-  static const menuAdvancedSettings = 'dashboardAdvancedSettings';
+  static const menuAdvancedSettings = 'menuAdvancedSettings';
 
   /// speed test
   static const dashboardSpeedTest = 'dashboardSpeedTest';
@@ -37,15 +37,13 @@ class RoutePath {
   /// settings
   static const settingsNotification = 'notificationSettings';
   static const settingsTimeZone = 'timeZone';
-  static const settingsInternet = 'internetSettings';
   static const settingsLocalNetwork = 'localNetworkSettings';
-  static const settingsPort = 'portSettings';
+  static const settingsAppsGaming = 'portSettings';
   static const settingsFirewall = 'firewall';
   static const settingsDMZ = 'dmz';
   static const settingsAdministration = "administration";
   static const settingsStaticRouting = "staticRouting";
-  static const settingsStaticRoutingList = "staticRoutingList";
-  static const settingsStaticRoutingDetail = "staticRoutingDetail";
+  static const settingsStaticRoutingRule = "staticRoutingRule";
 
   /// otp
   static const otpStart = 'otp';
@@ -76,10 +74,7 @@ class RoutePath {
   static const twoStepVerification = 'twoStepVerification';
 
   /// Internet Setting
-  static const mtuPicker = 'mtuPicker';
-  static const macClone = 'macClone';
-  static const connectionType = 'connectionType';
-  static const connectionTypeSelection = 'connectionTypeSelection';
+  static const internetSettings = 'internetSettings';
 
   /// Local Network
   static const dhcpReservation = 'dhcpReservation';
@@ -142,6 +137,9 @@ class RoutePath {
   /// Device picker
   static const devicePicker = 'devicePicker';
 
+  /// Card List edit
+  static const cardListEdit = 'cardListEdit';
+
   /// debug
   static const debug = 'debug';
 }
@@ -184,15 +182,13 @@ class RouteNamed {
   /// settings
   static const settingsNotification = 'notificationSettings';
   static const settingsTimeZone = 'timeZone';
-  static const settingsInternet = 'internetSettings';
   static const settingsLocalNetwork = 'localNetworkSettings';
-  static const settingsPort = 'portSettings';
+  static const settingsAppsGaming = 'portSettings';
   static const settingsFirewall = 'firewall';
   static const settingsDMZ = 'dmz';
   static const settingsAdministration = "administration";
   static const settingsStaticRouting = "staticRouting";
-  static const settingsStaticRoutingList = "staticRoutingList";
-  static const settingsStaticRoutingDetail = "staticRoutingDetail";
+  static const settingsStaticRoutingRule = "staticRoutingRule";
 
   /// otp
   static const otpStart = 'otp';
@@ -223,10 +219,7 @@ class RouteNamed {
   static const twoStepVerification = 'twoStepVerification';
 
   /// Internet Setting
-  static const mtuPicker = 'mtuPicker';
-  static const macClone = 'macClone';
-  static const connectionType = 'connectionType';
-  static const connectionTypeSelection = 'connectionTypeSelection';
+  static const internetSettings = 'internetSettings';
 
   /// Local Network
   static const dhcpReservation = 'dhcpReservation';
@@ -242,7 +235,7 @@ class RouteNamed {
   static const portRangeForwardingList = 'portRangeForwardingList';
   static const portRangeForwardingRule = 'portRangeForwardingRule';
   static const portRangeTriggeringList = 'portRangeTriggeringList';
-  static const protRangeTriggeringRule = 'portRangeTriggeringRule';
+  static const portRangeTriggeringRule = 'portRangeTriggeringRule';
   static const selectProtocol = 'selectProtocol';
 
   /// Ipv6 port service
@@ -286,6 +279,9 @@ class RouteNamed {
 
   /// Device picker
   static const devicePicker = 'devicePicker';
+
+  /// Card List edit
+  static const cardListEdit = 'cardListEdit';
 
   /// debug
   static const debug = 'debug';

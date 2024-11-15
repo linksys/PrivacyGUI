@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/constants/build_config.dart';
+import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -13,6 +15,8 @@ import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provi
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
 import 'package:privacy_gui/page/instant_safety/providers/_providers.dart';
 import 'package:privacy_gui/page/instant_topology/providers/instant_topology_provider.dart';
+import 'package:privacy_gui/providers/connectivity/connectivity_info.dart';
+import 'package:privacy_gui/providers/connectivity/connectivity_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
@@ -105,6 +109,14 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
     //     ref.watch(authProvider).value?.loginType == LoginType.remote;
     final safetyState = ref.watch(instantSafetyProvider);
     final privacyState = ref.watch(instantPrivacyProvider);
+    // External Speed test check
+    final routerType = ref.watch(connectivityProvider
+        .select((value) => value.connectivityInfo.routerType));
+    final isBehindRouter = routerType == RouterType.behindManaged ||
+        BuildConfig.forceCommandType == ForceCommand.local;
+    final isSpeedCheckSupported = ref
+        .read(dashboardManagerProvider.notifier)
+        .isHealthCheckModuleSupported('SpeedTest');
     return [
       AppSectionItemData(
           title: loc(context).incredibleWiFi,
@@ -165,6 +177,14 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
           onTap: () {
             _navigateTo(RouteNamed.menuInstantVerify);
           }),
+      if (isBehindRouter)
+        AppSectionItemData(
+            title: loc(context).externalSpeedText,
+            description: loc(context).speedTestInternetToDeviceDesc,
+            iconData: LinksysIcons.networkCheck,
+            onTap: () {
+              _navigateTo(RouteNamed.speedTestExternal);
+            }),
       // if (isCloudLogin)
       //   AppSectionItemData(
       //       title: loc(context).account,

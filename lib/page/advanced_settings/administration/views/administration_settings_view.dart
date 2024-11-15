@@ -96,35 +96,37 @@ class _AdministrationSettingsViewState
                           .setUPnPEnabled(value);
                     },
                   ),
-                  const Divider(),
-                  AppCheckbox(
-                    value: state.canUsersConfigure,
-                    semanticLabel: 'upnp allow users configure',
-                    text: loc(context).administrationUPnPAllowUsersConfigure,
-                    onChanged: (value) {
-                      if (value == null) {
-                        return;
-                      }
-                      ref
-                          .read(administrationSettingsProvider.notifier)
-                          .setCanUsersConfigure(value);
-                    },
-                  ),
-                  const AppGap.small2(),
-                  AppCheckbox(
-                    value: state.canUsersDisableWANAccess,
-                    semanticLabel: 'upnp allow users disable internet access',
-                    text: loc(context)
-                        .administrationUPnPAllowUsersDisableInternetAccess,
-                    onChanged: (value) {
-                      if (value == null) {
-                        return;
-                      }
-                      ref
-                          .read(administrationSettingsProvider.notifier)
-                          .setCanUsersDisableWANAccess(value);
-                    },
-                  ),
+                  if (state.isUPnPEnabled) ...[
+                    const Divider(),
+                    AppCheckbox(
+                      value: state.canUsersConfigure,
+                      semanticLabel: 'upnp allow users configure',
+                      text: loc(context).administrationUPnPAllowUsersConfigure,
+                      onChanged: (value) {
+                        if (value == null) {
+                          return;
+                        }
+                        ref
+                            .read(administrationSettingsProvider.notifier)
+                            .setCanUsersConfigure(value);
+                      },
+                    ),
+                    const AppGap.small2(),
+                    AppCheckbox(
+                      value: state.canUsersDisableWANAccess,
+                      semanticLabel: 'upnp allow users disable internet access',
+                      text: loc(context)
+                          .administrationUPnPAllowUsersDisableInternetAccess,
+                      onChanged: (value) {
+                        if (value == null) {
+                          return;
+                        }
+                        ref
+                            .read(administrationSettingsProvider.notifier)
+                            .setCanUsersDisableWANAccess(value);
+                      },
+                    ),
+                  ],
                 ],
               ),
             ),

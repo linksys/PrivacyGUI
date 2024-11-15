@@ -24,29 +24,32 @@ class StyledAppTabPageView extends ConsumerWidget {
   final bool pinned;
   final bool snap;
   final bool floating;
-  final bool isCloseStyle;
+  final AppBarStyle appBarStyle;
   final double? expandedHeight;
   final ScrollController? scrollController;
   final bool useMainPadding;
+  final EdgeInsets? padding;
+  final void Function(int index)? onTap;
 
-  const StyledAppTabPageView({
-    super.key,
-    this.title,
-    this.toolbarHeight = kDefaultToolbarHeight,
-    this.onBackTap,
-    this.backState = StyledBackState.enabled,
-    this.actions,
-    this.isCloseStyle = false,
-    required this.tabs,
-    this.headerContent,
-    this.tabContentViews = const [],
-    this.pinned = true,
-    this.snap = false,
-    this.floating = false,
-    this.expandedHeight,
-    this.scrollController,
-    this.useMainPadding = true,
-  });
+  const StyledAppTabPageView(
+      {super.key,
+      this.title,
+      this.toolbarHeight = kDefaultToolbarHeight,
+      this.onBackTap,
+      this.backState = StyledBackState.enabled,
+      this.actions,
+      this.appBarStyle = AppBarStyle.back,
+      required this.tabs,
+      this.headerContent,
+      this.tabContentViews = const [],
+      this.pinned = true,
+      this.snap = false,
+      this.floating = false,
+      this.expandedHeight,
+      this.scrollController,
+      this.useMainPadding = true,
+      this.padding,
+      this.onTap});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -84,15 +87,16 @@ class StyledAppTabPageView extends ConsumerWidget {
   Widget buildMainContent(BuildContext context, WidgetRef ref) {
     return AppPageView(
       // appBar: _buildAppBar(context, ref),
+      padding: padding,
       background: Theme.of(context).colorScheme.background,
-
       child: AppTabLayout(
         flexibleSpace: FlexibleSpaceBar(
           background: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildAppBar(context, ref),
-              headerContent ?? Container(),
+              if (appBarStyle != AppBarStyle.none)
+                _buildAppBar(context, ref) ?? SizedBox(height: 0),
+              headerContent ?? SizedBox(height: 0),
             ],
           ),
         ),
@@ -103,45 +107,50 @@ class StyledAppTabPageView extends ConsumerWidget {
         snap: snap,
         tabs: tabs,
         tabContentViews: tabContentViews,
+        onTap: onTap,
       ),
     );
   }
 
   bool isBackEnabled() => backState == StyledBackState.enabled;
 
-  LinksysAppBar _buildAppBar(BuildContext context, WidgetRef ref) {
+  LinksysAppBar? _buildAppBar(BuildContext context, WidgetRef ref) {
     final title = this.title;
-    return isCloseStyle
-        ? LinksysAppBar.withClose(
-            context: context,
-            title: title == null ? null : AppText.titleLarge(title),
-            toolbarHeight: toolbarHeight,
-            onBackTap: isBackEnabled()
-                ? (onBackTap ??
-                    () {
-                      context.pop();
-                    })
-                : null,
-            showBack: backState != StyledBackState.none,
-          )
-        : LinksysAppBar.withBack(
-            context: context,
-            title: title == null
-                ? null
-                : AppText.titleLarge(
-                    title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-            toolbarHeight: toolbarHeight,
-            onBackTap: isBackEnabled()
-                ? (onBackTap ??
-                    () {
-                      context.pop();
-                    })
-                : null,
-            showBack: backState != StyledBackState.none,
-            trailing: actions,
-          );
+    switch (appBarStyle) {
+      case AppBarStyle.back:
+        return LinksysAppBar.withBack(
+          context: context,
+          title: title == null
+              ? null
+              : AppText.titleLarge(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+          toolbarHeight: toolbarHeight,
+          onBackTap: isBackEnabled()
+              ? (onBackTap ??
+                  () {
+                    context.pop();
+                  })
+              : null,
+          showBack: backState != StyledBackState.none,
+        );
+      case AppBarStyle.close:
+        return LinksysAppBar.withClose(
+          context: context,
+          title: title == null ? null : AppText.titleLarge(title),
+          toolbarHeight: toolbarHeight,
+          onBackTap: isBackEnabled()
+              ? (onBackTap ??
+                  () {
+                    context.pop();
+                  })
+              : null,
+          showBack: backState != StyledBackState.none,
+        );
+      case AppBarStyle.none:
+        return null;
+    }
   }
 }

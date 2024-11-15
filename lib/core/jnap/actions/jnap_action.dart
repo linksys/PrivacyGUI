@@ -143,6 +143,8 @@ enum JNAPAction {
   setWANSettings,
   setLANSettings,
   setRoutingSettings,
+  releaseDHCPWANLease,
+  releaseDHCPIPv6WANLease,
   renewDHCPWANLease,
   renewDHCPIPv6WANLease,
   getEthernetPortConnections,

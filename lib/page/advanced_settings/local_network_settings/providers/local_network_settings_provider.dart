@@ -117,10 +117,17 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
         if (kIsWeb && previousIPAddress != newSettings.ipAddress) {
           ref.read(redirectionProvider.notifier).state =
               'https://${newSettings.ipAddress}';
+        } else {
+          throw error;
         }
       },
       test: (error) => error is JNAPSideEffectError,
     );
+  }
+
+  Future<List<DHCPReservation>> saveReservations(List<DHCPReservation> list) async {
+    await saveSettings(state.copyWith(dhcpReservationList: list));
+    return fetch(fetchRemote: true).then((state) => state.dhcpReservationList);
   }
 
   void updateHostName(String hostName) {

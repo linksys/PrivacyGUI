@@ -17,10 +17,6 @@ void main() {
     when(mockSinglePortForwardingListNotifier.build()).thenReturn(
         SinglePortForwardingListState.fromMap(
             singlePortForwardingListTestState));
-    when(mockSinglePortForwardingListNotifier.fetch())
-        .thenAnswer((realInvocation) async {
-      await Future.delayed(const Duration(seconds: 1));
-    });
   });
 
   testLocalizations('Single port forwarding list view - empty rule', (tester, locale) async {

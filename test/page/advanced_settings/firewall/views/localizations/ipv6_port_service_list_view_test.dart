@@ -16,7 +16,9 @@ void main() {
     when(mockIpv6PortServiceListNotifier.build()).thenReturn(
         Ipv6PortServiceListState.fromMap(ipv6PortServiceListTestState));
     when(mockIpv6PortServiceListNotifier.fetch())
-        .thenAnswer((realInvocation) async {});
+        .thenAnswer((realInvocation) async {
+      return Ipv6PortServiceListState.fromMap(ipv6PortServiceListTestState);
+    });
   });
   testLocalizations('IPv6 port service list view - with rules',
       (tester, locale) async {

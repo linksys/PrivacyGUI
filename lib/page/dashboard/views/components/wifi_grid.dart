@@ -150,8 +150,7 @@ class DashboardWiFiGrid extends ConsumerWidget {
         ],
       ),
       onTap: () {
-        context.pushNamed(RouteNamed.menuIncredibleWiFi,
-            extra: {'wifiIndex': index, 'guest': item.isGuest});
+        context.pushNamed(RouteNamed.menuIncredibleWiFi);
       },
     );
   }
