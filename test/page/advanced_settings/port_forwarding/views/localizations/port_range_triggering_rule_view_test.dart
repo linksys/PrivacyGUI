@@ -15,10 +15,7 @@ void main() {
     mockPortRangeTriggeringRuleNotifier = MockPortRangeTriggeringRuleNotifier();
     when(mockPortRangeTriggeringRuleNotifier.build())
         .thenReturn(const PortRangeTriggeringRuleState());
-    when(mockPortRangeTriggeringRuleNotifier.subnetMask)
-        .thenReturn('255.255.0.0');
-    when(mockPortRangeTriggeringRuleNotifier.ipAddress)
-        .thenReturn('192.168.1.1');
+    
   });
 
   testLocalizations('Port range triggering rule view', (tester, locale) async {

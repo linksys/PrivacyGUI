@@ -43,8 +43,7 @@ class RoutePath {
   static const settingsDMZ = 'dmz';
   static const settingsAdministration = "administration";
   static const settingsStaticRouting = "staticRouting";
-  static const settingsStaticRoutingList = "staticRoutingList";
-  static const settingsStaticRoutingDetail = "staticRoutingDetail";
+  static const settingsStaticRoutingRule = "staticRoutingRule";
 
   /// otp
   static const otpStart = 'otp';
@@ -138,6 +137,9 @@ class RoutePath {
   /// Device picker
   static const devicePicker = 'devicePicker';
 
+  /// Card List edit
+  static const cardListEdit = 'cardListEdit';
+
   /// debug
   static const debug = 'debug';
 }
@@ -186,8 +188,7 @@ class RouteNamed {
   static const settingsDMZ = 'dmz';
   static const settingsAdministration = "administration";
   static const settingsStaticRouting = "staticRouting";
-  static const settingsStaticRoutingList = "staticRoutingList";
-  static const settingsStaticRoutingDetail = "staticRoutingDetail";
+  static const settingsStaticRoutingRule = "staticRoutingRule";
 
   /// otp
   static const otpStart = 'otp';
@@ -234,7 +235,7 @@ class RouteNamed {
   static const portRangeForwardingList = 'portRangeForwardingList';
   static const portRangeForwardingRule = 'portRangeForwardingRule';
   static const portRangeTriggeringList = 'portRangeTriggeringList';
-  static const protRangeTriggeringRule = 'portRangeTriggeringRule';
+  static const portRangeTriggeringRule = 'portRangeTriggeringRule';
   static const selectProtocol = 'selectProtocol';
 
   /// Ipv6 port service
@@ -278,6 +279,9 @@ class RouteNamed {
 
   /// Device picker
   static const devicePicker = 'devicePicker';
+
+  /// Card List edit
+  static const cardListEdit = 'cardListEdit';
 
   /// debug
   static const debug = 'debug';

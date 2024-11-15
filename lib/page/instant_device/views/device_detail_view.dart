@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/utils/icon_device_category.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
@@ -220,7 +221,9 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
               horizontal: Spacing.large2, vertical: Spacing.medium),
           title: loc(context).ipAddress,
           description: _formatEmptyValue(state.item.ipv4Address),
-          trailing: state.item.isOnline && isReservedIp != null
+          trailing: state.item.isOnline &&
+                  state.item.type != WifiConnectionType.guest &&
+                  isReservedIp != null
               ? AppLoadableWidget.textButton(
                   title: isReservedIp == true
                       ? loc(context).releaseReservedIp

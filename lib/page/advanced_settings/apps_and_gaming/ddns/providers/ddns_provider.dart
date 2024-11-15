@@ -24,7 +24,7 @@ class DDNSNotifier extends Notifier<DDNSState> {
     );
   }
 
-  Future<DDNSState> fetch({bool force = false}) async {
+  Future<DDNSState> fetch([bool force = false]) async {
     final builder = JNAPTransactionBuilder(commands: [
       const MapEntry(JNAPAction.getDDNSSettings, {}),
       const MapEntry(JNAPAction.getSupportedDDNSProviders, {}),
@@ -104,7 +104,7 @@ class DDNSNotifier extends Notifier<DDNSState> {
                   : null,
             ).toMap()
               ..removeWhere((key, value) => value == null))
-        .then((value) => fetch(force: true));
+        .then((value) => fetch(true));
   }
 
   void setProvider(String value) {

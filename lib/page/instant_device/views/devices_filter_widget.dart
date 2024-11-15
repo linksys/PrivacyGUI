@@ -15,10 +15,12 @@ import 'package:privacygui_widgets/widgets/panel/general_section.dart';
 
 class DevicesFilterWidget extends ConsumerStatefulWidget {
   final List<String>? preselectedNodeId;
+  final bool onlineOnly;
 
   const DevicesFilterWidget({
     super.key,
     this.preselectedNodeId,
+    this.onlineOnly = false,
   });
 
   @override
@@ -87,7 +89,7 @@ class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
                   title: loc(context).byConnection,
                   dataList: [
                     (loc(context).online, true),
-                    (loc(context).offline, false)
+                    if (!widget.onlineOnly) (loc(context).offline, false)
                   ],
                   chipName: (data) => data?.$1 ?? '',
                   checkIsSelected: (data) => selectConnection == (data?.$2),

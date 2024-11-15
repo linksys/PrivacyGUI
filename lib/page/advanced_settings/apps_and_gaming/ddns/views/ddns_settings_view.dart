@@ -41,7 +41,7 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
     super.initState();
 
     doSomethingWithSpinner(
-            context, ref.read(ddnsProvider.notifier).fetch(force: true))
+            context, ref.read(ddnsProvider.notifier).fetch(false))
         .then((state) {
       setState(() {
         _preserveState = state;
@@ -82,10 +82,18 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
           desktop: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(width: 6.col, child: _ddnsProvideSelector(state)),
+              SizedBox(
+                  width: ResponsiveLayout.isOverMedimumLayout(context)
+                      ? 6.col
+                      : 4.col,
+                  child: _ddnsProvideSelector(state)),
               if (state.provider is! NoDDNSProvider) ...[
                 AppGap.gutter(),
-                SizedBox(width: 6.col, child: _buildStatusCell(state))
+                SizedBox(
+                    width: ResponsiveLayout.isOverMedimumLayout(context)
+                        ? 6.col
+                        : 4.col,
+                    child: _buildStatusCell(state))
               ],
             ],
           ),

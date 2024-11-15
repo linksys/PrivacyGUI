@@ -3,8 +3,10 @@ import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
+import 'package:privacy_gui/core/jnap/models/firmware_update_status_nodes.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
+import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
@@ -12,6 +14,7 @@ import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/instant_topology/_instant_topology.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:collection/collection.dart';
 
 final topologySelectedIdProvider = StateProvider((ref) => '');
 final instantTopologyProvider =
@@ -154,8 +157,19 @@ class InstantTopologyNotifier extends Notifier<InstantTopologyState> {
     String fwVersion = device.unit.firmwareVersion ?? '';
     String ipAddress = device.connections.firstOrNull?.ipAddress ?? '';
     String hardwareVersion = device.model.hardwareVersion ?? '1';
-
     int? signalStrength = device.signalDecibels;
+
+    final updateInfo = (ref.read(firmwareUpdateProvider).nodesStatus?.length ??
+                0) >
+            1
+        ? ref.watch(firmwareUpdateProvider.select((value) => value.nodesStatus
+            ?.firstWhereOrNull((element) => element is NodesFirmwareUpdateStatus
+                ? element.deviceUUID == deviceId
+                : false)))
+        : ref.watch(firmwareUpdateProvider
+            .select((value) => value.nodesStatus?.firstOrNull));
+    final isFwUpToDate = updateInfo?.availableUpdate == null;
+
     final data = TopologyModel(
       deviceId: deviceId,
       location: location,
@@ -173,6 +187,7 @@ class InstantTopologyNotifier extends Notifier<InstantTopologyState> {
       fwVersion: fwVersion,
       ipAddress: ipAddress,
       hardwareVersion: hardwareVersion,
+      fwUpToDate: isFwUpToDate,
     );
     return RouterTopologyNode(
       data: data,

@@ -22,7 +22,7 @@ final advancedSettings = [
         name: RouteNamed.dhcpReservation,
         path: RoutePath.dhcpReservation,
         config: LinksysRouteConfig(
-          column: ColumnGrid(column: 9),
+          column: ColumnGrid(column: 12),
         ),
         builder: (context, state) => DHCPReservationsView(
           args: state.extra as Map<String, dynamic>? ?? {},
@@ -109,7 +109,7 @@ final advancedSettings = [
         ),
       ),
       LinksysRoute(
-        name: RouteNamed.protRangeTriggeringRule,
+        name: RouteNamed.portRangeTriggeringRule,
         path: RoutePath.protRangeTriggeringRule,
         config: LinksysRouteConfig(
           column: ColumnGrid(column: 9),
@@ -134,7 +134,7 @@ final advancedSettings = [
             name: RouteNamed.ipv6PortServiceList,
             path: RoutePath.ipv6PortServiceList,
             config: LinksysRouteConfig(
-              column: ColumnGrid(column: 9),
+              column: ColumnGrid(column: 12),
             ),
             builder: (context, state) => Ipv6PortServiceListView(
                   args: state.extra as Map<String, dynamic>? ?? {},
@@ -176,34 +176,32 @@ final advancedSettings = [
     name: RouteNamed.settingsStaticRouting,
     path: RoutePath.settingsStaticRouting,
     config: LinksysRouteConfig(
-      column: ColumnGrid(column: 9),
+      column: ColumnGrid(column: 12),
     ),
     builder: (context, state) => StaticRoutingView(
       args: state.extra as Map<String, dynamic>? ?? {},
     ),
     routes: [
       LinksysRoute(
-        name: RouteNamed.settingsStaticRoutingList,
-        path: RoutePath.settingsStaticRoutingList,
+        name: RouteNamed.settingsStaticRoutingRule,
+        path: RoutePath.settingsStaticRoutingRule,
         config: LinksysRouteConfig(
-          column: ColumnGrid(column: 9),
+          column: ColumnGrid(column: 6),
         ),
-        builder: (context, state) => StaticRoutingListView(
+        builder: (context, state) => StaticRoutingRuleView(
           args: state.extra as Map<String, dynamic>? ?? {},
         ),
-        routes: [
-          LinksysRoute(
-            name: RouteNamed.settingsStaticRoutingDetail,
-            path: RoutePath.settingsStaticRoutingDetail,
-            config: LinksysRouteConfig(
-              column: ColumnGrid(column: 6),
-            ),
-            builder: (context, state) => StaticRoutingDetailView(
-              args: state.extra as Map<String, dynamic>? ?? {},
-            ),
-          ),
-        ],
       ),
     ],
+  ),
+  LinksysRoute(
+    name: RouteNamed.cardListEdit,
+    path: RoutePath.cardListEdit,
+    config: LinksysRouteConfig(
+      column: ColumnGrid(column: 9),
+    ),
+    builder: (context, state) => EditableCardListEditView(
+      args: state.extra as Map<String, dynamic>? ?? {},
+    ),
   ),
 ];

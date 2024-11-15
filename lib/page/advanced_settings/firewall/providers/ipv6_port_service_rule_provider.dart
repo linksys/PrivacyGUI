@@ -1,70 +1,70 @@
+import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/models/ipv6_firewall_rule.dart';
-import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/providers/port_util_mixin.dart';
 import 'package:privacy_gui/page/advanced_settings/firewall/providers/ipv6_port_service_rule_state.dart';
-import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/providers/consts.dart';
 
 final ipv6PortServiceRuleProvider =
     NotifierProvider<Ipv6PortServiceRuleNotifier, Ipv6PortServiceRuleState>(
         () => Ipv6PortServiceRuleNotifier());
 
-class Ipv6PortServiceRuleNotifier extends Notifier<Ipv6PortServiceRuleState> {
+class Ipv6PortServiceRuleNotifier extends Notifier<Ipv6PortServiceRuleState>
+    with PortUtilMixin {
   @override
   Ipv6PortServiceRuleState build() => const Ipv6PortServiceRuleState();
 
-  Future goAdd(List<IPv6FirewallRule> rules) {
-    return fetch().then(
-        (value) => state = state.copyWith(mode: RuleMode.adding, rules: rules));
+  void init(
+    List<IPv6FirewallRule> rules,
+    IPv6FirewallRule? rule,
+    int? index,
+  ) {
+    state = state.copyWith(
+      rules: rules,
+      rule: () => rule,
+      editIndex: () => index,
+    );
   }
 
-  Future goEdit(List<IPv6FirewallRule> rules, IPv6FirewallRule rule) {
-    return fetch().then((value) => state =
-        state.copyWith(mode: RuleMode.editing, rules: rules, rule: rule));
+  void updateRule(IPv6FirewallRule? rule) {
+    state = state.copyWith(rule: () => rule);
   }
 
-  Future fetch() async {}
-
-  Future<bool> save(IPv6FirewallRule rule) async {
-    final mode = state.mode;
-    final rules = List<IPv6FirewallRule>.from(state.rules);
-    if (mode == RuleMode.adding) {
-      rules.add(rule);
-    } else if (mode == RuleMode.editing) {
-      int index = state.rules.indexOf(state.rule!);
-      rules.replaceRange(index, index + 1, [rule]);
-    }
-    final repo = ref.read(routerRepositoryProvider);
-    final result = await repo.send(
-      JNAPAction.setIPv6FirewallRules,
-      auth: true,
-      data: {
-        'rules': rules.map((e) => e.toMap()).toList(),
-      },
-    ).then((value) => true);
-    return result;
-  }
-
-  Future<bool> delete() async {
-    final mode = state.mode;
-    if (mode == RuleMode.editing) {
-      final rules = List<IPv6FirewallRule>.from(state.rules)
-        ..removeWhere((element) => element == state.rule);
-      final repo = ref.read(routerRepositoryProvider);
-      final result = await repo.send(
-        JNAPAction.setIPv6FirewallRules,
-        auth: true,
-        data: {
-          'rules': rules.map((e) => e.toMap()).toList(),
-        },
-      ).then((value) => true);
-      return result;
-    } else {
+  bool isRuleValid() {
+    final rule = state.rule;
+    if (rule == null) {
       return false;
     }
+    return rule.description.isNotEmpty &&
+        isDeviceIpValidate(rule.ipv6Address) &&
+        isPortRangeValid(
+          rule.portRanges.first.firstPort,
+          rule.portRanges.first.lastPort,
+        ) &&
+        !isPortConflict(
+          rule.portRanges.first.firstPort,
+          rule.portRanges.first.lastPort,
+          rule.portRanges.first.protocol,
+        );
   }
 
-  bool isEdit() {
-    return state.mode == RuleMode.editing;
+  bool isDeviceIpValidate(String ipAddress) {
+    return ipAddress.isNotEmpty;
+  }
+
+  bool isPortRangeValid(int firstPort, int lastPort) {
+    return lastPort - firstPort >= 0;
+  }
+
+  bool isPortConflict(int firstPort, int lastPort, String protocol) {
+    return state.rules
+        .whereIndexed((index, rule) => index != state.editIndex)
+        .any((rule) =>
+            doesRangeOverlap(
+              rule.portRanges.first.firstPort,
+              rule.portRanges.first.lastPort,
+              firstPort,
+              lastPort,
+            ) &&
+            (protocol == rule.portRanges.first.protocol || protocol == 'Both'));
   }
 }

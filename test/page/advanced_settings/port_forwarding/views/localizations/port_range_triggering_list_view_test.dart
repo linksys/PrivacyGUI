@@ -19,6 +19,7 @@ void main() {
     when(mockPortRangeTriggeringListNotifier.fetch())
         .thenAnswer((realInvocation) async {
       await Future.delayed(const Duration(seconds: 1));
+      return PortRangeTriggeringListState();
     });
   });
   testLocalizations('Port range triggering list view - empty rule',

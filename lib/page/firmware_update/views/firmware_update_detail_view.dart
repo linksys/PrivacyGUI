@@ -14,6 +14,7 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class FirmwareUpdateDetailView extends ConsumerStatefulWidget {
@@ -69,58 +70,65 @@ class _FirmwareUpdateDetailViewState
         ? _updatingProgressView(ongoingList)
         : StyledAppPageView(
             title: loc(context).firmwareUpdate,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AppText.bodyLarge(loc(context).firmwareUpdateDesc1),
-                const AppGap.medium(),
-                AppText.bodyLarge(loc(context).firmwareUpdateDesc2),
-                const AppGap.large2(),
-                ListView.separated(
-                  shrinkWrap: true,
-                  itemCount: statusRecords.length,
-                  itemBuilder: (context, index) {
-                    final nodeDevice = statusRecords[index].$1;
-                    final currentVersion =
-                        nodeDevice.unit.firmwareVersion ?? 'Unknown';
-                    final newVersion = statusRecords[index]
-                        .$2
-                        .availableUpdate
-                        ?.firmwareVersion;
-                    final modelNumber = nodeDevice.modelNumber ?? '';
-                    final routerImage = Image(
-                      height: 40,
-                      image: CustomTheme.of(context).images.devices.getByName(
-                            routerIconTestByModel(
-                              modelNumber: modelNumber,
-                            ),
-                          ),
-                    );
-                    return FirmwareUpdateNodeCard(
-                      image: routerImage,
-                      title: nodeDevice.getDeviceName(),
-                      model: modelNumber,
-                      currentVersion: currentVersion,
-                      newVersion: newVersion,
-                    );
-                  },
-                  separatorBuilder: (BuildContext context, int index) =>
-                      const AppGap.medium(),
-                ),
-                if (isUpdateAvailable)
-                  Padding(
-                    padding: const EdgeInsets.only(top: Spacing.large5),
-                    child: AppFilledButton(
-                      loc(context).updateAll,
-                      onTap: () {
-                        ref
-                            .read(firmwareUpdateProvider.notifier)
-                            .updateFirmware();
+            child: AppBasicLayout(
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppText.bodyLarge(loc(context).firmwareUpdateDesc1),
+                  const AppGap.medium(),
+                  AppText.bodyLarge(loc(context).firmwareUpdateDesc2),
+                  const AppGap.large2(),
+                  Expanded(
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      physics: ScrollPhysics(),
+                      itemCount: statusRecords.length,
+                      itemBuilder: (context, index) {
+                        final nodeDevice = statusRecords[index].$1;
+                        final currentVersion =
+                            nodeDevice.unit.firmwareVersion ?? 'Unknown';
+                        final newVersion = statusRecords[index]
+                            .$2
+                            .availableUpdate
+                            ?.firmwareVersion;
+                        final modelNumber = nodeDevice.modelNumber ?? '';
+                        final routerImage = Image(
+                          height: 40,
+                          image:
+                              CustomTheme.of(context).images.devices.getByName(
+                                    routerIconTestByModel(
+                                      modelNumber: modelNumber,
+                                    ),
+                                  ),
+                        );
+                        return FirmwareUpdateNodeCard(
+                          image: routerImage,
+                          title: nodeDevice.getDeviceName(),
+                          model: modelNumber,
+                          currentVersion: currentVersion,
+                          newVersion: newVersion,
+                        );
                       },
+                      separatorBuilder: (BuildContext context, int index) =>
+                          const AppGap.medium(),
                     ),
                   ),
-              ],
+                ],
+              ),
+              footer: isUpdateAvailable
+                  ? Padding(
+                      padding: const EdgeInsets.only(top: Spacing.large5),
+                      child: AppFilledButton(
+                        loc(context).updateAll,
+                        onTap: () {
+                          ref
+                              .read(firmwareUpdateProvider.notifier)
+                              .updateFirmware();
+                        },
+                      ),
+                    )
+                  : null,
             ),
           );
   }

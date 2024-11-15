@@ -4,20 +4,19 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/core/jnap/models/port_range_forwarding_rule.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/_ports.dart';
-import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/providers/consts.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/views/widgets/protocol_utils.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/utils.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
+import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
 class PortRangeForwardingRuleView extends ArgumentsConsumerStatelessView {
   const PortRangeForwardingRuleView({super.key, super.args});
@@ -49,39 +48,47 @@ class _AddRuleContentViewState
       TextEditingController();
   final TextEditingController _deviceIpAddressController =
       TextEditingController();
-  String _protocol = 'Both';
-  bool _isEnabled = false;
-  List<PortRangeForwardingRule> _rules = [];
   String? _ipError;
   String? _portError;
+  bool _isEdit = false;
 
   @override
   void initState() {
     _notifier = ref.read(portRangeForwardingRuleProvider.notifier);
-    _rules = widget.args['rules'] ?? [];
-    final rule = widget.args['edit'] as PortRangeForwardingRule?;
-    if (rule != null) {
-      _notifier.goEdit(_rules, rule).then((_) {
-        _ruleNameController.text = rule.description;
-        _firstExternalPortController.text = '${rule.firstExternalPort}';
-        _lastExternalPortController.text = '${rule.lastExternalPort}';
-        _deviceIpAddressController.text = rule.internalServerIPAddress;
-        setState(() {
-          _isEnabled = rule.isEnabled;
-          _protocol = rule.protocol;
-        });
-      });
-    } else {
-      _notifier.goAdd(_rules).then((_) {
-        final prefixIp =
-            NetworkUtils.getIpPrefix(_notifier.ipAddress, _notifier.subnetMask);
-        _deviceIpAddressController.text = prefixIp.replaceAll('.0', '');
+    final state = ref.read(portRangeForwardingListProvider);
+    final routerIp = state.routerIp;
+    final subnetMask = state.subnetMask;
+    final rules = widget.args['items'] ?? [];
+    var rule = widget.args['edit'] as PortRangeForwardingRule?;
+    int? index;
 
-        setState(() {
-          _isEnabled = true;
-        });
-      });
+    if (rule != null) {
+      _isEdit = true;
+
+      _ruleNameController.text = rule.description;
+      _firstExternalPortController.text = '${rule.firstExternalPort}';
+      _lastExternalPortController.text = '${rule.lastExternalPort}';
+      _deviceIpAddressController.text = rule.internalServerIPAddress;
+      index = rules.indexOf(rule);
+    } else {
+      _isEdit = false;
+
+      final prefixIp =
+          NetworkUtils.getIpPrefix(state.routerIp, state.subnetMask);
+      _deviceIpAddressController.text = prefixIp.replaceAll('.0', '');
+      rule = PortRangeForwardingRule(
+        isEnabled: true,
+        firstExternalPort: 0,
+        protocol: 'Both',
+        internalServerIPAddress: prefixIp,
+        lastExternalPort: 0,
+        description: '',
+      );
     }
+
+    doSomethingWithSpinner(context, Future.doWhile(() => !mounted)).then((_) {
+      _notifier.init(rules, rule, index, routerIp, subnetMask);
+    });
     super.initState();
   }
 
@@ -102,56 +109,18 @@ class _AddRuleContentViewState
       scrollable: true,
       title: loc(context).portRangeForwarding,
       bottomBar: PageBottomBar(
-        isPositiveEnabled: _isSaveEnable(),
-        isNegitiveEnabled: state.mode == RuleMode.editing ? true : null,
-        negitiveLable: loc(context).delete,
+        isPositiveEnabled: _notifier.isRuleValid(),
         onPositiveTap: () {
-          final rule = PortRangeForwardingRule(
-              isEnabled: _isEnabled,
-              firstExternalPort: int.parse(_firstExternalPortController.text),
-              protocol: _protocol,
-              internalServerIPAddress: _deviceIpAddressController.text,
-              lastExternalPort: int.parse(_lastExternalPortController.text),
-              description: _ruleNameController.text);
-          doSomethingWithSpinner(
-            context,
-            _notifier.save(rule),
-          ).then(
-            (value) {
-              if (value == true) {
-                showSuccessSnackBar(
-                    context,
-                    _notifier.isEdit()
-                        ? loc(context).ruleUpdated
-                        : loc(context).ruleAdded);
-
-                context.pop(true);
-              } else {
-                showFailedSnackBar(context, loc(context).failedExclamation);
-              }
-            },
-          );
-        },
-        onNegitiveTap: () {
-          doSomethingWithSpinner(
-            context,
-            _notifier.delete(),
-          ).then((value) {
-            if (value == true) {
-              showSimpleSnackBar(context, loc(context).ruleDeleted);
-              context.pop(true);
-            } else {
-              showFailedSnackBar(context, loc(context).failedExclamation);
-            }
-          });
+          final rule = ref.read(portRangeForwardingRuleProvider).rule;
+          context.pop(rule);
         },
       ),
-      child: AppBasicLayout(
-        content: Column(
+      child: AppCard(
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const AppGap.large2(),
-            if (state.mode == RuleMode.editing)
+            if (_isEdit)
               ..._buildEditContents(state)
             else
               ..._buildAddContents(state)
@@ -168,14 +137,14 @@ class _AddRuleContentViewState
   List<Widget> _buildEditContents(PortRangeForwardingRuleState state) {
     return [
       AppListCard(
+        showBorder: false,
+        padding: EdgeInsets.zero,
         title: AppText.labelLarge(loc(context).ruleEnabled),
         trailing: AppSwitch(
           semanticLabel: 'rule enabled',
-          value: _isEnabled,
+          value: state.rule?.isEnabled ?? true,
           onChanged: (value) {
-            setState(() {
-              _isEnabled = value;
-            });
+            _notifier.updateRule(state.rule?.copyWith(isEnabled: value));
           },
         ),
       ),
@@ -185,31 +154,70 @@ class _AddRuleContentViewState
   }
 
   List<Widget> buildInputForms() {
-    final submaskToken = _notifier.subnetMask.split('.');
-
+    final state = ref.watch(portRangeForwardingRuleProvider);
+    final subnetMask = state.subnetMask;
+    final submaskToken = subnetMask.split('.');
     return [
       AppTextField.outline(
-        headerText: loc(context).ruleName,
+        headerText: loc(context).applicationName,
         controller: _ruleNameController,
         onFocusChanged: _onFocusChange,
+        onChanged: (value) {
+          _notifier.updateRule(state.rule?.copyWith(description: value));
+        },
       ),
       const AppGap.large2(),
-      AppTextField.minMaxNumber(
-        border: const OutlineInputBorder(),
-        headerText: loc(context).startPort,
-        controller: _firstExternalPortController,
-        max: 65535,
-        onFocusChanged: _onPortFocusChange,
-        errorText: _portError != null ? '' : null,
+      Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: AppTextField.minMaxNumber(
+              border: const OutlineInputBorder(),
+              headerText: loc(context).startPort,
+              controller: _firstExternalPortController,
+              max: 65535,
+              onFocusChanged: (value) =>
+                  _onPortFocusChange(value, state.rule?.protocol ?? ''),
+              errorText: _portError != null ? '' : null,
+              onChanged: (value) {
+                _notifier.updateRule(state.rule
+                    ?.copyWith(firstExternalPort: int.tryParse(value) ?? 0));
+              },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(
+                left: Spacing.small2,
+                right: Spacing.small2,
+                top: Spacing.medium),
+            child: AppText.bodyMedium(loc(context).to),
+          ),
+          Expanded(
+            child: AppTextField.minMaxNumber(
+              border: const OutlineInputBorder(),
+              headerText: loc(context).endPort,
+              controller: _lastExternalPortController,
+              max: 65535,
+              onFocusChanged: (value) =>
+                  _onPortFocusChange(value, state.rule?.protocol ?? ''),
+              errorText: _portError,
+              onChanged: (value) {
+                _notifier.updateRule(state.rule
+                    ?.copyWith(lastExternalPort: int.tryParse(value) ?? 0));
+              },
+            ),
+          ),
+        ],
       ),
       const AppGap.large2(),
-      AppTextField.minMaxNumber(
-        border: const OutlineInputBorder(),
-        headerText: loc(context).endPort,
-        controller: _lastExternalPortController,
-        max: 65535,
-        onFocusChanged: _onPortFocusChange,
-        errorText: _portError,
+      AppDropdownButton(
+        title: loc(context).protocol,
+        initial: state.rule?.protocol ?? 'Both',
+        items: const ['TCP', 'UDP', 'Both'],
+        label: (e) => getProtocolTitle(context, e),
+        onChanged: (value) {
+          _notifier.updateRule(state.rule?.copyWith(protocol: value));
+        },
       ),
       const AppGap.large2(),
       AppText.labelMedium(loc(context).ipAddress),
@@ -232,6 +240,10 @@ class _AddRuleContentViewState
           }
         },
         errorText: _ipError,
+        onChanged: (value) {
+          _notifier
+              .updateRule(state.rule?.copyWith(internalServerIPAddress: value));
+        },
       ),
       const AppGap.large2(),
       AppTextButton(
@@ -247,38 +259,10 @@ class _AddRuleContentViewState
           }
         },
       ),
-      const AppGap.large2(),
-      AppListCard(
-        title: AppText.labelLarge(loc(context).protocol),
-        description: AppText.bodyLarge(getProtocolTitle(context, _protocol)),
-        trailing: const Icon(
-          LinksysIcons.edit,
-          semanticLabel: 'edit',
-        ),
-        onTap: () async {
-          String? protocol = await showSelectProtocolModal(
-            context,
-            _protocol,
-          );
-          if (protocol != null) {
-            setState(() {
-              _protocol = protocol;
-            });
-          }
-        },
-      ),
     ];
   }
 
-  bool _isSaveEnable() {
-    return _ruleNameController.text.isNotEmpty &&
-        _firstExternalPortController.text.isNotEmpty &&
-        _lastExternalPortController.text.isNotEmpty &&
-        _notifier.isDeviceIpValidate(_deviceIpAddressController.text) &&
-        _portError == null;
-  }
-
-  void _onPortFocusChange(bool focus) {
+  void _onPortFocusChange(bool focus, String protocol) {
     if (!focus) {
       if (_firstExternalPortController.text.isEmpty ||
           _lastExternalPortController.text.isEmpty) {
@@ -286,9 +270,9 @@ class _AddRuleContentViewState
       }
       final firstPort = int.tryParse(_firstExternalPortController.text) ?? 0;
       final lastPort = int.tryParse(_lastExternalPortController.text) ?? 0;
-      bool isValidPortRange = lastPort - firstPort >= 0;
+      bool isValidPortRange = _notifier.isPortRangeValid(firstPort, lastPort);
       bool isRuleOverlap =
-          _notifier.isPortConflict(firstPort, lastPort, _protocol);
+          _notifier.isPortConflict(firstPort, lastPort, protocol);
       _portError = !isValidPortRange
           ? loc(context).portRangeError
           : isRuleOverlap

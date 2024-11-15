@@ -3,7 +3,7 @@ import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/models/get_routing_settings.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_state.dart';
-import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_detail_view.dart';
+import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_rule_view.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import '../../../../../common/test_responsive_widget.dart';
 import '../../../../../common/testable_router.dart';
@@ -27,13 +27,12 @@ void main() {
         staticRoutingProvider.overrideWith(() => mockStaticRoutingNotifier),
       ],
       locale: locale,
-      child: const StaticRoutingDetailView(),
+      child: const StaticRoutingRuleView(),
     );
     await tester.pumpWidget(widget);
   });
 
-  testLocalizations(
-      'Static routing detail view test - Edit LAN interface item',
+  testLocalizations('Static routing detail view test - Edit LAN interface item',
       (tester, locale) async {
     when(mockStaticRoutingNotifier.build())
         .thenReturn(StaticRoutingState.empty());
@@ -43,7 +42,7 @@ void main() {
         staticRoutingProvider.overrideWith(() => mockStaticRoutingNotifier),
       ],
       locale: locale,
-      child: StaticRoutingDetailView(
+      child: StaticRoutingRuleView(
         args: {
           'currentSetting': NamedStaticRouteEntry.fromMap(staticRoutingItem1),
         },
@@ -63,7 +62,7 @@ void main() {
         staticRoutingProvider.overrideWith(() => mockStaticRoutingNotifier),
       ],
       locale: locale,
-      child: StaticRoutingDetailView(
+      child: StaticRoutingRuleView(
         args: {
           'currentSetting': NamedStaticRouteEntry.fromMap(staticRoutingItem1),
         },

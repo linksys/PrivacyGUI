@@ -27,6 +27,8 @@ String? errorCodeHelper(BuildContext context, String? code) {
     errorAdminAccountLocked => loc(context).localLoginTooManyAttemptsTitle,
     errorInvalidDestinationMACAddress =>
       loc(context).invalidDestinationMacAddress,
+    errorInvalidDestinationIpAddress =>
+      loc(context).invalidDestinationIpAddress,
     errorInvalidGateway => loc(context).invalidGatewayIpAddress,
     errorInvalidIPAddress => loc(context).invalidIpAddress,
     errorInvalidPrimaryDNSServer => loc(context).invalidDns,
@@ -35,6 +37,7 @@ String? errorCodeHelper(BuildContext context, String? code) {
     errorInvalidMACAddress => loc(context).invalidMACAddress,
     errorInvalidInput => loc(context).invalidInput,
     errorInvalidServer => loc(context).errorInvalidServer,
+    errorMissingDestination => loc(context).invalidDestinationIpAddress,
     _ => unknownHandle(code),
   };
 }

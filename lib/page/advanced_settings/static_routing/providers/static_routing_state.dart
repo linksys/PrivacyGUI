@@ -1,11 +1,18 @@
 import 'dart:convert';
+
 import 'package:equatable/equatable.dart';
+
 import 'package:privacy_gui/core/jnap/models/get_routing_settings.dart';
 
 class StaticRoutingState extends Equatable {
   final GetRoutingSettings setting;
+  final String routerIp;
+  final String subnetMask;
+
   const StaticRoutingState({
     required this.setting,
+    this.routerIp = '192.168.1.1',
+    this.subnetMask = '255.255.255.0',
   });
 
   factory StaticRoutingState.empty() => const StaticRoutingState(
@@ -19,38 +26,46 @@ class StaticRoutingState extends Equatable {
 
   StaticRoutingState copyWith({
     GetRoutingSettings? setting,
+    String? routerIp,
+    String? subnetMask,
   }) {
     return StaticRoutingState(
       setting: setting ?? this.setting,
+      routerIp: routerIp ?? this.routerIp,
+      subnetMask: subnetMask ?? this.subnetMask,
     );
   }
 
   Map<String, dynamic> toMap() {
-    return <String, dynamic>{
+    return {
       'setting': setting.toMap(),
+      'routerIp': routerIp,
+      'subnetMask': subnetMask,
     };
   }
 
   factory StaticRoutingState.fromMap(Map<String, dynamic> map) {
     return StaticRoutingState(
-      setting: GetRoutingSettings.fromMap(
-        map['setting'] as Map<String, dynamic>,
-      ),
+      setting: GetRoutingSettings.fromMap(map['setting']),
+      routerIp: map['routerIp'] ?? '',
+      subnetMask: map['subnetMask'] ?? '',
     );
   }
 
   String toJson() => json.encode(toMap());
 
   factory StaticRoutingState.fromJson(String source) =>
-      StaticRoutingState.fromMap(
-        json.decode(source) as Map<String, dynamic>,
-      );
+      StaticRoutingState.fromMap(json.decode(source));
 
   @override
   bool get stringify => true;
 
   @override
-  List<Object> get props => [setting];
+  List<Object> get props => [setting, routerIp, subnetMask];
+
+  @override
+  String toString() =>
+      'StaticRoutingState(setting: $setting, routerIp: $routerIp, subnetMask: $subnetMask)';
 }
 
 enum RoutingSettingNetwork {

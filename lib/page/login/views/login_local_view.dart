@@ -39,6 +39,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
   int? _remainingAttempts;
   Timer? _timer;
   bool isCountdownJustFinished = false;
+  bool _showPassword = false;
   late AuthNotifier auth;
 
   final TextEditingController _passwordController = TextEditingController();
@@ -199,7 +200,8 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
                       errorText: _errorMessage,
                     ),
                   ),
-                  if (_passwordHint != null)
+                  if (_passwordHint != null &&
+                      _passwordHint?.isNotEmpty == true)
                     Theme(
                       data: Theme.of(context)
                           .copyWith(dividerColor: Colors.transparent),
@@ -207,7 +209,9 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
                         width: 200,
                         child: ExpansionTile(
                           title: AppText.labelMedium(
-                            getAppLocalizations(context).showHint,
+                            _showPassword
+                                ? loc(context).hideHint
+                                : loc(context).showHint,
                             color: Theme.of(context).colorScheme.primary,
                           ),
                           tilePadding: EdgeInsets.zero,
@@ -215,6 +219,11 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
                           trailing: const SizedBox(),
                           expandedAlignment: Alignment.centerLeft,
                           expandedCrossAxisAlignment: CrossAxisAlignment.start,
+                          onExpansionChanged: (value) {
+                            setState(() {
+                              _showPassword = value;
+                            });
+                          },
                           children: [AppText.bodySmall(_passwordHint!)],
                         ),
                       ),

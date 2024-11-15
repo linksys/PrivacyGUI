@@ -14,5 +14,7 @@ final instantPrivacyDeviceListProvider = Provider((ref) {
           .where((device) =>
               macAddresses.contains(device.macAddress.toUpperCase()))
           .toList()
-      : deviceList.where((device) => device.isOnline).toList();
+      : deviceList
+          .where((device) => !device.isWired && device.isOnline)
+          .toList();
 });

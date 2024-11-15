@@ -14,11 +14,7 @@ void main() {
     mockSinglePortForwardingRuleNotifier =
         MockSinglePortForwardingRuleNotifier();
     when(mockSinglePortForwardingRuleNotifier.build())
-        .thenReturn(const SinglePortForwardingRuleState());
-    when(mockSinglePortForwardingRuleNotifier.subnetMask)
-        .thenReturn('255.255.0.0');
-    when(mockSinglePortForwardingRuleNotifier.ipAddress)
-        .thenReturn('192.168.1.1');
+        .thenReturn(const SinglePortForwardingRuleState(routerIp: '', subnetMask: ''));
   });
 
   testLocalizations('Single port forwarding rule view', (tester, locale) async {

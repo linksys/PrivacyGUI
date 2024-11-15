@@ -80,6 +80,10 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
   }
 
   Widget _instantInfo(BuildContext context, WidgetRef ref) {
+    final isSpeedCheckSupported = ref
+        .read(dashboardManagerProvider.notifier)
+        .isHealthCheckModuleSupported('SpeedTest');
+    final desktopCol = isSpeedCheckSupported ? 4.col : 6.col;
     return SingleChildScrollView(
       child: ResponsiveLayout.isMobileLayout(context)
           ? Column(
@@ -87,9 +91,11 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
                 _deviceInfoCard(context, ref),
                 const AppGap.medium(),
                 _connectivityContentWidget(context, ref),
-                const AppGap.medium(),
-                _speedTestContent(context),
-                const AppGap.medium(),
+                if (isSpeedCheckSupported) ...[
+                  const AppGap.medium(),
+                  _speedTestContent(context),
+                  const AppGap.medium(),
+                ],
                 _portsCard(context, ref),
               ],
             )
@@ -100,19 +106,21 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       SizedBox(
-                        width: 4.col,
+                        width: desktopCol,
                         child: _deviceInfoCard(context, ref),
                       ),
                       const AppGap.gutter(),
                       SizedBox(
-                        width: 4.col,
+                        width: desktopCol,
                         child: _connectivityContentWidget(context, ref),
                       ),
-                      const AppGap.gutter(),
-                      SizedBox(
-                        width: 4.col,
-                        child: _speedTestContent(context),
-                      ),
+                      if (isSpeedCheckSupported) ...[
+                        const AppGap.gutter(),
+                        SizedBox(
+                          width: desktopCol,
+                          child: _speedTestContent(context),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -549,7 +557,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
                       children: [
                         Expanded(
                           child: AppText.labelMedium(
-                            '${loc(context).guest}|${guestWiFi.guestSSID}',
+                            '${loc(context).guest} | ${guestWiFi.guestSSID}',
                             overflow: TextOverflow.ellipsis,
                             maxLines: 2,
                           ),
@@ -611,9 +619,9 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
                 children: [
                   AppText.bodySmall(loc(context).nDNS(dnsCount)),
                   AppText.labelMedium(dnsCount == 3
-                      ? '${systemConnectivityState.wanConnection?.dnsServer1}|${systemConnectivityState.wanConnection?.dnsServer2}|${systemConnectivityState.wanConnection?.dnsServer3}'
+                      ? '${systemConnectivityState.wanConnection?.dnsServer1} | ${systemConnectivityState.wanConnection?.dnsServer2} | ${systemConnectivityState.wanConnection?.dnsServer3}'
                       : dnsCount == 2
-                          ? '${systemConnectivityState.wanConnection?.dnsServer1}|${systemConnectivityState.wanConnection?.dnsServer2}'
+                          ? '${systemConnectivityState.wanConnection?.dnsServer1} | ${systemConnectivityState.wanConnection?.dnsServer2}'
                           : systemConnectivityState.wanConnection?.dnsServer1 ??
                               '--'),
                 ],
@@ -656,21 +664,15 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
   }
 
   Widget _speedTestContent(BuildContext context) {
-    final isSupportedHealthCheck = serviceHelper.isSupportHealthCheck();
     return AppCard(
       key: const ValueKey('speedTestCard'),
       padding: const EdgeInsets.all(Spacing.large2),
-      child: Opacity(
-        opacity: isSupportedHealthCheck ? 1 : .3,
-        child: Column(
-          children: [
-            _headerWidget(loc(context).speedTest),
-            const AppGap.large2(),
-            AbsorbPointer(
-                absorbing: isSupportedHealthCheck ? false : true,
-                child: const SpeedTestWidget())
-          ],
-        ),
+      child: Column(
+        children: [
+          _headerWidget(loc(context).speedTest),
+          const AppGap.large2(),
+          const SpeedTestWidget()
+        ],
       ),
     );
   }

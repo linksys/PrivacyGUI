@@ -29,26 +29,27 @@ class StyledAppTabPageView extends ConsumerWidget {
   final ScrollController? scrollController;
   final bool useMainPadding;
   final EdgeInsets? padding;
+  final void Function(int index)? onTap;
 
-  const StyledAppTabPageView({
-    super.key,
-    this.title,
-    this.toolbarHeight = kDefaultToolbarHeight,
-    this.onBackTap,
-    this.backState = StyledBackState.enabled,
-    this.actions,
-    this.appBarStyle = AppBarStyle.back,
-    required this.tabs,
-    this.headerContent,
-    this.tabContentViews = const [],
-    this.pinned = true,
-    this.snap = false,
-    this.floating = false,
-    this.expandedHeight,
-    this.scrollController,
-    this.useMainPadding = true,
-    this.padding,
-  });
+  const StyledAppTabPageView(
+      {super.key,
+      this.title,
+      this.toolbarHeight = kDefaultToolbarHeight,
+      this.onBackTap,
+      this.backState = StyledBackState.enabled,
+      this.actions,
+      this.appBarStyle = AppBarStyle.back,
+      required this.tabs,
+      this.headerContent,
+      this.tabContentViews = const [],
+      this.pinned = true,
+      this.snap = false,
+      this.floating = false,
+      this.expandedHeight,
+      this.scrollController,
+      this.useMainPadding = true,
+      this.padding,
+      this.onTap});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -106,6 +107,7 @@ class StyledAppTabPageView extends ConsumerWidget {
         snap: snap,
         tabs: tabs,
         tabContentViews: tabContentViews,
+        onTap: onTap,
       ),
     );
   }

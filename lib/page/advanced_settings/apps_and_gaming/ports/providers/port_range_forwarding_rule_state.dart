@@ -2,64 +2,81 @@
 import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
+import 'package:flutter/widgets.dart';
 
 import 'package:privacy_gui/core/jnap/models/port_range_forwarding_rule.dart';
-import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/providers/consts.dart';
 
 class PortRangeForwardingRuleState extends Equatable {
-  final RuleMode mode;
   final List<PortRangeForwardingRule> rules;
   final PortRangeForwardingRule? rule;
+  final int? editIndex;
+  final String routerIp;
+  final String subnetMask;
 
   const PortRangeForwardingRuleState({
-    this.mode = RuleMode.init,
     this.rules = const [],
     this.rule,
+    this.editIndex,
+    required this.routerIp,
+    required this.subnetMask,
   });
 
   @override
-  List<Object?> get props => [mode, rules, rule];
+  List<Object?> get props {
+    return [
+      rules,
+      rule,
+      editIndex,
+      routerIp,
+      subnetMask,
+    ];
+  }
 
   PortRangeForwardingRuleState copyWith({
-    RuleMode? mode,
     List<PortRangeForwardingRule>? rules,
-    PortRangeForwardingRule? rule,
+    ValueGetter<PortRangeForwardingRule?>? rule,
+    ValueGetter<int?>? editIndex,
+    String? routerIp,
+    String? subnetMask,
   }) {
     return PortRangeForwardingRuleState(
-      mode: mode ?? this.mode,
       rules: rules ?? this.rules,
-      rule: rule ?? this.rule,
+      rule: rule != null ? rule() : this.rule,
+      editIndex: editIndex != null ? editIndex() : this.editIndex,
+      routerIp: routerIp ?? this.routerIp,
+      subnetMask: subnetMask ?? this.subnetMask,
     );
   }
 
   Map<String, dynamic> toMap() {
-    return <String, dynamic>{
-      'mode': mode.name,
+    return {
       'rules': rules.map((x) => x.toMap()).toList(),
       'rule': rule?.toMap(),
+      'editIndex': editIndex,
+      'routerIp': routerIp,
+      'subnetMask': subnetMask,
     };
   }
 
   factory PortRangeForwardingRuleState.fromMap(Map<String, dynamic> map) {
     return PortRangeForwardingRuleState(
-      mode: map['mode'] != null ? RuleMode.reslove(map['mode']) : RuleMode.init,
-      rules: List<PortRangeForwardingRule>.from(
-        map['rules'].map<PortRangeForwardingRule>(
-          (x) => PortRangeForwardingRule.fromMap(x as Map<String, dynamic>),
-        ),
-      ),
-      rule: map['rule'] != null
-          ? PortRangeForwardingRule.fromMap(map['rule'] as Map<String, dynamic>)
-          : null,
+      rules: List<PortRangeForwardingRule>.from(map['rules']?.map((x) => PortRangeForwardingRule.fromMap(x))),
+      rule: map['rule'] != null ? PortRangeForwardingRule.fromMap(map['rule']) : null,
+      editIndex: map['editIndex']?.toInt(),
+      routerIp: map['routerIp'] ?? '',
+      subnetMask: map['subnetMask'] ?? '',
     );
   }
 
   String toJson() => json.encode(toMap());
 
-  factory PortRangeForwardingRuleState.fromJson(String source) =>
-      PortRangeForwardingRuleState.fromMap(
-          json.decode(source) as Map<String, dynamic>);
+  factory PortRangeForwardingRuleState.fromJson(String source) => PortRangeForwardingRuleState.fromMap(json.decode(source));
 
   @override
   bool get stringify => true;
+
+  @override
+  String toString() {
+    return 'PortRangeForwardingRuleState(rules: $rules, rule: $rule, editIndex: $editIndex, routerIp: $routerIp, subnetMask: $subnetMask)';
+  }
 }

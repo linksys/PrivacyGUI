@@ -14,12 +14,12 @@ class PortRangeTriggeringListNotifier
   @override
   PortRangeTriggeringListState build() => const PortRangeTriggeringListState();
 
-  Future fetch() async {
+  Future<PortRangeTriggeringListState> fetch([bool force = false]) async {
     final repo = ref.read(routerRepositoryProvider);
     await repo
         .send(
       JNAPAction.getPortRangeTriggeringRules,
-      fetchRemote: true,
+      fetchRemote: force,
       auth: true,
     )
         .then<JNAPSuccess?>((value) {
@@ -36,9 +36,38 @@ class PortRangeTriggeringListNotifier
         return null;
       },
     );
+    return state;
+  }
+
+  Future<PortRangeTriggeringListState> save() async {
+    final rules = List<PortRangeTriggeringRule>.from(state.rules);
+    final repo = ref.read(routerRepositoryProvider);
+    await repo
+        .send(
+          JNAPAction.setPortRangeTriggeringRules,
+          data: {'rules': rules.map((e) => e.toMap()).toList()},
+          auth: true,
+        )
+        .then((value) => true)
+        .onError((error, stackTrace) => false);
+    await fetch(true);
+    return state;
   }
 
   bool isExceedMax() {
     return state.maxRules == state.rules.length;
+  }
+
+  void addRule(PortRangeTriggeringRule rule) {
+    state = state.copyWith(rules: List.from(state.rules)..add(rule));
+  }
+
+  void editRule(int index, PortRangeTriggeringRule rule) {
+    state = state.copyWith(
+        rules: List.from(state.rules)..replaceRange(index, index + 1, [rule]));
+  }
+
+  void deleteRule(PortRangeTriggeringRule rule) {
+    state = state.copyWith(rules: List.from(state.rules)..remove(rule));
   }
 }

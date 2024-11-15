@@ -1,4 +1,4 @@
-export 'port_forwarding_view.dart';
+export '../../views/apps_and_gaming_view.dart';
 export 'port_range_forwarding_list_view.dart';
 export 'port_range_forwarding_rule_view.dart';
 export 'port_range_triggering_list_view.dart';
