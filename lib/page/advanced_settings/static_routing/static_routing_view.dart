@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/models/get_routing_settings.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_provider.dart';
@@ -86,6 +87,15 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView> {
               });
             });
           }),
+      onBackTap: state != preservedState
+          ? () async {
+              final goBack = await showUnsavedAlert(context);
+              if (goBack == true) {
+                _notifier.fetch();
+                context.pop();
+              }
+            }
+          : null,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

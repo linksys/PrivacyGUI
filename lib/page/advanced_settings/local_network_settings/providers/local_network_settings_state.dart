@@ -2,6 +2,7 @@
 import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
+import 'package:flutter/widgets.dart';
 
 import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
 
@@ -24,6 +25,7 @@ class LocalNetworkSettingsState extends Equatable {
   final String? dns3;
   final String? wins;
   final List<DHCPReservation> dhcpReservationList;
+  final Map<String, String> errorTextMap;
 
   @override
   List<Object?> get props {
@@ -46,6 +48,7 @@ class LocalNetworkSettingsState extends Equatable {
       dns3,
       wins,
       dhcpReservationList,
+      errorTextMap,
     ];
   }
 
@@ -68,6 +71,7 @@ class LocalNetworkSettingsState extends Equatable {
     this.dns3,
     this.wins,
     this.dhcpReservationList = const [],
+    this.errorTextMap = const {},
   });
 
   factory LocalNetworkSettingsState.init() => const LocalNetworkSettingsState(
@@ -85,52 +89,6 @@ class LocalNetworkSettingsState extends Equatable {
         minNetworkPrefixLength: 8,
         maxNetworkPrefixLength: 30,
       );
-
-  LocalNetworkSettingsState copyWith({
-    String? hostName,
-    String? ipAddress,
-    String? subnetMask,
-    bool? isDHCPEnabled,
-    String? firstIPAddress,
-    String? lastIPAddress,
-    int? maxUserLimit,
-    int? maxUserAllowed,
-    int? clientLeaseTime,
-    int? minAllowDHCPLeaseMinutes,
-    int? maxAllowDHCPLeaseMinutes,
-    int? minNetworkPrefixLength,
-    int? maxNetworkPrefixLength,
-    String? dns1,
-    String? dns2,
-    String? dns3,
-    String? wins,
-    List<DHCPReservation>? dhcpReservationList,
-  }) {
-    return LocalNetworkSettingsState(
-      hostName: hostName ?? this.hostName,
-      ipAddress: ipAddress ?? this.ipAddress,
-      subnetMask: subnetMask ?? this.subnetMask,
-      isDHCPEnabled: isDHCPEnabled ?? this.isDHCPEnabled,
-      firstIPAddress: firstIPAddress ?? this.firstIPAddress,
-      lastIPAddress: lastIPAddress ?? this.lastIPAddress,
-      maxUserLimit: maxUserLimit ?? this.maxUserLimit,
-      maxUserAllowed: maxUserAllowed ?? this.maxUserAllowed,
-      clientLeaseTime: clientLeaseTime ?? this.clientLeaseTime,
-      minAllowDHCPLeaseMinutes:
-          minAllowDHCPLeaseMinutes ?? this.minAllowDHCPLeaseMinutes,
-      maxAllowDHCPLeaseMinutes:
-          maxAllowDHCPLeaseMinutes ?? this.maxAllowDHCPLeaseMinutes,
-      minNetworkPrefixLength:
-          minNetworkPrefixLength ?? this.minNetworkPrefixLength,
-      maxNetworkPrefixLength:
-          maxNetworkPrefixLength ?? this.maxNetworkPrefixLength,
-      dns1: dns1 ?? this.dns1,
-      dns2: dns2 ?? this.dns2,
-      dns3: dns3 ?? this.dns3,
-      wins: wins ?? this.wins,
-      dhcpReservationList: dhcpReservationList ?? this.dhcpReservationList,
-    );
-  }
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
@@ -152,6 +110,7 @@ class LocalNetworkSettingsState extends Equatable {
       'dns3': dns3,
       'wins': wins,
       'dhcpReservationList': dhcpReservationList.map((x) => x.toMap()).toList(),
+      'errorText': errorTextMap,
     };
   }
 
@@ -179,6 +138,7 @@ class LocalNetworkSettingsState extends Equatable {
           (x) => DHCPReservation.fromMap(x as Map<String, dynamic>),
         ),
       ),
+      errorTextMap: map['errorText'],
     );
   }
 
@@ -188,6 +148,56 @@ class LocalNetworkSettingsState extends Equatable {
       LocalNetworkSettingsState.fromMap(
           json.decode(source) as Map<String, dynamic>);
 
+  bool isEqualStateWithoutDhcpReservationList(LocalNetworkSettingsState compareState) {
+    final stateWithoutList = copyWith(dhcpReservationList: []);
+    final compareStateWithoutList = compareState.copyWith(dhcpReservationList: []);
+    return stateWithoutList == compareStateWithoutList;
+  }
+
   @override
   bool get stringify => true;
+
+  LocalNetworkSettingsState copyWith({
+    String? hostName,
+    String? ipAddress,
+    String? subnetMask,
+    bool? isDHCPEnabled,
+    String? firstIPAddress,
+    String? lastIPAddress,
+    int? maxUserLimit,
+    int? maxUserAllowed,
+    int? clientLeaseTime,
+    int? minAllowDHCPLeaseMinutes,
+    int? maxAllowDHCPLeaseMinutes,
+    int? minNetworkPrefixLength,
+    int? maxNetworkPrefixLength,
+    ValueGetter<String?>? dns1,
+    ValueGetter<String?>? dns2,
+    ValueGetter<String?>? dns3,
+    ValueGetter<String?>? wins,
+    List<DHCPReservation>? dhcpReservationList,
+    Map<String, String>? errorText,
+  }) {
+    return LocalNetworkSettingsState(
+      hostName: hostName ?? this.hostName,
+      ipAddress: ipAddress ?? this.ipAddress,
+      subnetMask: subnetMask ?? this.subnetMask,
+      isDHCPEnabled: isDHCPEnabled ?? this.isDHCPEnabled,
+      firstIPAddress: firstIPAddress ?? this.firstIPAddress,
+      lastIPAddress: lastIPAddress ?? this.lastIPAddress,
+      maxUserLimit: maxUserLimit ?? this.maxUserLimit,
+      maxUserAllowed: maxUserAllowed ?? this.maxUserAllowed,
+      clientLeaseTime: clientLeaseTime ?? this.clientLeaseTime,
+      minAllowDHCPLeaseMinutes: minAllowDHCPLeaseMinutes ?? this.minAllowDHCPLeaseMinutes,
+      maxAllowDHCPLeaseMinutes: maxAllowDHCPLeaseMinutes ?? this.maxAllowDHCPLeaseMinutes,
+      minNetworkPrefixLength: minNetworkPrefixLength ?? this.minNetworkPrefixLength,
+      maxNetworkPrefixLength: maxNetworkPrefixLength ?? this.maxNetworkPrefixLength,
+      dns1: dns1 != null ? dns1() : this.dns1,
+      dns2: dns2 != null ? dns2() : this.dns2,
+      dns3: dns3 != null ? dns3() : this.dns3,
+      wins: wins != null ? wins() : this.wins,
+      dhcpReservationList: dhcpReservationList ?? this.dhcpReservationList,
+      errorTextMap: errorText ?? this.errorTextMap,
+    );
+  }
 }

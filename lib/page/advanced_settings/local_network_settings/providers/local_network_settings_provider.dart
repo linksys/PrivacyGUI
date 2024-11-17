@@ -68,10 +68,10 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
       clientLeaseTime: lanSettings.dhcpSettings.leaseMinutes,
       minAllowDHCPLeaseMinutes: lanSettings.minAllowedDHCPLeaseMinutes,
       maxAllowDHCPLeaseMinutes: lanSettings.maxAllowedDHCPLeaseMinutes,
-      dns1: lanSettings.dhcpSettings.dnsServer1,
-      dns2: lanSettings.dhcpSettings.dnsServer2,
-      dns3: lanSettings.dhcpSettings.dnsServer3,
-      wins: lanSettings.dhcpSettings.winsServer,
+      dns1: () => lanSettings.dhcpSettings.dnsServer1,
+      dns2: () => lanSettings.dhcpSettings.dnsServer2,
+      dns3: () => lanSettings.dhcpSettings.dnsServer3,
+      wins: () => lanSettings.dhcpSettings.winsServer,
       dhcpReservationList: lanSettings.dhcpSettings.reservations,
     );
     // Update all necessary validators by the current settings
@@ -80,8 +80,8 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     return state;
   }
 
-  Future<void> saveSettings(LocalNetworkSettingsState settings) {
-    final previousIPAddress = state.ipAddress;
+  Future<void> saveSettings(LocalNetworkSettingsState settings,
+      {String? previousIPAddress}) {
     final newSettings = SetRouterLANSettings(
       ipAddress: settings.ipAddress,
       networkPrefixLength:
@@ -105,7 +105,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
       JNAPAction.setLANSettings,
       auth: true,
       data: newSettings.toMap()..removeWhere((key, value) => value == null),
-      sideEffectOverrides: const JNAPSideEffectOverrides(maxRetry: 5),
+      // sideEffectOverrides: const JNAPSideEffectOverrides(maxRetry: 5),
     )
         .then((result) async {
       // Update the state
@@ -114,7 +114,9 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
       await ref.read(instantSafetyProvider.notifier).fetchLANSettings();
     }).catchError(
       (error) {
-        if (kIsWeb && previousIPAddress != newSettings.ipAddress) {
+        if (kIsWeb &&
+            previousIPAddress != null &&
+            previousIPAddress != newSettings.ipAddress) {
           ref.read(redirectionProvider.notifier).state =
               'https://${newSettings.ipAddress}';
         } else {
@@ -125,13 +127,24 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     );
   }
 
-  Future<List<DHCPReservation>> saveReservations(List<DHCPReservation> list) async {
+  Future<List<DHCPReservation>> saveReservations(
+      List<DHCPReservation> list) async {
     await saveSettings(state.copyWith(dhcpReservationList: list));
     return fetch(fetchRemote: true).then((state) => state.dhcpReservationList);
   }
 
   void updateHostName(String hostName) {
     state = state.copyWith(hostName: hostName);
+  }
+
+  void updateErrorPrompts(String key, String? value) {
+    Map<String, String> errorTextMap = Map.from(state.errorTextMap);
+    if (value != null) {
+      errorTextMap[key] = value;
+    } else {
+      errorTextMap.remove(key);
+    }
+    state = state.copyWith(errorText: errorTextMap);
   }
 
   void updateDHCPReservationList(
@@ -354,7 +367,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     final isValid = _serverIpAddressValidator.validate(dnsIp);
     if (isValid || dnsIp.isEmpty) {
       settings = settings.copyWith(
-        dns1: dnsIp,
+        dns1: () => dnsIp,
       );
     }
     return (isValid, settings);
@@ -368,7 +381,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     final isValid = _serverIpAddressValidator.validate(dnsIp);
     if (isValid || dnsIp.isEmpty) {
       settings = settings.copyWith(
-        dns2: dnsIp,
+        dns2: () => dnsIp,
       );
     }
     return (isValid, settings);
@@ -382,7 +395,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     final isValid = _serverIpAddressValidator.validate(dnsIp);
     if (isValid || dnsIp.isEmpty) {
       settings = settings.copyWith(
-        dns3: dnsIp,
+        dns3: () => dnsIp,
       );
     }
     return (isValid, settings);
@@ -396,99 +409,9 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     final isValid = _serverIpAddressValidator.validate(winsIp);
     if (isValid || winsIp.isEmpty) {
       settings = settings.copyWith(
-        wins: winsIp,
+        wins: () => winsIp,
       );
     }
     return (isValid, settings);
   }
-
-/*
-  _updateValidator() {
-    _routerIPAddressValidator = IpAddressAsNewRouterIpValidator(
-        state.ipAddress, state.subnetMask);
-    _ipAddressAsLocalIpValidator =
-        IpAddressAsLocalIpValidator(state.ipAddress, state.subnetMask);
-    _subnetValidator = SubnetValidator(
-        min: state.minNetworkPrefixLength, max: state.maxNetworkPrefixLength);
-    _maxUsersValidator = MaxUsersValidator(state.maxNumUsers);
-    _leaseTimeValidator = DhcpClientLeaseTimeValidator(
-        state.minAllowDHCPLeaseMinutes, state.maxAllowDHCPLeaseMinutes);
-  }
-
-  updateMaxUser() {
-    final maxUsers = Utils.getMaxUserAllowedInDHCPRange(
-        state.ipAddress, state.firstIPAddress, state.lastIPAddress);
-    state = state.copyWith(maxUserLimit: maxUsers);
-  }
-
-  updateMaxUserLimit() {
-    var newMaxUsersLimit = Utils.getMaxUserLimit(state.ipAddress,
-        state.firstIPAddress, state.subnetMask, state.maxUserLimit);
-    if (newMaxUsersLimit != 0) {
-      state = state.copyWith(maxUserLimit: newMaxUsersLimit);
-    } else {
-      // startIPAddress not in valid subnet
-    }
-  }
-
-  setIPAddress(String newIPAddress) {
-    final valid = _routerIPAddressValidator.validate(newIPAddress);
-    if (valid) {
-      state = state.copyWith(ipAddress: newIPAddress);
-      updateIPFields();
-      _updateValidator();
-    }
-    setError('ipAddress', valid ? null : 'invalid_input');
-  }
-
-  setSubnetMask(String newSubnetMask) {
-    final valid = _subnetValidator.validate(newSubnetMask);
-    if (valid) {
-      state = state.copyWith(subnetMask: newSubnetMask);
-      updateMaxUserLimit();
-      updateLastClientIPAddress();
-      _updateValidator();
-    }
-    setError('subnetMask', valid ? null : 'invalid_input');
-  }
-
-  setFirstIPAddress(String newFirstIPAddress) {
-    final valid = _ipAddressAsLocalIpValidator.validate(newFirstIPAddress);
-    if (valid) {
-      state = state.copyWith(firstIPAddress: newFirstIPAddress);
-      updateLastClientIPAddress();
-      updateMaxUserLimit();
-      _updateValidator();
-    }
-    setError('firstIPAddress', valid ? null : 'invalid_input');
-  }
-
-  setMaxUsers(String newMaxUsers) {
-    final valid = _maxUsersValidator.validate(newMaxUsers);
-    if (valid) {
-      state = state.copyWith(maxNumUsers: int.parse(newMaxUsers));
-      updateMaxUserLimit();
-      updateLastClientIPAddress();
-      _updateValidator();
-    }
-    setError('maxUsers', valid ? null : 'invalid_input');
-  }
-
-  setAutoDNS(bool isAuto) {
-    state = state.copyWith(isAutoDNS: isAuto);
-  }
-
-  updateDNSMode() {
-    state = state.copyWith(
-        isAutoDNS:
-            state.dns1 != null || state.dns2 != null || state.dns3 != null);
-  }
-
-  updateLastClientIPAddress() {
-    final newLastIP = Utils.getEndDHCPRangeForMaxUsers(
-        state.firstIPAddress, state.maxNumUsers);
-    state = state.copyWith(lastIPAddress: newLastIP);
-  }
-  
-  */
 }

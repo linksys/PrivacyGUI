@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
@@ -44,6 +45,15 @@ class _AdministrationSettingsViewState
     return StyledAppPageView(
       scrollable: true,
       title: loc(context).administration,
+      onBackTap: _preservedState != state
+          ? () async {
+              final goBack = await showUnsavedAlert(context);
+              if (goBack == true) {
+                ref.read(administrationSettingsProvider.notifier).fetch();
+                context.pop();
+              }
+            }
+          : null,
       bottomBar: PageBottomBar(
           isPositiveEnabled:
               _preservedState != null && _preservedState != state,
