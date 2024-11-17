@@ -195,17 +195,18 @@ class TreeNodeItem extends StatelessWidget {
                   ? loc(context).wired
                   : loc(context).wireless),
         ]),
-        TableRow(children: [
-          AppText.labelLarge('${loc(context).meshHealth}:'),
-          AppText.labelLarge(
-            node.data.isOnline
-                ? signalLevel.resolveLabel(context)
-                : loc(context).offline,
-            color: node.data.isOnline
-                ? signalLevel.resolveColor(context)
-                : Theme.of(context).colorScheme.outline,
-          ),
-        ]),
+        if (!node.data.isMaster)
+          TableRow(children: [
+            AppText.labelLarge('${loc(context).meshHealth}:'),
+            AppText.labelLarge(
+              node.data.isOnline
+                  ? signalLevel.resolveLabel(context)
+                  : loc(context).offline,
+              color: node.data.isOnline
+                  ? signalLevel.resolveColor(context)
+                  : Theme.of(context).colorScheme.outline,
+            ),
+          ]),
         TableRow(children: [
           AppText.labelLarge('${loc(context).ipAddress}:'),
           AppText.bodyMedium(node.data.isOnline ? node.data.ipAddress : '--'),

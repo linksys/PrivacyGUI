@@ -93,59 +93,6 @@ class _ManualFirmwareUpdateViewState
   Widget _mainContent() {
     return StyledAppPageView(
       title: getAppLocalizations(context).manualFirmwareUpdate,
-      bottomBar: PageBottomBar(
-          isPositiveEnabled: _file != null,
-          onPositiveTap: () {
-            if (_file == null) {
-              return;
-            }
-
-            setState(() {
-              _status = ManualUpdateInstalling(0)..start(setState);
-            });
-
-            ref
-                .read(firmwareUpdateProvider.notifier)
-                .manualFirmwareUpdate(_file!.name, _file!.bytes ?? [])
-                .then((value) {
-              setState(() {
-                _status?.stop();
-                _status = ManualUpdateRebooting()..start(setState);
-              });
-              ref
-                  .read(firmwareUpdateProvider.notifier)
-                  .waitForRouterBackOnline()
-                  .then((_) {
-                handleSuccessUpdated();
-              }).catchError((error) {
-                setState(() {
-                  _status?.stop();
-                  _status = null;
-                });
-                showRouterNotFoundAlert(context, ref, onComplete: () async {
-                  handleSuccessUpdated();
-                });
-              }, test: (error) => error is JNAPSideEffectError);
-            }, onError: (error, stackTrace) {
-              setState(() {
-                _status?.stop();
-                _status = null;
-              });
-              if (error is ManualFirmwareUpdateException) {
-                _showErrorSnackbar(error.result);
-              } else {
-                _showErrorSnackbar();
-              }
-            });
-
-            // Future.delayed(Duration(seconds: 10)).then((_) {
-            //   setState(() {
-            //     _status?.stop();
-            //     _status = ManualUpdateRebooting()..start(setState);
-            //   });
-            // });
-          },
-          positiveLabel: loc(context).start),
       child: AppBasicLayout(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -178,6 +125,56 @@ class _ManualFirmwareUpdateViewState
                 },
               ),
             ),
+            const AppGap.large2(),
+            AppFilledButton(
+              loc(context).start,
+              onTap: _file == null
+                  ? null
+                  : () {
+                      if (_file == null) {
+                        return;
+                      }
+
+                      setState(() {
+                        _status = ManualUpdateInstalling(0)..start(setState);
+                      });
+
+                      ref
+                          .read(firmwareUpdateProvider.notifier)
+                          .manualFirmwareUpdate(_file!.name, _file!.bytes ?? [])
+                          .then((value) {
+                        setState(() {
+                          _status?.stop();
+                          _status = ManualUpdateRebooting()..start(setState);
+                        });
+                        ref
+                            .read(firmwareUpdateProvider.notifier)
+                            .waitForRouterBackOnline()
+                            .then((_) {
+                          handleSuccessUpdated();
+                        }).catchError((error) {
+                          setState(() {
+                            _status?.stop();
+                            _status = null;
+                          });
+                          showRouterNotFoundAlert(context, ref,
+                              onComplete: () async {
+                            handleSuccessUpdated();
+                          });
+                        }, test: (error) => error is JNAPSideEffectError);
+                      }, onError: (error, stackTrace) {
+                        setState(() {
+                          _status?.stop();
+                          _status = null;
+                        });
+                        if (error is ManualFirmwareUpdateException) {
+                          _showErrorSnackbar(error.result);
+                        } else {
+                          _showErrorSnackbar();
+                        }
+                      });
+                    },
+            )
           ],
         ),
       ),

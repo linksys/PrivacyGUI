@@ -271,7 +271,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
             devices: filteredDeviceList,
             enableDeauth: isOnlineFilter,
             enableDelete: !isOnlineFilter,
-            physics: const NeverScrollableScrollPhysics(),
+            // physics: const NeverScrollableScrollPhysics(),
             onItemClick: (item) {
               ref.read(deviceDetailIdProvider.notifier).state = item.deviceId;
               context.pushNamed(RouteNamed.deviceDetails);

@@ -1038,5 +1038,6 @@
   "labelInterface": "Interface",
   "retypeRouterPassword": "Retype Router Password",
   "externalSpeedText": "External speed test",
-  "hideHint": "Hide hint"
+  "hideHint": "Hide hint",
+  "execute": "Execute"
 }

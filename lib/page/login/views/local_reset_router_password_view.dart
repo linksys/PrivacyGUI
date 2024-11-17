@@ -52,6 +52,7 @@ class _LocalResetRouterPasswordViewState
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(routerPasswordProvider);
+    MediaQuery.of(context);
     return StyledAppPageView(
       scrollable: true,
       appBarStyle: AppBarStyle.none,
@@ -117,14 +118,14 @@ class _LocalResetRouterPasswordViewState
                     },
                     onValidationChanged: (isValid) {
                       isPasswordValid = isValid;
-                      ref
-                          .read(routerPasswordProvider.notifier)
-                          .setValidate(isPasswordValid && isHintNotContainPassword);
+                      ref.read(routerPasswordProvider.notifier).setValidate(
+                          isPasswordValid && isHintNotContainPassword);
                     },
                     onChanged: (value) {
                       setState(() {
-                        isHintNotContainPassword = hintNotContainPasswordValidator
-                            .validator(_newPasswordController.text);
+                        isHintNotContainPassword =
+                            hintNotContainPasswordValidator
+                                .validator(_newPasswordController.text);
                       });
                     },
                   ),
@@ -135,12 +136,12 @@ class _LocalResetRouterPasswordViewState
                     controller: _hintController,
                     onChanged: (value) {
                       setState(() {
-                        isHintNotContainPassword = hintNotContainPasswordValidator
-                            .validator(_newPasswordController.text);
+                        isHintNotContainPassword =
+                            hintNotContainPasswordValidator
+                                .validator(_newPasswordController.text);
                       });
-                      ref
-                          .read(routerPasswordProvider.notifier)
-                          .setValidate(isPasswordValid && isHintNotContainPassword);
+                      ref.read(routerPasswordProvider.notifier).setValidate(
+                          isPasswordValid && isHintNotContainPassword);
                     },
                   ),
                   const AppGap.large2(),

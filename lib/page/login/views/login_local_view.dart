@@ -163,6 +163,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
   bool _isTimerRunning() => _timer?.isActive ?? false;
 
   StyledAppPageView contentView() {
+    MediaQuery.of(context);
     return StyledAppPageView(
       appBarStyle: AppBarStyle.none,
       padding: EdgeInsets.zero,
@@ -181,7 +182,6 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
                   AppText.headlineSmall(loc(context).login),
                   const AppGap.large3(),
                   SizedBox(
-                    width: 289,
                     child: AppPasswordField(
                       border: const OutlineInputBorder(),
                       controller: _passwordController,
