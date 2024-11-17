@@ -14,7 +14,7 @@ final advancedSettings = [
     name: RouteNamed.settingsLocalNetwork,
     path: RoutePath.settingsLocalNetwork,
     config: LinksysRouteConfig(
-      column: ColumnGrid(column: 9),
+      column: ColumnGrid(column: 12),
     ),
     builder: (context, state) => const LocalNetworkSettingsView(),
     routes: [

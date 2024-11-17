@@ -83,6 +83,7 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
             ? () {
                 showUnsavedAlert(context).then((value) {
                   if (value == true) {
+                    ref.read(dmzSettingsProvider.notifier).fetch();
                     context.pop();
                   }
                 });

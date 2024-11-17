@@ -300,19 +300,20 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
               onPositiveTap: _showRestartAlert,
             )
           : null,
-      onBackTap: _isEdited(state)
-          ? () async {
-              final goBack = await showUnsavedAlert(context);
-              if (goBack == true) {
-                context.pop();
-              }
-            }
-          : null,
       child: AppBasicLayout(
         content: StyledAppTabPageView(
           padding: EdgeInsets.zero,
           useMainPadding: false,
           title: loc(context).internetSettings.capitalizeWords(),
+          onBackTap: _isEdited(state)
+          ? () async {
+              final goBack = await showUnsavedAlert(context);
+              if (goBack == true) {
+                _notifier.fetch();
+                context.pop();
+              }
+            }
+          : null,
           tabs: tabs
               .map((e) => Tab(
                     text: e,

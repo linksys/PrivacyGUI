@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/advanced_settings/firewall/providers/firewall_provider.dart';
@@ -78,6 +79,15 @@ class _FirewallViewState extends ConsumerState<FirewallView> {
           padding: EdgeInsets.zero,
           useMainPadding: false,
           title: loc(context).firewall,
+          onBackTap: _preservedState != state
+          ? () async {
+              final goBack = await showUnsavedAlert(context);
+              if (goBack == true) {
+                ref.read(firewallProvider.notifier).fetch();
+                context.pop();
+              }
+            }
+          : null,
           tabs: tabs
               .map((e) => Tab(
                     text: e,
