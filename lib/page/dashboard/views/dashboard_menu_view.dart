@@ -100,6 +100,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
       title: item.title,
       description: item.description,
       status: item.status,
+      isBeta: item.isBeta,
       onTap: item.onTap,
     );
   }
@@ -114,9 +115,6 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
         .select((value) => value.connectivityInfo.routerType));
     final isBehindRouter = routerType == RouterType.behindManaged ||
         BuildConfig.forceCommandType == ForceCommand.local;
-    final isSpeedCheckSupported = ref
-        .read(dashboardManagerProvider.notifier)
-        .isHealthCheckModuleSupported('SpeedTest');
     return [
       AppSectionItemData(
           title: loc(context).incredibleWiFi,
@@ -152,6 +150,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
           description: loc(context).instantPrivacyDesc,
           iconData: LinksysIcons.smartLock,
           status: privacyState.mode != MacFilterMode.allow,
+          isBeta: true,
           onTap: () {
             _navigateTo(RouteNamed.menuInstantPrivacy);
           }),
@@ -162,14 +161,12 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
           onTap: () {
             _navigateTo(RouteNamed.menuInstantDevices);
           }),
-
       AppSectionItemData(
           title: loc(context).advancedSettings,
           iconData: LinksysIcons.settings,
           onTap: () {
             _navigateTo(RouteNamed.menuAdvancedSettings);
           }),
-
       AppSectionItemData(
           title: loc(context).instantVerify,
           description: loc(context).instantVerifyDesc,
@@ -185,20 +182,6 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
             onTap: () {
               _navigateTo(RouteNamed.speedTestExternal);
             }),
-      // if (isCloudLogin)
-      //   AppSectionItemData(
-      //       title: loc(context).account,
-      //       description: 'This is a description for this tile',
-      //       iconData: LinksysIcons.accountCircle,
-      //       onTap: () {
-      //         _navigateTo(RouteNamed.accountInfo);
-      //       }),
-      // AppSectionItemData(
-      //     title: 'Linksys LinkUp',
-      //     iconData: getCharactersIcons(context).bellDefault,
-      //     onTap: () {
-      //       _navigateTo(RouteNamed.linkup);
-      //     }),
     ];
   }
 
@@ -266,6 +249,7 @@ class AppMenuCard extends StatelessWidget {
     this.color,
     this.borderColor,
     this.status,
+    this.isBeta = false,
   });
 
   final IconData? iconData;
@@ -275,6 +259,7 @@ class AppMenuCard extends StatelessWidget {
   final Color? color;
   final Color? borderColor;
   final bool? status;
+  final bool isBeta;
 
   @override
   Widget build(BuildContext context) {
@@ -307,10 +292,28 @@ class AppMenuCard extends StatelessWidget {
           if (title != null)
             Padding(
               padding: const EdgeInsets.only(top: Spacing.small2),
-              child: AppText.titleSmall(
-                title ?? '',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              child: Row(
+                children: [
+                  if (isBeta) ...[
+                    Container(
+                      decoration: BoxDecoration(
+                          color:
+                              Theme.of(context).colorScheme.secondaryContainer,
+                          border: Border.all(color: Colors.transparent),
+                          borderRadius: BorderRadius.circular(4)),
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
+                      child: AppText.bodyExtraSmall('Beta'),
+                    ),
+                    const AppGap.small2(),
+                  ],
+                  Expanded(
+                    child: AppText.titleSmall(
+                      title ?? '',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
             ),
           if (description != null)
