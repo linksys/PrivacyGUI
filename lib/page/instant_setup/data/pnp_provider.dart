@@ -239,6 +239,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
     //         .then((result) {
     //       return result.output['connectionStatus'] == 'InternetConnected';
     //     });
+    
     Future<bool> testPing() => ref.read(cloudRepositoryProvider).testPingPng();
     // final isOnline = isNode ? await isInternetConnected() : await testPing();
     final isOnline = await testPing();

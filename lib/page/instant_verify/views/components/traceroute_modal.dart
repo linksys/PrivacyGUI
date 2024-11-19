@@ -60,8 +60,10 @@ class _TracerouteModalState extends ConsumerState<TracerouteModal> {
         ),
         const AppGap.large1(),
         if (_tracerouteLog.isNotEmpty)
-          SingleChildScrollView(
-            child: AppText.bodySmall(_tracerouteLog),
+          Expanded(
+            child: SingleChildScrollView(
+              child: AppText.bodySmall(_tracerouteLog),
+            ),
           ),
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
