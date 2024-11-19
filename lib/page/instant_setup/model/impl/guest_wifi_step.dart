@@ -139,13 +139,13 @@ class GuestWiFiStep extends PnpStep {
     final password = _passwordEditController?.text ?? '';
     final noSurroundSpace = NoSurroundWhitespaceRule().validate(password);
     final noUseUnsupportChar = AsciiRule().validate(password);
-    if (isEnabled &&
+    if (!isEnabled ||
         ssid.isNotEmpty &&
-        password.isNotEmpty &&
-        password.length >= 8 &&
-        password.length <= 64 &&
-        noSurroundSpace &&
-        noUseUnsupportChar) {
+            password.isNotEmpty &&
+            password.length >= 8 &&
+            password.length <= 64 &&
+            noSurroundSpace &&
+            noUseUnsupportChar) {
       pnp.setStepStatus(index, status: StepViewStatus.data);
     } else {
       pnp.setStepStatus(index, status: StepViewStatus.error);

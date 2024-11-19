@@ -265,10 +265,13 @@ class StyledAppPageView extends ConsumerWidget {
           context: context,
           title: title == null
               ? null
-              : AppText.titleLarge(
-                  title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+              : Semantics(
+                  label: 'page title',
+                  child: AppText.titleLarge(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
           toolbarHeight: toolbarHeight,
           onBackTap: isBackEnabled()
@@ -284,7 +287,10 @@ class StyledAppPageView extends ConsumerWidget {
       case AppBarStyle.close:
         return LinksysAppBar.withClose(
           context: context,
-          title: title == null ? null : AppText.titleLarge(title),
+          title: title == null
+              ? null
+              : Semantics(
+                  label: 'page title', child: AppText.titleLarge(title)),
           toolbarHeight: toolbarHeight,
           onBackTap: isBackEnabled()
               ? (onBackTap ??

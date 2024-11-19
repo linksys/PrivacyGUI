@@ -61,8 +61,10 @@ class _PingNetworkModalState extends ConsumerState<PingNetworkModal> {
         ),
         const AppGap.large1(),
         if (_pingLog.isNotEmpty)
-          SingleChildScrollView(
-            child: AppText.bodySmall(_pingLog),
+          Expanded(
+            child: SingleChildScrollView(
+              child: AppText.bodySmall(_pingLog),
+            ),
           ),
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
