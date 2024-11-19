@@ -3,10 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
@@ -15,7 +14,6 @@ import 'package:privacy_gui/page/wifi_settings/providers/guest_wifi_item.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_state.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_view_provider.dart';
 import 'package:privacy_gui/validator_rules/_validator_rules.dart';
-import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -35,7 +33,8 @@ class WiFiListView extends ArgumentsConsumerStatefulView {
   ConsumerState<WiFiListView> createState() => _WiFiListViewState();
 }
 
-class _WiFiListViewState extends ConsumerState<WiFiListView> {
+class _WiFiListViewState extends ConsumerState<WiFiListView>
+    with PageSnackbarMixin {
   WiFiState? _preservedMainWiFiState;
 
   final Map<String, TextEditingController> _advancedPasswordController = {};
@@ -382,11 +381,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
             padding: const EdgeInsets.symmetric(vertical: 8.0),
             title: AppText.bodyMedium(
               loc(context).wifiPassword,
-              color: !radio.securityType.isOpenVariant &&
-                      _advancedPasswordController[radio.radioID.value]
-                              ?.text
-                              .isEmpty ==
-                          true
+              color: !radio.securityType.isOpenVariant && radio.password.isEmpty
                   ? Theme.of(context).colorScheme.error
                   : Theme.of(context).colorScheme.onSurface,
             ),
@@ -395,10 +390,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
                     data: Theme.of(context).copyWith(
                         inputDecorationTheme: const InputDecorationTheme(
                             isDense: true, contentPadding: EdgeInsets.zero)),
-                    child: (_advancedPasswordController[radio.radioID.value]
-                                ?.text
-                                .isEmpty ==
-                            true)
+                    child: radio.securityType.isOpenVariant
                         ? AppTextField(
                             readOnly: true,
                             border: InputBorder.none,
@@ -907,18 +899,19 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {
           .then((state) {
         ref.read(wifiViewProvider.notifier).setChanged(false);
         update(state);
-        showSuccessSnackBar(context, loc(context).saved);
+        showChangesSavedSnackBar();
       }).catchError((error, stackTrace) {
         showRouterNotFoundAlert(context, ref,
                 onComplete: () => ref.read(wifiListProvider.notifier).fetch())
             .then((state) {
           ref.read(wifiViewProvider.notifier).setChanged(false);
           update(state);
-          showSuccessSnackBar(context, loc(context).saved);
+          showChangesSavedSnackBar();
         });
       }, test: (error) => error is JNAPSideEffectError).onError(
-              (error, stackTrace) =>
-                  showFailedSnackBar(context, loc(context).generalError));
+              (error, stackTrace) {
+        showErrorMessageSnackBar(error);
+      });
     }
   }
 

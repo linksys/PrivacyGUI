@@ -13,6 +13,8 @@ abstract class RegExValidationRule extends ValidationRule {
 
   bool get notCheck => false;
 
+  RegExp get rule => _rule;
+
   @override
   bool validate(String input) =>
       notCheck ? !_rule.hasMatch(input) : _rule.hasMatch(input);
@@ -78,6 +80,16 @@ class AndroidNameRule extends RegExValidationRule {
 class AsciiRule extends RegExValidationRule {
   @override
   RegExp get _rule => RegExp(r'^[\x20-\x7E]+$');
+}
+
+class WhiteSpaceRule extends RegExValidationRule {
+  @override
+  RegExp get _rule => RegExp(r'.*[\s]+.*');
+}
+
+class HostNameRule extends RegExValidationRule {
+  @override
+  RegExp get _rule => RegExp(r'[^a-zA-Z0-9-]+|^-|-$/');
 }
 
 class ConsecutiveCharRule extends RegExValidationRule {

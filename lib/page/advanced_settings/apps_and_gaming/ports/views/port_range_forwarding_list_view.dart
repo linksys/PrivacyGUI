@@ -4,6 +4,7 @@ import 'package:privacy_gui/core/jnap/models/port_range_forwarding_rule.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/_ports.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/views/widgets/_widgets.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/providers/apps_and_gaming_provider.dart';
 import 'package:privacy_gui/page/components/settings_view/editable_card_list_settings_view.dart';
 import 'package:privacy_gui/page/components/settings_view/editable_table_settings_view.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
@@ -63,6 +64,7 @@ class _PortRangeForwardingContentViewState
       setState(() {
         preservedState = state;
       });
+      ref.read(appsAndGamingProvider.notifier).setChanged(false);
     });
 
     super.initState();
@@ -78,6 +80,11 @@ class _PortRangeForwardingContentViewState
     final state = ref.watch(portRangeForwardingListProvider);
     final submaskToken = state.subnetMask.split('.');
     final prefixIP = state.routerIp;
+    ref.listen(portRangeForwardingListProvider, (previous, next) {
+      ref
+          .read(appsAndGamingProvider.notifier)
+          .setChanged(next != preservedState);
+    });
     return StyledAppPageView(
       scrollable: true,
       useMainPadding: false,
@@ -91,6 +98,7 @@ class _PortRangeForwardingContentViewState
               setState(() {
                 preservedState = state;
               });
+              ref.read(appsAndGamingProvider.notifier).setChanged(false);
             });
           }),
       child: AppBasicLayout(

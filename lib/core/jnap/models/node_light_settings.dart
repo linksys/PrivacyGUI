@@ -2,6 +2,7 @@
 import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/page/nodes/_nodes.dart';
 
 class NodeLightSettings extends Equatable {
   final bool isNightModeEnable;
@@ -14,6 +15,20 @@ class NodeLightSettings extends Equatable {
     this.endHour,
     this.allDayOff,
   });
+
+  factory NodeLightSettings.fromStatus(NodeLightStatus status) =>
+      switch (status) {
+        NodeLightStatus.on => NodeLightSettings.on(),
+        NodeLightStatus.off => NodeLightSettings.off(),
+        NodeLightStatus.night => NodeLightSettings.night(),
+      };
+  factory NodeLightSettings.on() => NodeLightSettings(
+        isNightModeEnable: false,
+      );
+  factory NodeLightSettings.off() =>
+      NodeLightSettings(isNightModeEnable: true, startHour: 0, endHour: 24);
+  factory NodeLightSettings.night() =>
+      NodeLightSettings(isNightModeEnable: true, startHour: 20, endHour: 8);
 
   @override
   List<Object?> get props => [isNightModeEnable, startHour, endHour, allDayOff];
@@ -44,7 +59,8 @@ class NodeLightSettings extends Equatable {
   factory NodeLightSettings.fromMap(Map<String, dynamic> map) {
     return NodeLightSettings(
       isNightModeEnable: map['Enable'] as bool,
-      startHour: map['StartingTime'] != null ? map['StartingTime'] as int : null,
+      startHour:
+          map['StartingTime'] != null ? map['StartingTime'] as int : null,
       endHour: map['EndingTime'] != null ? map['EndingTime'] as int : null,
       allDayOff: map['AllDayOff'] != null ? map['AllDayOff'] as bool : null,
     );
@@ -52,7 +68,8 @@ class NodeLightSettings extends Equatable {
 
   String toJson() => json.encode(toMap());
 
-  factory NodeLightSettings.fromJson(String source) => NodeLightSettings.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory NodeLightSettings.fromJson(String source) =>
+      NodeLightSettings.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
   bool get stringify => true;

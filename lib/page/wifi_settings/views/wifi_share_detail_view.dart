@@ -4,6 +4,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/storage.dart';
@@ -46,7 +47,8 @@ class WiFiShareDetailView extends ConsumerStatefulWidget {
       _WiFiShareDetailViewState();
 }
 
-class _WiFiShareDetailViewState extends ConsumerState<WiFiShareDetailView> {
+class _WiFiShareDetailViewState extends ConsumerState<WiFiShareDetailView>
+    with PageSnackbarMixin {
   GlobalKey globalKey = GlobalKey();
   String get sharingContent =>
       'Connect to my WiFi Network:\n${widget.ssid}\n\nPassword: ${widget.password}';
@@ -157,47 +159,14 @@ class _WiFiShareDetailViewState extends ConsumerState<WiFiShareDetailView> {
             icon: LinksysIcons.fileCopy,
             semanticLabel: 'file copy',
             onTap: () {
-              Clipboard.setData(ClipboardData(text: widget.password)).then(
-                  (value) =>
-                      showSuccessSnackBar(context, loc(context).sharedCopied));
+              Clipboard.setData(ClipboardData(text: widget.password))
+                  .then((value) => showSharedCopiedSnackBar());
             },
           ),
         ),
         // AppText.labelLarge('${widget.numOfDevices} devices connected'),
       ],
     );
-  }
-
-  void _shareByClipboard() {
-    Clipboard.setData(ClipboardData(text: sharingContent))
-        .then((value) => showSuccessSnackBar(context, 'Copied to clipboard'));
-  }
-
-  void _shareByQrCode() async {
-    Size size = MediaQuery.of(context).size;
-    // Capture the image of this render object convert it to byte data
-    final RenderRepaintBoundary boundary =
-        globalKey.currentContext!.findRenderObject()! as RenderRepaintBoundary;
-    final ui.Image image = await boundary.toImage();
-    final ByteData? byteData =
-        await image.toByteData(format: ui.ImageByteFormat.png);
-    final Uint8List pngBytes = byteData!.buffer.asUint8List();
-    // Save the image byte data to the temp directory
-    Uri fileUri =
-        Uri.parse('${Storage.tempDirectory?.path}/shared_wifi_qr_code.png');
-    logger.i('Share WiFi - QRCode: Saved path=${fileUri.path}');
-
-    await Storage.saveByteFile(fileUri, pngBytes).then((_) async {
-      await Share.shareFilesWithResult(
-        [fileUri.path],
-        text: 'Connect to my WiFi',
-        sharePositionOrigin: Rect.fromLTWH(0, 0, size.width, size.height / 2),
-      ).then((result) {
-        logger.d('Share WiFi - QRCode: result=${result.status}');
-        // Delete the qr code image once the sharing operation ends
-        Storage.deleteFile(fileUri);
-      });
-    });
   }
 
   void _shareBySMS() async {

@@ -38,9 +38,11 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
 
   Widget _mobile(BuildContext context, WidgetRef ref, DashboardHomeState state,
       bool isOnline, bool isLoading) {
+    final hasLanPort = state.lanPortConnections.isNotEmpty;
     return Container(
       width: double.infinity,
-      constraints: const BoxConstraints(minHeight: 400),
+      constraints:
+          BoxConstraints(minHeight: !state.isHealthCheckSupported ? 240 : 400),
       child: ShimmerContainer(
         isLoading: isLoading,
         child: AppCard(
@@ -63,7 +65,8 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                                     context,
                                     e == 'None' ? null : e,
                                     loc(context).indexedPort(index + 1),
-                                    false),
+                                    false,
+                                    hasLanPort),
                               ))
                           .toList(),
                       Expanded(
@@ -73,7 +76,8 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                                 ? null
                                 : state.wanPortConnection,
                             loc(context).wan,
-                            true),
+                            true,
+                            hasLanPort),
                       )
                     ],
                   ),
@@ -88,14 +92,19 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
 
   Widget _desktopVertical(BuildContext context, WidgetRef ref,
       DashboardHomeState state, bool isOnline, bool isLoading) {
+    final hasLanPort = state.lanPortConnections.isNotEmpty;
+
     return Container(
-      constraints: const BoxConstraints(minWidth: 150, minHeight: 520),
+      constraints: BoxConstraints(
+          minWidth: 150, minHeight: !state.isHealthCheckSupported ? 360 : 520),
       child: ShimmerContainer(
         isLoading: isLoading,
         child: AppCard(
             padding: EdgeInsets.zero,
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: !state.isHealthCheckSupported
+                  ? MainAxisAlignment.center
+                  : MainAxisAlignment.spaceBetween,
               children: [
                 Padding(
                   padding: const EdgeInsets.symmetric(
@@ -113,7 +122,8 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                                     context,
                                     e == 'None' ? null : e,
                                     loc(context).indexedPort(index + 1),
-                                    false),
+                                    false,
+                                    hasLanPort),
                               ))
                           .toList(),
                       _portWidget(
@@ -122,7 +132,8 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                               ? null
                               : state.wanPortConnection,
                           loc(context).wan,
-                          true),
+                          true,
+                          hasLanPort),
                     ],
                   ),
                 ),
@@ -137,6 +148,8 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
 
   Widget _desktopHorizontal(BuildContext context, WidgetRef ref,
       DashboardHomeState state, bool isOnline, bool isLoading) {
+    final hasLanPort = state.lanPortConnections.isNotEmpty;
+
     return Container(
       width: double.infinity,
       constraints: const BoxConstraints(minHeight: 110),
@@ -162,7 +175,8 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                                     context,
                                     e == 'None' ? null : e,
                                     loc(context).indexedPort(index + 1),
-                                    false),
+                                    false,
+                                    hasLanPort),
                               ))
                           .toList(),
                       Expanded(
@@ -172,7 +186,8 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                                 ? null
                                 : state.wanPortConnection,
                             loc(context).wan,
-                            true),
+                            true,
+                            hasLanPort),
                       )
                     ],
                   ),
@@ -380,8 +395,8 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
     );
   }
 
-  Widget _portWidget(
-      BuildContext context, String? connection, String label, bool isWan) {
+  Widget _portWidget(BuildContext context, String? connection, String label,
+      bool isWan, bool hasLanPorts) {
     final isMobile = ResponsiveLayout.isMobileLayout(context);
     final portLabel = [
       Icon(
@@ -393,75 +408,152 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
             : Theme.of(context).colorSchemeExt.green,
         semanticLabel: 'port icon',
       ),
-      const AppGap.small2(),
-      AppText.labelMedium(label),
+      if (hasLanPorts) ...[
+        const AppGap.small2(),
+        AppText.labelMedium(label),
+      ],
     ];
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Wrap(
-          // mainAxisSize: MainAxisSize.min,
-          alignment: WrapAlignment.center,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            isMobile
-                ? Column(
-                    children: portLabel,
-                  )
-                : Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: portLabel,
-                  )
-          ],
-        ),
-        Padding(
-          padding: const EdgeInsets.all(Spacing.small2),
-          child: SvgPicture(
-            connection == null
-                ? CustomTheme.of(context).images.imgPortOff
-                : CustomTheme.of(context).images.imgPortOn,
-            semanticsLabel: 'port status image',
-            width: 40,
-            height: 40,
-          ),
-        ),
-        if (connection != null)
-          Column(
+
+    return hasLanPorts
+        ? Column(
+            mainAxisAlignment: MainAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
+              Wrap(
+                // mainAxisSize: MainAxisSize.min,
+                alignment: WrapAlignment.center,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  Icon(
-                    LinksysIcons.bidirectional,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  AppText.bodySmall(connection),
+                  isMobile
+                      ? Column(
+                          children: portLabel,
+                        )
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: portLabel,
+                        )
                 ],
               ),
-              SizedBox(
-                width: 70,
-                child: AppText.bodySmall(
-                  loc(context).connectedSpeed,
-                  textAlign: TextAlign.center,
+              Padding(
+                padding: const EdgeInsets.all(Spacing.small2),
+                child: SvgPicture(
+                  connection == null
+                      ? CustomTheme.of(context).images.imgPortOff
+                      : CustomTheme.of(context).images.imgPortOn,
+                  semanticsLabel: 'port status image',
+                  width: 40,
+                  height: 40,
                 ),
-              )
+              ),
+              if (connection != null)
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          LinksysIcons.bidirectional,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        AppText.bodySmall(connection),
+                      ],
+                    ),
+                    SizedBox(
+                      width: 70,
+                      child: AppText.bodySmall(
+                        loc(context).connectedSpeed,
+                        textAlign: TextAlign.center,
+                      ),
+                    )
+                  ],
+                ),
+              if (isWan) AppText.labelMedium(loc(context).internet),
+              Container(
+                constraints: const BoxConstraints(maxWidth: 60),
+                width: 60,
+                child: isWan
+                    ? Container(
+                        height: 2,
+                        color: connection == null
+                            ? Theme.of(context).colorScheme.outlineVariant
+                            : Color(orangeTonal.get(80)))
+                    : null,
+              ),
             ],
-          ),
-        if (isWan) AppText.labelMedium(loc(context).internet),
-        Container(
-          constraints: const BoxConstraints(maxWidth: 60),
-          width: 60,
-          child: isWan
-              ? Container(
-                  height: 2,
-                  color: connection == null
-                      ? Theme.of(context).colorScheme.outlineVariant
-                      : Color(orangeTonal.get(80)))
-              : null,
-        ),
-      ],
-    );
+          )
+        : Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Column(
+                children: [
+                  Wrap(
+                    // mainAxisSize: MainAxisSize.min,
+                    alignment: WrapAlignment.center,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      isMobile
+                          ? Column(
+                              children: portLabel,
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: portLabel,
+                            )
+                    ],
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(Spacing.small2),
+                    child: SvgPicture(
+                      connection == null
+                          ? CustomTheme.of(context).images.imgPortOff
+                          : CustomTheme.of(context).images.imgPortOn,
+                      semanticsLabel: 'port status image',
+                      width: 40,
+                      height: 40,
+                    ),
+                  ),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (connection != null)
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              LinksysIcons.bidirectional,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            AppText.bodyMedium(connection),
+                          ],
+                        ),
+                        AppText.bodySmall(
+                          loc(context).connectedSpeed,
+                          textAlign: TextAlign.center,
+                        )
+                      ],
+                    ),
+                  if (isWan) AppText.labelMedium(loc(context).internet),
+                  Container(
+                    constraints: const BoxConstraints(maxWidth: 60),
+                    width: 60,
+                    child: isWan
+                        ? Container(
+                            height: 2,
+                            color: connection == null
+                                ? Theme.of(context).colorScheme.outlineVariant
+                                : Color(orangeTonal.get(80)))
+                        : null,
+                  ),
+                ],
+              ),
+            ],
+          );
   }
 }

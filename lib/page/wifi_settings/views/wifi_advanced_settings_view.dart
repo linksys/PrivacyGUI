@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
@@ -52,19 +53,31 @@ class _WifiAdvancedSettingsViewState
       bottomBar: PageBottomBar(
           isPositiveEnabled: _preservedState != ref.read(wifiAdvancedProvider),
           onPositiveTap: () {
-            doSomethingWithSpinner(
-              context,
-              ref.read(wifiAdvancedProvider.notifier).save().then(
-                (state) {
-                  setState(() {
-                    ref.read(wifiViewProvider.notifier).setChanged(false);
-                    _preservedState = state;
-                  });
-                },
-              ),
-            );
+            if (ref.read(wifiAdvancedProvider).isDFSEnabled == true) {
+              _showConfirmDFSModal().then((value) {
+                if (value == true) {
+                  save();
+                }
+              });
+            } else {
+              save();
+            }
           }),
       child: _buildGrid(),
+    );
+  }
+
+  Future save() {
+    return doSomethingWithSpinner(
+      context,
+      ref.read(wifiAdvancedProvider.notifier).save().then(
+        (state) {
+          setState(() {
+            ref.read(wifiViewProvider.notifier).setChanged(false);
+            _preservedState = state;
+          });
+        },
+      ),
     );
   }
 
@@ -197,6 +210,7 @@ class _WifiAdvancedSettingsViewState
                 title: AppText.labelLarge(loc(context).mlo),
                 semanticLabel: 'mlo',
                 description: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     AppText.bodyMedium(loc(context).mloDesc),
                     if (showMLOWarning) ...[
@@ -220,5 +234,25 @@ class _WifiAdvancedSettingsViewState
   void _showDFSModal() {
     showMessageAppOkDialog(context,
         title: loc(context).dfs, message: loc(context).modalDFSDesc);
+  }
+
+  Future<bool?> _showConfirmDFSModal() {
+    return showMessageAppDialog(context,
+        title: loc(context).dfs,
+        message: loc(context).modalDFSDesc,
+        actions: [
+          AppTextButton(
+            loc(context).cancel,
+            onTap: () {
+              context.pop();
+            },
+          ),
+          AppTextButton(
+            loc(context).ok,
+            onTap: () {
+              context.pop(true);
+            },
+          ),
+        ]);
   }
 }
