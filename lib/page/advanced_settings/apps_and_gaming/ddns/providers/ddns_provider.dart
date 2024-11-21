@@ -90,20 +90,23 @@ class DDNSNotifier extends Notifier<DDNSState> {
   Future<DDNSState> save() {
     return ref
         .read(routerRepositoryProvider)
-        .send(JNAPAction.setDDNSSetting,
-            data: DDNSSettings(
-              ddnsProvider: state.provider.name,
-              dynDNSSettings: state.provider is DynDNSProvider
-                  ? state.provider.settings
-                  : null,
-              noIPSettings: state.provider is NoIPDNSProvider
-                  ? state.provider.settings
-                  : null,
-              tzoSettings: state.provider is TzoDNSProvider
-                  ? state.provider.settings
-                  : null,
-            ).toMap()
-              ..removeWhere((key, value) => value == null))
+        .send(
+          JNAPAction.setDDNSSetting,
+          data: DDNSSettings(
+            ddnsProvider: state.provider.name,
+            dynDNSSettings: state.provider is DynDNSProvider
+                ? state.provider.settings
+                : null,
+            noIPSettings: state.provider is NoIPDNSProvider
+                ? state.provider.settings
+                : null,
+            tzoSettings: state.provider is TzoDNSProvider
+                ? state.provider.settings
+                : null,
+          ).toMap()
+            ..removeWhere((key, value) => value == null),
+          auth: true,
+        )
         .then((value) => fetch(true));
   }
 

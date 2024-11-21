@@ -26,22 +26,23 @@ final DhcpOption openDNSSetting = DhcpOption(
   dnsServer1: '208.67.222.123',
   dnsServer2: '208.67.220.123',
 );
+// Remove all fortinet compatibility map
 final compatibilityMap = [
-  const CompatibilityItem(
-    modelRegExp: '^MX62',
-    compatibleFW: CompatibilityFW(min: '1.0.5.213402'),
-  ),
-  const CompatibilityItem(
-    modelRegExp: '^MBE70',
-    compatibleFW: CompatibilityFW(min: '1.0.4.213257'),
-  ),
-  const CompatibilityItem(modelRegExp: '^MBE71'),
-  const CompatibilityItem(
-    modelRegExp: '^LN11',
-    compatibleFW: CompatibilityFW(min: '1.0.2.213420'),
-  ),
-  const CompatibilityItem(modelRegExp: '^LN14'),
-  const CompatibilityItem(modelRegExp: '^LN15'),
+  // const CompatibilityItem(
+  //   modelRegExp: '^MX62',
+  //   compatibleFW: CompatibilityFW(min: '1.0.5.213402'),
+  // ),
+  // const CompatibilityItem(
+  //   modelRegExp: '^MBE70',
+  //   compatibleFW: CompatibilityFW(min: '1.0.4.213257'),
+  // ),
+  // const CompatibilityItem(modelRegExp: '^MBE71'),
+  // const CompatibilityItem(
+  //   modelRegExp: '^LN11',
+  //   compatibleFW: CompatibilityFW(min: '1.0.2.213420'),
+  // ),
+  // const CompatibilityItem(modelRegExp: '^LN14'),
+  // const CompatibilityItem(modelRegExp: '^LN15'),
   // const CompatibilityItem(modelRegExp: '^LN16'),
   // const CompatibilityItem(modelRegExp: '^MX57'),
 ];

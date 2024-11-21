@@ -5,7 +5,6 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/components/settings_view/editable_card_list_settings_view.dart';
 import 'package:privacy_gui/page/components/settings_view/editable_table_settings_view.dart';
-import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
@@ -15,6 +14,7 @@ import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/input_field/ip_form_field_display_type.dart';
 import 'package:privacygui_widgets/widgets/input_field/ipv6_form_field.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
@@ -31,7 +31,7 @@ class Ipv6PortServiceListView extends ArgumentsConsumerStatefulView {
 class _Ipv6PortServiceListViewState
     extends ConsumerState<Ipv6PortServiceListView> {
   late final Ipv6PortServiceListNotifier _notifier;
-  Ipv6PortServiceListState? preservedState;
+  // Ipv6PortServiceListState? preservedState;
   // Fro Edit table settings
   final TextEditingController applicationTextController =
       TextEditingController();
@@ -43,14 +43,14 @@ class _Ipv6PortServiceListViewState
   @override
   void initState() {
     _notifier = ref.read(ipv6PortServiceListProvider.notifier);
-    doSomethingWithSpinner(
-      context,
-      _notifier.fetch(),
-    ).then((state) {
-      setState(() {
-        preservedState = state;
-      });
-    });
+    // doSomethingWithSpinner(
+    //   context,
+    //   _notifier.fetch(),
+    // ).then((state) {
+    //   setState(() {
+    //     preservedState = state;
+    //   });
+    // });
     super.initState();
   }
 
@@ -67,15 +67,15 @@ class _Ipv6PortServiceListViewState
       scrollable: true,
       useMainPadding: false,
       title: loc(context).ipv6PortServices,
-      bottomBar: PageBottomBar(
-          isPositiveEnabled: state != preservedState,
-          onPositiveTap: () {
-            doSomethingWithSpinner(context, _notifier.save()).then((state) {
-              setState(() {
-                preservedState = state;
-              });
-            });
-          }),
+      // bottomBar: PageBottomBar(
+      //     isPositiveEnabled: state != preservedState,
+      //     onPositiveTap: () {
+      //       doSomethingWithSpinner(context, _notifier.save()).then((state) {
+      //         setState(() {
+      //           preservedState = state;
+      //         });
+      //       });
+      //     }),
       child: AppBasicLayout(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -158,7 +158,7 @@ class _Ipv6PortServiceListViewState
     return AppEditableTableSettingsView<IPv6FirewallRule>(
       title: loc(context).ipv6PortServices,
       addEnabled: !_notifier.isExceedMax(),
-      emptyMessage: loc(context).noPortRangeForwarding,
+      emptyMessage: loc(context).noIPv6PortService,
       onStartEdit: (index, rule) {
         ref
             .read(ipv6PortServiceRuleProvider.notifier)
@@ -246,9 +246,9 @@ class _Ipv6PortServiceListViewState
               },
             ),
           2 => AppIPv6FormField(
+              displayType: AppIpFormFieldDisplayType.tight,
               controller: ipAddressTextController,
               border: const OutlineInputBorder(),
-              forceWrapping: true,
               onChanged: (value) {
                 ref
                     .read(ipv6PortServiceRuleProvider.notifier)

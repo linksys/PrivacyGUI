@@ -6,7 +6,7 @@ import 'package:privacy_gui/core/http/linksys_http_client.dart';
 
 extension PingService on LinksysHttpClient {
   Future<Response> testPingPng() {
-    final endpoint = combineUrl(kTestPingPng);
+    final endpoint = '${combineUrl(kTestPingPng)}/?ts=${DateTime.now().millisecondsSinceEpoch}';
     final header = defaultHeader
       ..addAll({
         HttpHeaders.contentTypeHeader: 'image/png',

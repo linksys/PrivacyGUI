@@ -19,6 +19,7 @@ import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
+import 'package:privacygui_widgets/widgets/input_field/ip_form_field_display_type.dart';
 import 'package:privacygui_widgets/widgets/radios/radio_list.dart';
 
 class StaticRoutingView extends ArgumentsConsumerStatefulView {
@@ -190,8 +191,8 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView> {
   Widget _desktopSettingsView(
       StaticRoutingState state, List<String> submaskToken, String prefixIP) {
     return AppEditableTableSettingsView<NamedStaticRouteEntry>(
-      title: loc(context).singlePortForwarding,
-      emptyMessage: loc(context).noSinglePortForwarding,
+      title: loc(context).staticRouting,
+      emptyMessage: loc(context).noStaticRoutes,
       addEnabled: !_notifier.isExceedMax(),
       onStartEdit: (index, rule) {
         ref.read(staticRoutingRuleProvider.notifier).init(state.setting.entries,
@@ -261,6 +262,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView> {
               },
             ),
           1 => AppIPFormField(
+              displayType: AppIpFormFieldDisplayType.tight,
               controller: destinationIPTextController,
               border: const OutlineInputBorder(),
               onChanged: (value) {
@@ -278,6 +280,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView> {
               },
             ),
           2 => AppIPFormField(
+              displayType: AppIpFormFieldDisplayType.tight,
               controller: subnetMaskTextController,
               border: const OutlineInputBorder(),
               onChanged: (value) {
@@ -287,6 +290,24 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView> {
                           networkPrefixLength:
                               NetworkUtils.subnetMaskToPrefixLength(value),
                         ),
+                      ),
+                    );
+                setState(() {
+                  _isEditRuleValid = ref
+                      .read(staticRoutingRuleProvider.notifier)
+                      .isRuleValid();
+                });
+              },
+            ),
+          3 => AppIPFormField(
+              displayType: AppIpFormFieldDisplayType.tight,
+              controller: gatewayTextController,
+              border: const OutlineInputBorder(),
+              onChanged: (value) {
+                ref.read(staticRoutingRuleProvider.notifier).updateRule(
+                      stateRule?.copyWith(
+                        settings:
+                            stateRule.settings.copyWith(gateway: () => value),
                       ),
                     );
                 setState(() {
@@ -310,23 +331,6 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView> {
                       stateRule?.copyWith(
                         settings:
                             stateRule.settings.copyWith(interface: value.value),
-                      ),
-                    );
-                setState(() {
-                  _isEditRuleValid = ref
-                      .read(staticRoutingRuleProvider.notifier)
-                      .isRuleValid();
-                });
-              },
-            ),
-          3 => AppIPFormField(
-              controller: gatewayTextController,
-              border: const OutlineInputBorder(),
-              onChanged: (value) {
-                ref.read(staticRoutingRuleProvider.notifier).updateRule(
-                      stateRule?.copyWith(
-                        settings:
-                            stateRule.settings.copyWith(gateway: () => value),
                       ),
                     );
                 setState(() {

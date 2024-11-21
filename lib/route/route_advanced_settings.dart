@@ -124,7 +124,7 @@ final advancedSettings = [
       name: RouteNamed.settingsFirewall,
       path: RoutePath.settingsFirewall,
       config: LinksysRouteConfig(
-        column: ColumnGrid(column: 9),
+        column: ColumnGrid(column: 12),
       ),
       builder: (context, state) => FirewallView(
             args: state.extra as Map<String, dynamic>? ?? {},

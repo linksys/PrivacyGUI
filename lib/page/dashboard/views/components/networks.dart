@@ -65,6 +65,8 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
     final nodeTopologyHeight =
         (topologyState.root.children.firstOrNull?.toFlatList().length ?? 1) *
             116.0;
+    final hasLanPort =
+        ref.read(dashboardHomeProvider).lanPortConnections.isNotEmpty;
     return Container(
       constraints: BoxConstraints(minHeight: 200 + nodeTopologyHeight),
       child: ShimmerContainer(
@@ -74,9 +76,11 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ResponsiveLayout(
-                desktop: state.isHorizontalLayout
-                    ? _desktopHorizontal(context, ref)
-                    : _desktopVertical(context, ref),
+                desktop: !hasLanPort
+                    ? _mobile(context, ref)
+                    : state.isHorizontalLayout
+                        ? _desktopHorizontal(context, ref)
+                        : _desktopVertical(context, ref),
                 mobile: _mobile(context, ref),
               ),
               const AppGap.large2(),

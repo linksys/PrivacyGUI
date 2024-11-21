@@ -10,6 +10,7 @@ import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/views/dhcp_server_view.dart';
+import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
@@ -43,7 +44,7 @@ class LocalNetworkSettingsView extends ArgumentsConsumerStatefulView {
 }
 
 class _LocalNetworkSettingsViewState
-    extends ConsumerState<LocalNetworkSettingsView> {
+    extends ConsumerState<LocalNetworkSettingsView> with PageSnackbarMixin {
   late LocalNetworkSettingsState originalSettings;
   late LocalNetworkSettingsNotifier _notifier;
   final hostNameController = TextEditingController();
@@ -93,7 +94,7 @@ class _LocalNetworkSettingsViewState
     final state = ref.watch(localNetworkSettingProvider);
     final tabs = [
       loc(context).hostName,
-      loc(context).wanIPAddress,
+      loc(context).lanIPAddress,
       loc(context).dhcpServer,
     ];
     final tabContents = [
@@ -267,32 +268,36 @@ class _LocalNetworkSettingsViewState
           setState(() {
             originalSettings = state;
           });
-          showSuccessSnackBar(context, loc(context).changesSaved);
+          showChangesSavedSnackBar();
         },
-      ).catchError((error) {
-        showRouterNotFoundAlert(context, ref, onComplete: () async {
-          // Update the state
-          await _notifier.fetch(fetchRemote: true);
-          // Update instant safety
-          await ref.read(instantSafetyProvider.notifier).fetchLANSettings();
-          setState(() {
-            originalSettings = state;
-          });
-          showSuccessSnackBar(context, loc(context).changesSaved);
-        });
-      }, test: (error) => error is JNAPSideEffectError).onError(
-              (error, stackTrace) {
-        final errorMsg = switch (error.runtimeType) {
+      ),
+    ).catchError((error) {
+      _showRouterNotFoundModal();
+    }, test: (error) => error is JNAPSideEffectError).onError(
+        (error, stackTrace) {
+      showErrorMessageSnackBar(error);
+    });
+  }
+
+  String _getErrorMessage(Object? error) {
+    return switch (error.runtimeType) {
           JNAPError => errorCodeHelper(context, (error as JNAPError).result),
           TimeoutException => loc(context).generalError,
           _ => loc(context).unknownError,
-        };
-        showFailedSnackBar(
-          context,
-          errorMsg ??
-              loc(context).unknownErrorCode((error as JNAPError).result),
-        );
-      }),
-    );
+        } ??
+        loc(context).unknownErrorCode((error as JNAPError).result);
+  }
+
+  void _showRouterNotFoundModal() {
+    showRouterNotFoundAlert(context, ref, onComplete: () async {
+      // Update the state
+      final state = await _notifier.fetch(fetchRemote: true);
+      // Update instant safety
+      await ref.read(instantSafetyProvider.notifier).fetchLANSettings();
+      setState(() {
+        originalSettings = state;
+      });
+      showChangesSavedSnackBar();
+    });
   }
 }

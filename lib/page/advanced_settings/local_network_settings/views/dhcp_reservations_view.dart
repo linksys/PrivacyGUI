@@ -1,8 +1,8 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/dhcp_reservations_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/dhcp_reservations_state.dart';
-import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -55,9 +55,10 @@ class _DHCPReservationsContentViewState
       ref.read(deviceFilterConfigProvider.notifier).initFilter();
       final reservations = ref.read(localNetworkSettingProvider
           .select((state) => state.dhcpReservationList));
-      ref.read(dhcpReservationProvider.notifier).setReservations(reservations);
+      _preservedState = ref
+          .read(dhcpReservationProvider.notifier)
+          .setReservations(reservations);
     });
-    ;
   }
 
   @override
@@ -76,7 +77,8 @@ class _DHCPReservationsContentViewState
       scrollable: true,
       title: loc(context).dhcpReservations.capitalizeWords(),
       bottomBar: PageBottomBar(
-          isPositiveEnabled: state != _preservedState,
+          isPositiveEnabled: !ListEquality()
+              .equals(state.reservations, _preservedState?.reservations),
           onPositiveTap: () {
             final reservations = ref
                 .read(dhcpReservationProvider)
@@ -130,23 +132,27 @@ class _DHCPReservationsContentViewState
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          AppText.labelLarge(loc(context)
-                              .nReservedAddresses(state.reservations
-                                  .where((e) => e.reserved)
-                                  .length)
-                              .capitalizeWords()),
-                          AppIconButton(
-                            icon: LinksysIcons.filter,
-                            onTap: () {
-                              showBottomSheet(
-                                  context: context,
-                                  builder: (context) {
-                                    return DevicesFilterWidget(
+                          Expanded(
+                            child: AppText.labelLarge(loc(context)
+                                .nReservedAddresses(state.reservations
+                                    .where((e) => e.reserved)
+                                    .length)
+                                .capitalizeWords()),
+                          ),
+                          if (ResponsiveLayout.isMobileLayout(context))
+                            AppIconButton(
+                              icon: LinksysIcons.filter,
+                              onTap: () {
+                                showSimpleAppOkDialog(
+                                  context,
+                                  content: SingleChildScrollView(
+                                    child: DevicesFilterWidget(
                                       onlineOnly: true,
-                                    );
-                                  });
-                            },
-                          )
+                                    ),
+                                  ),
+                                );
+                              },
+                            )
                         ],
                       ),
                       const AppGap.medium(),
@@ -166,7 +172,8 @@ class _DHCPReservationsContentViewState
     final state = ref.watch(dhcpReservationProvider);
     final list = [
       ...state.reservations,
-      ...state.devices,
+      ...state.devices.where((e) => !state.reservations
+          .any((r) => r.data.macAddress == e.data.macAddress)),
     ]..sort((a, b) => a.reserved
         ? -1
         : b.reserved
@@ -245,7 +252,8 @@ class _DHCPReservationsContentViewState
     final macController = TextEditingController();
 
     bool enableSave = false;
-
+    bool isNameValid(String name) => !HostNameRule().validate(name);
+    bool isMacValid(String mac) => MACAddressRule().validate(mac);
     bool updateEnableSave() {
       final name = deviceNameController.text;
       final ip = ipController.text;
@@ -254,10 +262,8 @@ class _DHCPReservationsContentViewState
       bool edited = name != item?.description ||
           ip != item?.ipAddress ||
           mac != item?.macAddress;
-      final InputValidator macValidator = InputValidator([MACAddressRule()]);
 
-      bool isMacValid = macValidator.validate(mac);
-      return allFilled && edited && isMacValid;
+      return allFilled && edited && isMacValid(mac) && isNameValid(name);
     }
 
     return showSubmitAppDialog(context,
@@ -270,6 +276,9 @@ class _DHCPReservationsContentViewState
                 headerText: loc(context).deviceName,
                 controller: deviceNameController,
                 border: const OutlineInputBorder(),
+                errorText: !(isNameValid(deviceNameController.text))
+                    ? loc(context).invalidCharacters
+                    : null,
                 onChanged: (value) {
                   setState(() {
                     enableSave = updateEnableSave();
@@ -298,6 +307,9 @@ class _DHCPReservationsContentViewState
                 semanticLabel: 'mac address',
                 controller: macController,
                 border: const OutlineInputBorder(),
+                errorText: !isMacValid(macController.text)
+                    ? loc(context).invalidMACAddress
+                    : null,
                 onChanged: (value) {
                   setState(() {
                     enableSave = updateEnableSave();

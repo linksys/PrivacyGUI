@@ -56,7 +56,7 @@ class _StaticRoutingDetailViewState
       _routeNameController.text = rule!.name;
       _subnetController.text = NetworkUtils.prefixLengthToSubnetMask(
           rule.settings.networkPrefixLength);
-      _gatewayController.text = rule.settings.gateway!;
+      _gatewayController.text = rule.settings.gateway ?? '';
       _destinationIpController.text = rule.settings.destinationLAN;
       index = rules.indexOf(rule);
     } else {
@@ -66,6 +66,8 @@ class _StaticRoutingDetailViewState
         settings: StaticRouteEntry(
             destinationLAN: '', interface: 'LAN', networkPrefixLength: 24),
       );
+      _subnetController.text = NetworkUtils.prefixLengthToSubnetMask(
+          rule.settings.networkPrefixLength);
     }
     doSomethingWithSpinner(context, Future.doWhile(() => !mounted)).then((_) {
       _notifier.init(rules, rule, index, routerIp, subnetMask);

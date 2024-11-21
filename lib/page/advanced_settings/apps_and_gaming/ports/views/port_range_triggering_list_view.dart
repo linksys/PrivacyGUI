@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/models/port_range_triggering_rule.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/_ports.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/providers/apps_and_gaming_provider.dart';
 import 'package:privacy_gui/page/components/settings_view/editable_card_list_settings_view.dart';
 import 'package:privacy_gui/page/components/settings_view/editable_table_settings_view.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
@@ -64,6 +65,7 @@ class _PortRangeTriggeringContentViewState
       setState(() {
         preservedState = state;
       });
+      ref.read(appsAndGamingProvider.notifier).setChanged(false);
     });
   }
 
@@ -80,6 +82,11 @@ class _PortRangeTriggeringContentViewState
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(portRangeTriggeringListProvider);
+    ref.listen(portRangeTriggeringListProvider, (previous, next) {
+      ref
+          .read(appsAndGamingProvider.notifier)
+          .setChanged(next != preservedState);
+    });
     return StyledAppPageView(
       scrollable: true,
       useMainPadding: false,
@@ -94,6 +101,7 @@ class _PortRangeTriggeringContentViewState
                 preservedState = state;
               });
             });
+            ref.read(appsAndGamingProvider.notifier).setChanged(false);
           }),
       child: AppBasicLayout(
         content: Column(

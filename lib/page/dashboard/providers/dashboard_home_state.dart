@@ -5,10 +5,6 @@ import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
 import 'package:privacy_gui/core/jnap/models/radio_info.dart';
 
-import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/wifi_item.dart';
-
 class DashboardWiFiItem extends Equatable {
   final String ssid;
   final String password;

@@ -41,27 +41,38 @@ class DashboardWiFiGrid extends ConsumerWidget {
           : mainAxisCount * itemHeight +
               ((mainAxisCount == 0 ? 1 : mainAxisCount) - 1) * mainSpacing +
               100,
-      child: GridView.builder(
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: crossAxisCount,
-          mainAxisSpacing: Spacing.medium,
-          crossAxisSpacing: mainSpacing,
-          // childAspectRatio: (3 / 2),
-          mainAxisExtent: itemHeight,
+      child: ShimmerContainer(
+        isLoading: isLoading,
+        child: GridView.builder(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            mainAxisSpacing: Spacing.medium,
+            crossAxisSpacing: mainSpacing,
+            // childAspectRatio: (3 / 2),
+            mainAxisExtent: itemHeight,
+          ),
+          physics: const NeverScrollableScrollPhysics(),
+          shrinkWrap: true,
+          itemCount: isLoading ? 4 : items.length,
+          itemBuilder: (context, index) {
+            final item = isLoading ? null : items[index];
+            return SizedBox(
+                height: itemHeight,
+                child: _wifiCard(
+                    context,
+                    ref,
+                    item ??
+                        DashboardWiFiItem(
+                            ssid: 'ssid',
+                            password: 'password',
+                            radios: const ['6GHz'],
+                            isGuest: false,
+                            isEnabled: true,
+                            numOfConnectedDevices: 7),
+                    index,
+                    canBeDisabled));
+          },
         ),
-        physics: const NeverScrollableScrollPhysics(),
-        shrinkWrap: true,
-        itemCount: isLoading ? 4 : items.length,
-        itemBuilder: (context, index) {
-          final item = isLoading ? null : items[index];
-          return ShimmerContainer(
-              isLoading: isLoading,
-              child: SizedBox(
-                  height: itemHeight,
-                  child: item == null
-                      ? Container()
-                      : _wifiCard(context, ref, item, index, canBeDisabled)));
-        },
       ),
     );
   }
@@ -150,7 +161,8 @@ class DashboardWiFiGrid extends ConsumerWidget {
         ],
       ),
       onTap: () {
-        context.pushNamed(RouteNamed.menuIncredibleWiFi);
+        context.pushNamed(RouteNamed.menuIncredibleWiFi,
+            extra: {'wifiIndex': index, 'guest': item.isGuest});
       },
     );
   }

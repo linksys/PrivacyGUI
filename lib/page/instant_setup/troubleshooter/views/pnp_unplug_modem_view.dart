@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
@@ -44,6 +45,7 @@ class _PnpUnplugModemViewState extends ConsumerState<PnpUnplugModemView> {
           Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SvgPicture(
                   CustomTheme.of(context).images.modemPlugged,
@@ -52,27 +54,21 @@ class _PnpUnplugModemViewState extends ConsumerState<PnpUnplugModemView> {
                 ),
                 const AppGap.large3(),
                 const AppGap.large5(),
-                Wrap(
-                  children: [
-                    AppTextButton.noPadding(
-                      loc(context).pnpUnplugModemTip,
-                      onTap: () {
-                        showModalBottomSheet(
-                          context: context,
-                          useRootNavigator: true,
-                          useSafeArea: true,
-                          isScrollControlled: true,
-                          showDragHandle: true,
-                          builder: (context) {
-                            return _bottomSheetContent();
-                          },
-                        );
-                      },
-                    ),
-                  ],
-                ),
               ],
             ),
+          ),
+          Wrap(
+            children: [
+              AppTextButton.noPadding(
+                loc(context).pnpUnplugModemTip,
+                onTap: () {
+                  showSimpleAppOkDialog(
+                    context,
+                    content: _bottomSheetContent(),
+                  );
+                },
+              ),
+            ],
           ),
           const AppGap.large3(),
           AppFilledButton(
@@ -91,6 +87,7 @@ class _PnpUnplugModemViewState extends ConsumerState<PnpUnplugModemView> {
       padding: const EdgeInsets.all(Spacing.large2),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           AppText.headlineSmall(
             loc(context).pnpUnplugModemTipTitle,

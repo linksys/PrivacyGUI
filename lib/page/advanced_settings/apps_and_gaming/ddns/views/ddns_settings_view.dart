@@ -4,6 +4,7 @@ import 'package:privacy_gui/core/jnap/models/dyn_dns_settings.dart';
 import 'package:privacy_gui/core/jnap/models/no_ip_settings.dart';
 import 'package:privacy_gui/core/jnap/models/tzo_settings.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/providers/apps_and_gaming_provider.dart';
 import 'package:privacy_gui/page/components/customs/animated_refresh_container.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
@@ -45,6 +46,7 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
         .then((state) {
       setState(() {
         _preserveState = state;
+        ref.read(appsAndGamingProvider.notifier).setChanged(false);
       });
     });
   }
@@ -52,6 +54,11 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(ddnsProvider);
+    ref.listen(ddnsProvider, (previous, next) {
+      ref
+          .read(appsAndGamingProvider.notifier)
+          .setChanged(next != _preserveState);
+    });
     return StyledAppPageView(
       useMainPadding: false,
       appBarStyle: AppBarStyle.none,
@@ -98,37 +105,15 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
             ],
           ),
           mobile: Column(
-            children: [_ddnsProvideSelector(state)],
+            children: [
+              _ddnsProvideSelector(state),
+              if (state.provider is! NoDDNSProvider) _buildStatusCell(state)
+            ],
           ),
         ),
       ),
     );
   }
-
-  Widget _desktopLayout(DDNSState state) => Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Flexible(flex: 1, child: _buildDNSForms(state)),
-          Flexible(
-              flex: 1,
-              child: Align(
-                  alignment: Alignment.center,
-                  child: Card(
-                      child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: _buildStatusCell(state),
-                  )))),
-        ],
-      );
-  Widget _mobileLayout(DDNSState state) => Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildDNSForms(state),
-          _buildStatusCell(state),
-        ],
-      );
 
   Widget _ddnsProvideSelector(DDNSState state) => AppCard(
         child: Column(
@@ -138,7 +123,7 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
             AppText.titleMedium(loc(context).selectAProvider),
             const AppGap.medium(),
             AppDropdownButton<String>(
-              initial: state.provider.name,
+              selected: state.provider.name,
               items: state.supportedProvider,
               label: (item) {
                 if (item == dynDNSProviderName) {

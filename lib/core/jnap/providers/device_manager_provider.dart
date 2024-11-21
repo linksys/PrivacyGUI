@@ -1,6 +1,5 @@
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_provider.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/extensions/_extensions.dart';
@@ -8,7 +7,6 @@ import 'package:privacy_gui/core/jnap/models/back_haul_info.dart';
 import 'package:privacy_gui/core/jnap/models/device.dart';
 import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
 import 'package:privacy_gui/core/jnap/models/layer2_connection.dart';
-import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
 import 'package:privacy_gui/core/jnap/models/node_wireless_connection.dart';
 import 'package:privacy_gui/core/jnap/models/radio_info.dart';
 import 'package:privacy_gui/core/jnap/models/wan_status.dart';
@@ -396,29 +394,6 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
       });
       state = state.copyWith(deviceList: newList);
     }
-  }
-
-  Future<NodeLightSettings> getLEDLight() async {
-    final routerRepository = ref.read(routerRepositoryProvider);
-    final result = await routerRepository.send(
-      JNAPAction.getLedNightModeSetting,
-      auth: true,
-      cacheLevel: CacheLevel.noCache,
-    );
-    return NodeLightSettings.fromMap(result.output);
-  }
-
-  Future<void> setLEDLight(NodeLightSettings settings) async {
-    final routerRepository = ref.read(routerRepositoryProvider);
-    await routerRepository.send(
-      JNAPAction.setLedNightModeSetting,
-      data: {
-        'Enable': settings.isNightModeEnable,
-        'StartingTime': settings.startHour,
-        'EndingTime': settings.endHour,
-      }..removeWhere((key, value) => value == null),
-      auth: true,
-    );
   }
 
   Future<void> deleteDevices({required List<String> deviceIds}) {

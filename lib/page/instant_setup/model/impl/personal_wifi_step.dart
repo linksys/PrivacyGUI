@@ -128,7 +128,7 @@ class PersonalWiFiStep extends PnpStep {
     final password = _passwordEditController?.text ?? '';
     final noSurroundSpace = NoSurroundWhitespaceRule().validate(password);
     final noUseUnsupportChar = AsciiRule().validate(password);
-    if (ssid.isNotEmpty &&
+    if (LengthRule(min: 1, max: 32).validate(ssid) &&
         password.isNotEmpty &&
         password.length >= 8 &&
         password.length <= 64 &&

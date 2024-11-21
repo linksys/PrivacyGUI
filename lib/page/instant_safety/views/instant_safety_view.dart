@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
@@ -23,7 +24,8 @@ class InstantSafetyView extends ArgumentsConsumerStatefulView {
   ConsumerState<InstantSafetyView> createState() => _InstantSafetyViewState();
 }
 
-class _InstantSafetyViewState extends ConsumerState<InstantSafetyView> {
+class _InstantSafetyViewState extends ConsumerState<InstantSafetyView>
+    with PageSnackbarMixin {
   late final InstantSafetyNotifier _notifier;
   bool enableSafeBrowsing = false;
   InstantSafetyType currentSafeBrowsingType = InstantSafetyType.fortinet;
@@ -153,10 +155,7 @@ class _InstantSafetyViewState extends ConsumerState<InstantSafetyView> {
               : InstantSafetyType.off)
           .then((_) {
         _initCurrentState();
-        showSuccessSnackBar(
-          context,
-          loc(context).settingsSaved,
-        );
+        showChangesSavedSnackBar();
       }),
     ).catchError((error) {
       showRouterNotFoundAlert(context, ref, onComplete: () async {
@@ -164,10 +163,7 @@ class _InstantSafetyViewState extends ConsumerState<InstantSafetyView> {
             .read(instantSafetyProvider.notifier)
             .fetchLANSettings(fetchRemote: true);
         _initCurrentState();
-        showSuccessSnackBar(
-          context,
-          loc(context).settingsSaved,
-        );
+        showChangesSavedSnackBar();
       });
     }, test: (error) => error is JNAPSideEffectError).onError(
         (error, stackTrace) {

@@ -1039,5 +1039,8 @@
   "retypeRouterPassword": "Retype Router Password",
   "externalSpeedText": "External speed test",
   "hideHint": "Hide hint",
-  "execute": "Execute"
+  "execute": "Execute",
+  "allDayOff": "All day off",
+  "nightModeTime": "8PM - 8AM",
+  "invalidCharacters": "Invalid characters"
 }

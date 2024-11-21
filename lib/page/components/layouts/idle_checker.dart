@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 
 class IdleChecker extends StatefulWidget {
   final Duration idleTime;
