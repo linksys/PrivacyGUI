@@ -40,10 +40,9 @@ class StaticRoutingRuleNotifier extends Notifier<StaticRoutingRuleState> {
     }
     return rule.name.isNotEmpty &&
         isValidSubnetMask(rule.settings.networkPrefixLength) &&
-        isValidIpAddress(rule.settings.destinationLAN) &&
-        (rule.settings.gateway == null ||
-            isValidIpAddress(
-                rule.settings.gateway!, rule.settings.interface == 'LAN'));
+        IpAddressValidator().validate(rule.settings.destinationLAN) &&
+        isValidIpAddress(
+            rule.settings.gateway ?? '', rule.settings.interface == 'LAN');
   }
 
   bool isValidSubnetMask(int perfixLength) {
@@ -52,9 +51,13 @@ class StaticRoutingRuleNotifier extends Notifier<StaticRoutingRuleState> {
   }
 
   bool isValidIpAddress(String ipAddress, [bool localIPOnly = false]) {
-    final validator = localIPOnly
-        ? IpAddressAsLocalIpValidator(state.routerIp, state.subnetMask)
-        : IpAddressValidator();
-    return validator.validate(ipAddress);
+    if (localIPOnly) {
+      return IpAddressAsLocalIpValidator(state.routerIp, state.subnetMask)
+          .validate(ipAddress);
+    } else {
+      return IpAddressValidator().validate(ipAddress) &&
+          !IpAddressAsLocalIpValidator(state.routerIp, state.subnetMask)
+              .validate(ipAddress);
+    }
   }
 }

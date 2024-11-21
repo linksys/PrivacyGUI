@@ -4,6 +4,7 @@ import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
 
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/dhcp_reservations_state.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
+import 'package:privacy_gui/validator_rules/rules.dart';
 
 final dhcpReservationProvider = NotifierProvider.autoDispose<
     DHCPReservationsNotifier,
@@ -36,8 +37,6 @@ class DHCPReservationsNotifier
       [List<DeviceListItem> deviceList = const []]) {
     state = state.copyWith(
         devices: deviceList
-            .where((e) => !state.reservations
-                .any((r) => r.data.macAddress == e.macAddress))
             .map((e) => ReservedListItem(
                 reserved: false,
                 data: DHCPReservation(
@@ -68,11 +67,12 @@ class DHCPReservationsNotifier
               [item.copyWith(reserved: !item.reserved)],
             ));
       state = state.copyWith(
-          reservations: newRList,
-          devices: dList
-              .where((e) =>
-                  !newRList.any((r) => r.data.macAddress == e.data.macAddress))
-              .toList());
+        reservations: newRList,
+        // devices: dList
+        //     .where((e) =>
+        //         !newRList.any((r) => r.data.macAddress == e.data.macAddress))
+        //     .toList(),
+      );
       return;
     }
     hit = dList
@@ -81,13 +81,18 @@ class DHCPReservationsNotifier
     if (hit != null) {
       // This item is found on device list, add into reserveation list
       final newRList = List<ReservedListItem>.from(rList)
-        ..add(item.copyWith(reserved: !item.reserved));
+        ..add(item.copyWith(
+            reserved: !item.reserved,
+            data: item.data.copyWith(
+                description: item.data.description
+                    .replaceAll(HostNameRule().rule, ''))));
       state = state.copyWith(
-          reservations: newRList,
-          devices: dList
-              .where((e) =>
-                  !newRList.any((r) => r.data.macAddress == e.data.macAddress))
-              .toList());
+        reservations: newRList,
+        // devices: dList
+        //     .where((e) =>
+        //         !newRList.any((r) => r.data.macAddress == e.data.macAddress))
+        //     .toList(),
+      );
       return;
     }
 

@@ -46,7 +46,7 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
 
   Widget _countdownPage() {
     return StyledAppPageView(
-      backState: StyledBackState.disabled,
+      backState: StyledBackState.none,
       title: loc(context).pnpWaitingModemTitle,
       child: AppBasicLayout(
         content: Column(

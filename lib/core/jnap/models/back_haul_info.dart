@@ -2,6 +2,7 @@
 import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
+import 'package:flutter/widgets.dart';
 
 class WirelessConnectionInfo extends Equatable {
   final String radioID;
@@ -10,6 +11,10 @@ class WirelessConnectionInfo extends Equatable {
   final int stationRSSI;
   final String apBSSID;
   final String stationBSSID;
+  final int? txRate;
+  final int? rxRate;
+  final bool? isMultiLinkOperation;
+
   const WirelessConnectionInfo({
     required this.radioID,
     required this.channel,
@@ -17,10 +22,13 @@ class WirelessConnectionInfo extends Equatable {
     required this.stationRSSI,
     required this.apBSSID,
     required this.stationBSSID,
+    this.txRate,
+    this.rxRate,
+    this.isMultiLinkOperation,
   });
 
   @override
-  List<Object> get props {
+  List<Object?> get props {
     return [
       radioID,
       channel,
@@ -28,6 +36,9 @@ class WirelessConnectionInfo extends Equatable {
       stationRSSI,
       apBSSID,
       stationBSSID,
+      txRate,
+      rxRate,
+      isMultiLinkOperation,
     ];
   }
 
@@ -38,6 +49,9 @@ class WirelessConnectionInfo extends Equatable {
     int? stationRSSI,
     String? apBSSID,
     String? stationBSSID,
+    ValueGetter<int?>? txRate,
+    ValueGetter<int?>? rxRate,
+    ValueGetter<bool?>? isMultiLinkOperation,
   }) {
     return WirelessConnectionInfo(
       radioID: radioID ?? this.radioID,
@@ -46,39 +60,51 @@ class WirelessConnectionInfo extends Equatable {
       stationRSSI: stationRSSI ?? this.stationRSSI,
       apBSSID: apBSSID ?? this.apBSSID,
       stationBSSID: stationBSSID ?? this.stationBSSID,
+      txRate: txRate != null ? txRate() : this.txRate,
+      rxRate: rxRate != null ? rxRate() : this.rxRate,
+      isMultiLinkOperation: isMultiLinkOperation != null ? isMultiLinkOperation() : this.isMultiLinkOperation,
     );
   }
 
   Map<String, dynamic> toMap() {
-    return <String, dynamic>{
+    return {
       'radioID': radioID,
       'channel': channel,
       'apRSSI': apRSSI,
       'stationRSSI': stationRSSI,
       'apBSSID': apBSSID,
       'stationBSSID': stationBSSID,
+      'txRate': txRate,
+      'rxRate': rxRate,
+      'isMultiLinkOperation': isMultiLinkOperation,
     };
   }
 
   factory WirelessConnectionInfo.fromMap(Map<String, dynamic> map) {
     return WirelessConnectionInfo(
-      radioID: map['radioID'] as String,
-      channel: map['channel'] as int,
-      apRSSI: map['apRSSI'] as int,
-      stationRSSI: map['stationRSSI'] as int,
-      apBSSID: map['apBSSID'] as String,
-      stationBSSID: map['stationBSSID'] as String,
+      radioID: map['radioID'] ?? '',
+      channel: map['channel']?.toInt() ?? 0,
+      apRSSI: map['apRSSI']?.toInt() ?? 0,
+      stationRSSI: map['stationRSSI']?.toInt() ?? 0,
+      apBSSID: map['apBSSID'] ?? '',
+      stationBSSID: map['stationBSSID'] ?? '',
+      txRate: map['txRate']?.toInt(),
+      rxRate: map['rxRate']?.toInt(),
+      isMultiLinkOperation: map['isMultiLinkOperation'],
     );
   }
 
   String toJson() => json.encode(toMap());
 
-  factory WirelessConnectionInfo.fromJson(String source) =>
-      WirelessConnectionInfo.fromMap(
-          json.decode(source) as Map<String, dynamic>);
+  factory WirelessConnectionInfo.fromJson(String source) => WirelessConnectionInfo.fromMap(json.decode(source));
 
   @override
   bool get stringify => true;
+
+  @override
+  String toString() {
+    return 'WirelessConnectionInfo(radioID: $radioID, channel: $channel, apRSSI: $apRSSI, stationRSSI: $stationRSSI, apBSSID: $apBSSID, stationBSSID: $stationBSSID, txRate: $txRate, rxRate: $rxRate, isMultiLinkOperation: $isMultiLinkOperation)';
+  }
 }
 
 class BackHaulInfoData extends Equatable {

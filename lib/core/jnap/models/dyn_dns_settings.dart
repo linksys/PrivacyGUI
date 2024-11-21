@@ -96,7 +96,7 @@ class DynDNSSettings extends Equatable {
       'mode': mode,
       'isMailExchangeEnabled': isMailExchangeEnabled,
       'mailExchangeSettings': mailExchangeSettings?.toMap(),
-    };
+    }..removeWhere((key, value) => value == null);
   }
 
   factory DynDNSSettings.fromMap(Map<String, dynamic> map) {

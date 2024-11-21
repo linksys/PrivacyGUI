@@ -3,8 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
-import 'package:privacy_gui/page/advanced_settings/firewall/providers/firewall_provider.dart';
-import 'package:privacy_gui/page/advanced_settings/firewall/providers/firewall_state.dart';
+import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
@@ -23,8 +22,11 @@ class FirewallView extends ArgumentsConsumerStatefulView {
   ConsumerState<FirewallView> createState() => _FirewallViewState();
 }
 
-class _FirewallViewState extends ConsumerState<FirewallView> {
+class _FirewallViewState extends ConsumerState<FirewallView>
+    with PageSnackbarMixin {
   FirewallState? _preservedState;
+  Ipv6PortServiceListState? _preservedIPv6State;
+
   int _tabIndex = 0;
 
   @override
@@ -32,8 +34,14 @@ class _FirewallViewState extends ConsumerState<FirewallView> {
     super.initState();
     doSomethingWithSpinner(
         context,
-        ref.read(firewallProvider.notifier).fetch().then((value) {
-          _preservedState = value;
+        Future.wait([
+          ref.read(firewallProvider.notifier).fetch(),
+          ref.read(ipv6PortServiceListProvider.notifier).fetch()
+        ]).then((values) {
+          setState(() {
+            _preservedState = values[0] as FirewallState;
+            _preservedIPv6State = values[1] as Ipv6PortServiceListState;
+          });
         }));
   }
 
@@ -44,7 +52,8 @@ class _FirewallViewState extends ConsumerState<FirewallView> {
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(firewallProvider);
+    final firewallState = ref.watch(firewallProvider);
+    final ipv6State = ref.watch(ipv6PortServiceListProvider);
     final tabs = [
       loc(context).firewall,
       loc(context).vpnPassthrough,
@@ -52,42 +61,56 @@ class _FirewallViewState extends ConsumerState<FirewallView> {
       loc(context).ipv6PortServices,
     ];
     final tabContents = [
-      _firewallView(state),
-      _vpnPassthroughView(state),
-      _internetFiltersView(state),
-      _ipv6PortServicesView(state),
+      _firewallView(firewallState),
+      _vpnPassthroughView(firewallState),
+      _internetFiltersView(firewallState),
+      _ipv6PortServicesView(firewallState),
     ];
     return StyledAppPageView(
       appBarStyle: AppBarStyle.none,
-      bottomBar: _tabIndex == 3
-          ? null
-          : PageBottomBar(
-              isPositiveEnabled: _preservedState != state,
-              onPositiveTap: () {
-                doSomethingWithSpinner(
-                    context,
-                    ref.read(firewallProvider.notifier).save().then((value) {
-                      _preservedState = value;
-                      showSuccessSnackBar(context, loc(context).saved);
-                    }).onError((error, stackTrace) {
-                      showFailedSnackBar(
-                          context, loc(context).unknownErrorCode(error ?? ''));
-                    }));
-              }),
+      bottomBar: PageBottomBar(
+          isPositiveEnabled: _preservedState != firewallState ||
+              _preservedIPv6State != ipv6State,
+          onPositiveTap: () {
+            List<Future> futures = [
+              _preservedState != firewallState
+                  ? ref.read(firewallProvider.notifier).save()
+                  : Future.value(null),
+              _preservedIPv6State != ipv6State
+                  ? ref.read(ipv6PortServiceListProvider.notifier).save()
+                  : Future.value(null),
+            ];
+            doSomethingWithSpinner(context, Future.wait(futures))
+                .then((values) {
+              final newFirewallState = values?[0];
+              final newIPv6State = values?[1];
+              setState(() {
+                if (newFirewallState is FirewallState) {
+                  _preservedState = newFirewallState;
+                }
+                if (newIPv6State is Ipv6PortServiceListState) {
+                  _preservedIPv6State = newIPv6State;
+                }
+              });
+              showChangesSavedSnackBar();
+            }).onError((error, stackTrace) {
+              showErrorMessageSnackBar(error);
+            });
+          }),
       child: AppBasicLayout(
         content: StyledAppTabPageView(
           padding: EdgeInsets.zero,
           useMainPadding: false,
           title: loc(context).firewall,
-          onBackTap: _preservedState != state
-          ? () async {
-              final goBack = await showUnsavedAlert(context);
-              if (goBack == true) {
-                ref.read(firewallProvider.notifier).fetch();
-                context.pop();
-              }
-            }
-          : null,
+          onBackTap: _preservedState != firewallState
+              ? () async {
+                  final goBack = await showUnsavedAlert(context);
+                  if (goBack == true) {
+                    ref.read(firewallProvider.notifier).fetch();
+                    context.pop();
+                  }
+                }
+              : null,
           tabs: tabs
               .map((e) => Tab(
                     text: e,

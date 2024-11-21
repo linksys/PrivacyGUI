@@ -8,16 +8,16 @@ import 'package:privacy_gui/core/jnap/models/firmware_update_status_nodes.dart';
 import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/node_light_settings_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
-import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/customs/animated_refresh_container.dart';
+import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/shared_widgets.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/styled/styled_tab_page_view.dart';
@@ -43,7 +43,6 @@ import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
 import 'package:collection/collection.dart';
 import 'package:privacygui_widgets/widgets/panel/switch_trigger_tile.dart';
-import 'package:privacygui_widgets/widgets/radios/radio_list.dart';
 
 import 'blink_node_light_widget.dart';
 
@@ -57,7 +56,8 @@ class NodeDetailView extends ArgumentsConsumerStatefulView {
   ConsumerState<NodeDetailView> createState() => _NodeDetailViewState();
 }
 
-class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
+class _NodeDetailViewState extends ConsumerState<NodeDetailView>
+    with PageSnackbarMixin {
   @override
   void initState() {
     super.initState();
@@ -332,11 +332,9 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
                             .read(deviceManagerProvider.notifier)
                             .deauthClient(macAddress: device.macAddress)
                             .then((_) {
-                          showSimpleSnackBar(
-                              context, loc(context).successExclamation);
+                          showChangesSavedSnackBar();
                         }).onError((error, stackTrace) {
-                          showFailedSnackBar(
-                              context, loc(context).generalError);
+                          showErrorMessageSnackBar(error);
                         }),
                       );
                     },
@@ -403,7 +401,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: _createNodeLightTile(state.nodeLightSettings),
+        children: _createNodeLightTile(),
       ),
     );
   }
@@ -418,10 +416,11 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
     return value;
   }
 
-  List<Widget> _createNodeLightTile(NodeLightSettings? nodeLightSettings) {
+  List<Widget> _createNodeLightTile() {
     if (!serviceHelper.isSupportLedMode()) {
       return [];
     } else {
+      final nodeLightSettings = ref.watch(nodeLightSettingsProvider);
       final title = loc(context).nodeLight;
       final nodeLightStatus = NodeLightStatus.getStatus(nodeLightSettings);
       return [
@@ -443,12 +442,11 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
                       LinksysIcons.darkMode,
                       size: 16,
                     ),
-                    AppText.bodyMedium('8AM - 8PM')
+                    AppText.bodyMedium('8PM - 8AM')
                   ],
                 ),
           onTap: () {
-            // context.pushNamed(RouteNamed.nodeLightSettings);
-            _showNodeLightSelectionDialog();
+            _showNodeLightSelectionDialog(nodeLightStatus);
           },
         ),
       ];
@@ -641,73 +639,12 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
     return ref
         .read(nodeDetailProvider.notifier)
         .updateDeviceName(name)
-        .then((_) => showSuccessSnackBar(context, loc(context).saved));
+        .then((_) => showChangesSavedSnackBar());
   }
 
-  void _showMoreRouterInfoModal(NodeDetailState state) {
-    showSimpleAppDialog(
-      context,
-      title: loc(context).moreInfo.camelCapitalize(),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppText.labelLarge(loc(context).model),
-          AppText.bodyMedium(state.modelNumber),
-          const AppGap.medium(),
-          AppText.labelLarge(loc(context).serialNumber.camelCapitalize()),
-          AppText.bodyMedium(state.serialNumber),
-        ],
-      ),
-      actions: [
-        AppTextButton.noPadding(
-          loc(context).close,
-          onTap: () {
-            context.pop();
-          },
-        )
-      ],
-    );
-  }
-
-  void _showNodeLightSelectionDialog() {
-    var nodeLightStatus = NodeLightStatus.getStatus(
-        ref.read(nodeDetailProvider).nodeLightSettings);
+  void _showNodeLightSelectionDialog(NodeLightStatus nodeLightStatus) {
     showSubmitAppDialog(context, title: loc(context).nodeLight,
         contentBuilder: (context, setState, onSubmit) {
-      // return Column(
-      //   mainAxisSize: MainAxisSize.min,
-      //   crossAxisAlignment: CrossAxisAlignment.start,
-      //   children: [
-      //     AppRadioList(
-      //       initial: nodeLightStatus,
-      //       mainAxisSize: MainAxisSize.min,
-      //       itemHeight: 56,
-      //       items: [
-      //         AppRadioListItem(
-      //           title: loc(context).off,
-      //           value: NodeLightStatus.off,
-      //         ),
-      //         AppRadioListItem(
-      //           title: loc(context).nodeDetailsLedNightMode,
-      //           value: NodeLightStatus.night,
-      //         ),
-      //         AppRadioListItem(
-      //           title: loc(context).on,
-      //           value: NodeLightStatus.on,
-      //         ),
-      //       ],
-      //       onChanged: (index, selectedType) {
-      //         setState(() {
-      //           if (selectedType != null) {
-      //             nodeLightStatus = selectedType;
-      //           }
-      //         });
-      //       },
-      //     ),
-      //   ],
-      // );
       return Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -743,20 +680,13 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView> {
         ],
       );
     }, event: () async {
-      NodeLightSettings settings;
-      if (nodeLightStatus == NodeLightStatus.on) {
-        settings = const NodeLightSettings(isNightModeEnable: false);
-      } else if (nodeLightStatus == NodeLightStatus.off) {
-        settings = const NodeLightSettings(
-            isNightModeEnable: true, startHour: 0, endHour: 24);
-      } else {
-        settings = const NodeLightSettings(
-            isNightModeEnable: true, startHour: 20, endHour: 8);
-      }
+      ref
+          .read(nodeLightSettingsProvider.notifier)
+          .setSettings(NodeLightSettings.fromStatus(nodeLightStatus));
       await ref
-          .read(nodeDetailProvider.notifier)
-          .setLEDLight(settings)
-          .then((_) => showSuccessSnackBar(context, loc(context).saved));
+          .read(nodeLightSettingsProvider.notifier)
+          .save()
+          .then((_) => showChangesSavedSnackBar());
     });
   }
 }

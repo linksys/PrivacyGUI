@@ -68,7 +68,6 @@ class NodeDetailState extends Equatable {
   final String hardwareVersion;
   final String lanIpAddress;
   final String wanIpAddress;
-  final NodeLightSettings? nodeLightSettings;
   final BlinkingStatus blinkingStatus;
 
   const NodeDetailState({
@@ -86,7 +85,6 @@ class NodeDetailState extends Equatable {
     this.hardwareVersion = '',
     this.lanIpAddress = '',
     this.wanIpAddress = '',
-    this.nodeLightSettings,
     this.blinkingStatus = BlinkingStatus.blinkNode,
   });
 
@@ -123,7 +121,6 @@ class NodeDetailState extends Equatable {
       hardwareVersion: hardwareVersion ?? this.hardwareVersion,
       lanIpAddress: lanIpAddress ?? this.lanIpAddress,
       wanIpAddress: wanIpAddress ?? this.wanIpAddress,
-      nodeLightSettings: nodeLightSettings ?? this.nodeLightSettings,
       blinkingStatus: blinkingStatus ?? this.blinkingStatus,
     );
   }
@@ -144,7 +141,6 @@ class NodeDetailState extends Equatable {
       'hardwareVersion': hardwareVersion,
       'lanIpAddress': lanIpAddress,
       'wanIpAddress': wanIpAddress,
-      'nodeLightSettings': nodeLightSettings?.toMap(),
       'blinkingStatus': blinkingStatus.value,
     };
   }
@@ -169,10 +165,6 @@ class NodeDetailState extends Equatable {
       hardwareVersion: map['hardwareVersion'] as String,
       lanIpAddress: map['lanIpAddress'] as String,
       wanIpAddress: map['wanIpAddress'] as String,
-      nodeLightSettings: map['nodeLightSettings'] != null
-          ? NodeLightSettings.fromMap(
-              map['nodeLightSettings'] as Map<String, dynamic>)
-          : null,
       blinkingStatus: BlinkingStatus.resolve(map['blinkingStatus'] as String),
     );
   }
@@ -202,7 +194,6 @@ class NodeDetailState extends Equatable {
       hardwareVersion,
       lanIpAddress,
       wanIpAddress,
-      nodeLightSettings,
       blinkingStatus,
     ];
   }
