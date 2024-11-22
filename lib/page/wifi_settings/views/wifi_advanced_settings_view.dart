@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
@@ -22,7 +24,7 @@ class WifiAdvancedSettingsView extends ArgumentsConsumerStatefulView {
 }
 
 class _WifiAdvancedSettingsViewState
-    extends ConsumerState<WifiAdvancedSettingsView> {
+    extends ConsumerState<WifiAdvancedSettingsView> with PageSnackbarMixin {
   WifiAdvancedSettingsState? _preservedState;
 
   @override
@@ -72,13 +74,30 @@ class _WifiAdvancedSettingsViewState
       context,
       ref.read(wifiAdvancedProvider.notifier).save().then(
         (state) {
-          setState(() {
-            ref.read(wifiViewProvider.notifier).setChanged(false);
-            _preservedState = state;
-          });
+          success(state);
         },
       ),
-    );
+    ).onError((error, stackTrace) {
+      showErrorMessageSnackBar(error);
+    }).catchError((error) {
+      routerNotFound();
+    }, test: (error) => error is JNAPSideEffectError);
+  }
+
+  void routerNotFound() {
+    showRouterNotFoundAlert(context, ref, onComplete: () {
+      ref.read(wifiAdvancedProvider.notifier).fetch(true).then((state) {
+        success(state);
+      });
+    });
+  }
+
+  void success(WifiAdvancedSettingsState state) {
+    setState(() {
+      ref.read(wifiViewProvider.notifier).setChanged(false);
+      _preservedState = state;
+    });
+    showChangesSavedSnackBar();
   }
 
   Widget _buildGrid() {
@@ -175,7 +194,7 @@ class _WifiAdvancedSettingsViewState
                 semanticLabel: 'dfs',
                 description: AppStyledText.bold(
                   loc(context).dfsDesc,
-                  defaultTextStyle: Theme.of(context).textTheme.bodyLarge!,
+                  defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
                   color: Theme.of(context).colorScheme.primary,
                   tags: const ['a'],
                   callbackTags: {
