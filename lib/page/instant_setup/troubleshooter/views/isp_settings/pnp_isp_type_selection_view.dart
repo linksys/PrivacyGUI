@@ -48,8 +48,7 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
       builder: (context) {
         return AlertDialog(
           title: AppText.titleLarge(loc(context).settingsSaved),
-          content: const AppText.bodyMedium(
-              'Are you sure you want to switch to DHCP mode?'),
+          content: AppText.bodyMedium(loc(context).pnpIspTypeSelectionDhcpConfirm),
           actions: [
             AppTextButton(
               loc(context).cancel,
