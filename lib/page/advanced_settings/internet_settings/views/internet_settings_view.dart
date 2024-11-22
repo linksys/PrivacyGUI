@@ -91,7 +91,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
   final TextEditingController _ipv6BorderRelayPrefixLengthController =
       TextEditingController();
 
-  late InternetSettingsState originState;
+  late InternetSettingsState originalState;
   late InternetSettingsNotifier _notifier;
   bool isIpv4Editing = false;
   bool isIpv6Editing = false;
@@ -108,15 +108,15 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
     super.initState();
 
     _notifier = ref.read(internetSettingsProvider.notifier);
-    originState = ref.read(internetSettingsProvider).copyWith();
-    initUI(originState);
+    originalState = ref.read(internetSettingsProvider).copyWith();
+    initUI(originalState);
     doSomethingWithSpinner(
       context,
       _notifier.fetch().then(
         (value) {
           setState(() {
-            originState = ref.read(internetSettingsProvider).copyWith();
-            initUI(originState);
+            originalState = ref.read(internetSettingsProvider).copyWith();
+            initUI(originalState);
           });
         },
       ),
@@ -306,14 +306,14 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
           useMainPadding: false,
           title: loc(context).internetSettings.capitalizeWords(),
           onBackTap: _isEdited(state)
-          ? () async {
-              final goBack = await showUnsavedAlert(context);
-              if (goBack == true) {
-                _notifier.fetch();
-                context.pop();
-              }
-            }
-          : null,
+              ? () async {
+                  final goBack = await showUnsavedAlert(context);
+                  if (goBack == true) {
+                    _notifier.fetch();
+                    context.pop();
+                  }
+                }
+              : null,
           tabs: tabs
               .map((e) => Tab(
                     text: e,
@@ -445,12 +445,13 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
                     isIpv4Editing = false;
                   });
                   if (!isEditing) {
-                    _notifier.updateIpv4Settings(originState.ipv4Setting);
-                    _notifier.updateMacAddressCloneEnable(originState.macClone);
+                    _notifier.updateIpv4Settings(originalState.ipv4Setting);
                     _notifier
-                        .updateMacAddressClone(originState.macCloneAddress);
+                        .updateMacAddressCloneEnable(originalState.macClone);
+                    _notifier
+                        .updateMacAddressClone(originalState.macCloneAddress);
                   } else {
-                    _notifier.updateIpv4Settings(originState.ipv4Setting
+                    _notifier.updateIpv4Settings(originalState.ipv4Setting
                         .copyWith(mtu: state.ipv4Setting.mtu));
                   }
                   setState(() {
@@ -471,13 +472,14 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
                   setState(() {
                     isIpv6Editing = false;
                   });
-                  _notifier.updateIpv6Settings(originState.ipv6Setting);
+                  _notifier.updateIpv6Settings(originalState.ipv6Setting);
                   if (!isEditing) {
                     _notifier.updateIpv4Settings(state.ipv4Setting
-                        .copyWith(mtu: originState.ipv4Setting.mtu));
-                    _notifier.updateMacAddressCloneEnable(originState.macClone);
+                        .copyWith(mtu: originalState.ipv4Setting.mtu));
                     _notifier
-                        .updateMacAddressClone(originState.macCloneAddress);
+                        .updateMacAddressCloneEnable(originalState.macClone);
+                    _notifier
+                        .updateMacAddressClone(originalState.macCloneAddress);
                   }
                   setState(() {
                     initUI(ref.read(internetSettingsProvider));
@@ -633,10 +635,10 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
             ),
             const AppGap.small2(),
             AppTextButton.noPadding(
-              ipv4Setting.redirection ?? '',
+              'http://${_notifier.hostname}.local',
               icon: Icons.open_in_new,
               onTap: () {
-                openUrl(ipv4Setting.redirection ?? '');
+                openUrl('http://${_notifier.hostname}.local');
               },
             ),
             const AppGap.medium(),
@@ -902,16 +904,21 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
                     loc(context).macAddressClone.capitalizeWords()),
                 const Spacer(),
                 AppSwitch(
+                  semanticLabel: 'mac address clone',
                   value: state.macClone,
-                  onChanged: (value) {
-                    _notifier.updateMacAddressCloneEnable(value);
-                    _notifier.updateMacAddressClone(
-                        value ? originState.macCloneAddress : null);
-                    setState(() {
-                      _macAddressCloneController.text =
-                          value ? originState.macCloneAddress ?? '' : '';
-                    });
-                  },
+                  onChanged: isEditing
+                      ? (value) {
+                          _notifier.updateMacAddressCloneEnable(value);
+                          _notifier.updateMacAddressClone(value
+                              ? originalState.macCloneAddress ?? ''
+                              : null);
+                          setState(() {
+                            _macAddressCloneController.text = value
+                                ? originalState.macCloneAddress ?? ''
+                                : '';
+                          });
+                        }
+                      : null,
                 ),
               ],
             ),
@@ -998,8 +1005,8 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
           },
           onChanged: (value) {
             _notifier.updateIpv4Settings(
-                value == originState.ipv4Setting.ipv4ConnectionType
-                    ? originState.ipv4Setting.copyWith(mtu: ipv4Setting.mtu)
+                value == originalState.ipv4Setting.ipv4ConnectionType
+                    ? originalState.ipv4Setting.copyWith(mtu: ipv4Setting.mtu)
                     : Ipv4Setting(
                         ipv4ConnectionType: value,
                         supportedIPv4ConnectionType:
@@ -1061,7 +1068,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
           border: const OutlineInputBorder(),
           onChanged: (value) {
             _notifier.updateIpv4Settings(ipv4Setting.copyWith(
-              vlanId: () => value.isEmpty ? 0 : int.parse(value),
+              vlanId: () => value.isEmpty ? null : int.parse(value),
             ));
           },
           onFocusChanged: (hasFocus) {
@@ -1449,8 +1456,8 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
           },
           onChanged: (value) {
             _notifier.updateIpv6Settings(
-                value == originState.ipv6Setting.ipv6ConnectionType
-                    ? originState.ipv6Setting
+                value == originalState.ipv6Setting.ipv6ConnectionType
+                    ? originalState.ipv6Setting
                     : Ipv6Setting(
                         ipv6ConnectionType: value,
                         supportedIPv6ConnectionType:
@@ -1526,7 +1533,8 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
             padding: inputPadding,
             child: AppDropdownButton<IPv6rdTunnelMode>(
               title: loc(context).sixrdTunnel,
-              selected: ipv6Setting.ipv6rdTunnelMode ?? IPv6rdTunnelMode.disabled,
+              selected:
+                  ipv6Setting.ipv6rdTunnelMode ?? IPv6rdTunnelMode.disabled,
               items: const [
                 IPv6rdTunnelMode.disabled,
                 IPv6rdTunnelMode.automatic,
@@ -1646,7 +1654,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
   }
 
   bool _isEdited(InternetSettingsState state) {
-    if (state != originState) return true;
+    if (state != originalState) return true;
     return false;
   }
 
@@ -1729,44 +1737,49 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
     final state = ref.read(internetSettingsProvider);
     doSomethingWithSpinner(
       context,
-      _notifier.saveInternetSettings(state).then((value) {
+      _notifier.saveInternetSettings(state),
+    ).then((value) {
+      setState(() {
+        isIpv4Editing = false;
+        isIpv6Editing = false;
+        originalState = ref.read(internetSettingsProvider).copyWith();
+        initUI(originalState);
+      });
+      showSuccessSnackBar(
+        context,
+        loc(context).changesSaved,
+      );
+    }).catchError((error) {
+      showRouterNotFoundAlert(context, ref, onComplete: () async {
+        await _notifier.fetch(fetchRemote: true);
         setState(() {
           isIpv4Editing = false;
           isIpv6Editing = false;
-          originState = ref.read(internetSettingsProvider).copyWith();
-          initUI(originState);
+          originalState = ref.read(internetSettingsProvider).copyWith();
+          initUI(originalState);
         });
         showSuccessSnackBar(
           context,
           loc(context).changesSaved,
         );
-      }).catchError((error) {
-        showRouterNotFoundAlert(context, ref, onComplete: () async {
-          await _notifier.fetch(fetchRemote: true);
-          showSuccessSnackBar(
-            context,
-            loc(context).changesSaved,
-          );
+      });
+    }, test: (error) => error is JNAPSideEffectError).onError(
+        (error, stackTrace) {
+      final errorMsg = switch (error.runtimeType) {
+        JNAPError => errorCodeHelper(context, (error as JNAPError).result),
+        TimeoutException => loc(context).generalError,
+        _ => loc(context).unknownError,
+      };
+      showFailedSnackBar(
+        context,
+        errorMsg ?? loc(context).unknownErrorCode((error as JNAPError).result),
+      );
+    }).whenComplete(
+      () {
+        setState(() {
+          loadingTitle = '';
         });
-      }, test: (error) => error is JNAPSideEffectError).onError(
-          (error, stackTrace) {
-        final errorMsg = switch (error.runtimeType) {
-          JNAPError => errorCodeHelper(context, (error as JNAPError).result),
-          TimeoutException => loc(context).generalError,
-          _ => loc(context).unknownError,
-        };
-        showFailedSnackBar(
-          context,
-          errorMsg ??
-              loc(context).unknownErrorCode((error as JNAPError).result),
-        );
-      }).whenComplete(
-        () {
-          setState(() {
-            loadingTitle = '';
-          });
-        },
-      ),
+      },
     );
   }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
@@ -15,7 +16,8 @@ import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 
 class DHCPServerView extends ArgumentsConsumerStatefulView {
-  const DHCPServerView({super.key, super.args});
+  final LocalNetworkSettingsState? originalState;
+  const DHCPServerView({super.key, super.args, this.originalState});
 
   @override
   ConsumerState<DHCPServerView> createState() => _DHCPServerViewState();
@@ -23,7 +25,7 @@ class DHCPServerView extends ArgumentsConsumerStatefulView {
 
 class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
   late LocalNetworkSettingsNotifier _notifier;
-  late LocalNetworkSettingsState _originState;
+  late LocalNetworkSettingsState _originalState;
   final _startIpAddressController = TextEditingController();
   final _maxUserAllowedController = TextEditingController();
   final _clientLeaseTimeController = TextEditingController();
@@ -33,23 +35,21 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
   final _winsController = TextEditingController();
   final EdgeInsets inputPadding =
       EdgeInsets.symmetric(vertical: Spacing.small3);
-  bool firstLaunch = true;
-  bool enable = true;
 
   @override
   void initState() {
     super.initState();
 
     _notifier = ref.read(localNetworkSettingProvider.notifier);
-    _originState = ref.read(localNetworkSettingProvider);
-    _startIpAddressController.text = _originState.firstIPAddress;
-    _maxUserAllowedController.text = '${_originState.maxUserAllowed}';
-    _clientLeaseTimeController.text = '${_originState.clientLeaseTime}';
-    _dns1Controller.text = _originState.dns1 ?? '';
-    _dns2Controller.text = _originState.dns2 ?? '';
-    _dns3Controller.text = _originState.dns3 ?? '';
-    _winsController.text = _originState.wins ?? '';
-    enable = _originState.isDHCPEnabled;
+    _originalState =
+        widget.originalState ?? ref.read(localNetworkSettingProvider);
+    _startIpAddressController.text = _originalState.firstIPAddress;
+    _maxUserAllowedController.text = '${_originalState.maxUserAllowed}';
+    _clientLeaseTimeController.text = '${_originalState.clientLeaseTime}';
+    _dns1Controller.text = _originalState.dns1 ?? '';
+    _dns2Controller.text = _originalState.dns2 ?? '';
+    _dns3Controller.text = _originalState.dns3 ?? '';
+    _winsController.text = _originalState.wins ?? '';
   }
 
   @override
@@ -67,7 +67,12 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.read(localNetworkSettingProvider);
+    ref.listen(localNetworkSettingNeedToSaveProvider, (previous, next) {
+      if (previous == true && next == false) {
+        _originalState = ref.read(localNetworkSettingProvider);
+      }
+    });
+    final state = ref.watch(localNetworkSettingProvider);
     return AppCard(
       padding: EdgeInsets.all(Spacing.large2),
       child: Column(
@@ -78,12 +83,9 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
             padding: EdgeInsets.only(),
             title: AppText.titleMedium(loc(context).dhcpServer),
             semanticLabel: 'dhcp server',
-            value: enable,
+            value: state.isDHCPEnabled,
             onChanged: (value) {
               _notifier.updateState(state.copyWith(isDHCPEnabled: value));
-              setState(() {
-                enable = value;
-              });
             },
           ),
           Visibility(
@@ -196,7 +198,14 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
             ],
           ),
           onTap: () {
-            context.pushNamed(RoutePath.dhcpReservation);
+            final isEdited =
+                !_originalState.isEqualStateWithoutDhcpReservationList(
+                    ref.read(localNetworkSettingProvider));
+            if (isEdited) {
+              _showSaveChangeAlert();
+            } else {
+              context.pushNamed(RoutePath.dhcpReservation);
+            }
           },
         ),
       ],
@@ -321,5 +330,35 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
         ),
       ],
     );
+  }
+
+  _showSaveChangeAlert() {
+    showMessageAppDialog(
+      context,
+      title: '${loc(context).saveChanges}?',
+      message:
+          '${loc(context).saveLocalNetworkChangesDesc1}\n\n${loc(context).saveLocalNetworkChangesDesc2}\n\n${loc(context).doYouWantToSaveTheLocalNetworkSettings}',
+      actions: [
+        AppTextButton(
+          loc(context).cancel,
+          color: Theme.of(context).colorScheme.onSurface,
+          onTap: () {
+            context.pop();
+          },
+        ),
+        AppTextButton(
+          loc(context).save,
+          color: Theme.of(context).colorScheme.primary,
+          onTap: () {
+            context.pop();
+            _saveSettings();
+          },
+        ),
+      ],
+    );
+  }
+
+  _saveSettings() {
+    ref.read(localNetworkSettingNeedToSaveProvider.notifier).state = true;
   }
 }

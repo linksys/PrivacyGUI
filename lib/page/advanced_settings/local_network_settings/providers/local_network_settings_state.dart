@@ -110,7 +110,7 @@ class LocalNetworkSettingsState extends Equatable {
       'dns3': dns3,
       'wins': wins,
       'dhcpReservationList': dhcpReservationList.map((x) => x.toMap()).toList(),
-      'errorText': errorTextMap,
+      'errorTextMap': errorTextMap,
     };
   }
 
@@ -138,7 +138,7 @@ class LocalNetworkSettingsState extends Equatable {
           (x) => DHCPReservation.fromMap(x as Map<String, dynamic>),
         ),
       ),
-      errorTextMap: map['errorText'],
+      errorTextMap: map['errorTextMap'],
     );
   }
 
@@ -176,7 +176,8 @@ class LocalNetworkSettingsState extends Equatable {
     ValueGetter<String?>? dns3,
     ValueGetter<String?>? wins,
     List<DHCPReservation>? dhcpReservationList,
-    Map<String, String>? errorText,
+    Map<String, String>? errorTextMap,
+    bool? needToSave,
   }) {
     return LocalNetworkSettingsState(
       hostName: hostName ?? this.hostName,
@@ -197,7 +198,7 @@ class LocalNetworkSettingsState extends Equatable {
       dns3: dns3 != null ? dns3() : this.dns3,
       wins: wins != null ? wins() : this.wins,
       dhcpReservationList: dhcpReservationList ?? this.dhcpReservationList,
-      errorTextMap: errorText ?? this.errorTextMap,
+      errorTextMap: errorTextMap ?? this.errorTextMap,
     );
   }
 }
