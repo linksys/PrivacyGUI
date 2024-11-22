@@ -91,6 +91,11 @@ class _LocalNetworkSettingsViewState
         assignWebLocation(next);
       }
     });
+    ref.listen(localNetworkSettingNeedToSaveProvider, (previous, next) {
+      if (previous == false && next == true) {
+        _saveSettings();
+      }
+    });
     final state = ref.watch(localNetworkSettingProvider);
     final tabs = [
       loc(context).hostName,
@@ -100,7 +105,7 @@ class _LocalNetworkSettingsViewState
     final tabContents = [
       _hostNameView(state),
       _ipAddressView(state),
-      _dhcpServerView(),
+      _dhcpServerView(originalSettings),
     ];
     return StyledAppPageView(
       appBarStyle: AppBarStyle.none,
@@ -209,9 +214,9 @@ class _LocalNetworkSettingsViewState
     );
   }
 
-  Widget _dhcpServerView() {
+  Widget _dhcpServerView(LocalNetworkSettingsState? originalSettings) {
     return _viewLayout(
-      child: DHCPServerView(),
+      child: DHCPServerView(originalState: originalSettings),
     );
   }
 
@@ -261,16 +266,16 @@ class _LocalNetworkSettingsViewState
     final state = ref.read(localNetworkSettingProvider);
     doSomethingWithSpinner(
       context,
-      _notifier
-          .saveSettings(state, previousIPAddress: originalSettings.ipAddress)
-          .then(
-        (value) {
-          setState(() {
-            originalSettings = state;
-          });
-          showChangesSavedSnackBar();
-        },
-      ),
+      _notifier.saveSettings(state,
+          previousIPAddress: originalSettings.ipAddress),
+    ).then(
+      (value) {
+        ref.read(localNetworkSettingNeedToSaveProvider.notifier).state = false;
+        setState(() {
+          originalSettings = state;
+        });
+        showChangesSavedSnackBar();
+      },
     ).catchError((error) {
       _showRouterNotFoundModal();
     }, test: (error) => error is JNAPSideEffectError).onError(
@@ -279,21 +284,13 @@ class _LocalNetworkSettingsViewState
     });
   }
 
-  String _getErrorMessage(Object? error) {
-    return switch (error.runtimeType) {
-          JNAPError => errorCodeHelper(context, (error as JNAPError).result),
-          TimeoutException => loc(context).generalError,
-          _ => loc(context).unknownError,
-        } ??
-        loc(context).unknownErrorCode((error as JNAPError).result);
-  }
-
   void _showRouterNotFoundModal() {
     showRouterNotFoundAlert(context, ref, onComplete: () async {
       // Update the state
       final state = await _notifier.fetch(fetchRemote: true);
       // Update instant safety
       await ref.read(instantSafetyProvider.notifier).fetchLANSettings();
+      ref.read(localNetworkSettingNeedToSaveProvider.notifier).state = false;
       setState(() {
         originalSettings = state;
       });

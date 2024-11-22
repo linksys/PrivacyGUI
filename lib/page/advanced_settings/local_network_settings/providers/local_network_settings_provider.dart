@@ -12,6 +12,9 @@ import 'package:privacy_gui/providers/redirection/redirection_provider.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacy_gui/validator_rules/input_validators.dart';
 
+final localNetworkSettingNeedToSaveProvider =
+    StateProvider<bool>((ref) => false);
+
 final localNetworkSettingProvider =
     NotifierProvider<LocalNetworkSettingsNotifier, LocalNetworkSettingsState>(
         () => LocalNetworkSettingsNotifier());
@@ -96,7 +99,10 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
         dnsServer2: settings.dns2?.isEmpty == true ? null : settings.dns2,
         dnsServer3: settings.dns3?.isEmpty == true ? null : settings.dns3,
         winsServer: settings.wins?.isEmpty == true ? null : settings.wins,
-        reservations: settings.dhcpReservationList,
+        reservations: (previousIPAddress != null &&
+                previousIPAddress != settings.ipAddress)
+            ? []
+            : settings.dhcpReservationList,
       ),
     );
     final routerRepository = ref.read(routerRepositoryProvider);
@@ -105,7 +111,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
       JNAPAction.setLANSettings,
       auth: true,
       data: newSettings.toMap()..removeWhere((key, value) => value == null),
-      // sideEffectOverrides: const JNAPSideEffectOverrides(maxRetry: 5),
+      sideEffectOverrides: const JNAPSideEffectOverrides(maxRetry: 5),
     )
         .then((result) async {
       // Update the state
@@ -144,7 +150,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     } else {
       errorTextMap.remove(key);
     }
-    state = state.copyWith(errorText: errorTextMap);
+    state = state.copyWith(errorTextMap: errorTextMap);
   }
 
   void updateDHCPReservationList(
@@ -365,9 +371,13 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
   ) {
     // Due to the UI limit, the value input from users should always be valid
     final isValid = _serverIpAddressValidator.validate(dnsIp);
-    if (isValid || dnsIp.isEmpty) {
+    if (isValid) {
       settings = settings.copyWith(
         dns1: () => dnsIp,
+      );
+    } else if (dnsIp.isEmpty) {
+      settings = settings.copyWith(
+        dns1: () => null,
       );
     }
     return (isValid, settings);
@@ -379,11 +389,16 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
   ) {
     // Due to the UI limit, the value input from users should always be valid
     final isValid = _serverIpAddressValidator.validate(dnsIp);
-    if (isValid || dnsIp.isEmpty) {
+    if (isValid) {
       settings = settings.copyWith(
         dns2: () => dnsIp,
       );
+    } else if (dnsIp.isEmpty) {
+      settings = settings.copyWith(
+        dns2: () => null,
+      );
     }
+
     return (isValid, settings);
   }
 
@@ -393,9 +408,13 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
   ) {
     // Due to the UI limit, the value input from users should always be valid
     final isValid = _serverIpAddressValidator.validate(dnsIp);
-    if (isValid || dnsIp.isEmpty) {
+    if (isValid) {
       settings = settings.copyWith(
         dns3: () => dnsIp,
+      );
+    } else if (dnsIp.isEmpty) {
+      settings = settings.copyWith(
+        dns3: () => null,
       );
     }
     return (isValid, settings);
@@ -407,9 +426,13 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
   ) {
     // Due to the UI limit, the value input from users should always be valid
     final isValid = _serverIpAddressValidator.validate(winsIp);
-    if (isValid || winsIp.isEmpty) {
+    if (isValid) {
       settings = settings.copyWith(
         wins: () => winsIp,
+      );
+    } else if (winsIp.isEmpty) {
+      settings = settings.copyWith(
+        wins: () => null,
       );
     }
     return (isValid, settings);

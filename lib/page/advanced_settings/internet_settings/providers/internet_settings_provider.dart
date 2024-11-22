@@ -215,7 +215,7 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
             ?.borderRelayPrefixLength,
       ),
       macClone: macAddressCloneSettings?.isMACAddressCloneEnabled ?? false,
-      macCloneAddress: () => macAddressCloneSettings?.macAddress ?? '',
+      macCloneAddress: () => macAddressCloneSettings?.macAddress,
     );
     return state;
   }
@@ -351,8 +351,13 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
     if (vlanId != null) {
       wanTaggingSettingsEnabled = (vlanId >= 5) && (vlanId <= 4094);
     }
+    final diabledWanTaggingSettings =
+        SinglePortVLANTaggingSettings(isEnabled: false);
     return switch (wanType) {
-      WanType.dhcp => RouterWANSettings.dhcp(mtu: mtu),
+      WanType.dhcp => RouterWANSettings.dhcp(
+          mtu: mtu,
+          wanTaggingSettings: diabledWanTaggingSettings,
+        ),
       WanType.pppoe => RouterWANSettings.pppoe(
           mtu: mtu,
           pppoeSettings: PPPoESettings(
@@ -380,23 +385,27 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
       WanType.pptp => RouterWANSettings.pptp(
           mtu: mtu,
           tpSettings: _createTPSettings(ipv4Setting, true),
-          wanTaggingSettings:
-              const SinglePortVLANTaggingSettings(isEnabled: false),
+          wanTaggingSettings: diabledWanTaggingSettings,
         ),
       WanType.l2tp => RouterWANSettings.l2tp(
           mtu: mtu,
           tpSettings: _createTPSettings(ipv4Setting, false),
+          wanTaggingSettings: diabledWanTaggingSettings,
         ),
       WanType.static => RouterWANSettings.static(
           mtu: mtu,
           staticSettings: _createStaticSettings(ipv4Setting),
-          wanTaggingSettings:
-              const SinglePortVLANTaggingSettings(isEnabled: false),
+          wanTaggingSettings: diabledWanTaggingSettings,
         ),
       WanType.bridge => RouterWANSettings.bridge(
           bridgeSettings: const BridgeSettings(useStaticSettings: false),
+          wanTaggingSettings: diabledWanTaggingSettings,
         ),
-      _ => RouterWANSettings(wanType: wanType.type, mtu: ipv4Setting.mtu),
+      _ => RouterWANSettings(
+          wanType: wanType.type,
+          mtu: ipv4Setting.mtu,
+          wanTaggingSettings: diabledWanTaggingSettings,
+        ),
     };
   }
 
@@ -577,6 +586,8 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
               ipv4Setting.maxIdleMinutes ?? defaultMaxIdleMinutes,
           reconnectAfterSeconds: () =>
               ipv4Setting.reconnectAfterSeconds ?? defaultReconnectAfterSeconds,
+          wanTaggingSettingsEnable: () => ipv4Setting.wanTaggingSettingsEnable,
+          vlanId: () => ipv4Setting.vlanId,
         ),
       WanType.pptp || WanType.l2tp => newIpv4Setting.copyWith(
           serverIp: () => ipv4Setting.serverIp,

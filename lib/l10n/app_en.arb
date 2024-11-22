@@ -1041,6 +1041,10 @@
   "externalSpeedText": "External speed test",
   "hideHint": "Hide hint",
   "execute": "Execute",
+  "saveChanges": "Save Changes",
+  "saveLocalNetworkChangesDesc1": "The Local Network settings have changed and must be saved before you can access DHCP Reservations.",
+  "saveLocalNetworkChangesDesc2": "Note: If there are current DHCP Reservations that will be invalid when the Local Network Settings are saved, those DHCP Reservations will be deleted.",
+  "doYouWantToSaveTheLocalNetworkSettings": "Do you want to save the Local Network Settings?",
   "allDayOff": "All day off",
   "nightModeTime": "8PM - 8AM",
   "invalidCharacters": "Invalid characters"
