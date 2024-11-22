@@ -382,6 +382,17 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
               title: loc(context).connectTo,
               description: _checkEmptyValue(state.upstreamDevice),
             ),
+            if (state.isMLO)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: Spacing.medium),
+              child: AppTextButton.noPadding(
+                loc(context).connectedWithMLO,
+                onTap: () {
+                  showMLOCapableModal(context);
+                },
+              ),
+            ),
+            const AppGap.medium(),
           ],
         ),
       ),

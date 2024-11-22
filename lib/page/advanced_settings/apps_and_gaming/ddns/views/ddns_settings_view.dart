@@ -41,49 +41,49 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
   void initState() {
     super.initState();
 
-    doSomethingWithSpinner(
-            context, ref.read(ddnsProvider.notifier).fetch(false))
-        .then((state) {
-      setState(() {
-        _preserveState = state;
-        ref.read(appsAndGamingProvider.notifier).setChanged(false);
-      });
-    });
+    // doSomethingWithSpinner(
+    //         context, ref.read(ddnsProvider.notifier).fetch(false))
+    //     .then((state) {
+    //   setState(() {
+    //     _preserveState = state;
+    //     // ref.read(appsAndGamingProvider.notifier).setChanged(false);
+    //   });
+    // });
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(ddnsProvider);
-    ref.listen(ddnsProvider, (previous, next) {
-      ref
-          .read(appsAndGamingProvider.notifier)
-          .setChanged(next != _preserveState);
-    });
+    // ref.listen(ddnsProvider, (previous, next) {
+    //   ref
+    //       .read(appsAndGamingProvider.notifier)
+    //       .setChanged(next != _preserveState);
+    // });
     return StyledAppPageView(
       useMainPadding: false,
       appBarStyle: AppBarStyle.none,
       padding: EdgeInsets.zero,
       scrollable: true,
       title: loc(context).ddns,
-      bottomBar: PageBottomBar(
-        isPositiveEnabled: _preserveState != state,
-        negitiveLable: loc(context).delete,
-        onPositiveTap: () {
-          doSomethingWithSpinner(
-            context,
-            ref.read(ddnsProvider.notifier).save(),
-          ).then(
-            (state) {
-              setState(() {
-                _preserveState = state;
-              });
-              showSuccessSnackBar(context, loc(context).saved);
-            },
-          ).onError((error, stackTrace) {
-            showFailedSnackBar(context, loc(context).failedExclamation);
-          });
-        },
-      ),
+      // bottomBar: PageBottomBar(
+      //   isPositiveEnabled: _preserveState != state,
+      //   negitiveLable: loc(context).delete,
+      //   onPositiveTap: () {
+      //     doSomethingWithSpinner(
+      //       context,
+      //       ref.read(ddnsProvider.notifier).save(),
+      //     ).then(
+      //       (state) {
+      //         setState(() {
+      //           _preserveState = state;
+      //         });
+      //         showSuccessSnackBar(context, loc(context).saved);
+      //       },
+      //     ).onError((error, stackTrace) {
+      //       showFailedSnackBar(context, loc(context).failedExclamation);
+      //     });
+      //   },
+      // ),
       child: AppBasicLayout(
         content: ResponsiveLayout(
           desktop: Row(
@@ -132,6 +132,8 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
                   return 'No-IP.com';
                 } else if (item == tzoDNSProviderName) {
                   return 'tzo.com';
+                } else if (item == noDNSProviderName) {
+                  return loc(context).disabled;
                 } else {
                   return item;
                 }

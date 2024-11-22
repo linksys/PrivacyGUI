@@ -41,7 +41,12 @@ class SinglePortForwardingListNotifier
       final int maxRules = value.output['maxRules'] ?? 50;
       final int maxDesc = value.output['maxDescriptionLength'] ?? 32;
       state = state.copyWith(
-          rules: rules, maxRules: maxRules, maxDescriptionLength: maxDesc, routerIp: ipAddress, subnetMask: subnetMask,);
+        rules: rules,
+        maxRules: maxRules,
+        maxDescriptionLength: maxDesc,
+        routerIp: ipAddress,
+        subnetMask: subnetMask,
+      );
     }).onError(
       (error, stackTrace) {
         return null;
@@ -53,14 +58,11 @@ class SinglePortForwardingListNotifier
   Future<SinglePortForwardingListState> save() async {
     final rules = List<SinglePortForwardingRule>.from(state.rules);
     final repo = ref.read(routerRepositoryProvider);
-    await repo
-        .send(
-          JNAPAction.setSinglePortForwardingRules,
-          data: {'rules': rules.map((e) => e.toMap()).toList()},
-          auth: true,
-        )
-        .then((value) => true)
-        .onError((error, stackTrace) => false);
+    await repo.send(
+      JNAPAction.setSinglePortForwardingRules,
+      data: {'rules': rules.map((e) => e.toMap()).toList()},
+      auth: true,
+    );
     await fetch(true);
     return state;
   }

@@ -1,8 +1,10 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 
-import 'package:equatable/equatable.dart';
-import 'package:privacy_gui/core/jnap/models/ddns_settings_model.dart';
+import 'dart:convert';
 
+import 'package:equatable/equatable.dart';
+
+import 'package:privacy_gui/core/jnap/models/ddns_settings_model.dart';
 import 'package:privacy_gui/core/jnap/models/dyn_dns_settings.dart';
 import 'package:privacy_gui/core/jnap/models/no_ip_settings.dart';
 import 'package:privacy_gui/core/jnap/models/tzo_settings.dart';
@@ -10,7 +12,7 @@ import 'package:privacy_gui/core/jnap/models/tzo_settings.dart';
 const String dynDNSProviderName = 'DynDNS';
 const String noIPDNSProviderName = 'No-IP';
 const String tzoDNSProviderName = 'TZO';
-const String noDNSProviderName = 'disabled';
+const String noDNSProviderName = 'None';
 
 sealed class DDNSProvider<T> extends Equatable {
   final String name;
@@ -60,6 +62,28 @@ sealed class DDNSProvider<T> extends Equatable {
     }
   }
 
+  Map<String, dynamic> toMap();
+
+  factory DDNSProvider.fromMap(Map<String, dynamic> map) {
+    return switch (map['name']) {
+      dynDNSProviderName =>
+        DynDNSProvider(settings: DynDNSSettings.fromMap(map['settings']))
+            as DDNSProvider<T>,
+      noIPDNSProviderName =>
+        NoIPDNSProvider(settings: NoIPSettings.fromMap(map['settings']))
+            as DDNSProvider<T>,
+      tzoDNSProviderName =>
+        TzoDNSProvider(settings: TZOSettings.fromMap(map['settings']))
+            as DDNSProvider<T>,
+      _ => NoDDNSProvider() as DDNSProvider<T>,
+    };
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory DDNSProvider.fromJson(String source) =>
+      DDNSProvider.fromMap(json.decode(source));
+
   @override
   List<Object?> get props => [
         name,
@@ -76,10 +100,18 @@ class DynDNSProvider extends DDNSProvider<DynDNSSettings> {
   DDNSProvider applySettings(settings) {
     return DynDNSProvider(settings: settings);
   }
+
+  @override
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'settings': settings.toMap(),
+    }..removeWhere((key, value) => value == null);
+  }
 }
 
 class NoIPDNSProvider extends DDNSProvider<NoIPSettings> {
-  NoIPDNSProvider({
+  const NoIPDNSProvider({
     required super.settings,
   }) : super(name: noIPDNSProviderName);
 
@@ -87,23 +119,47 @@ class NoIPDNSProvider extends DDNSProvider<NoIPSettings> {
   DDNSProvider applySettings(settings) {
     return NoIPDNSProvider(settings: settings);
   }
+
+  @override
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'settings': settings.toMap(),
+    }..removeWhere((key, value) => value == null);
+  }
 }
 
 class TzoDNSProvider extends DDNSProvider<TZOSettings> {
-  TzoDNSProvider({required super.settings}) : super(name: tzoDNSProviderName);
+  const TzoDNSProvider({required super.settings})
+      : super(name: tzoDNSProviderName);
 
   @override
   DDNSProvider applySettings(settings) {
     return TzoDNSProvider(settings: settings);
   }
+
+  @override
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'settings': settings.toMap(),
+    }..removeWhere((key, value) => value == null);
+  }
 }
 
 class NoDDNSProvider extends DDNSProvider<dynamic> {
-  NoDDNSProvider({super.settings}) : super(name: noDNSProviderName);
+  const NoDDNSProvider({super.settings}) : super(name: noDNSProviderName);
 
   @override
   DDNSProvider applySettings(settings) {
     return NoDDNSProvider();
+  }
+
+  @override
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+    }..removeWhere((key, value) => value == null);
   }
 }
 
@@ -138,4 +194,32 @@ class DDNSState extends Equatable {
 
   @override
   List<Object> get props => [supportedProvider, provider, status, ipAddress];
+
+  Map<String, dynamic> toMap() {
+    return {
+      'supportedProvider': supportedProvider,
+      'provider': provider.toMap(),
+      'status': status,
+      'ipAddress': ipAddress,
+    };
+  }
+
+  factory DDNSState.fromMap(Map<String, dynamic> map) {
+    return DDNSState(
+      supportedProvider: List<String>.from(map['supportedProvider']),
+      provider: DDNSProvider.fromMap(map['provider']),
+      status: map['status'] ?? '',
+      ipAddress: map['ipAddress'] ?? '',
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory DDNSState.fromJson(String source) =>
+      DDNSState.fromMap(json.decode(source));
+
+  @override
+  String toString() {
+    return 'DDNSState(supportedProvider: $supportedProvider, provider: $provider, status: $status, ipAddress: $ipAddress)';
+  }
 }

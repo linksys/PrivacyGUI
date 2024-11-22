@@ -51,10 +51,18 @@ class SinglePortForwardingRuleNotifier
   }
 
   bool isPortConflict(int externalPort, String protocol) {
-    return state.rules
-        .whereIndexed((index, rule) => index != state.editIndex)
-        .any((rule) =>
-            rule.externalPort == externalPort &&
-            (protocol == rule.protocol || protocol == 'Both'));
+    final portRangeState = ref.read(portRangeForwardingListProvider).rules;
+    return portRangeState.any((rule) =>
+            externalPort > rule.firstExternalPort &&
+            externalPort < rule.lastExternalPort &&
+            (protocol == rule.protocol ||
+                protocol == 'Both' ||
+                rule.protocol == 'Both')) ||
+        state.rules.whereIndexed((index, rule) => index != state.editIndex).any(
+            (rule) =>
+                rule.externalPort == externalPort &&
+                (protocol == rule.protocol ||
+                    protocol == 'Both' ||
+                    rule.protocol == 'Both'));
   }
 }

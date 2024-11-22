@@ -381,3 +381,10 @@ Future<bool?> showRebootModal(BuildContext context, bool isParent) {
         ),
       ]);
 }
+
+Future showMLOCapableModal(BuildContext context) {
+  return showMessageAppOkDialog(context,
+      title: loc(context).mlo,
+      message:
+          '${loc(context).mloCapableModalDesc1}\n\n${loc(context).mloCapableModalDesc2}');
+}

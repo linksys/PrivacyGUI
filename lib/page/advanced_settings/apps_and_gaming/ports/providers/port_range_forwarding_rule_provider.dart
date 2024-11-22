@@ -62,16 +62,19 @@ class PortRangeForwardingRuleNotifier
     return singlePortsState.any((rule) =>
             rule.externalPort > firstPort &&
             rule.externalPort < lastPort &&
-            (protocol == rule.protocol || protocol == 'Both')) ||
-        state.rules
-            .whereIndexed((index, rule) => index != state.editIndex)
-            .any((rule) =>
+            (protocol == rule.protocol ||
+                protocol == 'Both' ||
+                rule.protocol == 'Both')) ||
+        state.rules.whereIndexed((index, rule) => index != state.editIndex).any(
+            (rule) =>
                 doesRangeOverlap(
                   rule.firstExternalPort,
                   rule.lastExternalPort,
                   firstPort,
                   lastPort,
                 ) &&
-                (protocol == rule.protocol || protocol == 'Both'));
+                (protocol == rule.protocol ||
+                    protocol == 'Both' ||
+                    rule.protocol == 'Both'));
   }
 }
