@@ -10,17 +10,52 @@ final appsAndGamingProvider =
 class AppsAndGamingViewNotifier extends Notifier<AppsAndGamingViewState> {
   @override
   AppsAndGamingViewState build() {
-    return AppsAndGamingViewState(isCurrentViewStateChanged: false);
+    return AppsAndGamingViewState();
   }
 
-  Future fetch([bool force = false]) async {
-    await ref.read(ddnsProvider.notifier).fetch(force);
-    await ref.read(singlePortForwardingListProvider.notifier).fetch(force);
-    await ref.read(portRangeForwardingListProvider.notifier).fetch(force);
-    await ref.read(portRangeTriggeringListProvider.notifier).fetch(force);
+  Future<AppsAndGamingViewState> fetch([bool force = false]) async {
+    final pDDNSState = await ref.read(ddnsProvider.notifier).fetch(force);
+    final pSinglePortState =
+        await ref.read(singlePortForwardingListProvider.notifier).fetch(force);
+    final pPortRangeForwardingState =
+        await ref.read(portRangeForwardingListProvider.notifier).fetch(force);
+    final pPortRangeTriggeringState =
+        await ref.read(portRangeTriggeringListProvider.notifier).fetch(force);
+    state = state.copyWith(
+      preserveDDNSState: () => pDDNSState,
+      preserveSinglePortForwardingListState: () => pSinglePortState,
+      preservePortRangeForwardingListState: () => pPortRangeForwardingState,
+      preservePortRangeTriggeringListState: () => pPortRangeTriggeringState,
+    );
+    return state;
   }
 
-  void setChanged(bool value) {
-    state = state.copyWith(isCurrentViewStateChanged: value);
+  Future<AppsAndGamingViewState> save() async {
+    if (ref.read(ddnsProvider) != state.preserveDDNSState) {
+      await ref.read(ddnsProvider.notifier).save();
+    }
+    if (ref.read(singlePortForwardingListProvider) !=
+        state.preserveSinglePortForwardingListState) {
+      await ref.read(singlePortForwardingListProvider.notifier).save();
+    }
+    if (ref.read(portRangeForwardingListProvider) !=
+        state.preservePortRangeForwardingListState) {
+      await ref.read(portRangeForwardingListProvider.notifier).save();
+    }
+    if (ref.read(portRangeTriggeringListProvider) !=
+        state.preservePortRangeTriggeringListState) {
+      await ref.read(portRangeTriggeringListProvider.notifier).save();
+    }
+    return fetch(true);
+  }
+
+  bool isChanged() {
+    return ref.read(ddnsProvider) != state.preserveDDNSState ||
+        ref.read(singlePortForwardingListProvider) !=
+            state.preserveSinglePortForwardingListState ||
+        ref.read(portRangeForwardingListProvider) !=
+            state.preservePortRangeForwardingListState ||
+        ref.read(portRangeTriggeringListProvider) !=
+            state.preservePortRangeTriggeringListState;
   }
 }

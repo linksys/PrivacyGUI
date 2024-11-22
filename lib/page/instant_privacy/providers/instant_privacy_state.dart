@@ -22,6 +22,7 @@ class InstantPrivacyState extends Equatable {
   final MacFilterMode mode;
   final List<String> macAddresses;
   final int maxMacAddresses;
+  final List<String> bssids;
 
   @override
   List<Object> get props => [mode, macAddresses, maxMacAddresses];
@@ -30,6 +31,7 @@ class InstantPrivacyState extends Equatable {
     required this.mode,
     required this.macAddresses,
     required this.maxMacAddresses,
+    this.bssids = const [],
   });
 
   factory InstantPrivacyState.init() {
@@ -44,11 +46,13 @@ class InstantPrivacyState extends Equatable {
     MacFilterMode? mode,
     List<String>? macAddresses,
     int? maxMacAddresses,
+    List<String>? bssids,
   }) {
     return InstantPrivacyState(
       mode: mode ?? this.mode,
       macAddresses: macAddresses ?? this.macAddresses,
       maxMacAddresses: maxMacAddresses ?? this.maxMacAddresses,
+      bssids: bssids ?? this.bssids,
     );
   }
 
@@ -57,6 +61,7 @@ class InstantPrivacyState extends Equatable {
       'status': mode.name,
       'macAddresses': macAddresses,
       'maxMacAddresses': maxMacAddresses,
+      'bssids': bssids,
     };
   }
 
@@ -65,6 +70,7 @@ class InstantPrivacyState extends Equatable {
       mode: MacFilterMode.reslove(map['status']),
       macAddresses: List.from(map['macAddresses']),
       maxMacAddresses: map['maxMacAddresses'] as int,
+      bssids: List.from(map['bssids']),
     );
   }
 

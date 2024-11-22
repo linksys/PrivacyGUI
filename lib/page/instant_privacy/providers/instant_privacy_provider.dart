@@ -1,6 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/models/mac_filter_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
@@ -32,10 +33,24 @@ class InstantPrivacyNotifier extends Notifier<InstantPrivacyState> {
           auth: true,
         )
         .then((result) => MACFilterSettings.fromMap(result.output));
+    final List<String> staBSSIDS = ServiceHelper().isSupportGetSTABSSID() ? await ref
+        .read(routerRepositoryProvider)
+        .send(
+          JNAPAction.getSTABSSIDs,
+          fetchRemote: true,
+          auth: true,
+        )
+        .then((result) {
+      return List<String>.from(result.output['staBSSIDS']);
+    }).onError((error, _) {
+      logger.d('Not able to get STA BSSIDs');
+      return [];
+    }) : [];
     state = state.copyWith(
       mode: MacFilterMode.reslove(settings.macFilterMode),
       macAddresses: settings.macAddresses.map((e) => e.toUpperCase()).toList(),
       maxMacAddresses: settings.maxMACAddresses,
+      bssids: staBSSIDS,
     );
     return state;
   }
@@ -47,19 +62,6 @@ class InstantPrivacyNotifier extends Notifier<InstantPrivacyState> {
   Future save() async {
     var macAddresses = [];
     if (state.mode == MacFilterMode.allow) {
-      final List<String> staBSSIDS = await ref
-          .read(routerRepositoryProvider)
-          .send(
-            JNAPAction.getSTABSSIDs,
-            fetchRemote: true,
-            auth: true,
-          )
-          .then((result) {
-        return List<String>.from(result.output['staBSSIDS']);
-      }).onError((error, _) {
-        logger.d('Not able to get STA BSSIDs');
-        return [];
-      });
       final nodesMacAddresses = ref
           .read(deviceManagerProvider)
           .nodeDevices
@@ -68,7 +70,7 @@ class InstantPrivacyNotifier extends Notifier<InstantPrivacyState> {
       macAddresses = [
         ...state.macAddresses,
         ...nodesMacAddresses,
-        ...staBSSIDS,
+        ...state.bssids,
       ].unique();
     }
     await ref.read(routerRepositoryProvider).send(

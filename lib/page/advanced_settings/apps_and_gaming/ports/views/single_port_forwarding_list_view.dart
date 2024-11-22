@@ -59,15 +59,15 @@ class _SinglePortForwardingContentViewState
   void initState() {
     _notifier = ref.read(singlePortForwardingListProvider.notifier);
 
-    doSomethingWithSpinner(
-      context,
-      _notifier.fetch(),
-    ).then((state) {
-      setState(() {
-        preservedState = state;
-      });
-      ref.read(appsAndGamingProvider.notifier).setChanged(false);
-    });
+    // doSomethingWithSpinner(
+    //   context,
+    //   _notifier.fetch(),
+    // ).then((state) {
+    //   setState(() {
+    //     preservedState = state;
+    //   });
+    //   // ref.read(appsAndGamingProvider.notifier).setChanged(false);
+    // });
 
     super.initState();
   }
@@ -86,27 +86,27 @@ class _SinglePortForwardingContentViewState
     final state = ref.watch(singlePortForwardingListProvider);
     final submaskToken = state.subnetMask.split('.');
     final prefixIP = state.routerIp;
-    ref.listen(singlePortForwardingListProvider, (previous, next) {
-      ref
-          .read(appsAndGamingProvider.notifier)
-          .setChanged(next != preservedState);
-    });
+    // ref.listen(singlePortForwardingListProvider, (previous, next) {
+    //   ref
+    //       .read(appsAndGamingProvider.notifier)
+    //       .setChanged(next != preservedState);
+    // });
     return StyledAppPageView(
       title: loc(context).singlePortForwarding,
       scrollable: true,
       useMainPadding: false,
       appBarStyle: AppBarStyle.none,
       padding: EdgeInsets.zero,
-      bottomBar: PageBottomBar(
-          isPositiveEnabled: state != preservedState,
-          onPositiveTap: () {
-            doSomethingWithSpinner(context, _notifier.save()).then((state) {
-              setState(() {
-                preservedState = state;
-              });
-              ref.read(appsAndGamingProvider.notifier).setChanged(false);
-            });
-          }),
+      // bottomBar: PageBottomBar(
+      //     isPositiveEnabled: state != preservedState,
+      //     onPositiveTap: () {
+      //       doSomethingWithSpinner(context, _notifier.save()).then((state) {
+      //         setState(() {
+      //           preservedState = state;
+      //         });
+      //         // ref.read(appsAndGamingProvider.notifier).setChanged(false);
+      //       });
+      //     }),
       child: AppBasicLayout(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

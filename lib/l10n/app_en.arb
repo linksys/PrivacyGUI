@@ -1047,5 +1047,9 @@
   "doYouWantToSaveTheLocalNetworkSettings": "Do you want to save the Local Network Settings?",
   "allDayOff": "All day off",
   "nightModeTime": "8PM - 8AM",
-  "invalidCharacters": "Invalid characters"
+  "invalidCharacters": "Invalid characters",
+  "mloCapableModalDesc1": "Multi-Link Operation (MLO) allows devices to use multiple bands and frequency channels simultaneously.",
+  "mloCapableModalDesc2": "This increases speed, reduces latency, and makes for a more reliable connection.",
+  "connectedWithMLO": "Connected with MLO",
+  "mloCapable": "MLO capable"
 }

@@ -68,7 +68,7 @@ class DDNSNotifier extends Notifier<DDNSState> {
           ddnsStatusData != null ? ddnsStatusData.output['status'] : null;
 
       state = state.copyWith(
-        supportedProvider: ['disabled', ...ddnsSupportedProviders],
+        supportedProvider: [noDNSProviderName, ...ddnsSupportedProviders],
         status: ddnsStatus,
         provider: DDNSProvider.reslove(ddnsSettings),
         ipAddress: wanStatus?.wanConnection?.ipAddress,
