@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/build_config.dart';
-import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -11,6 +10,7 @@ import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
 import 'package:privacy_gui/page/instant_safety/providers/_providers.dart';
@@ -96,13 +96,21 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
   }
 
   Widget _buildDeviceGridCell(AppSectionItemData item) {
-    return AppMenuCard(
-      iconData: item.iconData,
-      title: item.title,
-      description: item.description,
-      status: item.status,
-      isBeta: item.isBeta,
-      onTap: item.onTap,
+    final isBridge =
+        ref.watch(dashboardHomeProvider).isBridgeMode && item.disabledOnBridge;
+    return Opacity(
+      opacity: isBridge ? .3 : 1,
+      child: AbsorbPointer(
+        absorbing: isBridge,
+        child: AppMenuCard(
+          iconData: item.iconData,
+          title: item.title,
+          description: item.description,
+          status: item.status,
+          isBeta: item.isBeta,
+          onTap: item.onTap,
+        ),
+      ),
     );
   }
 
@@ -135,6 +143,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
           title: loc(context).instantTopology,
           description: loc(context).instantTopologyDesc,
           iconData: LinksysIcons.router,
+          disabledOnBridge: true,
           onTap: () {
             _navigateTo(RouteNamed.menuInstantTopology);
           }),
@@ -142,6 +151,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
           title: loc(context).instantSafety,
           description: loc(context).instantSafetyDesc,
           iconData: LinksysIcons.encrypted,
+          disabledOnBridge: true,
           status: safetyState.safeBrowsingType == InstantSafetyType.off,
           onTap: () {
             _navigateTo(RouteNamed.menuInstantSafety);
@@ -152,6 +162,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
           iconData: LinksysIcons.smartLock,
           status: privacyState.mode != MacFilterMode.allow,
           isBeta: true,
+          disabledOnBridge: true,
           onTap: () {
             _navigateTo(RouteNamed.menuInstantPrivacy);
           }),
@@ -159,6 +170,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
           title: loc(context).instantDevices,
           description: loc(context).instantDevicesDesc,
           iconData: LinksysIcons.devices,
+          disabledOnBridge: true,
           onTap: () {
             _navigateTo(RouteNamed.menuInstantDevices);
           }),

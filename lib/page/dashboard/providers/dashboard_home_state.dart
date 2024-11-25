@@ -124,6 +124,7 @@ class DashboardHomeState extends Equatable {
   final String? wanPortConnection;
   final List<String> lanPortConnections;
   final List<DashboardWiFiItem> wifis;
+  final String? wanType;
 
   const DashboardHomeState({
     this.isWanConnected = false,
@@ -139,6 +140,7 @@ class DashboardHomeState extends Equatable {
     this.wanPortConnection,
     this.lanPortConnections = const [],
     this.wifis = const [],
+    this.wanType,
   });
 
   DashboardHomeState copyWith({
@@ -155,6 +157,7 @@ class DashboardHomeState extends Equatable {
     String? wanPortConnection,
     List<String>? lanPortConnections,
     List<DashboardWiFiItem>? wifis,
+    String? wanType,
   }) {
     return DashboardHomeState(
       isWanConnected: isWanConnected ?? this.isWanConnected,
@@ -171,6 +174,7 @@ class DashboardHomeState extends Equatable {
       wanPortConnection: wanPortConnection ?? this.wanPortConnection,
       lanPortConnections: lanPortConnections ?? this.lanPortConnections,
       wifis: wifis ?? this.wifis,
+      wanType: wanType ?? this.wanType,
     );
   }
 
@@ -186,7 +190,8 @@ class DashboardHomeState extends Equatable {
       'wanPortConnection': wanPortConnection,
       'lanPortConnections': lanPortConnections,
       'wifis': wifis.map((x) => x.toMap()).toList(),
-    };
+      'wanType': wanType,
+    }..removeWhere((key, value) => value == null);
   }
 
   factory DashboardHomeState.fromMap(Map<String, dynamic> map) {
@@ -207,6 +212,7 @@ class DashboardHomeState extends Equatable {
           (x) => DashboardWiFiItem.fromMap(x as Map<String, dynamic>),
         ),
       ),
+      wanType: map['wanType'],
     );
   }
 
@@ -231,10 +237,13 @@ class DashboardHomeState extends Equatable {
       wanPortConnection,
       lanPortConnections,
       wifis,
+      wanType,
     ];
   }
 }
 
 extension DashboardHomeStateExt on DashboardHomeState {
   String get mainSSID => wifis.firstOrNull?.ssid ?? '';
+
+  bool get isBridgeMode => wanType == 'Bridge';
 }

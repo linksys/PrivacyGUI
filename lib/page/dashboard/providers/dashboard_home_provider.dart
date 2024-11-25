@@ -68,6 +68,10 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
     // Get WAN connection status
     final isWanConnected =
         deviceManagerState.wanStatus?.wanStatus == 'Connected';
+
+    // Get WAN type
+    final wanType = deviceManagerState.wanStatus?.wanConnection?.wanType;
+
     // If is first polling
     final isFirstPolling = deviceManagerState.lastUpdateTime == 0;
     // Get master node icon
@@ -110,6 +114,7 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
       speedCheckTimestamp: speedTestTimeStamp,
       isHorizontalLayout: horizontalPortLayout,
       isHealthCheckSupported: isSpeedCheckSupported,
+      wanType: wanType,
     );
 
     logger.d('[State]:[dashboardHome]: ${newState.toJson()}');

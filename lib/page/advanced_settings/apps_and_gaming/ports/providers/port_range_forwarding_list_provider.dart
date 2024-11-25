@@ -52,14 +52,12 @@ class PortRangeForwardingListNotifier
   Future<PortRangeForwardingListState> save() async {
     final rules = List<PortRangeForwardingRule>.from(state.rules);
     final repo = ref.read(routerRepositoryProvider);
-    await repo
-        .send(
-          JNAPAction.setPortRangeForwardingRules,
-          data: {'rules': rules.map((e) => e.toMap()).toList()},
-          auth: true,
-        )
-        .then((value) => true)
-        .onError((error, stackTrace) => false);
+    await repo.send(
+      JNAPAction.setPortRangeForwardingRules,
+      data: {'rules': rules.map((e) => e.toMap()).toList()},
+      auth: true,
+    );
+  
     await fetch(true);
     return state;
   }

@@ -58,15 +58,15 @@ class _PortRangeTriggeringContentViewState
   void initState() {
     super.initState();
     _notifier = ref.read(portRangeTriggeringListProvider.notifier);
-    doSomethingWithSpinner(
-      context,
-      _notifier.fetch(),
-    ).then((state) {
-      setState(() {
-        preservedState = state;
-      });
-      ref.read(appsAndGamingProvider.notifier).setChanged(false);
-    });
+    // doSomethingWithSpinner(
+    //   context,
+    //   _notifier.fetch(),
+    // ).then((state) {
+    //   setState(() {
+    //     preservedState = state;
+    //   });
+    //   // ref.read(appsAndGamingProvider.notifier).setChanged(false);
+    // });
   }
 
   @override
@@ -82,27 +82,27 @@ class _PortRangeTriggeringContentViewState
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(portRangeTriggeringListProvider);
-    ref.listen(portRangeTriggeringListProvider, (previous, next) {
-      ref
-          .read(appsAndGamingProvider.notifier)
-          .setChanged(next != preservedState);
-    });
+    // ref.listen(portRangeTriggeringListProvider, (previous, next) {
+    //   ref
+    //       .read(appsAndGamingProvider.notifier)
+    //       .setChanged(next != preservedState);
+    // });
     return StyledAppPageView(
       scrollable: true,
       useMainPadding: false,
       appBarStyle: AppBarStyle.none,
       padding: EdgeInsets.zero,
       title: loc(context).portRangeTriggering,
-      bottomBar: PageBottomBar(
-          isPositiveEnabled: state != preservedState,
-          onPositiveTap: () {
-            doSomethingWithSpinner(context, _notifier.save()).then((state) {
-              setState(() {
-                preservedState = state;
-              });
-            });
-            ref.read(appsAndGamingProvider.notifier).setChanged(false);
-          }),
+      // bottomBar: PageBottomBar(
+      //     isPositiveEnabled: state != preservedState,
+      //     onPositiveTap: () {
+      //       doSomethingWithSpinner(context, _notifier.save()).then((state) {
+      //         setState(() {
+      //           preservedState = state;
+      //         });
+      //       });
+      //       // ref.read(appsAndGamingProvider.notifier).setChanged(false);
+      //     }),
       child: AppBasicLayout(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

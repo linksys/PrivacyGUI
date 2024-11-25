@@ -38,6 +38,7 @@ String? errorCodeHelper(BuildContext context, String? code) {
     errorInvalidInput => loc(context).invalidInput,
     errorInvalidServer => loc(context).errorInvalidServer,
     errorMissingDestination => loc(context).invalidDestinationIpAddress,
+    errorRuleOverlap => loc(context).rulesOverlapError,
     _ => unknownHandle(code),
   };
 }

@@ -6,6 +6,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_rule_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_state.dart';
+import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/settings_view/editable_card_list_settings_view.dart';
 import 'package:privacy_gui/page/components/settings_view/editable_table_settings_view.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
@@ -32,7 +33,8 @@ class StaticRoutingView extends ArgumentsConsumerStatefulView {
   ConsumerState<StaticRoutingView> createState() => _StaticRoutingViewState();
 }
 
-class _StaticRoutingViewState extends ConsumerState<StaticRoutingView> {
+class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
+    with PageSnackbarMixin {
   late final StaticRoutingNotifier _notifier;
   StaticRoutingState? preservedState;
 
@@ -86,6 +88,9 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView> {
               setState(() {
                 preservedState = state;
               });
+              showChangesSavedSnackBar();
+            }).onError((error, stackTrace) {
+              showErrorMessageSnackBar(error);
             });
           }),
       onBackTap: state != preservedState
@@ -101,7 +106,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppRadioList(
-            initial: state.setting.isNATEnabled
+            selected: state.setting.isNATEnabled
                 ? RoutingSettingNetwork.nat
                 : RoutingSettingNetwork.dynamicRouting,
             itemHeight: 56,

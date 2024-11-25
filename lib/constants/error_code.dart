@@ -34,7 +34,7 @@ const errorInvalidInput = "_ErrorInvalidInput";
 const errorInvalidServer = "ErrorInvalidServer";
 const errorInvalidDestinationIpAddress = "ErrorInvalidDestinationIPAddress";
 const errorMissingDestination = "ErrorMissingDestination";
-
+const errorRuleOverlap = "ErrorRulesOverlap";
 
 // JNAP retry list
 const errorJNAPRetryList = [errorUnexpected];

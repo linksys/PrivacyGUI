@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/dashboard/_dashboard.dart';
+import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -20,8 +22,7 @@ class AdvancedSettingsView extends ConsumerStatefulWidget {
       _AdvancedSettingsViewState();
 }
 
-class _AdvancedSettingsViewState
-    extends ConsumerState<AdvancedSettingsView> {
+class _AdvancedSettingsViewState extends ConsumerState<AdvancedSettingsView> {
   List<AppSectionItemData> advancedSettings = [];
   @override
   void initState() {
@@ -65,6 +66,7 @@ class _AdvancedSettingsViewState
   }
 
   List<AppSectionItemData> _initAdvancedSettingsItems() {
+    final isBridge = ref.watch(dashboardHomeProvider).isBridgeMode;
     return [
       AppSectionItemData(
         title: loc(context).internetSettings.capitalizeWords(),
@@ -74,7 +76,7 @@ class _AdvancedSettingsViewState
       AppSectionItemData(
         title: loc(context).localNetwork,
         // iconData: getCharactersIcons(context).nodesDefault,
-        onTap: () => context.goNamed(RouteNamed.settingsLocalNetwork),
+        onTap: isBridge ? null: () => context.goNamed(RouteNamed.settingsLocalNetwork),
       ),
       AppSectionItemData(
         title: loc(context).advancedRouting,
@@ -99,7 +101,7 @@ class _AdvancedSettingsViewState
       AppSectionItemData(
         title: loc(context).appsGaming,
         // iconData: getCharactersIcons(context).nodesDefault,
-        onTap: () => context.goNamed(RouteNamed.settingsAppsGaming),
+        onTap: isBridge ? null : () => context.goNamed(RouteNamed.settingsAppsGaming),
       ),
     ];
   }

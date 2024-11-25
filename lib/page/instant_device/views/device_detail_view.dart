@@ -181,14 +181,29 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
         ),
         if (state.item.isOnline && !state.item.isWired) ...[
           const AppGap.small2(),
-          AppSettingCard(
+          AppListCard(
             padding: const EdgeInsets.symmetric(
               horizontal: Spacing.large2,
               vertical: Spacing.medium,
             ),
-            title: loc(context).ssid,
-            description:
-                _formatEmptyValue('${state.item.ssid} • ${state.item.band}'),
+            title: AppText.bodyMedium(loc(context).ssid),
+            description: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppText.labelLarge(_formatEmptyValue(
+                    '${state.item.ssid} • ${state.item.isMLO ? '6GHz, 5GHz' : state.item.band}')),
+                if (state.item.isMLO) ...[
+                  const AppGap.small2(),
+                  AppTextButton.noPadding(
+                    loc(context).mloCapable,
+                    onTap: () {
+                      showMLOCapableModal(context);
+                    },
+                  ),
+                ],
+              ],
+            ),
           ),
           const AppGap.small2(),
           AppListCard(

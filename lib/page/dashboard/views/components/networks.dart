@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/dashboard/views/components/shimmer.dart';
 import 'package:privacy_gui/page/nodes/providers/node_detail_id_provider.dart';
@@ -67,6 +68,7 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
             116.0;
     final hasLanPort =
         ref.read(dashboardHomeProvider).lanPortConnections.isNotEmpty;
+    final isBridge = ref.watch(dashboardHomeProvider).isBridgeMode;
     return Container(
       constraints: BoxConstraints(minHeight: 200 + nodeTopologyHeight),
       child: ShimmerContainer(
@@ -106,7 +108,7 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
                             extra: entry.node.data.isMaster
                                 ? '${loc(context).uptime}: $uptime'
                                 : null,
-                            onTap: entry.node.data.isOnline
+                            onTap: entry.node.data.isOnline && !isBridge
                                 ? () {
                                     ref
                                         .read(nodeDetailIdProvider.notifier)
@@ -294,6 +296,7 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
   Widget _nodesInfoTile(
       BuildContext context, WidgetRef ref, InstantTopologyState state) {
     final nodes = state.root.children.firstOrNull?.toFlatList() ?? [];
+    final isBridge = ref.watch(dashboardHomeProvider).isBridgeMode;
     return _infoTile(
       iconData: LinksysIcons.networkNode,
       text: nodes.length == 1 ? loc(context).node : loc(context).nodes,
@@ -306,17 +309,19 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
               color: Theme.of(context).colorScheme.error,
             )
           : null,
-      onTap: () {
-        ref.read(topologySelectedIdProvider.notifier).state = '';
-        context.pushNamed(RouteNamed.menuInstantTopology);
-      },
+      onTap: isBridge
+          ? null
+          : () {
+              ref.read(topologySelectedIdProvider.notifier).state = '';
+              context.pushNamed(RouteNamed.menuInstantTopology);
+            },
     );
   }
 
   Widget _devicesInfoTile(
       BuildContext context, WidgetRef ref, InstantTopologyState state) {
     final nodes = state.root.children.firstOrNull?.toFlatList() ?? [];
-
+    final isBridge = ref.watch(dashboardHomeProvider).isBridgeMode;
     final count = nodes.fold(
         0,
         (previousValue, element) =>
@@ -325,9 +330,11 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
       text: count == 1 ? loc(context).device : loc(context).devices,
       count: count,
       iconData: LinksysIcons.devices,
-      onTap: () {
-        context.pushNamed(RouteNamed.menuInstantDevices);
-      },
+      onTap: isBridge
+          ? null
+          : () {
+              context.pushNamed(RouteNamed.menuInstantDevices);
+            },
     );
   }
 

@@ -6,7 +6,6 @@ import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacy_gui/page/instant_device/extensions/icon_device_category_ext.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
 
 final offlineDeviceListProvider = Provider((ref) {
   final deviceListState = ref.watch(deviceListProvider);

@@ -902,8 +902,8 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
         showChangesSavedSnackBar();
       }).catchError((error, stackTrace) {
         showRouterNotFoundAlert(context, ref,
-                onComplete: () => ref.read(wifiListProvider.notifier).fetch())
-            .then((state) {
+            onComplete: () =>
+                ref.read(wifiListProvider.notifier).fetch(true)).then((state) {
           ref.read(wifiViewProvider.notifier).setChanged(false);
           update(state);
           showChangesSavedSnackBar();
