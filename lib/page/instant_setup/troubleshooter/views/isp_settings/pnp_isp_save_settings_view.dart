@@ -54,7 +54,7 @@ class _PnpIspSaveSettingsViewState
     )!;
     return ref
         .read(internetSettingsProvider.notifier)
-        .saveIpv4(newSettings)
+        .savePnpIpv4(newSettings)
         .then((value) {
       setState(() {
         _spinnerText = loc(context).savingChanges;

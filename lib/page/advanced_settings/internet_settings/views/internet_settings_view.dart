@@ -1737,7 +1737,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
     final state = ref.read(internetSettingsProvider);
     doSomethingWithSpinner(
       context,
-      _notifier.saveInternetSettings(state),
+      _notifier.saveInternetSettings(state, originalState),
     ).then((value) {
       setState(() {
         isIpv4Editing = false;

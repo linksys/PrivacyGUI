@@ -131,22 +131,26 @@ class _InternetConnectionWidgetState
                   children: [
                     Container(
                       color: Theme.of(context).colorScheme.onInverseSurface,
+                      height: 158,
                       width:
                           ResponsiveLayout.isDesktopLayout(context) ? 176 : 104,
-                      height: 176,
+                      // height: 176,
                       child: SharedWidgets.resolveRouterImage(
                           context, masterIcon,
                           size: 112),
                     ),
                     Expanded(
                       child: Padding(
-                        padding: const EdgeInsets.only(left: Spacing.large4),
+                        padding: const EdgeInsets.only(
+                            top: Spacing.medium,
+                            bottom: Spacing.medium,
+                            left: Spacing.large4),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             AppText.titleMedium(master.data.location),
-                            const AppGap.large2(),
+                            const AppGap.large1(),
                             Table(
                               border: const TableBorder(),
                               columnWidths: const {
@@ -193,7 +197,7 @@ class _InternetConnectionWidgetState
                                   ),
                                 ]),
                               ],
-                            )
+                            ),
                           ],
                         ),
                       ),
