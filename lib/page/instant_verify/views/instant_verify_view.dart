@@ -275,7 +275,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
                   children: [
                     AppText.bodySmall(loc(context).cpuUtilization),
                     AppText.labelMedium(
-                        '${(double.tryParse(cpuLoad) ?? 0) * 100}%'),
+                        '${(double.tryParse(cpuLoad.padLeft(2, '0')) ?? 0) * 100}%'),
                   ],
                 ),
               ),
@@ -286,7 +286,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
                   children: [
                     AppText.bodySmall(loc(context).memoryUtilization),
                     AppText.labelMedium(
-                        '${(double.tryParse(memoryLoad) ?? 0) * 100}%'),
+                        '${(double.tryParse(memoryLoad.padRight(2, '0')) ?? 0) * 100}%'),
                   ],
                 ),
               ),

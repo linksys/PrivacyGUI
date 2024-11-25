@@ -220,7 +220,8 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
     return state;
   }
 
-  Future saveInternetSettings(InternetSettingsState newState) {
+  Future saveInternetSettings(
+      InternetSettingsState newState, InternetSettingsState? originalState) {
     List<MapEntry<JNAPAction, Map<String, dynamic>>> transactions = [
       getMacAddressCloneTransaction(
           newState.macClone, newState.macCloneAddress),
@@ -236,15 +237,28 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
         )
         .then((successWrap) => successWrap.data)
         .then((results) async {
+      // Fetch
       await fetch(fetchRemote: true);
-      _handleWebRedirection(results);
+      // Handle redirection
+      final originalWanType =
+          WanType.resolve(originalState?.ipv4Setting.ipv4ConnectionType ?? '');
+      final redirectionMap = originalWanType == WanType.bridge
+          ? {'hostName': 'myrouter', 'domain': 'info'}
+          : _getRedirectionMap(results);
+      _handleWebRedirection(redirectionMap);
     }).catchError(
       (error) {
         final sideEffectError = error as JNAPSideEffectError;
         if (sideEffectError.attach is JNAPTransactionSuccessWrap) {
+          // Handle redirection
           JNAPTransactionSuccessWrap result =
               sideEffectError.attach as JNAPTransactionSuccessWrap;
-          _handleWebRedirection(result.data);
+          final originalWanType = WanType.resolve(
+              originalState?.ipv4Setting.ipv4ConnectionType ?? '');
+          final redirectionMap = originalWanType == WanType.bridge
+              ? {'hostName': 'myrouter', 'domain': 'info'}
+              : _getRedirectionMap(result.data);
+          _handleWebRedirection(redirectionMap);
         } else {
           throw error;
         }
@@ -279,17 +293,10 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
     }
   }
 
-  Future saveIpv4(InternetSettingsState newState) {
+  Future savePnpIpv4(InternetSettingsState newState) {
     // Create transactions
     List<MapEntry<JNAPAction, Map<String, dynamic>>> transactions =
         getSaveIpv4Transactions(newState);
-    // final currentWanType =
-    //     WanType.resolve(state.ipv4Setting.ipv4ConnectionType);
-    // if (currentWanType == WanType.bridge) {
-    //   ref.read(redirectionProvider.notifier).state = 'https://localhost';
-    // } else {
-    //   ref.read(redirectionProvider.notifier).state = null;
-    // }
     return ref
         .read(routerRepositoryProvider)
         .transaction(
@@ -298,32 +305,22 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
           cacheLevel: CacheLevel.noCache,
         )
         .then((successWrap) => successWrap.data)
-        .then((results) {
-      _handleWebRedirection(results);
-    }).catchError(
-      (error) {
-        final sideEffectError = error as JNAPSideEffectError;
-        if (sideEffectError.attach is JNAPTransactionSuccessWrap) {
-          JNAPTransactionSuccessWrap result =
-              sideEffectError.attach as JNAPTransactionSuccessWrap;
-          _handleWebRedirection(result.data);
-        } else {
-          throw error;
-        }
-      },
-      test: (error) => error is JNAPSideEffectError,
-    ).whenComplete(() async {
+        .whenComplete(() async {
       await fetch(fetchRemote: true);
     });
   }
 
-  void _handleWebRedirection(List<MapEntry<JNAPAction, JNAPResult>> data) {
+  Map<String, dynamic>? _getRedirectionMap(
+      List<MapEntry<JNAPAction, JNAPResult>> data) {
     final setWanSettingsResult = JNAPTransactionSuccessWrap.getResult(
         JNAPAction.setWANSettings, Map.fromEntries(data));
-    final redirection = setWanSettingsResult?.output["redirection"];
-    if (kIsWeb && redirection != null) {
+    return setWanSettingsResult?.output["redirection"];
+  }
+
+  void _handleWebRedirection(Map<String, dynamic>? redirectionMap) {
+    if (kIsWeb && redirectionMap != null) {
       final redirectionUrl =
-          'https://${redirection["hostName"]}.${redirection["domain"]}';
+          'https://${redirectionMap["hostName"]}.${redirectionMap["domain"]}';
       // Update state
       updateIpv4Settings(
           state.ipv4Setting.copyWith(redirection: () => redirectionUrl));
@@ -336,7 +333,7 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
       }
       // Update redirectionProvider
       ref.read(redirectionProvider.notifier).state = redirectionUrl;
-      logger.d('Set Bridge: $redirectionUrl');
+      logger.d('Redirect to: $redirectionUrl');
       return;
     }
     ref.read(redirectionProvider.notifier).state = null;
