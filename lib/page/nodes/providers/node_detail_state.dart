@@ -171,7 +171,7 @@ class NodeDetailState extends Equatable {
       lanIpAddress: map['lanIpAddress'] as String,
       wanIpAddress: map['wanIpAddress'] as String,
       blinkingStatus: BlinkingStatus.resolve(map['blinkingStatus'] as String),
-      isMLO: map['isMLO'],
+      isMLO: map['isMLO'] ?? false,
     );
   }
 

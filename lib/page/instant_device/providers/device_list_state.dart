@@ -207,7 +207,7 @@ class DeviceListItem extends Equatable {
           WifiConnectionType.values.firstWhereOrNull((e) => e == map['type']) ??
               WifiConnectionType.main,
       ssid: map['ssid'] as String,
-      isMLO: map['isMLO'],
+      isMLO: map['isMLO'] ?? false,
     );
   }
 
