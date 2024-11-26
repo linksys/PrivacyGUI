@@ -40,18 +40,19 @@ class GeolocationNotifier extends AsyncNotifier<GeolocationState> {
       logger.e('Not able to fetch geolocation!');
       return {};
     });
+
     final locale = ref.read(appSettingsProvider).locale;
     final localeTag = locale?.toLanguageTag() ?? 'en';
     final name = result['org'] ?? '';
-    final city = result['city']['names'][localeTag] ??
+    final city = result['city']?['names']?[localeTag] ??
         result['city']['defaultName'] ??
         '';
-    final region = result['region']['names'][localeTag] ??
-        result['region']['defaultName'] ??
+    final region = result['region']?['names']?[localeTag] ??
+        result['region']?['defaultName'] ??
         '';
     final regionCode = result['regionCode'] ?? '';
-    final country = result['country']['names'][localeTag] ??
-        result['country']['defaultName'] ??
+    final country = result['country']?['names']?[localeTag] ??
+        result['country']?['defaultName'] ??
         '';
     final countryCode = result['countryCode'] ?? '';
     final continentCode = result['continentCode'] ?? '';

@@ -2,11 +2,13 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/models/health_check_result.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/health_check/_health_check.dart';
+import 'package:privacy_gui/page/login/views/login_local_view.dart';
+import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -150,16 +152,6 @@ class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
             AppText.labelMedium('$latency ms'),
           ],
         ),
-        const AppGap.large5(),
-        Container(
-          alignment: Alignment.bottomCenter,
-          padding: const EdgeInsets.only(bottom: 40),
-          child: Image(
-            image: CustomTheme.of(context).images.speedtestPowered,
-            semanticLabel: 'speedtest Powered image',
-            fit: BoxFit.fitWidth,
-          ),
-        ),
       ],
     );
   }
@@ -207,14 +199,21 @@ class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
               borderRadius:
                   CustomTheme.of(context).radius.asBorderRadius().extraLarge,
               onTap: () {
-                Future.delayed(const Duration(milliseconds: 500), () {
-                  setState(() {
-                    _status = 'RUNNING';
+                final isSpeedCheckSupported = ref
+                    .read(dashboardManagerProvider.notifier)
+                    .isHealthCheckModuleSupported('SpeedTest');
+                if (isSpeedCheckSupported) {
+                  Future.delayed(const Duration(milliseconds: 500), () {
+                    setState(() {
+                      _status = 'RUNNING';
+                    });
                   });
-                });
-                ref
-                    .read(healthCheckProvider.notifier)
-                    .runHealthCheck(Module.speedtest);
+                  ref
+                      .read(healthCheckProvider.notifier)
+                      .runHealthCheck(Module.speedtest);
+                } else {
+                  context.pushNamed(RouteNamed.speedTestExternal);
+                }
               },
               child: Ink(
                 decoration: BoxDecoration(

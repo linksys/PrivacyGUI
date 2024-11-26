@@ -98,13 +98,16 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
       {bool force = false, int retry = 3}) async* {
     final lastCheckTime =
         (state.nodesStatus?.map((e) => e.lastSuccessfulCheckTime).toList() ??
-                [])
-            .map((e) => DateTime.tryParse(e))
-            .map((e) => e?.millisecondsSinceEpoch ?? 0)
-            .max;
+                    [])
+                .map((e) => DateTime.tryParse(e))
+                .map((e) => e?.millisecondsSinceEpoch ?? 0)
+                .maxOrNull ??
+            0;
+    state = state.copyWith(isChecking: true);
     if (_checkFirmwareUpdatePeriod(lastCheckTime) && !force) {
       logger.i(
           '[FIRMWARE]: Skip checking firmware update avaliable: last check time {${DateTime.fromMillisecondsSinceEpoch(lastCheckTime)}}');
+      state = state.copyWith(isChecking: false);
       yield [];
     } else {
       final action = serviceHelper.isSupportNodeFirmwareUpdate()
@@ -120,7 +123,11 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
             auth: true,
           )
           .then((_) {});
-      yield* _startCheckFirmwareUpdateStatus(retryTimes: retry);
+      yield* _startCheckFirmwareUpdateStatus(
+          retryTimes: retry,
+          onCompleted: (_) {
+            state = state.copyWith(isChecking: false);
+          });
     }
   }
 
@@ -151,24 +158,36 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     _sub?.cancel();
     ref.read(pollingProvider.notifier).stopPolling();
     _sub = _startCheckFirmwareUpdateStatus(
-      retryTimes: 180 * getAvailableUpdateNumber(),
+      retryTimes: 60 * getAvailableUpdateNumber(),
       stopCondition: (result) =>
           _checkFirmwareUpdateComplete(result, state.nodesStatus ?? []),
-      onCompleted: () {
-        logger.i('[FIRMWARE]: Update firmware: Done!');
-        final polling = ref.read(pollingProvider.notifier);
-        polling
-            .forcePolling()
-            .then((_) => checkFirmwareUpdateStatus())
-            .then((_) {
+      onCompleted: (bool exceedMaxRetry) {
+        logger.i(
+            '[FIRMWARE]: Update firmware: Done! is exceed max retry: $exceedMaxRetry');
+        if (!exceedMaxRetry) {
+          finishFirmwareUpdate().then((_) {
+            _sub?.cancel();
+            benchmark.end();
+          });
+        } else {
           state = state.copyWith(isUpdating: false);
-          polling.startPolling();
           _sub?.cancel();
           benchmark.end();
-        });
+        }
       },
     ).listen((statusList) {
       state = state.copyWith(nodesStatus: statusList);
+    });
+  }
+
+  Future finishFirmwareUpdate() {
+    final polling = ref.read(pollingProvider.notifier);
+    return polling
+        .forcePolling()
+        .then((_) => checkFirmwareUpdateStatus())
+        .then((_) {
+      state = state.copyWith(isUpdating: false);
+      polling.startPolling();
     });
   }
 
@@ -248,7 +267,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     int? retryTimes = 1,
     int? retryDelayInMilliSec,
     bool Function(JNAPResult)? stopCondition,
-    Function()? onCompleted,
+    Function(bool exceedMaxRetry)? onCompleted,
   }) {
     final action = serviceHelper.isSupportNodeFirmwareUpdate()
         ? JNAPAction.getNodesFirmwareUpdateStatus
@@ -256,12 +275,14 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     return ref
         .read(routerRepositoryProvider)
         .scheduledCommand(
-            action: action,
-            maxRetry: retryTimes ?? -1,
-            retryDelayInMilliSec: retryDelayInMilliSec ?? 3000,
-            condition: stopCondition,
-            onCompleted: onCompleted,
-            auth: true)
+          action: action,
+          maxRetry: retryTimes ?? -1,
+          retryDelayInMilliSec: retryDelayInMilliSec ?? 3000,
+          condition: stopCondition,
+          onCompleted: onCompleted,
+          requestTimeoutOverride: 3000,
+          auth: true,
+        )
         .map((result) {
       if (result is! JNAPSuccess) {
         throw result;
@@ -320,7 +341,10 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
   }
 
   Future waitForRouterBackOnline() {
-    return ref.read(sideEffectProvider.notifier).manualDeviceRestart().whenComplete(() {
+    return ref
+        .read(sideEffectProvider.notifier)
+        .manualDeviceRestart()
+        .whenComplete(() {
       ref.read(pollingProvider.notifier).startPolling();
     });
   }

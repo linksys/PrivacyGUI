@@ -77,11 +77,12 @@ class _WifiAdvancedSettingsViewState
           success(state);
         },
       ),
-    ).onError((error, stackTrace) {
-      showErrorMessageSnackBar(error);
-    }).catchError((error) {
+    ).catchError((error) {
       routerNotFound();
-    }, test: (error) => error is JNAPSideEffectError);
+    }, test: (error) => error is JNAPSideEffectError).onError(
+        (error, stackTrace) {
+      showErrorMessageSnackBar(error);
+    });
   }
 
   void routerNotFound() {

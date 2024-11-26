@@ -29,10 +29,14 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
     final horizontalLayout = state.isHorizontalLayout;
     final wanStatus = ref.watch(nodeWanStatusProvider);
     final isOnline = wanStatus == NodeWANStatus.online;
+    final hasLanPort = state.lanPortConnections.isNotEmpty;
+
     return ResponsiveLayout(
-        desktop: horizontalLayout
-            ? _desktopHorizontal(context, ref, state, isOnline, isLoading)
-            : _desktopVertical(context, ref, state, isOnline, isLoading),
+        desktop: !hasLanPort
+            ? _desktopNoLanPorts(context, ref, state, isOnline, isLoading)
+            : horizontalLayout
+                ? _desktopHorizontal(context, ref, state, isOnline, isLoading)
+                : _desktopVertical(context, ref, state, isOnline, isLoading),
         mobile: _mobile(context, ref, state, isOnline, isLoading));
   }
 
@@ -106,39 +110,43 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                   ? MainAxisAlignment.center
                   : MainAxisAlignment.spaceBetween,
               children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: Spacing.small2,
-                    vertical: Spacing.large4,
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      ...state.lanPortConnections
-                          .mapIndexed((index, e) => Padding(
-                                padding: const EdgeInsets.only(bottom: 60.0),
-                                child: _portWidget(
-                                    context,
-                                    e == 'None' ? null : e,
-                                    loc(context).indexedPort(index + 1),
-                                    false,
-                                    hasLanPort),
-                              ))
-                          .toList(),
-                      _portWidget(
-                          context,
-                          state.wanPortConnection == 'None'
-                              ? null
-                              : state.wanPortConnection,
-                          loc(context).wan,
-                          true,
-                          hasLanPort),
-                    ],
+                SizedBox(
+                  height: 752,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: Spacing.small2,
+                      vertical: Spacing.large2,
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        ...state.lanPortConnections
+                            .mapIndexed((index, e) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 36.0),
+                                  child: _portWidget(
+                                      context,
+                                      e == 'None' ? null : e,
+                                      loc(context).indexedPort(index + 1),
+                                      false,
+                                      hasLanPort),
+                                ))
+                            .toList(),
+                        _portWidget(
+                            context,
+                            state.wanPortConnection == 'None'
+                                ? null
+                                : state.wanPortConnection,
+                            loc(context).wan,
+                            true,
+                            hasLanPort),
+                      ],
+                    ),
                   ),
                 ),
                 SizedBox(
                     width: double.infinity,
+                    height: 304,
                     child: _speedCheckWidget(context, ref, state)),
               ],
             )),
@@ -160,39 +168,100 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: Spacing.small2,
-                    vertical: Spacing.large3,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ...state.lanPortConnections
-                          .mapIndexed((index, e) => Expanded(
-                                child: _portWidget(
-                                    context,
-                                    e == 'None' ? null : e,
-                                    loc(context).indexedPort(index + 1),
-                                    false,
-                                    hasLanPort),
-                              ))
-                          .toList(),
-                      Expanded(
-                        child: _portWidget(
-                            context,
-                            state.wanPortConnection == 'None'
-                                ? null
-                                : state.wanPortConnection,
-                            loc(context).wan,
-                            true,
-                            hasLanPort),
-                      )
-                    ],
+                SizedBox(
+                  height: 224,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: Spacing.small2,
+                      vertical: Spacing.large3,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ...state.lanPortConnections
+                            .mapIndexed((index, e) => Expanded(
+                                  child: _portWidget(
+                                      context,
+                                      e == 'None' ? null : e,
+                                      loc(context).indexedPort(index + 1),
+                                      false,
+                                      hasLanPort),
+                                ))
+                            .toList(),
+                        Expanded(
+                          child: _portWidget(
+                              context,
+                              state.wanPortConnection == 'None'
+                                  ? null
+                                  : state.wanPortConnection,
+                              loc(context).wan,
+                              true,
+                              hasLanPort),
+                        )
+                      ],
+                    ),
                   ),
                 ),
-                _speedCheckWidget(context, ref, state),
+                SizedBox(
+                    height: 112, child: _speedCheckWidget(context, ref, state)),
+              ],
+            )),
+      ),
+    );
+  }
+
+  Widget _desktopNoLanPorts(BuildContext context, WidgetRef ref,
+      DashboardHomeState state, bool isOnline, bool isLoading) {
+    final hasLanPort = state.lanPortConnections.isNotEmpty;
+
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(minHeight: 256),
+      child: ShimmerContainer(
+        isLoading: isLoading,
+        child: AppCard(
+            padding: EdgeInsets.zero,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  height: 124,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: Spacing.small2,
+                      vertical: Spacing.large1,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ...state.lanPortConnections
+                            .mapIndexed((index, e) => Expanded(
+                                  child: _portWidget(
+                                      context,
+                                      e == 'None' ? null : e,
+                                      loc(context).indexedPort(index + 1),
+                                      false,
+                                      hasLanPort),
+                                ))
+                            .toList(),
+                        Expanded(
+                          child: _portWidget(
+                              context,
+                              state.wanPortConnection == 'None'
+                                  ? null
+                                  : state.wanPortConnection,
+                              loc(context).wan,
+                              true,
+                              hasLanPort),
+                        )
+                      ],
+                    ),
+                  ),
+                ),
+                SizedBox(
+                    height: 132, child: _speedCheckWidget(context, ref, state)),
               ],
             )),
       ),
@@ -202,7 +271,8 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
   Widget _speedCheckWidget(
       BuildContext context, WidgetRef ref, DashboardHomeState state) {
     final horizontalLayout = state.isHorizontalLayout;
-
+    final hasLanPort =
+        ref.read(dashboardHomeProvider).lanPortConnections.isNotEmpty;
     final dateTime = state.speedCheckTimestamp == null
         ? null
         : DateTime.fromMillisecondsSinceEpoch(state.speedCheckTimestamp!);
@@ -212,22 +282,137 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
     final dateTimeStr = dateTime == null
         ? ''
         : loc(context).speedCheckLatestTime(dateTime, dateTime);
-    return state.isHealthCheckSupported
-        ? Container(
-            key: const ValueKey('speedCheck'),
-            color: Theme.of(context).colorSchemeExt.surfaceContainerLow,
-            padding: const EdgeInsets.symmetric(
-                vertical: Spacing.large2, horizontal: Spacing.large4),
-            child: Column(
-              crossAxisAlignment: horizontalLayout
-                  ? CrossAxisAlignment.start
-                  : CrossAxisAlignment.center,
-              children: [
-                AppText.bodySmall(dateTimeStr),
-                const AppGap.small2(),
-                ResponsiveLayout(
-                  desktop: horizontalLayout
-                      ? Row(
+    return Container(
+      key: const ValueKey('speedCheck'),
+      color: Theme.of(context).colorSchemeExt.surfaceContainerLow,
+      padding: const EdgeInsets.symmetric(horizontal: Spacing.large4),
+      child: Column(
+        crossAxisAlignment: horizontalLayout
+            ? CrossAxisAlignment.start
+            : CrossAxisAlignment.center,
+        children: [
+          ResponsiveLayout(
+            desktop: !hasLanPort
+                ? Padding(
+                    padding:
+                        const EdgeInsets.symmetric(vertical: Spacing.large2),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (dateTimeStr.isNotEmpty) ...[
+                                AppText.bodySmall(dateTimeStr),
+                                const AppGap.small2(),
+                              ],
+                              Opacity(
+                                opacity: isLegacy ? 0.6 : 1,
+                                child: _downloadSpeedResult(
+                                    context,
+                                    state.downloadResult?.value ?? '--',
+                                    state.downloadResult?.unit,
+                                    isLegacy),
+                              ),
+                              Opacity(
+                                opacity: isLegacy ? 0.6 : 1,
+                                child: _uploadSpeedResult(
+                                    context,
+                                    state.uploadResult?.value ?? '--',
+                                    state.uploadResult?.unit,
+                                    isLegacy),
+                              )
+                            ],
+                          ),
+                        ),
+                        _speedTestButton(context, state)
+                      ],
+                    ),
+                  )
+                : horizontalLayout
+                    ? Padding(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: Spacing.large2),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (dateTimeStr.isNotEmpty) ...[
+                                    AppText.bodySmall(dateTimeStr),
+                                    const AppGap.small2(),
+                                  ],
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: Opacity(
+                                          opacity: isLegacy ? 0.6 : 1,
+                                          child: _downloadSpeedResult(
+                                              context,
+                                              state.downloadResult?.value ??
+                                                  '--',
+                                              state.downloadResult?.unit,
+                                              isLegacy),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Opacity(
+                                          opacity: isLegacy ? 0.6 : 1,
+                                          child: _uploadSpeedResult(
+                                              context,
+                                              state.uploadResult?.value ?? '--',
+                                              state.uploadResult?.unit,
+                                              isLegacy),
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                ],
+                              ),
+                            ),
+                            _speedTestButton(context, state)
+                          ],
+                        ),
+                      )
+                    : Padding(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: Spacing.large2),
+                        child: Column(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              if (dateTimeStr.isNotEmpty) ...[
+                                AppText.bodySmall(dateTimeStr),
+                                const AppGap.small2(),
+                              ],
+                              _downloadSpeedResult(
+                                  context,
+                                  state.downloadResult?.value ?? '--',
+                                  state.downloadResult?.unit,
+                                  isLegacy),
+                              const AppGap.large2(),
+                              _uploadSpeedResult(
+                                  context,
+                                  state.uploadResult?.value ?? '--',
+                                  state.uploadResult?.unit,
+                                  isLegacy),
+                              const AppGap.large2(),
+                              _speedTestButton(context, state),
+                            ]),
+                      ),
+            mobile: Padding(
+              padding: const EdgeInsets.symmetric(vertical: Spacing.large2),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AppText.bodySmall(dateTimeStr),
+                        const AppGap.small2(),
+                        Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Expanded(
@@ -250,76 +435,29 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                                     isLegacy),
                               ),
                             ),
-                            Expanded(
-                              child: _speedTestButton(context),
-                            )
                           ],
                         )
-                      : Column(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                              _downloadSpeedResult(
-                                  context,
-                                  state.downloadResult?.value ?? '--',
-                                  state.downloadResult?.unit,
-                                  isLegacy),
-                              const AppGap.large2(),
-                              _uploadSpeedResult(
-                                  context,
-                                  state.uploadResult?.value ?? '--',
-                                  state.uploadResult?.unit,
-                                  isLegacy),
-                              const AppGap.large2(),
-                              _speedTestButton(context),
-                            ]),
-                  mobile: Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Expanded(
-                            child: _downloadSpeedResult(
-                                context,
-                                state.downloadResult?.value ?? '--',
-                                state.downloadResult?.unit,
-                                !state.isHealthCheckSupported || isLegacy,
-                                WrapAlignment.center),
-                          ),
-                          const AppGap.large2(),
-                          Expanded(
-                            child: _uploadSpeedResult(
-                                context,
-                                state.uploadResult?.value ?? '--',
-                                state.uploadResult?.unit,
-                                !state.isHealthCheckSupported || isLegacy,
-                                WrapAlignment.center),
-                          ),
-                          const AppGap.large2(),
-                          _speedTestButton(context),
-                        ],
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                  _speedTestButton(context, state)
+                ],
+              ),
             ),
-          )
-        : SizedBox.shrink();
+          ),
+        ],
+      ),
+    );
   }
 
-  Widget _speedTestButton(BuildContext context) {
-    // return AppTextButton.noPadding(
-    //   loc(context).speedTest,
-    //   icon: LinksysIcons.networkCheck,
-    //   onTap: () {
-    //     context.pushNamed(RouteNamed.dashboardSpeedTest);
-    //   },
-    // );
+  Widget _speedTestButton(BuildContext context, DashboardHomeState state) {
     return InkResponse(
       onTap: () {
-        context.pushNamed(RouteNamed.dashboardSpeedTest);
+        if (state.isHealthCheckSupported) {
+          context.pushNamed(RouteNamed.dashboardSpeedTest);
+        } else {
+          context.pushNamed(RouteNamed.speedTestExternal);
+        }
       },
       child: SvgPicture(
         CustomTheme.of(context).images.btnCheckSpeeds,

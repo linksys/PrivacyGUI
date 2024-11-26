@@ -86,7 +86,7 @@ class DashboardHomeTitle extends ConsumerWidget {
           ref
               .read(pnpTroubleshooterProvider.notifier)
               .setEnterRoute(RouteNamed.dashboardHome);
-          context.goNamed(RouteNamed.pnpNoInternetConnection);
+          context.goNamed(RouteNamed.pnpNoInternetConnection, extra: {'from': 'dashboard'});
         },
       ),
     );

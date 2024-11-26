@@ -296,7 +296,6 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
     bool isPasswordValid = false;
     bool isHintNotContainPassword =
         hintNotContainPasswordValidator.validator(controller.text);
-    bool isRetypeConsistent = false;
     final validations = [
       Validation(
           description: loc(context).routerPasswordRuleTenChars,
@@ -316,10 +315,9 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
       Validation(
           description: loc(context).routerPasswordRuleConsecutiveChar,
           validator: ((text) => !ConsecutiveCharRule().validate(text))),
-      // Validation(
-      //     description:
-      //         loc(context).routerPasswordRuleUnsupportSpecialChar,
-      //     validator: ((text) => AsciiRule().validate(text))),
+      Validation(
+          description: loc(context).passwordsMustMatch,
+          validator: ((text) => confirmController.text == text)),
     ];
     showSubmitAppDialog(
       context,
@@ -355,7 +353,8 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
             focusNode: confirmFocusNode,
             onChanged: (value) {
               setState(() {
-                isRetypeConsistent = controller.text == confirmController.text;
+                isPasswordValid =
+                    !validations.any((v) => !v.validator(controller.text));
               });
             },
             onSubmitted: (_) {
@@ -396,9 +395,7 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
         await _save(newPassword: controller.text, hint: hintController.text);
       },
       checkPositiveEnabled: () {
-        return isPasswordValid &&
-            isHintNotContainPassword &&
-            isRetypeConsistent;
+        return isPasswordValid && isHintNotContainPassword;
       },
     );
   }

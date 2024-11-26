@@ -104,7 +104,9 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
   }
 
   Future _additionalPolling() async {
-    await ref.read(nodeLightSettingsProvider.notifier).fetch();
+    if (serviceHelper.isSupportLedMode()) {
+      await ref.read(nodeLightSettingsProvider.notifier).fetch();
+    }
   }
 
   Future forcePolling() {

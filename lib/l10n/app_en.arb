@@ -1051,5 +1051,8 @@
   "mloCapableModalDesc1": "Multi-Link Operation (MLO) allows devices to use multiple bands and frequency channels simultaneously.",
   "mloCapableModalDesc2": "This increases speed, reduces latency, and makes for a more reliable connection.",
   "connectedWithMLO": "Connected with MLO",
-  "mloCapable": "MLO capable"
+  "mloCapable": "MLO capable",
+  "pnpFwUpdateTitle": "Saving your configuration and checking for software updates...",
+  "pnpFwUpdateDesc": "Please wait as we download and reboot your device. The LED will turn bright white when the process is complete.",
+  "passwordsMustMatch": "Passwords must match"
 }

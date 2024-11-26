@@ -67,7 +67,7 @@ class _PnpIspSaveSettingsViewState
           .read(pnpTroubleshooterProvider.notifier)
           .checkNewSettings(
             settingWanType: wanType,
-            onCompleted: () {
+            onCompleted: (_) {
               if (settingError != null) {
                 logger.e(
                     '[PnP]: Troubleshooter - Failed to use the new router configuration');
@@ -117,8 +117,9 @@ class _PnpIspSaveSettingsViewState
           '[PnP]: Troubleshooter - Failed to save the new settings - $error');
       // Saving new settings failed
       if (error is JNAPError) {
-        context.pop(errorCodeHelper(context, error.result) ??
-            loc(context).unknownError);
+        context.pop(
+            errorCodeHelper(context, error.result, loc(context).generalError) ??
+                loc(context).generalError);
       } else if (error is TimeoutException) {
         context.pop(loc(context).generalError);
       } else {

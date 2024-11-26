@@ -239,7 +239,7 @@ class SimpleTreeNodeItem extends StatelessWidget {
       onTap: onTap,
       child: Container(
         constraints:
-            const BoxConstraints(minWidth: 180, maxWidth: 300, maxHeight: 108),
+            const BoxConstraints(minWidth: 180, maxWidth: 300, maxHeight: 92),
         padding: const EdgeInsets.all(Spacing.medium),
         child: Row(
           mainAxisSize: MainAxisSize.min,

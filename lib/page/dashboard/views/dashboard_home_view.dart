@@ -53,6 +53,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
       child: ResponsiveLayout(
         desktop: Column(
           mainAxisAlignment: MainAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             const DashboardHomeTitle(),
             const AppGap.large1(),

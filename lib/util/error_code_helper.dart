@@ -3,10 +3,10 @@ import 'package:privacy_gui/constants/error_code.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 
-String? errorCodeHelper(BuildContext context, String? code) {
+String? errorCodeHelper(BuildContext context, String? code, [String? generalErrorMessage]) {
   String unknownHandle(String code) {
     logger.d('Unknown error: $code');
-    return loc(context).unknownErrorCode(code);
+    return generalErrorMessage ?? loc(context).unknownErrorCode(code);
   }
 
   if (code == null) {

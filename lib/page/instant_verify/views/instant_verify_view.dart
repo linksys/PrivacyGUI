@@ -80,10 +80,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
   }
 
   Widget _instantInfo(BuildContext context, WidgetRef ref) {
-    final isSpeedCheckSupported = ref
-        .read(dashboardManagerProvider.notifier)
-        .isHealthCheckModuleSupported('SpeedTest');
-    final desktopCol = isSpeedCheckSupported ? 4.col : 6.col;
+    final desktopCol = 4.col;
     return SingleChildScrollView(
       child: ResponsiveLayout.isMobileLayout(context)
           ? Column(
@@ -91,11 +88,9 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
                 _deviceInfoCard(context, ref),
                 const AppGap.medium(),
                 _connectivityContentWidget(context, ref),
-                if (isSpeedCheckSupported) ...[
-                  const AppGap.medium(),
-                  _speedTestContent(context),
-                  const AppGap.medium(),
-                ],
+                const AppGap.medium(),
+                _speedTestContent(context),
+                const AppGap.medium(),
                 _portsCard(context, ref),
               ],
             )
@@ -114,13 +109,11 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
                         width: desktopCol,
                         child: _connectivityContentWidget(context, ref),
                       ),
-                      if (isSpeedCheckSupported) ...[
-                        const AppGap.gutter(),
-                        SizedBox(
-                          width: desktopCol,
-                          child: _speedTestContent(context),
-                        ),
-                      ],
+                      const AppGap.gutter(),
+                      SizedBox(
+                        width: desktopCol,
+                        child: _speedTestContent(context),
+                      ),
                     ],
                   ),
                 ),

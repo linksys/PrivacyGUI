@@ -130,7 +130,7 @@ class _InternetConnectionWidgetState
                 child: Row(
                   children: [
                     Container(
-                      color: Theme.of(context).colorScheme.onInverseSurface,
+                      // color: Theme.of(context).colorScheme.onInverseSurface,
                       height: 158,
                       width:
                           ResponsiveLayout.isDesktopLayout(context) ? 176 : 104,
@@ -187,11 +187,13 @@ class _InternetConnectionWidgetState
                                       if (master.data.isOnline) ...[
                                         const AppGap.medium(),
                                         SharedWidgets.nodeFirmwareStatusWidget(
-                                            context, !master.data.fwUpToDate,
-                                            () {
-                                          context.pushNamed(
-                                              RouteNamed.firmwareUpdateDetail);
-                                        }),
+                                          context,
+                                          !master.data.fwUpToDate,
+                                          () {
+                                            context.pushNamed(RouteNamed
+                                                .firmwareUpdateDetail);
+                                          },
+                                        ),
                                       ]
                                     ],
                                   ),
