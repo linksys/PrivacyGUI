@@ -426,9 +426,13 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
 
   Widget _advancedWiFiSecurityTypeCard(WiFiItem radio) {
     final securityType = getWifiSecurityTypeTitle(context, radio.securityType);
-    return AppSettingCard.noBorder(
-      title: loc(context).securityMode,
-      description: '$securityType${securityType.length > 22 ? '' : '\n'}',
+    return AppListCard(
+      showBorder: false,
+      title: AppText.bodyMedium(loc(context).securityMode),
+      description: SizedBox(
+        height: 36,
+        child: AppText.labelLarge(securityType),
+      ),
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       trailing: const Icon(
         LinksysIcons.edit,

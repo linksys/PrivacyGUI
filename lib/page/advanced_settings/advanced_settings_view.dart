@@ -5,7 +5,6 @@ import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
-import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -66,51 +65,53 @@ class _AdvancedSettingsViewState extends ConsumerState<AdvancedSettingsView> {
   }
 
   List<AppSectionItemData> _initAdvancedSettingsItems() {
-    final isBridge = ref.watch(dashboardHomeProvider).isBridgeMode;
     return [
       AppSectionItemData(
         title: loc(context).internetSettings.capitalizeWords(),
-        // iconData: getCharactersIcons(context).profileDefault,
         onTap: () => context.goNamed(RouteNamed.internetSettings),
       ),
       AppSectionItemData(
-        title: loc(context).localNetwork,
-        // iconData: getCharactersIcons(context).nodesDefault,
-        onTap: isBridge ? null: () => context.goNamed(RouteNamed.settingsLocalNetwork),
-      ),
+          title: loc(context).localNetwork,
+          onTap: () => context.goNamed(RouteNamed.settingsLocalNetwork),
+          disabledOnBridge: true),
       AppSectionItemData(
         title: loc(context).advancedRouting,
-        // iconData: getCharactersIcons(context).infoRound,
         onTap: () => context.goNamed(RouteNamed.settingsStaticRouting),
+        disabledOnBridge: true,
       ),
       AppSectionItemData(
         title: loc(context).administration,
-        // iconData: getCharactersIcons(context).nodesDefault,
         onTap: () => context.goNamed(RouteNamed.settingsAdministration),
+        disabledOnBridge: true,
       ),
       AppSectionItemData(
         title: loc(context).firewall,
-        // iconData: getCharactersIcons(context).nodesDefault,
         onTap: () => context.goNamed(RouteNamed.settingsFirewall),
+        disabledOnBridge: true,
       ),
       AppSectionItemData(
         title: loc(context).dmz,
-        // iconData: getCharactersIcons(context).nodesDefault,
         onTap: () => context.goNamed(RouteNamed.settingsDMZ),
+        disabledOnBridge: true,
       ),
       AppSectionItemData(
-        title: loc(context).appsGaming,
-        // iconData: getCharactersIcons(context).nodesDefault,
-        onTap: isBridge ? null : () => context.goNamed(RouteNamed.settingsAppsGaming),
-      ),
+          title: loc(context).appsGaming,
+          onTap: () => context.goNamed(RouteNamed.settingsAppsGaming),
+          disabledOnBridge: true),
     ];
   }
 
   Widget _advancedSettingCard(int index) {
-    return AppSettingCard(
-      title: advancedSettings[index].title,
-      trailing: const Icon(LinksysIcons.chevronRight),
-      onTap: advancedSettings[index].onTap,
+    final item = advancedSettings[index];
+    final isBridge = ref.watch(dashboardHomeProvider).isBridgeMode;
+    final disabled = item.disabledOnBridge && isBridge;
+    return Opacity(
+      opacity: disabled ? .3 : 1,
+      child: AppSettingCard(
+        title: item.title,
+        trailing: const Icon(LinksysIcons.chevronRight),
+        onTap: disabled ? null : item.onTap,
+      ),
     );
   }
 }

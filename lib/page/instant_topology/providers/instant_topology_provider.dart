@@ -44,13 +44,6 @@ class InstantTopologyNotifier extends Notifier<InstantTopologyState> {
 
   RouterTreeNode _buildRootNode(
       DeviceManagerState deviceManagerState, String selectId) {
-    // if (ref.read(deviceManagerProvider.notifier).isEmptyState()) {
-    //   return TopologyNode();
-    // }
-    // final deviceId = null; //state.selectedDeviceId;
-    // return deviceId != null
-    //     ? _buildDeviceChain(deviceId, deviceManagerState)
-    //     : _buildRouterTopology(deviceManagerState);
     return OnlineTopologyNode(
         data: const TopologyModel(isOnline: true, location: 'Internet'),
         children: deviceManagerState.deviceList.isEmpty

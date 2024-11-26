@@ -62,7 +62,7 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
                             'Unavailable' ||
                     result is JNAPError;
               },
-              onCompleted: () async {
+              onCompleted: (_) async {
                 final resultId = state.result.firstOrNull?.resultID;
                 // Get health check result with resultId
                 final result = await getHealthCheckResults(module, 1, resultId);

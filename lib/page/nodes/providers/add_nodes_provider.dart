@@ -56,7 +56,7 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
             }
             return false;
           },
-          onCompleted: () {
+          onCompleted: (_) {
             logger.d('[AddNodes]: GetAutoOnboardingStatus Done!');
           },
           auth: true,
@@ -198,7 +198,7 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
               }
               return false;
             },
-            onCompleted: () {
+            onCompleted: (_) {
               logger.d('[AddNodes]: [pollForNodesOnline] Done!');
             })
         .transform(

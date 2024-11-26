@@ -8,6 +8,8 @@ import 'package:privacy_gui/core/jnap/providers/node_light_settings_provider.dar
 import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/page/dashboard/_dashboard.dart';
+import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/dashboard/views/components/shimmer.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_device_list_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
@@ -42,6 +44,7 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
     bool isCognitive = isCognitiveMeshRouter(
         modelNumber: master?.data.model ?? '',
         hardwareVersion: master?.data.hardwareVersion ?? '1');
+    final isBridge = ref.watch(dashboardHomeProvider).isBridgeMode;
 
     return ShimmerContainer(
       isLoading: isLoading,
@@ -51,49 +54,55 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
           mainAxisSize: MainAxisSize.min,
           children: [
             toggleTileWidget(
-              title: loc(context).instantPrivacy,
-              value: privacyState.mode == MacFilterMode.allow,
-              onTap: () {
-                context.pushNamed(RouteNamed.menuInstantPrivacy);
-              },
-              onChanged: (value) {
-                final notifier = ref.read(instantPrivacyProvider.notifier);
-                if (value) {
-                  final macAddressList = ref
-                      .read(instantPrivacyDeviceListProvider)
-                      .map((e) => e.macAddress.toUpperCase())
-                      .toList();
-                  notifier.setMacAddressList(macAddressList);
-                }
-                notifier.setEnable(value);
-                doSomethingWithSpinner(context, notifier.save());
-              },
-            ),
+                title: loc(context).instantPrivacy,
+                value: privacyState.mode == MacFilterMode.allow,
+                onTap: isBridge
+                    ? null
+                    : () {
+                        context.pushNamed(RouteNamed.menuInstantPrivacy);
+                      },
+                onChanged: isBridge
+                    ? null
+                    : (value) {
+                        final notifier =
+                            ref.read(instantPrivacyProvider.notifier);
+                        if (value) {
+                          final macAddressList = ref
+                              .read(instantPrivacyDeviceListProvider)
+                              .map((e) => e.macAddress.toUpperCase())
+                              .toList();
+                          notifier.setMacAddressList(macAddressList);
+                        }
+                        notifier.setEnable(value);
+                        doSomethingWithSpinner(context, notifier.save());
+                      },
+                semantics: 'quick instant privacy switch'),
             if (isCognitive && isSupportNodeLight) ...[
               const Divider(
                 height: 48,
                 thickness: 1.0,
               ),
               toggleTileWidget(
-                title: loc(context).nightMode,
-                value: nodeLightState.isNightModeEnable,
-                subTitle: NodeLightStatus.getStatus(nodeLightState) ==
-                        NodeLightStatus.night
-                    ? loc(context).nightModeTime
-                    : NodeLightStatus.getStatus(nodeLightState) ==
-                            NodeLightStatus.off
-                        ? loc(context).allDayOff
-                        : null,
-                onChanged: (value) {
-                  final notifier = ref.read(nodeLightSettingsProvider.notifier);
-                  if (value) {
-                    notifier.setSettings(NodeLightSettings.night());
-                  } else {
-                    notifier.setSettings(NodeLightSettings.on());
-                  }
-                  doSomethingWithSpinner(context, notifier.save());
-                },
-              ),
+                  title: loc(context).nightMode,
+                  value: nodeLightState.isNightModeEnable,
+                  subTitle: NodeLightStatus.getStatus(nodeLightState) ==
+                          NodeLightStatus.night
+                      ? loc(context).nightModeTime
+                      : NodeLightStatus.getStatus(nodeLightState) ==
+                              NodeLightStatus.off
+                          ? loc(context).allDayOff
+                          : null,
+                  onChanged: (value) {
+                    final notifier =
+                        ref.read(nodeLightSettingsProvider.notifier);
+                    if (value) {
+                      notifier.setSettings(NodeLightSettings.night());
+                    } else {
+                      notifier.setSettings(NodeLightSettings.on());
+                    }
+                    doSomethingWithSpinner(context, notifier.save());
+                  },
+                  semantics: 'quick night mode switch'),
             ]
           ],
         ),
@@ -106,25 +115,35 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
     String? subTitle,
     VoidCallback? onTap,
     required bool value,
-    required void Function(bool value) onChanged,
+    required void Function(bool value)? onChanged,
+    String? semantics,
   }) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return SizedBox(
+      height: 60,
+      child: InkWell(
+        onTap: onTap,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            AppText.labelLarge(title),
-            if (subTitle != null) AppText.bodySmall(subTitle),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppText.labelLarge(title),
+                  if (subTitle != null) AppText.bodySmall(subTitle),
+                ],
+              ),
+            ),
+            AppSwitch(
+              value: value,
+              onChanged: onChanged,
+              semanticLabel: semantics,
+            ),
           ],
         ),
-        AppSwitch(
-          value: value,
-          onChanged: onChanged,
-        ),
-      ],
+      ),
     );
   }
 }

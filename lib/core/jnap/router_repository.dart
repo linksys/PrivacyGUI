@@ -235,10 +235,12 @@ class RouterRepository {
     int firstDelayInMilliSec = 3000,
     Map<String, dynamic> data = const {},
     bool Function(JNAPResult)? condition,
-    Function()? onCompleted,
+    Function(bool exceedMaxRetry)? onCompleted,
+    int? requestTimeoutOverride,
     bool auth = false,
   }) async* {
     int retry = 0;
+    bool exceedMaxRetry = true;
     while (++retry <= maxRetry || maxRetry == -1) {
       logger.d('SCHEDULED COMMAND: publish command {$action}: $retry times');
       if (retry <= 1) {
@@ -252,6 +254,8 @@ class RouterRepository {
           auth: auth,
           fetchRemote: true,
           cacheLevel: CacheLevel.noCache,
+          retries: 0,
+          timeoutMs: requestTimeoutOverride ?? 10000,
         );
       } on JNAPError catch (e) {
         // JNAP error
@@ -272,11 +276,12 @@ class RouterRepository {
       if (condition?.call(result) ?? false) {
         logger.d(
             'SCHEDULED COMMAND: command {$action}: $retry times: satisfy condition, STOP!');
+        exceedMaxRetry = true;
         break;
       }
       await Future.delayed(Duration(milliseconds: retryDelayInMilliSec));
     }
-    onCompleted?.call();
+    onCompleted?.call(exceedMaxRetry);
   }
 
   String _buildCommandUrl({

@@ -33,10 +33,12 @@ class PnpNoInternetConnectionView extends ArgumentsConsumerStatefulView {
 class _PnpNoInternetConnectionState
     extends ConsumerState<PnpNoInternetConnectionView> {
   late final String? _ssid;
+  bool _fromDashboard = false;
 
   @override
   void initState() {
     _ssid = widget.args['ssid'] as String?;
+    _fromDashboard = (widget.args['from'] as String?) == 'dashboard';
     super.initState();
     Future.doWhile(() => !mounted).then((_) {
       ref.read(pnpProvider.notifier).setForceLogin(false);
@@ -141,7 +143,7 @@ class _PnpNoInternetConnectionState
                     .checkRouterConfigured()
                     .onError((_, __) {});
                 final attachedPassword = ref.read(pnpProvider).attachedPassword;
-                if (ref.read(pnpProvider).isUnconfigured) {
+                if (ref.read(pnpProvider).isRouterUnConfigured) {
                   // ALT, check router admin password is default one and ignore the exception, check only
                   await ref
                       .read(pnpProvider.notifier)
@@ -185,14 +187,16 @@ class _PnpNoInternetConnectionState
               ),
             ),
             const AppGap.large3(),
-            AppTextButton.noPadding(
-              loc(context).logIntoRouter,
-              onTap: () {
-                ref.read(pnpProvider.notifier).setForceLogin(true);
-                goRoute(RouteNamed.pnp, true);
-              },
-            ),
-            const AppGap.large3(),
+            if (!_fromDashboard) ...[
+              AppTextButton.noPadding(
+                loc(context).logIntoRouter,
+                onTap: () {
+                  ref.read(pnpProvider.notifier).setForceLogin(true);
+                  goRoute(RouteNamed.pnpConfig, true);
+                },
+              ),
+              const AppGap.large3(),
+            ],
             AppFilledButton(
               loc(context).tryAgain,
               onTap: () {
