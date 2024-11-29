@@ -47,7 +47,7 @@ sealed class DDNSProvider<T> extends Equatable {
               password: '',
               hostName: '',
               isWildcardEnabled: false,
-              mode: 'dynamic',
+              mode: 'Dynamic',
               isMailExchangeEnabled: false));
     } else if (name == noIPDNSProviderName) {
       return NoIPDNSProvider(

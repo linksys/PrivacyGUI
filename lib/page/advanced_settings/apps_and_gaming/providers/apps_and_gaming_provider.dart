@@ -31,7 +31,7 @@ class AppsAndGamingViewNotifier extends Notifier<AppsAndGamingViewState> {
   }
 
   Future<AppsAndGamingViewState> save() async {
-    if (ref.read(ddnsProvider) != state.preserveDDNSState) {
+    if (ref.read(ddnsProvider).provider != state.preserveDDNSState?.provider) {
       await ref.read(ddnsProvider.notifier).save();
     }
     if (ref.read(singlePortForwardingListProvider) !=
@@ -50,7 +50,8 @@ class AppsAndGamingViewNotifier extends Notifier<AppsAndGamingViewState> {
   }
 
   bool isChanged() {
-    return ref.read(ddnsProvider) != state.preserveDDNSState ||
+    return ref.read(ddnsProvider).provider !=
+            state.preserveDDNSState?.provider ||
         ref.read(singlePortForwardingListProvider) !=
             state.preserveSinglePortForwardingListState ||
         ref.read(portRangeForwardingListProvider) !=

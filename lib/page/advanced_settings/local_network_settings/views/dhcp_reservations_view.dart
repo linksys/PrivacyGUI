@@ -253,6 +253,8 @@ class _DHCPReservationsContentViewState
 
     bool enableSave = false;
     bool isNameValid(String name) => !HostNameRule().validate(name);
+    bool isIpValid(String ip) =>
+        IpAddressAsLocalIpValidator(routerIp, subnetMask).validate(ip);
     bool isMacValid(String mac) => MACAddressRule().validate(mac);
     bool updateEnableSave() {
       final name = deviceNameController.text;
@@ -263,7 +265,11 @@ class _DHCPReservationsContentViewState
           ip != item?.ipAddress ||
           mac != item?.macAddress;
 
-      return allFilled && edited && isMacValid(mac) && isNameValid(name);
+      return allFilled &&
+          edited &&
+          isMacValid(mac) &&
+          isNameValid(name) &&
+          isIpValid(ip);
     }
 
     return showSubmitAppDialog(context,
@@ -271,6 +277,7 @@ class _DHCPReservationsContentViewState
         contentBuilder: (context, setState, onSubmit) {
           return Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               AppTextField(
                 headerText: loc(context).deviceName,
@@ -300,6 +307,9 @@ class _DHCPReservationsContentViewState
                     enableSave = updateEnableSave();
                   });
                 },
+                errorText: isIpValid(ipController.text)
+                    ? null
+                    : loc(context).invalidIpOrSameAsHostIp,
               ),
               const AppGap.large3(),
               AppTextField.macAddress(

@@ -60,9 +60,7 @@ class _DHCPReservationsEditViewState
     _ipController.text = _viewType == 'add' ? ipPrefix : _item.ipAddress;
     _macController.text = _item.macAddress;
 
-    _localIpValidator = InputValidator([
-      HostValidForGivenRouterIPAddressAndSubnetMaskRule(_routerIp, _subnetMask)
-    ]);
+    _localIpValidator = IpAddressAsLocalIpValidator(_routerIp, _subnetMask);
     _updateEnableSave();
   }
 
