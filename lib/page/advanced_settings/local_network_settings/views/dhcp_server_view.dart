@@ -43,13 +43,14 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
     _notifier = ref.read(localNetworkSettingProvider.notifier);
     _originalState =
         widget.originalState ?? ref.read(localNetworkSettingProvider);
-    _startIpAddressController.text = _originalState.firstIPAddress;
-    _maxUserAllowedController.text = '${_originalState.maxUserAllowed}';
-    _clientLeaseTimeController.text = '${_originalState.clientLeaseTime}';
-    _dns1Controller.text = _originalState.dns1 ?? '';
-    _dns2Controller.text = _originalState.dns2 ?? '';
-    _dns3Controller.text = _originalState.dns3 ?? '';
-    _winsController.text = _originalState.wins ?? '';
+    final state = ref.read(localNetworkSettingProvider);
+    _startIpAddressController.text = state.firstIPAddress;
+    _maxUserAllowedController.text = '${state.maxUserAllowed}';
+    _clientLeaseTimeController.text = '${state.clientLeaseTime}';
+    _dns1Controller.text = state.dns1 ?? '';
+    _dns2Controller.text = state.dns2 ?? '';
+    _dns3Controller.text = state.dns3 ?? '';
+    _winsController.text = state.wins ?? '';
   }
 
   @override
@@ -73,6 +74,11 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
       }
     });
     final state = ref.watch(localNetworkSettingProvider);
+    setState(() {
+      _maxUserAllowedController.text = '${state.maxUserAllowed}';
+      _maxUserAllowedController.selection = TextSelection.collapsed(
+          offset: _maxUserAllowedController.text.length);
+    });
     return AppCard(
       padding: EdgeInsets.all(Spacing.large2),
       child: Column(
@@ -129,12 +135,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
             octet1ReadOnly: true,
             octet2ReadOnly: true,
             onChanged: (value) {
-              final result = _notifier.startIpFinished(value, state);
-              _notifier.updateState(result.$2);
-              _notifier.updateErrorPrompts(
-                'StartIpAddress',
-                result.$1 ? null : loc(context).invalidIpOrSameAsHostIp,
-              );
+              _notifier.startIpChanged(context, value, state);
             },
           ),
         ),
@@ -144,17 +145,13 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
           child: AppTextField.minMaxNumber(
             headerText: loc(context).maximumNumberOfUsers,
             descriptionText: '1 ${loc(context).to} ${state.maxUserLimit}',
+            min: 1,
             max: state.maxUserLimit,
             controller: _maxUserAllowedController,
             errorText: state.errorTextMap['MaxUserAllowed'],
             border: const OutlineInputBorder(),
             onChanged: (value) {
-              final result = _notifier.maxUserAllowedFinished(value, state);
-              _notifier.updateState(result.$2);
-              _notifier.updateErrorPrompts(
-                'MaxUserAllowed',
-                result.$1 ? null : loc(context).invalidNumber,
-              );
+              _notifier.maxUserAllowedChanged(context, value, state);
             },
           ),
         ),
