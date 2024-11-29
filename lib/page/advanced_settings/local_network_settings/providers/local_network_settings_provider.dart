@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
@@ -6,6 +7,7 @@ import 'package:privacy_gui/core/jnap/models/set_lan_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_state.dart';
 import 'package:privacy_gui/page/instant_safety/providers/instant_safety_provider.dart';
 import 'package:privacy_gui/providers/redirection/redirection_provider.dart';
@@ -198,10 +200,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
   }
 
   void _updateValidators(LocalNetworkSettingsState currentSettings) {
-    _routerIpAddressValidator = IpAddressRequiredValidator(
-        // currentSettings.ipAddress,
-        // currentSettings.subnetMask,
-        );
+    _routerIpAddressValidator = IpAddressRequiredValidator();
     _subnetMaskValidator = SubnetMaskValidator(
       min: currentSettings.minNetworkPrefixLength,
       max: currentSettings.maxNetworkPrefixLength,
@@ -218,6 +217,108 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     _serverIpAddressValidator = IpAddressValidator();
   }
 
+  void routerIpAddressChanged(
+    BuildContext context,
+    String newRouterIpAddress,
+    LocalNetworkSettingsState settings,
+  ) {
+    // Verify router ip
+    final routerIpAddressResult =
+        routerIpAddressFinished(newRouterIpAddress, settings);
+    updateState(routerIpAddressResult.$2);
+    // Verify start ip
+    final startIpResult = startIpFinished(
+        routerIpAddressResult.$2.firstIPAddress, routerIpAddressResult.$2);
+    updateState(startIpResult.$2);
+    // Verify max user allowed
+    final maxUserAllowedResult = maxUserAllowedFinished(
+        '${startIpResult.$2.maxUserAllowed}', startIpResult.$2);
+    updateState(maxUserAllowedResult.$2);
+    // Update error
+    updateErrorPrompts(
+      'StartIpAddress',
+      startIpResult.$1 ? null : loc(context).invalidIpOrSameAsHostIp,
+    );
+    updateErrorPrompts(
+      'ipAddress',
+      routerIpAddressResult.$1 ? null : loc(context).invalidIpAddress,
+    );
+    updateErrorPrompts(
+      'MaxUserAllowed',
+      maxUserAllowedResult.$1 ? null : loc(context).invalidNumber,
+    );
+  }
+
+  void subnetMaskChanged(
+    BuildContext context,
+    String subnetMask,
+    LocalNetworkSettingsState settings,
+  ) {
+    // Verify subnet mask
+    final subnetMaskResult = subnetMaskFinished(subnetMask, settings);
+    updateState(subnetMaskResult.$2);
+    // Verify start ip
+    final startIpResult = startIpFinished(
+        subnetMaskResult.$2.firstIPAddress, subnetMaskResult.$2);
+    updateState(startIpResult.$2);
+    // Verify max user allowed
+    final maxUserAllowedResult = maxUserAllowedFinished(
+        '${startIpResult.$2.maxUserAllowed}', startIpResult.$2);
+    updateState(maxUserAllowedResult.$2);
+    // Update error
+    updateErrorPrompts(
+      'subnetMask',
+      subnetMaskResult.$1 ? null : loc(context).invalidSubnetMask,
+    );
+    updateErrorPrompts(
+      'StartIpAddress',
+      startIpResult.$1 ? null : loc(context).invalidIpOrSameAsHostIp,
+    );
+    updateErrorPrompts(
+      'MaxUserAllowed',
+      maxUserAllowedResult.$1 ? null : loc(context).invalidNumber,
+    );
+  }
+
+  void startIpChanged(
+    BuildContext context,
+    String startIpAddress,
+    LocalNetworkSettingsState settings,
+  ) {
+    // Verify start ip
+    final startIpResult = startIpFinished(startIpAddress, settings);
+    updateState(startIpResult.$2);
+    // Verify max user allowed
+    final maxUserAllowedResult = maxUserAllowedFinished(
+        '${startIpResult.$2.maxUserAllowed}', startIpResult.$2);
+    updateState(maxUserAllowedResult.$2);
+    // Update error
+    updateErrorPrompts(
+      'StartIpAddress',
+      startIpResult.$1 ? null : loc(context).invalidIpOrSameAsHostIp,
+    );
+    updateErrorPrompts(
+      'MaxUserAllowed',
+      maxUserAllowedResult.$1 ? null : loc(context).invalidNumber,
+    );
+  }
+
+  void maxUserAllowedChanged(
+    BuildContext context,
+    String maxUserAllowed,
+    LocalNetworkSettingsState settings,
+  ) {
+    // Verify max user allowed
+    final maxUserAllowedResult =
+        maxUserAllowedFinished(maxUserAllowed, settings);
+    updateState(maxUserAllowedResult.$2);
+    // Update error
+    updateErrorPrompts(
+      'MaxUserAllowed',
+      maxUserAllowedResult.$1 ? null : loc(context).invalidNumber,
+    );
+  }
+
   (bool, LocalNetworkSettingsState) routerIpAddressFinished(
     String newRouterIpAddress,
     LocalNetworkSettingsState settings,
@@ -228,7 +329,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
       final routerIpSplit = newRouterIpAddress.split('.');
       final firstIpSplit = settings.firstIPAddress.split('.');
       final newFirstIp =
-          '${routerIpSplit[0]}.${routerIpSplit[1]}.${routerIpSplit[2]}.${firstIpSplit[3]}';
+          '${routerIpSplit[0]}.${routerIpSplit[1]}.${firstIpSplit[2]}.${firstIpSplit[3]}';
       // Calculate the new last Ip
       final newLastIp = NetworkUtils.getEndingIpAddress(
         newRouterIpAddress,
@@ -242,6 +343,10 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
       );
       // Update all necessary validators by the updated settings
       _updateValidators(settings);
+    } else {
+      settings = settings.copyWith(
+        ipAddress: newRouterIpAddress,
+      );
     }
     return (isValid, settings);
   }
@@ -283,30 +388,12 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
           lastIPAddress: newLastIpAddress,
         );
       }
+    } else {
+      settings = settings.copyWith(
+        subnetMask: subnetMask,
+      );
     }
     return (isMaskValid, settings);
-  }
-
-  (bool, LocalNetworkSettingsState) maxUserAllowedFinished(
-    String maxUserAllowed,
-    LocalNetworkSettingsState settings,
-  ) {
-    // Due to the UI limit, the value input from users should always be valid
-    final isValid = _maxUserAllowedValidator.validate(maxUserAllowed);
-    if (isValid) {
-      final maxUserAllowedInt = int.parse(maxUserAllowed);
-      // If it is valid, update the new last Ip
-      final lastIpAddress = NetworkUtils.getEndingIpAddress(
-        settings.ipAddress,
-        settings.firstIPAddress,
-        maxUserAllowedInt,
-      );
-      settings = settings.copyWith(
-        maxUserAllowed: maxUserAllowedInt,
-        lastIPAddress: lastIpAddress,
-      );
-    }
-    return (isValid, settings);
   }
 
   (bool, LocalNetworkSettingsState) startIpFinished(
@@ -346,6 +433,36 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
       settings = settings.copyWith(
         firstIPAddress: startIpAddress,
         lastIPAddress: lastIpAddress,
+      );
+    } else {
+      settings = settings.copyWith(
+        firstIPAddress: startIpAddress,
+      );
+    }
+    return (isValid, settings);
+  }
+
+  (bool, LocalNetworkSettingsState) maxUserAllowedFinished(
+    String maxUserAllowed,
+    LocalNetworkSettingsState settings,
+  ) {
+    // Due to the UI limit, the value input from users should always be valid
+    final isValid = _maxUserAllowedValidator.validate(maxUserAllowed);
+    final maxUserAllowedInt = int.parse(maxUserAllowed);
+    if (isValid) {
+      // If it is valid, update the new last Ip
+      final lastIpAddress = NetworkUtils.getEndingIpAddress(
+        settings.ipAddress,
+        settings.firstIPAddress,
+        maxUserAllowedInt,
+      );
+      settings = settings.copyWith(
+        maxUserAllowed: maxUserAllowedInt,
+        lastIPAddress: lastIpAddress,
+      );
+    } else {
+      settings = settings.copyWith(
+        maxUserAllowed: maxUserAllowedInt,
       );
     }
     return (isValid, settings);

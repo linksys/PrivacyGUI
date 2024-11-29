@@ -623,7 +623,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
   List<Widget> _bridgeInfo(Ipv4Setting ipv4Setting) {
     return [
       Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+        padding: const EdgeInsets.symmetric(vertical: Spacing.small3),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -641,7 +641,6 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
                 openUrl('http://${_notifier.hostname}.local');
               },
             ),
-            const AppGap.medium(),
           ],
         ),
       ),

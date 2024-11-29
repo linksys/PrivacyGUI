@@ -5,14 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
-import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/views/dhcp_server_view.dart';
 import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/styled/styled_tab_page_view.dart';
@@ -21,7 +19,6 @@ import 'package:privacy_gui/page/advanced_settings/local_network_settings/provid
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_state.dart';
 import 'package:privacy_gui/page/instant_safety/providers/instant_safety_provider.dart';
 import 'package:privacy_gui/providers/redirection/redirection_provider.dart';
-import 'package:privacy_gui/util/error_code_helper.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
@@ -179,12 +176,7 @@ class _LocalNetworkSettingsViewState
               border: const OutlineInputBorder(),
               onChanged: (value) {
                 setState(() {
-                  final result = routerIpAddressFinished(value);
-                  _notifier.updateState(result.$2);
-                  _notifier.updateErrorPrompts(
-                    'ipAddress',
-                    result.$1 ? null : loc(context).invalidIpAddress,
-                  );
+                  _notifier.routerIpAddressChanged(context, value, state);
                 });
               },
             ),
@@ -199,12 +191,7 @@ class _LocalNetworkSettingsViewState
               border: const OutlineInputBorder(),
               onChanged: (value) {
                 setState(() {
-                  final result = subnetMaskFinished(value);
-                  _notifier.updateState(result.$2);
-                  _notifier.updateErrorPrompts(
-                    'subnetMask',
-                    result.$1 ? null : loc(context).invalidSubnetMask,
-                  );
+                  _notifier.subnetMaskChanged(context, value, state);
                 });
               },
             ),
