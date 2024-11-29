@@ -113,23 +113,31 @@ class _DynDNSFormState extends ConsumerState<DynDNSForm> {
             final mailExchangeSettings = widget.value?.mailExchangeSettings ??
                 const DynDNSMailExchangeSettings(hostName: '', isBackup: false);
             widget.onFormChanged.call(widget.value?.copyWith(
-                mailExchangeSettings:
+                isMailExchangeEnabled: value.isNotEmpty,
+                mailExchangeSettings: () =>
                     mailExchangeSettings.copyWith(hostName: value)));
           },
         ),
         const AppGap.medium(),
-        AppSettingCard(
-          title: loc(context).backupMX,
-          trailing: AppSwitch(
-            value: widget.value?.mailExchangeSettings?.isBackup ?? false,
-            onChanged: (value) {
-              final mailExchangeSettings = widget.value?.mailExchangeSettings ??
-                  const DynDNSMailExchangeSettings(
-                      hostName: '', isBackup: false);
-              widget.onFormChanged.call(widget.value?.copyWith(
-                  mailExchangeSettings:
-                      mailExchangeSettings.copyWith(isBackup: value)));
-            },
+        Opacity(
+          opacity: _mailExchangeController.text.isNotEmpty ? 1 : .6,
+          child: AbsorbPointer(
+            absorbing: _mailExchangeController.text.isNotEmpty ? false : true,
+            child: AppSettingCard(
+              title: loc(context).backupMX,
+              trailing: AppSwitch(
+                value: widget.value?.mailExchangeSettings?.isBackup ?? false,
+                onChanged: (value) {
+                  final mailExchangeSettings =
+                      widget.value?.mailExchangeSettings ??
+                          const DynDNSMailExchangeSettings(
+                              hostName: '', isBackup: false);
+                  widget.onFormChanged.call(widget.value?.copyWith(
+                      mailExchangeSettings: () =>
+                          mailExchangeSettings.copyWith(isBackup: value)));
+                },
+              ),
+            ),
           ),
         ),
         const AppGap.medium(),

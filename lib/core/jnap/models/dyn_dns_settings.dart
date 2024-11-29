@@ -2,6 +2,7 @@
 import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
+import 'package:flutter/material.dart';
 
 class DynDNSMailExchangeSettings extends Equatable {
   final String hostName;
@@ -73,7 +74,7 @@ class DynDNSSettings extends Equatable {
     bool? isWildcardEnabled,
     String? mode,
     bool? isMailExchangeEnabled,
-    DynDNSMailExchangeSettings? mailExchangeSettings,
+    ValueGetter<DynDNSMailExchangeSettings?>? mailExchangeSettings,
   }) {
     return DynDNSSettings(
       username: username ?? this.username,
@@ -83,7 +84,7 @@ class DynDNSSettings extends Equatable {
       mode: mode ?? this.mode,
       isMailExchangeEnabled:
           isMailExchangeEnabled ?? this.isMailExchangeEnabled,
-      mailExchangeSettings: mailExchangeSettings ?? this.mailExchangeSettings,
+      mailExchangeSettings: mailExchangeSettings == null ? this.mailExchangeSettings : mailExchangeSettings.call(),
     );
   }
 
@@ -95,7 +96,8 @@ class DynDNSSettings extends Equatable {
       'isWildcardEnabled': isWildcardEnabled,
       'mode': mode,
       'isMailExchangeEnabled': isMailExchangeEnabled,
-      'mailExchangeSettings': mailExchangeSettings?.toMap(),
+      'mailExchangeSettings':
+          isMailExchangeEnabled ? mailExchangeSettings?.toMap() : null,
     }..removeWhere((key, value) => value == null);
   }
 
