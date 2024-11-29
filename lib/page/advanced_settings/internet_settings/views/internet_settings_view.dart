@@ -97,6 +97,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
   bool isIpv6Editing = false;
   bool get isEditing => isIpv4Editing || isIpv6Editing;
   bool isMtuAuto = true;
+  bool isBridgeMode = false;
   String? macAddressCloneErrorText;
   String? subnetMaskErrorText;
   String loadingTitle = '';
@@ -282,6 +283,11 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
     });
 
     final state = ref.watch(internetSettingsProvider);
+    setState(() {
+      final selectedType =
+          WanType.resolve(state.ipv4Setting.ipv4ConnectionType);
+      isBridgeMode = selectedType == WanType.bridge;
+    });
     final tabs = [
       loc(context).ipv4,
       loc(context).ipv6,
@@ -376,9 +382,11 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
                   wanStatus?.wanConnection?.ipAddress ?? '-'),
               trailing: AppTextButton.noPadding(
                 loc(context).releaseAndRenew,
-                onTap: () {
-                  _showRenewIPAlert(InternetSettingsViewType.ipv4);
-                },
+                onTap: isBridgeMode
+                    ? null
+                    : () {
+                        _showRenewIPAlert(InternetSettingsViewType.ipv4);
+                      },
               ),
             ),
           ),
@@ -391,9 +399,11 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
                   wanStatus?.wanIPv6Connection?.networkInfo?.ipAddress ?? '-'),
               trailing: AppTextButton.noPadding(
                 loc(context).releaseAndRenew,
-                onTap: () {
-                  _showRenewIPAlert(InternetSettingsViewType.ipv6);
-                },
+                onTap: isBridgeMode
+                    ? null
+                    : () {
+                        _showRenewIPAlert(InternetSettingsViewType.ipv6);
+                      },
               ),
             ),
           ),
@@ -466,30 +476,36 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
         ),
       InternetSettingsViewType.ipv6 => AppIconButton.noPadding(
           icon: isIpv6Editing ? LinksysIcons.close : LinksysIcons.edit,
-          color: isIpv6Editing ? null : Theme.of(context).colorScheme.primary,
-          onTap: isIpv6Editing
-              ? () {
-                  setState(() {
-                    isIpv6Editing = false;
-                  });
-                  _notifier.updateIpv6Settings(originalState.ipv6Setting);
-                  if (!isEditing) {
-                    _notifier.updateIpv4Settings(state.ipv4Setting
-                        .copyWith(mtu: originalState.ipv4Setting.mtu));
-                    _notifier
-                        .updateMacAddressCloneEnable(originalState.macClone);
-                    _notifier
-                        .updateMacAddressClone(originalState.macCloneAddress);
-                  }
-                  setState(() {
-                    initUI(ref.read(internetSettingsProvider));
-                  });
-                }
-              : () {
-                  setState(() {
-                    isIpv6Editing = true;
-                  });
-                },
+          color: isBridgeMode
+              ? null
+              : isIpv6Editing
+                  ? null
+                  : Theme.of(context).colorScheme.primary,
+          onTap: isBridgeMode
+              ? null
+              : isIpv6Editing
+                  ? () {
+                      setState(() {
+                        isIpv6Editing = false;
+                      });
+                      _notifier.updateIpv6Settings(originalState.ipv6Setting);
+                      if (!isEditing) {
+                        _notifier.updateIpv4Settings(state.ipv4Setting
+                            .copyWith(mtu: originalState.ipv4Setting.mtu));
+                        _notifier.updateMacAddressCloneEnable(
+                            originalState.macClone);
+                        _notifier.updateMacAddressClone(
+                            originalState.macCloneAddress);
+                      }
+                      setState(() {
+                        initUI(ref.read(internetSettingsProvider));
+                      });
+                    }
+                  : () {
+                      setState(() {
+                        isIpv6Editing = true;
+                      });
+                    },
         ),
       _ => Container(),
     };
@@ -512,7 +528,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
       InternetSettingsViewType viewType, InternetSettingsState state) {
     return switch (viewType) {
       InternetSettingsViewType.ipv4 => isIpv4Editing
-          ? _buildIpv4EditingCards(state.ipv4Setting)
+          ? _buildIpv4EditingCards(state)
           : _buildIpv4InfoCards(state.ipv4Setting),
       InternetSettingsViewType.ipv6 => isIpv6Editing
           ? _buildIpv6EditingCards(state)
@@ -800,7 +816,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
   }
 
   Widget _mtu(Ipv4Setting ipv4Setting) {
-    return isEditing
+    return isEditing && !isBridgeMode
         ? Padding(
             padding: const EdgeInsets.symmetric(
               vertical: Spacing.small3,
@@ -836,7 +852,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
   }
 
   Widget _mtuSize(Ipv4Setting ipv4Setting, bool isMtuAuto) {
-    return isEditing
+    return isEditing && !isBridgeMode
         ? Padding(
             padding: const EdgeInsets.symmetric(
               vertical: Spacing.small3,
@@ -905,7 +921,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
                 AppSwitch(
                   semanticLabel: 'mac address clone',
                   value: state.macClone,
-                  onChanged: isEditing
+                  onChanged: isEditing && !isBridgeMode
                       ? (value) {
                           _notifier.updateMacAddressCloneEnable(value);
                           _notifier.updateMacAddressClone(value
@@ -931,9 +947,10 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
               semanticLabel: 'mac address',
               controller: _macAddressCloneController,
               border: const OutlineInputBorder(),
-              errorText:
-                  isEditing && state.macClone ? macAddressCloneErrorText : null,
-              enable: isEditing && state.macClone,
+              errorText: isEditing && state.macClone && !isBridgeMode
+                  ? macAddressCloneErrorText
+                  : null,
+              enable: isEditing && state.macClone && !isBridgeMode,
               onChanged: (value) {
                 _notifier.updateMacAddressClone(value);
                 setState(() {
@@ -954,7 +971,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
             child: AppTextButton.noPadding(
               loc(context).cloneCurrentClientMac,
               icon: LinksysIcons.duplicateControl,
-              onTap: isEditing && state.macClone
+              onTap: isEditing && state.macClone && !isBridgeMode
                   ? () {
                       _notifier.getMyMACAddress().then((value) {
                         _notifier.updateMacAddressClone(value);
@@ -980,7 +997,8 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
     );
   }
 
-  List<Widget> _buildIpv4EditingCards(Ipv4Setting ipv4Setting) {
+  List<Widget> _buildIpv4EditingCards(InternetSettingsState state) {
+    final ipv4Setting = state.ipv4Setting;
     final type = WanType.resolve(ipv4Setting.ipv4ConnectionType);
     final infoCards = switch (type) {
       WanType.dhcp => [],
@@ -1014,6 +1032,11 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
                             ipv4Setting.supportedWANCombinations,
                         mtu: ipv4Setting.mtu,
                       ));
+            // Set settings to default if ipv4 set to bridge
+            final selectedType = WanType.resolve(value);
+            if (selectedType == WanType.bridge) {
+              _setSettingsDefaultOnBrigdeMode(state);
+            }
             setState(() {
               initUI(ref.read(internetSettingsProvider));
             });
@@ -1655,6 +1678,28 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
   bool _isEdited(InternetSettingsState state) {
     if (state != originalState) return true;
     return false;
+  }
+
+  void _setSettingsDefaultOnBrigdeMode(InternetSettingsState state) {
+    setState(() {
+      // Editing state
+      isIpv6Editing = false;
+      // Set ipv6 to automatic
+      _notifier.updateIpv6Settings(Ipv6Setting(
+        ipv6ConnectionType: WanIPv6Type.automatic.type,
+        supportedIPv6ConnectionType:
+            state.ipv6Setting.supportedIPv6ConnectionType,
+        duid: state.ipv6Setting.duid,
+        isIPv6AutomaticEnabled: state.ipv6Setting.isIPv6AutomaticEnabled,
+      ));
+      // Mtu
+      _notifier.updateMtu(0);
+      _mtuSizeController.text = '0';
+      // Mac address clone
+      _notifier.updateMacAddressCloneEnable(false);
+      _notifier.updateMacAddressClone(null);
+      _macAddressCloneController.text = '';
+    });
   }
 
   _showRestartAlert() {
