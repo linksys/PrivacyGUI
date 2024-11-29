@@ -45,7 +45,7 @@ class GeolocationNotifier extends AsyncNotifier<GeolocationState> {
     final localeTag = locale?.toLanguageTag() ?? 'en';
     final name = result['org'] ?? '';
     final city = result['city']?['names']?[localeTag] ??
-        result['city']['defaultName'] ??
+        result['city']?['defaultName'] ??
         '';
     final region = result['region']?['names']?[localeTag] ??
         result['region']?['defaultName'] ??

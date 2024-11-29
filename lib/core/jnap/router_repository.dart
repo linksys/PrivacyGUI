@@ -276,7 +276,7 @@ class RouterRepository {
       if (condition?.call(result) ?? false) {
         logger.d(
             'SCHEDULED COMMAND: command {$action}: $retry times: satisfy condition, STOP!');
-        exceedMaxRetry = true;
+        exceedMaxRetry = false;
         break;
       }
       await Future.delayed(Duration(milliseconds: retryDelayInMilliSec));

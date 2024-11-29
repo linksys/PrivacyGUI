@@ -25,7 +25,7 @@ class DynDNSMailExchangeSettings extends Equatable {
     return <String, dynamic>{
       'hostName': hostName,
       'isBackup': isBackup,
-    };
+    }..removeWhere((key, value) => value == null);
   }
 
   factory DynDNSMailExchangeSettings.fromMap(Map<String, dynamic> map) {

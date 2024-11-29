@@ -147,12 +147,11 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
 
   @override
   Widget build(BuildContext context) {
-    return !_isCheckingInternet ? _mainView() : _checkInternetView();
+    return _internetConnected ? _internetConnectedView() : !_isCheckingInternet ? _mainView() : _checkInternetView();
   }
 
-  Widget _checkInternetView() {
-    return _internetConnected
-        ? Center(
+  Widget _internetConnectedView() {
+return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -166,8 +165,11 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
                 AppText.titleMedium(loc(context).launchInternetConnected),
               ],
             ),
-          )
-        : Center(
+          );
+  }
+  Widget _checkInternetView() {
+    
+        return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [

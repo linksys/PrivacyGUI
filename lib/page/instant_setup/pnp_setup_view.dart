@@ -51,6 +51,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
   bool _needToReconnect = false;
   bool _hasNewFW = false;
   bool _forceLogin = false;
+  bool _fetchError = false;
   PnpStep? _currentStep;
   ({void Function() stepCancel, void Function() stepContinue})? _stepController;
 
@@ -74,6 +75,11 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
       setState(() {
         _setupStep = _PnpSetupStep.config;
         logger.d('[PnP]: Settle configuration. Setup step = config');
+      });
+    }).onError((e, _) {
+      logger.d('[PnP]: Fetch router data failed. Try again');
+      setState(() {
+        _fetchError = true;
       });
     });
   }
@@ -111,7 +117,33 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
             showBorder: false,
             color: Theme.of(context).colorScheme.background,
             padding: EdgeInsets.zero,
-            child: _buildPnpSetupView(),
+            child: _fetchError ? _errorView() : _buildPnpSetupView(),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _errorView() {
+    return Container(
+      color: Theme.of(context).colorScheme.background,
+      child: Center(
+        child: AppCard(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AppText.headlineSmall(loc(context).generalError),
+              const AppGap.large5(),
+              AppFilledButton(
+                loc(context).tryAgain,
+                onTap: () {
+                  logger.d('[PnP]: Tap try again, go home.');
+                  context.goNamed(RouteNamed.home);
+                },
+              )
+            ],
           ),
         ),
       ),
