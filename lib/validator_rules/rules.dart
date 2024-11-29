@@ -89,7 +89,7 @@ class WhiteSpaceRule extends RegExValidationRule {
 
 class HostNameRule extends RegExValidationRule {
   @override
-  RegExp get _rule => RegExp(r'[^a-zA-Z0-9-]+|^-|-$/');
+  RegExp get _rule => RegExp(r'[^a-zA-Z0-9-]+|^-|-$');
 }
 
 class ConsecutiveCharRule extends RegExValidationRule {

@@ -337,7 +337,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
     );
     return ref
         .read(routerRepositoryProvider)
-        .transaction(transaction, fetchRemote: true)
+        .transaction(transaction, fetchRemote: true, retries: 10)
         .then((response) {
       state = state.copyWith(data: Map.fromEntries(response.data));
     });
