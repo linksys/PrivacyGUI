@@ -1,6 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/dhcp_reservations_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/dhcp_reservations_state.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
@@ -70,7 +71,8 @@ class _DHCPReservationsContentViewState
   Widget build(BuildContext context) {
     final state = ref.watch(dhcpReservationProvider);
     ref.listen(filteredDeviceListProvider, (prev, next) {
-      ref.read(dhcpReservationProvider.notifier).updateDevices(next);
+      ref.read(dhcpReservationProvider.notifier).updateDevices(
+          next.where((e) => e.type != WifiConnectionType.guest).toList());
     });
 
     return StyledAppPageView(
