@@ -7,6 +7,7 @@ import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacygui_widgets/hook/icon_hooks.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
@@ -66,6 +67,13 @@ class _FirmwareUpdateDetailViewState
     logger.i('[FIRMWARE]: Ongoing process: ${ongoingList.map((e) {
       return (e.$1.friendlyName, e.$2);
     })}');
+    ref.listen(firmwareUpdateProvider, (prev, next) {
+      if (prev?.isRetryMaxReached == false && next.isRetryMaxReached == true) {
+        showRouterNotFoundAlert(context, ref, onComplete: () async {
+          ref.read(firmwareUpdateProvider.notifier).finishFirmwareUpdate();
+        });
+      }
+    });
     return isUpdating
         ? _updatingProgressView(ongoingList)
         : StyledAppPageView(
