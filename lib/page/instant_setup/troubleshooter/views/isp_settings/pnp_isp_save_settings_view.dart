@@ -82,7 +82,7 @@ class _PnpIspSaveSettingsViewState
                 });
                 ref
                     .read(pnpProvider.notifier)
-                    .checkInternetConnection()
+                    .checkInternetConnection(30)
                     .then((value) {
                   logger.i(
                       '[PnP]: Troubleshooter - Check internet connection with new settings - OK');

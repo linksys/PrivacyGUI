@@ -35,6 +35,7 @@ const errorInvalidServer = "ErrorInvalidServer";
 const errorInvalidDestinationIpAddress = "ErrorInvalidDestinationIPAddress";
 const errorMissingDestination = "ErrorMissingDestination";
 const errorRuleOverlap = "ErrorRulesOverlap";
+const errorGuestSSIDConflict = "ErrorGuestSSIDConflict";
 
 // JNAP retry list
 const errorJNAPRetryList = [errorUnexpected];

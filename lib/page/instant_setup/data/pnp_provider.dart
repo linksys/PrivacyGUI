@@ -82,7 +82,7 @@ abstract class BasePnpNotifier extends Notifier<PnpState> {
 
   Future fetchDeviceInfo();
   Future checkAdminPassword(String? password);
-  Future checkInternetConnection();
+  Future checkInternetConnection([int retries = 1]);
   Future checkRouterConfigured();
   Future<bool> pnpCheck();
   Future<bool> isRouterPasswordSet();
@@ -111,7 +111,7 @@ class MockPnpNotifier extends BasePnpNotifier {
   }
 
   @override
-  Future checkInternetConnection() {
+  Future checkInternetConnection([int retries = 1]) {
     return Future.delayed(const Duration(seconds: 1))
         .then((value) => throw ExceptionNoInternetConnection());
   }
@@ -198,6 +198,8 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
           JNAPAction.getDeviceInfo,
           type: CommandType.local,
           fetchRemote: true,
+          retries: 0,
+          timeoutMs: 3000,
         )
         .then((result) => NodeDeviceInfo.fromJson(result.output));
     // check current sn and clear it
@@ -228,17 +230,20 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
 
   /// check internet connection within 30 seconds
   @override
-  Future checkInternetConnection() async {
+  Future checkInternetConnection([int retries = 1]) async {
     final isNode = isNodeModel(
         modelNumber: state.deviceInfo?.modelNumber ?? '',
         hardwareVersion: state.deviceInfo?.hardwareVersion ?? '1');
     // getInternetConnectionStatus for Node router
     Future<bool> isInternetConnected() async {
       bool isConnected = false;
-      for (int i = 0; i < 30; i++) {
+      for (int i = 0; i < retries; i++) {
+        logger.i(
+            '[PnP]: Check internet connections MAX retries <$retries>, i=$i');
         isConnected = await ref
             .read(routerRepositoryProvider)
-            .send(JNAPAction.getInternetConnectionStatus, auth: true, retries: 0)
+            .send(JNAPAction.getInternetConnectionStatus,
+                auth: true, retries: 0)
             .then((result) {
           return result.output['connectionStatus'] == 'InternetConnected';
         });

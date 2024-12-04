@@ -902,7 +902,7 @@
   "dateAndTime": "Date & Time",
   "upstream": "Upstream",
   "ssid": "SSID",
-  "instantPrivacyDescription": "This will stop any new devices from connecting to the network until while feature is enabled.",
+  "instantPrivacyDescription": "Instant-Privacy will stop any new devices from connecting to the network until the feature is disabled.",
   "theDevicesAllowedToConnect": "These are the only devices allowed to connect.",
   "instantPrivacyInfo": "Enabling this feature will prevent any new devices from connecting to your network. If you need to add new devices to your network please disable this Instant-Privacy, connect the new devices, and then turn Instant-Privacy back on.",
   "turnOnInstantPrivacy": "Turn on Instant-Privacy?",
@@ -993,7 +993,6 @@
   "wifiPasswordLimit": "8 - 64 characters",
   "wifiSSIDLengthLimit": "Must less than 32 character",
   "connectedSpeed": "Connected Speed",
-  "dnsIpAddress": "DNS IP address",
   "pingNetwork": "Ping Network",
   "invalidDestinationMacAddress": "Invalid destination MAC address",
   "deviceNameExceedMaxSize": "Name can be only less than 256",
@@ -1054,5 +1053,10 @@
   "mloCapable": "MLO capable",
   "pnpFwUpdateTitle": "Saving your configuration and checking for software updates...",
   "pnpFwUpdateDesc": "Please wait as we download and reboot your device. The LED will turn bright white when the process is complete.",
-  "passwordsMustMatch": "Passwords must match"
+  "passwordsMustMatch": "Passwords must match",
+  "invalidUsername": "Invalid username",
+  "invalidPassword": "Invalid password",
+  "invalidHostname": "Invalid host name",
+  "instantPrivacyNotAllowDeleteCurrent": "Not allow to delete the device you're current connecting.",
+  "errorGuestSSIDConflict": "Guest network names must be different from your main network names. Please enter a different name."
 }

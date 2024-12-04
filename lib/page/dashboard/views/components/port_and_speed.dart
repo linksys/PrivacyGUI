@@ -47,19 +47,127 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
       width: double.infinity,
       constraints:
           BoxConstraints(minHeight: !state.isHealthCheckSupported ? 240 : 400),
-      child: ShimmerContainer(
-        isLoading: isLoading,
-        child: AppCard(
-            padding: EdgeInsets.zero,
-            child: Column(
-              children: [
-                Padding(
+      child: AppCard(
+          padding: EdgeInsets.zero,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: Spacing.medium,
+                  vertical: Spacing.large3,
+                ),
+                child: Row(
+                  // mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ...state.lanPortConnections
+                        .mapIndexed((index, e) => Expanded(
+                              child: _portWidget(
+                                  context,
+                                  e == 'None' ? null : e,
+                                  loc(context).indexedPort(index + 1),
+                                  false,
+                                  hasLanPort),
+                            ))
+                        .toList(),
+                    Expanded(
+                      child: _portWidget(
+                          context,
+                          state.wanPortConnection == 'None'
+                              ? null
+                              : state.wanPortConnection,
+                          loc(context).wan,
+                          true,
+                          hasLanPort),
+                    )
+                  ],
+                ),
+              ),
+              // const AppGap.large2(),
+              _speedCheckWidget(context, ref, state),
+            ],
+          )),
+    );
+  }
+
+  Widget _desktopVertical(BuildContext context, WidgetRef ref,
+      DashboardHomeState state, bool isOnline, bool isLoading) {
+    final hasLanPort = state.lanPortConnections.isNotEmpty;
+
+    return Container(
+      constraints: BoxConstraints(
+          minWidth: 150, minHeight: !state.isHealthCheckSupported ? 360 : 520),
+      child: AppCard(
+          padding: EdgeInsets.zero,
+          child: Column(
+            mainAxisAlignment: !state.isHealthCheckSupported
+                ? MainAxisAlignment.center
+                : MainAxisAlignment.spaceBetween,
+            children: [
+              SizedBox(
+                height: 752,
+                child: Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: Spacing.medium,
+                    horizontal: Spacing.small2,
+                    vertical: Spacing.large2,
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      ...state.lanPortConnections
+                          .mapIndexed((index, e) => Padding(
+                                padding: const EdgeInsets.only(bottom: 36.0),
+                                child: _portWidget(
+                                    context,
+                                    e == 'None' ? null : e,
+                                    loc(context).indexedPort(index + 1),
+                                    false,
+                                    hasLanPort),
+                              ))
+                          .toList(),
+                      _portWidget(
+                          context,
+                          state.wanPortConnection == 'None'
+                              ? null
+                              : state.wanPortConnection,
+                          loc(context).wan,
+                          true,
+                          hasLanPort),
+                    ],
+                  ),
+                ),
+              ),
+              SizedBox(
+                  width: double.infinity,
+                  height: 304,
+                  child: _speedCheckWidget(context, ref, state)),
+            ],
+          )),
+    );
+  }
+
+  Widget _desktopHorizontal(BuildContext context, WidgetRef ref,
+      DashboardHomeState state, bool isOnline, bool isLoading) {
+    final hasLanPort = state.lanPortConnections.isNotEmpty;
+
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(minHeight: 110),
+      child: AppCard(
+          padding: EdgeInsets.zero,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                height: 224,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: Spacing.small2,
                     vertical: Spacing.large3,
                   ),
                   child: Row(
-                    // mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -86,128 +194,11 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                     ],
                   ),
                 ),
-                // const AppGap.large2(),
-                _speedCheckWidget(context, ref, state),
-              ],
-            )),
-      ),
-    );
-  }
-
-  Widget _desktopVertical(BuildContext context, WidgetRef ref,
-      DashboardHomeState state, bool isOnline, bool isLoading) {
-    final hasLanPort = state.lanPortConnections.isNotEmpty;
-
-    return Container(
-      constraints: BoxConstraints(
-          minWidth: 150, minHeight: !state.isHealthCheckSupported ? 360 : 520),
-      child: ShimmerContainer(
-        isLoading: isLoading,
-        child: AppCard(
-            padding: EdgeInsets.zero,
-            child: Column(
-              mainAxisAlignment: !state.isHealthCheckSupported
-                  ? MainAxisAlignment.center
-                  : MainAxisAlignment.spaceBetween,
-              children: [
-                SizedBox(
-                  height: 752,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: Spacing.small2,
-                      vertical: Spacing.large2,
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        ...state.lanPortConnections
-                            .mapIndexed((index, e) => Padding(
-                                  padding: const EdgeInsets.only(bottom: 36.0),
-                                  child: _portWidget(
-                                      context,
-                                      e == 'None' ? null : e,
-                                      loc(context).indexedPort(index + 1),
-                                      false,
-                                      hasLanPort),
-                                ))
-                            .toList(),
-                        _portWidget(
-                            context,
-                            state.wanPortConnection == 'None'
-                                ? null
-                                : state.wanPortConnection,
-                            loc(context).wan,
-                            true,
-                            hasLanPort),
-                      ],
-                    ),
-                  ),
-                ),
-                SizedBox(
-                    width: double.infinity,
-                    height: 304,
-                    child: _speedCheckWidget(context, ref, state)),
-              ],
-            )),
-      ),
-    );
-  }
-
-  Widget _desktopHorizontal(BuildContext context, WidgetRef ref,
-      DashboardHomeState state, bool isOnline, bool isLoading) {
-    final hasLanPort = state.lanPortConnections.isNotEmpty;
-
-    return Container(
-      width: double.infinity,
-      constraints: const BoxConstraints(minHeight: 110),
-      child: ShimmerContainer(
-        isLoading: isLoading,
-        child: AppCard(
-            padding: EdgeInsets.zero,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  height: 224,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: Spacing.small2,
-                      vertical: Spacing.large3,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ...state.lanPortConnections
-                            .mapIndexed((index, e) => Expanded(
-                                  child: _portWidget(
-                                      context,
-                                      e == 'None' ? null : e,
-                                      loc(context).indexedPort(index + 1),
-                                      false,
-                                      hasLanPort),
-                                ))
-                            .toList(),
-                        Expanded(
-                          child: _portWidget(
-                              context,
-                              state.wanPortConnection == 'None'
-                                  ? null
-                                  : state.wanPortConnection,
-                              loc(context).wan,
-                              true,
-                              hasLanPort),
-                        )
-                      ],
-                    ),
-                  ),
-                ),
-                SizedBox(
-                    height: 112, child: _speedCheckWidget(context, ref, state)),
-              ],
-            )),
-      ),
+              ),
+              SizedBox(
+                  height: 112, child: _speedCheckWidget(context, ref, state)),
+            ],
+          )),
     );
   }
 
@@ -218,53 +209,50 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
     return Container(
       width: double.infinity,
       constraints: const BoxConstraints(minHeight: 256),
-      child: ShimmerContainer(
-        isLoading: isLoading,
-        child: AppCard(
-            padding: EdgeInsets.zero,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  height: 124,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: Spacing.small2,
-                      vertical: Spacing.large1,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ...state.lanPortConnections
-                            .mapIndexed((index, e) => Expanded(
-                                  child: _portWidget(
-                                      context,
-                                      e == 'None' ? null : e,
-                                      loc(context).indexedPort(index + 1),
-                                      false,
-                                      hasLanPort),
-                                ))
-                            .toList(),
-                        Expanded(
-                          child: _portWidget(
-                              context,
-                              state.wanPortConnection == 'None'
-                                  ? null
-                                  : state.wanPortConnection,
-                              loc(context).wan,
-                              true,
-                              hasLanPort),
-                        )
-                      ],
-                    ),
+      child: AppCard(
+          padding: EdgeInsets.zero,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                height: 124,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: Spacing.small2,
+                    vertical: Spacing.large1,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ...state.lanPortConnections
+                          .mapIndexed((index, e) => Expanded(
+                                child: _portWidget(
+                                    context,
+                                    e == 'None' ? null : e,
+                                    loc(context).indexedPort(index + 1),
+                                    false,
+                                    hasLanPort),
+                              ))
+                          .toList(),
+                      Expanded(
+                        child: _portWidget(
+                            context,
+                            state.wanPortConnection == 'None'
+                                ? null
+                                : state.wanPortConnection,
+                            loc(context).wan,
+                            true,
+                            hasLanPort),
+                      )
+                    ],
                   ),
                 ),
-                SizedBox(
-                    height: 132, child: _speedCheckWidget(context, ref, state)),
-              ],
-            )),
-      ),
+              ),
+              SizedBox(
+                  height: 132, child: _speedCheckWidget(context, ref, state)),
+            ],
+          )),
     );
   }
 

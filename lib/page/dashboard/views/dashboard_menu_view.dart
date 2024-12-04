@@ -9,6 +9,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
+import 'package:privacy_gui/page/components/styled/status_label.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
@@ -308,16 +309,7 @@ class AppMenuCard extends StatelessWidget {
               child: Row(
                 children: [
                   if (isBeta) ...[
-                    Container(
-                      decoration: BoxDecoration(
-                          color:
-                              Theme.of(context).colorScheme.secondaryContainer,
-                          border: Border.all(color: Colors.transparent),
-                          borderRadius: BorderRadius.circular(4)),
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
-                      child: AppText.bodyExtraSmall('Beta'),
-                    ),
+                    betaLabel(),
                     const AppGap.small2(),
                   ],
                   Expanded(

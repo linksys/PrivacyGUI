@@ -162,6 +162,8 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
       final result = await routerRepository.send(
         JNAPAction.getDeviceInfo,
         fetchRemote: true,
+        retries: 0,
+        timeoutMs: 3000,
       );
       nodeDeviceInfo = NodeDeviceInfo.fromJson(result.output);
     }

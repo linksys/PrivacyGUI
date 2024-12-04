@@ -74,8 +74,7 @@ class TimezoneNotifier extends Notifier<TimezoneState> {
     final selected = state.supportedTimezones[index];
     state = state.copyWith(
         timezoneId: selected.timeZoneID,
-        isDaylightSaving:
-            selected.observesDST ? state.isDaylightSaving : false);
+        isDaylightSaving: selected.observesDST ? state.isDaylightSaving : true);
   }
 
   setDaylightSaving(bool isDaylightSaving) {

@@ -393,3 +393,32 @@ Future showMLOCapableModal(BuildContext context) {
       message:
           '${loc(context).mloCapableModalDesc1}\n\n${loc(context).mloCapableModalDesc2}');
 }
+
+Future<bool?> showInstantPrivacyConfirmDialog(BuildContext context, bool enable) {
+  return showSimpleAppDialog<bool>(
+    context,
+    dismissible: false,
+    title: enable
+        ? loc(context).turnOnInstantPrivacy
+        : loc(context).turnOffInstantPrivacy,
+    content: AppText.bodyMedium(enable
+        ? loc(context).instantPrivacyDescription
+        : loc(context).turnOffInstantPrivacyDesc),
+    actions: [
+      AppTextButton(
+        loc(context).cancel,
+        color: Theme.of(context).colorScheme.onSurface,
+        onTap: () {
+          context.pop();
+        },
+      ),
+      AppTextButton(
+        enable ? loc(context).turnOn : loc(context).turnOff,
+        color: Theme.of(context).colorScheme.primary,
+        onTap: () {
+          context.pop(true);
+        },
+      ),
+    ],
+  );
+}

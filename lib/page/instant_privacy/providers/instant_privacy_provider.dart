@@ -33,24 +33,29 @@ class InstantPrivacyNotifier extends Notifier<InstantPrivacyState> {
           auth: true,
         )
         .then((result) => MACFilterSettings.fromMap(result.output));
-    final List<String> staBSSIDS = ServiceHelper().isSupportGetSTABSSID() ? await ref
-        .read(routerRepositoryProvider)
-        .send(
-          JNAPAction.getSTABSSIDs,
-          fetchRemote: true,
-          auth: true,
-        )
-        .then((result) {
-      return List<String>.from(result.output['staBSSIDS']);
-    }).onError((error, _) {
-      logger.d('Not able to get STA BSSIDs');
-      return [];
-    }) : [];
+    final List<String> staBSSIDS = ServiceHelper().isSupportGetSTABSSID()
+        ? await ref
+            .read(routerRepositoryProvider)
+            .send(
+              JNAPAction.getSTABSSIDs,
+              fetchRemote: true,
+              auth: true,
+            )
+            .then((result) {
+            return List<String>.from(result.output['staBSSIDS']);
+          }).onError((error, _) {
+            logger.d('Not able to get STA BSSIDs');
+            return [];
+          })
+        : [];
+
+    final myMac = await getMyMACAddress();
     state = state.copyWith(
       mode: MacFilterMode.reslove(settings.macFilterMode),
       macAddresses: settings.macAddresses.map((e) => e.toUpperCase()).toList(),
       maxMacAddresses: settings.maxMACAddresses,
       bssids: staBSSIDS,
+      myMac: myMac,
     );
     return state;
   }
@@ -84,6 +89,22 @@ class InstantPrivacyNotifier extends Notifier<InstantPrivacyState> {
           cacheLevel: CacheLevel.noCache,
         );
     await fetch(fetchRemote: true);
+  }
+
+  Future<String?> getMyMACAddress() {
+    final repo = ref.read(routerRepositoryProvider);
+    return repo
+        .send(JNAPAction.getLocalDevice, auth: true, fetchRemote: true)
+        .then((result) {
+      final deviceID = result.output['deviceID'];
+      return ref
+          .read(deviceManagerProvider)
+          .deviceList
+          .firstWhereOrNull((device) => device.deviceID == deviceID)
+          ?.getMacAddress();
+    }).onError((_, __) {
+      return null;
+    });
   }
 
   setEnable(bool isEnabled) {
