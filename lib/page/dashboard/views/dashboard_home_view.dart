@@ -194,7 +194,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
 
   void _firmwareUpdateCheck() {
     Future.doWhile(() => !mounted).then((_) {
-      firmware.checkFirmwareUpdateStatus();
+      firmware.fetchAvailableFirmwareUpdates();
     });
   }
 
