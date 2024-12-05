@@ -4,6 +4,7 @@ import 'package:privacy_gui/core/jnap/models/dyn_dns_settings.dart';
 import 'package:privacy_gui/core/jnap/models/no_ip_settings.dart';
 import 'package:privacy_gui/core/jnap/models/tzo_settings.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/providers/apps_and_gaming_provider.dart';
 import 'package:privacy_gui/page/components/customs/animated_refresh_container.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
@@ -32,55 +33,21 @@ class DDNSSettingsView extends ArgumentsConsumerStatefulView {
 }
 
 class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
-  DDNSState? _preserveState;
-
   @override
   void initState() {
     super.initState();
-
-    // doSomethingWithSpinner(
-    //         context, ref.read(ddnsProvider.notifier).fetch(false))
-    //     .then((state) {
-    //   setState(() {
-    //     _preserveState = state;
-    //     // ref.read(appsAndGamingProvider.notifier).setChanged(false);
-    //   });
-    // });
+    
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(ddnsProvider);
-    // ref.listen(ddnsProvider, (previous, next) {
-    //   ref
-    //       .read(appsAndGamingProvider.notifier)
-    //       .setChanged(next != _preserveState);
-    // });
     return StyledAppPageView(
       useMainPadding: false,
       appBarStyle: AppBarStyle.none,
       padding: EdgeInsets.zero,
       scrollable: true,
       title: loc(context).ddns,
-      // bottomBar: PageBottomBar(
-      //   isPositiveEnabled: _preserveState != state,
-      //   negitiveLable: loc(context).delete,
-      //   onPositiveTap: () {
-      //     doSomethingWithSpinner(
-      //       context,
-      //       ref.read(ddnsProvider.notifier).save(),
-      //     ).then(
-      //       (state) {
-      //         setState(() {
-      //           _preserveState = state;
-      //         });
-      //         showSuccessSnackBar(context, loc(context).saved);
-      //       },
-      //     ).onError((error, stackTrace) {
-      //       showFailedSnackBar(context, loc(context).failedExclamation);
-      //     });
-      //   },
-      // ),
       child: AppBasicLayout(
         content: ResponsiveLayout(
           desktop: Row(
@@ -163,6 +130,7 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
         DynDNSForm(
           onFormChanged: (settings) {
             ref.read(ddnsProvider.notifier).setProviderSettings(settings);
+            
           },
           value: settings,
         )

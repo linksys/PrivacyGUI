@@ -175,41 +175,47 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
   }
 
   Widget _buildPnpSetupView() {
+    final showConfig = _setupStep != _PnpSetupStep.saving &&
+        _setupStep != _PnpSetupStep.saved &&
+        _setupStep != _PnpSetupStep.needReconnect;
     return switch (_setupStep) {
       _PnpSetupStep.init => _loadingSpinner(),
       _PnpSetupStep.wifiReady => _showWiFi(),
       _PnpSetupStep.fwCheck => _fwUpdateCheck(),
       _ => Stack(
           children: [
-            _configView(),
-            switch (_setupStep) {
-              _PnpSetupStep.saving => _loadingSpinner(),
-              _PnpSetupStep.saved => _showSaved(),
-              _PnpSetupStep.needReconnect => _showNeedReconnect(),
-              _ => const Center(),
-            }
+            IgnorePointer(
+                ignoring: !showConfig,
+                child:
+                    Opacity(opacity: showConfig ? 1 : 0, child: _configView())),
+            Container(
+              color: Theme.of(context).colorScheme.background,
+              child: switch (_setupStep) {
+                _PnpSetupStep.saving => _loadingSpinner(),
+                _PnpSetupStep.saved => _showSaved(),
+                _PnpSetupStep.needReconnect => _showNeedReconnect(),
+                _ => SizedBox.square(),
+              },
+            )
           ],
         ),
     };
   }
 
-  Widget _configView() => AppBasicLayout(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        content: LayoutBuilder(builder: (context, constraints) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: Spacing.large5),
-            child: PnpStepper(
-              steps: steps,
-              stepperType: StepperType.horizontal,
-              onLastStep: _isUnconfigured ? null : _saveChanges,
-              onStepChanged: ((index, step, controller) {
-                _currentStep = step;
-                _stepController = controller;
-              }),
-            ),
-          );
-        }),
-      );
+  Widget _configView() => LayoutBuilder(builder: (context, constraints) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: Spacing.large5),
+          child: PnpStepper(
+            steps: steps,
+            stepperType: StepperType.horizontal,
+            onLastStep: _isUnconfigured ? null : _saveChanges,
+            onStepChanged: ((index, step, controller) {
+              _currentStep = step;
+              _stepController = controller;
+            }),
+          ),
+        );
+      });
 
   Widget _fwUpdateCheck() => Container(
         color: Theme.of(context).colorScheme.background,
@@ -238,7 +244,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
               const AppGap.medium(),
               AppText.headlineSmall(_loadingMessage),
               const AppGap.medium(),
-              AppText.bodyLarge(_loadingMessageSub),
+              // AppText.bodyLarge(_loadingMessageSub),
             ],
           ),
         ),

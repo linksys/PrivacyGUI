@@ -54,6 +54,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
     pnp = ref.read(pnpProvider.notifier);
     // check path include local password
     _password = widget.args['p'] as String?;
+
     logger.i(
         '[PnP]: Start PNP setup ${_password != null ? 'with' : 'without'} admin password');
     // verify admin password is valid

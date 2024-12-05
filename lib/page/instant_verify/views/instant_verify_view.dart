@@ -20,6 +20,7 @@ import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/styled_tab_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/dashboard/views/components/shimmer.dart';
 import 'package:privacy_gui/page/health_check/_health_check.dart';
@@ -57,10 +58,14 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
 
   @override
   Widget build(BuildContext context) {
-    final tabs = [loc(context).instantInfo, loc(context).instantTopology];
+    final isBridge = ref.watch(dashboardHomeProvider).isBridgeMode;
+    final tabs = [
+      loc(context).instantInfo,
+      if (!isBridge) loc(context).instantTopology
+    ];
     final tabContents = [
       _instantInfo(context, ref),
-      _instantTopology(),
+      if (!isBridge) _instantTopology(),
     ];
     return StyledAppTabPageView(
       title: loc(context).instantVerify,
@@ -302,48 +307,45 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
     return Container(
       width: double.infinity,
       constraints: const BoxConstraints(minHeight: 110),
-      child: ShimmerContainer(
-        isLoading: isLoading,
-        child: AppCard(
-            key: const ValueKey('portCard'),
-            padding: EdgeInsets.zero,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: Spacing.small2,
-                    vertical: Spacing.large3,
-                  ),
-                  child: Row(
-                    // mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ...state.lanPortConnections
-                          .mapIndexed((index, e) => Expanded(
-                                child: _portWidget(
-                                    context,
-                                    e == 'None' ? null : e,
-                                    loc(context).indexedPort(index + 1),
-                                    false),
-                              ))
-                          .toList(),
-                      Expanded(
-                        child: _portWidget(
-                            context,
-                            state.wanPortConnection == 'None'
-                                ? null
-                                : state.wanPortConnection,
-                            loc(context).wan,
-                            true),
-                      )
-                    ],
-                  ),
+      child: AppCard(
+          key: const ValueKey('portCard'),
+          padding: EdgeInsets.zero,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: Spacing.small2,
+                  vertical: Spacing.large3,
                 ),
-              ],
-            )),
-      ),
+                child: Row(
+                  // mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ...state.lanPortConnections
+                        .mapIndexed((index, e) => Expanded(
+                              child: _portWidget(
+                                  context,
+                                  e == 'None' ? null : e,
+                                  loc(context).indexedPort(index + 1),
+                                  false),
+                            ))
+                        .toList(),
+                    Expanded(
+                      child: _portWidget(
+                          context,
+                          state.wanPortConnection == 'None'
+                              ? null
+                              : state.wanPortConnection,
+                          loc(context).wan,
+                          true),
+                    )
+                  ],
+                ),
+              ),
+            ],
+          )),
     );
   }
 

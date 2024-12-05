@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/utils/extension.dart';
+import 'package:privacy_gui/page/components/styled/status_label.dart';
+import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/styled/top_bar.dart';
 import 'package:privacy_gui/route/route_model.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_column_layout.dart';
+import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
+import 'package:collection/collection.dart';
 
 import 'package:privacygui_widgets/widgets/page/base_page_view.dart';
 import 'package:privacygui_widgets/widgets/page/layout/tab_layout.dart';
@@ -30,26 +37,35 @@ class StyledAppTabPageView extends ConsumerWidget {
   final bool useMainPadding;
   final EdgeInsets? padding;
   final void Function(int index)? onTap;
+  final IconData? menuIcon;
+  final PageMenu? menu;
+  final Widget? menuWidget;
+  final String? markLabel;
 
-  const StyledAppTabPageView(
-      {super.key,
-      this.title,
-      this.toolbarHeight = kDefaultToolbarHeight,
-      this.onBackTap,
-      this.backState = StyledBackState.enabled,
-      this.actions,
-      this.appBarStyle = AppBarStyle.back,
-      required this.tabs,
-      this.headerContent,
-      this.tabContentViews = const [],
-      this.pinned = true,
-      this.snap = false,
-      this.floating = false,
-      this.expandedHeight,
-      this.scrollController,
-      this.useMainPadding = true,
-      this.padding,
-      this.onTap});
+  const StyledAppTabPageView({
+    super.key,
+    this.title,
+    this.toolbarHeight = kDefaultToolbarHeight,
+    this.onBackTap,
+    this.backState = StyledBackState.enabled,
+    this.actions,
+    this.appBarStyle = AppBarStyle.back,
+    required this.tabs,
+    this.headerContent,
+    this.tabContentViews = const [],
+    this.pinned = true,
+    this.snap = false,
+    this.floating = false,
+    this.expandedHeight,
+    this.scrollController,
+    this.useMainPadding = true,
+    this.padding,
+    this.onTap,
+    this.menu,
+    this.menuIcon,
+    this.menuWidget,
+    this.markLabel,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -125,10 +141,20 @@ class StyledAppTabPageView extends ConsumerWidget {
               : MergeSemantics(
                   child: Semantics(
                     label: 'page title',
-                    child: AppText.titleLarge(
-                      title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AppText.titleLarge(
+                          title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (markLabel != null) ...[
+                          const AppGap.small2(),
+                          StatusLabel(label: markLabel!),
+                        ],
+                      ],
                     ),
                   ),
                 ),
@@ -140,6 +166,7 @@ class StyledAppTabPageView extends ConsumerWidget {
                   })
               : null,
           showBack: backState != StyledBackState.none,
+          trailing: _buildActions(context),
         );
       case AppBarStyle.close:
         return LinksysAppBar.withClose(
@@ -147,9 +174,25 @@ class StyledAppTabPageView extends ConsumerWidget {
           title: title == null
               ? null
               : MergeSemantics(
-                child: Semantics(
-                    label: 'page title', child: AppText.titleLarge(title)),
-              ),
+                  child: Semantics(
+                    label: 'page title',
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AppText.titleLarge(
+                          title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (markLabel != null) ...[
+                          const AppGap.small2(),
+                          StatusLabel(label: markLabel!),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
           toolbarHeight: toolbarHeight,
           onBackTap: isBackEnabled()
               ? (onBackTap ??
@@ -158,9 +201,82 @@ class StyledAppTabPageView extends ConsumerWidget {
                   })
               : null,
           showBack: backState != StyledBackState.none,
+          trailing: _buildActions(context),
         );
       case AppBarStyle.none:
         return null;
     }
+  }
+
+  bool hasMenu() => menu != null || menuWidget != null;
+
+  List<Widget>? _buildActions(BuildContext context) {
+    final actionWidgets =
+        !hasMenu() || !ResponsiveLayout.isMobileLayout(context)
+            ? actions
+            : [_createMenuAction(context), ...(actions ?? [])];
+    return actionWidgets?.expandIndexed<Widget>((index, element) sync* {
+      if (index != actionWidgets.length - 1) {
+        yield element;
+        yield const AppGap.small2();
+      } else {
+        yield element;
+      }
+    }).toList();
+  }
+
+  Widget _createMenuAction(BuildContext context) {
+    return AppIconButton.noPadding(
+      icon: menuIcon ?? LinksysIcons.moreHoriz,
+      onTap: () {
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          useRootNavigator: true,
+          builder: (context) => Container(
+              padding: const EdgeInsets.all(Spacing.large2),
+              width: double.infinity,
+              child: _createMenuWidget(context)),
+        );
+      },
+    );
+  }
+
+  Widget _createMenuWidget(BuildContext context, [double? maxWidth]) {
+    return Semantics(
+      explicitChildNodes: true,
+      identifier: 'now-page-menu-container',
+      child: Container(
+        constraints:
+            maxWidth != null ? BoxConstraints(maxWidth: maxWidth) : null,
+        child: menuWidget ??
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(
+                      left: 24.0, right: 24.0, top: 24.0, bottom: 0.0),
+                  child: Semantics(
+                      identifier: 'now-page-menu-title',
+                      child: AppText.titleSmall(menu?.title ?? '')),
+                ),
+                const AppGap.medium(),
+                ...(menu?.items ?? []).map((e) => ListTile(
+                      shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(100))),
+                      leading: e.icon != null ? Icon(e.icon) : null,
+                      title: Semantics(
+                        // excludeSemantics: true,
+                        identifier: 'now-page-menu-${e.label.kebab()}',
+                        child: AppText.bodySmall(e.label),
+                      ),
+                      onTap: e.onTap,
+                    ))
+              ],
+            ),
+      ),
+    );
   }
 }

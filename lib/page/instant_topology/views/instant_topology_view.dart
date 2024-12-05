@@ -406,7 +406,6 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
         .deleteDevices(deviceIds: [targetId]).then((value) {
       setState(() {
         _isLoading = false;
-        context.goNamed(RouteNamed.menuInstantTopology);
       });
     }).onError((error, stackTrace) {
       logger.e(error.toString());

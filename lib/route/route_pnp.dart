@@ -20,7 +20,9 @@ final pnpRoute = LinksysRoute(
     column: ColumnGrid(column: 6, centered: true),
   ),
   builder: (context, state) => PnpAdminView(
-    args: state.uri.queryParameters,
+    args: <String, dynamic>{}
+      ..addAll(state.extra as Map<String, dynamic>? ?? <String, dynamic>{})
+      ..addAll(state.uri.queryParameters),
   ),
   routes: [
     LinksysRoute(

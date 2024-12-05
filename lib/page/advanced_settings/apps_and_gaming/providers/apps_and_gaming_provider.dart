@@ -36,6 +36,7 @@ class AppsAndGamingViewNotifier extends Notifier<AppsAndGamingViewState> {
       await ref.read(ddnsProvider.notifier).save();
     }
     bool saveForwardingSuccess = false;
+
     /// Because UI can edit all rules at a same time
     /// Here is an edge case - Port range deleted a exist rule and Single port add a rule which conflict with
     /// the deleted rule. Then save will get overlap error becaule single port JNAP is called first, the Router
@@ -81,5 +82,9 @@ class AppsAndGamingViewNotifier extends Notifier<AppsAndGamingViewState> {
             state.preservePortRangeForwardingListState ||
         ref.read(portRangeTriggeringListProvider) !=
             state.preservePortRangeTriggeringListState;
+  }
+
+  bool isDataValid() {
+    return ref.read(ddnsProvider.notifier).isDataValid();
   }
 }

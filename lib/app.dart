@@ -48,6 +48,7 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     _connectivityNotifier.forceUpdate().then((value) => _initAuth());
     _routerDelegate = ref.read(routerProvider).routerDelegate;
     ref.read(appSettingsProvider.notifier).load();
+    getVersion();
   }
 
   @override

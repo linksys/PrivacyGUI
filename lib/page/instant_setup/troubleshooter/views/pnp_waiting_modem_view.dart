@@ -109,7 +109,7 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
                   });
                   ref
                       .read(pnpProvider.notifier)
-                      .checkInternetConnection()
+                      .checkInternetConnection(30)
                       .then((value) {
                     logger.i(
                         '[PnP Troubleshooter]: Internet connection is OK after resetting the modem');

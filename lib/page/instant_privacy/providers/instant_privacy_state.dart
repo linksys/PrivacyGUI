@@ -23,15 +23,23 @@ class InstantPrivacyState extends Equatable {
   final List<String> macAddresses;
   final int maxMacAddresses;
   final List<String> bssids;
+  final String? myMac;
 
   @override
-  List<Object> get props => [mode, macAddresses, maxMacAddresses];
+  List<Object?> get props => [
+        mode,
+        macAddresses,
+        maxMacAddresses,
+        bssids,
+        myMac,
+      ];
 
   const InstantPrivacyState({
     required this.mode,
     required this.macAddresses,
     required this.maxMacAddresses,
     this.bssids = const [],
+    this.myMac,
   });
 
   factory InstantPrivacyState.init() {
@@ -47,12 +55,14 @@ class InstantPrivacyState extends Equatable {
     List<String>? macAddresses,
     int? maxMacAddresses,
     List<String>? bssids,
+    String? myMac,
   }) {
     return InstantPrivacyState(
       mode: mode ?? this.mode,
       macAddresses: macAddresses ?? this.macAddresses,
       maxMacAddresses: maxMacAddresses ?? this.maxMacAddresses,
       bssids: bssids ?? this.bssids,
+      myMac: myMac ?? this.myMac,
     );
   }
 
@@ -62,7 +72,8 @@ class InstantPrivacyState extends Equatable {
       'macAddresses': macAddresses,
       'maxMacAddresses': maxMacAddresses,
       'bssids': bssids,
-    };
+      'myMac': myMac,
+    }..removeWhere((key, value) => value == null);
   }
 
   factory InstantPrivacyState.fromMap(Map<String, dynamic> map) {
@@ -71,6 +82,7 @@ class InstantPrivacyState extends Equatable {
       macAddresses: List.from(map['macAddresses']),
       maxMacAddresses: map['maxMacAddresses'] as int,
       bssids: List.from(map['bssids']),
+      myMac: map['myMac'],
     );
   }
 

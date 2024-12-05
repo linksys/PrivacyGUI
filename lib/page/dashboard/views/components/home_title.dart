@@ -13,6 +13,7 @@ import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_trou
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 
@@ -28,49 +29,47 @@ class DashboardHomeTitle extends ConsumerWidget {
         .watch(deviceManagerProvider.select((value) => value.deviceList))
         .isEmpty;
     final localTime = DateTime.fromMillisecondsSinceEpoch(state.localTime);
-    return ShimmerContainer(
-      isLoading: isLoading,
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                child: AppText.titleLarge(
-                  helloString(context, localTime),
-                  overflow: TextOverflow.ellipsis,
-                ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: AppText.titleLarge(
+                helloString(context, localTime),
+                overflow: TextOverflow.ellipsis,
               ),
-              InkWell(
-                onTap: () {
-                  doSomethingWithSpinner(
-                          context, ref.read(timezoneProvider.notifier).fetch())
-                      .then((_) {
-                    context.pushNamed(RouteNamed.settingsTimeZone);
-                  });
-                },
-                child: Wrap(
-                  children: [
-                    Icon(LinksysIcons.calendar,
-                        color: Theme.of(context).colorScheme.onSurface),
-                    Padding(
-                      padding: const EdgeInsets.only(left: Spacing.small2),
-                      child: AppText.bodyMedium(
-                        loc(context).formalDateTime(localTime, localTime),
-                        color: Theme.of(context).colorScheme.onSurface,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+            ),
+            InkWell(
+              onTap: () {
+                doSomethingWithSpinner(
+                        context, ref.read(timezoneProvider.notifier).fetch())
+                    .then((_) {
+                  context.pushNamed(RouteNamed.settingsTimeZone);
+                });
+              },
+              child: Wrap(
+                children: [
+                  Icon(LinksysIcons.calendar,
+                      color: Theme.of(context).colorScheme.onSurface),
+                  Padding(
+                    padding: const EdgeInsets.only(left: Spacing.small2),
+                    child: AppText.bodyMedium(
+                      loc(context).formalDateTime(localTime, localTime),
+                      color: Theme.of(context).colorScheme.onSurface,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
-          if (!isLoading && !isOnline) _troubleshooting(context, ref),
-        ],
-      ),
+            ),
+          ],
+        ),
+        if (!isLoading && !isOnline) _troubleshooting(context, ref),
+      ],
     );
   }
 
@@ -86,7 +85,8 @@ class DashboardHomeTitle extends ConsumerWidget {
           ref
               .read(pnpTroubleshooterProvider.notifier)
               .setEnterRoute(RouteNamed.dashboardHome);
-          context.goNamed(RouteNamed.pnpNoInternetConnection, extra: {'from': 'dashboard'});
+          context.goNamed(RouteNamed.pnpNoInternetConnection,
+              extra: {'from': 'dashboard'});
         },
       ),
     );
