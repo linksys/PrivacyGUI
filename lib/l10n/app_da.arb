@@ -489,5 +489,7 @@
   "applicationName": "Applikationsnavn",
   "ports": "Porte",
   "labelInterface": "Grænseflade",
-  "invalidCharacters": "Ugyldige tegn"
+  "invalidCharacters": "Ugyldige tegn",
+  "invalidPassword": "Ugyldig adgangskode",
+  "invalidHostname": "Ugyldigt værtsnavn"
 }
