@@ -121,7 +121,7 @@
   },
   "byConnection": "By connection",
   "byNode": "By node",
-  "byWifiName": "By WiFi Name",
+  "byWifi": "By WiFi",
   "byRadio": "By Radio",
   "resetFilters": "Reset Filters",
   "online": "Online",
@@ -1058,5 +1058,8 @@
   "invalidPassword": "Invalid password",
   "invalidHostname": "Invalid host name",
   "instantPrivacyNotAllowDeleteCurrent": "Not allow to delete the device you're current connecting.",
-  "errorGuestSSIDConflict": "Guest network names must be different from your main network names. Please enter a different name."
+  "errorGuestSSIDConflict": "Guest network names must be different from your main network names. Please enter a different name.",
+  "deviceNameAndIcon": "Device Name and Icon",
+  "connectionStatus": "Connection Status",
+  "connectedVia": "Connected via"
 }

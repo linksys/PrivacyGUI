@@ -782,8 +782,6 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
     final type = WanType.resolve(ipv4Setting.ipv4ConnectionType);
     final isDomainNameEditable = switch (type) {
       WanType.static => true,
-      WanType.pptp => true,
-      // WanType.bridge => true,
       _ => false,
     };
     return isEditing && isDomainNameEditable

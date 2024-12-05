@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
+import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_list_provider.dart';
 import 'package:privacy_gui/util/extensions.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
@@ -29,9 +31,13 @@ class DevicesFilterWidget extends ConsumerStatefulWidget {
 }
 
 class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
+  late DeviceFilterConfigNotifier notifier;
+
   @override
   void initState() {
     super.initState();
+
+    notifier = ref.read(deviceFilterConfigProvider.notifier);
   }
 
   @override
@@ -53,6 +59,11 @@ class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
       }
       return radios;
     });
+    final wifiState = ref.watch(wifiListProvider);
+    final wifiNames = [
+      ...wifiState.mainWiFi.map((e) => e.ssid).toList().unique(),
+      wifiState.guestWiFi.ssid,
+    ];
     final radios = (ref
             .watch(dashboardManagerProvider.select((value) => value.mainRadios))
             .unique((x) => x.band)
@@ -63,9 +74,9 @@ class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
         .unique((x) => x);
     final filterConfig = ref.watch(deviceFilterConfigProvider);
     final selectedNodeId = filterConfig.nodeFilter;
+    final selectedWifi = filterConfig.wifiFilter;
     final selectedBand = filterConfig.bandFilter;
     final selectConnection = filterConfig.connectionFilter;
-    // final selectSSID = ref.watch(ssidFilterProvider);
     return SingleChildScrollView(
       physics: const ScrollPhysics(),
       child: Container(
@@ -86,7 +97,7 @@ class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
               AppText.titleSmall(loc(context).filters),
               const AppGap.medium(),
               FilteredChipsWidget<(String, bool)>(
-                  title: loc(context).byConnection,
+                  title: loc(context).connectionStatus,
                   dataList: [
                     (loc(context).online, true),
                     if (!widget.onlineOnly) (loc(context).offline, false)
@@ -98,13 +109,11 @@ class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
                       return;
                     }
                     if (value) {
-                      ref
-                          .read(deviceFilterConfigProvider.notifier)
-                          .updateConnectionFilter(data.$2);
+                      notifier.updateConnectionFilter(data.$2);
                     }
                   }),
               FilteredChipsWidget<LinksysDevice>(
-                  title: loc(context).byNode,
+                  title: loc(context).connectedVia,
                   dataList: nodes,
                   chipName: (data) => data?.getDeviceLocation() ?? '',
                   checkIsSelected: (data) => selectConnection
@@ -116,29 +125,34 @@ class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
                           if (deviceId == null) {
                             return;
                           }
-                          final filter =
-                              ref.read(deviceFilterConfigProvider.notifier);
                           if (value) {
-                            filter.updateNodeFilter(
+                            notifier.updateNodeFilter(
                                 List.from(selectedNodeId..add(deviceId)));
                           } else {
-                            filter.updateNodeFilter(
+                            notifier.updateNodeFilter(
                                 List.from(selectedNodeId..remove(deviceId)));
                           }
                         }
                       : null),
-              // FilteredChipsWidget<WifiConnectionType>(
-              //     title: 'SSID',
-              //     dataList: WifiConnectionType.values,
-              //     chipName: (data) => data?.value ?? '',
-              //     checkIsSelected: (data) =>
-              //         (data == null && selectSSID == null) ||
-              //         selectSSID == data,
-              //     onSelected: (data, value) {
-              //       ref.read(ssidFilterProvider.notifier).state = data;
-              //     }),
               FilteredChipsWidget<String>(
-                  title: loc(context).byRadio,
+                  title: loc(context).byWifi,
+                  dataList: wifiNames,
+                  chipName: (data) => data ?? '',
+                  checkIsSelected: (data) => selectedWifi.contains(data),
+                  onSelected: (data, value) {
+                    if (data == null) {
+                      return;
+                    }
+                    if (value) {
+                      notifier
+                          .updateWifiFilter(List.from(selectedWifi..add(data)));
+                    } else {
+                      notifier.updateWifiFilter(
+                          List.from(selectedWifi..remove(data)));
+                    }
+                  }),
+              FilteredChipsWidget<String>(
+                  title: loc(context).byConnection.capitalizeWords(),
                   dataList: radios,
                   chipName: (data) =>
                       data == 'Ethernet' ? loc(context).ethernet : (data ?? ''),
@@ -150,13 +164,11 @@ class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
                           if (band == null) {
                             return;
                           }
-                          final filter =
-                              ref.read(deviceFilterConfigProvider.notifier);
                           if (value) {
-                            filter.updateBandFilter(
+                            notifier.updateBandFilter(
                                 List.from(selectedBand..add(band)));
                           } else {
-                            filter.updateBandFilter(
+                            notifier.updateBandFilter(
                                 List.from(selectedBand..remove(band)));
                           }
                         }
@@ -166,9 +178,8 @@ class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
                 loc(context).resetFilters,
                 icon: LinksysIcons.restartAlt,
                 onTap: () {
-                  ref
-                      .read(deviceFilterConfigProvider.notifier)
-                      .initFilter(preselectedNodeId: widget.preselectedNodeId);
+                  notifier.initFilter(
+                      preselectedNodeId: widget.preselectedNodeId);
                 },
               )
             ],
