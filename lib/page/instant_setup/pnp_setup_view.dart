@@ -426,7 +426,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
       });
       final fwUpdate = ref.read(firmwareUpdateProvider.notifier);
       logger.i('[PnP]: Do FW update check');
-      fwUpdate.checkFirmwareUpdateStatus().then((_) async {
+      fwUpdate.fetchAvailableFirmwareUpdates().then((_) async {
         setState(() {
           _hasNewFW = fwUpdate.getAvailableUpdateNumber() > 0;
         });
