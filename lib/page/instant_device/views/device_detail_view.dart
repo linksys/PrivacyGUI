@@ -7,8 +7,10 @@ import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
+import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/core/utils/icon_device_category.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/views/dyn_ddns_form.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_provider.dart';
 import 'package:privacy_gui/page/components/shared_widgets.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
@@ -318,6 +320,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
     _iconIndex = _getCurrentIconIndex();
     _errorMessage = _deviceNameController.text.isEmpty ? 'empty' : null;
     return showSubmitAppDialog(context,
+        title: loc(context).deviceNameAndIcon,
         contentBuilder: (context, setState, onSubmit) {
           return _dialogContent(context, setState, onSubmit);
         },
@@ -358,7 +361,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
             },
           ),
           const AppGap.large3(),
-          AppText.labelLarge(loc(context).selectIcon),
+          AppText.labelLarge(loc(context).selectIcon.capitalizeWords()),
           const AppGap.large3(),
           GridView.builder(
             shrinkWrap: true,

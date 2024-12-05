@@ -70,25 +70,9 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
         return _contentView();
       }
     }
-    // return state.err(error: (error, stackTrace) {
-    //   // error handling
-    //   logger.e(error, stackTrace: stackTrace);
-    //   return _resultView(state.value);
-    // }, data: (state) {
-    //   if (state.onboardingProceed != null) {
-    //     return _resultView(state);
-    //   } else {
-    //     return _contentView();
-    //   }
-    // }, loading: () {
-    //   return AppFullScreenSpinner(
-    //     title: loc(context).addNodesSearchingNodes,
-    //     text: loc(context).addNodesSearchingNodesDesc,
-    //   );
-    // });
   }
 
-  Widget _resultView(AddNodesState? state) {
+  Widget _resultView(AddNodesState state) {
     return StyledAppPageView(
       scrollable: true,
       title: loc(context).addNodes,
@@ -110,7 +94,7 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
             ],
           ),
           const AppGap.medium(),
-          if (state?.addedNodes?.isEmpty == true)
+          if (state.addedNodes?.isEmpty == true)
             AppStyledText.link(
               loc(context).addNodesNoNodesFound,
               key: const ValueKey('troubleshoot'),
@@ -129,25 +113,27 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
           const AppGap.medium(),
           Column(
             children: [
-              ...state?.childNodes?.map((e) {
-                    final node = LinksysDevice.fromMap(e.toMap());
-                    return AppNodeListCard(
-                        leading: CustomTheme.of(context)
-                            .images
-                            .devices
-                            .getByName(routerIconTest(e.toMap())),
-                        title: e.getDeviceLocation(),
-                        trailing: SharedWidgets.resolveSignalStrengthIcon(
-                          context,
-                          node.signalDecibels ?? 0,
-                          isOnline: node.isOnline(),
-                          isWired: node.getConnectionType() == DeviceConnectionType.wired,
-                        ));
-                  }).expandIndexed((index, element) sync* {
-                    yield element;
-                    yield const AppGap.medium();
-                  }).toList() ??
-                  []
+              if (state.addedNodes?.isNotEmpty ?? false)
+                ...state.childNodes?.map((e) {
+                      final node = LinksysDevice.fromMap(e.toMap());
+                      return AppNodeListCard(
+                          leading: CustomTheme.of(context)
+                              .images
+                              .devices
+                              .getByName(routerIconTest(e.toMap())),
+                          title: e.getDeviceLocation(),
+                          trailing: SharedWidgets.resolveSignalStrengthIcon(
+                            context,
+                            node.signalDecibels ?? 0,
+                            isOnline: node.isOnline(),
+                            isWired: node.getConnectionType() ==
+                                DeviceConnectionType.wired,
+                          ));
+                    }).expandIndexed((index, element) sync* {
+                      yield element;
+                      yield const AppGap.medium();
+                    }).toList() ??
+                    []
             ],
           ),
           const AppGap.medium(),
@@ -165,9 +151,9 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
               final callback = widget.args['callback'] as VoidCallback?;
               if (callback != null) {
                 callback.call();
-                context.pop(state?.addedNodes?.isNotEmpty ?? false);
+                context.pop(state.addedNodes?.isNotEmpty ?? false);
               } else {
-                context.pop(state?.addedNodes?.isNotEmpty ?? false);
+                context.pop(state.addedNodes?.isNotEmpty ?? false);
               }
             },
           )
