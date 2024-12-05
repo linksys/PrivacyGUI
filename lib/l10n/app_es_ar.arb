@@ -489,5 +489,7 @@
   "applicationName": "Nombre de la aplicación",
   "ports": "Puertos",
   "labelInterface": "Interfaz",
-  "invalidCharacters": "Caracteres no válidos"
+  "invalidCharacters": "Caracteres no válidos",
+  "invalidPassword": "La contraseña no es válida",
+  "invalidHostname": "Nombre de host no válido"
 }

@@ -489,5 +489,7 @@
   "applicationName": "Όνομα εφαρμογής",
   "ports": "Θύρες",
   "labelInterface": "Διασύνδεση",
-  "invalidCharacters": "Μη έγκυροι χαρακτήρες"
+  "invalidCharacters": "Μη έγκυροι χαρακτήρες",
+  "invalidPassword": "Μη έγκυρος κωδικός πρόσβασης",
+  "invalidHostname": "Μη έγκυρο όνομα κεντρικού υπολογιστή"
 }

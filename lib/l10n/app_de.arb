@@ -489,5 +489,7 @@
   "applicationName": "Name der Anwendung",
   "ports": "Ports",
   "labelInterface": "Schnittstelle",
-  "invalidCharacters": "Ungültige Zeichen"
+  "invalidCharacters": "Ungültige Zeichen",
+  "invalidPassword": "Ungültiges Passwort",
+  "invalidHostname": "Ungültiger Host-Name"
 }

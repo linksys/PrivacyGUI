@@ -489,5 +489,7 @@
   "applicationName": "اسم التطبيق",
   "ports": "المنافذ",
   "labelInterface": "الواجهة",
-  "invalidCharacters": "أحرف غير صالحة"
+  "invalidCharacters": "أحرف غير صالحة",
+  "invalidPassword": "كلمة مرور غير صالحة",
+  "invalidHostname": "اسم المضيف غير صالح"
 }
