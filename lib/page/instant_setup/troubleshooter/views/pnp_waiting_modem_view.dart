@@ -14,6 +14,7 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
 
 class PnpWaitingModemView extends ConsumerStatefulWidget {
   const PnpWaitingModemView({Key? key}) : super(key: key);
@@ -67,7 +68,7 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
 
   Widget _plugBackPage() {
     return StyledAppPageView(
-      backState: StyledBackState.disabled,
+      backState: StyledBackState.none,
       title: _isPlugged
           ? _isCheckingInternet
               ? loc(context).pnpWaitingModemCheckingInternet
@@ -76,6 +77,11 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (_isCheckingInternet) ...[
+            Center(
+              child: AppSpinner(),
+            ),
+          ],
           Center(
             child: Padding(
               padding: const EdgeInsets.symmetric(
