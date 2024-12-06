@@ -10,7 +10,6 @@ import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/core/utils/icon_device_category.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
-import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/views/dyn_ddns_form.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_provider.dart';
 import 'package:privacy_gui/page/components/shared_widgets.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
@@ -179,7 +178,9 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
             vertical: Spacing.medium,
           ),
           title: loc(context).connectTo,
-          description: state.item.upstreamDevice,
+          description: state.item.upstreamDevice.isEmpty
+              ? loc(context).unknown
+              : state.item.upstreamDevice,
         ),
         if (state.item.isOnline && !state.item.isWired) ...[
           const AppGap.small2(),

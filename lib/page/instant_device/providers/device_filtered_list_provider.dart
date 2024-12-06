@@ -11,15 +11,23 @@ import 'package:privacy_gui/util/extensions.dart';
 final filteredDeviceListProvider = Provider((ref) {
   final config = ref.watch(deviceFilterConfigProvider);
   final deviceListState = ref.watch(deviceListProvider);
+  final allNodes = ref.watch(deviceManagerProvider).nodeDevices;
   final nodeId = config.nodeFilter;
   final wifiName = config.wifiFilter;
   final band = config.bandFilter;
   final connection = config.connectionFilter;
+  final showOrphan = config.showOrphanNodes;
   final filteredDevices = deviceListState.devices
-      .where((device) => wifiName.contains(device.ssid))
       .where((device) => connection == device.isOnline)
+      .where((device) => device.isOnline
+          ? device.isWired || wifiName.contains(device.ssid)
+          : true)
       .where((device) {
         if (!device.isOnline) {
+          return true;
+        }
+        // Show all, if no preselect router && all node ids are selected
+        if (showOrphan && nodeId.length == allNodes.length) {
           return true;
         }
         if (nodeId.contains(device.upstreamDeviceID)) {
@@ -54,6 +62,7 @@ class DeviceFilterConfigNotifier extends Notifier<DeviceFilterConfigState> {
       nodeFilter: nodes,
       wifiFilter: wifiNames,
       bandFilter: bands,
+      showOrphanNodes: preselectedNodeId == null,
     );
   }
 
