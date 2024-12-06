@@ -138,19 +138,22 @@ class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
                   title: loc(context).byWifi,
                   dataList: wifiNames,
                   chipName: (data) => data ?? '',
-                  checkIsSelected: (data) => selectedWifi.contains(data),
-                  onSelected: (data, value) {
-                    if (data == null) {
-                      return;
-                    }
-                    if (value) {
-                      notifier
-                          .updateWifiFilter(List.from(selectedWifi..add(data)));
-                    } else {
-                      notifier.updateWifiFilter(
-                          List.from(selectedWifi..remove(data)));
-                    }
-                  }),
+                  checkIsSelected: (data) =>
+                      selectConnection ? selectedWifi.contains(data) : false,
+                  onSelected: selectConnection
+                      ? (data, value) {
+                          if (data == null) {
+                            return;
+                          }
+                          if (value) {
+                            notifier.updateWifiFilter(
+                                List.from(selectedWifi..add(data)));
+                          } else {
+                            notifier.updateWifiFilter(
+                                List.from(selectedWifi..remove(data)));
+                          }
+                        }
+                      : null),
               FilteredChipsWidget<String>(
                   title: loc(context).byConnection.capitalizeWords(),
                   dataList: radios,

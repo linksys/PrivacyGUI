@@ -146,7 +146,7 @@ class LinksysDevice extends RawDevice {
       upstream: map['upstream'] != null
           ? LinksysDevice.fromMap(map['upstream'])
           : null,
-      connectionType: map['connectionType'] ?? 'wireless',
+      connectionType: map['connectionType'] ?? 'wired',
       wirelessConnectionInfo: map['wirelessConnectionInfo'] != null
           ? WirelessConnectionInfo.fromMap(map['wirelessConnectionInfo'])
           : null,
