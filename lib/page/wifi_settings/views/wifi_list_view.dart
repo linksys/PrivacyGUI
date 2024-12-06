@@ -386,31 +386,41 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
                   : Theme.of(context).colorScheme.onSurface,
             ),
             description: IntrinsicWidth(
-                child: Theme(
-                    data: Theme.of(context).copyWith(
-                        inputDecorationTheme: const InputDecorationTheme(
-                            isDense: true, contentPadding: EdgeInsets.zero)),
-                    child: radio.securityType.isOpenVariant
-                        ? AppTextField(
-                            readOnly: true,
-                            border: InputBorder.none,
-                            controller:
-                                _advancedPasswordController[radio.radioID.value]
-                                  ?..text = (radio.securityType.isOpenVariant
-                                      ? ''
-                                      : radio.password),
-                          )
-                        : AppPasswordField(
-                            semanticLabel: 'wifi password',
-                            readOnly: true,
-                            border: InputBorder.none,
-                            controller:
-                                _advancedPasswordController[radio.radioID.value]
-                                  ?..text = (radio.securityType.isOpenVariant
-                                      ? ''
-                                      : radio.password),
-                            suffixIconConstraints: const BoxConstraints(),
-                          ))),
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                    inputDecorationTheme: const InputDecorationTheme(
+                        isDense: true, contentPadding: EdgeInsets.zero)),
+                child: radio.securityType.isOpenVariant
+                    ? Semantics(
+                        textField: false,
+                        explicitChildNodes: true,
+                        child: AppTextField(
+                          readOnly: true,
+                          border: InputBorder.none,
+                          controller:
+                              _advancedPasswordController[radio.radioID.value]
+                                ?..text = (radio.securityType.isOpenVariant
+                                    ? ''
+                                    : radio.password),
+                        ),
+                      )
+                    : Semantics(
+                        textField: false,
+                        explicitChildNodes: true,
+                        child: AppPasswordField(
+                          semanticLabel: 'wifi password',
+                          readOnly: true,
+                          border: InputBorder.none,
+                          controller:
+                              _advancedPasswordController[radio.radioID.value]
+                                ?..text = (radio.securityType.isOpenVariant
+                                    ? ''
+                                    : radio.password),
+                          suffixIconConstraints: const BoxConstraints(),
+                        ),
+                      ),
+              ),
+            ),
             trailing: const Icon(LinksysIcons.edit),
             onTap: () {
               _showWifiPasswordModal(radio.password, (value) {
@@ -606,7 +616,11 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
     TextEditingController controller = TextEditingController()
       ..text = initValue;
     bool isPasswordValid = true;
-
+    final InputValidator wifiPasswordValidator = InputValidator([
+      LengthRule(min: 8, max: 64),
+      NoSurroundWhitespaceRule(),
+      AsciiRule(),
+    ]);
     final result = await showSubmitAppDialog<String>(
       context,
       title: loc(context).wifiPassword,
@@ -622,24 +636,36 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
               Validation(
                 description: loc(context).wifiPasswordLimit,
                 validator: ((text) =>
-                    LengthRule(min: 8, max: 64).validate(text)),
+                    wifiPasswordValidator
+                        .getRule('LengthRule')
+                        ?.validate(text) ??
+                    false),
               ),
               Validation(
                 description: loc(context).routerPasswordRuleStartEndWithSpace,
                 validator: ((text) =>
-                    NoSurroundWhitespaceRule().validate(text)),
+                    wifiPasswordValidator
+                        .getRule('NoSurroundWhitespaceRule')
+                        ?.validate(text) ??
+                    false),
               ),
               Validation(
                 description:
                     loc(context).routerPasswordRuleUnsupportSpecialChar,
-                validator: ((text) => AsciiRule().validate(text)),
+                validator: ((text) =>
+                    wifiPasswordValidator
+                        .getRule('AsciiRule')
+                        ?.validate(text) ??
+                    false),
               ),
             ],
             onValidationChanged: (isValid) => setState(() {
               isPasswordValid = isValid;
             }),
             onSubmitted: (_) {
-              context.pop(controller.text);
+              if (wifiPasswordValidator.validate(controller.text)) {
+                context.pop(controller.text);
+              }
             },
           )
         ],

@@ -222,17 +222,22 @@ class _FilteredChipsWidgetState<T>
           spacing: 8,
           runSpacing: 8,
           children: [
-            ...widget.dataList.map((e) => FilterChip(
-                  label: AppText.bodySmall(
-                    widget.chipName(e),
-                    overflow: TextOverflow.ellipsis,
+            ...widget.dataList.map((e) => MergeSemantics(
+                  child: Semantics(
+                    label: widget.checkIsSelected(e) ? 'enabled' : 'disabled',
+                    child: FilterChip(
+                      label: AppText.bodySmall(
+                        widget.chipName(e),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      onSelected: widget.onSelected != null
+                          ? (value) {
+                              widget.onSelected?.call(e, value);
+                            }
+                          : null,
+                      selected: widget.checkIsSelected(e),
+                    ),
                   ),
-                  onSelected: widget.onSelected != null
-                      ? (value) {
-                          widget.onSelected?.call(e, value);
-                        }
-                      : null,
-                  selected: widget.checkIsSelected(e),
                 ))
           ],
         ));

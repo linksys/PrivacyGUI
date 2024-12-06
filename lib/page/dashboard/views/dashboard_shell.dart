@@ -27,9 +27,7 @@ class DashboardShell extends ArgumentsConsumerStatefulView {
   ConsumerState<DashboardShell> createState() => _DashboardShellState();
 }
 
-class _DashboardShellState extends ConsumerState<DashboardShell>
-    with DebugObserver {
-  int _selectedIndex = 0;
+class _DashboardShellState extends ConsumerState<DashboardShell> {
   final List<DashboardNaviItem> _dashboardNaviItems = [];
 
   @override
@@ -111,29 +109,6 @@ class _DashboardShellState extends ConsumerState<DashboardShell>
 
   Widget _buildLayout() {
     return widget.child;
-  }
-
-  Widget _buildDesktop() {
-    final pageRoute = GoRouter.of(context)
-        .routerDelegate
-        .currentConfiguration
-        .routes
-        .last as LinksysRoute?;
-
-    final showNavi = LinksysRoute.isShowNaviRail(context, pageRoute?.config);
-    return widget.child;
-  }
-
-  Widget _buildMobile() {
-    return widget.child;
-  }
-
-  void _onItemTapped(int index) {
-    shellNavigatorKey.currentContext!
-        .goNamed(_dashboardNaviItems[index].rootPath);
-    setState(() {
-      _selectedIndex = index;
-    });
   }
 
   _prepareNavigationItems(BuildContext context) {

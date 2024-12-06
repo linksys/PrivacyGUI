@@ -96,13 +96,17 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
                       inputDecorationTheme: const InputDecorationTheme(
                           isDense: true, contentPadding: EdgeInsets.zero)),
                   child: IntrinsicWidth(
-                      child: AppPasswordField(
-                    semanticLabel: 'admin Password',
-                    readOnly: true,
-                    border: InputBorder.none,
-                    controller: _passwordController
-                      ..text = routerPasswordState.adminPassword,
-                    suffixIconConstraints: const BoxConstraints(),
+                      child: Semantics(
+                    textField: false,
+                    explicitChildNodes: true,
+                    child: AppPasswordField(
+                      semanticLabel: 'admin Password',
+                      readOnly: true,
+                      border: InputBorder.none,
+                      controller: _passwordController
+                        ..text = routerPasswordState.adminPassword,
+                      suffixIconConstraints: const BoxConstraints(),
+                    ),
                   )),
                 ),
                 trailing: const Icon(
