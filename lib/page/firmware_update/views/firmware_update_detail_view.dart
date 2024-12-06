@@ -67,15 +67,15 @@ class _FirmwareUpdateDetailViewState
     logger.i('[FIRMWARE]: Ongoing process: ${ongoingList.map((e) {
       return (e.$1.friendlyName, e.$2);
     })}');
-    logger.i(
-        '[FIRMWARE]: XXXXXXXX1111 View Build: statusRecords = $statusRecords,,,');
-    // ref.listen(firmwareUpdateProvider, (prev, next) {
-    //   if (prev?.isRetryMaxReached == false && next.isRetryMaxReached == true) {
-    //     showRouterNotFoundAlert(context, ref, onComplete: () async {
-    //       ref.read(firmwareUpdateProvider.notifier).finishFirmwareUpdate();
-    //     });
-    //   }
-    // });
+    // When the client fails to reconnect to the router after updating the firmware
+    // the retry requests will reach the max limit and the alert will pop up
+    ref.listen(firmwareUpdateProvider, (prev, next) {
+      if (prev?.isRetryMaxReached == false && next.isRetryMaxReached == true) {
+        showRouterNotFoundAlert(context, ref, onComplete: () async {
+          ref.read(firmwareUpdateProvider.notifier).finishFirmwareUpdate();
+        });
+      }
+    });
     return isUpdating
         ? _updatingProgressView(ongoingList)
         : StyledAppPageView(

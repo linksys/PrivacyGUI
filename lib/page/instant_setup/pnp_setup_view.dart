@@ -244,7 +244,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
               const AppGap.medium(),
               AppText.headlineSmall(_loadingMessage),
               const AppGap.medium(),
-              // AppText.bodyLarge(_loadingMessageSub),
+              AppText.bodyLarge(_loadingMessageSub),
             ],
           ),
         ),
