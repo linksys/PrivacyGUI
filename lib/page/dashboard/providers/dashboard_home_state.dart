@@ -245,5 +245,6 @@ class DashboardHomeState extends Equatable {
 extension DashboardHomeStateExt on DashboardHomeState {
   String get mainSSID => wifis.firstOrNull?.ssid ?? '';
 
-  bool get isBridgeMode => wanType == 'Bridge';
+  // bool get isBridgeMode => wanType == 'Bridge';
+  bool get isBridgeMode => true;
 }

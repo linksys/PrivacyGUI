@@ -144,7 +144,6 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
           title: loc(context).instantTopology,
           description: loc(context).instantTopologyDesc,
           iconData: LinksysIcons.router,
-          disabledOnBridge: true,
           onTap: () {
             _navigateTo(RouteNamed.menuInstantTopology);
           }),
@@ -171,7 +170,6 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
           title: loc(context).instantDevices,
           description: loc(context).instantDevicesDesc,
           iconData: LinksysIcons.devices,
-          disabledOnBridge: true,
           onTap: () {
             _navigateTo(RouteNamed.menuInstantDevices);
           }),

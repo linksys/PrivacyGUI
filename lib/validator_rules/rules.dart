@@ -102,6 +102,43 @@ class MACAddressRule extends RegExValidationRule {
   RegExp get _rule => RegExp(r"^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$");
 }
 
+class MACAddressWithReservedRule extends ValidationRule {
+  @override
+  bool validate(String input) {
+    // 1. check if mac address is in a valid format
+    if (!MACAddressRule().validate(input)) {
+      return false;
+    }
+    // 2. check if it's all zeros
+    if (input == '00:00:00:00:00:00') {
+      return false;
+    }
+    // 3. check if it's a multicast (the least significant bit of the most significant address octet is set to 1)
+    var firstOctet = input.split(':')[0],
+        firstOctetInBinary =
+            int.parse(firstOctet, radix: 16).toString().padRight(2),
+        leastSignificantBit =
+            firstOctetInBinary.substring(firstOctetInBinary.length - 1);
+    if (leastSignificantBit == '1') {
+      return false;
+    }
+    // 4. check if second character is 0, 2, 4, 6, 8, A, C, E
+    var secondCharacter =
+        firstOctet.substring(firstOctet.length - 1).toUpperCase();
+    if (secondCharacter != '0' &&
+        secondCharacter != '2' &&
+        secondCharacter != '4' &&
+        secondCharacter != '6' &&
+        secondCharacter != '8' &&
+        secondCharacter != 'A' &&
+        secondCharacter != 'C' &&
+        secondCharacter != 'E') {
+      return false;
+    }
+    return true;
+  }
+}
+
 class LengthRule extends ValidationRule {
   final int min;
   final int max;

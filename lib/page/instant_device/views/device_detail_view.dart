@@ -17,6 +17,8 @@ import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/dashboard/_dashboard.dart';
+import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacy_gui/page/instant_device/extensions/icon_device_category_ext.dart';
 import 'package:privacy_gui/utils.dart';
@@ -170,6 +172,8 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
   }
 
   Widget _detailSection(ExternalDeviceDetailState state) {
+    final isBridge = ref.watch(dashboardHomeProvider).isBridgeMode;
+
     return Column(
       children: [
         AppSettingCard(
@@ -239,7 +243,8 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
               horizontal: Spacing.large2, vertical: Spacing.medium),
           title: loc(context).ipAddress,
           description: _formatEmptyValue(state.item.ipv4Address),
-          trailing: state.item.isOnline &&
+          trailing: !isBridge &&
+                  state.item.isOnline &&
                   state.item.type != WifiConnectionType.guest &&
                   isReservedIp != null
               ? AppLoadableWidget.textButton(
@@ -336,60 +341,63 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
   ) {
     return SizedBox(
       width: 400,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const AppGap.large2(),
-          AppTextField.outline(
-            controller: _deviceNameController,
-            headerText: loc(context).deviceName,
-            errorText: _errorMessage,
-            onChanged: (text) {
-              setState(() {
-                final overMaxSize = utf8.encoder.convert(text).length >= 256;
-                _errorMessage = text.isEmpty
-                    ? loc(context).theNameMustNotBeEmpty
-                    : overMaxSize
-                        ? loc(context).deviceNameExceedMaxSize
-                        : null;
-              });
-            },
-            onSubmitted: (_) {
-              if (_errorMessage != null) {
-                onSubmit();
-              }
-            },
-          ),
-          const AppGap.large3(),
-          AppText.labelLarge(loc(context).selectIcon.capitalizeWords()),
-          const AppGap.large3(),
-          GridView.builder(
-            shrinkWrap: true,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 6,
+      child: Semantics(
+        explicitChildNodes: true,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const AppGap.large2(),
+            AppTextField.outline(
+              controller: _deviceNameController,
+              headerText: loc(context).deviceName,
+              errorText: _errorMessage,
+              onChanged: (text) {
+                setState(() {
+                  final overMaxSize = utf8.encoder.convert(text).length >= 256;
+                  _errorMessage = text.isEmpty
+                      ? loc(context).theNameMustNotBeEmpty
+                      : overMaxSize
+                          ? loc(context).deviceNameExceedMaxSize
+                          : null;
+                });
+              },
+              onSubmitted: (_) {
+                if (_errorMessage != null) {
+                  onSubmit();
+                }
+              },
             ),
-            itemCount: IconDeviceCategory.values.length,
-            itemBuilder: ((context, index) {
-              return InkWell(
-                onTap: () {
-                  setState(() {
-                    _iconIndex = index;
-                  });
-                },
-                child: Icon(
-                  IconDeviceCategoryExt.resolveByName(
-                    IconDeviceCategory.values[index].name,
+            const AppGap.large3(),
+            AppText.labelLarge(loc(context).selectIcon.capitalizeWords()),
+            const AppGap.large3(),
+            GridView.builder(
+              shrinkWrap: true,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 6,
+              ),
+              itemCount: IconDeviceCategory.values.length,
+              itemBuilder: ((context, index) {
+                return InkWell(
+                  onTap: () {
+                    setState(() {
+                      _iconIndex = index;
+                    });
+                  },
+                  child: Icon(
+                    IconDeviceCategoryExt.resolveByName(
+                      IconDeviceCategory.values[index].name,
+                    ),
+                    semanticLabel: IconDeviceCategory.values[index].name,
+                    color: index == _iconIndex
+                        ? Theme.of(context).colorScheme.primary
+                        : null,
                   ),
-                  semanticLabel: IconDeviceCategory.values[index].name,
-                  color: index == _iconIndex
-                      ? Theme.of(context).colorScheme.primary
-                      : null,
-                ),
-              );
-            }),
-          ),
-        ],
+                );
+              }),
+            ),
+          ],
+        ),
       ),
     );
   }

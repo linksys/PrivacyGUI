@@ -74,7 +74,6 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
         : min(routerLength * topologyItemHeight, 3 * topologyItemHeight);
     final hasLanPort =
         ref.read(dashboardHomeProvider).lanPortConnections.isNotEmpty;
-    final isBridge = ref.watch(dashboardHomeProvider).isBridgeMode;
     final showAllTopology =
         ResponsiveLayout.isMobileLayout(context) || routerLength <= 3;
     final isLoading = ref.watch(deviceManagerProvider).deviceList.isEmpty;
@@ -116,7 +115,7 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
                         extra: entry.node.data.isMaster
                             ? '${loc(context).uptime}: $uptime'
                             : null,
-                        onTap: entry.node.data.isOnline && !isBridge
+                        onTap: entry.node.data.isOnline
                             ? () {
                                 ref.read(nodeDetailIdProvider.notifier).state =
                                     entry.node.data.deviceId;
@@ -302,16 +301,13 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
   Widget _nodesInfoTile(
       BuildContext context, WidgetRef ref, InstantTopologyState state) {
     final nodes = state.root.children.firstOrNull?.toFlatList() ?? [];
-    final isBridge = ref.watch(dashboardHomeProvider).isBridgeMode;
     final hasOffline = nodes.any((element) => !element.data.isOnline);
     return _infoTile(
       iconData: hasOffline ? LinksysIcons.infoCircle : LinksysIcons.networkNode,
       iconColor: hasOffline ? Theme.of(context).colorScheme.error : null,
       text: nodes.length == 1 ? loc(context).node : loc(context).nodes,
       count: nodes.length,
-      onTap: isBridge
-          ? null
-          : () {
+      onTap: () {
               ref.read(topologySelectedIdProvider.notifier).state = '';
               context.pushNamed(RouteNamed.menuInstantTopology);
             },
@@ -326,16 +322,13 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
         .where((e) => e.isOnline())
         .length;
     final nodes = state.root.children.firstOrNull?.toFlatList() ?? [];
-    final isBridge = ref.watch(dashboardHomeProvider).isBridgeMode;
 
     return _infoTile(
       text:
           externalDeviceCount == 1 ? loc(context).device : loc(context).devices,
       count: externalDeviceCount,
       iconData: LinksysIcons.devices,
-      onTap: isBridge
-          ? null
-          : () {
+      onTap: () {
               context.pushNamed(RouteNamed.menuInstantDevices);
             },
     );
