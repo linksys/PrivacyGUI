@@ -58,14 +58,13 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
 
   @override
   Widget build(BuildContext context) {
-    final isBridge = ref.watch(dashboardHomeProvider).isBridgeMode;
     final tabs = [
       loc(context).instantInfo,
-      if (!isBridge) loc(context).instantTopology
+      loc(context).instantTopology
     ];
     final tabContents = [
       _instantInfo(context, ref),
-      if (!isBridge) _instantTopology(),
+      _instantTopology(),
     ];
     return StyledAppTabPageView(
       title: loc(context).instantVerify,

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
-import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
@@ -43,6 +42,8 @@ class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
   @override
   Widget build(BuildContext context) {
     final nodes = ref.watch(deviceManagerProvider).nodeDevices;
+    List<(String, String)> connectedList =
+        nodes.map((e) => (e.deviceID, e.getDeviceLocation())).toList();
     final deviceUUID = widget.preselectedNodeId?.length == 1
         ? widget.preselectedNodeId?.first
         : null;
@@ -77,6 +78,11 @@ class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
     final selectedWifi = filterConfig.wifiFilter;
     final selectedBand = filterConfig.bandFilter;
     final selectConnection = filterConfig.connectionFilter;
+    final showOrphan = filterConfig.showOrphanNodes;
+
+    if (showOrphan) {
+      connectedList.add(('', 'unknown'));
+    }
     return SingleChildScrollView(
       physics: const ScrollPhysics(),
       child: Container(
@@ -112,16 +118,18 @@ class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
                       notifier.updateConnectionFilter(data.$2);
                     }
                   }),
-              FilteredChipsWidget<LinksysDevice>(
+              FilteredChipsWidget<(String, String)>(
                   title: loc(context).connectedVia,
-                  dataList: nodes,
-                  chipName: (data) => data?.getDeviceLocation() ?? '',
+                  dataList: connectedList,
+                  chipName: (data) => data?.$2 == 'unknown'
+                      ? loc(context).unknown
+                      : data?.$2 ?? '',
                   checkIsSelected: (data) => selectConnection
-                      ? selectedNodeId.contains(data?.deviceID)
+                      ? selectedNodeId.contains(data?.$1)
                       : false,
                   onSelected: selectConnection
                       ? (data, value) {
-                          final deviceId = data?.deviceID;
+                          final deviceId = data?.$1;
                           if (deviceId == null) {
                             return;
                           }
@@ -138,19 +146,22 @@ class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
                   title: loc(context).byWifi,
                   dataList: wifiNames,
                   chipName: (data) => data ?? '',
-                  checkIsSelected: (data) => selectedWifi.contains(data),
-                  onSelected: (data, value) {
-                    if (data == null) {
-                      return;
-                    }
-                    if (value) {
-                      notifier
-                          .updateWifiFilter(List.from(selectedWifi..add(data)));
-                    } else {
-                      notifier.updateWifiFilter(
-                          List.from(selectedWifi..remove(data)));
-                    }
-                  }),
+                  checkIsSelected: (data) =>
+                      selectConnection ? selectedWifi.contains(data) : false,
+                  onSelected: selectConnection
+                      ? (data, value) {
+                          if (data == null) {
+                            return;
+                          }
+                          if (value) {
+                            notifier.updateWifiFilter(
+                                List.from(selectedWifi..add(data)));
+                          } else {
+                            notifier.updateWifiFilter(
+                                List.from(selectedWifi..remove(data)));
+                          }
+                        }
+                      : null),
               FilteredChipsWidget<String>(
                   title: loc(context).byConnection.capitalizeWords(),
                   dataList: radios,
