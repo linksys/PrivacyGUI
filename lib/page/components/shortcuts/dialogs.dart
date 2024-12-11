@@ -116,6 +116,7 @@ Future<T?> showSubmitAppDialog<T>(
             });
             context.pop(value);
           }).onError((error, stackTrace) {
+            logger.e('submit app error: $error', stackTrace: stackTrace);
             setState(() {
               isLoading = false;
             });
@@ -394,7 +395,8 @@ Future showMLOCapableModal(BuildContext context) {
           '${loc(context).mloCapableModalDesc1}\n\n${loc(context).mloCapableModalDesc2}');
 }
 
-Future<bool?> showInstantPrivacyConfirmDialog(BuildContext context, bool enable) {
+Future<bool?> showInstantPrivacyConfirmDialog(
+    BuildContext context, bool enable) {
   return showSimpleAppDialog<bool>(
     context,
     dismissible: false,

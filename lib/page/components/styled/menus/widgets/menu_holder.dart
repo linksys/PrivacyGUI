@@ -3,36 +3,40 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
-import 'package:privacy_gui/providers/auth/auth_provider.dart';
+import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
+
+final menuController = Provider((ref) => MenuController());
 
 class MenuHolder extends ConsumerStatefulWidget {
   final Widget Function(BuildContext, MenuController) builder;
   const MenuHolder({super.key, required this.builder});
 
   @override
-  ConsumerState<MenuHolder> createState() => _MenuHolderState();
+  ConsumerState<MenuHolder> createState() => MenuHolderState();
 }
 
-class _MenuHolderState extends ConsumerState<MenuHolder> {
+class MenuHolderState extends ConsumerState<MenuHolder> {
+  late final MenuController _controller;
+
   @override
   void initState() {
     super.initState();
+    _controller = ref.read(menuController);
   }
 
-  static final MenuController _controller = MenuController();
   @override
   Widget build(BuildContext context) {
-    // ref.listen(authProvider.select((value) => value.value?.loginType),
-    //     (previous, next) {
-    //   // reset to home once logged out
-    //   if (next == null || next == LoginType.none) {
-    //     _controller.select(NaviType.home);
-    //   }
-    // });
+    final pageRoute = GoRouter.maybeOf(context)
+        ?.routerDelegate
+        .currentConfiguration
+        .routes
+        .last as LinksysRoute?;
+
+    final showNavi = LinksysRoute.isShowNaviRail(context, pageRoute?.config);
     Future.doWhile(() => !mounted).then((value) {
-      final displayType = shellNavigatorKey.currentContext == null
+      final displayType = shellNavigatorKey.currentContext == null || !showNavi
           ? MenuDisplay.none
           : ResponsiveLayout.isMobileLayout(context)
               ? MenuDisplay.bottom
@@ -60,17 +64,10 @@ class MenuController {
   NaviType get selected => _menuNotifier.value.selected;
   MenuDisplay get displayType {
     return _menuNotifier.value.type;
+  }
 
-    // if (_menuNotifier.value.type == MenuDisplay.none) {
-    //   return _menuNotifier.value.type;
-    // }
-    final context = shellNavigatorKey.currentContext;
-    if (context == null) {
-      return MenuDisplay.none;
-    }
-    return ResponsiveLayout.isMobileLayout(context)
-        ? MenuDisplay.bottom
-        : MenuDisplay.top;
+  void resetToHome() {
+    _menuNotifier.value = _menuNotifier.value.copyWith(selected: NaviType.home);
   }
 
   void select(NaviType type) {

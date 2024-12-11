@@ -1,4 +1,5 @@
 import 'package:privacy_gui/validator_rules/input_validators.dart';
+import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -736,6 +737,43 @@ void main() {
         onlyFailed: true,
       );
       expect(results3.isEmpty, true);
+    });
+  });
+
+  group('MAC address test', () {
+    test('test reserved MAC address - 11:11:11:11:11:11', () {
+      final rule = MACAddressWithReservedRule();
+      final isValid = rule.validate('11:11:11:11:11:11');
+
+      expect(isValid, isFalse);
+    });
+
+    test('test reserved MAC address - FF:FF:FF:FF:FF:FF', () {
+      final rule = MACAddressWithReservedRule();
+      final isValid = rule.validate('FF:FF:FF:FF:FF:FF');
+
+      expect(isValid, isFalse);
+    });
+
+    test('test reserved MAC address - 01:00:5E:00:00:01', () {
+      final rule = MACAddressWithReservedRule();
+      final isValid = rule.validate('01:00:5E:00:00:01');
+
+      expect(isValid, isFalse);
+    });
+
+    test('test valid MAC address - 66:DF:21:26:32:85', () {
+      final rule = MACAddressWithReservedRule();
+      final isValid = rule.validate('66:DF:21:26:32:85');
+
+      expect(isValid, isTrue);
+    });
+
+    test('test valid MAC address - 58:A0:23:9B:78:64', () {
+      final rule = MACAddressWithReservedRule();
+      final isValid = rule.validate('58:A0:23:9B:78:64');
+
+      expect(isValid, isTrue);
     });
   });
 

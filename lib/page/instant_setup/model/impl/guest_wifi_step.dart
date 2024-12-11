@@ -58,64 +58,67 @@ class GuestWiFiStep extends PnpStep {
     //     {};
     // bool isEnabled = data['isEnabled'] ?? false;
     return StatefulBuilder(builder: (context, setState) {
-      return Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppSwitch(
-            semanticLabel: 'pnp guest wifi',
-            value: isEnabled,
-            onChanged: (value) {
-              setState(() {
-                isEnabled = value;
-              });
-              // update(ref, key: 'isEnabled', value: value);
-            },
-          ),
-          const AppGap.large3(),
-          AppText.bodyLarge(loc(context).pnpGuestWiFiDesc),
-          const AppGap.large3(),
-          ...isEnabled
-              ? [
-                  WiFiSSIDField(
-                    controller: _ssidEditController!,
-                    label: loc(context).guestWiFiName,
-                    hint: loc(context).guestWiFiName,
-                    onCheckInput: (isValid, input) {
-                      // if (isValid) {
-                      //   ref
-                      //       .read(pnpProvider.notifier)
-                      //       .setStepData(index, data: {'ssid': input});
-                      // } else {
-                      //   ref
-                      //       .read(pnpProvider.notifier)
-                      //       .setStepData(index, data: {'ssid': ''});
-                      // }
-                      _check(ref);
-                    },
-                  ),
-                  const AppGap.medium(),
-                  WiFiPasswordField(
-                    controller: _passwordEditController!,
-                    label: loc(context).guestWiFiPassword,
-                    hint: loc(context).guestWiFiPassword,
-                    onCheckInput: (isValid, input) {
-                      // if (isValid) {
-                      //   ref
-                      //       .read(pnpProvider.notifier)
-                      //       .setStepData(index, data: {'password': input});
-                      // } else {
-                      //   ref
-                      //       .read(pnpProvider.notifier)
-                      //       .setStepData(index, data: {'password': ''});
-                      // }
-                      _check(ref);
-                    },
-                  ),
-                  const AppGap.medium(),
-                ]
-              : [],
-        ],
+      return Semantics(
+        explicitChildNodes: true,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppSwitch(
+              semanticLabel: 'pnp guest wifi',
+              value: isEnabled,
+              onChanged: (value) {
+                setState(() {
+                  isEnabled = value;
+                });
+                // update(ref, key: 'isEnabled', value: value);
+              },
+            ),
+            const AppGap.large3(),
+            AppText.bodyLarge(loc(context).pnpGuestWiFiDesc),
+            const AppGap.large3(),
+            ...isEnabled
+                ? [
+                    WiFiSSIDField(
+                      controller: _ssidEditController!,
+                      label: loc(context).guestWiFiName,
+                      hint: loc(context).guestWiFiName,
+                      onCheckInput: (isValid, input) {
+                        // if (isValid) {
+                        //   ref
+                        //       .read(pnpProvider.notifier)
+                        //       .setStepData(index, data: {'ssid': input});
+                        // } else {
+                        //   ref
+                        //       .read(pnpProvider.notifier)
+                        //       .setStepData(index, data: {'ssid': ''});
+                        // }
+                        _check(ref);
+                      },
+                    ),
+                    const AppGap.medium(),
+                    WiFiPasswordField(
+                      controller: _passwordEditController!,
+                      label: loc(context).guestWiFiPassword,
+                      hint: loc(context).guestWiFiPassword,
+                      onCheckInput: (isValid, input) {
+                        // if (isValid) {
+                        //   ref
+                        //       .read(pnpProvider.notifier)
+                        //       .setStepData(index, data: {'password': input});
+                        // } else {
+                        //   ref
+                        //       .read(pnpProvider.notifier)
+                        //       .setStepData(index, data: {'password': ''});
+                        // }
+                        _check(ref);
+                      },
+                    ),
+                    const AppGap.medium(),
+                  ]
+                : [],
+          ],
+        ),
       );
     });
   }
@@ -141,11 +144,11 @@ class GuestWiFiStep extends PnpStep {
     final noUseUnsupportChar = AsciiRule().validate(password);
     if (!isEnabled ||
         LengthRule(min: 1, max: 32).validate(ssid) &&
-        password.isNotEmpty &&
-        password.length >= 8 &&
-        password.length <= 64 &&
-        noSurroundSpace &&
-        noUseUnsupportChar) {
+            password.isNotEmpty &&
+            password.length >= 8 &&
+            password.length <= 64 &&
+            noSurroundSpace &&
+            noUseUnsupportChar) {
       pnp.setStepStatus(index, status: StepViewStatus.data);
     } else {
       pnp.setStepStatus(index, status: StepViewStatus.error);
