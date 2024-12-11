@@ -8,8 +8,9 @@ import 'package:privacy_gui/util/url_helper/url_helper.dart'
 const officialWebHost = 'https://store.linksys.com';
 const linkEULA = '$officialWebHost/support-article?articleNum=59241';
 const linkTerms = '$officialWebHost/terms.html';
-const linkPrivacy = '$officialWebHost/privacy-and-security.html';
-const linkThirdParty = '$officialWebHost/support-article?articleNum=47763';
+const linkPrivacy =
+    '$officialWebHost/blogs/support-article/linksys-privacy-policy';
+const linkThirdParty = '$officialWebHost/kb/article/943-en';
 const linkSupport = '$officialWebHost/linksys-support';
 // FAQ Setup
 const linkSetupCannotAddChildNode =
