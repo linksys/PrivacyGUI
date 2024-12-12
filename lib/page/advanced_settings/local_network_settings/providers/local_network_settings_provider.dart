@@ -120,19 +120,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
       await fetch(fetchRemote: true);
       // Update instant safety
       await ref.read(instantSafetyProvider.notifier).fetchLANSettings();
-    }).catchError(
-      (error) {
-        if (kIsWeb &&
-            previousIPAddress != null &&
-            previousIPAddress != newSettings.ipAddress) {
-          ref.read(redirectionProvider.notifier).state =
-              'https://${newSettings.ipAddress}';
-        } else {
-          throw error;
-        }
-      },
-      test: (error) => error is JNAPSideEffectError,
-    );
+    });
   }
 
   Future<List<DHCPReservation>> saveReservations(

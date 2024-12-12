@@ -289,7 +289,7 @@ class RouterRepository {
     required CommandType? type,
   }) {
     String url;
-    var localIP = _getLocalIP();
+    var localIP = getLocalIP();
     localIP = localIP.startsWith('http') ? localIP : 'https://$localIP/';
     if (kIsWeb) {
       type = checkForce() ?? type;
@@ -455,7 +455,7 @@ class RouterRepository {
 }
 
 extension RouterRepositoryUtil on RouterRepository {
-  String _getLocalIP() {
+  String getLocalIP() {
     return getLocalIp(ref);
   }
 
