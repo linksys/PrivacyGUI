@@ -247,6 +247,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
           description: _formatEmptyValue(state.item.ipv4Address),
           trailing: !isBridge &&
                   state.item.isOnline &&
+                  state.item.ipv4Address.isNotEmpty &&
                   state.item.type != WifiConnectionType.guest &&
                   isReservedIp != null
               ? AppLoadableWidget.textButton(

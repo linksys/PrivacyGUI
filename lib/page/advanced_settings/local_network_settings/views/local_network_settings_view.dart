@@ -19,6 +19,7 @@ import 'package:privacy_gui/page/advanced_settings/local_network_settings/provid
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_state.dart';
 import 'package:privacy_gui/page/instant_safety/providers/instant_safety_provider.dart';
 import 'package:privacy_gui/providers/redirection/redirection_provider.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
@@ -41,12 +42,14 @@ class LocalNetworkSettingsView extends ArgumentsConsumerStatefulView {
 }
 
 class _LocalNetworkSettingsViewState
-    extends ConsumerState<LocalNetworkSettingsView> with PageSnackbarMixin {
+    extends ConsumerState<LocalNetworkSettingsView>
+    with PageSnackbarMixin, SingleTickerProviderStateMixin {
   late LocalNetworkSettingsState originalSettings;
   late LocalNetworkSettingsNotifier _notifier;
   final hostNameController = TextEditingController();
   final ipAddressController = TextEditingController();
   final subnetMaskController = TextEditingController();
+  int _selectedTabIndex = 0;
 
   @override
   void initState() {
@@ -94,11 +97,6 @@ class _LocalNetworkSettingsViewState
       }
     });
     final state = ref.watch(localNetworkSettingProvider);
-    final tabs = [
-      loc(context).hostName,
-      loc(context).lanIPAddress,
-      loc(context).dhcpServer,
-    ];
     final tabContents = [
       _hostNameView(state),
       _ipAddressView(state),
@@ -124,13 +122,30 @@ class _LocalNetworkSettingsViewState
                   }
                 }
               : null,
-          tabs: tabs
-              .map((e) => Tab(
-                    text: e,
-                  ))
-              .toList(),
+          tabs: [
+            tab(
+              loc(context).hostName,
+              selected: _selectedTabIndex == 0,
+              hasError: state.hasErrorOnHostNameTab,
+            ),
+            tab(
+              loc(context).lanIPAddress,
+              selected: _selectedTabIndex == 1,
+              hasError: state.hasErrorOnIPAddressTab,
+            ),
+            tab(
+              loc(context).dhcpServer,
+              selected: _selectedTabIndex == 2,
+              hasError: state.hasErrorOnDhcpServerTab,
+            ),
+          ],
           tabContentViews: tabContents,
           expandedHeight: 120,
+          onTap: (index) {
+            setState(() {
+              _selectedTabIndex = index;
+            });
+          },
         ),
       ),
     );
@@ -144,12 +159,12 @@ class _LocalNetworkSettingsViewState
         child: AppTextField(
           headerText: loc(context).hostName.capitalizeWords(),
           controller: hostNameController,
-          errorText: state.errorTextMap['hostName'],
+          errorText: state.errorTextMap[LocalNetworkErrorPrompt.hostName.name],
           border: const OutlineInputBorder(),
           onChanged: (value) {
             _notifier.updateHostName(value);
             _notifier.updateErrorPrompts(
-              'hostName',
+              LocalNetworkErrorPrompt.hostName.name,
               value.isEmpty ? loc(context).hostNameCannotEmpty : null,
             );
           },
@@ -172,12 +187,11 @@ class _LocalNetworkSettingsViewState
               header: AppText.bodySmall(loc(context).ipAddress),
               semanticLabel: 'ip address',
               controller: ipAddressController,
-              errorText: state.errorTextMap['ipAddress'],
+              errorText:
+                  state.errorTextMap[LocalNetworkErrorPrompt.ipAddress.name],
               border: const OutlineInputBorder(),
               onChanged: (value) {
-                setState(() {
-                  _notifier.routerIpAddressChanged(context, value, state);
-                });
+                _notifier.routerIpAddressChanged(context, value, state);
               },
             ),
             const AppGap.large2(),
@@ -187,12 +201,11 @@ class _LocalNetworkSettingsViewState
               octet1ReadOnly: true,
               octet2ReadOnly: true,
               controller: subnetMaskController,
-              errorText: state.errorTextMap['subnetMask'],
+              errorText:
+                  state.errorTextMap[LocalNetworkErrorPrompt.subnetMask.name],
               border: const OutlineInputBorder(),
               onChanged: (value) {
-                setState(() {
-                  _notifier.subnetMaskChanged(context, value, state);
-                });
+                _notifier.subnetMaskChanged(context, value, state);
               },
             ),
           ],
@@ -224,29 +237,36 @@ class _LocalNetworkSettingsViewState
     );
   }
 
+  Widget tab(
+    String title, {
+    required bool selected,
+    bool hasError = false,
+  }) {
+    return Tab(
+      child: Row(
+        children: [
+          if (hasError) ...[
+            Icon(
+              LinksysIcons.error,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            AppGap.small1(),
+          ],
+          AppText.titleSmall(
+            title,
+            color: selected ? Theme.of(context).colorScheme.primary : null,
+          ),
+        ],
+      ),
+    );
+  }
+
   bool _isEdited(LocalNetworkSettingsState state) {
     return !originalSettings.isEqualStateWithoutDhcpReservationList(state);
   }
 
   bool _hasError(LocalNetworkSettingsState state) {
     return state.errorTextMap.isNotEmpty;
-  }
-
-  (bool, LocalNetworkSettingsState) routerIpAddressFinished(String ipAddress) {
-    final state = ref.read(localNetworkSettingProvider);
-    // Host IP input finishes
-    return _notifier.routerIpAddressFinished(
-      ipAddress,
-      state,
-    );
-  }
-
-  (bool, LocalNetworkSettingsState) subnetMaskFinished(String subnetMask) {
-    final state = ref.read(localNetworkSettingProvider);
-    return ref.read(localNetworkSettingProvider.notifier).subnetMaskFinished(
-          subnetMask,
-          state,
-        );
   }
 
   void _saveSettings() {

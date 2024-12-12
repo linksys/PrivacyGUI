@@ -131,7 +131,8 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
             header: AppText.bodySmall(loc(context).startIpAddress),
             controller: _startIpAddressController,
             border: const OutlineInputBorder(),
-            errorText: state.errorTextMap['StartIpAddress'],
+            errorText:
+                state.errorTextMap[LocalNetworkErrorPrompt.startIpAddress.name],
             octet1ReadOnly: true,
             octet2ReadOnly: true,
             onChanged: (value) {
@@ -148,7 +149,8 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
             min: 1,
             max: state.maxUserLimit,
             controller: _maxUserAllowedController,
-            errorText: state.errorTextMap['MaxUserAllowed'],
+            errorText:
+                state.errorTextMap[LocalNetworkErrorPrompt.maxUserAllowed.name],
             border: const OutlineInputBorder(),
             onChanged: (value) {
               _notifier.maxUserAllowedChanged(context, value, state);
@@ -165,14 +167,15 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
             min: state.minAllowDHCPLeaseMinutes,
             max: state.maxAllowDHCPLeaseMinutes,
             controller: _clientLeaseTimeController,
-            errorText: state.errorTextMap['LeaseTime'],
+            errorText:
+                state.errorTextMap[LocalNetworkErrorPrompt.leaseTime.name],
             border: const OutlineInputBorder(),
             descriptionText: loc(context).minutes,
             onChanged: (value) {
               final result = _notifier.clientLeaseFinished(value, state);
               _notifier.updateState(result.$2);
               _notifier.updateErrorPrompts(
-                'LeaseTime',
+                LocalNetworkErrorPrompt.leaseTime.name,
                 result.$1 ? null : loc(context).invalidNumber,
               );
             },
@@ -245,13 +248,13 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
               loc(context).staticDns1,
             ),
             controller: _dns1Controller,
-            errorText: state.errorTextMap['DNS1'],
+            errorText: state.errorTextMap[LocalNetworkErrorPrompt.dns1.name],
             border: const OutlineInputBorder(),
             onChanged: (value) {
               final result = _notifier.staticDns1Finished(value, state);
               _notifier.updateState(result.$2);
               _notifier.updateErrorPrompts(
-                'DNS1',
+                LocalNetworkErrorPrompt.dns1.name,
                 result.$1 || value.isEmpty
                     ? null
                     : loc(context).invalidIpAddress,
@@ -267,13 +270,13 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
               loc(context).staticDns2,
             ),
             controller: _dns2Controller,
-            errorText: state.errorTextMap['DNS2'],
+            errorText: state.errorTextMap[LocalNetworkErrorPrompt.dns2.name],
             border: const OutlineInputBorder(),
             onChanged: (value) {
               final result = _notifier.staticDns2Finished(value, state);
               _notifier.updateState(result.$2);
               _notifier.updateErrorPrompts(
-                'DNS2',
+                LocalNetworkErrorPrompt.dns2.name,
                 result.$1 || value.isEmpty
                     ? null
                     : loc(context).invalidIpAddress,
@@ -289,13 +292,13 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
               loc(context).staticDns3,
             ),
             controller: _dns3Controller,
-            errorText: state.errorTextMap['DNS3'],
+            errorText: state.errorTextMap[LocalNetworkErrorPrompt.dns3.name],
             border: const OutlineInputBorder(),
             onChanged: (value) {
               final result = _notifier.staticDns3Finished(value, state);
               _notifier.updateState(result.$2);
               _notifier.updateErrorPrompts(
-                'DNS3',
+                LocalNetworkErrorPrompt.dns3.name,
                 result.$1 || value.isEmpty
                     ? null
                     : loc(context).invalidIpAddress,
@@ -311,13 +314,13 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
               loc(context).wins,
             ),
             controller: _winsController,
-            errorText: state.errorTextMap['WINS'],
+            errorText: state.errorTextMap[LocalNetworkErrorPrompt.wins.name],
             border: const OutlineInputBorder(),
             onChanged: (value) {
               final result = _notifier.winsServerFinished(value, state);
               _notifier.updateState(result.$2);
               _notifier.updateErrorPrompts(
-                'WINS',
+                LocalNetworkErrorPrompt.wins.name,
                 result.$1 || value.isEmpty
                     ? null
                     : loc(context).invalidIpAddress,
