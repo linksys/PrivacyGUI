@@ -150,11 +150,6 @@ class FaqListView extends ArgumentsConsumerStatelessView {
                     gotoOfficialWebUrl(linkPasswordChangeWiFiNamePassword,
                         locale: ref.read(appSettingsProvider).locale);
                   }),
-                  AppTextButton(loc(context).faqListAccessByWebBrowser,
-                      onTap: () {
-                    gotoOfficialWebUrl(linkPasswordAccessByWebBrowser,
-                        locale: ref.read(appSettingsProvider).locale);
-                  }),
                 ],
               ),
             ),
@@ -190,6 +185,11 @@ class FaqListView extends ArgumentsConsumerStatelessView {
                   AppTextButton(loc(context).faqListEthernetPortNotWorking,
                       onTap: () {
                     gotoOfficialWebUrl(linkHardwareEthernetPortNotWorking,
+                        locale: ref.read(appSettingsProvider).locale);
+                  }),
+                  AppTextButton(loc(context).faqListCheckIfFirmwareAutoUpdate,
+                      onTap: () {
+                    gotoOfficialWebUrl(linkCheckIfAutoFirmwareOn,
                         locale: ref.read(appSettingsProvider).locale);
                   }),
                 ],
