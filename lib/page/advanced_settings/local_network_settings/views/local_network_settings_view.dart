@@ -261,15 +261,26 @@ class _LocalNetworkSettingsViewState
           previousIPAddress: originalSettings.ipAddress),
     ).then(
       (value) {
+        ///
+        /// Default success case only if 
+        /// 1) Wired connection and host using myrouter.info
+        /// 2) Wireless connection and didn't swap to another WiFi and using myrouter.info
+        ///
         _finishSaveSettings(state);
       },
     ).catchError((error) {
       final currentUrl = ref.read(routerRepositoryProvider).getLocalIP();
       final regex = RegExp(r'(www\.)?myrouter\.info');
+      
       // check is url start with www.myrouter.info or myrouter.info
       if (regex.hasMatch(currentUrl)) {
+        // url start with myrouter.info, show router not found and wait for connect back
         _showRouterNotFoundModal();
+      } else if (currentUrl != state.ipAddress) {
+        // ip is changed, show redirect alert to warn user make sure connect back to the router
+        showRedirectNewIpAlert(context, ref, state.ipAddress);
       } else {
+        // ip is not changed, finish settings
         _finishSaveSettings(state);
       }
     }, test: (error) => error is JNAPSideEffectError).onError(
