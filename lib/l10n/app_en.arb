@@ -1065,5 +1065,16 @@
   "connectionStatus": "Connection Status",
   "connectedVia": "Connected via",
   "unknown": "Unknown",
-  "invalidIPAddressSubnet": "IP address not in valid subnet"
+  "invalidIPAddressSubnet": "IP address not in valid subnet",
+  "redirect": "Redirect",
+  "redirectDescription": "Please connect your device to the router before proceeding to {ip}.",
+  "@redirectDescription": {
+    "description": "ip",
+    "placeholders": {
+      "ip": {
+        "type": "String",
+        "example": "192.168.1.1"
+      }
+    }
+  }
 }

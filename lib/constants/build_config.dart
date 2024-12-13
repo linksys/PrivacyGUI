@@ -67,7 +67,7 @@ Map<String, dynamic> get cloudEnvironmentConfig =>
     kCloudEnvironmentMap[cloudEnvTarget];
 
 Future<String> getVersion() async {
-  final version = await getBuildNumber() ;
+  final version = await getBuildNumber();
   return version ??
       await PackageInfo.fromPlatform().then((value) => value.version);
 }
@@ -75,7 +75,7 @@ Future<String> getVersion() async {
 Future<String?> getBuildNumber() async {
   String? buildNumber;
   final json = await rootBundle
-      .loadString('assets/resources/versions.json')
+      .loadString('assets/resources/versions.json', cache: false)
       .then((value) => jsonDecode(value))
       .onError((error, stackTrace) => null);
   if (json != null) {

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
+import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -29,6 +30,9 @@ import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacy_gui/core/jnap/providers/assign_ip/base_assign_ip.dart'
     if (dart.library.html) 'package:privacy_gui/core/jnap/providers/assign_ip/web_assign_ip.dart';
+import 'package:privacy_gui/core/jnap/providers/ip_getter/get_local_ip.dart'
+    if (dart.library.io) 'package:privacy_gui/core/jnap/providers/ip_getter/mobile_get_local_ip.dart'
+    if (dart.library.html) 'package:privacy_gui/core/jnap/providers/ip_getter/web_get_local_ip.dart';
 
 class LocalNetworkSettingsView extends ArgumentsConsumerStatefulView {
   const LocalNetworkSettingsView({
@@ -277,14 +281,28 @@ class _LocalNetworkSettingsViewState
           previousIPAddress: originalSettings.ipAddress),
     ).then(
       (value) {
-        ref.read(localNetworkSettingNeedToSaveProvider.notifier).state = false;
-        setState(() {
-          originalSettings = state;
-        });
-        showChangesSavedSnackBar();
+        ///
+        /// Default success case only if 
+        /// 1) Wired connection and host using myrouter.info
+        /// 2) Wireless connection and didn't swap to another WiFi and using myrouter.info
+        ///
+        _finishSaveSettings(state);
       },
     ).catchError((error) {
-      _showRouterNotFoundModal();
+      final currentUrl = ref.read(routerRepositoryProvider).getLocalIP();
+      final regex = RegExp(r'(www\.)?myrouter\.info');
+      
+      // check is url start with www.myrouter.info or myrouter.info
+      if (regex.hasMatch(currentUrl)) {
+        // url start with myrouter.info, show router not found and wait for connect back
+        _showRouterNotFoundModal();
+      } else if (currentUrl != state.ipAddress) {
+        // ip is changed, show redirect alert to warn user make sure connect back to the router
+        showRedirectNewIpAlert(context, ref, state.ipAddress);
+      } else {
+        // ip is not changed, finish settings
+        _finishSaveSettings(state);
+      }
     }, test: (error) => error is JNAPSideEffectError).onError(
         (error, stackTrace) {
       showErrorMessageSnackBar(error);
@@ -297,11 +315,33 @@ class _LocalNetworkSettingsViewState
       final state = await _notifier.fetch(fetchRemote: true);
       // Update instant safety
       await ref.read(instantSafetyProvider.notifier).fetchLANSettings();
-      ref.read(localNetworkSettingNeedToSaveProvider.notifier).state = false;
-      setState(() {
-        originalSettings = state;
-      });
-      showChangesSavedSnackBar();
+      _finishSaveSettings(state);
     });
+  }
+
+  void _finishSaveSettings(LocalNetworkSettingsState state) {
+    ref.read(localNetworkSettingNeedToSaveProvider.notifier).state = false;
+    setState(() {
+      originalSettings = state;
+    });
+    showChangesSavedSnackBar();
+    // handle redirect
+    if (!kIsWeb) {
+      return;
+    }
+    final currentUrl = ref.read(routerRepositoryProvider).getLocalIP();
+    final regex = RegExp(r'(www\.)?myrouter\.info');
+    // check is url start with www.myrouter.info or myrouter.info
+    if (regex.hasMatch(currentUrl)) {
+      return;
+    }
+    // ip case
+    if (state.ipAddress != currentUrl) {
+      _doRedirect(state.ipAddress);
+    }
+  }
+
+  void _doRedirect(String ip) {
+    ref.read(redirectionProvider.notifier).state = 'https://$ip';
   }
 }

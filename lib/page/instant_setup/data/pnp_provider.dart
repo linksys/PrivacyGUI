@@ -246,6 +246,8 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
                 auth: true, retries: 0)
             .then((result) {
           return result.output['connectionStatus'] == 'InternetConnected';
+        }).onError((error, stackTrece) {
+          return false;
         });
         if (isConnected) {
           break;
