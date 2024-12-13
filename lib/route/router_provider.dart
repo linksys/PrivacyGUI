@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
@@ -109,8 +110,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (state.matchedLocation == '/') {
         return router._redirectPnpLogic(state);
       } else if (state.matchedLocation.startsWith('/pnp')) {
-        // bypass any pnp views
-        return state.uri.toString();
+        return router._goPnpPath(state);
       }
       return router._redirectLogic(state);
     },
@@ -213,5 +213,15 @@ class RouterNotifier extends ChangeNotifier {
     return BuildConfig.forceCommandType == ForceCommand.local
         ? RoutePath.localLoginPassword
         : RoutePath.home;
+  }
+
+  FutureOr<String?> _goPnpPath(GoRouterState state) {
+    if (_ref.read(pnpProvider).deviceInfo == null) {
+      _ref.read(pnpProvider.notifier).fetchDeviceInfo().then((_) {
+        return state.uri.toString();
+      });
+    }
+    // bypass any pnp views
+    return state.uri.toString();
   }
 }

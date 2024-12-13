@@ -48,7 +48,7 @@ class DHCPReservationsNotifier
     return state;
   }
 
-  void updateReservations(ReservedListItem item) {
+  void updateReservations(ReservedListItem item, [bool isNew = false]) {
     final rList = state.reservations;
     final dList = state.devices;
     var hit = rList
@@ -83,7 +83,7 @@ class DHCPReservationsNotifier
       // This item is found on device list, add into reserveation list
       final newRList = List<ReservedListItem>.from(rList)
         ..add(item.copyWith(
-            reserved: !item.reserved,
+            reserved: isNew ? true : !item.reserved,
             data: item.data.copyWith(
                 description: item.data.description
                     .replaceAll(HostNameRule().rule, ''))));

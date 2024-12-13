@@ -41,6 +41,10 @@ class _InternetConnectionWidgetState
         ? null
         : ref.watch(instantTopologyProvider).root.children.first;
     final masterIcon = ref.watch(dashboardHomeProvider).masterIcon;
+    final wanPortConnection =
+        ref.watch(dashboardHomeProvider).wanPortConnection;
+    final isMasterOffline =
+        master?.data.isOnline == false || wanPortConnection == 'None';
     return AppCard(
       padding: EdgeInsets.zero,
       child: Column(
@@ -71,14 +75,12 @@ class _InternetConnectionWidgetState
                             ? loc(context).internetOnline
                             : loc(context).internetOffline,
                       ),
-                      if (geolocationState.value?.name.isNotEmpty ==
-                          true) ...[
+                      if (geolocationState.value?.name.isNotEmpty == true) ...[
                         const AppGap.small2(),
                         SharedWidgets.geolocationWidget(
                             context,
                             geolocationState.value?.name ?? '',
-                            geolocationState.value?.displayLocationText ??
-                                ''),
+                            geolocationState.value?.displayLocationText ?? ''),
                       ],
                     ],
                   ),
@@ -105,8 +107,7 @@ class _InternetConnectionWidgetState
                 Container(
                   // color: Theme.of(context).colorScheme.onInverseSurface,
                   height: 158,
-                  width:
-                      ResponsiveLayout.isDesktopLayout(context) ? 176 : 104,
+                  width: ResponsiveLayout.isDesktopLayout(context) ? 176 : 104,
                   // height: 176,
                   child: SharedWidgets.resolveRouterImage(context, masterIcon,
                       size: 112),
@@ -131,10 +132,8 @@ class _InternetConnectionWidgetState
                           },
                           children: [
                             TableRow(children: [
-                              AppText.labelLarge(
-                                  '${loc(context).connection}:'),
-                              AppText.bodyMedium((master?.data.isOnline ==
-                                      false)
+                              AppText.labelLarge('${loc(context).connection}:'),
+                              AppText.bodyMedium(isMasterOffline
                                   ? '--'
                                   : (master?.data.isWiredConnection == true)
                                       ? loc(context).wired
@@ -150,14 +149,13 @@ class _InternetConnectionWidgetState
                                   master?.data.serialNumber ?? '--'),
                             ]),
                             TableRow(children: [
-                              AppText.labelLarge(
-                                  '${loc(context).fwVersion}:'),
+                              AppText.labelLarge('${loc(context).fwVersion}:'),
                               Wrap(
                                 crossAxisAlignment: WrapCrossAlignment.center,
                                 children: [
                                   AppText.bodyMedium(
                                       master?.data.fwVersion ?? '--'),
-                                  if (master?.data.isOnline == true) ...[
+                                  if (!isMasterOffline) ...[
                                     const AppGap.medium(),
                                     SharedWidgets.nodeFirmwareStatusWidget(
                                       context,
