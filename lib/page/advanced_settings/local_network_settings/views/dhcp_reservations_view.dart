@@ -346,6 +346,7 @@ class _DHCPReservationsContentViewState
                   data: DHCPReservation(
                       macAddress: mac, ipAddress: ip, description: name),
                 ),
+                true,
               );
         },
         checkPositiveEnabled: () => enableSave);
