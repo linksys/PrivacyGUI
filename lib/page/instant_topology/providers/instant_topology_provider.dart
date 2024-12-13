@@ -270,14 +270,17 @@ class InstantTopologyNotifier extends Notifier<InstantTopologyState> {
     });
   }
 
-  Future factoryReset([List<String> deviceUUIDs = const []]) {
+  Future<dynamic> factoryReset(List<String> deviceUUIDs) {
     final routerRepository = ref.read(routerRepositoryProvider);
     final builder = JNAPTransactionBuilder(
-        commands: deviceUUIDs.reversed
-            .map((uuid) =>
-                MapEntry(JNAPAction.factoryReset2, {'deviceUUID': uuid}))
-            .toList(),
-        auth: true);
+      // Start doing factory reset from the nodes of the bottom level
+      commands: deviceUUIDs.reversed
+          .map((uuid) =>
+              MapEntry(JNAPAction.factoryReset2, {'deviceUUID': uuid}))
+          .toList(),
+      auth: true,
+    );
+    // If the target node is the master, the Id list will be empty
     if (deviceUUIDs.isEmpty) {
       return routerRepository.send(
         JNAPAction.factoryReset,
@@ -286,33 +289,41 @@ class InstantTopologyNotifier extends Notifier<InstantTopologyState> {
         auth: true,
       );
     } else {
-      return routerRepository.transaction(
-        builder,
-        fetchRemote: true,
-        cacheLevel: CacheLevel.noCache,
-      );
+      return routerRepository
+          .transaction(
+            builder,
+            fetchRemote: true,
+            cacheLevel: CacheLevel.noCache,
+          )
+          // After factory resetting a child node, we need to wait for them 
+          // being offline for subsequent Delete actions
+          .then(
+            (_) => _waitForNodesOffline(deviceUUIDs),
+          );
     }
   }
 
-  Future _waitForNodesOffline(List<String> deviceUUIDs) async {
+  Future<void> _waitForNodesOffline(List<String> deviceUUIDs) async {
     final waitingStream = ref.read(routerRepositoryProvider).scheduledCommand(
-        action: JNAPAction.getDevices,
-        retryDelayInMilliSec: 3000,
-        maxRetry: 20,
-        condition: (result) {
-          if (result is JNAPSuccess) {
-            final deviceList = List.from(
-              result.output['devices'],
-            )
-                .map((e) => LinksysDevice.fromMap(e))
-                .where((device) => deviceUUIDs.contains(device.deviceID))
-                .toList();
-            return !deviceList.any((device) => device.isOnline());
-          }
-          return false;
-        });
+          action: JNAPAction.getDevices,
+          retryDelayInMilliSec: 3000,
+          maxRetry: 20,
+          condition: (result) {
+            if (result is JNAPSuccess) {
+              final deviceList = List.from(
+                result.output['devices'],
+              )
+                  .map((e) => LinksysDevice.fromMap(e))
+                  .where((device) => deviceUUIDs.contains(device.deviceID))
+                  .toList();
+              return !deviceList.any((device) => device.isOnline());
+            }
+            return false;
+          },
+          auth: true,
+        );
     await for (final result in waitingStream) {
-      logger.d('[Reboot] Waiting for all nodes offline');
+      logger.d('[Reboot/FactoryReset]: Waiting for all nodes offline');
       if (result is JNAPSuccess) {
         final deviceList = List.from(
           result.output['devices'],
@@ -322,7 +333,7 @@ class InstantTopologyNotifier extends Notifier<InstantTopologyState> {
             .toList();
         for (final device in deviceList) {
           logger.d(
-              '[Reboot] Waiting for - isDevice<${device.getDeviceLocation()}> Online - ${device.isOnline()}');
+              '[Reboot/FactoryReset]: Waiting for - isDevice<${device.getDeviceLocation()}> Online - ${device.isOnline()}');
         }
       }
     }
