@@ -83,7 +83,8 @@ class _DeviceListWidgetState extends ConsumerState<DeviceListWidget> {
       isSelected: widget.isItemSelected?.call(item) ?? false,
       title: item.name,
       description: item.isOnline
-          ? AppText.bodyMedium(item.ipv4Address)
+          ? AppText.bodyMedium(
+              item.ipv4Address.isNotEmpty ? item.ipv4Address : item.ipv6Address)
           : AppText.bodyMedium(loc(context).offline),
       band: _connectionInfo(item),
       leading: IconDeviceCategoryExt.resolveByName(item.icon),

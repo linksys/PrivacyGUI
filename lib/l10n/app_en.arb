@@ -1064,5 +1064,6 @@
   "deviceNameAndIcon": "Device Name and Icon",
   "connectionStatus": "Connection Status",
   "connectedVia": "Connected via",
-  "unknown": "Unknown"
+  "unknown": "Unknown",
+  "invalidIPAddressSubnet": "IP address not in valid subnet"
 }

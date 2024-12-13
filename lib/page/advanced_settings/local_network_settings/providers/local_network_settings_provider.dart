@@ -155,6 +155,39 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     state = state.copyWith(errorTextMap: errorTextMap);
   }
 
+  void updateHasErrorOnTabs() {
+    bool hasErrorOnHostNameTab = false;
+    bool hasErrorOnIPAddressTab = false;
+    bool hasErrorOnDhcpServerTab = false;
+    for (String errorKey in state.errorTextMap.keys) {
+      switch (errorKey) {
+        case 'hostName':
+          hasErrorOnHostNameTab = true;
+          break;
+        case 'ipAddress':
+        case 'subnetMask':
+          hasErrorOnIPAddressTab = true;
+          break;
+        case 'startIpAddress':
+        case 'maxUserAllowed':
+        case 'leaseTime':
+        case 'dns1':
+        case 'dns2':
+        case 'dns3':
+        case 'wins':
+          hasErrorOnDhcpServerTab = true;
+          break;
+        default:
+          break;
+      }
+    }
+    state = state.copyWith(
+      hasErrorOnHostNameTab: hasErrorOnHostNameTab,
+      hasErrorOnIPAddressTab: hasErrorOnIPAddressTab,
+      hasErrorOnDhcpServerTab: hasErrorOnDhcpServerTab,
+    );
+  }
+
   void updateDHCPReservationList(
       List<DHCPReservation> addedDHCPReservationList) {
     final filteredList = addedDHCPReservationList
@@ -236,17 +269,23 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     updateState(maxUserAllowedResult.$2);
     // Update error
     updateErrorPrompts(
-      'StartIpAddress',
-      startIpResult.$1 ? null : loc(context).invalidIpOrSameAsHostIp,
+      LocalNetworkErrorPrompt.startIpAddress.name,
+      startIpResult.$1
+          ? null
+          : newRouterIpAddress == startIpResult.$2.firstIPAddress
+              ? loc(context).invalidIpOrSameAsHostIp
+              : startIpAddressInvalidMessage(
+                  context, newRouterIpAddress, startIpResult.$2.subnetMask),
     );
     updateErrorPrompts(
-      'ipAddress',
+      LocalNetworkErrorPrompt.ipAddress.name,
       routerIpAddressResult.$1 ? null : loc(context).invalidIpAddress,
     );
     updateErrorPrompts(
-      'MaxUserAllowed',
+      LocalNetworkErrorPrompt.maxUserAllowed.name,
       maxUserAllowedResult.$1 ? null : loc(context).invalidNumber,
     );
+    updateHasErrorOnTabs();
   }
 
   void subnetMaskChanged(
@@ -257,27 +296,36 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     // Verify subnet mask
     final subnetMaskResult = subnetMaskFinished(subnetMask, settings);
     updateState(subnetMaskResult.$2);
-    // Verify start ip
-    final startIpResult = startIpFinished(
-        subnetMaskResult.$2.firstIPAddress, subnetMaskResult.$2);
-    updateState(startIpResult.$2);
-    // Verify max user allowed
-    final maxUserAllowedResult = maxUserAllowedFinished(
-        '${startIpResult.$2.maxUserAllowed}', startIpResult.$2);
-    updateState(maxUserAllowedResult.$2);
+    if (subnetMaskResult.$1 == true) {
+      // Verify start ip
+      final startIpResult = startIpFinished(
+          subnetMaskResult.$2.firstIPAddress, subnetMaskResult.$2);
+      updateState(startIpResult.$2);
+      // Verify max user allowed
+      final maxUserAllowedResult = maxUserAllowedFinished(
+          '${startIpResult.$2.maxUserAllowed}', startIpResult.$2);
+      updateState(maxUserAllowedResult.$2);
+      // Update error
+      updateErrorPrompts(
+        LocalNetworkErrorPrompt.startIpAddress.name,
+        startIpResult.$1
+            ? null
+            : startIpResult.$2.ipAddress == startIpResult.$2.firstIPAddress
+              ? loc(context).invalidIpOrSameAsHostIp
+              : startIpAddressInvalidMessage(
+                  context, startIpResult.$2.ipAddress, subnetMask),
+      );
+      updateErrorPrompts(
+        LocalNetworkErrorPrompt.maxUserAllowed.name,
+        maxUserAllowedResult.$1 ? null : loc(context).invalidNumber,
+      );
+    }
     // Update error
     updateErrorPrompts(
-      'subnetMask',
+      LocalNetworkErrorPrompt.subnetMask.name,
       subnetMaskResult.$1 ? null : loc(context).invalidSubnetMask,
     );
-    updateErrorPrompts(
-      'StartIpAddress',
-      startIpResult.$1 ? null : loc(context).invalidIpOrSameAsHostIp,
-    );
-    updateErrorPrompts(
-      'MaxUserAllowed',
-      maxUserAllowedResult.$1 ? null : loc(context).invalidNumber,
-    );
+    updateHasErrorOnTabs();
   }
 
   void startIpChanged(
@@ -294,13 +342,19 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     updateState(maxUserAllowedResult.$2);
     // Update error
     updateErrorPrompts(
-      'StartIpAddress',
-      startIpResult.$1 ? null : loc(context).invalidIpOrSameAsHostIp,
+      LocalNetworkErrorPrompt.startIpAddress.name,
+      startIpResult.$1
+          ? null
+          : startIpResult.$2.ipAddress == startIpResult.$2.firstIPAddress
+              ? loc(context).invalidIpOrSameAsHostIp
+              : startIpAddressInvalidMessage(
+                  context, startIpResult.$2.ipAddress, startIpResult.$2.subnetMask),
     );
     updateErrorPrompts(
-      'MaxUserAllowed',
+      LocalNetworkErrorPrompt.maxUserAllowed.name,
       maxUserAllowedResult.$1 ? null : loc(context).invalidNumber,
     );
+    updateHasErrorOnTabs();
   }
 
   void maxUserAllowedChanged(
@@ -314,9 +368,10 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     updateState(maxUserAllowedResult.$2);
     // Update error
     updateErrorPrompts(
-      'MaxUserAllowed',
+      LocalNetworkErrorPrompt.maxUserAllowed.name,
       maxUserAllowedResult.$1 ? null : loc(context).invalidNumber,
     );
+    updateHasErrorOnTabs();
   }
 
   (bool, LocalNetworkSettingsState) routerIpAddressFinished(
@@ -553,5 +608,17 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
       );
     }
     return (isValid, settings);
+  }
+
+  String startIpAddressInvalidMessage(
+      BuildContext context, String routerIp, String subnetMask) {
+    final routerIPAddressNum = NetworkUtils.ipToNum(routerIp);
+    final subnetMaskNum = NetworkUtils.ipToNum(subnetMask);
+    final routerSubnet = (routerIPAddressNum & subnetMaskNum) >>> 0;
+    final routerBroadcast = (~subnetMaskNum | routerSubnet) >>> 0;
+    final startIpAddress = NetworkUtils.numToIp(routerSubnet + 1);
+    final endIpAddress = NetworkUtils.numToIp(routerBroadcast - 1);
+
+    return '${loc(context).invalidIPAddressSubnet} [$startIpAddress - $endIpAddress]';
   }
 }
