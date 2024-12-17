@@ -637,7 +637,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
                 description: loc(context).wifiPasswordLimit,
                 validator: ((text) =>
                     wifiPasswordValidator
-                        .getRule('LengthRule')
+                        .getRuleByIndex(0)
                         ?.validate(text) ??
                     false),
               ),
@@ -645,7 +645,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
                 description: loc(context).routerPasswordRuleStartEndWithSpace,
                 validator: ((text) =>
                     wifiPasswordValidator
-                        .getRule('NoSurroundWhitespaceRule')
+                        .getRuleByIndex(1)
                         ?.validate(text) ??
                     false),
               ),
@@ -654,7 +654,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
                     loc(context).routerPasswordRuleUnsupportSpecialChar,
                 validator: ((text) =>
                     wifiPasswordValidator
-                        .getRule('AsciiRule')
+                        .getRuleByIndex(2)
                         ?.validate(text) ??
                     false),
               ),
