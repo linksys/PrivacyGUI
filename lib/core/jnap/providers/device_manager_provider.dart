@@ -17,6 +17,7 @@ import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/icon_device_category.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 
 final deviceManagerProvider =
     NotifierProvider<DeviceManagerNotifier, DeviceManagerState>(
@@ -98,6 +99,8 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     newState = newState.copyWith(
       lastUpdateTime: pollingResult?.lastUpdate,
     );
+    logger.d('[State]:[deviceManager]: ${newState.toJson()}');
+
     return newState;
   }
 
