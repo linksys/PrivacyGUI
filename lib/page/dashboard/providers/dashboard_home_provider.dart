@@ -71,6 +71,7 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
 
     // Get WAN type
     final wanType = deviceManagerState.wanStatus?.wanConnection?.wanType;
+    final detectedWANType = deviceManagerState.wanStatus?.detectedWANType;
 
     // If is first polling
     final isFirstPolling = deviceManagerState.lastUpdateTime == 0;
@@ -115,6 +116,7 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
       isHorizontalLayout: horizontalPortLayout,
       isHealthCheckSupported: isSpeedCheckSupported,
       wanType: wanType,
+      detectedWANType: detectedWANType,
     );
 
     logger.d('[State]:[dashboardHome]: ${newState.toJson()}');
