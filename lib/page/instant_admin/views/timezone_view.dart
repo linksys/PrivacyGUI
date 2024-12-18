@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/models/timezone.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/instant_admin/providers/timezone_provider.dart';
@@ -27,7 +28,8 @@ class TimezoneView extends ArgumentsConsumerStatefulView {
   ConsumerState<TimezoneView> createState() => _TimezoneContentViewState();
 }
 
-class _TimezoneContentViewState extends ConsumerState<TimezoneView> {
+class _TimezoneContentViewState extends ConsumerState<TimezoneView>
+    with PageSnackbarMixin {
   late final TimezoneNotifier _notifier;
   late final String previousTimezoneId;
 
@@ -60,14 +62,9 @@ class _TimezoneContentViewState extends ConsumerState<TimezoneView> {
               context,
               _notifier.save().then((value) {
                 context.pop(true);
-              }).catchError(
-                (error, stackTrace) {
-                  showFailedSnackBar(
-                      context, loc(context).unknownErrorCode(error ?? ''));
-                },
-                test: (error) => error is JNAPError,
-              ).onError((error, stackTrace) {
-                showFailedSnackBar(context, loc(context).generalError);
+                showChangesSavedSnackBar();
+              }).onError((error, stackTrace) {
+                showErrorMessageSnackBar(error);
               }),
               title: loc(context).savingChanges,
             );
