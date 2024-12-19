@@ -162,7 +162,8 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
         .scheduledCommand(
             firstDelayInMilliSec: refreshing ? 1000 : 20000,
             retryDelayInMilliSec: refreshing ? 3000 : 20000,
-            maxRetry: refreshing ? 5 : 9,
+            // Basic 3 minutes, add 2 minutes for each one more node
+            maxRetry: refreshing ? 5 : 9 + onboardedMACList.length * 6,
             auth: true,
             action: JNAPAction.getDevices,
             condition: (result) {
