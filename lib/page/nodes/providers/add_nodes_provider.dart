@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
-import 'package:privacy_gui/core/jnap/models/device.dart';
+import 'package:privacy_gui/core/jnap/models/back_haul_info.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
@@ -69,9 +69,11 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
     benchMark.start();
 
     ref.read(pollingProvider.notifier).stopPolling();
-    final nodeSnapshot =
-        List<LinksysDevice>.from(ref.read(deviceManagerProvider).deviceList)
-            .toList();
+
+    // final nodeSnapshot =
+    //     List<LinksysDevice>.from(ref.read(deviceManagerProvider).deviceList)
+    //         .toList();
+
     // Commence the auto-onboarding process
     final repo = ref.read(routerRepositoryProvider);
     await repo.send(JNAPAction.startBlueboothAutoOnboarding, auth: true);
@@ -104,14 +106,14 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
       onboardedMACList = List.from(deviceOnboardingStatus)
           .where((element) => element['onboardingStatus'] == 'Onboarded')
           .map((e) => e['btMACAddress'] as String?)
-          .whereNotNull()
+          .nonNulls
           .toList();
     }
     logger.d(
         '[AddNodes]: Number of onboarded MAC addresses = ${onboardedMACList.length}');
-    List<RawDevice> addedDevices = [];
-    List<RawDevice> childNodes = [];
-
+    List<LinksysDevice> addedDevices = [];
+    List<LinksysDevice> childNodes = [];
+    List<BackHaulInfoData> backhaulInfoList = [];
     state = state.copyWith(isLoading: true, loadingMessage: 'onboarding');
     if (onboardingProceed && anyOnboarded) {
       await for (final result in pollForNodesOnline(onboardedMACList)) {
@@ -128,32 +130,30 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
         logger
             .d('[AddNodes]: [pollForNodesOnline] added devices: $addedDevices');
       }
-    } else {
-      // put original slave nodes
-      childNodes =
-          nodeSnapshot.where((element) => element.nodeType != null).toList();
+      await for (final result in pollNodesBackhaulInfo(childNodes)) {
+        backhaulInfoList = result;
+      }
     }
-    childNodes.sort((a, b) => a.isAuthority ? -1 : 1);
     final polling = ref.read(pollingProvider.notifier);
     await polling.forcePolling().then((value) => polling.startPolling());
-    logger.d('[AddNodes]: Update state: nodesSnapshot = $nodeSnapshot');
+    // logger.d('[AddNodes]: Update state: nodesSnapshot = $nodeSnapshot');
     logger.d('[AddNodes]: Update state: addedDevices = $addedDevices');
     logger.d(
         '[AddNodes]: Update state: onboardingProceed = $onboardingProceed, anyOnboarded=$anyOnboarded');
     benchMark.end();
 
     state = state.copyWith(
-      nodesSnapshot: nodeSnapshot,
+      // nodesSnapshot: nodeSnapshot,
       onboardingProceed: onboardingProceed,
       anyOnboarded: anyOnboarded,
       addedNodes: addedDevices,
-      childNodes: childNodes,
+      childNodes: collectChildNodeData(childNodes, backhaulInfoList),
       isLoading: false,
       onboardedMACList: onboardedMACList,
     );
   }
 
-  Stream<List<RawDevice>> pollForNodesOnline(List<String> onboardedMACList,
+  Stream<List<LinksysDevice>> pollForNodesOnline(List<String> onboardedMACList,
       {bool refreshing = false}) {
     logger
         .d('[AddNodes]: [pollForNodesOnline] Start by MACs: $onboardedMACList');
@@ -162,7 +162,8 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
         .scheduledCommand(
             firstDelayInMilliSec: refreshing ? 1000 : 20000,
             retryDelayInMilliSec: refreshing ? 3000 : 20000,
-            maxRetry: refreshing ? 5 : 9,
+            // Basic 3 minutes, add 2 minutes for each one more node
+            maxRetry: refreshing ? 5 : 9 + onboardedMACList.length * 6,
             auth: true,
             action: JNAPAction.getDevices,
             condition: (result) {
@@ -202,7 +203,7 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
               logger.d('[AddNodes]: [pollForNodesOnline] Done!');
             })
         .transform(
-      StreamTransformer<JNAPResult, List<RawDevice>>.fromHandlers(
+      StreamTransformer<JNAPResult, List<LinksysDevice>>.fromHandlers(
         handleData: (result, sink) {
           if (result is JNAPSuccess) {
             final deviceList = List.from(
@@ -218,20 +219,90 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
     );
   }
 
+  Stream<List<BackHaulInfoData>> pollNodesBackhaulInfo(
+      List<LinksysDevice> nodes,
+      {bool refreshing = false}) {
+    final childNodes =
+        nodes.where((e) => e.nodeType == 'Slave' && e.isOnline()).toList();
+    logger.d(
+        '[AddNodes]: [pollNodesBackhaulInfo] check child nodes backhaul info data: $childNodes');
+    final repo = ref.read(routerRepositoryProvider);
+    return repo
+        .scheduledCommand(
+            firstDelayInMilliSec: refreshing ? 1000 : 3000,
+            retryDelayInMilliSec: refreshing ? 3000 : 3000,
+            maxRetry: refreshing ? 1 : 20,
+            auth: true,
+            action: JNAPAction.getBackhaulInfo,
+            condition: (result) {
+              if (result is JNAPSuccess) {
+                final backhaulList = List.from(
+                  result.output['backhaulDevices'] ?? [],
+                ).map((e) => BackHaulInfoData.fromMap(e)).toList();
+                // check all mac address in the list can be found on the device list
+                bool allFound = backhaulList.isNotEmpty &&
+                    childNodes.every((n) => backhaulList
+                    .any((backhaul) => backhaul.deviceUUID == n.deviceID));
+                logger.d(
+                    '[AddNodes]: [pollNodesBackhaulInfo] are All child deviceUUID in backhaul info data? $allFound');
+
+                return allFound;
+              }
+              return false;
+            },
+            onCompleted: (_) {
+              logger.d('[AddNodes]: [pollNodesBackhaulInfo] Done!');
+            })
+        .transform(
+      StreamTransformer<JNAPResult, List<BackHaulInfoData>>.fromHandlers(
+        handleData: (result, sink) {
+          if (result is JNAPSuccess) {
+            final backhaulList = List.from(
+              result.output['backhaulDevices'] ?? [],
+            ).map((e) => BackHaulInfoData.fromMap(e)).toList();
+            sink.add(backhaulList);
+          }
+        },
+      ),
+    );
+  }
+
   Future startRefresh() async {
     state = state.copyWith(isLoading: true, loadingMessage: 'searching');
 
-    List<RawDevice> childNodes = [];
+    List<LinksysDevice> childNodes = [];
+    List<BackHaulInfoData> backhaulInfoList = [];
+
     await for (final result
         in pollForNodesOnline(state.onboardedMACList ?? [], refreshing: true)) {
-      childNodes =
-          result.where((element) => element.nodeType != null).toList();
+      childNodes = result.where((element) => element.nodeType != null).toList();
     }
-    childNodes.sort((a, b) => a.isAuthority ? -1 : 1);
+    await for (final result
+        in pollNodesBackhaulInfo(childNodes, refreshing: true)) {
+      backhaulInfoList = result;
+    }
     state = state.copyWith(
-      childNodes: childNodes,
+      childNodes: collectChildNodeData(childNodes, backhaulInfoList),
       isLoading: false,
       loadingMessage: '',
     );
+  }
+
+  List<LinksysDevice> collectChildNodeData(
+      List<LinksysDevice> childNodes, List<BackHaulInfoData> backhaulInfoList) {
+    childNodes.sort((a, b) => a.isAuthority ? -1 : 1);
+    final newChildNodes = childNodes.map((e) {
+      final target =
+          backhaulInfoList.firstWhereOrNull((d) => d.deviceUUID == e.deviceID);
+      if (target != null) {
+        return e.copyWith(
+          wirelessConnectionInfo: target.wirelessConnectionInfo,
+          connectionType: target.connectionType,
+        );
+      } else {
+        return e;
+      }
+    }).toList();
+    return newChildNodes;
   }
 }
