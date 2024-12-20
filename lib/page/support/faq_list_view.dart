@@ -168,11 +168,6 @@ class FaqListView extends ArgumentsConsumerStatelessView {
                     gotoOfficialWebUrl(linkHardwareHowToFactoryReset,
                         locale: ref.read(appSettingsProvider).locale);
                   }),
-                  AppTextButton(loc(context).faqListNodeKeepRestarting,
-                      onTap: () {
-                    gotoOfficialWebUrl(linkHardwareNodeKeepRestarting,
-                        locale: ref.read(appSettingsProvider).locale);
-                  }),
                   AppTextButton(loc(context).faqListLightsNotWorking,
                       onTap: () {
                     gotoOfficialWebUrl(linkHardwareLightsNotWorking,
