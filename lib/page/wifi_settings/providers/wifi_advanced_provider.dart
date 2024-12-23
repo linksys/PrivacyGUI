@@ -4,7 +4,6 @@ import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
-import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 
 final wifiAdvancedProvider =
@@ -104,6 +103,7 @@ class WifiAdvancedSettingsNotifier extends Notifier<WifiAdvancedSettingsState> {
               data[JNAPAction.getAirtimeFairnessSettings] as JNAPSuccess?,
             ))
         .then((data) {
+      // topology optimization
       final bool? isClientSteeringEnabled =
           data.$1?.output['isClientSteeringEnabled'];
       final bool? isNodeSteeringEnabled =
@@ -122,9 +122,9 @@ class WifiAdvancedSettingsNotifier extends Notifier<WifiAdvancedSettingsState> {
       if (isDFSSupported ?? false) {
         isDFSEnabled = data.$4?.output['isDFSEnabled'];
       }
-      // airtimefairness
+      // airtime fairness
       final bool? isAirtimeFairnessSupported =
-          data.$3?.output['isAirtimeFairnessSupported'];
+          data.$5?.output['isAirtimeFairnessSupported'];
       bool? isAirtimeFairnessEnabled;
       if (isAirtimeFairnessSupported ?? false) {
         isAirtimeFairnessEnabled = data.$5?.output['isAirtimeFairnessEnabled'];
