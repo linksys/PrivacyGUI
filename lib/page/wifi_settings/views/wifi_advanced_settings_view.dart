@@ -115,7 +115,7 @@ class _WifiAdvancedSettingsViewState
       if (state.isIptvEnabled != null) _buildIptv(state.isIptvEnabled!),
     ];
     return MasonryGridView.count(
-      crossAxisCount: 2,
+      crossAxisCount: ResponsiveLayout.isMobileLayout(context) ? 1 : 2,
       mainAxisSpacing: Spacing.small2,
       crossAxisSpacing: ResponsiveLayout.columnPadding(context),
       itemCount: advancedSettingWidgets.length,
