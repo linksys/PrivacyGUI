@@ -35,10 +35,12 @@ class _WifiAdvancedSettingsViewState
 
     ref.read(wifiAdvancedProvider.notifier).fetch().then(
       (state) {
-        ref.read(wifiViewProvider.notifier).setChanged(false);
         setState(
           () {
             _preservedState = state;
+            ref
+                .read(wifiViewProvider.notifier)
+                .setWifiAdvancedSettingsViewChanged(state != _preservedState);
           },
         );
       },
@@ -48,14 +50,21 @@ class _WifiAdvancedSettingsViewState
   @override
   Widget build(BuildContext context) {
     ref.listen(wifiAdvancedProvider, (previous, next) {
-      ref.read(wifiViewProvider.notifier).setChanged(next != _preservedState);
+      if (_preservedState != null) {
+        ref
+            .read(wifiViewProvider.notifier)
+            .setWifiAdvancedSettingsViewChanged(next != _preservedState);
+      }
     });
+    final isPositiveEnabled =
+        _preservedState != ref.watch(wifiAdvancedProvider);
+
     return StyledAppPageView(
       appBarStyle: AppBarStyle.none,
       padding: EdgeInsets.zero,
       useMainPadding: false,
       bottomBar: PageBottomBar(
-          isPositiveEnabled: _preservedState != ref.read(wifiAdvancedProvider),
+          isPositiveEnabled: isPositiveEnabled,
           onPositiveTap: () {
             if (ref.read(wifiAdvancedProvider).isDFSEnabled == true) {
               _showConfirmDFSModal().then((value) {
@@ -97,8 +106,10 @@ class _WifiAdvancedSettingsViewState
 
   void success(WifiAdvancedSettingsState state) {
     setState(() {
-      ref.read(wifiViewProvider.notifier).setChanged(false);
       _preservedState = state;
+      ref
+          .read(wifiViewProvider.notifier)
+          .setWifiAdvancedSettingsViewChanged(false);
     });
     showChangesSavedSnackBar();
   }

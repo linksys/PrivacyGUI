@@ -51,7 +51,6 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
       context,
       ref.read(wifiListProvider.notifier).fetch().then(
         (state) {
-          ref.read(wifiViewProvider.notifier).setChanged(false);
           setState(
             () {
               update(state);
@@ -73,13 +72,13 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(wifiListProvider);
-
     ref.listen(wifiListProvider, (previous, next) {
-      ref
-          .read(wifiViewProvider.notifier)
-          .setChanged(next != _preservedMainWiFiState);
+      if (_preservedMainWiFiState != null) {
+        ref
+            .read(wifiViewProvider.notifier)
+            .setWifiListViewStateChanged(next != _preservedMainWiFiState);
+      }
     });
-
     final isPositiveEnabled = (!const ListEquality()
                 .equals(_preservedMainWiFiState?.mainWiFi, state.mainWiFi) ||
             _preservedMainWiFiState?.guestWiFi != state.guestWiFi) &&
@@ -636,26 +635,20 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
               Validation(
                 description: loc(context).wifiPasswordLimit,
                 validator: ((text) =>
-                    wifiPasswordValidator
-                        .getRuleByIndex(0)
-                        ?.validate(text) ??
+                    wifiPasswordValidator.getRuleByIndex(0)?.validate(text) ??
                     false),
               ),
               Validation(
                 description: loc(context).routerPasswordRuleStartEndWithSpace,
                 validator: ((text) =>
-                    wifiPasswordValidator
-                        .getRuleByIndex(1)
-                        ?.validate(text) ??
+                    wifiPasswordValidator.getRuleByIndex(1)?.validate(text) ??
                     false),
               ),
               Validation(
                 description:
                     loc(context).routerPasswordRuleUnsupportSpecialChar,
                 validator: ((text) =>
-                    wifiPasswordValidator
-                        .getRuleByIndex(2)
-                        ?.validate(text) ??
+                    wifiPasswordValidator.getRuleByIndex(2)?.validate(text) ??
                     false),
               ),
             ],
@@ -927,14 +920,12 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
       doSomethingWithSpinner(
               context, ref.read(wifiListProvider.notifier).save())
           .then((state) {
-        ref.read(wifiViewProvider.notifier).setChanged(false);
         update(state);
         showChangesSavedSnackBar();
       }).catchError((error, stackTrace) {
         showRouterNotFoundAlert(context, ref,
             onComplete: () =>
                 ref.read(wifiListProvider.notifier).fetch(true)).then((state) {
-          ref.read(wifiViewProvider.notifier).setChanged(false);
           update(state);
           showChangesSavedSnackBar();
         });
@@ -958,6 +949,9 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
     }
     setState(() {
       _preservedMainWiFiState = state;
+      ref
+          .read(wifiViewProvider.notifier)
+          .setWifiListViewStateChanged(state != _preservedMainWiFiState);
       for (var wifi in state.mainWiFi) {
         final controller = TextEditingController()..text = wifi.password;
         _advancedPasswordController.putIfAbsent(

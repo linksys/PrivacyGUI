@@ -190,6 +190,8 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView> {
         SizedBox(
           height: deviceList.length * 110,
           child: ListView.separated(
+            physics: const NeverScrollableScrollPhysics(),
+            shrinkWrap: true,
             itemCount: deviceList.length,
             itemBuilder: (context, index) {
               return _deviceCard(isEnable, deviceList[index]);
@@ -223,7 +225,37 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AppText.labelLarge(device.name),
+                LayoutBuilder(
+                  builder: (BuildContext context, BoxConstraints constraints) {
+                    final textPainter = TextPainter(
+                      text: TextSpan(
+                        text: device.name,
+                        style: Theme.of(context)
+                            .textTheme
+                            .labelLarge, // Use your actual text style
+                      ),
+                      maxLines: 1, // Use your actual maxLines value
+                      textDirection:
+                          TextDirection.ltr, // Use your actual text direction
+                    )..layout(minWidth: 0, maxWidth: double.infinity);
+                    if (textPainter.size.width > constraints.maxWidth) {
+                      return Tooltip(
+                        message: device.name,
+                        child: AppText.labelLarge(
+                          device.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      );
+                    } else {
+                      return AppText.labelLarge(
+                        device.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      );
+                    }
+                  },
+                ),
                 const AppGap.small1(),
                 AppText.bodyMedium(device.isOnline
                     ? device.ipv4Address
