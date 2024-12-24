@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:privacy_gui/core/jnap/models/device.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/page/nodes/providers/add_nodes_provider.dart';
 import 'package:privacy_gui/page/nodes/providers/add_nodes_state.dart';
 import 'package:privacy_gui/page/nodes/views/add_nodes_view.dart';
@@ -172,7 +172,7 @@ void main() async {
   testLocalizations('add nodes view - results', (tester, locale) async {
     when(mockAddNodesNotifier.build()).thenReturn(AddNodesState(
         onboardingProceed: true,
-        childNodes: [RawDevice.fromJson(singleDeviceData)]));
+        childNodes: [LinksysDevice.fromJson(singleDeviceData)]));
 
     // Pre-cached images to make image display proporly
     await tester.runAsync(() async {

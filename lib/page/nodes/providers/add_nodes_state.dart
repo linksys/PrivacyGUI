@@ -3,14 +3,14 @@ import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
 
-import 'package:privacy_gui/core/jnap/models/device.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 
 class AddNodesState extends Equatable {
   final bool? onboardingProceed;
   final bool? anyOnboarded;
-  final List<RawDevice>? nodesSnapshot;
-  final List<RawDevice>? addedNodes;
-  final List<RawDevice>? childNodes;
+  final List<LinksysDevice>? nodesSnapshot;
+  final List<LinksysDevice>? addedNodes;
+  final List<LinksysDevice>? childNodes;
   final bool isLoading;
   final String? loadingMessage;
   final List<String>? onboardedMACList;
@@ -43,9 +43,9 @@ class AddNodesState extends Equatable {
   AddNodesState copyWith({
     bool? onboardingProceed,
     bool? anyOnboarded,
-    List<RawDevice>? nodesSnapshot,
-    List<RawDevice>? addedNodes,
-    List<RawDevice>? childNodes,
+    List<LinksysDevice>? nodesSnapshot,
+    List<LinksysDevice>? addedNodes,
+    List<LinksysDevice>? childNodes,
     bool? isLoading,
     String? loadingMessage,
     List<String>? onboardedMACList,
@@ -83,23 +83,23 @@ class AddNodesState extends Equatable {
       anyOnboarded:
           map['anyOnboarded'] != null ? map['anyOnboarded'] as bool : null,
       nodesSnapshot: map['nodesSnapshot'] != null
-          ? List<RawDevice>.from(
-              (map['nodesSnapshot'] as List<int>).map<RawDevice?>(
-                (x) => RawDevice.fromMap(x as Map<String, dynamic>),
+          ? List<LinksysDevice>.from(
+              map['nodesSnapshot'].map<LinksysDevice?>(
+                (x) => LinksysDevice.fromMap(x as Map<String, dynamic>),
               ),
             )
           : null,
       addedNodes: map['addedNodes'] != null
-          ? List<RawDevice>.from(
-              (map['addedNodes'] as List<int>).map<RawDevice?>(
-                (x) => RawDevice.fromMap(x as Map<String, dynamic>),
+          ? List<LinksysDevice>.from(
+              map['addedNodes'].map<LinksysDevice?>(
+                (x) => LinksysDevice.fromMap(x as Map<String, dynamic>),
               ),
             )
           : null,
       childNodes: map['childNodes'] != null
-          ? List<RawDevice>.from(
-              (map['childNodes'] as List<int>).map<RawDevice?>(
-                (x) => RawDevice.fromMap(x as Map<String, dynamic>),
+          ? List<LinksysDevice>.from(
+              map['childNodes'].map<LinksysDevice?>(
+                (x) => LinksysDevice.fromMap(x as Map<String, dynamic>),
               ),
             )
           : null,
