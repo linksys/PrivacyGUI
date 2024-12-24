@@ -67,14 +67,32 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
       _ => [],
     };
 
+    // After fw updating and router restarting, the child nodes will be offline for a while
+    // During this period, the polling will only obtain the status of the master device
+    // In order to maintain the integrity of the list on the page, the status list should not be overwritten in state
+    final cachedStatusList = ref.read(firmwareUpdateCandidateProvider);
+    if (cachedStatusList != null) {
+      if (_isRecordConsistent(fwUpdateStatusList, cachedStatusList)) {
+        logger.d(
+            '[FIRMWARE]: the fetched status is correct, remove the saved one');
+        // Clean out the saved status list
+        ref.read(firmwareUpdateCandidateProvider.notifier).state = null;
+      } else {
+        logger.d(
+            '[FIRMWARE]: the fetched status number is incorrect, use the saved one');
+        fwUpdateStatusList = cachedStatusList;
+      }
+    }
+
     final state = FirmwareUpdateState(
       settings: fwUpdateSettings ??
           FirmwareUpdateSettings(
-              updatePolicy: FirmwareUpdateSettings.firmwareUpdatePolicyAuto,
-              autoUpdateWindow: FirmwareAutoUpdateWindow.simple()),
+            updatePolicy: FirmwareUpdateSettings.firmwareUpdatePolicyAuto,
+            autoUpdateWindow: FirmwareAutoUpdateWindow.simple(),
+          ),
       nodesStatus: fwUpdateStatusList,
     );
-    logger.d('[State]:[FirmwareUpdate]:${state.toJson()}');
+    logger.d('[FIRMWARE]: State = ${state.toJson()}');
     return state;
   }
 
@@ -82,13 +100,18 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     final repo = ref.read(routerRepositoryProvider);
     final newSettings = state.settings.copyWith(updatePolicy: policy);
     return repo
-        .send(JNAPAction.setFirmwareUpdateSettings,
-            auth: true,
-            cacheLevel: CacheLevel.noCache,
-            data: newSettings.toMap())
+        .send(
+      JNAPAction.setFirmwareUpdateSettings,
+      auth: true,
+      cacheLevel: CacheLevel.noCache,
+      data: newSettings.toMap(),
+    )
         .then((_) async {
-      await repo.send(JNAPAction.getFirmwareUpdateSettings,
-          auth: true, fetchRemote: true);
+      await repo.send(
+        JNAPAction.getFirmwareUpdateSettings,
+        auth: true,
+        fetchRemote: true,
+      );
     }).then((_) {
       state = state.copyWith(settings: newSettings);
     });
@@ -98,10 +121,11 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
       {bool force = false, int retry = 3}) async* {
     final lastCheckTime =
         (state.nodesStatus?.map((e) => e.lastSuccessfulCheckTime).toList() ??
-                [])
-            .map((e) => DateTime.tryParse(e))
-            .map((e) => e?.millisecondsSinceEpoch ?? 0)
-            .max;
+                    [])
+                .map((e) => DateTime.tryParse(e))
+                .map((e) => e?.millisecondsSinceEpoch ?? 0)
+                .maxOrNull ??
+            0;
     if (_checkFirmwareUpdatePeriod(lastCheckTime) && !force) {
       logger.i(
           '[FIRMWARE]: Skip checking firmware update avaliable: last check time {${DateTime.fromMillisecondsSinceEpoch(lastCheckTime)}}');
@@ -120,11 +144,13 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
             auth: true,
           )
           .then((_) {});
-      yield* _startCheckFirmwareUpdateStatus(retryTimes: retry);
+      yield* _startCheckFirmwareUpdateStatus(
+          retryTimes: retry, onCompleted: (_) {});
     }
   }
 
   Future checkFirmwareUpdateStatus() {
+    logger.i('[FIRMWARE]: Check if there are firmware updates available');
     return checkFirmwareUpdateStream(force: true, retry: 1)
         .single
         .onError((error, stackTrace) => [])
@@ -138,6 +164,9 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     final benchmark = BenchMarkLogger(name: 'FirmwareUpdate');
     benchmark.start();
     state = state.copyWith(isUpdating: true);
+    // Save the current status list
+    ref.read(firmwareUpdateCandidateProvider.notifier).state =
+        state.nodesStatus;
     final action = serviceHelper.isSupportNodeFirmwareUpdate()
         ? JNAPAction.updateFirmwareNow
         : JNAPAction.nodesUpdateFirmwareNow;
@@ -151,24 +180,40 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     _sub?.cancel();
     ref.read(pollingProvider.notifier).stopPolling();
     _sub = _startCheckFirmwareUpdateStatus(
-      retryTimes: 180 * getAvailableUpdateNumber(),
+      retryTimes: 60 * getAvailableUpdateNumber(),
       stopCondition: (result) =>
           _checkFirmwareUpdateComplete(result, state.nodesStatus ?? []),
-      onCompleted: () {
-        logger.i('[FIRMWARE]: Update firmware: Done!');
-        final polling = ref.read(pollingProvider.notifier);
-        polling
-            .forcePolling()
-            .then((_) => checkFirmwareUpdateStatus())
-            .then((_) {
+      onCompleted: (bool exceedMaxRetry) {
+        state = state.copyWith(isRetryMaxReached: exceedMaxRetry);
+        if (exceedMaxRetry) {
+          logger.e(
+              '[FIRMWARE]: Firmware update halts due to exceeding the maximum retry limit');
+          // If the client does not reconnect to the router, the requests will continue to fail up to the maximum limit
+          // Update ended with exception
           state = state.copyWith(isUpdating: false);
-          polling.startPolling();
           _sub?.cancel();
           benchmark.end();
-        });
+        } else {
+          logger.i('[FIRMWARE]: Firmware update: Done!');
+          finishFirmwareUpdate().then((_) {
+            _sub?.cancel();
+            benchmark.end();
+          });
+        }
       },
     ).listen((statusList) {
       state = state.copyWith(nodesStatus: statusList);
+    });
+  }
+
+  Future finishFirmwareUpdate() {
+    final polling = ref.read(pollingProvider.notifier);
+    return polling
+        .forcePolling()
+        .then((_) => checkFirmwareUpdateStatus())
+        .then((_) {
+      state = state.copyWith(isUpdating: false);
+      polling.startPolling();
     });
   }
 
@@ -184,10 +229,8 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
             .toList()
       };
 
-      final isSatisfied =
+      final isDone =
           !statusList.any((status) => status.pendingOperation != null);
-      final isDataConsitent = _isRecordConsistent(statusList, records);
-      final isDone = isSatisfied && isDataConsitent;
       logger.i('[FIRMWARE]: Check if all updates are finished: $isDone');
       return isDone;
     } else {
@@ -248,7 +291,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     int? retryTimes = 1,
     int? retryDelayInMilliSec,
     bool Function(JNAPResult)? stopCondition,
-    Function()? onCompleted,
+    Function(bool exceedMaxRetry)? onCompleted,
   }) {
     final action = serviceHelper.isSupportNodeFirmwareUpdate()
         ? JNAPAction.getNodesFirmwareUpdateStatus
@@ -256,12 +299,14 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     return ref
         .read(routerRepositoryProvider)
         .scheduledCommand(
-            action: action,
-            maxRetry: retryTimes ?? -1,
-            retryDelayInMilliSec: retryDelayInMilliSec ?? 3000,
-            condition: stopCondition,
-            onCompleted: onCompleted,
-            auth: true)
+          action: action,
+          maxRetry: retryTimes ?? -1,
+          retryDelayInMilliSec: retryDelayInMilliSec ?? 3000,
+          condition: stopCondition,
+          onCompleted: onCompleted,
+          requestTimeoutOverride: 3000,
+          auth: true,
+        )
         .map((result) {
       if (result is! JNAPSuccess) {
         throw result;
@@ -320,7 +365,10 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
   }
 
   Future waitForRouterBackOnline() {
-    return ref.read(sideEffectProvider.notifier).manualDeviceRestart().whenComplete(() {
+    return ref
+        .read(sideEffectProvider.notifier)
+        .manualDeviceRestart()
+        .whenComplete(() {
       ref.read(pollingProvider.notifier).startPolling();
     });
   }
@@ -330,3 +378,8 @@ class ManualFirmwareUpdateException implements Exception {
   final String? result;
   ManualFirmwareUpdateException(this.result);
 }
+
+final firmwareUpdateCandidateProvider =
+    StateProvider<List<FirmwareUpdateStatus>?>((ref) {
+  return null;
+});

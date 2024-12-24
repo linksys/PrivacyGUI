@@ -3,15 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_safety/providers/_providers.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/list_expand_card.dart';
-import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/radios/radio_list.dart';
 
@@ -25,7 +24,8 @@ class InstantSafetyView extends ArgumentsConsumerStatefulView {
   ConsumerState<InstantSafetyView> createState() => _InstantSafetyViewState();
 }
 
-class _InstantSafetyViewState extends ConsumerState<InstantSafetyView> {
+class _InstantSafetyViewState extends ConsumerState<InstantSafetyView>
+    with PageSnackbarMixin {
   late final InstantSafetyNotifier _notifier;
   bool enableSafeBrowsing = false;
   InstantSafetyType currentSafeBrowsingType = InstantSafetyType.fortinet;
@@ -155,10 +155,7 @@ class _InstantSafetyViewState extends ConsumerState<InstantSafetyView> {
               : InstantSafetyType.off)
           .then((_) {
         _initCurrentState();
-        showSuccessSnackBar(
-          context,
-          loc(context).settingsSaved,
-        );
+        showChangesSavedSnackBar();
       }),
     ).catchError((error) {
       showRouterNotFoundAlert(context, ref, onComplete: () async {
@@ -166,14 +163,11 @@ class _InstantSafetyViewState extends ConsumerState<InstantSafetyView> {
             .read(instantSafetyProvider.notifier)
             .fetchLANSettings(fetchRemote: true);
         _initCurrentState();
-        showSuccessSnackBar(
-          context,
-          loc(context).settingsSaved,
-        );
+        showChangesSavedSnackBar();
       });
     }, test: (error) => error is JNAPSideEffectError).onError(
         (error, stackTrace) {
-      final errorMsg = switch (error) {
+      final errorMsg = switch (error.runtimeType) {
         SafeBrowsingError => (error as SafeBrowsingError).message,
         _ => 'Unknown error',
       };

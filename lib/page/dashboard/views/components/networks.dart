@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +8,7 @@ import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/dashboard/views/components/shimmer.dart';
 import 'package:privacy_gui/page/nodes/providers/node_detail_id_provider.dart';
@@ -60,11 +63,21 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
     final state = ref.watch(dashboardHomeProvider);
     final isLoading = ref.watch(deviceManagerProvider).deviceList.isEmpty;
     final topologyState = ref.watch(instantTopologyProvider);
+
     treeController.roots = topologyState.root.children;
     treeController.expandAll();
-    final nodeTopologyHeight =
-        (topologyState.root.children.firstOrNull?.toFlatList().length ?? 1) *
-            116.0;
+    const topologyItemHeight = 96.0;
+    const treeViewBaseHeight = 68.0;
+        final routerLength =
+        topologyState.root.children.firstOrNull?.toFlatList().length ?? 1;
+    final double nodeTopologyHeight = ResponsiveLayout.isMobileLayout(context)
+        ? routerLength * topologyItemHeight
+        : min(routerLength * topologyItemHeight, 3 * topologyItemHeight);
+    final hasLanPort =
+        ref.read(dashboardHomeProvider).lanPortConnections.isNotEmpty;
+    final isBridge = ref.watch(dashboardHomeProvider).isBridgeMode;
+    final showAllTopology =
+        ResponsiveLayout.isMobileLayout(context) || routerLength <= 3;
     return Container(
       constraints: BoxConstraints(minHeight: 200 + nodeTopologyHeight),
       child: ShimmerContainer(
@@ -73,18 +86,22 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const AppGap.medium(),
               ResponsiveLayout(
-                desktop: state.isHorizontalLayout
-                    ? _desktopHorizontal(context, ref)
-                    : _desktopVertical(context, ref),
+                desktop: !hasLanPort
+                    ? _mobile(context, ref)
+                    : state.isHorizontalLayout
+                        ? _desktopHorizontal(context, ref)
+                        : _desktopVertical(context, ref),
                 mobile: _mobile(context, ref),
               ),
-              const AppGap.large2(),
               SizedBox(
-                  height: nodeTopologyHeight + 48,
+                  height: nodeTopologyHeight + treeViewBaseHeight,
                   child: TreeView<RouterTreeNode>(
                     treeController: treeController,
-                    physics: NeverScrollableScrollPhysics(),
+                    physics: showAllTopology
+                        ? NeverScrollableScrollPhysics()
+                        : ScrollPhysics(),
                     shrinkWrap: true,
                     nodeBuilder: (BuildContext context,
                         TreeEntry<RouterTreeNode> entry) {
@@ -96,13 +113,13 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
                             thickness: 1,
                             strokeJoin: StrokeJoin.miter),
                         child: Padding(
-                          padding: const EdgeInsets.fromLTRB(0, 16, 8, 0),
+                          padding: const EdgeInsets.fromLTRB(0, 16, 0, 0),
                           child: SimpleTreeNodeItem(
                             node: entry.node,
                             extra: entry.node.data.isMaster
                                 ? '${loc(context).uptime}: $uptime'
                                 : null,
-                            onTap: entry.node.data.isOnline
+                            onTap: entry.node.data.isOnline && !isBridge
                                 ? () {
                                     ref
                                         .read(nodeDetailIdProvider.notifier)
@@ -204,6 +221,7 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
     final wanStatus = ref.watch(nodeWanStatusProvider);
     final isOnline = wanStatus == NodeWANStatus.online;
     final topologyState = ref.watch(instantTopologyProvider);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -214,7 +232,7 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
             if (isOnline) _firmwareStatusWidget(context, newFirmware),
           ],
         ),
-        const AppGap.medium(),
+        const AppGap.large2(),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -290,6 +308,7 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
   Widget _nodesInfoTile(
       BuildContext context, WidgetRef ref, InstantTopologyState state) {
     final nodes = state.root.children.firstOrNull?.toFlatList() ?? [];
+    final isBridge = ref.watch(dashboardHomeProvider).isBridgeMode;
     return _infoTile(
       iconData: LinksysIcons.networkNode,
       text: nodes.length == 1 ? loc(context).node : loc(context).nodes,
@@ -302,17 +321,19 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
               color: Theme.of(context).colorScheme.error,
             )
           : null,
-      onTap: () {
-        ref.read(topologySelectedIdProvider.notifier).state = '';
-        context.pushNamed(RouteNamed.menuInstantTopology);
-      },
+      onTap: isBridge
+          ? null
+          : () {
+              ref.read(topologySelectedIdProvider.notifier).state = '';
+              context.pushNamed(RouteNamed.menuInstantTopology);
+            },
     );
   }
 
   Widget _devicesInfoTile(
       BuildContext context, WidgetRef ref, InstantTopologyState state) {
     final nodes = state.root.children.firstOrNull?.toFlatList() ?? [];
-
+    final isBridge = ref.watch(dashboardHomeProvider).isBridgeMode;
     final count = nodes.fold(
         0,
         (previousValue, element) =>
@@ -321,9 +342,11 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
       text: count == 1 ? loc(context).device : loc(context).devices,
       count: count,
       iconData: LinksysIcons.devices,
-      onTap: () {
-        context.pushNamed(RouteNamed.menuInstantDevices);
-      },
+      onTap: isBridge
+          ? null
+          : () {
+              context.pushNamed(RouteNamed.menuInstantDevices);
+            },
     );
   }
 
@@ -362,3 +385,420 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
     );
   }
 }
+
+final _onlineRoot = OnlineTopologyNode(
+  data: const TopologyModel(isOnline: true, location: 'Internet'),
+  children: [],
+);
+
+final _masterNode = RouterTopologyNode(
+  data: const TopologyModel(
+    deviceId: 'ROUTER-MASTER-DEVICEID-000001',
+    location: 'Living room',
+    isMaster: true,
+    isOnline: true,
+    isWiredConnection: true,
+    signalStrength: 0,
+    isRouter: true,
+    icon: 'routerMx6200',
+    connectedDeviceCount: 30,
+  ),
+  children: [],
+);
+
+final _slaveNode1 = RouterTopologyNode(
+  data: const TopologyModel(
+    deviceId: 'ROUTER-SLAVE-DEVICEID-000001',
+    location: 'Kitchen',
+    isMaster: false,
+    isOnline: true,
+    isWiredConnection: false,
+    signalStrength: -44,
+    isRouter: true,
+    icon: 'routerMx6200',
+    connectedDeviceCount: 20,
+  ),
+  children: [],
+);
+
+final _slaveNode2 = RouterTopologyNode(
+  data: const TopologyModel(
+    deviceId: 'ROUTER-SLAVE-DEVICEID-000002',
+    location: 'Basement',
+    isMaster: false,
+    isOnline: true,
+    isWiredConnection: false,
+    signalStrength: -66,
+    isRouter: true,
+    icon: 'routerMx6200',
+    connectedDeviceCount: 17,
+  ),
+  children: [],
+);
+
+final _slaveNode3 = RouterTopologyNode(
+  data: const TopologyModel(
+    deviceId: 'ROUTER-SLAVE-DEVICEID-000003',
+    location: 'Bed room 1',
+    isMaster: false,
+    isOnline: true,
+    isWiredConnection: false,
+    signalStrength: -58,
+    isRouter: true,
+    icon: 'routerMx6200',
+    connectedDeviceCount: 7,
+  ),
+  children: [],
+);
+
+final _slaveNode4 = RouterTopologyNode(
+  data: const TopologyModel(
+    deviceId: 'ROUTER-SLAVE-DEVICEID-000004',
+    location: 'Bed room 2',
+    isMaster: false,
+    isOnline: true,
+    isWiredConnection: false,
+    signalStrength: -55,
+    isRouter: true,
+    icon: 'routerMx6200',
+    connectedDeviceCount: 1,
+  ),
+  children: [],
+);
+
+final _slaveNode5 = RouterTopologyNode(
+  data: const TopologyModel(
+    deviceId: 'ROUTER-SLAVE-DEVICEID-000005',
+    location: 'A super long long long long long long cool name',
+    isMaster: false,
+    isOnline: true,
+    isWiredConnection: false,
+    signalStrength: -70,
+    isRouter: true,
+    icon: 'routerMx6200',
+    connectedDeviceCount: 999,
+  ),
+  children: [],
+);
+
+final _slaveOfflineNode1 = RouterTopologyNode(
+  data: const TopologyModel(
+    deviceId: 'ROUTER-SLAVE-DEVICEID-000001',
+    location: 'Kitchen',
+    isMaster: false,
+    isOnline: false,
+    isWiredConnection: false,
+    signalStrength: -49,
+    isRouter: true,
+    icon: 'routerMx6200',
+    connectedDeviceCount: 20,
+  ),
+  children: [],
+);
+
+final _slaveOfflineNode2 = RouterTopologyNode(
+  data: const TopologyModel(
+    deviceId: 'ROUTER-SLAVE-DEVICEID-000002',
+    location: 'Basement',
+    isMaster: false,
+    isOnline: false,
+    isWiredConnection: false,
+    signalStrength: -78,
+    isRouter: true,
+    icon: 'routerMx6200',
+    connectedDeviceCount: 17,
+  ),
+  children: [],
+);
+
+final _slaveOfflineNode3 = RouterTopologyNode(
+  data: const TopologyModel(
+    deviceId: 'ROUTER-SLAVE-DEVICEID-000003',
+    location: 'Bed room 1',
+    isMaster: false,
+    isOnline: false,
+    isWiredConnection: false,
+    signalStrength: -55,
+    isRouter: true,
+    icon: 'routerMx6200',
+    connectedDeviceCount: 7,
+  ),
+  children: [],
+);
+
+final _slaveOfflineNode4 = RouterTopologyNode(
+  data: const TopologyModel(
+    deviceId: 'ROUTER-SLAVE-DEVICEID-000004',
+    location: 'Bed room 2',
+    isMaster: false,
+    isOnline: false,
+    isWiredConnection: false,
+    signalStrength: -58,
+    isRouter: true,
+    icon: 'routerMx6200',
+    connectedDeviceCount: 1,
+  ),
+  children: [],
+);
+
+final _slaveOfflineNode5 = RouterTopologyNode(
+  data: const TopologyModel(
+    deviceId: 'ROUTER-SLAVE-DEVICEID-000005',
+    location: 'A super long long long long long long cool name',
+    isMaster: false,
+    isOnline: false,
+    isWiredConnection: false,
+    signalStrength: -70,
+    isRouter: true,
+    icon: 'routerMx6200',
+    connectedDeviceCount: 999,
+  ),
+  children: [],
+);
+
+/// State
+final testTopologyMasterOnlyState = InstantTopologyState(
+  root: _onlineRoot
+    ..children.add(
+      _masterNode
+        ..children.clear()
+        ..parent = _onlineRoot,
+    ),
+);
+
+final testTopology1SlaveState = InstantTopologyState(
+  root: _onlineRoot
+    ..children.add(
+      _masterNode
+        ..children.clear()
+        ..parent = _onlineRoot
+        ..children.add(_slaveNode1..parent = _masterNode),
+    ),
+);
+
+final testTopology2SlavesStarState = InstantTopologyState(
+  root: _onlineRoot
+    ..children.clear()
+    ..children.add(_masterNode
+      ..parent = _onlineRoot
+      ..children.clear()
+      ..children.addAll([
+        _slaveNode1
+          ..children.clear()
+          ..parent = _masterNode,
+        _slaveNode2
+          ..children.clear()
+          ..parent = _masterNode
+      ])),
+);
+
+final testTopology2SlavesDaisyState = InstantTopologyState(
+  root: _onlineRoot
+    ..children.clear()
+    ..children.add(_masterNode
+      ..parent = _onlineRoot
+      ..children.clear()
+      ..children.addAll([
+        _slaveNode1
+          ..children.clear()
+          ..parent = _masterNode
+          ..children.addAll([
+            _slaveNode2
+              ..children.clear()
+              ..parent = _slaveNode1
+          ]),
+      ])),
+);
+
+final testTopology5SlavesStarState = InstantTopologyState(
+  root: _onlineRoot
+    ..children.clear()
+    ..children.add(_masterNode
+      ..parent = _onlineRoot
+      ..children.clear()
+      ..children.addAll([
+        _slaveNode1
+          ..children.clear()
+          ..parent = _masterNode,
+        _slaveNode2
+          ..children.clear()
+          ..parent = _masterNode,
+        _slaveNode3
+          ..children.clear()
+          ..parent = _masterNode,
+        _slaveNode4
+          ..children.clear()
+          ..parent = _masterNode,
+        _slaveNode5
+          ..children.clear()
+          ..parent = _masterNode,
+      ])),
+);
+
+final testTopology5SlavesDaisyState = InstantTopologyState(
+  root: _onlineRoot
+    ..children.clear()
+    ..children.add(_masterNode
+      ..parent = _onlineRoot
+      ..children.clear()
+      ..children.addAll([
+        _slaveNode1
+          ..children.clear()
+          ..parent = _masterNode
+          ..children.addAll([
+            _slaveNode2
+              ..children.clear()
+              ..parent = _slaveNode1
+              ..children.addAll([
+                _slaveNode3
+                  ..children.clear()
+                  ..parent = _slaveNode2
+                  ..children.addAll([
+                    _slaveNode4
+                      ..children.clear()
+                      ..parent = _slaveNode3
+                      ..children.addAll([
+                        _slaveNode5
+                          ..children.clear()
+                          ..parent = _slaveNode4,
+                      ]),
+                  ]),
+              ]),
+          ]),
+      ])),
+);
+
+final testTopology5SlavesMixedState = InstantTopologyState(
+  root: _onlineRoot
+    ..children.clear()
+    ..children.add(_masterNode
+      ..parent = _onlineRoot
+      ..children.clear()
+      ..children.addAll([
+        _slaveNode1
+          ..children.clear()
+          ..parent = _masterNode
+          ..children.addAll([
+            _slaveNode2
+              ..children.clear()
+              ..parent = _slaveNode1,
+            _slaveNode3
+              ..children.clear()
+              ..parent = _slaveNode1
+              ..children.addAll([
+                _slaveNode4
+                  ..children.clear()
+                  ..parent = _slaveNode3,
+                _slaveNode5
+                  ..children.clear()
+                  ..parent = _slaveNode3,
+              ]),
+          ]),
+      ])),
+);
+
+final testTopology1OfflineState = InstantTopologyState(
+  root: _onlineRoot
+    ..children.clear()
+    ..children.add(
+      _masterNode
+        ..children.clear()
+        ..parent = _onlineRoot
+        ..children.add(
+          _slaveOfflineNode1
+            ..children.clear()
+            ..parent = _masterNode,
+        ),
+    ),
+);
+
+final testTopology2OfflineState = InstantTopologyState(
+  root: _onlineRoot
+    ..children.clear()
+    ..children.add(
+      _masterNode
+        ..children.clear()
+        ..parent = _onlineRoot
+        ..children.add(_slaveOfflineNode1
+          ..children.clear()
+          ..parent = _masterNode)
+        ..children.add(_slaveOfflineNode2
+          ..children.clear()
+          ..parent = _masterNode),
+    ),
+);
+
+final testTopology3OfflineState = InstantTopologyState(
+  root: _onlineRoot
+    ..children.clear()
+    ..children.add(_masterNode
+      ..parent = _onlineRoot
+      ..children.clear()
+      ..children.addAll([
+        _slaveNode1
+          ..children.clear()
+          ..parent = _masterNode,
+        _slaveNode2
+          ..children.clear()
+          ..parent = _masterNode,
+        _slaveOfflineNode1
+          ..children.clear()
+          ..parent = _masterNode,
+        _slaveOfflineNode2
+          ..children.clear()
+          ..parent = _masterNode,
+        _slaveOfflineNode3
+          ..children.clear()
+          ..parent = _masterNode,
+      ])),
+);
+
+final testTopology4OfflineState = InstantTopologyState(
+  root: _onlineRoot
+    ..children.clear()
+    ..children.add(_masterNode
+      ..parent = _onlineRoot
+      ..children.clear()
+      ..children.addAll([
+        _slaveNode1
+          ..children.clear()
+          ..parent = _masterNode,
+        _slaveOfflineNode1
+          ..children.clear()
+          ..parent = _masterNode,
+        _slaveOfflineNode2
+          ..children.clear()
+          ..parent = _masterNode,
+        _slaveOfflineNode3
+          ..children.clear()
+          ..parent = _masterNode,
+        _slaveOfflineNode4
+          ..children.clear()
+          ..parent = _masterNode,
+      ])),
+);
+
+final testTopology5OfflineState = InstantTopologyState(
+  root: _onlineRoot
+    ..children.clear()
+    ..children.add(_masterNode
+      ..parent = _onlineRoot
+      ..children.clear()
+      ..children.addAll([
+        _slaveOfflineNode1
+          ..children.clear()
+          ..parent = _masterNode,
+        _slaveOfflineNode2
+          ..children.clear()
+          ..parent = _masterNode,
+        _slaveOfflineNode3
+          ..children.clear()
+          ..parent = _masterNode,
+        _slaveOfflineNode4
+          ..children.clear()
+          ..parent = _masterNode,
+        _slaveOfflineNode5
+          ..children.clear()
+          ..parent = _masterNode,
+      ])),
+);

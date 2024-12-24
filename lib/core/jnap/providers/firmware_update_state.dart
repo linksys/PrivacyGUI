@@ -11,13 +11,13 @@ class FirmwareUpdateState extends Equatable {
   final FirmwareUpdateSettings settings;
   final List<FirmwareUpdateStatus>? nodesStatus;
   final bool isUpdating;
-  final bool isChecking;
+  final bool isRetryMaxReached;
 
   const FirmwareUpdateState({
     required this.settings,
     required this.nodesStatus,
     this.isUpdating = false,
-    this.isChecking = false,
+    this.isRetryMaxReached = false,
   });
 
   factory FirmwareUpdateState.empty() => FirmwareUpdateState(
@@ -30,13 +30,13 @@ class FirmwareUpdateState extends Equatable {
     FirmwareUpdateSettings? settings,
     List<FirmwareUpdateStatus>? nodesStatus,
     bool? isUpdating,
-    bool? isChecking,
+    bool? isRetryMaxReached,
   }) {
     return FirmwareUpdateState(
       settings: settings ?? this.settings,
       nodesStatus: nodesStatus ?? this.nodesStatus,
       isUpdating: isUpdating ?? this.isUpdating,
-      isChecking: isChecking ?? this.isChecking,
+      isRetryMaxReached: isRetryMaxReached ?? this.isRetryMaxReached,
     );
   }
 
@@ -45,7 +45,7 @@ class FirmwareUpdateState extends Equatable {
       'settings': settings.toMap(),
       'nodesStatus': nodesStatus?.map((x) => x.toMap()).toList(),
       'isUpdating': isUpdating,
-      'isChecking': isChecking,
+      'isRetryMaxReached': isRetryMaxReached,
     };
   }
 
@@ -63,7 +63,7 @@ class FirmwareUpdateState extends Equatable {
             )
           : null,
       isUpdating: map['isUpdating'] as bool,
-      isChecking: map['isChecking'] as bool,
+      isRetryMaxReached: map['isRetryMaxReached'] as bool,
     );
   }
 
@@ -81,7 +81,7 @@ class FirmwareUpdateState extends Equatable {
       settings,
       nodesStatus,
       isUpdating,
-      isChecking,
+      isRetryMaxReached,
     ];
   }
 }

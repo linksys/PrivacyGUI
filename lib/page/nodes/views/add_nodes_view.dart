@@ -20,8 +20,6 @@ import 'package:privacygui_widgets/widgets/card/node_list_card.dart';
 import 'package:privacygui_widgets/widgets/dialogs/multiple_page_alert_dialog.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
-
-import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
@@ -298,7 +296,10 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
           loc(context).addNodesSearchingNodes,
           loc(context).addNodesSearchingNodesDesc
         ),
-      'onboarding' => ('Onboarding nodes', 'Bringing your nodes online'),
+      'onboarding' => (
+          loc(context).addNodesOnboardingNodes,
+          loc(context).addNodesOnboardingNodesDesc,
+        ),
       _ => (
           loc(context).addNodesSearchingNodes,
           loc(context).addNodesSearchingNodesDesc

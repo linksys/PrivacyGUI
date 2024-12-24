@@ -1,10 +1,13 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/views/single_port_forwarding_rule_view.dart';
 import 'package:privacy_gui/page/components/shared_widgets.dart';
 import 'package:privacy_gui/page/instant_topology/views/model/topology_model.dart';
 import 'package:privacy_gui/page/instant_topology/views/model/tree_view_node.dart';
+import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
@@ -175,26 +178,11 @@ class TreeNodeItem extends StatelessWidget {
             children: [
               AppText.bodyMedium(node.data.fwVersion),
               if (node.data.isOnline) ...[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(8, 0, 4, 0),
-                  child: Icon(
-                    node.data.fwUpToDate
-                        ? LinksysIcons.check
-                        : LinksysIcons.cloudDownload,
-                    color: node.data.fwUpToDate
-                        ? Theme.of(context).colorSchemeExt.green
-                        : Theme.of(context).colorScheme.error,
-                    size: 16,
-                  ),
-                ),
-                AppText.labelMedium(
-                  node.data.fwUpToDate
-                      ? loc(context).updated
-                      : loc(context).available,
-                  color: node.data.fwUpToDate
-                      ? Theme.of(context).colorSchemeExt.green
-                      : Theme.of(context).colorScheme.error,
-                ),
+                const AppGap.medium(),
+                SharedWidgets.nodeFirmwareStatusWidget(
+                    context, !node.data.fwUpToDate, () {
+                  context.pushNamed(RouteNamed.firmwareUpdateDetail);
+                }),
               ]
             ],
           ),
@@ -207,17 +195,18 @@ class TreeNodeItem extends StatelessWidget {
                   ? loc(context).wired
                   : loc(context).wireless),
         ]),
-        TableRow(children: [
-          AppText.labelLarge('${loc(context).meshHealth}:'),
-          AppText.labelLarge(
-            node.data.isOnline
-                ? signalLevel.resolveLabel(context)
-                : loc(context).offline,
-            color: node.data.isOnline
-                ? signalLevel.resolveColor(context)
-                : Theme.of(context).colorScheme.outline,
-          ),
-        ]),
+        if (!node.data.isMaster)
+          TableRow(children: [
+            AppText.labelLarge('${loc(context).meshHealth}:'),
+            AppText.labelLarge(
+              node.data.isOnline
+                  ? signalLevel.resolveLabel(context)
+                  : loc(context).offline,
+              color: node.data.isOnline
+                  ? signalLevel.resolveColor(context)
+                  : Theme.of(context).colorScheme.outline,
+            ),
+          ]),
         TableRow(children: [
           AppText.labelLarge('${loc(context).ipAddress}:'),
           AppText.bodyMedium(node.data.isOnline ? node.data.ipAddress : '--'),
@@ -250,7 +239,7 @@ class SimpleTreeNodeItem extends StatelessWidget {
       onTap: onTap,
       child: Container(
         constraints:
-            const BoxConstraints(minWidth: 180, maxWidth: 300, maxHeight: 108),
+            const BoxConstraints(minWidth: 180, maxWidth: 300, maxHeight: 92),
         padding: const EdgeInsets.all(Spacing.medium),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -258,7 +247,8 @@ class SimpleTreeNodeItem extends StatelessWidget {
             Stack(
               alignment: Alignment.centerRight,
               children: [
-                SharedWidgets.resolveRouterImage(context, node.data.icon, size: 64),
+                SharedWidgets.resolveRouterImage(context, node.data.icon,
+                    size: 64),
               ],
             ),
             Expanded(

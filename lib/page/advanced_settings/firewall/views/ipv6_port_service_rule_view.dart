@@ -2,19 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/models/ipv6_firewall_rule.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/firewall/_firewall.dart';
-import 'package:privacy_gui/page/advanced_settings/port_forwarding/providers/consts.dart';
-import 'package:privacy_gui/page/advanced_settings/port_forwarding/views/widgets/protocol_utils.dart';
-import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/views/widgets/protocol_utils.dart';
+import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
+import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/input_field/ipv6_form_field.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
@@ -47,35 +47,39 @@ class _AddRuleContentViewState
   final TextEditingController _lastExternalPortController =
       TextEditingController();
   final TextEditingController _ipAddressController = TextEditingController();
-  String _protocol = 'Both';
-  bool _isEnabled = false;
-  List<IPv6FirewallRule> _rules = [];
+  String? _portError;
+  bool _isEdit = false;
 
   @override
   void initState() {
     _notifier = ref.read(ipv6PortServiceRuleProvider.notifier);
-    _rules = widget.args['rules'] ?? [];
-    final rule = widget.args['edit'] as IPv6FirewallRule?;
+
+    final rules = widget.args['items'] ?? [];
+    var rule = widget.args['edit'] as IPv6FirewallRule?;
+    int? index;
+
     if (rule != null) {
-      _notifier.goEdit(_rules, rule).then((_) {
-        _ruleNameController.text = rule.description;
-        _firstExternalPortController.text =
-            '${rule.portRanges.firstOrNull?.firstPort ?? ''}';
-        _lastExternalPortController.text =
-            '${rule.portRanges.firstOrNull?.lastPort ?? ''}';
-        _ipAddressController.text = rule.ipv6Address;
-        setState(() {
-          _isEnabled = rule.isEnabled;
-          _protocol = rule.portRanges.firstOrNull?.protocol ?? 'Both';
-        });
-      });
+      _isEdit = true;
+
+      _ruleNameController.text = rule.description;
+      _firstExternalPortController.text =
+          '${rule.portRanges.firstOrNull?.firstPort ?? ''}';
+      _lastExternalPortController.text =
+          '${rule.portRanges.firstOrNull?.lastPort ?? ''}';
+      _ipAddressController.text = rule.ipv6Address;
+      index = rules.indexOf(rule);
     } else {
-      _notifier.goAdd(_rules).then((_) {
-        setState(() {
-          _isEnabled = true;
-        });
-      });
+      rule = IPv6FirewallRule(
+          description: '',
+          ipv6Address: '',
+          isEnabled: true,
+          portRanges: const [
+            PortRange(protocol: 'Both', firstPort: 0, lastPort: 0)
+          ]);
     }
+    doSomethingWithSpinner(context, Future.doWhile(() => !mounted)).then((_) {
+      _notifier.init(rules, rule, index);
+    });
     super.initState();
   }
 
@@ -96,58 +100,19 @@ class _AddRuleContentViewState
       scrollable: true,
       title: loc(context).ipv6PortServices,
       bottomBar: PageBottomBar(
-        isPositiveEnabled: true,
-        isNegitiveEnabled: state.mode == RuleMode.editing ? true : null,
-        negitiveLable: loc(context).delete,
+        isPositiveEnabled: _notifier.isRuleValid(),
         onPositiveTap: () {
-          final rule = IPv6FirewallRule(
-              isEnabled: _isEnabled,
-              portRanges: [
-                PortRange(
-                  protocol: _protocol,
-                  firstPort: int.parse(_firstExternalPortController.text),
-                  lastPort: int.parse(_lastExternalPortController.text),
-                ),
-              ],
-              ipv6Address: _ipAddressController.text,
-              description: _ruleNameController.text);
-          _notifier.save(rule).then((value) {
-            if (value) {
-              showSuccessSnackBar(
-                  context,
-                  _notifier.isEdit()
-                      ? loc(context).ruleUpdated
-                      : loc(context).ruleAdded);
-
-              context.pop(true);
-            }
-          }).onError((error, stackTrace) {
-            logger.e('IpV6 Port service error:',
-                error: error, stackTrace: stackTrace);
-            showFailedSnackBar(
-                context, loc(context).unknownErrorCode(error ?? ''));
-          });
-        },
-        onNegitiveTap: () {
-          _notifier.delete().then((value) {
-            if (value) {
-              showSimpleSnackBar(context, loc(context).ruleDeleted);
-            }
-            context.pop(true);
-          }).onError((error, stackTrace) {
-            logger.e('IpV6 Port service error:',
-                error: error, stackTrace: stackTrace);
-            showFailedSnackBar(
-                context, loc(context).unknownErrorCode(error ?? ''));
-          });
+          final rule = ref.read(ipv6PortServiceRuleProvider).rule;
+          context.pop(rule);
         },
       ),
-      child: AppBasicLayout(
-        content: Column(
+      child: AppCard(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const AppGap.large2(),
-            if (state.mode == RuleMode.editing)
+            if (_isEdit)
               ..._buildEditContents(state)
             else
               ..._buildAddContents(state)
@@ -164,14 +129,14 @@ class _AddRuleContentViewState
   List<Widget> _buildEditContents(Ipv6PortServiceRuleState state) {
     return [
       AppListCard(
+        showBorder: false,
+        padding: EdgeInsets.zero,
         title: AppText.labelLarge(loc(context).ruleEnabled),
         trailing: AppSwitch(
           semanticLabel: 'rule enabled',
-          value: _isEnabled,
+          value: state.rule?.isEnabled ?? true,
           onChanged: (value) {
-            setState(() {
-              _isEnabled = value;
-            });
+            _notifier.updateRule(state.rule?.copyWith(isEnabled: value));
           },
         ),
       ),
@@ -181,24 +146,34 @@ class _AddRuleContentViewState
   }
 
   List<Widget> buildInputForms() {
+    final state = ref.watch(ipv6PortServiceRuleProvider);
+
     return [
       AppTextField.outline(
         headerText: loc(context).ruleName,
         controller: _ruleNameController,
+        onFocusChanged: _onFocusChange,
+        onChanged: (value) {
+          _notifier.updateRule(state.rule?.copyWith(description: value));
+        },
       ),
       const AppGap.large2(),
-      AppTextField.minMaxNumber(
-        border: const OutlineInputBorder(),
-        headerText: loc(context).startPort,
-        controller: _firstExternalPortController,
-        max: 65535,
-      ),
-      const AppGap.large2(),
-      AppTextField.minMaxNumber(
-        border: const OutlineInputBorder(),
-        headerText: loc(context).endPort,
-        controller: _lastExternalPortController,
-        max: 65535,
+      AppDropdownButton(
+        title: loc(context).protocol,
+        initial: state.rule?.portRanges.firstOrNull?.protocol ?? 'Both',
+        items: const ['TCP', 'UDP', 'Both'],
+        label: (e) => getProtocolTitle(context, e),
+        onChanged: (value) {
+          final portRanges = state.rule?.portRanges ?? [];
+          final portRange = portRanges.firstOrNull;
+          _notifier.updateRule(
+            state.rule?.copyWith(
+              portRanges: portRange == null
+                  ? null
+                  : [portRange.copyWith(protocol: value)],
+            ),
+          );
+        },
       ),
       const AppGap.large2(),
       AppText.labelMedium(loc(context).ipAddress),
@@ -207,6 +182,9 @@ class _AddRuleContentViewState
         semanticLabel: 'ip address',
         controller: _ipAddressController,
         border: const OutlineInputBorder(),
+        onChanged: (value) {
+          _notifier.updateRule(state.rule?.copyWith(ipv6Address: value));
+        },
       ),
       const AppGap.large2(),
       AppTextButton(
@@ -223,22 +201,94 @@ class _AddRuleContentViewState
         },
       ),
       const AppGap.large2(),
-      AppListCard(
-        title: AppText.labelLarge(loc(context).protocol),
-        description: AppText.bodyLarge(getProtocolTitle(context, _protocol)),
-        trailing: const Icon(LinksysIcons.edit),
-        onTap: () async {
-          String? protocol = await showSelectProtocolModal(
-            context,
-            _protocol,
-          );
-          if (protocol != null) {
-            setState(() {
-              _protocol = protocol;
-            });
-          }
-        },
+      Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: AppTextField.minMaxNumber(
+              border: const OutlineInputBorder(),
+              headerText: loc(context).startPort,
+              controller: _firstExternalPortController,
+              max: 65535,
+              onFocusChanged: (value) => _onPortFocusChange(value,
+                  '${state.rule?.portRanges.firstOrNull?.firstPort ?? 0}'),
+              errorText: _portError != null ? '' : null,
+              onChanged: (value) {
+                final portRanges = state.rule?.portRanges ?? [];
+                final portRange = portRanges.firstOrNull;
+                _notifier.updateRule(
+                  state.rule?.copyWith(
+                    portRanges: portRange == null
+                        ? null
+                        : [
+                            portRange.copyWith(
+                                firstPort: int.tryParse(value) ?? 0)
+                          ],
+                  ),
+                );
+              },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(
+                left: Spacing.small2,
+                right: Spacing.small2,
+                top: Spacing.medium),
+            child: AppText.bodyMedium(loc(context).to),
+          ),
+          Expanded(
+            child: AppTextField.minMaxNumber(
+              border: const OutlineInputBorder(),
+              headerText: loc(context).endPort,
+              controller: _lastExternalPortController,
+              max: 65535,
+              onFocusChanged: (value) => _onPortFocusChange(value,
+                  '${state.rule?.portRanges.firstOrNull?.lastPort ?? 0}'),
+              errorText: _portError != null ? '' : null,
+              onChanged: (value) {
+                final portRanges = state.rule?.portRanges ?? [];
+                final portRange = portRanges.firstOrNull;
+                _notifier.updateRule(
+                  state.rule?.copyWith(
+                    portRanges: portRange == null
+                        ? null
+                        : [
+                            portRange.copyWith(
+                                lastPort: int.tryParse(value) ?? 0)
+                          ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     ];
+  }
+
+  void _onPortFocusChange(bool focus, String protocol) {
+    if (!focus) {
+      if (_firstExternalPortController.text.isEmpty ||
+          _lastExternalPortController.text.isEmpty) {
+        return;
+      }
+      final firstPort = int.tryParse(_firstExternalPortController.text) ?? 0;
+      final lastPort = int.tryParse(_lastExternalPortController.text) ?? 0;
+      bool isValidPortRange = _notifier.isPortRangeValid(firstPort, lastPort);
+      bool isRuleOverlap =
+          _notifier.isPortConflict(firstPort, lastPort, protocol);
+      _portError = !isValidPortRange
+          ? loc(context).portRangeError
+          : isRuleOverlap
+              ? loc(context).rulesOverlapError
+              : null;
+      _onFocusChange(focus);
+    }
+  }
+
+  void _onFocusChange(bool focus) {
+    if (!focus) {
+      setState(() {});
+    }
   }
 }

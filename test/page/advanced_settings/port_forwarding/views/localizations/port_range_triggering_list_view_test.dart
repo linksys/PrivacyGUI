@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
-import 'package:privacy_gui/page/advanced_settings/port_forwarding/_port_forwarding.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/_ports.dart';
 import 'package:privacy_gui/route/route_model.dart';
 
 import '../../../../../common/test_responsive_widget.dart';
@@ -19,6 +19,7 @@ void main() {
     when(mockPortRangeTriggeringListNotifier.fetch())
         .thenAnswer((realInvocation) async {
       await Future.delayed(const Duration(seconds: 1));
+      return PortRangeTriggeringListState();
     });
   });
   testLocalizations('Port range triggering list view - empty rule',

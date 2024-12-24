@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -293,6 +294,7 @@ Future<bool?> showUnsavedAlert(BuildContext context,
 
 Future<T?> showRouterNotFoundAlert<T>(BuildContext context, WidgetRef ref,
     {FutureOr<T?> Function()? onComplete}) {
+  logger.d('[RouterNotFound] show Router not found alert');
   return showSimpleAppDialog<T>(context,
       dismissible: false,
       title: loc(context).routerNotFound,
@@ -310,17 +312,20 @@ Future<T?> showRouterNotFoundAlert<T>(BuildContext context, WidgetRef ref,
         ],
       ),
       actions: [
-        AppFilledButton(
+        AppFilledButtonWithLoading(
           loc(context).tryAgain,
-          onTap: () {
-            ref
+          onTap: () async {
+            await ref
                 .read(dashboardManagerProvider.notifier)
                 .checkRouterIsBack()
                 .then((_) {
+              logger.d('[RouterNotFound] Found!');
               return onComplete?.call();
             }).then((value) {
               ref.read(pollingProvider.notifier).startPolling();
               context.pop(value);
+            }).onError((_, __) {
+              logger.d('[RouterNotFound] Try again failed');
             });
           },
         ),
@@ -380,4 +385,11 @@ Future<bool?> showRebootModal(BuildContext context, bool isParent) {
           },
         ),
       ]);
+}
+
+Future showMLOCapableModal(BuildContext context) {
+  return showMessageAppOkDialog(context,
+      title: loc(context).mlo,
+      message:
+          '${loc(context).mloCapableModalDesc1}\n\n${loc(context).mloCapableModalDesc2}');
 }

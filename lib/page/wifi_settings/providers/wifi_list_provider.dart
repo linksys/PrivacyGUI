@@ -180,64 +180,13 @@ class WifiListNotifier extends Notifier<WiFiState> {
   Future<void> saveToggleEnabled(
       {required List<String>? radios, required bool enabled}) async {
     if (radios == null) {
-      final guestRadioInfo = await ref
-          .read(routerRepositoryProvider)
-          .send(JNAPAction.getGuestRadioSettings, auth: true)
-          .then((response) => GuestRadioSettings.fromMap(response.output));
-      final setGuestRadioSettings =
-          SetGuestRadioSettings.fromGuestRadioSettings(guestRadioInfo);
-      final newGuestRadios = setGuestRadioSettings.radios
-          .map((e) => e.copyWith(
-              isEnabled: state.guestWiFi.isEnabled,
-              guestSSID: state.guestWiFi.ssid,
-              guestWPAPassphrase: state.guestWiFi.password))
-          .toList();
-      final newSetGuestRadioSettings = setGuestRadioSettings.copyWith(
-          isGuestNetworkEnabled: state.guestWiFi.isEnabled,
-          radios: newGuestRadios);
-      await ref
-          .read(routerRepositoryProvider)
-          .send(
-            JNAPAction.setGuestRadioSettings,
-            data: newSetGuestRadioSettings.toMap(),
-            fetchRemote: true,
-            cacheLevel: CacheLevel.noCache,
-            auth: true,
-          )
-          .then((_) => fetch(true))
-          .then((_) => ref.read(pollingProvider.notifier).forcePolling());
+      setWiFiEnabled(enabled);
     } else {
-      final settings = state.mainWiFi
-          .map((wifiItem) => NewRadioSettings(
-                radioID: wifiItem.radioID.value,
-                settings: RouterRadioSettings(
-                  isEnabled: radios.contains(wifiItem.radioID.value)
-                      ? enabled
-                      : wifiItem.isEnabled,
-                  mode: wifiItem.wirelessMode.value,
-                  ssid: wifiItem.ssid,
-                  broadcastSSID: wifiItem.isBroadcast,
-                  channelWidth: wifiItem.channelWidth.value,
-                  channel: wifiItem.channel,
-                  security: wifiItem.securityType.value,
-                  wepSettings: _getWepSettings(wifiItem),
-                  wpaPersonalSettings: _getWpaPersonalSettings(wifiItem),
-                  wpaEnterpriseSettings: _getWpaEnterpriseSettings(wifiItem),
-                ),
-              ))
-          .toList();
-      final newSettings = SetRadioSettings(radios: settings);
-
-      final routerRepository = ref.read(routerRepositoryProvider);
-      return routerRepository
-          .send(
-            JNAPAction.setRadioSettings,
-            auth: true,
-            data: newSettings.toMap(),
-          )
-          .then((_) => fetch(true))
-          .then((_) => ref.read(pollingProvider.notifier).forcePolling());
+      for (final radio in radios) {
+        setWiFiEnabled(enabled, WifiRadioBand.getByValue(radio));
+      }
     }
+    await save();
   }
 
   WepSettings? _getWepSettings(WiFiItem wifiItem) {

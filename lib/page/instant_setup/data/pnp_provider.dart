@@ -233,14 +233,26 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
         modelNumber: state.deviceInfo?.modelNumber ?? '',
         hardwareVersion: state.deviceInfo?.hardwareVersion ?? '1');
     // getInternetConnectionStatus for Node router
-    Future<bool> isInternetConnected() => ref
+    Future<bool> isInternetConnected() async {
+      bool isConnected = false;
+      for (int i = 0; i < 30; i++) {
+        isConnected = await ref
             .read(routerRepositoryProvider)
-            .send(JNAPAction.getInternetConnectionStatus, auth: true)
+            .send(JNAPAction.getInternetConnectionStatus, auth: true, retries: 0)
             .then((result) {
           return result.output['connectionStatus'] == 'InternetConnected';
         });
+        if (isConnected) {
+          break;
+        }
+        await Future.delayed(const Duration(seconds: 3));
+      }
+      return isConnected;
+    }
+
     Future<bool> testPing() => ref.read(cloudRepositoryProvider).testPingPng();
     final isOnline = isNode ? await isInternetConnected() : await testPing();
+    // final isOnline = await testPing();
     if (!isOnline) {
       throw ExceptionNoInternetConnection();
     }
@@ -325,7 +337,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
     );
     return ref
         .read(routerRepositoryProvider)
-        .transaction(transaction, fetchRemote: true)
+        .transaction(transaction, fetchRemote: true, retries: 10)
         .then((response) {
       state = state.copyWith(data: Map.fromEntries(response.data));
     });
@@ -377,10 +389,10 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
     final defaultWiFi = getDefaultWiFiNameAndPassphrase();
     final defaultGuestWiFi = getDefaultGuestWiFiNameAndPassPhrase();
     // if configured call setUserAcknowledgedAutoConfiguration else call setAdminPassword
-    final closeCommand = state.isUnconfigured
+    final closeCommand = state.isRouterUnConfigured
         ? JNAPAction.pnpSetAdminPassword
         : JNAPAction.setUserAcknowledgedAutoConfiguration;
-    final closeData = state.isUnconfigured
+    final closeData = state.isRouterUnConfigured
         ? {'adminPassword': defaultWiFi.password}
         : <String, dynamic>{};
     // personal wifi
@@ -457,7 +469,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
       if (isNightModeEnabled)
         MapEntry(JNAPAction.setLedNightModeSetting, nightModeSettings.toMap()),
       MapEntry(JNAPAction.setFirmwareUpdateSettings, firmwareUpdateSettings),
-      if (state.isUnconfigured)
+      if (state.isRouterUnConfigured)
         const MapEntry(JNAPAction.setDeviceMode, {'mode': 'Master'})
     ], auth: true);
 
@@ -516,13 +528,14 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
 
   @override
   Future checkRouterConfigured() async {
+    final isFirstFetch = state.isUnconfigured == null;
     final repo = ref.read(routerRepositoryProvider);
     final isUnconfigured = await repo
         .send(JNAPAction.getDeviceMode, fetchRemote: true)
         .then((value) =>
             (value.output['mode'] ?? 'Unconfigured') == 'Unconfigured');
     state = state.copyWith(isUnconfigured: isUnconfigured);
-    if (isUnconfigured) {
+    if (isUnconfigured && isFirstFetch) {
       throw ExceptionRouterUnconfigured();
     }
   }

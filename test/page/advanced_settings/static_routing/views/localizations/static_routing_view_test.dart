@@ -21,7 +21,7 @@ void main() {
       (tester, locale) async {
     when(mockStaticRoutingNotifier.build())
         .thenReturn(StaticRoutingState.fromMap(staticRoutingState1));
-    when(mockStaticRoutingNotifier.fetchSettings())
+    when(mockStaticRoutingNotifier.fetch())
         .thenAnswer((_) => Future.delayed(const Duration(seconds: 1)));
     final widget = testableSingleRoute(
       config: LinksysRouteConfig(column: ColumnGrid(column: 9, centered: true)),
@@ -38,7 +38,7 @@ void main() {
       (tester, locale) async {
     when(mockStaticRoutingNotifier.build())
         .thenReturn(StaticRoutingState.fromMap(staticRoutingState2));
-    when(mockStaticRoutingNotifier.fetchSettings())
+    when(mockStaticRoutingNotifier.fetch())
         .thenAnswer((_) => Future.delayed(const Duration(seconds: 1)));
     final widget = testableSingleRoute(
       config: LinksysRouteConfig(column: ColumnGrid(column: 9, centered: true)),

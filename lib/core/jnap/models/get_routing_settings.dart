@@ -2,6 +2,7 @@
 import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
+import 'package:flutter/widgets.dart';
 
 class GetRoutingSettings extends Equatable {
   final bool isNATEnabled;
@@ -134,51 +135,52 @@ class StaticRouteEntry extends Equatable {
     required this.networkPrefixLength,
   });
 
-  StaticRouteEntry copyWith({
-    String? destinationLAN,
-    String? gateway,
-    String? interface,
-    int? networkPrefixLength,
-  }) {
-    return StaticRouteEntry(
-      destinationLAN: destinationLAN ?? this.destinationLAN,
-      gateway: gateway ?? this.gateway,
-      interface: interface ?? this.interface,
-      networkPrefixLength: networkPrefixLength ?? this.networkPrefixLength,
-    );
-  }
+
 
   Map<String, dynamic> toMap() {
-    return <String, dynamic>{
+    return {
       'destinationLAN': destinationLAN,
       'gateway': gateway,
       'interface': interface,
       'networkPrefixLength': networkPrefixLength,
-    }..removeWhere((key, value) => value == null);
+    };
   }
 
   factory StaticRouteEntry.fromMap(Map<String, dynamic> map) {
     return StaticRouteEntry(
-      destinationLAN: map['destinationLAN'] as String,
-      gateway: map['gateway'] != null ? map['gateway'] as String : null,
-      interface: map['interface'] as String,
-      networkPrefixLength: map['networkPrefixLength'] as int,
+      destinationLAN: map['destinationLAN'] ?? '',
+      gateway: map['gateway'],
+      interface: map['interface'] ?? '',
+      networkPrefixLength: map['networkPrefixLength']?.toInt() ?? 0,
     );
   }
 
   String toJson() => json.encode(toMap());
 
-  factory StaticRouteEntry.fromJson(String source) =>
-      StaticRouteEntry.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory StaticRouteEntry.fromJson(String source) => StaticRouteEntry.fromMap(json.decode(source));
 
   @override
   bool get stringify => true;
 
   @override
-  List<Object?> get props => [
-        destinationLAN,
-        gateway,
-        interface,
-        networkPrefixLength,
-      ];
+  List<Object?> get props => [destinationLAN, gateway, interface, networkPrefixLength];
+
+  StaticRouteEntry copyWith({
+    String? destinationLAN,
+    ValueGetter<String?>? gateway,
+    String? interface,
+    int? networkPrefixLength,
+  }) {
+    return StaticRouteEntry(
+      destinationLAN: destinationLAN ?? this.destinationLAN,
+      gateway: gateway != null ? gateway() : this.gateway,
+      interface: interface ?? this.interface,
+      networkPrefixLength: networkPrefixLength ?? this.networkPrefixLength,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'StaticRouteEntry(destinationLAN: $destinationLAN, gateway: $gateway, interface: $interface, networkPrefixLength: $networkPrefixLength)';
+  }
 }

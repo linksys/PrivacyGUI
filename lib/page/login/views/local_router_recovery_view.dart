@@ -63,40 +63,42 @@ class _LocalRouterRecoveryViewState
                   AppText.bodyMedium(
                       loc(context).localRouterRecoveryDescription),
                   const AppGap.large3(),
-                  Semantics(
-                    label: 'pin code text field',
-                    textField: true,
-                    child: PinCodeTextField(
-                      errorTextSpace: 0,
-                      onChanged: (String value) {
-                        setState(() {
-                          userInputCode = value;
-                        });
-                      },
-                      length: 5,
-                      appContext: context,
-                      controller: _otpController,
-                      keyboardType: TextInputType.number,
-                      autoDismissKeyboard: false,
-                      cursorColor: Theme.of(context).colorScheme.onSurface,
-                      pinTheme: PinTheme(
-                        shape: PinCodeFieldShape.box,
-                        borderRadius: CustomTheme.of(context)
-                            .radius
-                            .asBorderRadius()
-                            .small,
-                        borderWidth: 1,
-                        fieldHeight: 56,
-                        fieldWidth: 40,
-                        activeColor: Theme.of(context).colorScheme.outline,
-                        selectedColor: Theme.of(context).colorScheme.outline,
-                        inactiveColor: Theme.of(context).colorScheme.outline,
+                  MergeSemantics(
+                    child: Semantics(
+                      label: 'pin code text field',
+                      textField: true,
+                      child: PinCodeTextField(
+                        errorTextSpace: 0,
+                        onChanged: (String value) {
+                          setState(() {
+                            userInputCode = value;
+                          });
+                        },
+                        length: 5,
+                        appContext: context,
+                        controller: _otpController,
+                        keyboardType: TextInputType.number,
+                        autoDismissKeyboard: false,
+                        cursorColor: Theme.of(context).colorScheme.onSurface,
+                        pinTheme: PinTheme(
+                          shape: PinCodeFieldShape.box,
+                          borderRadius: CustomTheme.of(context)
+                              .radius
+                              .asBorderRadius()
+                              .small,
+                          borderWidth: 1,
+                          fieldHeight: 56,
+                          fieldWidth: 40,
+                          activeColor: Theme.of(context).colorScheme.outline,
+                          selectedColor: Theme.of(context).colorScheme.outline,
+                          inactiveColor: Theme.of(context).colorScheme.outline,
+                        ),
+                        onSubmitted: (_) {
+                          if (userInputCode.length == 5) {
+                            _validateCode(userInputCode);
+                          }
+                        },
                       ),
-                      onSubmitted: (_) {
-                        if (userInputCode.length == 5) {
-                          _validateCode(userInputCode);
-                        }
-                      },
                     ),
                   ),
                   if (state.remainingErrorAttempts != null)

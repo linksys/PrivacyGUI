@@ -1,22 +1,29 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
+import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/advanced_settings/widgets/_widgets.dart';
+import 'package:privacy_gui/page/advanced_settings/local_network_settings/views/dhcp_server_view.dart';
+import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
+import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/styled/styled_tab_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_state.dart';
+import 'package:privacy_gui/page/instant_safety/providers/instant_safety_provider.dart';
 import 'package:privacy_gui/providers/redirection/redirection_provider.dart';
-import 'package:privacy_gui/route/constants.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacy_gui/core/jnap/providers/assign_ip/base_assign_ip.dart'
@@ -34,24 +41,29 @@ class LocalNetworkSettingsView extends ArgumentsConsumerStatefulView {
 }
 
 class _LocalNetworkSettingsViewState
-    extends ConsumerState<LocalNetworkSettingsView> {
-  LocalNetworkSettingsState? originalSettings;
+    extends ConsumerState<LocalNetworkSettingsView> with PageSnackbarMixin {
+  late LocalNetworkSettingsState originalSettings;
+  late LocalNetworkSettingsNotifier _notifier;
+  final hostNameController = TextEditingController();
+  final ipAddressController = TextEditingController();
+  final subnetMaskController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
+
+    _notifier = ref.read(localNetworkSettingProvider.notifier);
+    originalSettings = _notifier.currentSettings();
     doSomethingWithSpinner(
       context,
-      ref
-          .read(localNetworkSettingProvider.notifier)
-          .fetch(fetchRemote: true)
-          .then(
+      _notifier.fetch(fetchRemote: true).then(
         (value) {
           setState(
             () {
-              originalSettings = ref
-                  .read(localNetworkSettingProvider.notifier)
-                  .currentSettings();
+              originalSettings = _notifier.currentSettings();
+              hostNameController.text = originalSettings.hostName;
+              ipAddressController.text = originalSettings.ipAddress;
+              subnetMaskController.text = originalSettings.subnetMask;
             },
           );
         },
@@ -62,84 +74,125 @@ class _LocalNetworkSettingsViewState
   @override
   void dispose() {
     super.dispose();
+
+    hostNameController.dispose();
+    ipAddressController.dispose();
+    subnetMaskController.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     ref.listen(redirectionProvider, (previous, next) {
-      if (kIsWeb && next != null && originalSettings?.ipAddress != next) {
+      if (kIsWeb && next != null && originalSettings.ipAddress != next) {
         logger.d('Redirect to $next');
         assignWebLocation(next);
       }
     });
+    ref.listen(localNetworkSettingNeedToSaveProvider, (previous, next) {
+      if (previous == false && next == true) {
+        _saveSettings();
+      }
+    });
     final state = ref.watch(localNetworkSettingProvider);
-    return infoView(state);
-  }
-
-  Widget infoView(LocalNetworkSettingsState state) {
+    final tabs = [
+      loc(context).hostName,
+      loc(context).lanIPAddress,
+      loc(context).dhcpServer,
+    ];
+    final tabContents = [
+      _hostNameView(state),
+      _ipAddressView(state),
+      _dhcpServerView(originalSettings),
+    ];
     return StyledAppPageView(
-      scrollable: true,
-      title: loc(context).localNetwork,
+      appBarStyle: AppBarStyle.none,
       bottomBar: PageBottomBar(
-        isPositiveEnabled: _isEdited(),
+        isPositiveEnabled: _isEdited(state) && !_hasError(state),
         onPositiveTap: _saveSettings,
       ),
-      onBackTap: _isEdited()
-          ? () async {
-              final goBack = await showUnsavedAlert(context);
-              if (goBack == true) {
-                context.pop();
-              }
-            }
-          : null,
       child: AppBasicLayout(
-        content: Column(
+        content: StyledAppTabPageView(
+          padding: EdgeInsets.zero,
+          useMainPadding: false,
+          title: loc(context).localNetwork,
+          onBackTap: _isEdited(state)
+              ? () async {
+                  final goBack = await showUnsavedAlert(context);
+                  if (goBack == true) {
+                    _notifier.fetch();
+                    context.pop();
+                  }
+                }
+              : null,
+          tabs: tabs
+              .map((e) => Tab(
+                    text: e,
+                  ))
+              .toList(),
+          tabContentViews: tabContents,
+          expandedHeight: 120,
+        ),
+      ),
+    );
+  }
+
+  Widget _hostNameView(LocalNetworkSettingsState state) {
+    return _viewLayout(
+      child: AppCard(
+        padding: const EdgeInsets.symmetric(
+            vertical: Spacing.large3, horizontal: Spacing.large2),
+        child: AppTextField(
+          headerText: loc(context).hostName.capitalizeWords(),
+          controller: hostNameController,
+          errorText: state.errorTextMap['hostName'],
+          border: const OutlineInputBorder(),
+          onChanged: (value) {
+            _notifier.updateHostName(value);
+            _notifier.updateErrorPrompts(
+              'hostName',
+              value.isEmpty ? loc(context).hostNameCannotEmpty : null,
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _ipAddressView(LocalNetworkSettingsState state) {
+    return _viewLayout(
+      col: 6.col,
+      child: AppCard(
+        padding: const EdgeInsets.symmetric(
+            vertical: Spacing.large3, horizontal: Spacing.large2),
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            InternetSettingCard(
-              title: loc(context).hostName,
-              description: state.hostName,
-              onTap: () {
-                _showHostNameEditDialog(state.hostName);
+            AppIPFormField(
+              header: AppText.bodySmall(loc(context).ipAddress),
+              semanticLabel: 'ip address',
+              controller: ipAddressController,
+              errorText: state.errorTextMap['ipAddress'],
+              border: const OutlineInputBorder(),
+              onChanged: (value) {
+                setState(() {
+                  _notifier.routerIpAddressChanged(context, value, state);
+                });
               },
             ),
-            const AppGap.small2(),
-            InternetSettingCard(
-              title: loc(context).ipAddress.capitalizeWords(),
-              description: state.ipAddress,
-              onTap: () {
-                _showIpAddressEditDialog(state.ipAddress);
-              },
-            ),
-            const AppGap.small2(),
-            InternetSettingCard(
-              title: loc(context).subnetMask,
-              description: state.subnetMask,
-              onTap: () {
-                _showSubnetMaskEditDialog(state.subnetMask);
-              },
-            ),
-            const AppGap.small2(),
-            InternetSettingCard(
-              title: loc(context).dhcpServer,
-              description:
-                  state.isDHCPEnabled ? loc(context).on : loc(context).off,
-              onTap: () {
-                context.pushNamed(RouteNamed.dhcpServer);
-              },
-            ),
-            const AppGap.small2(),
-            InternetSettingCard(
-              title: loc(context).dhcpReservations,
-              padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 24),
-              trailing: Row(
-                children: [
-                  AppText.labelLarge('${state.dhcpReservationList.length}'),
-                  const Icon(LinksysIcons.chevronRight),
-                ],
-              ),
-              onTap: () async {
-                await context.pushNamed(RouteNamed.dhcpReservation);
+            const AppGap.large2(),
+            AppIPFormField(
+              header: AppText.bodySmall(loc(context).subnetMask),
+              semanticLabel: 'subnet mask',
+              octet1ReadOnly: true,
+              octet2ReadOnly: true,
+              controller: subnetMaskController,
+              errorText: state.errorTextMap['subnetMask'],
+              border: const OutlineInputBorder(),
+              onChanged: (value) {
+                setState(() {
+                  _notifier.subnetMaskChanged(context, value, state);
+                });
               },
             ),
           ],
@@ -148,187 +201,43 @@ class _LocalNetworkSettingsViewState
     );
   }
 
-  bool _isEdited() {
-    final state = ref.read(localNetworkSettingProvider);
-    return originalSettings != state;
-  }
-
-  void _showHostNameEditDialog(String hostName) {
-    final textController = TextEditingController();
-    textController.text = hostName;
-    String? errorDesc;
-    bool enableButton = false;
-    showSubmitAppDialog(
-      context,
-      title: loc(context).hostName.capitalizeWords(),
-      contentBuilder: (context, setState, onSubmit) {
-        return AppTextField(
-          headerText: loc(context).hostName.capitalizeWords(),
-          controller: textController,
-          errorText: errorDesc,
-          border: const OutlineInputBorder(),
-          onChanged: (value) {
-            if (value.isEmpty) {
-              setState(() {
-                enableButton = false;
-                errorDesc = loc(context).hostNameCannotEmpty;
-              });
-            } else if (value != hostName) {
-              setState(() {
-                enableButton = true;
-                errorDesc = null;
-              });
-            } else {
-              setState(() {
-                enableButton = false;
-                errorDesc = null;
-              });
-            }
-          },
-        );
-      },
-      event: () async {
-        ref
-            .read(localNetworkSettingProvider.notifier)
-            .updateHostName(textController.text);
-      },
-      checkPositiveEnabled: () => enableButton,
+  Widget _dhcpServerView(LocalNetworkSettingsState? originalSettings) {
+    return _viewLayout(
+      child: DHCPServerView(originalState: originalSettings),
     );
   }
 
-  void _showIpAddressEditDialog(String ipAddress) {
-    final textController = TextEditingController();
-    textController.text = ipAddress;
-    String? errorDesc;
-    bool enableButton = false;
-    showSubmitAppDialog(
-      context,
-      title: loc(context).ipAddress.capitalizeWords(),
-      contentBuilder: (context, setState, onSubmit) {
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AppIPFormField(
-              semanticLabel: 'ip address',
-              controller: textController,
-              errorText: errorDesc,
-              border: const OutlineInputBorder(),
-              onChanged: (value) {
-                if (value.isEmpty) {
-                  setState(() {
-                    enableButton = false;
-                    errorDesc = loc(context).invalidIpAddress;
-                  });
-                } else if (value == ipAddress) {
-                  setState(() {
-                    enableButton = false;
-                    errorDesc = null;
-                  });
-                } else {
-                  final result = routerIpAddressFinished(textController.text);
-                  if (result.$1 == false) {
-                    setState(() {
-                      errorDesc = loc(context).invalidIpAddress;
-                      enableButton = false;
-                    });
-                  } else {
-                    setState(() {
-                      enableButton = true;
-                      errorDesc = null;
-                    });
-                  }
-                }
-              },
+  Widget _viewLayout({double? col, required Widget child}) {
+    col = col ?? 9.col;
+    return SingleChildScrollView(
+      child: ResponsiveLayout.isMobileLayout(context)
+          ? child
+          : Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: col,
+                  child: child,
+                ),
+              ],
             ),
-          ],
-        );
-      },
-      event: () async {
-        // Host IP input finishes
-        final result = routerIpAddressFinished(textController.text);
-        if (result.$1 == false) {
-          setState(() {
-            errorDesc = loc(context).invalidIpAddress;
-          });
-        } else {
-          ref.read(localNetworkSettingProvider.notifier).updateState(result.$2);
-        }
-      },
-      checkPositiveEnabled: () => enableButton,
     );
+  }
+
+  bool _isEdited(LocalNetworkSettingsState state) {
+    return !originalSettings.isEqualStateWithoutDhcpReservationList(state);
+  }
+
+  bool _hasError(LocalNetworkSettingsState state) {
+    return state.errorTextMap.isNotEmpty;
   }
 
   (bool, LocalNetworkSettingsState) routerIpAddressFinished(String ipAddress) {
     final state = ref.read(localNetworkSettingProvider);
     // Host IP input finishes
-    return ref
-        .read(localNetworkSettingProvider.notifier)
-        .routerIpAddressFinished(
-          ipAddress,
-          state,
-        );
-  }
-
-  void _showSubnetMaskEditDialog(String subnetMask) {
-    final textController = TextEditingController();
-    textController.text = subnetMask;
-    String? errorDesc;
-    bool enableButton = false;
-    showSubmitAppDialog(
-      context,
-      title: loc(context).subnetMask.capitalizeWords(),
-      contentBuilder: (context, setState, onSubmit) {
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AppIPFormField(
-              semanticLabel: 'subnet mask',
-              octet1ReadOnly: true,
-              octet2ReadOnly: true,
-              controller: textController,
-              errorText: errorDesc,
-              border: const OutlineInputBorder(),
-              onChanged: (value) {
-                if (value.isEmpty) {
-                  setState(() {
-                    enableButton = false;
-                    errorDesc = loc(context).invalidIpAddress;
-                  });
-                } else if (value == subnetMask) {
-                  setState(() {
-                    enableButton = false;
-                    errorDesc = null;
-                  });
-                } else {
-                  final result = subnetMaskFinished(textController.text);
-                  if (result.$1 == false) {
-                    setState(() {
-                      enableButton = false;
-                      errorDesc = loc(context).invalidSubnetMask;
-                    });
-                  } else {
-                    setState(() {
-                      enableButton = true;
-                      errorDesc = null;
-                    });
-                  }
-                }
-              },
-            ),
-          ],
-        );
-      },
-      event: () async {
-        final result = subnetMaskFinished(textController.text);
-        if (result.$1 == false) {
-          setState(() {
-            errorDesc = loc(context).invalidSubnetMask;
-          });
-        } else {
-          ref.read(localNetworkSettingProvider.notifier).updateState(result.$2);
-        }
-      },
-      checkPositiveEnabled: () => enableButton,
+    return _notifier.routerIpAddressFinished(
+      ipAddress,
+      state,
     );
   }
 
@@ -344,20 +253,35 @@ class _LocalNetworkSettingsViewState
     final state = ref.read(localNetworkSettingProvider);
     doSomethingWithSpinner(
       context,
-      ref.read(localNetworkSettingProvider.notifier).saveSettings(state).then(
-        (value) {
-          setState(() {
-            originalSettings = state;
-          });
-          showSuccessSnackBar(context, loc(context).changesSaved);
-        },
-      ).catchError(
+      _notifier.saveSettings(state,
+          previousIPAddress: originalSettings.ipAddress),
+    ).then(
+      (value) {
+        ref.read(localNetworkSettingNeedToSaveProvider.notifier).state = false;
+        setState(() {
+          originalSettings = state;
+        });
+        showChangesSavedSnackBar();
+      },
+    ).catchError((error) {
+      _showRouterNotFoundModal();
+    }, test: (error) => error is JNAPSideEffectError).onError(
         (error, stackTrace) {
-          final err = error as JNAPError;
-          showFailedSnackBar(context, err.result);
-        },
-        test: (error) => error is JNAPError,
-      ),
-    );
+      showErrorMessageSnackBar(error);
+    });
+  }
+
+  void _showRouterNotFoundModal() {
+    showRouterNotFoundAlert(context, ref, onComplete: () async {
+      // Update the state
+      final state = await _notifier.fetch(fetchRemote: true);
+      // Update instant safety
+      await ref.read(instantSafetyProvider.notifier).fetchLANSettings();
+      ref.read(localNetworkSettingNeedToSaveProvider.notifier).state = false;
+      setState(() {
+        originalSettings = state;
+      });
+      showChangesSavedSnackBar();
+    });
   }
 }

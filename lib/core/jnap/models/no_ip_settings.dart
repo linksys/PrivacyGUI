@@ -30,7 +30,7 @@ class NoIPSettings extends Equatable {
       'username': username,
       'password': password,
       'hostName': hostName,
-    };
+    }..removeWhere((key, value) => value == null);
   }
 
   factory NoIPSettings.fromMap(Map<String, dynamic> map) {

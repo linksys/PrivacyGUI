@@ -2,8 +2,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_provider.dart';
-import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
@@ -12,7 +10,7 @@ import 'package:privacy_gui/page/dashboard/views/components/home_title.dart';
 import 'package:privacy_gui/page/dashboard/views/components/internet_status.dart';
 import 'package:privacy_gui/page/dashboard/views/components/networks.dart';
 import 'package:privacy_gui/page/dashboard/views/components/port_and_speed.dart';
-import 'package:privacy_gui/page/dashboard/views/components/privacy.dart';
+import 'package:privacy_gui/page/dashboard/views/components/quick_panel.dart';
 import 'package:privacy_gui/page/dashboard/views/components/wifi_grid.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
@@ -39,9 +37,11 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
 
   @override
   Widget build(BuildContext context) {
+    MediaQuery.of(context);
     final horizontalLayout =
         ref.watch(dashboardHomeProvider).isHorizontalLayout;
-
+    final hasLanPort =
+        ref.read(dashboardHomeProvider).lanPortConnections.isNotEmpty;
     return StyledAppPageView(
       scrollable: true,
       appBarStyle: AppBarStyle.none,
@@ -53,90 +53,142 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
       child: ResponsiveLayout(
         desktop: Column(
           mainAxisAlignment: MainAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             const DashboardHomeTitle(),
             const AppGap.large1(),
-            horizontalLayout
-                ? IntrinsicHeight(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const Expanded(
-                          child: Column(
-                            children: [
-                              InternetConnectionWidget(),
-                              AppGap.medium(),
-                              DashboardHomePortAndSpeed(),
-                              AppGap.medium(),
-                              DashboardWiFiGrid(),
-                            ],
-                          ),
-                        ),
-                        const AppGap.gutter(),
-                        SizedBox(
-                            width: 4.col,
-                            child: const Column(
-                              children: [
-                                DashboardNetworks(),
-                                AppGap.medium(),
-                                PrivacyWidget(),
-                                // _networkInfoTiles(state, isLoading),
-                              ],
-                            )),
-                      ],
-                    ),
-                  )
-                : IntrinsicHeight(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        SizedBox(
-                          width: 3.col,
-                          child: const Column(
-                            children: [
-                              InternetConnectionWidget(),
-                              AppGap.medium(),
-                              DashboardHomePortAndSpeed(),
-                            ],
-                          ),
-                        ),
-                        const AppGap.gutter(),
-                        const Expanded(
-                          child: Column(
-                            children: [
-                              DashboardNetworks(),
-                              AppGap.medium(),
-                              PrivacyWidget(),
-                              AppGap.medium(),
-                              DashboardWiFiGrid(),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+            !hasLanPort
+                ? _desktopNoLanPortsLayout()
+                : horizontalLayout
+                    ? _desktopHorizontalLayout()
+                    : _desktopVerticalLayout(),
           ],
         ),
-        mobile: const Column(
-          mainAxisAlignment: MainAxisAlignment.start,
+        mobile: _mobileLayout(),
+      ),
+    );
+  }
+
+  Widget _desktopNoLanPortsLayout() {
+    return Column(
+      children: [
+        SizedBox(
+          height: 256,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SizedBox(width: 8.col, child: InternetConnectionWidget()),
+              AppGap.gutter(),
+              SizedBox(width: 4.col, child: DashboardHomePortAndSpeed()),
+            ],
+          ),
+        ),
+        const AppGap.medium(),
+        Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            DashboardHomeTitle(),
-            AppGap.large1(),
-            InternetConnectionWidget(),
-            AppGap.medium(),
-            DashboardHomePortAndSpeed(),
-            AppGap.medium(),
-            DashboardNetworks(),
-            AppGap.medium(),
-            PrivacyWidget(),
-            AppGap.medium(),
-            DashboardWiFiGrid(),
-            // const AppGap.large5(),
-            // _speedTestTile(state, isLoading),
+            SizedBox(
+              width: 4.col,
+              child: const Column(
+                children: [
+                  DashboardNetworks(),
+                  AppGap.medium(),
+                  DashboardQuickPanel(),
+                  // _networkInfoTiles(state, isLoading),
+                ],
+              ),
+            ),
+            AppGap.gutter(),
+            SizedBox(width: 8.col, child: DashboardWiFiGrid()),
           ],
         ),
+      ],
+    );
+  }
+
+  Widget _desktopHorizontalLayout() {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Expanded(
+            child: Column(
+              children: [
+                InternetConnectionWidget(),
+                AppGap.medium(),
+                DashboardHomePortAndSpeed(),
+                AppGap.medium(),
+                DashboardWiFiGrid(),
+              ],
+            ),
+          ),
+          const AppGap.gutter(),
+          SizedBox(
+              width: 4.col,
+              child: const Column(
+                children: [
+                  DashboardNetworks(),
+                  AppGap.medium(),
+                  DashboardQuickPanel(),
+                  // _networkInfoTiles(state, isLoading),
+                ],
+              )),
+        ],
       ),
+    );
+  }
+
+  Widget _desktopVerticalLayout() {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            width: 3.col,
+            child: const Column(
+              children: [
+                DashboardHomePortAndSpeed(),
+                AppGap.medium(),
+                DashboardQuickPanel(),
+              ],
+            ),
+          ),
+          const AppGap.gutter(),
+          const Expanded(
+            child: Column(
+              children: [
+                InternetConnectionWidget(),
+                AppGap.medium(),
+                DashboardNetworks(),
+                AppGap.medium(),
+                DashboardWiFiGrid(),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _mobileLayout() {
+    return const Column(
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        DashboardHomeTitle(),
+        AppGap.large1(),
+        InternetConnectionWidget(),
+        AppGap.medium(),
+        DashboardHomePortAndSpeed(),
+        AppGap.medium(),
+        DashboardNetworks(),
+        AppGap.medium(),
+        DashboardQuickPanel(),
+        AppGap.medium(),
+        DashboardWiFiGrid(),
+        // const AppGap.large5(),
+        // _speedTestTile(state, isLoading),
+      ],
     );
   }
 
