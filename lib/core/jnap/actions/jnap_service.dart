@@ -58,6 +58,7 @@ enum JNAPService {
   locale2(value: 'http://linksys.com/jnap/locale/Locale2'),
   locale3(value: 'http://linksys.com/jnap/locale/Locale3'),
   macFilter(value: 'http://linksys.com/jnap/macfilter/MACFilter'),
+  macFilter2(value: 'http://linksys.com/jnap/macfilter/MACFilter2'),
   motionSensing(value: 'http://linksys.com/jnap/motionsensing/MotionSensing'),
   motionSensing2(value: 'http://linksys.com/jnap/motionsensing/MotionSensing2'),
   networkConnections(

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/models/traceroute_status.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_provider.dart';
+import 'package:privacy_gui/validator_rules/input_validators.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 
@@ -23,6 +24,7 @@ class _TracerouteModalState extends ConsumerState<TracerouteModal> {
   final TextEditingController _controller = TextEditingController();
   String _tracerouteLog = '';
   StreamSubscription<TracerouteStatus>? _subscription;
+  bool _validIP = false;
 
   @override
   void initState() {
@@ -50,11 +52,18 @@ class _TracerouteModalState extends ConsumerState<TracerouteModal> {
         AppIPFormField(
           border: const OutlineInputBorder(),
           controller: _controller,
+          onChanged: (value) {
+            setState(() {
+              _validIP = IpAddressValidator().validate(value);
+            });
+          },
         ),
         const AppGap.large1(),
         if (_tracerouteLog.isNotEmpty)
-          SingleChildScrollView(
-            child: AppText.bodySmall(_tracerouteLog),
+          Expanded(
+            child: SingleChildScrollView(
+              child: AppText.bodySmall(_tracerouteLog),
+            ),
           ),
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
@@ -67,8 +76,8 @@ class _TracerouteModalState extends ConsumerState<TracerouteModal> {
               },
             ),
             AppTextButton(
-              loc(context).traceroute,
-              onTap: isRunning
+              loc(context).execute,
+              onTap: isRunning || !_validIP
                   ? null
                   : () {
                       ref

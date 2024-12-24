@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/models/ping_status.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_provider.dart';
+import 'package:privacy_gui/validator_rules/input_validators.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 
@@ -23,6 +24,7 @@ class _PingNetworkModalState extends ConsumerState<PingNetworkModal> {
   final TextEditingController _controller = TextEditingController();
   String _pingLog = '';
   StreamSubscription<PingStatus>? _subscription;
+  bool _validIP = false;
 
   @override
   void initState() {
@@ -51,11 +53,18 @@ class _PingNetworkModalState extends ConsumerState<PingNetworkModal> {
           semanticLabel: 'dns ip address',
           border: const OutlineInputBorder(),
           controller: _controller,
+          onChanged: (value) {
+            setState(() {
+            _validIP = IpAddressValidator().validate(value);
+            });
+          },
         ),
         const AppGap.large1(),
         if (_pingLog.isNotEmpty)
-          SingleChildScrollView(
-            child: AppText.bodySmall(_pingLog),
+          Expanded(
+            child: SingleChildScrollView(
+              child: AppText.bodySmall(_pingLog),
+            ),
           ),
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
@@ -68,8 +77,8 @@ class _PingNetworkModalState extends ConsumerState<PingNetworkModal> {
               },
             ),
             AppTextButton(
-              loc(context).ping,
-              onTap: isRunning
+              loc(context).execute,
+              onTap: isRunning || !_validIP
                   ? null
                   : () {
                       ref

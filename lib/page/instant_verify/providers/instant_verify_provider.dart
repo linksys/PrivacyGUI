@@ -89,7 +89,7 @@ class InstantVerifyNotifier extends Notifier<InstantVerifyState> {
             }
           },
           auth: true,
-          onCompleted: () {
+          onCompleted: (_) {
             state = state.copyWith(isRunning: false);
           },
         )
@@ -137,7 +137,7 @@ class InstantVerifyNotifier extends Notifier<InstantVerifyState> {
             }
           },
           auth: true,
-          onCompleted: () {
+          onCompleted: (_) {
             state = state.copyWith(isRunning: false);
           },
         )

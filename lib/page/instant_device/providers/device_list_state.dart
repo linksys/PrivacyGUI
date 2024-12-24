@@ -68,6 +68,7 @@ class DeviceListItem extends Equatable {
   final bool isWired;
   final WifiConnectionType type;
   final String ssid;
+  final bool isMLO;
 
   const DeviceListItem({
     this.deviceId = '',
@@ -88,6 +89,7 @@ class DeviceListItem extends Equatable {
     this.isWired = false,
     this.type = WifiConnectionType.main,
     this.ssid = '',
+    this.isMLO = false,
   });
 
   DeviceListItem copyWith({
@@ -109,6 +111,7 @@ class DeviceListItem extends Equatable {
     bool? isWired,
     WifiConnectionType? type,
     String? ssid,
+    bool? isMLO,
   }) {
     return DeviceListItem(
       deviceId: deviceId ?? this.deviceId,
@@ -129,6 +132,7 @@ class DeviceListItem extends Equatable {
       isWired: isWired ?? this.isWired,
       type: type ?? this.type,
       ssid: ssid ?? this.ssid,
+      isMLO: isMLO ?? this.isMLO,
     );
   }
 
@@ -153,6 +157,7 @@ class DeviceListItem extends Equatable {
       isWired,
       type,
       ssid,
+      isMLO,
     ];
   }
 
@@ -176,6 +181,7 @@ class DeviceListItem extends Equatable {
       'isWired': isWired,
       'type': type.value,
       'ssid': ssid,
+      'isMLO': isMLO,
     };
   }
 
@@ -201,6 +207,7 @@ class DeviceListItem extends Equatable {
           WifiConnectionType.values.firstWhereOrNull((e) => e == map['type']) ??
               WifiConnectionType.main,
       ssid: map['ssid'] as String,
+      isMLO: map['isMLO'] ?? false,
     );
   }
 

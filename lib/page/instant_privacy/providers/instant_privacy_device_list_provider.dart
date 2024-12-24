@@ -1,18 +1,29 @@
+import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/page/instant_device/providers/device_list_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
+import 'package:privacy_gui/core/utils/devices.dart';
+import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
 
 final instantPrivacyDeviceListProvider = Provider((ref) {
   final deviceListState = ref.watch(deviceListProvider);
   final macFilteringState = ref.watch(instantPrivacyProvider);
+  final nodeList =
+      ref.watch(deviceManagerProvider.select((state) => state.nodeDevices));
   final deviceList = deviceListState.devices;
   final macAddresses = macFilteringState.macAddresses;
   final isEnable = macFilteringState.mode == MacFilterMode.allow;
   return isEnable
-      ? deviceList
+      ? macAddresses
+          .map((e) =>
+              deviceList.firstWhereOrNull((device) => device.macAddress == e) ??
+              DeviceListItem(macAddress: e))
           .where((device) =>
-              macAddresses.contains(device.macAddress.toUpperCase()))
+              !macFilteringState.bssids.contains(device.macAddress) &&
+              !nodeList.any((e) => e.getMacAddress() == device.macAddress))
           .toList()
-      : deviceList.where((device) => device.isOnline).toList();
+      : deviceList
+          .where((device) => !device.isWired && device.isOnline)
+          .toList();
 });

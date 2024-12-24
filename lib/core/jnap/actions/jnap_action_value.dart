@@ -149,6 +149,7 @@ enum _JNAPActionValue {
       value: 'http://linksys.com/jnap/macfilter/GetMACFilterSettings'),
   setMACFilterSettings(
       value: 'http://linksys.com/jnap/macfilter/SetMACFilterSettings'),
+  getSTABSSIDs(value: 'http://linksys.com/jnap/macfilter/GetSTABSSIDS'),
   getActiveMotionSensingBots(
       value:
           'http://linksys.com/jnap/motionsensing/GetActiveMotionSensingBots'),
@@ -249,8 +250,12 @@ enum _JNAPActionValue {
   setLANSettings(value: 'http://linksys.com/jnap/router/SetLANSettings'),
   setRoutingSettings(
       value: 'http://linksys.com/jnap/router/SetRoutingSettings'),
+  releaseDHCPWANLease(
+      value: 'http://linksys.com/jnap/router/ReleaseDHCPWANLease'),
+  releaseDHCPIPv6WANLease(
+      value: 'http://linksys.com/jnap/router/ReleaseDHCPIPv6WANLease'),
   renewDHCPWANLease(value: 'http://linksys.com/jnap/router/RenewDHCPWANLease'),
-  renewDHCPIPv6Lease(
+  renewDHCPIPv6WANLease(
       value: 'http://linksys.com/jnap/router/RenewDHCPIPv6WANLease'),
   getEthernetPortConnections(
       value: 'http://linksys.com/jnap/router/GetEthernetPortConnections'),

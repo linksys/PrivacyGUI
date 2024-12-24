@@ -98,6 +98,7 @@ enum JNAPAction {
   // macFilter
   getMACFilterSettings,
   setMACFilterSettings,
+  getSTABSSIDs,
   // motionSensing
   getActiveMotionSensingBots,
   getMotionSensingSettings,
@@ -142,6 +143,8 @@ enum JNAPAction {
   setWANSettings,
   setLANSettings,
   setRoutingSettings,
+  releaseDHCPWANLease,
+  releaseDHCPIPv6WANLease,
   renewDHCPWANLease,
   renewDHCPIPv6WANLease,
   getEthernetPortConnections,

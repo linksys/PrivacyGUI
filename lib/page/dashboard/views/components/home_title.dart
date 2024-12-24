@@ -6,7 +6,9 @@ import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart'
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/dashboard/views/components/shimmer.dart';
+import 'package:privacy_gui/page/instant_admin/_instant_admin.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_troubleshooter_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
@@ -40,20 +42,29 @@ class DashboardHomeTitle extends ConsumerWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              Wrap(
-                children: [
-                  Icon(LinksysIcons.calendar,
-                      color: Theme.of(context).colorScheme.onSurface),
-                  Padding(
-                    padding: const EdgeInsets.only(left: Spacing.small2),
-                    child: AppText.bodyMedium(
-                      loc(context).formalDateTime(localTime, localTime),
-                      color: Theme.of(context).colorScheme.onSurface,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+              InkWell(
+                onTap: () {
+                  doSomethingWithSpinner(
+                          context, ref.read(timezoneProvider.notifier).fetch())
+                      .then((_) {
+                    context.pushNamed(RouteNamed.settingsTimeZone);
+                  });
+                },
+                child: Wrap(
+                  children: [
+                    Icon(LinksysIcons.calendar,
+                        color: Theme.of(context).colorScheme.onSurface),
+                    Padding(
+                      padding: const EdgeInsets.only(left: Spacing.small2),
+                      child: AppText.bodyMedium(
+                        loc(context).formalDateTime(localTime, localTime),
+                        color: Theme.of(context).colorScheme.onSurface,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
@@ -75,7 +86,7 @@ class DashboardHomeTitle extends ConsumerWidget {
           ref
               .read(pnpTroubleshooterProvider.notifier)
               .setEnterRoute(RouteNamed.dashboardHome);
-          context.goNamed(RouteNamed.pnpNoInternetConnection);
+          context.goNamed(RouteNamed.pnpNoInternetConnection, extra: {'from': 'dashboard'});
         },
       ),
     );

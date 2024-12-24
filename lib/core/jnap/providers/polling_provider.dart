@@ -6,7 +6,7 @@ import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
-import 'package:privacy_gui/core/jnap/providers/wan_external_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/node_light_settings_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/bench_mark.dart';
@@ -91,9 +91,22 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
       throw error ?? '';
     });
 
-    state = await AsyncValue.guard(() => fetchFuture);
+    state = await AsyncValue.guard(
+      () => fetchFuture.then(
+        (result) async {
+          await _additionalPolling();
+          return result;
+        },
+      ),
+    );
 
     benchMark.end();
+  }
+
+  Future _additionalPolling() async {
+    if (serviceHelper.isSupportLedMode()) {
+      await ref.read(nodeLightSettingsProvider.notifier).fetch();
+    }
   }
 
   Future forcePolling() {

@@ -40,26 +40,33 @@ class _WiFiPasswordFieldState extends ConsumerState<WiFiPasswordField> {
       border: const OutlineInputBorder(),
       headerText: widget.label,
       hintText: widget.hint,
-      errorText: () {
-        if (widget.controller?.text.isEmpty == true) {
-          return null;
-        }
-        final errorKeys = wifiPasswordValidator
-            .validateDetail(widget.controller?.text ?? '', onlyFailed: true)
-          ..removeWhere((key, value) => key == (LengthRule).toString());
-        if (errorKeys.isEmpty) {
-          return null;
-        } else if (errorKeys.keys.first ==
-            (NoSurroundWhitespaceRule).toString()) {
-          return loc(context).routerPasswordRuleStartEndWithSpace;
-        } else if (errorKeys.keys.first == (WiFiPasswordRule).toString()) {
-          return loc(context).routerPasswordRuleUnsupportSpecialChar;
-        }
-      }(),
+      // errorText: () {
+      //   if (widget.controller?.text.isEmpty == true) {
+      //     return null;
+      //   }
+      //   final errorKeys = wifiPasswordValidator
+      //       .validateDetail(widget.controller?.text ?? '', onlyFailed: true)
+      //     ..removeWhere((key, value) => key == (LengthRule).toString());
+      //   if (errorKeys.isEmpty) {
+      //     return null;
+      //   } else if (errorKeys.keys.first ==
+      //       (NoSurroundWhitespaceRule).toString()) {
+      //     return loc(context).routerPasswordRuleStartEndWithSpace;
+      //   } else if (errorKeys.keys.first == (WiFiPasswordRule).toString()) {
+      //     return loc(context).routerPasswordRuleUnsupportSpecialChar;
+      //   }
+      // }(),
       validations: [
         Validation(
             description: loc(context).wifiPasswordLimit,
-            validator: LengthRule(min: 8, max: 64).validate)
+            validator: LengthRule(min: 8, max: 64).validate),
+        Validation(
+            description: loc(context).routerPasswordRuleStartEndWithSpace,
+            validator: NoSurroundWhitespaceRule().validate),
+        Validation(
+          description: loc(context).routerPasswordRuleUnsupportSpecialChar,
+          validator: ((text) => AsciiRule().validate(text)),
+        ),
       ],
       controller: widget.controller,
       onChanged: (value) {

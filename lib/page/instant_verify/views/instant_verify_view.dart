@@ -80,6 +80,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
   }
 
   Widget _instantInfo(BuildContext context, WidgetRef ref) {
+    final desktopCol = 4.col;
     return SingleChildScrollView(
       child: ResponsiveLayout.isMobileLayout(context)
           ? Column(
@@ -100,17 +101,17 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       SizedBox(
-                        width: 4.col,
+                        width: desktopCol,
                         child: _deviceInfoCard(context, ref),
                       ),
                       const AppGap.gutter(),
                       SizedBox(
-                        width: 4.col,
+                        width: desktopCol,
                         child: _connectivityContentWidget(context, ref),
                       ),
                       const AppGap.gutter(),
                       SizedBox(
-                        width: 4.col,
+                        width: desktopCol,
                         child: _speedTestContent(context),
                       ),
                     ],
@@ -267,7 +268,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
                   children: [
                     AppText.bodySmall(loc(context).cpuUtilization),
                     AppText.labelMedium(
-                        '${(double.tryParse(cpuLoad) ?? 0) * 100}%'),
+                        '${(double.tryParse(cpuLoad.padLeft(2, '0')) ?? 0) * 100}%'),
                   ],
                 ),
               ),
@@ -278,7 +279,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
                   children: [
                     AppText.bodySmall(loc(context).memoryUtilization),
                     AppText.labelMedium(
-                        '${(double.tryParse(memoryLoad) ?? 0) * 100}%'),
+                        '${(double.tryParse(memoryLoad.padRight(2, '0')) ?? 0) * 100}%'),
                   ],
                 ),
               ),
@@ -549,7 +550,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
                       children: [
                         Expanded(
                           child: AppText.labelMedium(
-                            '${loc(context).guest}|${guestWiFi.guestSSID}',
+                            '${loc(context).guest} | ${guestWiFi.guestSSID}',
                             overflow: TextOverflow.ellipsis,
                             maxLines: 2,
                           ),
@@ -611,9 +612,9 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
                 children: [
                   AppText.bodySmall(loc(context).nDNS(dnsCount)),
                   AppText.labelMedium(dnsCount == 3
-                      ? '${systemConnectivityState.wanConnection?.dnsServer1}|${systemConnectivityState.wanConnection?.dnsServer2}|${systemConnectivityState.wanConnection?.dnsServer3}'
+                      ? '${systemConnectivityState.wanConnection?.dnsServer1} | ${systemConnectivityState.wanConnection?.dnsServer2} | ${systemConnectivityState.wanConnection?.dnsServer3}'
                       : dnsCount == 2
-                          ? '${systemConnectivityState.wanConnection?.dnsServer1}|${systemConnectivityState.wanConnection?.dnsServer2}'
+                          ? '${systemConnectivityState.wanConnection?.dnsServer1} | ${systemConnectivityState.wanConnection?.dnsServer2}'
                           : systemConnectivityState.wanConnection?.dnsServer1 ??
                               '--'),
                 ],
@@ -656,21 +657,15 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
   }
 
   Widget _speedTestContent(BuildContext context) {
-    final isSupportedHealthCheck = serviceHelper.isSupportHealthCheck();
     return AppCard(
       key: const ValueKey('speedTestCard'),
       padding: const EdgeInsets.all(Spacing.large2),
-      child: Opacity(
-        opacity: isSupportedHealthCheck ? 1 : .3,
-        child: Column(
-          children: [
-            _headerWidget(loc(context).speedTest),
-            const AppGap.large2(),
-            AbsorbPointer(
-                absorbing: isSupportedHealthCheck ? false : true,
-                child: const SpeedTestWidget())
-          ],
-        ),
+      child: Column(
+        children: [
+          _headerWidget(loc(context).speedTest),
+          const AppGap.large2(),
+          const SpeedTestWidget()
+        ],
       ),
     );
   }

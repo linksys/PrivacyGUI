@@ -11,7 +11,7 @@ class PnpState extends Equatable {
   final NodeDeviceInfo? deviceInfo;
   final String? attachedPassword;
   final Map<int, PnpStepState> stepStateList;
-  final bool isUnconfigured;
+  final bool? isUnconfigured;
   final Map<JNAPAction, JNAPResult> data;
   final List<RawDevice> childNodes;
   final bool forceLogin;
@@ -20,7 +20,7 @@ class PnpState extends Equatable {
     required this.deviceInfo,
     this.attachedPassword,
     this.stepStateList = const {},
-    this.isUnconfigured = false,
+    this.isUnconfigured,
     this.data = const {},
     this.childNodes = const [],
     this.forceLogin = false,
@@ -56,4 +56,6 @@ class PnpState extends Equatable {
         childNodes,
         forceLogin,
       ];
+
+  bool get isRouterUnConfigured => isUnconfigured ?? false;
 }

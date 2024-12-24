@@ -41,7 +41,7 @@ abstract class SharedWidgets {
   static Widget nodeFirmwareStatusWidget(
     BuildContext context,
     bool hasNewFirmware,
-    VoidCallback? onTap,
+    [VoidCallback? onTap, bool isOffline = false,]
   ) {
     return InkWell(
       onTap: hasNewFirmware ? onTap : null,

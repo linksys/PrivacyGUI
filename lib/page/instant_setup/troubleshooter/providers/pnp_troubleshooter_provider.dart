@@ -16,7 +16,7 @@ class PnpTroubleshooterNotifier extends Notifier<PnpTroubleshooterState> {
 
   Stream<bool> checkNewSettings({
     required WanType settingWanType,
-    required Function() onCompleted,
+    required Function(bool exceedMaxRetry) onCompleted,
   }) {
     int retryTimes;
     int retryDelay;

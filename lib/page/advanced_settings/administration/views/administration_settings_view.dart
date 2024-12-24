@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
@@ -26,8 +28,8 @@ class _AdministrationSettingsViewState
   @override
   void initState() {
     super.initState();
-    doSomethingWithSpinner(
-            context, ref.read(administrationSettingsProvider.notifier).fetch())
+    doSomethingWithSpinner(context,
+            ref.read(administrationSettingsProvider.notifier).fetch(true))
         .then((value) {
       _preservedState = value;
     });
@@ -44,6 +46,15 @@ class _AdministrationSettingsViewState
     return StyledAppPageView(
       scrollable: true,
       title: loc(context).administration,
+      onBackTap: _preservedState != state
+          ? () async {
+              final goBack = await showUnsavedAlert(context);
+              if (goBack == true) {
+                ref.read(administrationSettingsProvider.notifier).fetch();
+                context.pop();
+              }
+            }
+          : null,
       bottomBar: PageBottomBar(
           isPositiveEnabled:
               _preservedState != null && _preservedState != state,
@@ -96,35 +107,37 @@ class _AdministrationSettingsViewState
                           .setUPnPEnabled(value);
                     },
                   ),
-                  const Divider(),
-                  AppCheckbox(
-                    value: state.canUsersConfigure,
-                    semanticLabel: 'upnp allow users configure',
-                    text: loc(context).administrationUPnPAllowUsersConfigure,
-                    onChanged: (value) {
-                      if (value == null) {
-                        return;
-                      }
-                      ref
-                          .read(administrationSettingsProvider.notifier)
-                          .setCanUsersConfigure(value);
-                    },
-                  ),
-                  const AppGap.small2(),
-                  AppCheckbox(
-                    value: state.canUsersDisableWANAccess,
-                    semanticLabel: 'upnp allow users disable internet access',
-                    text: loc(context)
-                        .administrationUPnPAllowUsersDisableInternetAccess,
-                    onChanged: (value) {
-                      if (value == null) {
-                        return;
-                      }
-                      ref
-                          .read(administrationSettingsProvider.notifier)
-                          .setCanUsersDisableWANAccess(value);
-                    },
-                  ),
+                  if (state.isUPnPEnabled) ...[
+                    const Divider(),
+                    AppCheckbox(
+                      value: state.canUsersConfigure,
+                      semanticLabel: 'upnp allow users configure',
+                      text: loc(context).administrationUPnPAllowUsersConfigure,
+                      onChanged: (value) {
+                        if (value == null) {
+                          return;
+                        }
+                        ref
+                            .read(administrationSettingsProvider.notifier)
+                            .setCanUsersConfigure(value);
+                      },
+                    ),
+                    const AppGap.small2(),
+                    AppCheckbox(
+                      value: state.canUsersDisableWANAccess,
+                      semanticLabel: 'upnp allow users disable internet access',
+                      text: loc(context)
+                          .administrationUPnPAllowUsersDisableInternetAccess,
+                      onChanged: (value) {
+                        if (value == null) {
+                          return;
+                        }
+                        ref
+                            .read(administrationSettingsProvider.notifier)
+                            .setCanUsersDisableWANAccess(value);
+                      },
+                    ),
+                  ],
                 ],
               ),
             ),

@@ -7,7 +7,6 @@ import 'dyn_dns_settings.dart';
 import 'no_ip_settings.dart';
 import 'tzo_settings.dart';
 
-
 class DDNSSettings extends Equatable {
   final String ddnsProvider;
   final DynDNSSettings? dynDNSSettings;
@@ -39,7 +38,7 @@ class DDNSSettings extends Equatable {
       'ddnsProvider': ddnsProvider,
       'dynDNSSettings': dynDNSSettings?.toMap(),
       'tzoSettings': tzoSettings?.toMap(),
-      'noIPSettings': noIPSettings?.toMap(),
+      'noipSettings': noIPSettings?.toMap(),
     };
   }
 
@@ -53,8 +52,8 @@ class DDNSSettings extends Equatable {
       tzoSettings: map['tzoSettings'] != null
           ? TZOSettings.fromMap(map['tzoSettings'] as Map<String, dynamic>)
           : null,
-      noIPSettings: map['noIPSettings'] != null
-          ? NoIPSettings.fromMap(map['noIPSettings'] as Map<String, dynamic>)
+      noIPSettings: map['noipSettings'] != null
+          ? NoIPSettings.fromMap(map['noipSettings'] as Map<String, dynamic>)
           : null,
     );
   }

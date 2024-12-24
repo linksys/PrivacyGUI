@@ -21,7 +21,7 @@ class SpeedTestExternalView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StyledAppPageView(
-      title: loc(context).speedTestInternetToDevice,
+      title: loc(context).externalSpeedText,
       child: AppBasicLayout(
           content: SizedBox(
         width: 6.col,

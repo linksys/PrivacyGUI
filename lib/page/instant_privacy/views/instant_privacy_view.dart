@@ -34,6 +34,8 @@ class InstantPrivacyView extends ArgumentsConsumerStatefulView {
 
 class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView> {
   late final InstantPrivacyNotifier _notifier;
+  bool _isRefreshing = false;
+
   @override
   void initState() {
     _notifier = ref.read(instantPrivacyProvider.notifier);
@@ -165,12 +167,18 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView> {
                 icon: LinksysIcons.refresh,
                 color: Theme.of(context).colorScheme.primary,
                 onTap: () {
+                  setState(() {
+                    _isRefreshing = true;
+                  });
                   controller.repeat();
                   ref
                       .read(pollingProvider.notifier)
                       .forcePolling()
                       .then((value) {
                     controller.stop();
+                    setState(() {
+                      _isRefreshing = false;
+                    });
                   });
                 },
               );
@@ -275,9 +283,11 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView> {
         AppSwitch(
           semanticLabel: 'instant privacy',
           value: state.mode != MacFilterMode.disabled,
-          onChanged: (value) {
-            _showEnableDialog(value);
-          },
+          onChanged: _isRefreshing
+              ? null
+              : (value) {
+                  _showEnableDialog(value);
+                },
         )
       ],
     ));

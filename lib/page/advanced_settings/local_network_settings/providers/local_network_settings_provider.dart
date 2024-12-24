@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
@@ -6,11 +7,15 @@ import 'package:privacy_gui/core/jnap/models/set_lan_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_state.dart';
 import 'package:privacy_gui/page/instant_safety/providers/instant_safety_provider.dart';
 import 'package:privacy_gui/providers/redirection/redirection_provider.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacy_gui/validator_rules/input_validators.dart';
+
+final localNetworkSettingNeedToSaveProvider =
+    StateProvider<bool>((ref) => false);
 
 final localNetworkSettingProvider =
     NotifierProvider<LocalNetworkSettingsNotifier, LocalNetworkSettingsState>(
@@ -68,10 +73,10 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
       clientLeaseTime: lanSettings.dhcpSettings.leaseMinutes,
       minAllowDHCPLeaseMinutes: lanSettings.minAllowedDHCPLeaseMinutes,
       maxAllowDHCPLeaseMinutes: lanSettings.maxAllowedDHCPLeaseMinutes,
-      dns1: lanSettings.dhcpSettings.dnsServer1,
-      dns2: lanSettings.dhcpSettings.dnsServer2,
-      dns3: lanSettings.dhcpSettings.dnsServer3,
-      wins: lanSettings.dhcpSettings.winsServer,
+      dns1: () => lanSettings.dhcpSettings.dnsServer1,
+      dns2: () => lanSettings.dhcpSettings.dnsServer2,
+      dns3: () => lanSettings.dhcpSettings.dnsServer3,
+      wins: () => lanSettings.dhcpSettings.winsServer,
       dhcpReservationList: lanSettings.dhcpSettings.reservations,
     );
     // Update all necessary validators by the current settings
@@ -80,8 +85,8 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     return state;
   }
 
-  Future<void> saveSettings(LocalNetworkSettingsState settings) {
-    final previousIPAddress = state.ipAddress;
+  Future<void> saveSettings(LocalNetworkSettingsState settings,
+      {String? previousIPAddress}) {
     final newSettings = SetRouterLANSettings(
       ipAddress: settings.ipAddress,
       networkPrefixLength:
@@ -96,7 +101,10 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
         dnsServer2: settings.dns2?.isEmpty == true ? null : settings.dns2,
         dnsServer3: settings.dns3?.isEmpty == true ? null : settings.dns3,
         winsServer: settings.wins?.isEmpty == true ? null : settings.wins,
-        reservations: settings.dhcpReservationList,
+        reservations: (previousIPAddress != null &&
+                previousIPAddress != settings.ipAddress)
+            ? []
+            : settings.dhcpReservationList,
       ),
     );
     final routerRepository = ref.read(routerRepositoryProvider);
@@ -114,17 +122,37 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
       await ref.read(instantSafetyProvider.notifier).fetchLANSettings();
     }).catchError(
       (error) {
-        if (kIsWeb && previousIPAddress != newSettings.ipAddress) {
+        if (kIsWeb &&
+            previousIPAddress != null &&
+            previousIPAddress != newSettings.ipAddress) {
           ref.read(redirectionProvider.notifier).state =
               'https://${newSettings.ipAddress}';
+        } else {
+          throw error;
         }
       },
       test: (error) => error is JNAPSideEffectError,
     );
   }
 
+  Future<List<DHCPReservation>> saveReservations(
+      List<DHCPReservation> list) async {
+    await saveSettings(state.copyWith(dhcpReservationList: list));
+    return fetch(fetchRemote: true).then((state) => state.dhcpReservationList);
+  }
+
   void updateHostName(String hostName) {
     state = state.copyWith(hostName: hostName);
+  }
+
+  void updateErrorPrompts(String key, String? value) {
+    Map<String, String> errorTextMap = Map.from(state.errorTextMap);
+    if (value != null) {
+      errorTextMap[key] = value;
+    } else {
+      errorTextMap.remove(key);
+    }
+    state = state.copyWith(errorTextMap: errorTextMap);
   }
 
   void updateDHCPReservationList(
@@ -172,10 +200,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
   }
 
   void _updateValidators(LocalNetworkSettingsState currentSettings) {
-    _routerIpAddressValidator = IpAddressRequiredValidator(
-        // currentSettings.ipAddress,
-        // currentSettings.subnetMask,
-        );
+    _routerIpAddressValidator = IpAddressRequiredValidator();
     _subnetMaskValidator = SubnetMaskValidator(
       min: currentSettings.minNetworkPrefixLength,
       max: currentSettings.maxNetworkPrefixLength,
@@ -192,6 +217,108 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     _serverIpAddressValidator = IpAddressValidator();
   }
 
+  void routerIpAddressChanged(
+    BuildContext context,
+    String newRouterIpAddress,
+    LocalNetworkSettingsState settings,
+  ) {
+    // Verify router ip
+    final routerIpAddressResult =
+        routerIpAddressFinished(newRouterIpAddress, settings);
+    updateState(routerIpAddressResult.$2);
+    // Verify start ip
+    final startIpResult = startIpFinished(
+        routerIpAddressResult.$2.firstIPAddress, routerIpAddressResult.$2);
+    updateState(startIpResult.$2);
+    // Verify max user allowed
+    final maxUserAllowedResult = maxUserAllowedFinished(
+        '${startIpResult.$2.maxUserAllowed}', startIpResult.$2);
+    updateState(maxUserAllowedResult.$2);
+    // Update error
+    updateErrorPrompts(
+      'StartIpAddress',
+      startIpResult.$1 ? null : loc(context).invalidIpOrSameAsHostIp,
+    );
+    updateErrorPrompts(
+      'ipAddress',
+      routerIpAddressResult.$1 ? null : loc(context).invalidIpAddress,
+    );
+    updateErrorPrompts(
+      'MaxUserAllowed',
+      maxUserAllowedResult.$1 ? null : loc(context).invalidNumber,
+    );
+  }
+
+  void subnetMaskChanged(
+    BuildContext context,
+    String subnetMask,
+    LocalNetworkSettingsState settings,
+  ) {
+    // Verify subnet mask
+    final subnetMaskResult = subnetMaskFinished(subnetMask, settings);
+    updateState(subnetMaskResult.$2);
+    // Verify start ip
+    final startIpResult = startIpFinished(
+        subnetMaskResult.$2.firstIPAddress, subnetMaskResult.$2);
+    updateState(startIpResult.$2);
+    // Verify max user allowed
+    final maxUserAllowedResult = maxUserAllowedFinished(
+        '${startIpResult.$2.maxUserAllowed}', startIpResult.$2);
+    updateState(maxUserAllowedResult.$2);
+    // Update error
+    updateErrorPrompts(
+      'subnetMask',
+      subnetMaskResult.$1 ? null : loc(context).invalidSubnetMask,
+    );
+    updateErrorPrompts(
+      'StartIpAddress',
+      startIpResult.$1 ? null : loc(context).invalidIpOrSameAsHostIp,
+    );
+    updateErrorPrompts(
+      'MaxUserAllowed',
+      maxUserAllowedResult.$1 ? null : loc(context).invalidNumber,
+    );
+  }
+
+  void startIpChanged(
+    BuildContext context,
+    String startIpAddress,
+    LocalNetworkSettingsState settings,
+  ) {
+    // Verify start ip
+    final startIpResult = startIpFinished(startIpAddress, settings);
+    updateState(startIpResult.$2);
+    // Verify max user allowed
+    final maxUserAllowedResult = maxUserAllowedFinished(
+        '${startIpResult.$2.maxUserAllowed}', startIpResult.$2);
+    updateState(maxUserAllowedResult.$2);
+    // Update error
+    updateErrorPrompts(
+      'StartIpAddress',
+      startIpResult.$1 ? null : loc(context).invalidIpOrSameAsHostIp,
+    );
+    updateErrorPrompts(
+      'MaxUserAllowed',
+      maxUserAllowedResult.$1 ? null : loc(context).invalidNumber,
+    );
+  }
+
+  void maxUserAllowedChanged(
+    BuildContext context,
+    String maxUserAllowed,
+    LocalNetworkSettingsState settings,
+  ) {
+    // Verify max user allowed
+    final maxUserAllowedResult =
+        maxUserAllowedFinished(maxUserAllowed, settings);
+    updateState(maxUserAllowedResult.$2);
+    // Update error
+    updateErrorPrompts(
+      'MaxUserAllowed',
+      maxUserAllowedResult.$1 ? null : loc(context).invalidNumber,
+    );
+  }
+
   (bool, LocalNetworkSettingsState) routerIpAddressFinished(
     String newRouterIpAddress,
     LocalNetworkSettingsState settings,
@@ -202,7 +329,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
       final routerIpSplit = newRouterIpAddress.split('.');
       final firstIpSplit = settings.firstIPAddress.split('.');
       final newFirstIp =
-          '${routerIpSplit[0]}.${routerIpSplit[1]}.${routerIpSplit[2]}.${firstIpSplit[3]}';
+          '${routerIpSplit[0]}.${routerIpSplit[1]}.${firstIpSplit[2]}.${firstIpSplit[3]}';
       // Calculate the new last Ip
       final newLastIp = NetworkUtils.getEndingIpAddress(
         newRouterIpAddress,
@@ -216,6 +343,10 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
       );
       // Update all necessary validators by the updated settings
       _updateValidators(settings);
+    } else {
+      settings = settings.copyWith(
+        ipAddress: newRouterIpAddress,
+      );
     }
     return (isValid, settings);
   }
@@ -257,30 +388,12 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
           lastIPAddress: newLastIpAddress,
         );
       }
+    } else {
+      settings = settings.copyWith(
+        subnetMask: subnetMask,
+      );
     }
     return (isMaskValid, settings);
-  }
-
-  (bool, LocalNetworkSettingsState) maxUserAllowedFinished(
-    String maxUserAllowed,
-    LocalNetworkSettingsState settings,
-  ) {
-    // Due to the UI limit, the value input from users should always be valid
-    final isValid = _maxUserAllowedValidator.validate(maxUserAllowed);
-    if (isValid) {
-      final maxUserAllowedInt = int.parse(maxUserAllowed);
-      // If it is valid, update the new last Ip
-      final lastIpAddress = NetworkUtils.getEndingIpAddress(
-        settings.ipAddress,
-        settings.firstIPAddress,
-        maxUserAllowedInt,
-      );
-      settings = settings.copyWith(
-        maxUserAllowed: maxUserAllowedInt,
-        lastIPAddress: lastIpAddress,
-      );
-    }
-    return (isValid, settings);
   }
 
   (bool, LocalNetworkSettingsState) startIpFinished(
@@ -321,6 +434,36 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
         firstIPAddress: startIpAddress,
         lastIPAddress: lastIpAddress,
       );
+    } else {
+      settings = settings.copyWith(
+        firstIPAddress: startIpAddress,
+      );
+    }
+    return (isValid, settings);
+  }
+
+  (bool, LocalNetworkSettingsState) maxUserAllowedFinished(
+    String maxUserAllowed,
+    LocalNetworkSettingsState settings,
+  ) {
+    // Due to the UI limit, the value input from users should always be valid
+    final isValid = _maxUserAllowedValidator.validate(maxUserAllowed);
+    final maxUserAllowedInt = int.parse(maxUserAllowed);
+    if (isValid) {
+      // If it is valid, update the new last Ip
+      final lastIpAddress = NetworkUtils.getEndingIpAddress(
+        settings.ipAddress,
+        settings.firstIPAddress,
+        maxUserAllowedInt,
+      );
+      settings = settings.copyWith(
+        maxUserAllowed: maxUserAllowedInt,
+        lastIPAddress: lastIpAddress,
+      );
+    } else {
+      settings = settings.copyWith(
+        maxUserAllowed: maxUserAllowedInt,
+      );
     }
     return (isValid, settings);
   }
@@ -345,9 +488,13 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
   ) {
     // Due to the UI limit, the value input from users should always be valid
     final isValid = _serverIpAddressValidator.validate(dnsIp);
-    if (isValid || dnsIp.isEmpty) {
+    if (isValid) {
       settings = settings.copyWith(
-        dns1: dnsIp,
+        dns1: () => dnsIp,
+      );
+    } else if (dnsIp.isEmpty) {
+      settings = settings.copyWith(
+        dns1: () => null,
       );
     }
     return (isValid, settings);
@@ -359,11 +506,16 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
   ) {
     // Due to the UI limit, the value input from users should always be valid
     final isValid = _serverIpAddressValidator.validate(dnsIp);
-    if (isValid || dnsIp.isEmpty) {
+    if (isValid) {
       settings = settings.copyWith(
-        dns2: dnsIp,
+        dns2: () => dnsIp,
+      );
+    } else if (dnsIp.isEmpty) {
+      settings = settings.copyWith(
+        dns2: () => null,
       );
     }
+
     return (isValid, settings);
   }
 
@@ -373,9 +525,13 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
   ) {
     // Due to the UI limit, the value input from users should always be valid
     final isValid = _serverIpAddressValidator.validate(dnsIp);
-    if (isValid || dnsIp.isEmpty) {
+    if (isValid) {
       settings = settings.copyWith(
-        dns3: dnsIp,
+        dns3: () => dnsIp,
+      );
+    } else if (dnsIp.isEmpty) {
+      settings = settings.copyWith(
+        dns3: () => null,
       );
     }
     return (isValid, settings);
@@ -387,101 +543,15 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
   ) {
     // Due to the UI limit, the value input from users should always be valid
     final isValid = _serverIpAddressValidator.validate(winsIp);
-    if (isValid || winsIp.isEmpty) {
+    if (isValid) {
       settings = settings.copyWith(
-        wins: winsIp,
+        wins: () => winsIp,
+      );
+    } else if (winsIp.isEmpty) {
+      settings = settings.copyWith(
+        wins: () => null,
       );
     }
     return (isValid, settings);
   }
-
-/*
-  _updateValidator() {
-    _routerIPAddressValidator = IpAddressAsNewRouterIpValidator(
-        state.ipAddress, state.subnetMask);
-    _ipAddressAsLocalIpValidator =
-        IpAddressAsLocalIpValidator(state.ipAddress, state.subnetMask);
-    _subnetValidator = SubnetValidator(
-        min: state.minNetworkPrefixLength, max: state.maxNetworkPrefixLength);
-    _maxUsersValidator = MaxUsersValidator(state.maxNumUsers);
-    _leaseTimeValidator = DhcpClientLeaseTimeValidator(
-        state.minAllowDHCPLeaseMinutes, state.maxAllowDHCPLeaseMinutes);
-  }
-
-  updateMaxUser() {
-    final maxUsers = Utils.getMaxUserAllowedInDHCPRange(
-        state.ipAddress, state.firstIPAddress, state.lastIPAddress);
-    state = state.copyWith(maxUserLimit: maxUsers);
-  }
-
-  updateMaxUserLimit() {
-    var newMaxUsersLimit = Utils.getMaxUserLimit(state.ipAddress,
-        state.firstIPAddress, state.subnetMask, state.maxUserLimit);
-    if (newMaxUsersLimit != 0) {
-      state = state.copyWith(maxUserLimit: newMaxUsersLimit);
-    } else {
-      // startIPAddress not in valid subnet
-    }
-  }
-
-  setIPAddress(String newIPAddress) {
-    final valid = _routerIPAddressValidator.validate(newIPAddress);
-    if (valid) {
-      state = state.copyWith(ipAddress: newIPAddress);
-      updateIPFields();
-      _updateValidator();
-    }
-    setError('ipAddress', valid ? null : 'invalid_input');
-  }
-
-  setSubnetMask(String newSubnetMask) {
-    final valid = _subnetValidator.validate(newSubnetMask);
-    if (valid) {
-      state = state.copyWith(subnetMask: newSubnetMask);
-      updateMaxUserLimit();
-      updateLastClientIPAddress();
-      _updateValidator();
-    }
-    setError('subnetMask', valid ? null : 'invalid_input');
-  }
-
-  setFirstIPAddress(String newFirstIPAddress) {
-    final valid = _ipAddressAsLocalIpValidator.validate(newFirstIPAddress);
-    if (valid) {
-      state = state.copyWith(firstIPAddress: newFirstIPAddress);
-      updateLastClientIPAddress();
-      updateMaxUserLimit();
-      _updateValidator();
-    }
-    setError('firstIPAddress', valid ? null : 'invalid_input');
-  }
-
-  setMaxUsers(String newMaxUsers) {
-    final valid = _maxUsersValidator.validate(newMaxUsers);
-    if (valid) {
-      state = state.copyWith(maxNumUsers: int.parse(newMaxUsers));
-      updateMaxUserLimit();
-      updateLastClientIPAddress();
-      _updateValidator();
-    }
-    setError('maxUsers', valid ? null : 'invalid_input');
-  }
-
-  setAutoDNS(bool isAuto) {
-    state = state.copyWith(isAutoDNS: isAuto);
-  }
-
-  updateDNSMode() {
-    state = state.copyWith(
-        isAutoDNS:
-            state.dns1 != null || state.dns2 != null || state.dns3 != null);
-  }
-
-  updateLastClientIPAddress() {
-    final newLastIP = Utils.getEndDHCPRangeForMaxUsers(
-        state.firstIPAddress, state.maxNumUsers);
-    state = state.copyWith(lastIPAddress: newLastIP);
-  }
-  
-  */
 }

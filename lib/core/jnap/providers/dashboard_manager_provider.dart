@@ -139,6 +139,7 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
     final result = await routerRepository.send(
       JNAPAction.getDeviceInfo,
       fetchRemote: true,
+      retries: 0,
     );
     nodeDeviceInfo = NodeDeviceInfo.fromJson(result.output);
     final prefs = await SharedPreferences.getInstance();

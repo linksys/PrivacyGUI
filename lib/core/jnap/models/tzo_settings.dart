@@ -30,7 +30,7 @@ class TZOSettings extends Equatable {
       'username': username,
       'password': password,
       'hostName': hostName,
-    };
+    }..removeWhere((key, value) => value == null);
   }
 
   factory TZOSettings.fromMap(Map<String, dynamic> map) {

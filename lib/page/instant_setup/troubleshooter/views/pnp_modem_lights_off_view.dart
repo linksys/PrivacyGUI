@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
@@ -50,15 +51,9 @@ class _PnpLightOffViewState extends ConsumerState<PnpModemLightsOffView> {
                       child: AppTextButton.noPadding(
                         loc(context).pnpModemLightsOffTip,
                         onTap: () {
-                          showModalBottomSheet(
-                            context: context,
-                            useRootNavigator: true,
-                            useSafeArea: true,
-                            isScrollControlled: true,
-                            showDragHandle: true,
-                            builder: (context) {
-                              return _bottomSheetContent();
-                            },
+                          showSimpleAppOkDialog(
+                            context,
+                            content: _bottomSheetContent(),
                           );
                         },
                       ),
@@ -86,6 +81,7 @@ class _PnpLightOffViewState extends ConsumerState<PnpModemLightsOffView> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           AppText.headlineSmall(
             loc(context).pnpModemLightsOffTipTitle,

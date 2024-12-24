@@ -68,7 +68,7 @@ class LightDifferentColorModal extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AppText.labelLarge(loc(context).blinkBlue),
+            AppText.labelLarge(loc(context).blinkingBlue),
             AppText.bodyMedium(loc(context).nodeBlinkBlueDesc),
           ],
         ),
@@ -92,7 +92,7 @@ class LightDifferentColorModal extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AppText.labelLarge(loc(context).blinkWhite),
+            AppText.labelLarge(loc(context).blinkingWhite),
             AppText.bodyMedium(loc(context).nodeBlinkWhiteDesc),
           ],
         ),
@@ -116,7 +116,7 @@ class LightDifferentColorModal extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AppText.labelLarge(loc(context).blinkYellow),
+            AppText.labelLarge(loc(context).blinkingYellow),
             AppText.bodyMedium(loc(context).nodeBlinkYellowDesc),
           ],
         ),
@@ -144,7 +144,7 @@ class LightDifferentColorModal extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AppText.labelLarge(loc(context).blinkRed),
+            AppText.labelLarge(loc(context).blinkingRed),
             AppText.bodyMedium(loc(context).nodeBlinkRedDesc),
           ],
         ),

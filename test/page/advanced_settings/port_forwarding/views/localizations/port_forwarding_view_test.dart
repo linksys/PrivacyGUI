@@ -4,13 +4,11 @@ import 'package:privacy_gui/route/route_model.dart';
 import '../../../../../common/test_responsive_widget.dart';
 import '../../../../../common/testable_router.dart';
 
-
 void main() {
-  
   testLocalizations('Port settings view', (tester, locale) async {
     await tester.pumpWidget(
       testableSingleRoute(
-        child: const PortForwardingView(),
+        child: const AppsGamingSettingsView(),
         config: LinksysRouteConfig(
           column: ColumnGrid(column: 9),
         ),

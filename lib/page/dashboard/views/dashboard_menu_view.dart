@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -9,10 +10,13 @@ import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
 import 'package:privacy_gui/page/instant_safety/providers/_providers.dart';
 import 'package:privacy_gui/page/instant_topology/providers/instant_topology_provider.dart';
+import 'package:privacy_gui/providers/connectivity/connectivity_info.dart';
+import 'package:privacy_gui/providers/connectivity/connectivity_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
@@ -63,6 +67,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(child: _buildMenuGridView(createMenuItems())),
+          const AppGap.large2(),
           // const Spacer(),
           // AppTextButton.noPadding('About Linksys', onTap: () {}),
         ],
@@ -91,12 +96,21 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
   }
 
   Widget _buildDeviceGridCell(AppSectionItemData item) {
-    return AppMenuCard(
-      iconData: item.iconData,
-      title: item.title,
-      description: item.description,
-      status: item.status,
-      onTap: item.onTap,
+    final isBridge =
+        ref.watch(dashboardHomeProvider).isBridgeMode && item.disabledOnBridge;
+    return Opacity(
+      opacity: isBridge ? .3 : 1,
+      child: AbsorbPointer(
+        absorbing: isBridge,
+        child: AppMenuCard(
+          iconData: item.iconData,
+          title: item.title,
+          description: item.description,
+          status: item.status,
+          isBeta: item.isBeta,
+          onTap: item.onTap,
+        ),
+      ),
     );
   }
 
@@ -105,6 +119,11 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
     //     ref.watch(authProvider).value?.loginType == LoginType.remote;
     final safetyState = ref.watch(instantSafetyProvider);
     final privacyState = ref.watch(instantPrivacyProvider);
+    // External Speed test check
+    final routerType = ref.watch(connectivityProvider
+        .select((value) => value.connectivityInfo.routerType));
+    final isBehindRouter = routerType == RouterType.behindManaged ||
+        BuildConfig.forceCommandType == ForceCommand.local;
     return [
       AppSectionItemData(
           title: loc(context).incredibleWiFi,
@@ -124,6 +143,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
           title: loc(context).instantTopology,
           description: loc(context).instantTopologyDesc,
           iconData: LinksysIcons.router,
+          disabledOnBridge: true,
           onTap: () {
             _navigateTo(RouteNamed.menuInstantTopology);
           }),
@@ -131,6 +151,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
           title: loc(context).instantSafety,
           description: loc(context).instantSafetyDesc,
           iconData: LinksysIcons.encrypted,
+          disabledOnBridge: true,
           status: safetyState.safeBrowsingType == InstantSafetyType.off,
           onTap: () {
             _navigateTo(RouteNamed.menuInstantSafety);
@@ -140,6 +161,8 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
           description: loc(context).instantPrivacyDesc,
           iconData: LinksysIcons.smartLock,
           status: privacyState.mode != MacFilterMode.allow,
+          isBeta: true,
+          disabledOnBridge: true,
           onTap: () {
             _navigateTo(RouteNamed.menuInstantPrivacy);
           }),
@@ -147,17 +170,16 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
           title: loc(context).instantDevices,
           description: loc(context).instantDevicesDesc,
           iconData: LinksysIcons.devices,
+          disabledOnBridge: true,
           onTap: () {
             _navigateTo(RouteNamed.menuInstantDevices);
           }),
-
       AppSectionItemData(
           title: loc(context).advancedSettings,
           iconData: LinksysIcons.settings,
           onTap: () {
             _navigateTo(RouteNamed.menuAdvancedSettings);
           }),
-
       AppSectionItemData(
           title: loc(context).instantVerify,
           description: loc(context).instantVerifyDesc,
@@ -165,20 +187,14 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
           onTap: () {
             _navigateTo(RouteNamed.menuInstantVerify);
           }),
-      // if (isCloudLogin)
-      //   AppSectionItemData(
-      //       title: loc(context).account,
-      //       description: 'This is a description for this tile',
-      //       iconData: LinksysIcons.accountCircle,
-      //       onTap: () {
-      //         _navigateTo(RouteNamed.accountInfo);
-      //       }),
-      // AppSectionItemData(
-      //     title: 'Linksys LinkUp',
-      //     iconData: getCharactersIcons(context).bellDefault,
-      //     onTap: () {
-      //       _navigateTo(RouteNamed.linkup);
-      //     }),
+      if (isBehindRouter)
+        AppSectionItemData(
+            title: loc(context).externalSpeedText,
+            description: loc(context).speedTestInternetToDeviceDesc,
+            iconData: LinksysIcons.networkCheck,
+            onTap: () {
+              _navigateTo(RouteNamed.speedTestExternal);
+            }),
     ];
   }
 
@@ -246,6 +262,7 @@ class AppMenuCard extends StatelessWidget {
     this.color,
     this.borderColor,
     this.status,
+    this.isBeta = false,
   });
 
   final IconData? iconData;
@@ -255,6 +272,7 @@ class AppMenuCard extends StatelessWidget {
   final Color? color;
   final Color? borderColor;
   final bool? status;
+  final bool isBeta;
 
   @override
   Widget build(BuildContext context) {
@@ -287,10 +305,28 @@ class AppMenuCard extends StatelessWidget {
           if (title != null)
             Padding(
               padding: const EdgeInsets.only(top: Spacing.small2),
-              child: AppText.titleSmall(
-                title ?? '',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              child: Row(
+                children: [
+                  if (isBeta) ...[
+                    Container(
+                      decoration: BoxDecoration(
+                          color:
+                              Theme.of(context).colorScheme.secondaryContainer,
+                          border: Border.all(color: Colors.transparent),
+                          borderRadius: BorderRadius.circular(4)),
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
+                      child: AppText.bodyExtraSmall('Beta'),
+                    ),
+                    const AppGap.small2(),
+                  ],
+                  Expanded(
+                    child: AppText.titleSmall(
+                      title ?? '',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
             ),
           if (description != null)

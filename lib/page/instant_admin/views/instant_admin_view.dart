@@ -184,17 +184,16 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
           if (dashboardManager.skuModelNumber?.endsWith('AH') != true) ...[
             const AppGap.small2(),
             AppListCard(
-            title: AppText.bodyMedium(loc(context).manualFirmwareUpdate),
-            description: AppText.labelLarge(firmwareVersion ?? '--'),
-            trailing: AppTextButton.noPadding(
-              loc(context).manualUpdate,
-              onTap: () {
-            context.goNamed(RouteNamed.manualFirmwareUpdate);
-            
-              },
+              title: AppText.bodyMedium(loc(context).manualFirmwareUpdate),
+              description: AppText.labelLarge(firmwareVersion ?? '--'),
+              trailing: AppTextButton.noPadding(
+                loc(context).manualUpdate,
+                onTap: () {
+                  context.goNamed(RouteNamed.manualFirmwareUpdate);
+                },
+              ),
             ),
-          ),
-          ],          
+          ],
         ],
       ),
     );
@@ -284,9 +283,11 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
 
   _showRouterPasswordModal(String? hint) {
     TextEditingController controller = TextEditingController();
+    TextEditingController confirmController = TextEditingController();
     TextEditingController hintController = TextEditingController()
       ..text = hint ?? '';
     FocusNode hintFocusNode = FocusNode();
+    FocusNode confirmFocusNode = FocusNode();
 
     final hintNotContainPasswordValidator = Validation(
         description: loc(context).routerPasswordRuleHintContainPassword,
@@ -295,41 +296,40 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
     bool isPasswordValid = false;
     bool isHintNotContainPassword =
         hintNotContainPasswordValidator.validator(controller.text);
+    final validations = [
+      Validation(
+          description: loc(context).routerPasswordRuleTenChars,
+          validator: ((text) => LengthRule().validate(text))),
+      Validation(
+          description: loc(context).routerPasswordRuleLowerUpper,
+          validator: ((text) => HybridCaseRule().validate(text))),
+      Validation(
+          description: loc(context).routerPasswordRuleOneNumber,
+          validator: ((text) => DigitalCheckRule().validate(text))),
+      Validation(
+          description: loc(context).routerPasswordRuleSpecialChar,
+          validator: ((text) => SpecialCharCheckRule().validate(text))),
+      Validation(
+          description: loc(context).routerPasswordRuleStartEndWithSpace,
+          validator: ((text) => NoSurroundWhitespaceRule().validate(text))),
+      Validation(
+          description: loc(context).routerPasswordRuleConsecutiveChar,
+          validator: ((text) => !ConsecutiveCharRule().validate(text))),
+      Validation(
+          description: loc(context).passwordsMustMatch,
+          validator: ((text) => confirmController.text == text)),
+    ];
     showSubmitAppDialog(
       context,
       title: loc(context).routerPassword,
       contentBuilder: (context, setState, onSubmit) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          AppPasswordField.withValidator(
+          AppPasswordField(
             border: const OutlineInputBorder(),
-            validations: [
-              Validation(
-                  description: loc(context).routerPasswordRuleTenChars,
-                  validator: ((text) => LengthRule().validate(text))),
-              Validation(
-                  description: loc(context).routerPasswordRuleLowerUpper,
-                  validator: ((text) => HybridCaseRule().validate(text))),
-              Validation(
-                  description: loc(context).routerPasswordRuleOneNumber,
-                  validator: ((text) => DigitalCheckRule().validate(text))),
-              Validation(
-                  description: loc(context).routerPasswordRuleSpecialChar,
-                  validator: ((text) => SpecialCharCheckRule().validate(text))),
-              Validation(
-                  description: loc(context).routerPasswordRuleStartEndWithSpace,
-                  validator: ((text) =>
-                      NoSurroundWhitespaceRule().validate(text))),
-              Validation(
-                  description: loc(context).routerPasswordRuleConsecutiveChar,
-                  validator: ((text) => !ConsecutiveCharRule().validate(text))),
-              // Validation(
-              //     description:
-              //         loc(context).routerPasswordRuleUnsupportSpecialChar,
-              //     validator: ((text) => AsciiRule().validate(text))),
-            ],
             controller: controller,
             headerText: loc(context).routerPasswordNew,
+            validations: validations,
             onValidationChanged: (isValid) {
               setState(() {
                 isPasswordValid = isValid;
@@ -342,8 +342,29 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
               });
             },
             onSubmitted: (_) {
+              FocusScope.of(context).requestFocus(confirmFocusNode);
+            },
+          ),
+          const AppGap.medium(),
+          AppPasswordField(
+            border: const OutlineInputBorder(),
+            controller: confirmController,
+            headerText: loc(context).retypeRouterPassword,
+            focusNode: confirmFocusNode,
+            onChanged: (value) {
+              setState(() {
+                isPasswordValid =
+                    !validations.any((v) => !v.validator(controller.text));
+              });
+            },
+            onSubmitted: (_) {
               FocusScope.of(context).requestFocus(hintFocusNode);
             },
+          ),
+          const AppGap.large2(),
+          AppValidatorWidget(
+            validations: validations,
+            textToValidate: controller.text,
           ),
           const AppGap.large3(),
           AppTextField(

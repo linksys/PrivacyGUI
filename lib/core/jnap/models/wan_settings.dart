@@ -41,10 +41,12 @@ class RouterWANSettings extends Equatable {
     this.wanTaggingSettings,
   });
 
-  factory RouterWANSettings.dhcp({required int mtu}) {
+  factory RouterWANSettings.dhcp(
+      {required int mtu, SinglePortVLANTaggingSettings? wanTaggingSettings}) {
     return RouterWANSettings(
       wanType: 'DHCP',
       mtu: mtu,
+      wanTaggingSettings: wanTaggingSettings,
     );
   }
 
@@ -74,11 +76,13 @@ class RouterWANSettings extends Equatable {
 
   factory RouterWANSettings.l2tp(
       {required int mtu,
-      required TPSettings tpSettings}) {
+      required TPSettings tpSettings,
+      SinglePortVLANTaggingSettings? wanTaggingSettings}) {
     return RouterWANSettings(
       wanType: 'L2TP',
       mtu: mtu,
       tpSettings: tpSettings,
+      wanTaggingSettings: wanTaggingSettings,
     );
   }
 
@@ -96,11 +100,13 @@ class RouterWANSettings extends Equatable {
 
   factory RouterWANSettings.bridge(
       {int mtu = 0,
-      required BridgeSettings bridgeSettings}) {
+      required BridgeSettings bridgeSettings,
+      SinglePortVLANTaggingSettings? wanTaggingSettings}) {
     return RouterWANSettings(
       wanType: 'Bridge',
       mtu: mtu,
       bridgeSettings: bridgeSettings,
+      wanTaggingSettings: wanTaggingSettings,
     );
   }
 

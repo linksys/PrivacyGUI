@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
@@ -21,7 +24,7 @@ class WifiAdvancedSettingsView extends ArgumentsConsumerStatefulView {
 }
 
 class _WifiAdvancedSettingsViewState
-    extends ConsumerState<WifiAdvancedSettingsView> {
+    extends ConsumerState<WifiAdvancedSettingsView> with PageSnackbarMixin {
   WifiAdvancedSettingsState? _preservedState;
 
   @override
@@ -52,20 +55,50 @@ class _WifiAdvancedSettingsViewState
       bottomBar: PageBottomBar(
           isPositiveEnabled: _preservedState != ref.read(wifiAdvancedProvider),
           onPositiveTap: () {
-            doSomethingWithSpinner(
-              context,
-              ref.read(wifiAdvancedProvider.notifier).save().then(
-                (state) {
-                  setState(() {
-                    ref.read(wifiViewProvider.notifier).setChanged(false);
-                    _preservedState = state;
-                  });
-                },
-              ),
-            );
+            if (ref.read(wifiAdvancedProvider).isDFSEnabled == true) {
+              _showConfirmDFSModal().then((value) {
+                if (value == true) {
+                  save();
+                }
+              });
+            } else {
+              save();
+            }
           }),
       child: _buildGrid(),
     );
+  }
+
+  Future save() {
+    return doSomethingWithSpinner(
+      context,
+      ref.read(wifiAdvancedProvider.notifier).save().then(
+        (state) {
+          success(state);
+        },
+      ),
+    ).catchError((error) {
+      routerNotFound();
+    }, test: (error) => error is JNAPSideEffectError).onError(
+        (error, stackTrace) {
+      showErrorMessageSnackBar(error);
+    });
+  }
+
+  void routerNotFound() {
+    showRouterNotFoundAlert(context, ref, onComplete: () {
+      ref.read(wifiAdvancedProvider.notifier).fetch(true).then((state) {
+        success(state);
+      });
+    });
+  }
+
+  void success(WifiAdvancedSettingsState state) {
+    setState(() {
+      ref.read(wifiViewProvider.notifier).setChanged(false);
+      _preservedState = state;
+    });
+    showChangesSavedSnackBar();
   }
 
   Widget _buildGrid() {
@@ -162,7 +195,7 @@ class _WifiAdvancedSettingsViewState
                 semanticLabel: 'dfs',
                 description: AppStyledText.bold(
                   loc(context).dfsDesc,
-                  defaultTextStyle: Theme.of(context).textTheme.bodyLarge!,
+                  defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
                   color: Theme.of(context).colorScheme.primary,
                   tags: const ['a'],
                   callbackTags: {
@@ -197,6 +230,7 @@ class _WifiAdvancedSettingsViewState
                 title: AppText.labelLarge(loc(context).mlo),
                 semanticLabel: 'mlo',
                 description: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     AppText.bodyMedium(loc(context).mloDesc),
                     if (showMLOWarning) ...[
@@ -220,5 +254,25 @@ class _WifiAdvancedSettingsViewState
   void _showDFSModal() {
     showMessageAppOkDialog(context,
         title: loc(context).dfs, message: loc(context).modalDFSDesc);
+  }
+
+  Future<bool?> _showConfirmDFSModal() {
+    return showMessageAppDialog(context,
+        title: loc(context).dfs,
+        message: loc(context).modalDFSDesc,
+        actions: [
+          AppTextButton(
+            loc(context).cancel,
+            onTap: () {
+              context.pop();
+            },
+          ),
+          AppTextButton(
+            loc(context).ok,
+            onTap: () {
+              context.pop(true);
+            },
+          ),
+        ]);
   }
 }

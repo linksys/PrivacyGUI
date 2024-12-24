@@ -9,6 +9,7 @@ import 'package:privacy_gui/core/jnap/models/device.dart';
 import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
+import 'package:privacy_gui/core/jnap/providers/node_light_settings_provider.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -43,9 +44,6 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
       return newState;
     }
 
-    if (serviceHelper.isSupportLedMode()) {
-      getLEDLight();
-    }
     // Details of the specific device
     var location = '';
     var isMaster = false;
@@ -60,6 +58,7 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
     var lanIpAddress = '';
     var wanIpAddress = '';
     var hardwareVersion = '';
+    var isMLO = false;
 
     RawDevice? master = deviceManagerState.deviceList
         .firstWhereOrNull((element) => element.isAuthority);
@@ -87,6 +86,7 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
         connectedDevices = device.connectedDevices
             .map((e) => ref.read(deviceListProvider.notifier).createItem(e))
             .toList();
+        isMLO = device.wirelessConnectionInfo?.isMultiLinkOperation ?? false;
       }
     }
 
@@ -105,25 +105,10 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
       hardwareVersion: hardwareVersion,
       lanIpAddress: lanIpAddress,
       wanIpAddress: wanIpAddress,
+      isMLO: isMLO,
     );
 
     return state;
-  }
-
-  Future<void> getLEDLight() async {
-    return ref.read(deviceManagerProvider.notifier).getLEDLight().then((value) {
-      state = state.copyWith(nodeLightSettings: value);
-    });
-  }
-
-  Future<void> setLEDLight(NodeLightSettings settings) async {
-    return ref
-        .read(deviceManagerProvider.notifier)
-        .setLEDLight(settings)
-        .then((_) => ref.read(deviceManagerProvider.notifier).getLEDLight())
-        .then((value) {
-      state = state.copyWith(nodeLightSettings: settings);
-    });
   }
 
   Future startBlinkNodeLED(String deviceId) async {
