@@ -6,54 +6,42 @@ import 'package:privacy_gui/util/url_helper/url_helper.dart'
     if (dart.library.html) 'package:privacy_gui/util/url_helper/url_helper_web.dart';
 
 const officialWebHost = 'https://store.linksys.com';
-const linkEULA = '$officialWebHost/support-article?articleNum=59241';
+const officialSupportHost = 'https://support.linksys.com';
+
+const linkEULA = 'https://www.linksys.com/pages/end-user-license-agreement';
 const linkTerms = '$officialWebHost/terms.html';
-const linkPrivacy = '$officialWebHost/privacy-and-security.html';
-const linkThirdParty = '$officialWebHost/support-article?articleNum=47763';
+const linkPrivacy =
+    'https://www.linksys.com/blogs/support-article/linksys-privacy-policy';
+const linkThirdParty = '$officialSupportHost/kb/article/943-en';
 const linkSupport = '$officialWebHost/linksys-support';
 // FAQ Setup
-const linkSetupCannotAddChildNode =
-    '$officialWebHost/support-article?articleNum=49041#Q1PlaceNodes';
-const linkSetupNoInternetConnection =
-    '$officialWebHost/support-article?articleNum=48464';
+const linkSetupCannotAddChildNode = '$officialSupportHost/kb/article/6793-en';
+const linkSetupNoInternetConnection = '$officialSupportHost/kb/article/6794-en';
 // FAQ Connectivity
-const linkConnectivityLoseChildNode =
-    '$officialWebHost/support-article?articleNum=49041#Q2NodeConnection';
-const linkConnectivityLoseDevices =
-    '$officialWebHost/support-article?articleNum=49041#Q3DeviceConnection';
-const linkConnectivityDeviceNoWiFi =
-    '$officialWebHost/support-article?articleNum=49782';
+const linkConnectivityLoseChildNode = '$officialSupportHost/kb/article/6873-en';
+const linkConnectivityLoseDevices = '$officialSupportHost/kb/article/6796-en';
+const linkConnectivityDeviceNoWiFi = '$officialSupportHost/kb/article/6797-en';
 const linkConnectivityDeviceNoBestNode =
-    '$officialWebHost/support-article?articleNum=49041#Q4DeviceNode';
+    '$officialSupportHost/kb/article/6798-en';
 // FAQ Speed
-const linkSpeedMyInternetSlow =
-    '$officialWebHost/support-article?articleNum=47970#q2';
-const linkSpeedSpecificDeviceSlow =
-    '$officialWebHost/support-article?articleNum=47970#q3';
-const linkSpeedSlowAfterAddNode =
-    '$officialWebHost/support-article?articleNum=47970#q4';
+const linkSpeedMyInternetSlow = '$officialSupportHost/kb/article/6873-en';
+const linkSpeedSpecificDeviceSlow = '$officialSupportHost/kb/article/6873-en';
+const linkSpeedSlowAfterAddNode = '$officialSupportHost/kb/article/6873-en';
 // FAQ Password And Access
 const linkPasswordLoginByRouterPassword =
-    '$officialWebHost/support-article?articleNum=50112#q2';
+    '$officialSupportHost/kb/article/6802-en';
 const linkPasswordForgotRouterPassword =
-    '$officialWebHost/support-article?articleNum=50112#q4';
+    '$officialSupportHost/kb/article/6803-en';
 const linkPasswordChangeWiFiNamePassword =
-    '$officialWebHost/support-article?articleNum=48369';
-const linkPasswordAccessByWebBrowser =
-    '$officialWebHost/support-article?articleNum=50112#q3';
+    '$officialSupportHost/kb/article/6804-en';
 // FAQ Hardware
-const linkHardwareWhatLightMean =
-    '$officialWebHost/support-article?articleNum=48301';
-const linkHardwareHowToFactoryReset =
-    '$officialWebHost/support-article?articleNum=50124';
-const linkHardwareNodeKeepRestarting =
-    '$officialWebHost/support-article?articleNum=48905#Restarting';
-const linkHardwareLightsNotWorking =
-    '$officialWebHost/support-article?articleNum=48905#LightNotWorking';
-const linkHardwareNodeNotTureOn =
-    '$officialWebHost/support-article?articleNum=48905#NotTurningOn';
+const linkHardwareWhatLightMean = '$officialSupportHost/kb/article/97-en';
+const linkHardwareHowToFactoryReset = '$officialSupportHost/kb/article/201-en';
+const linkHardwareLightsNotWorking = '$officialSupportHost/kb/article/6807-en';
+const linkHardwareNodeNotTureOn = '$officialSupportHost/kb/article/6807-en';
 const linkHardwareEthernetPortNotWorking =
-    '$officialWebHost/support-article?articleNum=48905#PortsNotWorking';
+    '$officialSupportHost/kb/article/6807-en';
+const linkCheckIfAutoFirmwareOn = '$officialSupportHost/kb/article/6810-en';
 // Explanation
 const linksysCertExplanation =
     '$officialWebHost/support-article?articleNum=318835';
