@@ -34,6 +34,7 @@ class StyledAppTabPageView extends ConsumerWidget {
   final AppBarStyle appBarStyle;
   final double? expandedHeight;
   final ScrollController? scrollController;
+  final TabController? tabController;
   final bool useMainPadding;
   final EdgeInsets? padding;
   final void Function(int index)? onTap;
@@ -58,6 +59,7 @@ class StyledAppTabPageView extends ConsumerWidget {
     this.floating = false,
     this.expandedHeight,
     this.scrollController,
+    this.tabController,
     this.useMainPadding = true,
     this.padding,
     this.onTap,
@@ -118,6 +120,7 @@ class StyledAppTabPageView extends ConsumerWidget {
         ),
         expandedHeight: expandedHeight,
         scrollController: scrollController,
+        tabController: tabController,
         pinned: pinned,
         floating: floating,
         snap: snap,
