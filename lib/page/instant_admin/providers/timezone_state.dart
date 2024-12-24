@@ -23,7 +23,7 @@ class TimezoneState extends Equatable {
 
   factory TimezoneState.init() {
     return const TimezoneState(
-      isDaylightSaving: false,
+      isDaylightSaving: true,
       timezoneId: 'PST8',
       supportedTimezones: [],
       error: null,

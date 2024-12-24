@@ -49,6 +49,9 @@ class _NoIPDNSFormState extends State<NoIPDNSForm> {
         AppTextField.outline(
           headerText: loc(context).username,
           controller: _usernameController,
+          errorText: _usernameController.text.isEmpty
+              ? loc(context).invalidUsername
+              : null,
           onChanged: (value) {
             widget.onFormChanged.call(widget.value?.copyWith(username: value));
           },
@@ -57,6 +60,9 @@ class _NoIPDNSFormState extends State<NoIPDNSForm> {
         AppTextField.outline(
           headerText: loc(context).password,
           controller: _passwordController,
+          errorText: _passwordController.text.isEmpty
+              ? loc(context).invalidPassword
+              : null,
           onChanged: (value) {
             widget.onFormChanged.call(widget.value?.copyWith(password: value));
           },
@@ -65,6 +71,9 @@ class _NoIPDNSFormState extends State<NoIPDNSForm> {
         AppTextField.outline(
           headerText: loc(context).hostName,
           controller: _hostnameController,
+          errorText: _hostnameController.text.isEmpty
+              ? loc(context).invalidHostname
+              : null,
           onChanged: (value) {
             widget.onFormChanged.call(widget.value?.copyWith(hostName: value));
           },

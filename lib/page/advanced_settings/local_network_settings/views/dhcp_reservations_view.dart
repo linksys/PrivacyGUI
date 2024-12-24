@@ -184,7 +184,7 @@ class _DHCPReservationsContentViewState
     return list.isEmpty
         ? SizedBox.shrink()
         : SizedBox(
-            height: list.length * 100,
+            height: list.length * 108 + 16,
             // height: constraint.maxHeight,
             child: ListView.separated(
               itemCount: list.length,
@@ -246,6 +246,7 @@ class _DHCPReservationsContentViewState
   Future _showManualAddReservationModal([
     DHCPReservation? item,
   ]) {
+    final reservationList = ref.watch(dhcpReservationProvider).reservations;
     final routerIp = ref.watch(localNetworkSettingProvider).ipAddress;
     final subnetMask = ref.watch(localNetworkSettingProvider).subnetMask;
     final subnetToken = subnetMask.split('.');
@@ -256,8 +257,12 @@ class _DHCPReservationsContentViewState
     bool enableSave = false;
     bool isNameValid(String name) => !HostNameRule().validate(name);
     bool isIpValid(String ip) =>
-        IpAddressAsLocalIpValidator(routerIp, subnetMask).validate(ip);
-    bool isMacValid(String mac) => MACAddressRule().validate(mac);
+        IpAddressAsLocalIpValidator(routerIp, subnetMask).validate(ip) &&
+        !reservationList.any((e) => e.data.ipAddress == ip);
+    bool isMacValid(String mac) =>
+        MACAddressWithReservedRule().validate(mac) &&
+        !reservationList
+            .any((e) => e.data.macAddress.toUpperCase() == mac.toUpperCase());
     bool updateEnableSave() {
       final name = deviceNameController.text;
       final ip = ipController.text;
@@ -341,6 +346,7 @@ class _DHCPReservationsContentViewState
                   data: DHCPReservation(
                       macAddress: mac, ipAddress: ip, description: name),
                 ),
+                true,
               );
         },
         checkPositiveEnabled: () => enableSave);

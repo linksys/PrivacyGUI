@@ -121,7 +121,7 @@
   },
   "byConnection": "By connection",
   "byNode": "By node",
-  "byWifiName": "By WiFi Name",
+  "byWifi": "By WiFi",
   "byRadio": "By Radio",
   "resetFilters": "Reset Filters",
   "online": "Online",
@@ -586,13 +586,13 @@
   "faqListLogInByRouterPassword": "Log in to router using router password",
   "faqListForgotRouterPassword": "Forgot router password",
   "faqListChangeWiFiNamePassword": "Change WiFi name or password",
-  "faqListAccessByWebBrowser": "Access router locally through a web browser",
   "faqListWhatLightsMean": "What do the lights on my node mean?",
   "faqListHowToFactoryReset": "How to factory reset your node",
   "faqListNodeKeepRestarting": "Node keeps restarting",
   "faqListLightsNotWorking": "Node lights not working",
   "faqListNodeNotTurnOn": "Node not turning on",
   "faqListEthernetPortNotWorking": "Ethernet ports not working",
+  "faqListCheckIfFirmwareAutoUpdate": "How to check if firmware Auto-Updates is turned on",
   "callSupportSelectionTitle": "Choose your region",
   "callSupportDetailTwentyFourSeven": "24 hours, 7 days a week",
   "callSupportDetailDesc": "For prompt service, have your product type, model and serial # handy.",
@@ -904,7 +904,7 @@
   "dateAndTime": "Date & Time",
   "upstream": "Upstream",
   "ssid": "SSID",
-  "instantPrivacyDescription": "This will stop any new devices from connecting to the network until while feature is enabled.",
+  "instantPrivacyDescription": "Instant-Privacy will stop any new devices from connecting to the network until the feature is disabled.",
   "theDevicesAllowedToConnect": "These are the only devices allowed to connect.",
   "instantPrivacyInfo": "Enabling this feature will prevent any new devices from connecting to your network. If you need to add new devices to your network please disable this Instant-Privacy, connect the new devices, and then turn Instant-Privacy back on.",
   "turnOnInstantPrivacy": "Turn on Instant-Privacy?",
@@ -995,7 +995,6 @@
   "wifiPasswordLimit": "8 - 64 characters",
   "wifiSSIDLengthLimit": "Must less than 32 character",
   "connectedSpeed": "Connected Speed",
-  "dnsIpAddress": "DNS IP address",
   "pingNetwork": "Ping Network",
   "invalidDestinationMacAddress": "Invalid destination MAC address",
   "deviceNameExceedMaxSize": "Name can be only less than 256",
@@ -1064,5 +1063,18 @@
   "errorGuestSSIDConflict": "Guest network names must be different from your main network names. Please enter a different name.",
   "deviceNameAndIcon": "Device Name and Icon",
   "connectionStatus": "Connection Status",
-  "connectedVia": "Connected via"
+  "connectedVia": "Connected via",
+  "unknown": "Unknown",
+  "invalidIPAddressSubnet": "IP address not in valid subnet",
+  "redirect": "Redirect",
+  "redirectDescription": "Please connect your device to the router before proceeding to {ip}.",
+  "@redirectDescription": {
+    "description": "ip",
+    "placeholders": {
+      "ip": {
+        "type": "String",
+        "example": "192.168.1.1"
+      }
+    }
+  }
 }

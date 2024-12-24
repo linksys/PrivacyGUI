@@ -67,6 +67,8 @@ class _FirmwareUpdateDetailViewState
     logger.i('[FIRMWARE]: Ongoing process: ${ongoingList.map((e) {
       return (e.$1.friendlyName, e.$2);
     })}');
+    // When the client fails to reconnect to the router after updating the firmware
+    // the retry requests will reach the max limit and the alert will pop up
     ref.listen(firmwareUpdateProvider, (prev, next) {
       if (prev?.isRetryMaxReached == false && next.isRetryMaxReached == true) {
         showRouterNotFoundAlert(context, ref, onComplete: () async {
@@ -124,7 +126,9 @@ class _FirmwareUpdateDetailViewState
                   ),
                 ],
               ),
-              footer: isUpdateAvailable
+              // There will be a short offline period after firmware updating
+              // During this period, the mock nodes displayed should not be able to be updated
+              footer: isUpdateAvailable && state.isChildAllUp
                   ? Padding(
                       padding: const EdgeInsets.only(top: Spacing.large5),
                       child: AppFilledButton(
@@ -146,6 +150,8 @@ class _FirmwareUpdateDetailViewState
     if (list.isEmpty) {
       // if updating is ture but there are not items in the ongoing list,
       // it is a temporary blank period before getting the operation data
+      // Or it is the last FwUpdateStatus request with a successful result 
+      // and without pending operation before isUpdating is set to false
       return const AppFullScreenSpinner();
     }
     return Center(

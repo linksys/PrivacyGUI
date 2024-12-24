@@ -55,7 +55,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
           FirmwareUpdateSettings.fromMap(fwUpdateSettingsRaw.output);
     }
 
-    List<FirmwareUpdateStatus>? fwUpdateStatusList =
+    List<FirmwareUpdateStatus>? resultStatusList =
         switch (serviceHelper.isSupportNodeFirmwareUpdate()) {
       true when nodesFwUpdateCheckRaw is JNAPSuccess =>
         List.from(nodesFwUpdateCheckRaw.output['firmwareUpdateStatus'])
@@ -66,23 +66,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
         ],
       _ => [],
     };
-
-    // After fw updating and router restarting, the child nodes will be offline for a while
-    // During this period, the polling will only obtain the status of the master device
-    // In order to maintain the integrity of the list on the page, the status list should not be overwritten in state
-    final cachedStatusList = ref.read(firmwareUpdateCandidateProvider);
-    if (cachedStatusList != null) {
-      if (_isRecordConsistent(fwUpdateStatusList, cachedStatusList)) {
-        logger.d(
-            '[FIRMWARE]: the fetched status is correct, remove the saved one');
-        // Clean out the saved status list
-        ref.read(firmwareUpdateCandidateProvider.notifier).state = null;
-      } else {
-        logger.d(
-            '[FIRMWARE]: the fetched status number is incorrect, use the saved one');
-        fwUpdateStatusList = cachedStatusList;
-      }
-    }
+    final fwUpdateStatusRecord = _examineStatusResult(resultStatusList);
 
     final state = FirmwareUpdateState(
       settings: fwUpdateSettings ??
@@ -90,9 +74,10 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
             updatePolicy: FirmwareUpdateSettings.firmwareUpdatePolicyAuto,
             autoUpdateWindow: FirmwareAutoUpdateWindow.simple(),
           ),
-      nodesStatus: fwUpdateStatusList,
+      nodesStatus: fwUpdateStatusRecord.$1,
+      isChildAllUp: fwUpdateStatusRecord.$2,
     );
-    logger.d('[FIRMWARE]: State = ${state.toJson()}');
+    logger.d('[FIRMWARE]: Build: state = ${state.toJson()}');
     return state;
   }
 
@@ -117,7 +102,24 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     });
   }
 
-  Stream<List<FirmwareUpdateStatus>> checkFirmwareUpdateStream(
+  Future fetchAvailableFirmwareUpdates() {
+    logger.i('[FIRMWARE]: Examine if there are firmware updates available');
+    return fetchFirmwareUpdateStream(force: true, retry: 1)
+        .single
+        .onError((error, stackTrace) => [])
+        .then((resultList) {
+      // In addition to the build function, state updates here should also be examined
+      final statusRecord = _examineStatusResult(resultList);
+      logger.d(
+          '[FIRMWARE]: Fetch available firmware updates: saved status list = $statusRecord');
+      state = state.copyWith(
+        nodesStatus: statusRecord.$1,
+        isChildAllUp: statusRecord.$2,
+      );
+    });
+  }
+
+  Stream<List<FirmwareUpdateStatus>> fetchFirmwareUpdateStream(
       {bool force = false, int retry = 3}) async* {
     final lastCheckTime =
         (state.nodesStatus?.map((e) => e.lastSuccessfulCheckTime).toList() ??
@@ -126,7 +128,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
                 .map((e) => e?.millisecondsSinceEpoch ?? 0)
                 .maxOrNull ??
             0;
-    if (_checkFirmwareUpdatePeriod(lastCheckTime) && !force) {
+    if (!_isNeedDoFetch(lastCheckTime: lastCheckTime) && !force) {
       logger.i(
           '[FIRMWARE]: Skip checking firmware update avaliable: last check time {${DateTime.fromMillisecondsSinceEpoch(lastCheckTime)}}');
       yield [];
@@ -149,21 +151,12 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     }
   }
 
-  Future checkFirmwareUpdateStatus() {
-    logger.i('[FIRMWARE]: Check if there are firmware updates available');
-    return checkFirmwareUpdateStream(force: true, retry: 1)
-        .single
-        .onError((error, stackTrace) => [])
-        .then((statusList) {
-      state = state.copyWith(nodesStatus: statusList);
-    });
-  }
-
   Future updateFirmware() async {
     logger.i('[FIRMWARE]: Update firmware: Start');
     final benchmark = BenchMarkLogger(name: 'FirmwareUpdate');
     benchmark.start();
     state = state.copyWith(isUpdating: true);
+    logger.d('[FIRMWARE]: Save the current status list: ${state.nodesStatus}');
     // Save the current status list
     ref.read(firmwareUpdateCandidateProvider.notifier).state =
         state.nodesStatus;
@@ -202,6 +195,8 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
         }
       },
     ).listen((statusList) {
+      // The updated list here will be continuously rendered on different screens
+      // No need to examine the node status number
       state = state.copyWith(nodesStatus: statusList);
     });
   }
@@ -210,7 +205,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     final polling = ref.read(pollingProvider.notifier);
     return polling
         .forcePolling()
-        .then((_) => checkFirmwareUpdateStatus())
+        .then((_) => fetchAvailableFirmwareUpdates())
         .then((_) {
       state = state.copyWith(isUpdating: false);
       polling.startPolling();
@@ -256,6 +251,26 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     return (state.nodesStatus ?? [])
         .where((e) => e.availableUpdate != null)
         .length;
+  }
+
+  (List<FirmwareUpdateStatus>, bool) _examineStatusResult(
+      List<FirmwareUpdateStatus> resultList) {
+    // After fw updating and router restarting, the child nodes will be offline for a while
+    // During this period, the polling will only obtain the status of the master node
+    // In order to maintain the integrity of the list on the page, the status list should not be overwritten in state
+    final cachedList = ref.read(firmwareUpdateCandidateProvider);
+    if (cachedList != null) {
+      if (_isRecordConsistent(resultList, cachedList)) {
+        logger.d('[FIRMWARE]: Fetched status is correct - nodes have resumed');
+        return (resultList, true);
+      } else {
+        logger.d('[FIRMWARE]: Fetched status mismatch! - show the cached list');
+        return (cachedList, false);
+      }
+    }
+    // Initial state - no updates in progress
+    logger.d('[FIRMWARE]: No cached node status list');
+    return (resultList, true);
   }
 
   ///
@@ -319,9 +334,9 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     });
   }
 
-  bool _checkFirmwareUpdatePeriod(int lastCheckTime) {
+  bool _isNeedDoFetch({required int lastCheckTime}) {
     final period = firmwareCheckPeriod.inMilliseconds;
-    return (DateTime.now().millisecondsSinceEpoch - lastCheckTime) < period;
+    return (DateTime.now().millisecondsSinceEpoch - lastCheckTime) >= period;
   }
 
   Future<bool> manualFirmwareUpdate(String filename, List<int> bytes) async {
@@ -379,6 +394,8 @@ class ManualFirmwareUpdateException implements Exception {
   ManualFirmwareUpdateException(this.result);
 }
 
+// This provider is used to save the original list of all nodes and their fw status
+// when the firmware update right started
 final firmwareUpdateCandidateProvider =
     StateProvider<List<FirmwareUpdateStatus>?>((ref) {
   return null;

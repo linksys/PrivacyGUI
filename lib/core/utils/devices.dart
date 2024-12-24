@@ -109,13 +109,14 @@ extension LinksysDeviceExt on LinksysDevice {
   }
 
   bool isOnline() {
-    return nodeType == 'Master'
-        ? connections.isNotEmpty
-        : connections.isNotEmpty &&
-            knownInterfaces?.any((element) =>
-                    element.interfaceType == 'Wired' ||
-                    element.interfaceType == 'Wireless') ==
-                true;
+    // return nodeType == 'Master'
+    //     ? connections.isNotEmpty
+    //     : connections.isNotEmpty &&
+    //         knownInterfaces?.any((element) =>
+    //                 element.interfaceType == 'Wired' ||
+    //                 element.interfaceType == 'Wireless') ==
+    //             true;
+    return connections.isNotEmpty;
   }
 }
 

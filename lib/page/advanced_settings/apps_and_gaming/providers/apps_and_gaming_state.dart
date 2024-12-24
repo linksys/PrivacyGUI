@@ -11,12 +11,14 @@ class AppsAndGamingViewState extends Equatable {
   final SinglePortForwardingListState? preserveSinglePortForwardingListState;
   final PortRangeForwardingListState? preservePortRangeForwardingListState;
   final PortRangeTriggeringListState? preservePortRangeTriggeringListState;
+  final bool isDataValid;
 
   const AppsAndGamingViewState({
     this.preserveDDNSState,
     this.preserveSinglePortForwardingListState,
     this.preservePortRangeForwardingListState,
     this.preservePortRangeTriggeringListState,
+    this.isDataValid = true,
   });
 
   AppsAndGamingViewState copyWith({
@@ -27,6 +29,7 @@ class AppsAndGamingViewState extends Equatable {
         preservePortRangeForwardingListState,
     ValueGetter<PortRangeTriggeringListState?>?
         preservePortRangeTriggeringListState,
+    bool? isDataValid,
   }) {
     return AppsAndGamingViewState(
       preserveDDNSState: preserveDDNSState != null
@@ -44,6 +47,7 @@ class AppsAndGamingViewState extends Equatable {
           preservePortRangeTriggeringListState != null
               ? preservePortRangeTriggeringListState()
               : this.preservePortRangeTriggeringListState,
+      isDataValid: isDataValid ?? this.isDataValid,
     );
   }
 
@@ -56,6 +60,7 @@ class AppsAndGamingViewState extends Equatable {
           preservePortRangeForwardingListState?.toMap(),
       'preservePortRangeTriggeringListState':
           preservePortRangeTriggeringListState?.toMap(),
+      'isDataValid': isDataValid,
     };
   }
 
@@ -79,6 +84,7 @@ class AppsAndGamingViewState extends Equatable {
               ? PortRangeTriggeringListState.fromMap(
                   map['preservePortRangeTriggeringListState'])
               : null,
+      isDataValid: map['isDataValid'] ?? false,
     );
   }
 
@@ -89,14 +95,17 @@ class AppsAndGamingViewState extends Equatable {
 
   @override
   String toString() {
-    return 'AppsAndGamingViewState(preserveDDNSState: $preserveDDNSState, preserveSinglePortForwardingListState: $preserveSinglePortForwardingListState, preservePortRangeForwardingListState: $preservePortRangeForwardingListState, preservePortRangeTriggeringListState: $preservePortRangeTriggeringListState)';
+    return 'AppsAndGamingViewState(preserveDDNSState: $preserveDDNSState, preserveSinglePortForwardingListState: $preserveSinglePortForwardingListState, preservePortRangeForwardingListState: $preservePortRangeForwardingListState, preservePortRangeTriggeringListState: $preservePortRangeTriggeringListState, isDataValid: $isDataValid)';
   }
 
   @override
-  List<Object?> get props => [
-        preserveDDNSState,
-        preserveSinglePortForwardingListState,
-        preservePortRangeForwardingListState,
-        preservePortRangeTriggeringListState
-      ];
+  List<Object?> get props {
+    return [
+      preserveDDNSState,
+      preserveSinglePortForwardingListState,
+      preservePortRangeForwardingListState,
+      preservePortRangeTriggeringListState,
+      isDataValid,
+    ];
+  }
 }

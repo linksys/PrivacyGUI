@@ -27,7 +27,8 @@ class _AppsGamingSettingsViewState extends ConsumerState<AppsGamingSettingsView>
     super.initState();
 
     doSomethingWithSpinner(
-        context, ref.read(appsAndGamingProvider.notifier).fetch());
+            context, ref.read(appsAndGamingProvider.notifier).fetch())
+        .then((state) {});
   }
 
   @override
@@ -65,7 +66,9 @@ class _AppsGamingSettingsViewState extends ConsumerState<AppsGamingSettingsView>
     return StyledAppPageView(
       appBarStyle: AppBarStyle.none,
       bottomBar: PageBottomBar(
-        isPositiveEnabled: ref.read(appsAndGamingProvider.notifier).isChanged(),
+        isPositiveEnabled:
+            ref.read(appsAndGamingProvider.notifier).isChanged() &&
+                ref.watch(appsAndGamingProvider.notifier).isDataValid(),
         onPositiveTap: () {
           doSomethingWithSpinner(
                   context, ref.read(appsAndGamingProvider.notifier).save())

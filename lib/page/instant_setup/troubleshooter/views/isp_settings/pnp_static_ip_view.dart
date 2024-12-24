@@ -7,6 +7,7 @@ import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/_
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/utils.dart';
+import 'package:privacy_gui/validator_rules/_validator_rules.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
@@ -27,6 +28,16 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
   final _dns1Controller = TextEditingController();
   final _dns2Controller = TextEditingController();
   var _hasExtraDNS = false;
+
+  final subnetMaskValidator = SubnetMaskValidator();
+  final ipAddressValidator = IpAddressValidator();
+  final requiredIpAddressValidator = IpAddressRequiredValidator();
+  String? _ipError;
+  String? _subnetError;
+  String? _gatewayError;
+  String? _dns1Error;
+  String? _dns2Error;
+
   String? errorMessage;
 
   @override
@@ -68,7 +79,17 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
             ),
             controller: _ipController,
             border: const OutlineInputBorder(),
-            onFocusChanged: (isFocused) {},
+            errorText: _ipError,
+            onFocusChanged: (isFocused) {
+              if (!isFocused) {
+                setState(() {
+                  _ipError = ipAddressValidator.validate(_ipController.text)
+                      ? null
+                      : loc(context).invalidIpAddress;
+                });
+                isDataValidate();
+              }
+            },
           ),
           const AppGap.large2(),
           AppIPFormField(
@@ -78,6 +99,18 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
             ),
             controller: _subnetController,
             border: const OutlineInputBorder(),
+            errorText: _subnetError,
+            onFocusChanged: (isFocused) {
+              if (!isFocused) {
+                setState(() {
+                  _subnetError =
+                      subnetMaskValidator.validate(_subnetController.text)
+                          ? null
+                          : loc(context).invalidSubnetMask;
+                });
+                isDataValidate();
+              }
+            },
           ),
           const AppGap.large2(),
           AppIPFormField(
@@ -87,6 +120,18 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
             ),
             controller: _gatewayController,
             border: const OutlineInputBorder(),
+            errorText: _gatewayError,
+            onFocusChanged: (isFocused) {
+              if (!isFocused) {
+                setState(() {
+                  _gatewayError =
+                      ipAddressValidator.validate(_gatewayController.text)
+                          ? null
+                          : loc(context).invalidIpAddress;
+                });
+                isDataValidate();
+              }
+            },
           ),
           const AppGap.large2(),
           AppIPFormField(
@@ -96,6 +141,24 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
             ),
             controller: _dns1Controller,
             border: const OutlineInputBorder(),
+            errorText: _dns1Error,
+            onFocusChanged: (isFocused) {
+              if (!isFocused) {
+                if (_dns1Controller.text.isNotEmpty) {
+                  setState(() {
+                    _dns1Error =
+                        ipAddressValidator.validate(_dns1Controller.text)
+                            ? null
+                            : loc(context).invalidDns;
+                  });
+                } else {
+                  setState(() {
+                    _dns1Error = null;
+                  });
+                }
+                isDataValidate();
+              }
+            },
           ),
           Visibility(
             visible: _hasExtraDNS,
@@ -123,17 +186,49 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
                 ),
                 controller: _dns2Controller,
                 border: const OutlineInputBorder(),
+                errorText: _dns2Error,
+                onFocusChanged: (isFocused) {
+                  if (!isFocused) {
+                    if (_dns2Controller.text.isNotEmpty) {
+                      setState(() {
+                        _dns2Error =
+                            ipAddressValidator.validate(_dns2Controller.text)
+                                ? null
+                                : loc(context).invalidDns;
+                      });
+                    } else {
+                      setState(() {
+                        _dns2Error = null;
+                      });
+                    }
+                    isDataValidate();
+                  }
+                },
               ),
             ),
           ),
           const AppGap.large5(),
           AppFilledButton(
             loc(context).next,
-            onTap: onNext,
+            onTap: isDataValidate() ? onNext : null,
           ),
         ],
       ),
     );
+  }
+
+  bool isDataValidate() {
+    final ipAddress = _ipController.text;
+    final subnetMask = _subnetController.text;
+    final gatewayIp = _gatewayController.text;
+    final dns1 = _dns1Controller.text;
+    final dns2 = _dns2Controller.text;
+
+    return requiredIpAddressValidator.validate(ipAddress) &&
+        subnetMaskValidator.validate(subnetMask) &&
+        requiredIpAddressValidator.validate(gatewayIp) &&
+        (dns1.isEmpty || ipAddressValidator.validate(dns1)) &&
+        (dns2.isEmpty || ipAddressValidator.validate(dns2));
   }
 
   void onNext() async {
@@ -148,8 +243,8 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
         ),
         staticGateway: () => _gatewayController.text,
         staticDns1: () => _dns1Controller.text,
-        staticDns2:
-            () => _dns2Controller.text.isNotEmpty ? _dns2Controller.text : null,
+        staticDns2: () =>
+            _dns2Controller.text.isNotEmpty ? _dns2Controller.text : null,
       ),
     );
 

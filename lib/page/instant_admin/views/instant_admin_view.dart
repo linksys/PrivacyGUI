@@ -1,9 +1,11 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/models/firmware_update_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/dashboard_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -20,6 +22,7 @@ import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
+import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/input_field/validator_widget.dart';
 import 'package:privacygui_widgets/widgets/panel/switch_trigger_tile.dart';
@@ -70,132 +73,174 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
   @override
   Widget build(BuildContext context) {
     final routerPasswordState = ref.watch(routerPasswordProvider);
-    final timezoneState = ref.watch(timezoneProvider);
     final isFwAutoUpdate = ref.watch(firmwareUpdateProvider
             .select((value) => value.settings.updatePolicy)) ==
         FirmwareUpdateSettings.firmwareUpdatePolicyAuto;
+    final dashboardManagerState = ref.watch(dashboardManagerProvider);
+    final timezoneState = ref.watch(timezoneProvider);
     final powerTableState = ref.watch(powerTableProvider);
-    final dashboardManager = ref.watch(dashboardManagerProvider);
-    final firmwareVersion = dashboardManager.deviceInfo?.firmwareVersion;
+
+    final widgets = [
+      _buildPasswordWidget(context, routerPasswordState),
+      _buildAutoFirmwareWidget(context, isFwAutoUpdate),
+      if (dashboardManagerState.skuModelNumber?.endsWith('AH') != true)
+        _buildManualFirmwareWidget(context, dashboardManagerState),
+      _buildTimezoneWidget(context, timezoneState),
+      if (powerTableState.isPowerTableSelectable)
+        _buildTransmitRegionWidget(context, powerTableState),
+    ];
 
     return StyledAppPageView(
-      scrollable: true,
       title: loc(context).instantAdmin,
+      child: MasonryGridView.count(
+        crossAxisCount: ResponsiveLayout.isMobileLayout(context) ? 1 : 2,
+        mainAxisSpacing: Spacing.small2,
+        crossAxisSpacing: ResponsiveLayout.columnPadding(context),
+        itemCount: widgets.length,
+        itemBuilder: (context, index) => widgets[index],
+      ),
+    );
+  }
+
+   AppCard _buildPasswordWidget(
+    BuildContext context,
+    RouterPasswordState routerPasswordState,
+  ) {
+    return AppCard(
+      padding: const EdgeInsets.symmetric(
+        vertical: Spacing.medium,
+        horizontal: Spacing.large2,
+      ),
       child: Column(
         children: [
-          AppCard(
-            padding: const EdgeInsets.symmetric(
-                vertical: Spacing.medium, horizontal: Spacing.large2),
-            child: Column(children: [
-              AppListCard(
-                padding: EdgeInsets.zero,
-                showBorder: false,
-                title: AppText.bodyMedium(loc(context).routerPassword),
-                description: Theme(
-                  data: Theme.of(context).copyWith(
-                      inputDecorationTheme: const InputDecorationTheme(
-                          isDense: true, contentPadding: EdgeInsets.zero)),
-                  child: IntrinsicWidth(
-                      child: AppPasswordField(
-                    semanticLabel: 'admin Password',
-                    readOnly: true,
-                    border: InputBorder.none,
-                    controller: _passwordController
-                      ..text = routerPasswordState.adminPassword,
-                    suffixIconConstraints: const BoxConstraints(),
-                  )),
-                ),
-                trailing: const Icon(
-                  LinksysIcons.edit,
-                  semanticLabel: 'edit',
-                ),
-                onTap: () {
-                  _showRouterPasswordModal(routerPasswordState.hint);
-                },
-              ),
-              const Divider(),
-              AppListCard(
-                padding: EdgeInsets.zero,
-                showBorder: false,
-                title: AppText.bodySmall(loc(context).routerPasswordHint),
-                description: routerPasswordState.hint.isEmpty
-                    ? AppText.labelLarge(loc(context).setOne)
-                    : AppText.bodyMedium(routerPasswordState.hint),
-              ),
-            ]),
-          ),
-          const AppGap.small2(),
-          AppCard(
-            padding: const EdgeInsets.symmetric(
-                vertical: Spacing.medium, horizontal: Spacing.large2),
-            child: AppSwitchTriggerTile(
-              value: isFwAutoUpdate,
-              title: AppText.labelLarge(loc(context).autoFirmwareUpdate),
-              semanticLabel: 'auto firmware update',
-              onChanged: (value) {},
-              event: (value) async {
-                await ref
-                    .read(firmwareUpdateProvider.notifier)
-                    .setFirmwareUpdatePolicy(value
-                        ? FirmwareUpdateSettings.firmwareUpdatePolicyAuto
-                        : FirmwareUpdateSettings.firmwareUpdatePolicyManual);
-              },
-            ),
-          ),
-          const AppGap.small2(),
           AppListCard(
-            title: AppText.bodyLarge(loc(context).timezone),
-            description: AppText.labelLarge(_getTimezone(timezoneState)),
-            trailing: const Icon(LinksysIcons.chevronRight),
+            padding: EdgeInsets.zero,
+            showBorder: false,
+            title: AppText.bodyMedium(loc(context).routerPassword),
+            description: Theme(
+              data: Theme.of(context).copyWith(
+                  inputDecorationTheme: const InputDecorationTheme(
+                      isDense: true, contentPadding: EdgeInsets.zero)),
+              child: IntrinsicWidth(
+                  child: Semantics(
+                textField: false,
+                explicitChildNodes: true,
+                child: AppPasswordField(
+                  semanticLabel: 'admin Password',
+                  readOnly: true,
+                  border: InputBorder.none,
+                  controller: _passwordController
+                    ..text = routerPasswordState.adminPassword,
+                  suffixIconConstraints: const BoxConstraints(),
+                ),
+              )),
+            ),
+            trailing: const Icon(
+              LinksysIcons.edit,
+              semanticLabel: 'edit',
+            ),
             onTap: () {
-              context
-                  .pushNamed<bool?>(RouteNamed.settingsTimeZone)
-                  .then((result) {
-                if (result == true) {
-                  showSuccessSnackBar(context, loc(context).done);
-                }
-              });
+              _showRouterPasswordModal(routerPasswordState.hint);
             },
           ),
-          if (powerTableState.isPowerTableSelectable) ...[
-            const AppGap.small2(),
-            AppListCard(
-              title: AppText.bodyLarge(loc(context).transmitRegion),
-              description: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AppText.labelLarge(
-                      powerTableState.country?.resolveDisplayText(context) ??
-                          ''),
-                  const AppGap.small2(),
-                  AppText.bodyMedium(
-                    loc(context).transmitRegionDesc,
-                    color: Theme.of(context).colorScheme.outline,
-                  ),
-                ],
-              ),
-              trailing: const Icon(LinksysIcons.chevronRight),
-              onTap: () {
-                handleTransmitRefionTap(powerTableState);
-              },
-            ),
-          ],
-          if (dashboardManager.skuModelNumber?.endsWith('AH') != true) ...[
-            const AppGap.small2(),
-            AppListCard(
-              title: AppText.bodyMedium(loc(context).manualFirmwareUpdate),
-              description: AppText.labelLarge(firmwareVersion ?? '--'),
-              trailing: AppTextButton.noPadding(
-                loc(context).manualUpdate,
-                onTap: () {
-                  context.goNamed(RouteNamed.manualFirmwareUpdate);
-                },
-              ),
-            ),
-          ],
+          const Divider(),
+          AppListCard(
+            padding: EdgeInsets.zero,
+            showBorder: false,
+            title: AppText.bodySmall(loc(context).routerPasswordHint),
+            description: routerPasswordState.hint.isEmpty
+                ? AppText.labelLarge(loc(context).setOne)
+                : AppText.bodyMedium(routerPasswordState.hint),
+          ),
         ],
       ),
+    );
+  }
+
+  AppCard _buildAutoFirmwareWidget(BuildContext context, bool isFwAutoUpdate) {
+    return AppCard(
+      padding: const EdgeInsets.symmetric(
+        vertical: Spacing.medium,
+        horizontal: Spacing.large2,
+      ),
+      child: Column(
+        children: [
+          AppSwitchTriggerTile(
+            value: isFwAutoUpdate,
+            title: AppText.labelLarge(loc(context).autoFirmwareUpdate),
+            semanticLabel: 'auto firmware update',
+            onChanged: (value) {},
+            event: (value) async {
+              await ref
+                  .read(firmwareUpdateProvider.notifier)
+                  .setFirmwareUpdatePolicy(value
+                      ? FirmwareUpdateSettings.firmwareUpdatePolicyAuto
+                      : FirmwareUpdateSettings.firmwareUpdatePolicyManual);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  AppListCard _buildManualFirmwareWidget(
+    BuildContext context,
+    DashboardManagerState dashboardManagerState,
+  ) {
+    final firmwareVersion = dashboardManagerState.deviceInfo?.firmwareVersion;
+    return AppListCard(
+      title: AppText.bodyMedium(loc(context).manualFirmwareUpdate),
+      description: AppText.labelLarge(firmwareVersion ?? '--'),
+      trailing: AppTextButton.noPadding(
+        loc(context).manualUpdate,
+        onTap: () {
+          context.goNamed(RouteNamed.manualFirmwareUpdate);
+        },
+      ),
+    );
+  }
+
+  AppListCard _buildTimezoneWidget(
+    BuildContext context,
+    TimezoneState timezoneState,
+  ) {
+    return AppListCard(
+      title: AppText.bodyLarge(loc(context).timezone),
+      description: AppText.labelLarge(_getTimezone(timezoneState)),
+      trailing: const Icon(LinksysIcons.chevronRight),
+      onTap: () {
+        context.pushNamed<bool?>(RouteNamed.settingsTimeZone).then((result) {
+          if (result == true) {
+            showSuccessSnackBar(context, loc(context).done);
+          }
+        });
+      },
+    );
+  }
+
+  AppListCard _buildTransmitRegionWidget(
+    BuildContext context,
+    PowerTableState powerTableState,
+  ) {
+    return AppListCard(
+      title: AppText.bodyLarge(loc(context).transmitRegion),
+      description: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AppText.labelLarge(
+              powerTableState.country?.resolveDisplayText(context) ?? ''),
+          const AppGap.small2(),
+          AppText.bodyMedium(
+            loc(context).transmitRegionDesc,
+            color: Theme.of(context).colorScheme.outline,
+          ),
+        ],
+      ),
+      trailing: const Icon(LinksysIcons.chevronRight),
+      onTap: () {
+        handleTransmitRefionTap(powerTableState);
+      },
     );
   }
 

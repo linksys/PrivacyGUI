@@ -18,6 +18,7 @@ import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/icon_device_category.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 
 final deviceManagerProvider =
     NotifierProvider<DeviceManagerNotifier, DeviceManagerState>(
@@ -99,6 +100,8 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     newState = newState.copyWith(
       lastUpdateTime: pollingResult?.lastUpdate,
     );
+    logger.d('[State]:[deviceManager]: ${newState.toJson()}');
+
     return newState;
   }
 
@@ -162,8 +165,11 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
           final parentDeviceId = device.connections.firstOrNull?.parentDeviceID;
           // Count it if this item's parentId is the target node,
           // or if its parentId is null and the target node is master
-          return ((parentDeviceId == node.deviceID) ||
-              (parentDeviceId == null && node.deviceID == masterId));
+          // return ((parentDeviceId == node.deviceID) ||
+          //     (parentDeviceId == null && node.deviceID == masterId));
+
+          // For orphan nodes, don't caculate into any nodes
+          return parentDeviceId == node.deviceID;
         }
         return false;
       }).toList();
@@ -327,12 +333,14 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     final device = currentState.deviceList
         .firstWhereOrNull((element) => element.deviceID == deviceID);
     if (device == null) {
-      return master;
+      return null;
     }
     if (!device.isOnline()) {
-      return master;
+      return null;
     }
     String? parentIpAddr;
+
+    // Check connections from backhaul info data.
     for (var element in device.connections) {
       for (var backhaul in currentState.backhaulInfoData) {
         if (backhaul.ipAddress == element.ipAddress) {
@@ -356,7 +364,7 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     // or if its parentId is null and the target node is master
     return currentState.deviceList.firstWhereOrNull(
             (element) => parentDeviceId == element.deviceID) ??
-        master;
+        (device.nodeType != null ? master : null);
   }
 
   // Update the name(location) of nodes and external devices

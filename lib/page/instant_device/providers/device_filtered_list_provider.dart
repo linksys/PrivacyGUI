@@ -2,22 +2,27 @@ import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
+import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_filtered_list_state.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_provider.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_list_provider.dart';
 import 'package:privacy_gui/util/extensions.dart';
 
 final filteredDeviceListProvider = Provider((ref) {
   final config = ref.watch(deviceFilterConfigProvider);
   final deviceListState = ref.watch(deviceListProvider);
+  final allNodes = ref.watch(deviceManagerProvider).nodeDevices;
   final nodeId = config.nodeFilter;
+  final wifiName = config.wifiFilter;
   final band = config.bandFilter;
   final connection = config.connectionFilter;
+  final showOrphan = config.showOrphanNodes;
   final filteredDevices = deviceListState.devices
-      // .where(
-      //   (device) => ssidFilter == null ? true : device.type == ssidFilter,
-      // )
       .where((device) => connection == device.isOnline)
+      .where((device) => device.isOnline
+          ? device.isWired || wifiName.contains(device.ssid)
+          : true)
       .where((device) {
         if (!device.isOnline) {
           return true;
@@ -41,16 +46,28 @@ class DeviceFilterConfigNotifier extends Notifier<DeviceFilterConfigState> {
   @override
   DeviceFilterConfigState build() {
     return const DeviceFilterConfigState(
-        connectionFilter: true, nodeFilter: [], bandFilter: []);
+        connectionFilter: true, nodeFilter: [], wifiFilter: [], bandFilter: []);
   }
 
   void initFilter({List<String>? preselectedNodeId}) {
     final nodes = preselectedNodeId ?? getNodes();
-
+    final wifiNames = getWifiNames();
     final bands = getBands(
         preselectedNodeId?.length == 1 ? preselectedNodeId?.first : null);
+    final showOrphan = ref
+        .read(deviceManagerProvider)
+        .externalDevices
+        .any((e) => e.isOnline() && e.upstream == null);
+    if (showOrphan) {
+      nodes.add('');
+    }
     state = state.copyWith(
-        connectionFilter: true, nodeFilter: nodes, bandFilter: bands);
+      connectionFilter: true,
+      nodeFilter: nodes,
+      wifiFilter: wifiNames,
+      bandFilter: bands,
+      showOrphanNodes: showOrphan,
+    );
   }
 
   List<String> getNodes() {
@@ -59,6 +76,14 @@ class DeviceFilterConfigNotifier extends Notifier<DeviceFilterConfigState> {
         .nodeDevices
         .map((e) => e.deviceID)
         .toList();
+  }
+
+  List<String> getWifiNames() {
+    final wifiState = ref.read(wifiListProvider);
+    return [
+      ...wifiState.mainWiFi.map((e) => e.ssid).toList().unique(),
+      wifiState.guestWiFi.ssid,
+    ];
   }
 
   List<String> getBands([String? deviceUUID]) {
@@ -96,6 +121,10 @@ class DeviceFilterConfigNotifier extends Notifier<DeviceFilterConfigState> {
 
   void updateNodeFilter(List<String> nodes) {
     state = state.copyWith(nodeFilter: nodes);
+  }
+
+  void updateWifiFilter(List<String> wifiNames) {
+    state = state.copyWith(wifiFilter: wifiNames);
   }
 
   void updateBandFilter(List<String> bands) {

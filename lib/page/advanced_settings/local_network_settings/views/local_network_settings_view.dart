@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
+import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -19,6 +20,7 @@ import 'package:privacy_gui/page/advanced_settings/local_network_settings/provid
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_state.dart';
 import 'package:privacy_gui/page/instant_safety/providers/instant_safety_provider.dart';
 import 'package:privacy_gui/providers/redirection/redirection_provider.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
@@ -28,6 +30,9 @@ import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacy_gui/core/jnap/providers/assign_ip/base_assign_ip.dart'
     if (dart.library.html) 'package:privacy_gui/core/jnap/providers/assign_ip/web_assign_ip.dart';
+import 'package:privacy_gui/core/jnap/providers/ip_getter/get_local_ip.dart'
+    if (dart.library.io) 'package:privacy_gui/core/jnap/providers/ip_getter/mobile_get_local_ip.dart'
+    if (dart.library.html) 'package:privacy_gui/core/jnap/providers/ip_getter/web_get_local_ip.dart';
 
 class LocalNetworkSettingsView extends ArgumentsConsumerStatefulView {
   const LocalNetworkSettingsView({
@@ -41,12 +46,14 @@ class LocalNetworkSettingsView extends ArgumentsConsumerStatefulView {
 }
 
 class _LocalNetworkSettingsViewState
-    extends ConsumerState<LocalNetworkSettingsView> with PageSnackbarMixin {
+    extends ConsumerState<LocalNetworkSettingsView>
+    with PageSnackbarMixin, SingleTickerProviderStateMixin {
   late LocalNetworkSettingsState originalSettings;
   late LocalNetworkSettingsNotifier _notifier;
   final hostNameController = TextEditingController();
   final ipAddressController = TextEditingController();
   final subnetMaskController = TextEditingController();
+  int _selectedTabIndex = 0;
 
   @override
   void initState() {
@@ -94,11 +101,6 @@ class _LocalNetworkSettingsViewState
       }
     });
     final state = ref.watch(localNetworkSettingProvider);
-    final tabs = [
-      loc(context).hostName,
-      loc(context).lanIPAddress,
-      loc(context).dhcpServer,
-    ];
     final tabContents = [
       _hostNameView(state),
       _ipAddressView(state),
@@ -124,13 +126,30 @@ class _LocalNetworkSettingsViewState
                   }
                 }
               : null,
-          tabs: tabs
-              .map((e) => Tab(
-                    text: e,
-                  ))
-              .toList(),
+          tabs: [
+            tab(
+              loc(context).hostName,
+              selected: _selectedTabIndex == 0,
+              hasError: state.hasErrorOnHostNameTab,
+            ),
+            tab(
+              loc(context).lanIPAddress,
+              selected: _selectedTabIndex == 1,
+              hasError: state.hasErrorOnIPAddressTab,
+            ),
+            tab(
+              loc(context).dhcpServer,
+              selected: _selectedTabIndex == 2,
+              hasError: state.hasErrorOnDhcpServerTab,
+            ),
+          ],
           tabContentViews: tabContents,
           expandedHeight: 120,
+          onTap: (index) {
+            setState(() {
+              _selectedTabIndex = index;
+            });
+          },
         ),
       ),
     );
@@ -144,12 +163,12 @@ class _LocalNetworkSettingsViewState
         child: AppTextField(
           headerText: loc(context).hostName.capitalizeWords(),
           controller: hostNameController,
-          errorText: state.errorTextMap['hostName'],
+          errorText: state.errorTextMap[LocalNetworkErrorPrompt.hostName.name],
           border: const OutlineInputBorder(),
           onChanged: (value) {
             _notifier.updateHostName(value);
             _notifier.updateErrorPrompts(
-              'hostName',
+              LocalNetworkErrorPrompt.hostName.name,
               value.isEmpty ? loc(context).hostNameCannotEmpty : null,
             );
           },
@@ -172,12 +191,11 @@ class _LocalNetworkSettingsViewState
               header: AppText.bodySmall(loc(context).ipAddress),
               semanticLabel: 'ip address',
               controller: ipAddressController,
-              errorText: state.errorTextMap['ipAddress'],
+              errorText:
+                  state.errorTextMap[LocalNetworkErrorPrompt.ipAddress.name],
               border: const OutlineInputBorder(),
               onChanged: (value) {
-                setState(() {
-                  _notifier.routerIpAddressChanged(context, value, state);
-                });
+                _notifier.routerIpAddressChanged(context, value, state);
               },
             ),
             const AppGap.large2(),
@@ -187,12 +205,11 @@ class _LocalNetworkSettingsViewState
               octet1ReadOnly: true,
               octet2ReadOnly: true,
               controller: subnetMaskController,
-              errorText: state.errorTextMap['subnetMask'],
+              errorText:
+                  state.errorTextMap[LocalNetworkErrorPrompt.subnetMask.name],
               border: const OutlineInputBorder(),
               onChanged: (value) {
-                setState(() {
-                  _notifier.subnetMaskChanged(context, value, state);
-                });
+                _notifier.subnetMaskChanged(context, value, state);
               },
             ),
           ],
@@ -224,29 +241,36 @@ class _LocalNetworkSettingsViewState
     );
   }
 
+  Widget tab(
+    String title, {
+    required bool selected,
+    bool hasError = false,
+  }) {
+    return Tab(
+      child: Row(
+        children: [
+          if (hasError) ...[
+            Icon(
+              LinksysIcons.error,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            AppGap.small1(),
+          ],
+          AppText.titleSmall(
+            title,
+            color: selected ? Theme.of(context).colorScheme.primary : null,
+          ),
+        ],
+      ),
+    );
+  }
+
   bool _isEdited(LocalNetworkSettingsState state) {
     return !originalSettings.isEqualStateWithoutDhcpReservationList(state);
   }
 
   bool _hasError(LocalNetworkSettingsState state) {
     return state.errorTextMap.isNotEmpty;
-  }
-
-  (bool, LocalNetworkSettingsState) routerIpAddressFinished(String ipAddress) {
-    final state = ref.read(localNetworkSettingProvider);
-    // Host IP input finishes
-    return _notifier.routerIpAddressFinished(
-      ipAddress,
-      state,
-    );
-  }
-
-  (bool, LocalNetworkSettingsState) subnetMaskFinished(String subnetMask) {
-    final state = ref.read(localNetworkSettingProvider);
-    return ref.read(localNetworkSettingProvider.notifier).subnetMaskFinished(
-          subnetMask,
-          state,
-        );
   }
 
   void _saveSettings() {
@@ -257,14 +281,28 @@ class _LocalNetworkSettingsViewState
           previousIPAddress: originalSettings.ipAddress),
     ).then(
       (value) {
-        ref.read(localNetworkSettingNeedToSaveProvider.notifier).state = false;
-        setState(() {
-          originalSettings = state;
-        });
-        showChangesSavedSnackBar();
+        ///
+        /// Default success case only if 
+        /// 1) Wired connection and host using myrouter.info
+        /// 2) Wireless connection and didn't swap to another WiFi and using myrouter.info
+        ///
+        _finishSaveSettings(state);
       },
     ).catchError((error) {
-      _showRouterNotFoundModal();
+      final currentUrl = ref.read(routerRepositoryProvider).getLocalIP();
+      final regex = RegExp(r'(www\.)?myrouter\.info');
+      
+      // check is url start with www.myrouter.info or myrouter.info
+      if (regex.hasMatch(currentUrl)) {
+        // url start with myrouter.info, show router not found and wait for connect back
+        _showRouterNotFoundModal();
+      } else if (currentUrl != state.ipAddress) {
+        // ip is changed, show redirect alert to warn user make sure connect back to the router
+        showRedirectNewIpAlert(context, ref, state.ipAddress);
+      } else {
+        // ip is not changed, finish settings
+        _finishSaveSettings(state);
+      }
     }, test: (error) => error is JNAPSideEffectError).onError(
         (error, stackTrace) {
       showErrorMessageSnackBar(error);
@@ -277,11 +315,33 @@ class _LocalNetworkSettingsViewState
       final state = await _notifier.fetch(fetchRemote: true);
       // Update instant safety
       await ref.read(instantSafetyProvider.notifier).fetchLANSettings();
-      ref.read(localNetworkSettingNeedToSaveProvider.notifier).state = false;
-      setState(() {
-        originalSettings = state;
-      });
-      showChangesSavedSnackBar();
+      _finishSaveSettings(state);
     });
+  }
+
+  void _finishSaveSettings(LocalNetworkSettingsState state) {
+    ref.read(localNetworkSettingNeedToSaveProvider.notifier).state = false;
+    setState(() {
+      originalSettings = state;
+    });
+    showChangesSavedSnackBar();
+    // handle redirect
+    if (!kIsWeb) {
+      return;
+    }
+    final currentUrl = ref.read(routerRepositoryProvider).getLocalIP();
+    final regex = RegExp(r'(www\.)?myrouter\.info');
+    // check is url start with www.myrouter.info or myrouter.info
+    if (regex.hasMatch(currentUrl)) {
+      return;
+    }
+    // ip case
+    if (state.ipAddress != currentUrl) {
+      _doRedirect(state.ipAddress);
+    }
+  }
+
+  void _doRedirect(String ip) {
+    ref.read(redirectionProvider.notifier).state = 'https://$ip';
   }
 }

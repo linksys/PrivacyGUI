@@ -8,9 +8,8 @@ import 'package:privacy_gui/core/jnap/providers/node_light_settings_provider.dar
 import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/page/components/styled/status_label.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
-import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
-import 'package:privacy_gui/page/dashboard/views/components/shimmer.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_device_list_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
@@ -46,24 +45,28 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
         hardwareVersion: master?.data.hardwareVersion ?? '1');
     final isBridge = ref.watch(dashboardHomeProvider).isBridgeMode;
 
-    return ShimmerContainer(
-      isLoading: isLoading,
-      child: AppCard(
-        padding: EdgeInsets.all(Spacing.large2),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            toggleTileWidget(
-                title: loc(context).instantPrivacy,
-                value: privacyState.mode == MacFilterMode.allow,
-                onTap: isBridge
-                    ? null
-                    : () {
-                        context.pushNamed(RouteNamed.menuInstantPrivacy);
-                      },
-                onChanged: isBridge
-                    ? null
-                    : (value) {
+    return AppCard(
+      padding: EdgeInsets.all(Spacing.large2),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          toggleTileWidget(
+              title: loc(context).instantPrivacy,
+              value: privacyState.mode == MacFilterMode.allow,
+              leading: betaLabel(),
+              onTap: isBridge
+                  ? null
+                  : () {
+                      context.pushNamed(RouteNamed.menuInstantPrivacy);
+                    },
+              onChanged: isBridge
+                  ? null
+                  : (value) {
+                      showInstantPrivacyConfirmDialog(context, value)
+                          .then((isOk) {
+                        if (isOk != true) {
+                          return;
+                        }
                         final notifier =
                             ref.read(instantPrivacyProvider.notifier);
                         if (value) {
@@ -75,43 +78,44 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
                         }
                         notifier.setEnable(value);
                         doSomethingWithSpinner(context, notifier.save());
-                      },
-                semantics: 'quick instant privacy switch'),
-            if (isCognitive && isSupportNodeLight) ...[
-              const Divider(
-                height: 48,
-                thickness: 1.0,
-              ),
-              toggleTileWidget(
-                  title: loc(context).nightMode,
-                  value: nodeLightState.isNightModeEnable,
-                  subTitle: NodeLightStatus.getStatus(nodeLightState) ==
-                          NodeLightStatus.night
-                      ? loc(context).nightModeTime
-                      : NodeLightStatus.getStatus(nodeLightState) ==
-                              NodeLightStatus.off
-                          ? loc(context).allDayOff
-                          : null,
-                  onChanged: (value) {
-                    final notifier =
-                        ref.read(nodeLightSettingsProvider.notifier);
-                    if (value) {
-                      notifier.setSettings(NodeLightSettings.night());
-                    } else {
-                      notifier.setSettings(NodeLightSettings.on());
-                    }
-                    doSomethingWithSpinner(context, notifier.save());
-                  },
-                  semantics: 'quick night mode switch'),
-            ]
-          ],
-        ),
+                      });
+                    },
+              semantics: 'quick instant privacy switch'),
+          if (isCognitive && isSupportNodeLight) ...[
+            const Divider(
+              height: 48,
+              thickness: 1.0,
+            ),
+            toggleTileWidget(
+                title: loc(context).nightMode,
+                value: nodeLightState.isNightModeEnable,
+                subTitle: NodeLightStatus.getStatus(nodeLightState) ==
+                        NodeLightStatus.night
+                    ? loc(context).nightModeTime
+                    : NodeLightStatus.getStatus(nodeLightState) ==
+                            NodeLightStatus.off
+                        ? loc(context).allDayOff
+                        : null,
+                onChanged: (value) {
+                  final notifier =
+                      ref.read(nodeLightSettingsProvider.notifier);
+                  if (value) {
+                    notifier.setSettings(NodeLightSettings.night());
+                  } else {
+                    notifier.setSettings(NodeLightSettings.on());
+                  }
+                  doSomethingWithSpinner(context, notifier.save());
+                },
+                semantics: 'quick night mode switch'),
+          ]
+        ],
       ),
     );
   }
 
   Widget toggleTileWidget({
     required String title,
+    Widget? leading,
     String? subTitle,
     VoidCallback? onTap,
     required bool value,
@@ -126,6 +130,10 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
+            if (leading != null) ...[
+              leading,
+              AppGap.small2(),
+            ],
             Expanded(
               child: Column(
                 mainAxisSize: MainAxisSize.min,

@@ -2,8 +2,10 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
+import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/dashboard/views/components/home_title.dart';
@@ -13,9 +15,12 @@ import 'package:privacy_gui/page/dashboard/views/components/port_and_speed.dart'
 import 'package:privacy_gui/page/dashboard/views/components/quick_panel.dart';
 import 'package:privacy_gui/page/dashboard/views/components/wifi_grid.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
+import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
+
+import 'components/shimmer.dart';
 
 class DashboardHomeView extends ConsumerStatefulWidget {
   const DashboardHomeView({Key? key}) : super(key: key);
@@ -33,6 +38,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     firmware = ref.read(firmwareUpdateProvider.notifier);
     // _pushNotificationCheck();
     _firmwareUpdateCheck();
+    ref.read(menuController).resetToHome();
   }
 
   @override
@@ -42,6 +48,8 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
         ref.watch(dashboardHomeProvider).isHorizontalLayout;
     final hasLanPort =
         ref.read(dashboardHomeProvider).lanPortConnections.isNotEmpty;
+    final isLoading = ref.watch(deviceManagerProvider).deviceList.isEmpty;
+
     return StyledAppPageView(
       scrollable: true,
       appBarStyle: AppBarStyle.none,
@@ -50,21 +58,27 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
         top: Spacing.large3,
         bottom: Spacing.medium,
       ),
-      child: ResponsiveLayout(
-        desktop: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const DashboardHomeTitle(),
-            const AppGap.large1(),
-            !hasLanPort
-                ? _desktopNoLanPortsLayout()
-                : horizontalLayout
-                    ? _desktopHorizontalLayout()
-                    : _desktopVerticalLayout(),
-          ],
+      child: Shimmer(
+        gradient: shimmerGradient,
+        child: ShimmerContainer(
+          isLoading: isLoading,
+          child: ResponsiveLayout(
+            desktop: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const DashboardHomeTitle(),
+                const AppGap.large1(),
+                !hasLanPort
+                    ? _desktopNoLanPortsLayout()
+                    : horizontalLayout
+                        ? _desktopHorizontalLayout()
+                        : _desktopVerticalLayout(),
+              ],
+            ),
+            mobile: _mobileLayout(),
+          ),
         ),
-        mobile: _mobileLayout(),
       ),
     );
   }
@@ -171,10 +185,10 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
   }
 
   Widget _mobileLayout() {
-    return const Column(
+    return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+      children: const [
         DashboardHomeTitle(),
         AppGap.large1(),
         InternetConnectionWidget(),
@@ -186,15 +200,13 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
         DashboardQuickPanel(),
         AppGap.medium(),
         DashboardWiFiGrid(),
-        // const AppGap.large5(),
-        // _speedTestTile(state, isLoading),
       ],
     );
   }
 
   void _firmwareUpdateCheck() {
     Future.doWhile(() => !mounted).then((_) {
-      firmware.checkFirmwareUpdateStatus();
+      firmware.fetchAvailableFirmwareUpdates();
     });
   }
 

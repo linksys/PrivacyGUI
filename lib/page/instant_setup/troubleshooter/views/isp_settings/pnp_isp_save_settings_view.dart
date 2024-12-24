@@ -2,9 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:http/http.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
-import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/_providers.dart';
@@ -82,7 +80,7 @@ class _PnpIspSaveSettingsViewState
                 });
                 ref
                     .read(pnpProvider.notifier)
-                    .checkInternetConnection()
+                    .checkInternetConnection(30)
                     .then((value) {
                   logger.i(
                       '[PnP]: Troubleshooter - Check internet connection with new settings - OK');
@@ -118,12 +116,10 @@ class _PnpIspSaveSettingsViewState
       // Saving new settings failed
       if (error is JNAPError) {
         context.pop(
-            errorCodeHelper(context, error.result, loc(context).generalError) ??
-                loc(context).generalError);
-      } else if (error is TimeoutException) {
-        context.pop(loc(context).generalError);
+            errorCodeHelper(context, error.result, _getErrorMessage(wanType)) ??
+                _getErrorMessage(wanType));
       } else {
-        context.pop(loc(context).unknownError);
+        context.pop(_getErrorMessage(wanType));
       }
     });
   }

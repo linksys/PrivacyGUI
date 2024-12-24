@@ -8,7 +8,6 @@ import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_view_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/views/wifi_list_view.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 class WiFiMainView extends ArgumentsConsumerStatefulView {
   const WiFiMainView({Key? key, super.args}) : super(key: key);
@@ -17,12 +16,42 @@ class WiFiMainView extends ArgumentsConsumerStatefulView {
   ConsumerState<WiFiMainView> createState() => _WiFiMainViewState();
 }
 
-class _WiFiMainViewState extends ConsumerState<WiFiMainView> {
+class _WiFiMainViewState extends ConsumerState<WiFiMainView>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
+  bool _tabIsChanging = false;
 
   @override
   void initState() {
     super.initState();
 
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() async {
+      if (_tabController.indexIsChanging &&
+          _tabController.previousIndex != _tabController.index &&
+          _tabIsChanging == false) {
+        final nextIndex = _tabController.index;
+        final isStateChange =
+            hasChangedWithTabIndex(_tabController.previousIndex);
+        if (isStateChange) {
+          _tabIsChanging = true;
+          _tabController.animateTo(_tabController.previousIndex);
+          if (await showUnsavedAlert(context) != true) {
+            _tabIsChanging = false;
+          } else {
+            _tabController.animateTo(nextIndex);
+            _tabIsChanging = false;
+          }
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+
+    _tabController.dispose();
   }
 
   @override
@@ -35,8 +64,7 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView> {
     return StyledAppTabPageView(
       title: loc(context).incredibleWiFi,
       onBackTap: () async {
-        final isCurrentChanged =
-            ref.read(wifiViewProvider).isCurrentViewStateChanged;
+        final isCurrentChanged = hasChangedWithTabIndex(_tabController.index);
         if (isCurrentChanged && (await showUnsavedAlert(context) != true)) {
           return;
         }
@@ -68,6 +96,7 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView> {
       //         ),
       //       );
       //     }),
+      tabController: _tabController,
       tabs: tabs
           .map((e) => Tab(
                 text: e,
@@ -78,5 +107,13 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView> {
 
       // child: _content(_WiFiSubMenus.values[_selectMenuIndex]),
     );
+  }
+
+  bool hasChangedWithTabIndex(int index) {
+    return switch (index) {
+      0 => ref.read(wifiViewProvider).isWifiListViewStateChanged,
+      1 => ref.read(wifiViewProvider).isWifiAdvancedSettingsViewStateChanged,
+      _ => false,
+    };
   }
 }

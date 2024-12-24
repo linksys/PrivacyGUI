@@ -48,14 +48,14 @@ class DHCPReservationsNotifier
     return state;
   }
 
-  void updateReservations(ReservedListItem item) {
+  void updateReservations(ReservedListItem item, [bool isNew = false]) {
     final rList = state.reservations;
     final dList = state.devices;
     var hit = rList
         .firstWhereOrNull((e) => e.data.macAddress == item.data.macAddress);
-    if (hit != null) {
+    final index = rList.indexOf(item);
+    if (hit != null && index >= 0) {
       // This item is found on reservations list, so it is reserved.
-      final index = rList.indexOf(item);
       final isInDevice =
           dList.any((e) => e.data.macAddress == hit?.data.macAddress);
       final newRList = isInDevice
@@ -75,14 +75,15 @@ class DHCPReservationsNotifier
       );
       return;
     }
-    hit = dList
-        .firstWhereOrNull((e) => e.data.macAddress == item.data.macAddress);
+    hit = dList.firstWhereOrNull((e) =>
+        e.data.macAddress == item.data.macAddress &&
+        e.data.ipAddress == item.data.ipAddress);
 
     if (hit != null) {
       // This item is found on device list, add into reserveation list
       final newRList = List<ReservedListItem>.from(rList)
         ..add(item.copyWith(
-            reserved: !item.reserved,
+            reserved: isNew ? true : !item.reserved,
             data: item.data.copyWith(
                 description: item.data.description
                     .replaceAll(HostNameRule().rule, ''))));

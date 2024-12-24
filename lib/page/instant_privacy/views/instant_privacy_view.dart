@@ -58,6 +58,7 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView> {
     return StyledAppPageView(
       scrollable: true,
       title: loc(context).instantPrivacy,
+      markLabel: 'Beta',
       child: ResponsiveLayout(
         desktop: _desktopLayout(state, displayDevices),
         mobile: _mobileLayout(state, displayDevices),
@@ -189,6 +190,8 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView> {
         SizedBox(
           height: deviceList.length * 110,
           child: ListView.separated(
+            physics: const NeverScrollableScrollPhysics(),
+            shrinkWrap: true,
             itemCount: deviceList.length,
             itemBuilder: (context, index) {
               return _deviceCard(isEnable, deviceList[index]);
@@ -203,6 +206,8 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView> {
   }
 
   Widget _deviceCard(bool isEnable, DeviceListItem device) {
+    final myMac =
+        ref.watch(instantPrivacyProvider.select((state) => state.myMac));
     return AppCard(
       color:
           device.isOnline ? null : Theme.of(context).colorScheme.surfaceVariant,
@@ -220,7 +225,37 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AppText.labelLarge(device.name),
+                LayoutBuilder(
+                  builder: (BuildContext context, BoxConstraints constraints) {
+                    final textPainter = TextPainter(
+                      text: TextSpan(
+                        text: device.name,
+                        style: Theme.of(context)
+                            .textTheme
+                            .labelLarge, // Use your actual text style
+                      ),
+                      maxLines: 1, // Use your actual maxLines value
+                      textDirection:
+                          TextDirection.ltr, // Use your actual text direction
+                    )..layout(minWidth: 0, maxWidth: double.infinity);
+                    if (textPainter.size.width > constraints.maxWidth) {
+                      return Tooltip(
+                        message: device.name,
+                        child: AppText.labelLarge(
+                          device.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      );
+                    } else {
+                      return AppText.labelLarge(
+                        device.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      );
+                    }
+                  },
+                ),
                 const AppGap.small1(),
                 AppText.bodyMedium(device.isOnline
                     ? device.ipv4Address
@@ -246,7 +281,8 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView> {
               semanticLabel: 'delete',
               color: Theme.of(context).colorScheme.error,
               onTap: () {
-                _showDeleteDialog(device.macAddress);
+                _showDeleteDialog(
+                    device.macAddress, device.macAddress == myMac);
               },
             ),
           ],
@@ -294,72 +330,63 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView> {
   }
 
   void _showEnableDialog(bool enable) {
-    showSimpleAppDialog(
-      context,
-      dismissible: false,
-      title: enable
-          ? loc(context).turnOnInstantPrivacy
-          : loc(context).turnOffInstantPrivacy,
-      content: AppText.bodyMedium(enable
-          ? loc(context).turnOnInstantPrivacyDesc
-          : loc(context).turnOffInstantPrivacyDesc),
-      actions: [
-        AppTextButton(
-          loc(context).cancel,
-          color: Theme.of(context).colorScheme.onSurface,
-          onTap: () {
-            context.pop();
-          },
-        ),
-        AppTextButton(
-          enable ? loc(context).turnOn : loc(context).turnOff,
-          color: Theme.of(context).colorScheme.primary,
-          onTap: () {
-            if (enable) {
-              final macAddressList = ref
-                  .read(instantPrivacyDeviceListProvider)
-                  .map((e) => e.macAddress.toUpperCase())
-                  .toList();
-              _notifier.setMacAddressList(macAddressList);
-            }
-            _notifier.setEnable(enable);
-            context.pop();
-            doSomethingWithSpinner(
-              context,
-              _notifier.save(),
-            );
-          },
-        ),
-      ],
-    );
+    showInstantPrivacyConfirmDialog(context, enable).then((value) {
+      if (value != true) {
+        return;
+      }
+      if (enable) {
+        final macAddressList = ref
+            .read(instantPrivacyDeviceListProvider)
+            .map((e) => e.macAddress.toUpperCase())
+            .toList();
+        _notifier.setMacAddressList(macAddressList);
+      }
+      _notifier.setEnable(enable);
+      doSomethingWithSpinner(
+        context,
+        _notifier.save(),
+      );
+    });
   }
 
-  void _showDeleteDialog(String macAddress) {
+  void _showDeleteDialog(String macAddress, bool self) {
     showSimpleAppDialog(
       context,
       dismissible: false,
-      title: loc(context).deleteDevice,
-      content: AppText.bodyMedium(loc(context).instantPrivacyDeleteDeviceDesc),
+      title: self ? loc(context).alertExclamation : loc(context).deleteDevice,
+      content: AppText.bodyMedium(self
+          ? loc(context).instantPrivacyNotAllowDeleteCurrent
+          : loc(context).instantPrivacyDeleteDeviceDesc),
       actions: [
-        AppTextButton(
-          loc(context).cancel,
-          color: Theme.of(context).colorScheme.onSurface,
-          onTap: () {
-            context.pop();
-          },
-        ),
-        AppTextButton(
-          loc(context).delete,
-          color: Theme.of(context).colorScheme.error,
-          onTap: () {
-            _notifier.removeSelection([macAddress]);
-            context.pop();
-            doSomethingWithSpinner(
-              context,
-              _notifier.save(),
-            );
-          },
-        ),
+        if (self) ...[
+          AppTextButton(
+            loc(context).ok,
+            onTap: () {
+              context.pop();
+            },
+          ),
+        ],
+        if (!self) ...[
+          AppTextButton(
+            loc(context).cancel,
+            color: Theme.of(context).colorScheme.onSurface,
+            onTap: () {
+              context.pop();
+            },
+          ),
+          AppTextButton(
+            loc(context).delete,
+            color: Theme.of(context).colorScheme.error,
+            onTap: () {
+              _notifier.removeSelection([macAddress]);
+              context.pop();
+              doSomethingWithSpinner(
+                context,
+                _notifier.save(),
+              );
+            },
+          ),
+        ],
       ],
     );
   }

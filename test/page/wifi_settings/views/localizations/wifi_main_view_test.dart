@@ -376,12 +376,10 @@ void main() {
 class MockWiFiViewNotifier extends WiFiViewNotifier {
   @override
   WiFiViewState build() =>
-      const WiFiViewState(isCurrentViewStateChanged: false);
+      const WiFiViewState();
 }
 
 class MockWiFiViewChangedNotifier extends WiFiViewNotifier {
   @override
-  WiFiViewState build() => const WiFiViewState(isCurrentViewStateChanged: true);
-  @override
-  void setChanged(bool value) {}
+  WiFiViewState build() => const WiFiViewState();
 }

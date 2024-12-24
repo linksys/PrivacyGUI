@@ -6,6 +6,19 @@ import 'package:flutter/widgets.dart';
 
 import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
 
+enum LocalNetworkErrorPrompt {
+  hostName,
+  startIpAddress,
+  ipAddress,
+  maxUserAllowed,
+  subnetMask,
+  leaseTime,
+  dns1,
+  dns2,
+  dns3,
+  wins,
+}
+
 class LocalNetworkSettingsState extends Equatable {
   final String hostName;
   final String ipAddress;
@@ -26,6 +39,9 @@ class LocalNetworkSettingsState extends Equatable {
   final String? wins;
   final List<DHCPReservation> dhcpReservationList;
   final Map<String, String> errorTextMap;
+  final bool hasErrorOnHostNameTab;
+  final bool hasErrorOnIPAddressTab;
+  final bool hasErrorOnDhcpServerTab;
 
   @override
   List<Object?> get props {
@@ -72,6 +88,9 @@ class LocalNetworkSettingsState extends Equatable {
     this.wins,
     this.dhcpReservationList = const [],
     this.errorTextMap = const {},
+    this.hasErrorOnHostNameTab = false,
+    this.hasErrorOnIPAddressTab = false,
+    this.hasErrorOnDhcpServerTab = false,
   });
 
   factory LocalNetworkSettingsState.init() => const LocalNetworkSettingsState(
@@ -111,6 +130,9 @@ class LocalNetworkSettingsState extends Equatable {
       'wins': wins,
       'dhcpReservationList': dhcpReservationList.map((x) => x.toMap()).toList(),
       'errorTextMap': errorTextMap,
+      'hasErrorOnHostNameTab': hasErrorOnHostNameTab,
+      'hasErrorOnIPAddressTab': hasErrorOnIPAddressTab,
+      'hasErrorOnDhcpServerTab': hasErrorOnDhcpServerTab,
     };
   }
 
@@ -139,6 +161,9 @@ class LocalNetworkSettingsState extends Equatable {
         ),
       ),
       errorTextMap: map['errorTextMap'],
+      hasErrorOnHostNameTab: map['hasErrorOnHostNameTab'] ?? false,
+      hasErrorOnIPAddressTab: map['hasErrorOnIPAddressTab'] ?? false,
+      hasErrorOnDhcpServerTab: map['hasErrorOnDhcpServerTab'] ?? false,
     );
   }
 
@@ -148,9 +173,11 @@ class LocalNetworkSettingsState extends Equatable {
       LocalNetworkSettingsState.fromMap(
           json.decode(source) as Map<String, dynamic>);
 
-  bool isEqualStateWithoutDhcpReservationList(LocalNetworkSettingsState compareState) {
+  bool isEqualStateWithoutDhcpReservationList(
+      LocalNetworkSettingsState compareState) {
     final stateWithoutList = copyWith(dhcpReservationList: []);
-    final compareStateWithoutList = compareState.copyWith(dhcpReservationList: []);
+    final compareStateWithoutList =
+        compareState.copyWith(dhcpReservationList: []);
     return stateWithoutList == compareStateWithoutList;
   }
 
@@ -177,7 +204,9 @@ class LocalNetworkSettingsState extends Equatable {
     ValueGetter<String?>? wins,
     List<DHCPReservation>? dhcpReservationList,
     Map<String, String>? errorTextMap,
-    bool? needToSave,
+    bool? hasErrorOnHostNameTab,
+    bool? hasErrorOnIPAddressTab,
+    bool? hasErrorOnDhcpServerTab,
   }) {
     return LocalNetworkSettingsState(
       hostName: hostName ?? this.hostName,
@@ -189,16 +218,26 @@ class LocalNetworkSettingsState extends Equatable {
       maxUserLimit: maxUserLimit ?? this.maxUserLimit,
       maxUserAllowed: maxUserAllowed ?? this.maxUserAllowed,
       clientLeaseTime: clientLeaseTime ?? this.clientLeaseTime,
-      minAllowDHCPLeaseMinutes: minAllowDHCPLeaseMinutes ?? this.minAllowDHCPLeaseMinutes,
-      maxAllowDHCPLeaseMinutes: maxAllowDHCPLeaseMinutes ?? this.maxAllowDHCPLeaseMinutes,
-      minNetworkPrefixLength: minNetworkPrefixLength ?? this.minNetworkPrefixLength,
-      maxNetworkPrefixLength: maxNetworkPrefixLength ?? this.maxNetworkPrefixLength,
+      minAllowDHCPLeaseMinutes:
+          minAllowDHCPLeaseMinutes ?? this.minAllowDHCPLeaseMinutes,
+      maxAllowDHCPLeaseMinutes:
+          maxAllowDHCPLeaseMinutes ?? this.maxAllowDHCPLeaseMinutes,
+      minNetworkPrefixLength:
+          minNetworkPrefixLength ?? this.minNetworkPrefixLength,
+      maxNetworkPrefixLength:
+          maxNetworkPrefixLength ?? this.maxNetworkPrefixLength,
       dns1: dns1 != null ? dns1() : this.dns1,
       dns2: dns2 != null ? dns2() : this.dns2,
       dns3: dns3 != null ? dns3() : this.dns3,
       wins: wins != null ? wins() : this.wins,
       dhcpReservationList: dhcpReservationList ?? this.dhcpReservationList,
       errorTextMap: errorTextMap ?? this.errorTextMap,
+      hasErrorOnHostNameTab:
+          hasErrorOnHostNameTab ?? this.hasErrorOnHostNameTab,
+      hasErrorOnIPAddressTab:
+          hasErrorOnIPAddressTab ?? this.hasErrorOnIPAddressTab,
+      hasErrorOnDhcpServerTab:
+          hasErrorOnDhcpServerTab ?? this.hasErrorOnDhcpServerTab,
     );
   }
 }
