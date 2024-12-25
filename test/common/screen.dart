@@ -3,11 +3,27 @@ import 'dart:ui';
 class ScreenSize {
   const ScreenSize(this.name, this.width, this.height, this.pixelDensity);
   final String name;
-  final double width, height, pixelDensity;
+  final double width;
+  final double height;
+  final double pixelDensity;
 
   @override
   String toString() => '$name($width, $height, $pixelDensity)';
   String toShort() => name;
+
+  ScreenSize copyWith({
+    String? name,
+    double? width,
+    double? height,
+    double? pixelDensity,
+  }) {
+    return ScreenSize(
+      name ?? this.name,
+      width ?? this.width,
+      height ?? this.height,
+      pixelDensity ?? this.pixelDensity,
+    );
+  }
 }
 
 class LocalizedScreen extends ScreenSize {
