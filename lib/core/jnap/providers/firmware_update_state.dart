@@ -12,14 +12,14 @@ class FirmwareUpdateState extends Equatable {
   final List<FirmwareUpdateStatus>? nodesStatus;
   final bool isUpdating;
   final bool isRetryMaxReached;
-  final bool isChildAllUp;
+  final bool isWaitingChildrenAfterUpdating;
 
   const FirmwareUpdateState({
     required this.settings,
     required this.nodesStatus,
     this.isUpdating = false,
     this.isRetryMaxReached = false,
-    this.isChildAllUp = false,
+    this.isWaitingChildrenAfterUpdating = false,
   });
 
   factory FirmwareUpdateState.empty() => FirmwareUpdateState(
@@ -35,14 +35,14 @@ class FirmwareUpdateState extends Equatable {
     List<FirmwareUpdateStatus>? nodesStatus,
     bool? isUpdating,
     bool? isRetryMaxReached,
-    bool? isChildAllUp,
+    bool? isWaitingChildrenAfterUpdating,
   }) {
     return FirmwareUpdateState(
       settings: settings ?? this.settings,
       nodesStatus: nodesStatus ?? this.nodesStatus,
       isUpdating: isUpdating ?? this.isUpdating,
       isRetryMaxReached: isRetryMaxReached ?? this.isRetryMaxReached,
-      isChildAllUp: isChildAllUp ?? this.isChildAllUp,
+      isWaitingChildrenAfterUpdating: isWaitingChildrenAfterUpdating ?? this.isWaitingChildrenAfterUpdating,
     );
   }
 
@@ -52,7 +52,7 @@ class FirmwareUpdateState extends Equatable {
       'nodesStatus': nodesStatus?.map((x) => x.toMap()).toList(),
       'isUpdating': isUpdating,
       'isRetryMaxReached': isRetryMaxReached,
-      'isChildAllUp': isChildAllUp,
+      'isWaitingChildrenAfterUpdating': isWaitingChildrenAfterUpdating,
     };
   }
 
@@ -71,7 +71,7 @@ class FirmwareUpdateState extends Equatable {
           : null,
       isUpdating: map['isUpdating'] as bool,
       isRetryMaxReached: map['isRetryMaxReached'] as bool,
-      isChildAllUp: map['isChildAllUp'] as bool,
+      isWaitingChildrenAfterUpdating: map['isWaitingChildrenAfterUpdating'] as bool,
     );
   }
 
@@ -90,7 +90,7 @@ class FirmwareUpdateState extends Equatable {
       nodesStatus,
       isUpdating,
       isRetryMaxReached,
-      isChildAllUp,
+      isWaitingChildrenAfterUpdating,
     ];
   }
 }
