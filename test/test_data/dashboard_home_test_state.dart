@@ -1,3 +1,43 @@
+const dashboardHomeCherry7TestState = {
+  "isWanConnected": true,
+  "isFirstPolling": false,
+  "isHorizontalLayout": false,
+  "isHealthCheckSupported": false,
+  "masterIcon": "routerLn12",
+  "isAnyNodesOffline": true,
+  "uptimes": 18681,
+  "wanPortConnection": "1Gbps",
+  "lanPortConnections": [],
+  "wifis": [
+    {
+      "ssid": "Linksys03041",
+      "password": "7sVzt65hf@",
+      "radios": ["RADIO_2.4GHz"],
+      "isGuest": false,
+      "isEnabled": true,
+      "numOfConnectedDevices": 0
+    },
+    {
+      "ssid": "Linksys03041",
+      "password": "7sVzt65hf@",
+      "radios": ["RADIO_5GHz"],
+      "isGuest": false,
+      "isEnabled": true,
+      "numOfConnectedDevices": 2
+    },
+    {
+      "ssid": "Linksys03041-guest",
+      "password": "BeMyGuest",
+      "radios": ["RADIO_2.4GHz", "RADIO_5GHz"],
+      "isGuest": true,
+      "isEnabled": true,
+      "numOfConnectedDevices": 0
+    }
+  ],
+  "wanType": "DHCP",
+  "detectedWANType": "DHCP"
+};
+
 const dashboardHomeStateData = {
   "isWanConnected": true,
   "isFirstPolling": false,

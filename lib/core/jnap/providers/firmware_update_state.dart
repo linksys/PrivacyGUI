@@ -69,9 +69,9 @@ class FirmwareUpdateState extends Equatable {
               ),
             )
           : null,
-      isUpdating: map['isUpdating'] as bool,
-      isRetryMaxReached: map['isRetryMaxReached'] as bool,
-      isWaitingChildrenAfterUpdating: map['isWaitingChildrenAfterUpdating'] as bool,
+      isUpdating: map['isUpdating'] as bool? ?? false,
+      isRetryMaxReached: map['isRetryMaxReached'] as bool? ?? false,
+      isWaitingChildrenAfterUpdating: map['isChildAllUp'] as bool? ?? false,
     );
   }
 

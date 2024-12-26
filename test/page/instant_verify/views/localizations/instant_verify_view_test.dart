@@ -62,7 +62,7 @@ void main() {
     when(mockInstantPrivacyNotifier.build())
         .thenReturn(InstantPrivacyState.fromMap(instantPrivacyTestState));
     when(mockInstantTopologyNotifier.build())
-        .thenReturn(testTopology2SlavesDaisyState);
+        .thenReturn(TopologyTestData().testTopology2SlavesDaisyState);
     when(mockInstantVerifyNotifier.build())
         .thenReturn(InstantVerifyState.fromMap(instantVerifyTestState));
     when(mockDashboardManagerNotifier.build())

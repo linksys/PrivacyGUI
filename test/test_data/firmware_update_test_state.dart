@@ -479,6 +479,28 @@ const firmwareUpdateTestData = {
   "isChecking": false
 };
 
+const firmwareUpdateHasFirmwareCherry7TestState = {
+  "settings": {
+    "updatePolicy": "AutomaticallyCheckAndInstall",
+    "autoUpdateWindow": {"startMinute": 0, "durationMinutes": 240}
+  },
+  "nodesStatus": [
+    {
+      "lastSuccessfulCheckTime": "2024-06-14T07:26:11Z",
+      "availableUpdate": {
+        "firmwareVersion": "1.23.34567",
+        "firmwareDate": "2024-05-14T07:26:11Z",
+        "description": ""
+      },
+      "pendingOperation": null,
+      "lastOperationFailure": null,
+      "deviceUUID": "6c73112b-b6d1-4bfd-9a8c-80691abb46cc"
+    }
+  ],
+  "isUpdating": false,
+  "isRetryMaxReached": false,
+  "isWaitingChildrenAfterUpdating": false
+};
 const firmwareUpdateHasFirmwareTestData = {
   "settings": {
     "updatePolicy": "AutomaticallyCheckAndInstall",
@@ -498,5 +520,6 @@ const firmwareUpdateHasFirmwareTestData = {
     }
   ],
   "isUpdating": false,
-  "isChecking": false
+  "isRetryMaxReached": false,
+  "isWaitingChildrenAfterUpdating": false
 };

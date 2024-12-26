@@ -10,10 +10,10 @@ enum MacFilterMode {
   deny,
   ;
 
-  static MacFilterMode reslove(String value) => switch (value) {
-        'Disabled' => MacFilterMode.disabled,
-        'Allow' => MacFilterMode.allow,
-        'Deny' => MacFilterMode.deny,
+  static MacFilterMode reslove(String value) => switch (value.toLowerCase()) {
+        'disabled' => MacFilterMode.disabled,
+        'allow' => MacFilterMode.allow,
+        'deny' => MacFilterMode.deny,
         _ => MacFilterMode.disabled,
       };
 }
@@ -81,7 +81,7 @@ class InstantPrivacyState extends Equatable {
       mode: MacFilterMode.reslove(map['status']),
       macAddresses: List.from(map['macAddresses']),
       maxMacAddresses: map['maxMacAddresses'] as int,
-      bssids: List.from(map['bssids']),
+      bssids: map['bssids']  == null ? [] : List.from(map['bssids']),
       myMac: map['myMac'],
     );
   }

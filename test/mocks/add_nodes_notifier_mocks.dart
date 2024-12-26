@@ -52,7 +52,7 @@ class _FakeAddNodesState_1 extends _i1.SmartFake implements _i3.AddNodesState {
 /// A class which mocks [AddNodesNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockAddNodesNotifier extends _i2.Notifier<_i3.AddNodesState> with _i1.Mock implements _i4.AddNodesNotifier {
+class MockAddNodesNotifier extends _i2.AutoDisposeNotifier<_i3.AddNodesState> with _i1.Mock implements _i4.AddNodesNotifier {
   @override
   _i2.AutoDisposeNotifierProviderRef<_i3.AddNodesState> get ref =>
       (super.noSuchMethod(

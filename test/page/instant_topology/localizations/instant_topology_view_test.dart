@@ -28,7 +28,7 @@ void main() async {
   group('Instant topology view test - online nodes', () {
     testLocalizations('Instant topology view - 2 online nodes',
         (tester, locale) async {
-      when(mockTopologyNotifier.build()).thenReturn(testTopology1SlaveState);
+      when(mockTopologyNotifier.build()).thenReturn(TopologyTestData().testTopology1SlaveState);
 
       final widget = testableSingleRoute(
         themeMode: ThemeMode.dark,
@@ -44,7 +44,7 @@ void main() async {
     testLocalizations('Instant topology view - 3 online nodes stars',
         (tester, locale) async {
       when(mockTopologyNotifier.build())
-          .thenReturn(testTopology2SlavesStarState);
+          .thenReturn(TopologyTestData().testTopology2SlavesStarState);
 
       final widget = testableSingleRoute(
         overrides: [
@@ -59,7 +59,7 @@ void main() async {
     testLocalizations('Instant topology view - 3 online nodes daisy',
         (tester, locale) async {
       when(mockTopologyNotifier.build())
-          .thenReturn(testTopology2SlavesDaisyState);
+          .thenReturn(TopologyTestData().testTopology2SlavesDaisyState);
 
       final widget = testableSingleRoute(
         overrides: [
@@ -74,7 +74,7 @@ void main() async {
     testLocalizations('Instant topology view - 6 online nodes stars',
         (tester, locale) async {
       when(mockTopologyNotifier.build())
-          .thenReturn(testTopology5SlavesStarState);
+          .thenReturn(TopologyTestData().testTopology5SlavesStarState);
 
       final widget = testableSingleRoute(
         overrides: [
@@ -89,7 +89,7 @@ void main() async {
     testLocalizations('Instant topology view - 6 online nodes daisy',
         (tester, locale) async {
       when(mockTopologyNotifier.build())
-          .thenReturn(testTopology5SlavesDaisyState);
+          .thenReturn(TopologyTestData().testTopology5SlavesDaisyState);
 
       final widget = testableSingleRoute(
         overrides: [
@@ -104,7 +104,7 @@ void main() async {
     testLocalizations('Instant topology view - 6 online nodes hybrid',
         (tester, locale) async {
       when(mockTopologyNotifier.build())
-          .thenReturn(testTopology5SlavesMixedState);
+          .thenReturn(TopologyTestData().testTopology5SlavesMixedState);
 
       final widget = testableSingleRoute(
         overrides: [
@@ -120,7 +120,7 @@ void main() async {
   group('Instant topology view test - has offline nodes', () {
     testLocalizations('Instant topology view - 1 offline node',
         (tester, locale) async {
-      when(mockTopologyNotifier.build()).thenReturn(testTopology1OfflineState);
+      when(mockTopologyNotifier.build()).thenReturn(TopologyTestData().testTopology1OfflineState);
       // when(mockTopologyNotifier.isSupportAutoOnboarding()).thenReturn(true);
       final widget = testableSingleRoute(
         themeMode: ThemeMode.dark,
@@ -135,7 +135,7 @@ void main() async {
 
     testLocalizations('Instant topology view - 2 offline nodes',
         (tester, locale) async {
-      when(mockTopologyNotifier.build()).thenReturn(testTopology2OfflineState);
+      when(mockTopologyNotifier.build()).thenReturn(TopologyTestData().testTopology2OfflineState);
       // when(mockTopologyNotifier.isSupportAutoOnboarding()).thenReturn(true);
 
       final widget = testableSingleRoute(
@@ -150,7 +150,7 @@ void main() async {
 
     testLocalizations('Instant topology view - 3 offline nodes',
         (tester, locale) async {
-      when(mockTopologyNotifier.build()).thenReturn(testTopology3OfflineState);
+      when(mockTopologyNotifier.build()).thenReturn(TopologyTestData().testTopology3OfflineState);
       final widget = testableSingleRoute(
         overrides: [
           instantTopologyProvider.overrideWith(() => mockTopologyNotifier),
@@ -163,7 +163,7 @@ void main() async {
 
     testLocalizations('Instant topology view - 4 offline nodes',
         (tester, locale) async {
-      when(mockTopologyNotifier.build()).thenReturn(testTopology4OfflineState);
+      when(mockTopologyNotifier.build()).thenReturn(TopologyTestData().testTopology4OfflineState);
       final widget = testableSingleRoute(
         overrides: [
           instantTopologyProvider.overrideWith(() => mockTopologyNotifier),
@@ -176,7 +176,7 @@ void main() async {
 
     testLocalizations('Instant topology view - 5 offline nodes',
         (tester, locale) async {
-      when(mockTopologyNotifier.build()).thenReturn(testTopology5OfflineState);
+      when(mockTopologyNotifier.build()).thenReturn(TopologyTestData().testTopology5OfflineState);
       final widget = testableSingleRoute(
         overrides: [
           instantTopologyProvider.overrideWith(() => mockTopologyNotifier),

@@ -268,7 +268,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
         : DateTime.now().difference(dateTime).inDays > 1;
     final dateTimeStr = dateTime == null
         ? ''
-        : loc(context).speedCheckLatestTime(dateTime, dateTime);
+        : loc(context).formalDateTime(dateTime, dateTime);
     return Container(
       key: const ValueKey('speedCheck'),
       color: Theme.of(context).colorSchemeExt.surfaceContainerLow,
@@ -282,7 +282,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
             desktop: !hasLanPort
                 ? Padding(
                     padding:
-                        const EdgeInsets.symmetric(vertical: Spacing.large2),
+                        const EdgeInsets.symmetric(vertical: Spacing.large1),
                     child: Row(
                       children: [
                         Expanded(

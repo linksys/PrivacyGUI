@@ -9,7 +9,6 @@ import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_provider.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/nodes/providers/node_detail_id_provider.dart';
 import 'package:privacy_gui/page/instant_topology/providers/_providers.dart';
@@ -62,7 +61,6 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
         DateFormatUtils.formatDuration(Duration(seconds: uptimeInt), null);
     final state = ref.watch(dashboardHomeProvider);
     final topologyState = ref.watch(instantTopologyProvider);
-
     treeController.roots = topologyState.root.children;
     treeController.expandAll();
     const topologyItemHeight = 96.0;
@@ -308,9 +306,9 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
       text: nodes.length == 1 ? loc(context).node : loc(context).nodes,
       count: nodes.length,
       onTap: () {
-              ref.read(topologySelectedIdProvider.notifier).state = '';
-              context.pushNamed(RouteNamed.menuInstantTopology);
-            },
+        ref.read(topologySelectedIdProvider.notifier).state = '';
+        context.pushNamed(RouteNamed.menuInstantTopology);
+      },
     );
   }
 
@@ -329,8 +327,8 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
       count: externalDeviceCount,
       iconData: LinksysIcons.devices,
       onTap: () {
-              context.pushNamed(RouteNamed.menuInstantDevices);
-            },
+        context.pushNamed(RouteNamed.menuInstantDevices);
+      },
     );
   }
 

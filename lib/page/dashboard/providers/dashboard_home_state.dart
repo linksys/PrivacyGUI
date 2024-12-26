@@ -2,8 +2,54 @@
 import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
+import 'package:flutter/widgets.dart';
+
 import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
 import 'package:privacy_gui/core/jnap/models/radio_info.dart';
+
+class DashboardSpeedItem extends Equatable {
+  final String unit;
+  final String value;
+
+  const DashboardSpeedItem({
+    required this.unit,
+    required this.value,
+  });
+
+  DashboardSpeedItem copyWith({
+    String? unit,
+    String? value,
+  }) {
+    return DashboardSpeedItem(
+      unit: unit ?? this.unit,
+      value: value ?? this.value,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'unit': unit,
+      'value': value,
+    };
+  }
+
+  factory DashboardSpeedItem.fromMap(Map<String, dynamic> map) {
+    return DashboardSpeedItem(
+      unit: map['unit'] ?? '',
+      value: map['value'] ?? '',
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory DashboardSpeedItem.fromJson(String source) => DashboardSpeedItem.fromMap(json.decode(source));
+
+  @override
+  String toString() => 'DasboardSpeedItem(unit: $unit, value: $value)';
+
+  @override
+  List<Object> get props => [unit, value];
+}
 
 class DashboardWiFiItem extends Equatable {
   final String ssid;
@@ -117,8 +163,8 @@ class DashboardHomeState extends Equatable {
   final bool isHealthCheckSupported;
   final String masterIcon;
   final bool isAnyNodesOffline;
-  final ({String value, String unit})? uploadResult;
-  final ({String value, String unit})? downloadResult;
+  final DashboardSpeedItem? uploadResult;
+  final DashboardSpeedItem? downloadResult;
   final int? speedCheckTimestamp;
   final int? uptime;
   final String? wanPortConnection;
@@ -145,78 +191,41 @@ class DashboardHomeState extends Equatable {
     this.detectedWANType,
   });
 
-  DashboardHomeState copyWith({
-    bool? isWanConnected,
-    bool? isFirstPolling,
-    bool? isHorizontalLayout,
-    bool? isHealthCheckSupported,
-    String? masterIcon,
-    bool? isAnyNodesOffline,
-    ({String value, String unit})? uploadResult,
-    ({String value, String unit})? downloadResult,
-    int? speedCheckTimestamp,
-    int? uptime,
-    String? wanPortConnection,
-    List<String>? lanPortConnections,
-    List<DashboardWiFiItem>? wifis,
-    String? wanType,
-    String? detectedWANType,
-  }) {
-    return DashboardHomeState(
-      isWanConnected: isWanConnected ?? this.isWanConnected,
-      isFirstPolling: isFirstPolling ?? this.isFirstPolling,
-      isHorizontalLayout: isHorizontalLayout ?? this.isHorizontalLayout,
-      isHealthCheckSupported:
-          isHealthCheckSupported ?? this.isHealthCheckSupported,
-      masterIcon: masterIcon ?? this.masterIcon,
-      isAnyNodesOffline: isAnyNodesOffline ?? this.isAnyNodesOffline,
-      uploadResult: uploadResult ?? this.uploadResult,
-      downloadResult: downloadResult ?? this.downloadResult,
-      speedCheckTimestamp: speedCheckTimestamp ?? this.speedCheckTimestamp,
-      uptime: uptime ?? this.uptime,
-      wanPortConnection: wanPortConnection ?? this.wanPortConnection,
-      lanPortConnections: lanPortConnections ?? this.lanPortConnections,
-      wifis: wifis ?? this.wifis,
-      wanType: wanType ?? this.wanType,
-      detectedWANType: detectedWANType ?? this.detectedWANType,
-    );
-  }
-
   Map<String, dynamic> toMap() {
-    return <String, dynamic>{
+    return {
       'isWanConnected': isWanConnected,
       'isFirstPolling': isFirstPolling,
       'isHorizontalLayout': isHorizontalLayout,
       'isHealthCheckSupported': isHealthCheckSupported,
       'masterIcon': masterIcon,
       'isAnyNodesOffline': isAnyNodesOffline,
-      'uptimes': uptime,
+      'uploadResult': uploadResult?.toMap(),
+      'downloadResult': downloadResult?.toMap(),
+      'speedCheckTimestamp': speedCheckTimestamp,
+      'uptime': uptime,
       'wanPortConnection': wanPortConnection,
       'lanPortConnections': lanPortConnections,
       'wifis': wifis.map((x) => x.toMap()).toList(),
       'wanType': wanType,
       'detectedWANType': detectedWANType,
-    }..removeWhere((key, value) => value == null);
+    };
   }
 
   factory DashboardHomeState.fromMap(Map<String, dynamic> map) {
     return DashboardHomeState(
-      isWanConnected: map['isWanConnected'] as bool,
-      isFirstPolling: map['isFirstPolling'] as bool,
-      isHorizontalLayout: map['isHorizontalLayout'] as bool,
-      isHealthCheckSupported: map['isHealthCheckSupported'] as bool,
-      masterIcon: map['masterIcon'] as String,
-      isAnyNodesOffline: map['isAnyNodesOffline'] as bool,
-      uptime: map['uptimes'] != null ? map['uptimes'] as int : null,
-      wanPortConnection: map['wanPortConnection'] != null
-          ? map['wanPortConnection'] as String
-          : null,
+      isWanConnected: map['isWanConnected'] ?? false,
+      isFirstPolling: map['isFirstPolling'] ?? false,
+      isHorizontalLayout: map['isHorizontalLayout'] ?? false,
+      isHealthCheckSupported: map['isHealthCheckSupported'] ?? false,
+      masterIcon: map['masterIcon'] ?? '',
+      isAnyNodesOffline: map['isAnyNodesOffline'] ?? false,
+      uploadResult: map['uploadResult'] != null ? DashboardSpeedItem.fromMap(map['uploadResult']) : null,
+      downloadResult: map['downloadResult'] != null ? DashboardSpeedItem.fromMap(map['downloadResult']) : null,
+      speedCheckTimestamp: map['speedCheckTimestamp']?.toInt(),
+      uptime: map['uptime']?.toInt(),
+      wanPortConnection: map['wanPortConnection'],
       lanPortConnections: List<String>.from(map['lanPortConnections']),
-      wifis: List<DashboardWiFiItem>.from(
-        map['wifis'].map<DashboardWiFiItem>(
-          (x) => DashboardWiFiItem.fromMap(x as Map<String, dynamic>),
-        ),
-      ),
+      wifis: List<DashboardWiFiItem>.from(map['wifis']?.map((x) => DashboardWiFiItem.fromMap(x))),
       wanType: map['wanType'],
       detectedWANType: map['detectedWANType'],
     );
@@ -224,8 +233,7 @@ class DashboardHomeState extends Equatable {
 
   String toJson() => json.encode(toMap());
 
-  factory DashboardHomeState.fromJson(String source) =>
-      DashboardHomeState.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory DashboardHomeState.fromJson(String source) => DashboardHomeState.fromMap(json.decode(source));
 
   @override
   bool get stringify => true;
@@ -239,6 +247,9 @@ class DashboardHomeState extends Equatable {
       isHealthCheckSupported,
       masterIcon,
       isAnyNodesOffline,
+      uploadResult,
+      downloadResult,
+      speedCheckTimestamp,
       uptime,
       wanPortConnection,
       lanPortConnections,
@@ -246,6 +257,47 @@ class DashboardHomeState extends Equatable {
       wanType,
       detectedWANType,
     ];
+  }
+
+  DashboardHomeState copyWith({
+    bool? isWanConnected,
+    bool? isFirstPolling,
+    bool? isHorizontalLayout,
+    bool? isHealthCheckSupported,
+    String? masterIcon,
+    bool? isAnyNodesOffline,
+    ValueGetter<DashboardSpeedItem?>? uploadResult,
+    ValueGetter<DashboardSpeedItem?>? downloadResult,
+    ValueGetter<int?>? speedCheckTimestamp,
+    ValueGetter<int?>? uptime,
+    ValueGetter<String?>? wanPortConnection,
+    List<String>? lanPortConnections,
+    List<DashboardWiFiItem>? wifis,
+    ValueGetter<String?>? wanType,
+    ValueGetter<String?>? detectedWANType,
+  }) {
+    return DashboardHomeState(
+      isWanConnected: isWanConnected ?? this.isWanConnected,
+      isFirstPolling: isFirstPolling ?? this.isFirstPolling,
+      isHorizontalLayout: isHorizontalLayout ?? this.isHorizontalLayout,
+      isHealthCheckSupported: isHealthCheckSupported ?? this.isHealthCheckSupported,
+      masterIcon: masterIcon ?? this.masterIcon,
+      isAnyNodesOffline: isAnyNodesOffline ?? this.isAnyNodesOffline,
+      uploadResult: uploadResult != null ? uploadResult() : this.uploadResult,
+      downloadResult: downloadResult != null ? downloadResult() : this.downloadResult,
+      speedCheckTimestamp: speedCheckTimestamp != null ? speedCheckTimestamp() : this.speedCheckTimestamp,
+      uptime: uptime != null ? uptime() : this.uptime,
+      wanPortConnection: wanPortConnection != null ? wanPortConnection() : this.wanPortConnection,
+      lanPortConnections: lanPortConnections ?? this.lanPortConnections,
+      wifis: wifis ?? this.wifis,
+      wanType: wanType != null ? wanType() : this.wanType,
+      detectedWANType: detectedWANType != null ? detectedWANType() : this.detectedWANType,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'DashboardHomeState(isWanConnected: $isWanConnected, isFirstPolling: $isFirstPolling, isHorizontalLayout: $isHorizontalLayout, isHealthCheckSupported: $isHealthCheckSupported, masterIcon: $masterIcon, isAnyNodesOffline: $isAnyNodesOffline, uploadResult: $uploadResult, downloadResult: $downloadResult, speedCheckTimestamp: $speedCheckTimestamp, uptime: $uptime, wanPortConnection: $wanPortConnection, lanPortConnections: $lanPortConnections, wifis: $wifis, wanType: $wanType, detectedWANType: $detectedWANType)';
   }
 }
 
