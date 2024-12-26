@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 
 final nodeLightSettingsProvider =
     NotifierProvider<NodeLightSettingsNotifier, NodeLightSettings>(
@@ -21,6 +22,7 @@ class NodeLightSettingsNotifier extends Notifier<NodeLightSettings> {
       fetchRemote: forceRemote,
     );
     state = NodeLightSettings.fromMap(result.output);
+    logger.d('[State][NodeLightSettings]: ${state.toJson()}');
     return state;
   }
 

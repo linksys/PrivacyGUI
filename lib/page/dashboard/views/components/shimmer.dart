@@ -61,6 +61,9 @@ class _ShimmerLoadingState extends State<ShimmerLoading> {
       setState(() {
         // Update the shimmer painting.
       });
+    } else {
+      // Stop the shimmer animation.
+      (_shimmerChanges as AnimationController?)?.stop();
     }
   }
 

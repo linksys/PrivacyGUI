@@ -57,6 +57,7 @@ class InstantPrivacyNotifier extends Notifier<InstantPrivacyState> {
       bssids: staBSSIDS,
       myMac: myMac,
     );
+    logger.d('[State]:[instantPrivacy]: ${state.toJson()}');
     return state;
   }
 

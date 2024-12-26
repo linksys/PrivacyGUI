@@ -28,7 +28,7 @@ void main() {
   });
   group('Topology view test - online nodes', () {
     testResponsiveWidgets('topology view - 2 online nodes', (tester) async {
-      when(mockTopologyNotifier.build()).thenReturn(testTopology1SlaveState);
+      when(mockTopologyNotifier.build()).thenReturn(TopologyTestData().testTopology1SlaveState);
 
       final widget = testableSingleRoute(
           themeMode: ThemeMode.dark,
@@ -75,7 +75,7 @@ void main() {
     testResponsiveWidgets('topology view - 3 online nodes stars',
         (tester) async {
       when(mockTopologyNotifier.build())
-          .thenReturn(testTopology2SlavesStarState);
+          .thenReturn(TopologyTestData().testTopology2SlavesStarState);
 
       final widget = testableSingleRoute(overrides: [
         instantTopologyProvider.overrideWith(() => mockTopologyNotifier),
@@ -152,7 +152,7 @@ void main() {
     testResponsiveWidgets('topology view - 3 online nodes daisy',
         (tester) async {
       when(mockTopologyNotifier.build())
-          .thenReturn(testTopology2SlavesDaisyState);
+          .thenReturn(TopologyTestData().testTopology2SlavesDaisyState);
 
       final widget = testableSingleRoute(overrides: [
         instantTopologyProvider.overrideWith(() => mockTopologyNotifier),
@@ -224,7 +224,7 @@ void main() {
     testResponsiveWidgets('topology view - 6 online nodes stars',
         (tester) async {
       when(mockTopologyNotifier.build())
-          .thenReturn(testTopology5SlavesStarState);
+          .thenReturn(TopologyTestData().testTopology5SlavesStarState);
 
       final widget = testableSingleRoute(overrides: [
         instantTopologyProvider.overrideWith(() => mockTopologyNotifier),
@@ -354,7 +354,7 @@ void main() {
     testResponsiveWidgets('topology view - 6 online nodes daisy',
         (tester) async {
       when(mockTopologyNotifier.build())
-          .thenReturn(testTopology5SlavesDaisyState);
+          .thenReturn(TopologyTestData().testTopology5SlavesDaisyState);
 
       final widget = testableSingleRoute(overrides: [
         instantTopologyProvider.overrideWith(() => mockTopologyNotifier),
@@ -484,7 +484,7 @@ void main() {
     testResponsiveWidgets('topology view - 6 online nodes hybrid',
         (tester) async {
       when(mockTopologyNotifier.build())
-          .thenReturn(testTopology5SlavesDaisyState);
+          .thenReturn(TopologyTestData().testTopology5SlavesDaisyState);
 
       final widget = testableSingleRoute(overrides: [
         instantTopologyProvider.overrideWith(() => mockTopologyNotifier),
