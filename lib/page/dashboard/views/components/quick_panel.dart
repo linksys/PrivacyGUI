@@ -145,6 +145,7 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
               ),
             ),
             AppSwitch(
+              key: ValueKey(semantics),
               value: value,
               onChanged: onChanged,
               semanticLabel: semantics,

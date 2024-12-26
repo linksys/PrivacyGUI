@@ -10,10 +10,10 @@ enum MacFilterMode {
   deny,
   ;
 
-  static MacFilterMode reslove(String value) => switch (value) {
-        'Disabled' => MacFilterMode.disabled,
-        'Allow' => MacFilterMode.allow,
-        'Deny' => MacFilterMode.deny,
+  static MacFilterMode reslove(String value) => switch (value.toLowerCase()) {
+        'disabled' => MacFilterMode.disabled,
+        'allow' => MacFilterMode.allow,
+        'deny' => MacFilterMode.deny,
         _ => MacFilterMode.disabled,
       };
 }

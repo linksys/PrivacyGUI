@@ -8,6 +8,7 @@ import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provi
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
 import 'package:privacy_gui/page/instant_safety/providers/instant_safety_provider.dart';
 import 'package:privacy_gui/page/instant_safety/providers/instant_safety_state.dart';
+import 'package:privacy_gui/providers/connectivity/connectivity_provider.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -15,12 +16,14 @@ import '../../../common/config.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
 import '../../../mocks/_index.dart';
+import '../../../mocks/connectivity_notifier_mocks.dart';
 import '../../../mocks/jnap_service_supported_mocks.dart';
 import '../../../test_data/_index.dart';
 
 void main() async {
   late InstantPrivacyNotifier mockInstantPrivacyNotifier;
   late InstantSafetyNotifier mockInstantSafetyNotifier;
+  late ConnectivityNotifier mockConnectivityNotifier;
 
   ServiceHelper mockServiceHelper = MockServiceHelper();
   getIt.registerSingleton<ServiceHelper>(mockServiceHelper);
@@ -29,6 +32,8 @@ void main() async {
     SharedPreferences.setMockInitialValues({});
     mockInstantPrivacyNotifier = MockInstantPrivacyNotifier();
     mockInstantSafetyNotifier = MockInstantSafetyNotifier();
+    mockConnectivityNotifier = MockConnectivityNotifier();
+
     when(mockInstantSafetyNotifier.build())
         .thenReturn(InstantSafetyState.fromMap(instantSafetyTestState));
     when(mockInstantPrivacyNotifier.build())
@@ -36,7 +41,7 @@ void main() async {
 
     initBetterActions();
   });
-  testLocalizations('Dashboard Menu View', (tester, locale) async {
+  testLocalizations('Dashboard Menu View - default', (tester, locale) async {
     await tester.pumpWidget(
       testableRouteShellWidget(
         child: const DashboardMenuView(),
@@ -48,7 +53,10 @@ void main() async {
       ),
     );
     await tester.pumpAndSettle();
-  });
+  }, screens: [
+      ...responsiveMobileScreens.map((e) => e.copyWith(height: 1440)).toList(),
+      ...responsiveDesktopScreens
+    ]);
   testLocalizations('Dashboard Menu View show bottom sheet',
       (tester, locale) async {
     await tester.pumpWidget(

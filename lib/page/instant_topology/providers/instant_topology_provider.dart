@@ -37,9 +37,12 @@ class InstantTopologyNotifier extends Notifier<InstantTopologyState> {
     if (onlineRoot.children.isNotEmpty) {
       onlineRoot.children.first.children.addAll(offlineRoot.children);
     }
-    return InstantTopologyState(
+    final state = InstantTopologyState(
       root: onlineRoot,
     );
+    logger.d(
+        'topology flat list: ${state.root.toFlatList().map((e) => e.data.toJson())}');
+    return state;
   }
 
   RouterTreeNode _buildRootNode(
@@ -295,7 +298,7 @@ class InstantTopologyNotifier extends Notifier<InstantTopologyState> {
             fetchRemote: true,
             cacheLevel: CacheLevel.noCache,
           )
-          // After factory resetting a child node, we need to wait for them 
+          // After factory resetting a child node, we need to wait for them
           // being offline for subsequent Delete actions
           .then(
             (_) => _waitForNodesOffline(deviceUUIDs),
