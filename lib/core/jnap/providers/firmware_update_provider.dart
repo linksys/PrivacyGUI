@@ -75,7 +75,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
             autoUpdateWindow: FirmwareAutoUpdateWindow.simple(),
           ),
       nodesStatus: fwUpdateStatusRecord.$1,
-      isChildAllUp: fwUpdateStatusRecord.$2,
+      isWaitingChildrenAfterUpdating: fwUpdateStatusRecord.$2,
     );
     logger.d('[FIRMWARE]: Build: state = ${state.toJson()}');
     return state;
@@ -114,7 +114,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
           '[FIRMWARE]: Fetch available firmware updates: saved status list = $statusRecord');
       state = state.copyWith(
         nodesStatus: statusRecord.$1,
-        isChildAllUp: statusRecord.$2,
+        isWaitingChildrenAfterUpdating: statusRecord.$2,
       );
     });
   }
@@ -262,15 +262,15 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     if (cachedList != null) {
       if (_isRecordConsistent(resultList, cachedList)) {
         logger.d('[FIRMWARE]: Fetched status is correct - nodes have resumed');
-        return (resultList, true);
+        return (resultList, false);
       } else {
         logger.d('[FIRMWARE]: Fetched status mismatch! - show the cached list');
-        return (cachedList, false);
+        return (cachedList, true);
       }
     }
     // Initial state - no updates in progress
     logger.d('[FIRMWARE]: No cached node status list');
-    return (resultList, true);
+    return (resultList, false);
   }
 
   ///
