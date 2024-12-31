@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/page/components/styled/general_settings_widget/language_tile.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
@@ -10,8 +11,7 @@ import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 
-import '../../../common/test_responsive_widget.dart';
-import '../../../common/testable_router.dart';
+import '../../../common/_index.dart';
 import '../../../mocks/mock_auth_notifier.dart';
 
 void main() async {
@@ -22,7 +22,7 @@ void main() async {
   });
 
   testLocalizations(
-    'Test top bar with popup with system theme when logged in',
+    'General Settings - popup with system theme when logged in',
     (tester, locale) async {
       final provider = ProviderContainer();
 
@@ -32,7 +32,8 @@ void main() async {
           provider: provider,
           overrides: [
             authProvider.overrideWith(() => mockAuthNotifier),
-            appSettingsProvider.overrideWith(() => AppSettingsNotifier())
+            appSettingsProvider.overrideWith(
+                () => MockAppSettingsNotifier(AppSettings(locale: locale)))
           ],
           router: GoRouter(routes: [
             LinksysRoute(
@@ -54,7 +55,7 @@ void main() async {
   );
 
   testLocalizations(
-    'Test top bar with popup with light theme when logged in',
+    'General Settings - popup with light theme when logged in',
     (tester, locale) async {
       final provider = ProviderContainer();
 
@@ -64,8 +65,11 @@ void main() async {
           provider: provider,
           overrides: [
             authProvider.overrideWith(() => mockAuthNotifier),
-            appSettingsProvider.overrideWith(() => MockAppSettingsNotifier(
-                const AppSettings(themeMode: ThemeMode.light))),
+            appSettingsProvider
+                .overrideWith(() => MockAppSettingsNotifier(AppSettings(
+                      themeMode: ThemeMode.light,
+                      locale: locale,
+                    ))),
           ],
           router: GoRouter(routes: [
             LinksysRoute(
@@ -87,7 +91,7 @@ void main() async {
   );
 
   testLocalizations(
-    'Test top bar with popup with dark theme when logged in',
+    'General Settings - popup with dark theme when logged in',
     (tester, locale) async {
       final provider = ProviderContainer();
 
@@ -98,7 +102,7 @@ void main() async {
           overrides: [
             authProvider.overrideWith(() => mockAuthNotifier),
             appSettingsProvider.overrideWith(() => MockAppSettingsNotifier(
-                const AppSettings(themeMode: ThemeMode.dark))),
+                AppSettings(themeMode: ThemeMode.dark, locale: locale))),
           ],
           router: GoRouter(routes: [
             LinksysRoute(
@@ -120,7 +124,7 @@ void main() async {
   );
 
   testLocalizations(
-    'Test top bar with popup with system theme when not log in yet',
+    'General Settings - popup with system theme when not log in yet',
     (tester, locale) async {
       final provider = ProviderContainer();
 
@@ -131,7 +135,7 @@ void main() async {
           overrides: [
             authProvider.overrideWith(() => mockAuthNotifier),
             appSettingsProvider.overrideWith(() => MockAppSettingsNotifier(
-                const AppSettings(themeMode: ThemeMode.system))),
+                AppSettings(themeMode: ThemeMode.system, locale: locale))),
           ],
           router: GoRouter(routes: [
             LinksysRoute(
@@ -153,7 +157,7 @@ void main() async {
   );
 
   testLocalizations(
-    'Test top bar with popup with light theme when not log in yet',
+    'General Settings - popup with light theme when not log in yet',
     (tester, locale) async {
       final provider = ProviderContainer();
 
@@ -164,7 +168,7 @@ void main() async {
           overrides: [
             authProvider.overrideWith(() => mockAuthNotifier),
             appSettingsProvider.overrideWith(() => MockAppSettingsNotifier(
-                const AppSettings(themeMode: ThemeMode.light))),
+                AppSettings(themeMode: ThemeMode.light, locale: locale))),
           ],
           router: GoRouter(routes: [
             LinksysRoute(
@@ -186,7 +190,7 @@ void main() async {
   );
 
   testLocalizations(
-    'Test top bar with popup with dark theme when not log in yet',
+    'General Settings - popup with dark theme when not log in yet',
     (tester, locale) async {
       final provider = ProviderContainer();
 
@@ -197,7 +201,7 @@ void main() async {
           overrides: [
             authProvider.overrideWith(() => mockAuthNotifier),
             appSettingsProvider.overrideWith(() => MockAppSettingsNotifier(
-                const AppSettings(themeMode: ThemeMode.dark))),
+                AppSettings(themeMode: ThemeMode.dark, locale: locale))),
           ],
           router: GoRouter(routes: [
             LinksysRoute(
@@ -216,6 +220,45 @@ void main() async {
       await tester.tap(settingsFinder);
       await tester.pumpAndSettle();
     },
+  );
+
+  testLocalizations(
+    'General Settings - Language selection modal',
+    (tester, locale) async {
+      final provider = ProviderContainer();
+
+      await tester.pumpWidget(
+        testableRouter(
+          themeMode: ThemeMode.dark,
+          provider: provider,
+          overrides: [
+            authProvider.overrideWith(() => mockAuthNotifier),
+            appSettingsProvider.overrideWith(() => MockAppSettingsNotifier(
+                AppSettings(themeMode: ThemeMode.dark, locale: locale))),
+          ],
+          router: GoRouter(routes: [
+            LinksysRoute(
+                path: '/',
+                builder: (context, state) => const StyledAppPageView(
+                      child: Center(),
+                    ))
+          ], initialLocation: '/'),
+        ),
+      );
+      mockAuthNotifier.state =
+          const AsyncData(AuthState(loginType: LoginType.none));
+      await tester.pumpAndSettle();
+
+      final settingsFinder = find.byIcon(LinksysIcons.person);
+      await tester.tap(settingsFinder);
+      await tester.pumpAndSettle();
+      final localeTileFinder = find.byType(LanguageTile);
+      await tester.tap(localeTileFinder);
+      await tester.pumpAndSettle();
+    }, screens: [
+    ...responsiveMobileScreens.map((e) => e.copyWith(height: 1600)).toList(),
+    ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1600)).toList()
+  ]
   );
 }
 

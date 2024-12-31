@@ -12,7 +12,6 @@ import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/core/utils/icon_device_category.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
-import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/views/dyn_ddns_form.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_provider.dart';
 import 'package:privacy_gui/page/components/shared_widgets.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
@@ -259,8 +258,10 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
                       ? 'release reserved ip'
                       : 'reserved ip',
                   padding: const EdgeInsets.only(),
-                  onTap: () async {
-                    await handleReserveDhcp(state.item, isReservedIp!);
+                  showSpinnerWhenTap: false,
+                  onTap: (AppLoadableWidgetController controller) async {
+                    await handleReserveDhcp(
+                        state.item, isReservedIp!, controller);
                   },
                 )
               : null,
@@ -430,8 +431,8 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
     return (value == null || value.isEmpty) ? '--' : value;
   }
 
-  Future<dynamic> handleReserveDhcp(
-      DeviceListItem item, bool isReservedIp) async {
+  Future<dynamic> handleReserveDhcp(DeviceListItem item, bool isReservedIp,
+      AppLoadableWidgetController controller) async {
     final notifier = ref.read(localNetworkSettingProvider.notifier);
     final dhcpReservationItem = DHCPReservation(
       description: item.name.replaceAll(HostNameRule().rule, ''),
@@ -442,6 +443,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
       // Show dialog to release
       final delete = await _showResevedIpDialog(isReservedIp);
       if (delete) {
+        controller.showSpinner();
         final dhcpReservationList =
             ref.read(localNetworkSettingProvider).dhcpReservationList;
         final hit = dhcpReservationList.firstWhereOrNull((e) =>
@@ -460,6 +462,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
       // Show dialog to release
       final reserve = await _showResevedIpDialog(isReservedIp);
       if (reserve) {
+        controller.showSpinner();
         final isOverlap =
             notifier.isReservationOverlap(item: dhcpReservationItem);
         if (isOverlap) {

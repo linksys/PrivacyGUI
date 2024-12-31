@@ -5,8 +5,10 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i5;
 
+import 'package:flutter/widgets.dart' as _i7;
 import 'package:flutter_riverpod/flutter_riverpod.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
+import 'package:mockito/src/dummies.dart' as _i8;
 import 'package:privacy_gui/core/jnap/models/lan_settings.dart' as _i6;
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_provider.dart'
     as _i4;
@@ -51,7 +53,9 @@ class _FakeLocalNetworkSettingsState_1 extends _i1.SmartFake
 /// A class which mocks [LocalNetworkSettingsNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockLocalNetworkSettingsNotifier extends _i2.Notifier<_i3.LocalNetworkSettingsState> with _i1.Mock
+class MockLocalNetworkSettingsNotifier extends _i2.Notifier<
+        _i3.LocalNetworkSettingsState>
+   with _i1.Mock
     implements _i4.LocalNetworkSettingsNotifier {
   @override
   _i2.NotifierProviderRef<_i3.LocalNetworkSettingsState> get ref =>
@@ -219,6 +223,15 @@ class MockLocalNetworkSettingsNotifier extends _i2.Notifier<_i3.LocalNetworkSett
       );
 
   @override
+  void updateHasErrorOnTabs() => super.noSuchMethod(
+        Invocation.method(
+          #updateHasErrorOnTabs,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
   void updateDHCPReservationList(
           List<_i6.DHCPReservation>? addedDHCPReservationList) =>
       super.noSuchMethod(
@@ -270,6 +283,78 @@ class MockLocalNetworkSettingsNotifier extends _i2.Notifier<_i3.LocalNetworkSett
         Invocation.method(
           #updateState,
           [newState],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  void routerIpAddressChanged(
+    _i7.BuildContext? context,
+    String? newRouterIpAddress,
+    _i3.LocalNetworkSettingsState? settings,
+  ) =>
+      super.noSuchMethod(
+        Invocation.method(
+          #routerIpAddressChanged,
+          [
+            context,
+            newRouterIpAddress,
+            settings,
+          ],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  void subnetMaskChanged(
+    _i7.BuildContext? context,
+    String? subnetMask,
+    _i3.LocalNetworkSettingsState? settings,
+  ) =>
+      super.noSuchMethod(
+        Invocation.method(
+          #subnetMaskChanged,
+          [
+            context,
+            subnetMask,
+            settings,
+          ],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  void startIpChanged(
+    _i7.BuildContext? context,
+    String? startIpAddress,
+    _i3.LocalNetworkSettingsState? settings,
+  ) =>
+      super.noSuchMethod(
+        Invocation.method(
+          #startIpChanged,
+          [
+            context,
+            startIpAddress,
+            settings,
+          ],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  void maxUserAllowedChanged(
+    _i7.BuildContext? context,
+    String? maxUserAllowed,
+    _i3.LocalNetworkSettingsState? settings,
+  ) =>
+      super.noSuchMethod(
+        Invocation.method(
+          #maxUserAllowedChanged,
+          [
+            context,
+            maxUserAllowed,
+            settings,
+          ],
         ),
         returnValueForMissingStub: null,
       );
@@ -357,47 +442,6 @@ class MockLocalNetworkSettingsNotifier extends _i2.Notifier<_i3.LocalNetworkSett
       ) as (bool, _i3.LocalNetworkSettingsState));
 
   @override
-  (bool, _i3.LocalNetworkSettingsState) maxUserAllowedFinished(
-    String? maxUserAllowed,
-    _i3.LocalNetworkSettingsState? settings,
-  ) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #maxUserAllowedFinished,
-          [
-            maxUserAllowed,
-            settings,
-          ],
-        ),
-        returnValue: (
-          false,
-          _FakeLocalNetworkSettingsState_1(
-            this,
-            Invocation.method(
-              #maxUserAllowedFinished,
-              [
-                maxUserAllowed,
-                settings,
-              ],
-            ),
-          )
-        ),
-        returnValueForMissingStub: (
-          false,
-          _FakeLocalNetworkSettingsState_1(
-            this,
-            Invocation.method(
-              #maxUserAllowedFinished,
-              [
-                maxUserAllowed,
-                settings,
-              ],
-            ),
-          )
-        ),
-      ) as (bool, _i3.LocalNetworkSettingsState));
-
-  @override
   (bool, _i3.LocalNetworkSettingsState) startIpFinished(
     String? startIpAddress,
     _i3.LocalNetworkSettingsState? settings,
@@ -431,6 +475,47 @@ class MockLocalNetworkSettingsNotifier extends _i2.Notifier<_i3.LocalNetworkSett
               #startIpFinished,
               [
                 startIpAddress,
+                settings,
+              ],
+            ),
+          )
+        ),
+      ) as (bool, _i3.LocalNetworkSettingsState));
+
+  @override
+  (bool, _i3.LocalNetworkSettingsState) maxUserAllowedFinished(
+    String? maxUserAllowed,
+    _i3.LocalNetworkSettingsState? settings,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #maxUserAllowedFinished,
+          [
+            maxUserAllowed,
+            settings,
+          ],
+        ),
+        returnValue: (
+          false,
+          _FakeLocalNetworkSettingsState_1(
+            this,
+            Invocation.method(
+              #maxUserAllowedFinished,
+              [
+                maxUserAllowed,
+                settings,
+              ],
+            ),
+          )
+        ),
+        returnValueForMissingStub: (
+          false,
+          _FakeLocalNetworkSettingsState_1(
+            this,
+            Invocation.method(
+              #maxUserAllowedFinished,
+              [
+                maxUserAllowed,
                 settings,
               ],
             ),
@@ -642,6 +727,65 @@ class MockLocalNetworkSettingsNotifier extends _i2.Notifier<_i3.LocalNetworkSett
           )
         ),
       ) as (bool, _i3.LocalNetworkSettingsState));
+
+  @override
+  String startIpAddressInvalidMessage(
+    _i7.BuildContext? context,
+    String? routerIp,
+    String? subnetMask,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #startIpAddressInvalidMessage,
+          [
+            context,
+            routerIp,
+            subnetMask,
+          ],
+        ),
+        returnValue: _i8.dummyValue<String>(
+          this,
+          Invocation.method(
+            #startIpAddressInvalidMessage,
+            [
+              context,
+              routerIp,
+              subnetMask,
+            ],
+          ),
+        ),
+        returnValueForMissingStub: _i8.dummyValue<String>(
+          this,
+          Invocation.method(
+            #startIpAddressInvalidMessage,
+            [
+              context,
+              routerIp,
+              subnetMask,
+            ],
+          ),
+        ),
+      ) as String);
+
+  @override
+  void listenSelf(
+    void Function(
+      _i3.LocalNetworkSettingsState?,
+      _i3.LocalNetworkSettingsState,
+    )? listener, {
+    void Function(
+      Object,
+      StackTrace,
+    )? onError,
+  }) =>
+      super.noSuchMethod(
+        Invocation.method(
+          #listenSelf,
+          [listener],
+          {#onError: onError},
+        ),
+        returnValueForMissingStub: null,
+      );
 
   @override
   bool updateShouldNotify(

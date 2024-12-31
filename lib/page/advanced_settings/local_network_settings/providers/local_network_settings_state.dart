@@ -160,7 +160,7 @@ class LocalNetworkSettingsState extends Equatable {
           (x) => DHCPReservation.fromMap(x as Map<String, dynamic>),
         ),
       ),
-      errorTextMap: map['errorTextMap'],
+      errorTextMap: map['errorTextMap'] ?? {},
       hasErrorOnHostNameTab: map['hasErrorOnHostNameTab'] ?? false,
       hasErrorOnIPAddressTab: map['hasErrorOnIPAddressTab'] ?? false,
       hasErrorOnDhcpServerTab: map['hasErrorOnDhcpServerTab'] ?? false,

@@ -7,10 +7,11 @@ import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
 import 'package:privacy_gui/page/instant_privacy/views/instant_privacy_view.dart';
-import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/card/card.dart';
 
+import '../../../../common/config.dart';
 import '../../../../common/test_responsive_widget.dart';
 import '../../../../common/testable_router.dart';
 import '../../../../mocks/_index.dart';
@@ -40,96 +41,66 @@ void main() {
         .thenReturn(DeviceListState.fromMap(deviceListTestState));
   });
 
-  testLocalizations('Instant privacy view - off 1', (tester, locale) async {
-    when(mockDeviceListNotifier.build()).thenReturn(
-        DeviceListState.fromMap(instantPrivacyDeviceListTestState1));
+  testLocalizations(
+    'Instant-Privacy view - disabled state',
+    (tester, locale) async {
+      when(mockDeviceListNotifier.build()).thenReturn(
+          DeviceListState.fromMap(instantPrivacyDeviceListTestState));
 
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const InstantPrivacyView(),
-        config:
-            LinksysRouteConfig(column: ColumnGrid(column: 9, centered: true)),
-        locale: locale,
-        overrides: [
-          instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
-          deviceListProvider.overrideWith(() => mockDeviceListNotifier),
-        ],
-      ),
-    );
-    await tester.pumpAndSettle();
-  });
+      await tester.pumpWidget(
+        testableSingleRoute(
+          child: const InstantPrivacyView(),
+          locale: locale,
+          overrides: [
+            instantPrivacyProvider
+                .overrideWith(() => mockInstantPrivacyNotifier),
+            deviceListProvider.overrideWith(() => mockDeviceListNotifier),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+    },
+    screens: [
+      ...responsiveMobileScreens.map((e) => e.copyWith(height: 1280)).toList(),
+      ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1080)).toList()
+    ],
+  );
 
-  testLocalizations('Instant privacy view - off 2', (tester, locale) async {
-    when(mockDeviceListNotifier.build()).thenReturn(
-        DeviceListState.fromMap(instantPrivacyDeviceListTestState2));
+  testLocalizations(
+    'Instant-Privacy view - enabled state',
+    (tester, locale) async {
+      when(mockInstantPrivacyNotifier.build())
+          .thenReturn(InstantPrivacyState.fromMap(instantPrivacyOnState));
+      when(mockDeviceListNotifier.build()).thenReturn(
+          DeviceListState.fromMap(instantPrivacyDeviceListTestState));
 
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const InstantPrivacyView(),
-        config:
-            LinksysRouteConfig(column: ColumnGrid(column: 9, centered: true)),
-        locale: locale,
-        overrides: [
-          instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
-          deviceListProvider.overrideWith(() => mockDeviceListNotifier),
-        ],
-      ),
-    );
-    await tester.pumpAndSettle();
-  });
+      await tester.pumpWidget(
+        testableSingleRoute(
+          child: const InstantPrivacyView(),
+          locale: locale,
+          overrides: [
+            instantPrivacyProvider
+                .overrideWith(() => mockInstantPrivacyNotifier),
+            deviceListProvider.overrideWith(() => mockDeviceListNotifier),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+    },
+    screens: [
+      ...responsiveMobileScreens.map((e) => e.copyWith(height: 1280)).toList(),
+      ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1280)).toList()
+    ],
+  );
 
-  testLocalizations('Instant privacy view - on 1', (tester, locale) async {
-    when(mockInstantPrivacyNotifier.build())
-        .thenReturn(InstantPrivacyState.fromMap(instantPrivacyOnState1));
-    when(mockDeviceListNotifier.build()).thenReturn(
-        DeviceListState.fromMap(instantPrivacyDeviceListTestState1));
-
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const InstantPrivacyView(),
-        config:
-            LinksysRouteConfig(column: ColumnGrid(column: 9, centered: true)),
-        locale: locale,
-        overrides: [
-          instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
-          deviceListProvider.overrideWith(() => mockDeviceListNotifier),
-        ],
-      ),
-    );
-    await tester.pumpAndSettle();
-  });
-
-  testLocalizations('Instant privacy view - on 2', (tester, locale) async {
-    when(mockInstantPrivacyNotifier.build())
-        .thenReturn(InstantPrivacyState.fromMap(instantPrivacyOnState2));
-    when(mockDeviceListNotifier.build()).thenReturn(
-        DeviceListState.fromMap(instantPrivacyDeviceListTestState2));
-
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const InstantPrivacyView(),
-        config:
-            LinksysRouteConfig(column: ColumnGrid(column: 9, centered: true)),
-        locale: locale,
-        overrides: [
-          instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
-          deviceListProvider.overrideWith(() => mockDeviceListNotifier),
-        ],
-      ),
-    );
-    await tester.pumpAndSettle();
-  });
-
-  testLocalizations('Instant privacy view - enable dialog',
+  testLocalizations('Instant-Privacy view - enabling modal',
       (tester, locale) async {
-    when(mockDeviceListNotifier.build()).thenReturn(
-        DeviceListState.fromMap(instantPrivacyDeviceListTestState1));
+    when(mockDeviceListNotifier.build())
+        .thenReturn(DeviceListState.fromMap(instantPrivacyDeviceListTestState));
 
     await tester.pumpWidget(
       testableSingleRoute(
         child: const InstantPrivacyView(),
-        config:
-            LinksysRouteConfig(column: ColumnGrid(column: 9, centered: true)),
         locale: locale,
         overrides: [
           instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
@@ -144,18 +115,16 @@ void main() {
     await tester.pumpAndSettle();
   });
 
-  testLocalizations('Instant privacy view - disable dialog',
+  testLocalizations('Instant-Privacy view - disabling modal',
       (tester, locale) async {
     when(mockInstantPrivacyNotifier.build())
-        .thenReturn(InstantPrivacyState.fromMap(instantPrivacyOnState1));
-    when(mockDeviceListNotifier.build()).thenReturn(
-        DeviceListState.fromMap(instantPrivacyDeviceListTestState1));
+        .thenReturn(InstantPrivacyState.fromMap(instantPrivacyOnState));
+    when(mockDeviceListNotifier.build())
+        .thenReturn(DeviceListState.fromMap(instantPrivacyDeviceListTestState));
 
     await tester.pumpWidget(
       testableSingleRoute(
         child: const InstantPrivacyView(),
-        config:
-            LinksysRouteConfig(column: ColumnGrid(column: 9, centered: true)),
         locale: locale,
         overrides: [
           instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
@@ -170,18 +139,16 @@ void main() {
     await tester.pumpAndSettle();
   });
 
-  testLocalizations('Instant privacy view - delete dialog',
+  testLocalizations('Instant-Privacy view - delete confirm modal',
       (tester, locale) async {
     when(mockInstantPrivacyNotifier.build())
-        .thenReturn(InstantPrivacyState.fromMap(instantPrivacyOnState1));
-    when(mockDeviceListNotifier.build()).thenReturn(
-        DeviceListState.fromMap(instantPrivacyDeviceListTestState1));
+        .thenReturn(InstantPrivacyState.fromMap(instantPrivacyOnState));
+    when(mockDeviceListNotifier.build())
+        .thenReturn(DeviceListState.fromMap(instantPrivacyDeviceListTestState));
 
     await tester.pumpWidget(
       testableSingleRoute(
         child: const InstantPrivacyView(),
-        config:
-            LinksysRouteConfig(column: ColumnGrid(column: 9, centered: true)),
         locale: locale,
         overrides: [
           instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
@@ -192,6 +159,32 @@ void main() {
     await tester.pumpAndSettle();
 
     final deleteFinder = find.byIcon(LinksysIcons.delete);
+    await tester.tap(deleteFinder.at(1));
+    await tester.pumpAndSettle();
+  });
+
+  testLocalizations('Instant-Privacy view - delete self alert modal',
+      (tester, locale) async {
+    when(mockInstantPrivacyNotifier.build())
+        .thenReturn(InstantPrivacyState.fromMap(instantPrivacyOnState));
+    when(mockDeviceListNotifier.build())
+        .thenReturn(DeviceListState.fromMap(instantPrivacyDeviceListTestState));
+
+    await tester.pumpWidget(
+      testableSingleRoute(
+        child: const InstantPrivacyView(),
+        locale: locale,
+        overrides: [
+          instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
+          deviceListProvider.overrideWith(() => mockDeviceListNotifier),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    final myCardFinder = find.ancestor(
+        of: find.text('3C:22:FB:E4:4F:18'), matching: find.byType(AppCard));
+    final deleteFinder = find.descendant(
+        of: myCardFinder, matching: find.byIcon(LinksysIcons.delete));
     await tester.tap(deleteFinder.first);
     await tester.pumpAndSettle();
   });

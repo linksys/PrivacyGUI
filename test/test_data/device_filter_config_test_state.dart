@@ -1,5 +1,8 @@
 final deviceFilterConfigTestState = {
   "connectionFilter": true,
-  "nodeFilter": ["ef07238c-4870-46fb-a524-80691a13160e"],
-  "bandFilter": ["2.4GHz", "5GHz", "6GHz", "Ethernet"]
+  "nodeFilter": ["6c73112b-b6d1-4bfd-9a8c-80691abb46cc"],
+  "wifiFilter": ["Linksys03041", "Linksys03041-guest"],
+  "bandFilter": ["2.4GHz", "5GHz", "Ethernet"],
+  "showOrphanNodes": false
 };
+
