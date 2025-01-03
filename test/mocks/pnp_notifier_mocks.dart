@@ -99,7 +99,9 @@ class _FakeAvailabilityInfo_5 extends _i1.SmartFake
 /// A class which mocks [PnpNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockPnpNotifier extends _i2.Notifier<_i3.PnpState> with _i1.Mock implements _i7.PnpNotifier {
+class MockPnpNotifier extends _i2.Notifier<_i3.PnpState>
+    with _i1.Mock
+    implements _i7.PnpNotifier {
   @override
   _i2.NotifierProviderRef<_i3.PnpState> get ref => (super.noSuchMethod(
         Invocation.getter(#ref),
