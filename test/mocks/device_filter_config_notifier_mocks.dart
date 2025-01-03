@@ -48,7 +48,9 @@ class _FakeDeviceFilterConfigState_1 extends _i1.SmartFake
 /// A class which mocks [DeviceFilterConfigNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockDeviceFilterConfigNotifier extends _i2.Notifier<_i3.DeviceFilterConfigState> with _i1.Mock
+class MockDeviceFilterConfigNotifier extends _i2.Notifier<
+    _i3.DeviceFilterConfigState>
+    with _i1.Mock
     implements _i4.DeviceFilterConfigNotifier {
   @override
   _i2.NotifierProviderRef<_i3.DeviceFilterConfigState> get ref =>
@@ -130,6 +132,16 @@ class MockDeviceFilterConfigNotifier extends _i2.Notifier<_i3.DeviceFilterConfig
       ) as List<String>);
 
   @override
+  List<String> getWifiNames() => (super.noSuchMethod(
+        Invocation.method(
+          #getWifiNames,
+          [],
+        ),
+        returnValue: <String>[],
+        returnValueForMissingStub: <String>[],
+      ) as List<String>);
+
+  @override
   List<String> getBands([String? deviceUUID]) => (super.noSuchMethod(
         Invocation.method(
           #getBands,
@@ -158,10 +170,39 @@ class MockDeviceFilterConfigNotifier extends _i2.Notifier<_i3.DeviceFilterConfig
       );
 
   @override
+  void updateWifiFilter(List<String>? wifiNames) => super.noSuchMethod(
+        Invocation.method(
+          #updateWifiFilter,
+          [wifiNames],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
   void updateBandFilter(List<String>? bands) => super.noSuchMethod(
         Invocation.method(
           #updateBandFilter,
           [bands],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  void listenSelf(
+    void Function(
+      _i3.DeviceFilterConfigState?,
+      _i3.DeviceFilterConfigState,
+    )? listener, {
+    void Function(
+      Object,
+      StackTrace,
+    )? onError,
+  }) =>
+      super.noSuchMethod(
+        Invocation.method(
+          #listenSelf,
+          [listener],
+          {#onError: onError},
         ),
         returnValueForMissingStub: null,
       );

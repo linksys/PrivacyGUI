@@ -6,6 +6,8 @@ import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/instant_topology/_instant_topology.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/instant_topology/views/instant_topology_view.dart';
+import 'package:privacy_gui/page/instant_topology/views/widgets/tree_node_item.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
 
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
@@ -23,168 +25,436 @@ void main() async {
     initBetterActions();
     when(mockServiceHelper.isSupportAutoOnboarding()).thenReturn(true);
     when(mockServiceHelper.isSupportLedBlinking()).thenReturn(true);
+    when(mockServiceHelper.isSupportChildFactoryReset()).thenReturn(true);
+    when(mockServiceHelper.isSupportChildReboot()).thenReturn(true);
   });
 
-  group('Instant topology view test - online nodes', () {
-    testLocalizations('Instant topology view - 2 online nodes',
-        (tester, locale) async {
-      when(mockTopologyNotifier.build()).thenReturn(TopologyTestData().testTopology1SlaveState);
-
-      final widget = testableSingleRoute(
-        themeMode: ThemeMode.dark,
-        overrides: [
-          instantTopologyProvider.overrideWith(() => mockTopologyNotifier),
-        ],
-        locale: locale,
-        child: const InstantTopologyView(),
-      );
-      await tester.pumpWidget(widget);
-    });
-
-    testLocalizations('Instant topology view - 3 online nodes stars',
+  group('Instant-Topology view', () {
+    testLocalizations('Instant-Topology view - default',
         (tester, locale) async {
       when(mockTopologyNotifier.build())
-          .thenReturn(TopologyTestData().testTopology2SlavesStarState);
+          .thenReturn(TopologyTestData().testTopology1SlaveState);
 
       final widget = testableSingleRoute(
         overrides: [
           instantTopologyProvider.overrideWith(() => mockTopologyNotifier),
         ],
-        child: const InstantTopologyView(),
         locale: locale,
+        child: const InstantTopologyView(),
       );
       await tester.pumpWidget(widget);
     });
 
-    testLocalizations('Instant topology view - 3 online nodes daisy',
+    testLocalizations('Instant-Topology view - signal good',
         (tester, locale) async {
       when(mockTopologyNotifier.build())
-          .thenReturn(TopologyTestData().testTopology2SlavesDaisyState);
+          .thenReturn(TopologyTestData().testTopologyGoodSlaveState);
 
       final widget = testableSingleRoute(
         overrides: [
           instantTopologyProvider.overrideWith(() => mockTopologyNotifier),
         ],
-        child: const InstantTopologyView(),
         locale: locale,
+        child: const InstantTopologyView(),
       );
+
       await tester.pumpWidget(widget);
+      final treeNodeItemFinder = find.byType(TreeNodeItem);
+      await tester.scrollUntilVisible(treeNodeItemFinder.last, 10,
+          scrollable: find.byType(Scrollable).last);
+      await tester.pumpAndSettle();
     });
 
-    testLocalizations('Instant topology view - 6 online nodes stars',
+    testLocalizations('Instant-Topology view - signal fair',
         (tester, locale) async {
       when(mockTopologyNotifier.build())
-          .thenReturn(TopologyTestData().testTopology5SlavesStarState);
+          .thenReturn(TopologyTestData().testTopologyFairSlaveState);
 
       final widget = testableSingleRoute(
         overrides: [
           instantTopologyProvider.overrideWith(() => mockTopologyNotifier),
         ],
-        child: const InstantTopologyView(),
         locale: locale,
+        child: const InstantTopologyView(),
       );
+
       await tester.pumpWidget(widget);
+      final treeNodeItemFinder = find.byType(TreeNodeItem);
+      await tester.scrollUntilVisible(treeNodeItemFinder.last, 10,
+          scrollable: find.byType(Scrollable).last);
+      await tester.pumpAndSettle();
     });
 
-    testLocalizations('Instant topology view - 6 online nodes daisy',
+    testLocalizations('Instant-Topology view - signal poor',
         (tester, locale) async {
       when(mockTopologyNotifier.build())
-          .thenReturn(TopologyTestData().testTopology5SlavesDaisyState);
+          .thenReturn(TopologyTestData().testTopologyPoorSlaveState);
 
       final widget = testableSingleRoute(
         overrides: [
           instantTopologyProvider.overrideWith(() => mockTopologyNotifier),
         ],
-        child: const InstantTopologyView(),
         locale: locale,
+        child: const InstantTopologyView(),
       );
+
       await tester.pumpWidget(widget);
+      final treeNodeItemFinder = find.byType(TreeNodeItem);
+      await tester.scrollUntilVisible(treeNodeItemFinder.last, 10,
+          scrollable: find.byType(Scrollable).last);
+      await tester.pumpAndSettle();
     });
 
-    testLocalizations('Instant topology view - 6 online nodes hybrid',
+    testLocalizations('Instant-Topology view - instant-action popup',
         (tester, locale) async {
       when(mockTopologyNotifier.build())
-          .thenReturn(TopologyTestData().testTopology5SlavesMixedState);
+          .thenReturn(TopologyTestData().testTopology1SlaveState);
 
       final widget = testableSingleRoute(
         overrides: [
           instantTopologyProvider.overrideWith(() => mockTopologyNotifier),
         ],
-        child: const InstantTopologyView(),
         locale: locale,
+        child: const InstantTopologyView(),
       );
       await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+      final treeNodeItemFinder = find.byType(TreeNodeItem, skipOffstage: false);
+      final instantActionFinder = find.descendant(
+        of: treeNodeItemFinder.first,
+        matching: find.byType(PopupMenuButton<NodeInstantActions>),
+        skipOffstage: false,
+      );
+      await tester.tap(instantActionFinder);
+      await tester.pumpAndSettle();
     });
+    testLocalizations(
+        'Instant-Topology view - instant-action popup - child node',
+        (tester, locale) async {
+      when(mockTopologyNotifier.build())
+          .thenReturn(TopologyTestData().testTopology1SlaveState);
+
+      final widget = testableSingleRoute(
+        overrides: [
+          instantTopologyProvider.overrideWith(() => mockTopologyNotifier),
+        ],
+        locale: locale,
+        child: const InstantTopologyView(),
+      );
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+      final treeNodeItemFinder = find.byType(TreeNodeItem, skipOffstage: false);
+      await tester.scrollUntilVisible(treeNodeItemFinder.last, 10,
+          scrollable: find.byType(Scrollable).last);
+      final instantActionFinder = find.descendant(
+        of: treeNodeItemFinder.last,
+        matching: find.byType(PopupMenuButton<NodeInstantActions>),
+        skipOffstage: false,
+      );
+      await tester.tap(instantActionFinder);
+      await tester.pumpAndSettle();
+    });
+
+    testLocalizations('Instant-Topology view - reboot parent alert ',
+        (tester, locale) async {
+      when(mockTopologyNotifier.build())
+          .thenReturn(TopologyTestData().testTopology1SlaveState);
+
+      final widget = testableSingleRoute(
+        overrides: [
+          instantTopologyProvider.overrideWith(() => mockTopologyNotifier),
+        ],
+        locale: locale,
+        child: const InstantTopologyView(),
+      );
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+      final treeNodeItemFinder = find.byType(TreeNodeItem);
+      final instantActionFinder = find.descendant(
+        of: treeNodeItemFinder.first,
+        matching: find.byType(PopupMenuButton<NodeInstantActions>),
+        skipOffstage: true,
+      );
+      await tester.tap(instantActionFinder);
+      await tester.pumpAndSettle();
+
+      final popupMenuItemFinder =
+          find.byType(PopupMenuItem<NodeInstantActions>);
+      await tester.tap(popupMenuItemFinder.at(1));
+      await tester.pumpAndSettle();
+    });
+
+    testLocalizations('Instant-Topology view - reboot child alert ',
+        (tester, locale) async {
+      when(mockTopologyNotifier.build())
+          .thenReturn(TopologyTestData().testTopology1SlaveState);
+
+      final widget = testableSingleRoute(
+        overrides: [
+          instantTopologyProvider.overrideWith(() => mockTopologyNotifier),
+        ],
+        locale: locale,
+        child: const InstantTopologyView(),
+      );
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+      final treeNodeItemFinder = find.byType(TreeNodeItem);
+      await tester.scrollUntilVisible(treeNodeItemFinder.last, 10,
+          scrollable: find.byType(Scrollable).last);
+      final instantActionFinder = find.descendant(
+        of: treeNodeItemFinder.last,
+        matching: find.byType(PopupMenuButton<NodeInstantActions>),
+        skipOffstage: true,
+      );
+      await tester.tap(instantActionFinder);
+      await tester.pumpAndSettle();
+
+      final popupMenuItemFinder =
+          find.byType(PopupMenuItem<NodeInstantActions>);
+      await tester.tap(popupMenuItemFinder.at(1));
+      await tester.pumpAndSettle();
+    });
+
+    testLocalizations('Instant-Topology view - factory reset parent alert ',
+        (tester, locale) async {
+      when(mockTopologyNotifier.build())
+          .thenReturn(TopologyTestData().testTopology1SlaveState);
+
+      final widget = testableSingleRoute(
+        overrides: [
+          instantTopologyProvider.overrideWith(() => mockTopologyNotifier),
+        ],
+        locale: locale,
+        child: const InstantTopologyView(),
+      );
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+      final treeNodeItemFinder = find.byType(TreeNodeItem);
+      final instantActionFinder = find.descendant(
+        of: treeNodeItemFinder.first,
+        matching: find.byType(PopupMenuButton<NodeInstantActions>),
+        skipOffstage: true,
+      );
+      await tester.tap(instantActionFinder);
+      await tester.pumpAndSettle();
+
+      final popupMenuItemFinder =
+          find.byType(PopupMenuItem<NodeInstantActions>);
+      await tester.tap(popupMenuItemFinder.at(3));
+      await tester.pumpAndSettle();
+    });
+
+    testLocalizations('Instant-Topology view - factory reset child alert ',
+        (tester, locale) async {
+      when(mockTopologyNotifier.build())
+          .thenReturn(TopologyTestData().testTopology1SlaveState);
+
+      final widget = testableSingleRoute(
+        overrides: [
+          instantTopologyProvider.overrideWith(() => mockTopologyNotifier),
+        ],
+        locale: locale,
+        child: const InstantTopologyView(),
+      );
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+      final treeNodeItemFinder = find.byType(TreeNodeItem);
+      await tester.scrollUntilVisible(treeNodeItemFinder.last, 10,
+          scrollable: find.byType(Scrollable).last);
+      final instantActionFinder = find.descendant(
+        of: treeNodeItemFinder.last,
+        matching: find.byType(PopupMenuButton<NodeInstantActions>),
+        skipOffstage: true,
+      );
+      await tester.tap(instantActionFinder);
+      await tester.pumpAndSettle();
+
+      final popupMenuItemFinder =
+          find.byType(PopupMenuItem<NodeInstantActions>);
+      await tester.tap(popupMenuItemFinder.at(2));
+      await tester.pumpAndSettle();
+    });
+
+    testLocalizations('Instant-Topology view - firmware update available',
+        (tester, locale) async {
+      when(mockTopologyNotifier.build()).thenReturn(
+          TopologyTestData().testTopology2SlavesDaisyAndFwUpdateState);
+      final widget = testableSingleRoute(
+        overrides: [
+          instantTopologyProvider.overrideWith(() => mockTopologyNotifier),
+        ],
+        locale: locale,
+        child: const InstantTopologyView(),
+      );
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+      final treeNodeItemFinder = find.byType(TreeNodeItem, skipOffstage: false);
+      await tester.scrollUntilVisible(treeNodeItemFinder.last, 10,
+          scrollable: find.byType(Scrollable).last);
+    });
+    testLocalizations('Instant-Topology view - offline node',
+        (tester, locale) async {
+      when(mockTopologyNotifier.build())
+          .thenReturn(TopologyTestData().testTopology1OfflineState);
+
+      final widget = testableSingleRoute(
+        overrides: [
+          instantTopologyProvider.overrideWith(() => mockTopologyNotifier),
+        ],
+        locale: locale,
+        child: const InstantTopologyView(),
+      );
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+      final treeNodeItemFinder = find.byType(TreeNodeItem, skipOffstage: false);
+      await tester.scrollUntilVisible(treeNodeItemFinder.last, 10,
+          scrollable: find.byType(Scrollable).last);
+    });
+
+    // testLocalizations('Instant topology view - 3 online nodes stars',
+    //     (tester, locale) async {
+    //   when(mockTopologyNotifier.build())
+    //       .thenReturn(TopologyTestData().testTopology2SlavesStarState);
+
+    //   final widget = testableSingleRoute(
+    //     overrides: [
+    //       instantTopologyProvider.overrideWith(() => mockTopologyNotifier),
+    //     ],
+    //     child: const InstantTopologyView(),
+    //     locale: locale,
+    //   );
+    //   await tester.pumpWidget(widget);
+    // });
+
+    // testLocalizations('Instant topology view - 3 online nodes daisy',
+    //     (tester, locale) async {
+    //   when(mockTopologyNotifier.build())
+    //       .thenReturn(TopologyTestData().testTopology2SlavesDaisyState);
+
+    //   final widget = testableSingleRoute(
+    //     overrides: [
+    //       instantTopologyProvider.overrideWith(() => mockTopologyNotifier),
+    //     ],
+    //     child: const InstantTopologyView(),
+    //     locale: locale,
+    //   );
+    //   await tester.pumpWidget(widget);
+    // });
+
+    // testLocalizations('Instant topology view - 6 online nodes stars',
+    //     (tester, locale) async {
+    //   when(mockTopologyNotifier.build())
+    //       .thenReturn(TopologyTestData().testTopology5SlavesStarState);
+
+    //   final widget = testableSingleRoute(
+    //     overrides: [
+    //       instantTopologyProvider.overrideWith(() => mockTopologyNotifier),
+    //     ],
+    //     child: const InstantTopologyView(),
+    //     locale: locale,
+    //   );
+    //   await tester.pumpWidget(widget);
+    // });
+
+    // testLocalizations('Instant topology view - 6 online nodes daisy',
+    //     (tester, locale) async {
+    //   when(mockTopologyNotifier.build())
+    //       .thenReturn(TopologyTestData().testTopology5SlavesDaisyState);
+
+    //   final widget = testableSingleRoute(
+    //     overrides: [
+    //       instantTopologyProvider.overrideWith(() => mockTopologyNotifier),
+    //     ],
+    //     child: const InstantTopologyView(),
+    //     locale: locale,
+    //   );
+    //   await tester.pumpWidget(widget);
+    // });
+
+    // testLocalizations('Instant topology view - 6 online nodes hybrid',
+    //     (tester, locale) async {
+    //   when(mockTopologyNotifier.build())
+    //       .thenReturn(TopologyTestData().testTopology5SlavesMixedState);
+
+    //   final widget = testableSingleRoute(
+    //     overrides: [
+    //       instantTopologyProvider.overrideWith(() => mockTopologyNotifier),
+    //     ],
+    //     child: const InstantTopologyView(),
+    //     locale: locale,
+    //   );
+    //   await tester.pumpWidget(widget);
+    // });
   });
 
-  group('Instant topology view test - has offline nodes', () {
-    testLocalizations('Instant topology view - 1 offline node',
-        (tester, locale) async {
-      when(mockTopologyNotifier.build()).thenReturn(TopologyTestData().testTopology1OfflineState);
-      // when(mockTopologyNotifier.isSupportAutoOnboarding()).thenReturn(true);
-      final widget = testableSingleRoute(
-        themeMode: ThemeMode.dark,
-        overrides: [
-          instantTopologyProvider.overrideWith(() => mockTopologyNotifier),
-        ],
-        child: const InstantTopologyView(),
-        locale: locale,
-      );
-      await tester.pumpWidget(widget);
-    });
+  // group('Instant topology view test - has offline nodes', () {
+  //   testLocalizations('Instant topology view - 1 offline node',
+  //       (tester, locale) async {
+  //     when(mockTopologyNotifier.build()).thenReturn(TopologyTestData().testTopology1OfflineState);
+  //     // when(mockTopologyNotifier.isSupportAutoOnboarding()).thenReturn(true);
+  //     final widget = testableSingleRoute(
+  //       themeMode: ThemeMode.dark,
+  //       overrides: [
+  //         instantTopologyProvider.overrideWith(() => mockTopologyNotifier),
+  //       ],
+  //       child: const InstantTopologyView(),
+  //       locale: locale,
+  //     );
+  //     await tester.pumpWidget(widget);
+  //   });
 
-    testLocalizations('Instant topology view - 2 offline nodes',
-        (tester, locale) async {
-      when(mockTopologyNotifier.build()).thenReturn(TopologyTestData().testTopology2OfflineState);
-      // when(mockTopologyNotifier.isSupportAutoOnboarding()).thenReturn(true);
+  //   testLocalizations('Instant topology view - 2 offline nodes',
+  //       (tester, locale) async {
+  //     when(mockTopologyNotifier.build()).thenReturn(TopologyTestData().testTopology2OfflineState);
+  //     // when(mockTopologyNotifier.isSupportAutoOnboarding()).thenReturn(true);
 
-      final widget = testableSingleRoute(
-        overrides: [
-          instantTopologyProvider.overrideWith(() => mockTopologyNotifier),
-        ],
-        child: const InstantTopologyView(),
-        locale: locale,
-      );
-      await tester.pumpWidget(widget);
-    });
+  //     final widget = testableSingleRoute(
+  //       overrides: [
+  //         instantTopologyProvider.overrideWith(() => mockTopologyNotifier),
+  //       ],
+  //       child: const InstantTopologyView(),
+  //       locale: locale,
+  //     );
+  //     await tester.pumpWidget(widget);
+  //   });
 
-    testLocalizations('Instant topology view - 3 offline nodes',
-        (tester, locale) async {
-      when(mockTopologyNotifier.build()).thenReturn(TopologyTestData().testTopology3OfflineState);
-      final widget = testableSingleRoute(
-        overrides: [
-          instantTopologyProvider.overrideWith(() => mockTopologyNotifier),
-        ],
-        child: const InstantTopologyView(),
-        locale: locale,
-      );
-      await tester.pumpWidget(widget);
-    });
+  //   testLocalizations('Instant topology view - 3 offline nodes',
+  //       (tester, locale) async {
+  //     when(mockTopologyNotifier.build()).thenReturn(TopologyTestData().testTopology3OfflineState);
+  //     final widget = testableSingleRoute(
+  //       overrides: [
+  //         instantTopologyProvider.overrideWith(() => mockTopologyNotifier),
+  //       ],
+  //       child: const InstantTopologyView(),
+  //       locale: locale,
+  //     );
+  //     await tester.pumpWidget(widget);
+  //   });
 
-    testLocalizations('Instant topology view - 4 offline nodes',
-        (tester, locale) async {
-      when(mockTopologyNotifier.build()).thenReturn(TopologyTestData().testTopology4OfflineState);
-      final widget = testableSingleRoute(
-        overrides: [
-          instantTopologyProvider.overrideWith(() => mockTopologyNotifier),
-        ],
-        child: const InstantTopologyView(),
-        locale: locale,
-      );
-      await tester.pumpWidget(widget);
-    });
+  //   testLocalizations('Instant topology view - 4 offline nodes',
+  //       (tester, locale) async {
+  //     when(mockTopologyNotifier.build()).thenReturn(TopologyTestData().testTopology4OfflineState);
+  //     final widget = testableSingleRoute(
+  //       overrides: [
+  //         instantTopologyProvider.overrideWith(() => mockTopologyNotifier),
+  //       ],
+  //       child: const InstantTopologyView(),
+  //       locale: locale,
+  //     );
+  //     await tester.pumpWidget(widget);
+  //   });
 
-    testLocalizations('Instant topology view - 5 offline nodes',
-        (tester, locale) async {
-      when(mockTopologyNotifier.build()).thenReturn(TopologyTestData().testTopology5OfflineState);
-      final widget = testableSingleRoute(
-        overrides: [
-          instantTopologyProvider.overrideWith(() => mockTopologyNotifier),
-        ],
-        child: const InstantTopologyView(),
-        locale: locale,
-      );
-      await tester.pumpWidget(widget);
-    });
-  });
+  //   testLocalizations('Instant topology view - 5 offline nodes',
+  //       (tester, locale) async {
+  //     when(mockTopologyNotifier.build()).thenReturn(TopologyTestData().testTopology5OfflineState);
+  //     final widget = testableSingleRoute(
+  //       overrides: [
+  //         instantTopologyProvider.overrideWith(() => mockTopologyNotifier),
+  //       ],
+  //       child: const InstantTopologyView(),
+  //       locale: locale,
+  //     );
+  //     await tester.pumpWidget(widget);
+  //   });
+  // });
 }

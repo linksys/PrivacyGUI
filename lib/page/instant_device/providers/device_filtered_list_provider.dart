@@ -12,12 +12,12 @@ import 'package:privacy_gui/util/extensions.dart';
 final filteredDeviceListProvider = Provider((ref) {
   final config = ref.watch(deviceFilterConfigProvider);
   final deviceListState = ref.watch(deviceListProvider);
-  final allNodes = ref.watch(deviceManagerProvider).nodeDevices;
+
   final nodeId = config.nodeFilter;
   final wifiName = config.wifiFilter;
   final band = config.bandFilter;
   final connection = config.connectionFilter;
-  final showOrphan = config.showOrphanNodes;
+
   final filteredDevices = deviceListState.devices
       .where((device) => connection == device.isOnline)
       .where((device) => device.isOnline
@@ -68,6 +68,7 @@ class DeviceFilterConfigNotifier extends Notifier<DeviceFilterConfigState> {
       bandFilter: bands,
       showOrphanNodes: showOrphan,
     );
+    logger.d('[State]:[DeviceFilter]: ${state.toJson()}');
   }
 
   List<String> getNodes() {

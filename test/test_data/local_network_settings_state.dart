@@ -1,10 +1,10 @@
 final mockLocalNetworkSettingsState = {
-  "hostName": "Linksys00062",
-  "ipAddress": "10.11.1.1",
+  "hostName": "Linksys03041",
+  "ipAddress": "10.216.1.1",
   "subnetMask": "255.255.255.0",
   "isDHCPEnabled": true,
-  "firstIPAddress": "10.11.1.10",
-  "lastIPAddress": "10.11.1.254",
+  "firstIPAddress": "10.216.1.10",
+  "lastIPAddress": "10.216.1.254",
   "maxUserLimit": 245,
   "maxUserAllowed": 245,
   "clientLeaseTime": 1440,
@@ -12,20 +12,13 @@ final mockLocalNetworkSettingsState = {
   "maxAllowDHCPLeaseMinutes": 525600,
   "minNetworkPrefixLength": 16,
   "maxNetworkPrefixLength": 30,
-  "dns1": "168.95.1.1",
-  "dns2": "168.95.192.1",
-  "dns3": "8.8.8.8",
+  "dns1": null,
+  "dns2": null,
+  "dns3": null,
   "wins": null,
-  "dhcpReservationList": [
-    {
-      "macAddress": "A4:83:E7:36:4C:22",
-      "ipAddress": "10.11.1.39",
-      "description": "ASTWP-028292"
-    },
-    {
-      "macAddress": "A4:83:E7:36:4C:33",
-      "ipAddress": "10.11.1.33",
-      "description": "Test-iPhone-15-Pro"
-    }
-  ]
+  "dhcpReservationList": [],
+  "errorTextMap": null,
+  "hasErrorOnHostNameTab": false,
+  "hasErrorOnIPAddressTab": false,
+  "hasErrorOnDhcpServerTab": false
 };

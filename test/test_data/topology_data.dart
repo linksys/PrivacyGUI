@@ -203,6 +203,49 @@ final _slaveOfflineNode5 = RouterTopologyNode(
   children: [],
 );
 
+final _slaveGoodNode = RouterTopologyNode(
+  data: TopologyModel.fromMap(topologyModelJsonTemplate).copyWith(
+    deviceId: 'ROUTER-SLAVE-DEVICEID-000001',
+    location: 'First floor',
+    isMaster: false,
+    isOnline: true,
+    isWiredConnection: false,
+    signalStrength: -68,
+    isRouter: true,
+    icon: 'routerLn12',
+    connectedDeviceCount: 20,
+  ),
+  children: [],
+);
+
+final _slaveFairNode = RouterTopologyNode(
+  data: TopologyModel.fromMap(topologyModelJsonTemplate).copyWith(
+    deviceId: 'ROUTER-SLAVE-DEVICEID-000001',
+    location: 'Second floor',
+    isMaster: false,
+    isOnline: true,
+    isWiredConnection: false,
+    signalStrength: -75,
+    isRouter: true,
+    icon: 'routerLn12',
+    connectedDeviceCount: 20,
+  ),
+  children: [],
+);
+final _slavePoorNode = RouterTopologyNode(
+  data: TopologyModel.fromMap(topologyModelJsonTemplate).copyWith(
+    deviceId: 'ROUTER-SLAVE-DEVICEID-000001',
+    location: 'Third floor',
+    isMaster: false,
+    isOnline: true,
+    isWiredConnection: false,
+    signalStrength: -90,
+    isRouter: true,
+    icon: 'routerLn12',
+    connectedDeviceCount: 20,
+  ),
+  children: [],
+);
 /// State
 get testTopologyMasterOnlyState => InstantTopologyState(
   root: _onlineRoot
@@ -210,6 +253,36 @@ get testTopologyMasterOnlyState => InstantTopologyState(
       _masterNode
         ..children.clear()
         ..parent = _onlineRoot,
+    ),
+);
+
+get testTopologyGoodSlaveState => InstantTopologyState(
+  root: _onlineRoot
+    ..children.add(
+      _masterNode
+        ..children.clear()
+        ..parent = _onlineRoot
+        ..children.add(_slaveGoodNode..parent = _masterNode),
+    ),
+);
+
+get testTopologyFairSlaveState => InstantTopologyState(
+  root: _onlineRoot
+    ..children.add(
+      _masterNode
+        ..children.clear()
+        ..parent = _onlineRoot
+        ..children.add(_slaveFairNode..parent = _masterNode),
+    ),
+);
+
+get testTopologyPoorSlaveState => InstantTopologyState(
+  root: _onlineRoot
+    ..children.add(
+      _masterNode
+        ..children.clear()
+        ..parent = _onlineRoot
+        ..children.add(_slavePoorNode..parent = _masterNode),
     ),
 );
 
@@ -482,5 +555,7 @@ void cleanup() {
   _slaveNode3.children.clear();
   _slaveNode4.children.clear();
   _slaveNode5.children.clear();
+  _slaveGoodNode.children.clear();
+  _slaveFairNode.children.clear();
 }
 }

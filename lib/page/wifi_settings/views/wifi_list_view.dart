@@ -574,9 +574,6 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
               });
             },
             errorText: () {
-              if (controller.text.isEmpty == true) {
-                return null;
-              }
               final errorKeys = wifiSSIDValidator
                   .validateDetail(controller.text, onlyFailed: true);
               if (errorKeys.isEmpty) {
@@ -584,7 +581,8 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
               } else if (errorKeys.keys.first ==
                   (NoSurroundWhitespaceRule).toString()) {
                 return loc(context).routerPasswordRuleStartEndWithSpace;
-              } else if (errorKeys.keys.first == (WiFiSsidRule).toString()) {
+              } else if (errorKeys.keys.first == (WiFiSsidRule).toString() ||
+                  errorKeys.keys.first == (RequiredRule).toString()) {
                 return loc(context).theNameMustNotBeEmpty;
               } else if (errorKeys.keys.first == (LengthRule).toString()) {
                 return loc(context).wifiSSIDLengthLimit;
