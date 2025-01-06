@@ -118,7 +118,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
       _notifier.fetch().then(
         (value) {
           setState(() {
-            originalState = ref.read(internetSettingsProvider).copyWith();
+            originalState = value;
             initUI(originalState);
           });
         },
@@ -1581,6 +1581,8 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
     final isEnable = !ipv6Setting.isIPv6AutomaticEnabled &&
         ipv6Setting.ipv6rdTunnelMode == IPv6rdTunnelMode.manual;
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Padding(
           padding: inputPadding,
@@ -1826,35 +1828,32 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
   }
 
   _showRenewIPAlert(InternetSettingsViewType type) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: AppText.titleLarge(loc(context).releaseAndRenewIpAddress),
-          content: AppText.bodyMedium(
-              loc(context).releaseAndRenewIpAddressDescription),
-          actions: [
-            AppTextButton(
-              loc(context).cancel,
-              color: Theme.of(context).colorScheme.onSurface,
-              onTap: () {
-                context.pop();
-              },
-            ),
-            AppTextButton(
-              loc(context).releaseAndRenew,
-              onTap: () {
-                context.pop();
-                if (type == InternetSettingsViewType.ipv4) {
-                  _releaseAndRenewIpv4();
-                } else {
-                  _releaseAndRenewIpv6();
-                }
-              },
-            ),
-          ],
-        );
-      },
+    showSimpleAppDialog(
+      context,
+      dismissible: false,
+      title: loc(context).releaseAndRenewIpAddress,
+      content:
+          AppText.bodyMedium(loc(context).releaseAndRenewIpAddressDescription),
+      actions: [
+        AppTextButton(
+          loc(context).cancel,
+          color: Theme.of(context).colorScheme.onSurface,
+          onTap: () {
+            context.pop();
+          },
+        ),
+        AppTextButton(
+          loc(context).releaseAndRenew,
+          onTap: () {
+            context.pop();
+            if (type == InternetSettingsViewType.ipv4) {
+              _releaseAndRenewIpv4();
+            } else {
+              _releaseAndRenewIpv6();
+            }
+          },
+        ),
+      ],
     );
   }
 

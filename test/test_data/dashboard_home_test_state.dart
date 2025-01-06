@@ -595,3 +595,50 @@ const dashboardHomeOfflineStateData = {
     }
   ]
 };
+
+const dashboardHomeStateDataInBridge = {
+  "isWanConnected": true,
+  "isFirstPolling": false,
+  "isHorizontalLayout": false,
+  "isHealthCheckSupported": false,
+  "masterIcon": "routerMx6200",
+  "isAnyNodesOffline": false,
+  "uptimes": 16244,
+  "wanPortConnection": "1Gbps",
+  "lanPortConnections": ["None", "None", "None", "None"],
+  "wanType": "Bridge",
+  "wifis": [
+    {
+      "ssid": "_VelopSetup4C4",
+      "password": "9pe0a3rpwc",
+      "radios": ["RADIO_2.4GHz"],
+      "isGuest": false,
+      "isEnabled": true,
+      "numOfConnectedDevices": 0
+    },
+    {
+      "ssid": "_VelopSetup4C4",
+      "password": "9pe0a3rpwc",
+      "radios": ["RADIO_5GHz"],
+      "isGuest": false,
+      "isEnabled": true,
+      "numOfConnectedDevices": 2
+    },
+    {
+      "ssid": "_VelopSetup4C4",
+      "password": "9pe0a3rpwc",
+      "radios": ["RADIO_6GHz"],
+      "isGuest": false,
+      "isEnabled": true,
+      "numOfConnectedDevices": 0
+    },
+    {
+      "ssid": "_VelopSetup4C4-123-guest",
+      "password": "BeMyGuest",
+      "radios": ["RADIO_5GHz", "RADIO_2.4GHz", "RADIO_6GHz"],
+      "isGuest": true,
+      "isEnabled": true,
+      "numOfConnectedDevices": 0
+    }
+  ]
+};

@@ -60,14 +60,14 @@ class _LocalNetworkSettingsViewState
     super.initState();
 
     _notifier = ref.read(localNetworkSettingProvider.notifier);
-    originalSettings = _notifier.currentSettings();
+    originalSettings = ref.read(localNetworkSettingProvider);
     doSomethingWithSpinner(
       context,
       _notifier.fetch(fetchRemote: true).then(
         (value) {
           setState(
             () {
-              originalSettings = _notifier.currentSettings();
+              originalSettings = value;
               hostNameController.text = originalSettings.hostName;
               ipAddressController.text = originalSettings.ipAddress;
               subnetMaskController.text = originalSettings.subnetMask;
@@ -163,13 +163,16 @@ class _LocalNetworkSettingsViewState
         child: AppTextField(
           headerText: loc(context).hostName.capitalizeWords(),
           controller: hostNameController,
-          errorText: state.errorTextMap[LocalNetworkErrorPrompt.hostName.name],
+          errorText: LocalNetworkErrorPrompt.getErrorText(
+              context: context,
+              error: LocalNetworkErrorPrompt.resolve(
+                  state.errorTextMap[LocalNetworkErrorPrompt.hostName.name])),
           border: const OutlineInputBorder(),
           onChanged: (value) {
             _notifier.updateHostName(value);
             _notifier.updateErrorPrompts(
               LocalNetworkErrorPrompt.hostName.name,
-              value.isEmpty ? loc(context).hostNameCannotEmpty : null,
+              value.isEmpty ? LocalNetworkErrorPrompt.hostName.name : null,
             );
           },
         ),
@@ -191,8 +194,10 @@ class _LocalNetworkSettingsViewState
               header: AppText.bodySmall(loc(context).ipAddress),
               semanticLabel: 'ip address',
               controller: ipAddressController,
-              errorText:
-                  state.errorTextMap[LocalNetworkErrorPrompt.ipAddress.name],
+              errorText: LocalNetworkErrorPrompt.getErrorText(
+                  context: context,
+                  error: LocalNetworkErrorPrompt.resolve(state
+                      .errorTextMap[LocalNetworkErrorPrompt.ipAddress.name])),
               border: const OutlineInputBorder(),
               onChanged: (value) {
                 _notifier.routerIpAddressChanged(context, value, state);
@@ -205,8 +210,10 @@ class _LocalNetworkSettingsViewState
               octet1ReadOnly: true,
               octet2ReadOnly: true,
               controller: subnetMaskController,
-              errorText:
-                  state.errorTextMap[LocalNetworkErrorPrompt.subnetMask.name],
+              errorText: LocalNetworkErrorPrompt.getErrorText(
+                  context: context,
+                  error: LocalNetworkErrorPrompt.resolve(state
+                      .errorTextMap[LocalNetworkErrorPrompt.subnetMask.name])),
               border: const OutlineInputBorder(),
               onChanged: (value) {
                 _notifier.subnetMaskChanged(context, value, state);
@@ -282,7 +289,7 @@ class _LocalNetworkSettingsViewState
     ).then(
       (value) {
         ///
-        /// Default success case only if 
+        /// Default success case only if
         /// 1) Wired connection and host using myrouter.info
         /// 2) Wireless connection and didn't swap to another WiFi and using myrouter.info
         ///
@@ -291,7 +298,7 @@ class _LocalNetworkSettingsViewState
     ).catchError((error) {
       final currentUrl = ref.read(routerRepositoryProvider).getLocalIP();
       final regex = RegExp(r'(www\.)?myrouter\.info');
-      
+
       // check is url start with www.myrouter.info or myrouter.info
       if (regex.hasMatch(currentUrl)) {
         // url start with myrouter.info, show router not found and wait for connect back
