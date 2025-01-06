@@ -1,14 +1,18 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
 
+import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/widgets.dart';
 
 import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/utils.dart';
 
 enum LocalNetworkErrorPrompt {
   hostName,
   startIpAddress,
+  startIpAddressRange,
   ipAddress,
   maxUserAllowed,
   subnetMask,
@@ -16,7 +20,47 @@ enum LocalNetworkErrorPrompt {
   dns1,
   dns2,
   dns3,
-  wins,
+  wins;
+
+  static LocalNetworkErrorPrompt? resolve(String? error) {
+    return LocalNetworkErrorPrompt.values.firstWhereOrNull((element) => element.name == error);
+  }
+
+  static String? getErrorText({required BuildContext context,
+      LocalNetworkErrorPrompt? error, String? ipAddress, String? subnetMask}) {
+    if (error == null) {
+      return null;
+    }
+    return switch (error) {
+      LocalNetworkErrorPrompt.startIpAddress =>
+        loc(context).invalidIpOrSameAsHostIp,
+      LocalNetworkErrorPrompt.startIpAddressRange =>
+        startIpAddressInvalidMessage(
+            context, ipAddress ?? '', subnetMask ?? ''),
+      LocalNetworkErrorPrompt.ipAddress => loc(context).invalidIpAddress,
+      LocalNetworkErrorPrompt.maxUserAllowed => loc(context).invalidNumber,
+      LocalNetworkErrorPrompt.subnetMask => loc(context).invalidSubnetMask,
+      LocalNetworkErrorPrompt.leaseTime => loc(context).invalidNumber,
+      LocalNetworkErrorPrompt.dns1 => loc(context).invalidIpAddress,
+      LocalNetworkErrorPrompt.dns2 => loc(context).invalidIpAddress,
+      LocalNetworkErrorPrompt.dns3 => loc(context).invalidIpAddress,
+      LocalNetworkErrorPrompt.wins => loc(context).invalidIpAddress,
+      LocalNetworkErrorPrompt.hostName => loc(context).hostNameCannotEmpty,
+      _ => null,
+    };
+  }
+
+  static String startIpAddressInvalidMessage(
+      BuildContext context, String routerIp, String subnetMask) {
+    final routerIPAddressNum = NetworkUtils.ipToNum(routerIp);
+    final subnetMaskNum = NetworkUtils.ipToNum(subnetMask);
+    final routerSubnet = (routerIPAddressNum & subnetMaskNum) >>> 0;
+    final routerBroadcast = (~subnetMaskNum | routerSubnet) >>> 0;
+    final startIpAddress = NetworkUtils.numToIp(routerSubnet + 1);
+    final endIpAddress = NetworkUtils.numToIp(routerBroadcast - 1);
+
+    return '${loc(context).invalidIPAddressSubnet} [$startIpAddress - $endIpAddress]';
+  }
 }
 
 class LocalNetworkSettingsState extends Equatable {
@@ -65,6 +109,9 @@ class LocalNetworkSettingsState extends Equatable {
       wins,
       dhcpReservationList,
       errorTextMap,
+      hasErrorOnHostNameTab,
+      hasErrorOnIPAddressTab,
+      hasErrorOnDhcpServerTab,
     ];
   }
 
@@ -138,29 +185,27 @@ class LocalNetworkSettingsState extends Equatable {
 
   factory LocalNetworkSettingsState.fromMap(Map<String, dynamic> map) {
     return LocalNetworkSettingsState(
-      hostName: map['hostName'] as String,
-      ipAddress: map['ipAddress'] as String,
-      subnetMask: map['subnetMask'] as String,
-      isDHCPEnabled: map['isDHCPEnabled'] as bool,
-      firstIPAddress: map['firstIPAddress'] as String,
-      lastIPAddress: map['lastIPAddress'] as String,
-      maxUserLimit: map['maxUserLimit'] as int,
-      maxUserAllowed: map['maxUserAllowed'] as int,
-      clientLeaseTime: map['clientLeaseTime'] as int,
-      minAllowDHCPLeaseMinutes: map['minAllowDHCPLeaseMinutes'] as int,
-      maxAllowDHCPLeaseMinutes: map['maxAllowDHCPLeaseMinutes'] as int,
-      minNetworkPrefixLength: map['minNetworkPrefixLength'] as int,
-      maxNetworkPrefixLength: map['maxNetworkPrefixLength'] as int,
-      dns1: map['dns1'] != null ? map['dns1'] as String : null,
-      dns2: map['dns2'] != null ? map['dns2'] as String : null,
-      dns3: map['dns3'] != null ? map['dns3'] as String : null,
-      wins: map['wins'] != null ? map['wins'] as String : null,
+      hostName: map['hostName'] ?? '',
+      ipAddress: map['ipAddress'] ?? '',
+      subnetMask: map['subnetMask'] ?? '',
+      isDHCPEnabled: map['isDHCPEnabled'] ?? false,
+      firstIPAddress: map['firstIPAddress'] ?? '',
+      lastIPAddress: map['lastIPAddress'] ?? '',
+      maxUserLimit: map['maxUserLimit']?.toInt() ?? 0,
+      maxUserAllowed: map['maxUserAllowed']?.toInt() ?? 0,
+      clientLeaseTime: map['clientLeaseTime']?.toInt() ?? 0,
+      minAllowDHCPLeaseMinutes: map['minAllowDHCPLeaseMinutes']?.toInt() ?? 0,
+      maxAllowDHCPLeaseMinutes: map['maxAllowDHCPLeaseMinutes']?.toInt() ?? 0,
+      minNetworkPrefixLength: map['minNetworkPrefixLength']?.toInt() ?? 0,
+      maxNetworkPrefixLength: map['maxNetworkPrefixLength']?.toInt() ?? 0,
+      dns1: map['dns1'],
+      dns2: map['dns2'],
+      dns3: map['dns3'],
+      wins: map['wins'],
       dhcpReservationList: List<DHCPReservation>.from(
-        (map['dhcpReservationList']).map<DHCPReservation>(
-          (x) => DHCPReservation.fromMap(x as Map<String, dynamic>),
-        ),
-      ),
-      errorTextMap: map['errorTextMap'] ?? {},
+          map['dhcpReservationList']?.map((x) => DHCPReservation.fromMap(x))),
+      errorTextMap: Map<String, String>.from(
+          map['errorTextMap'] ?? {}),
       hasErrorOnHostNameTab: map['hasErrorOnHostNameTab'] ?? false,
       hasErrorOnIPAddressTab: map['hasErrorOnIPAddressTab'] ?? false,
       hasErrorOnDhcpServerTab: map['hasErrorOnDhcpServerTab'] ?? false,
@@ -170,8 +215,7 @@ class LocalNetworkSettingsState extends Equatable {
   String toJson() => json.encode(toMap());
 
   factory LocalNetworkSettingsState.fromJson(String source) =>
-      LocalNetworkSettingsState.fromMap(
-          json.decode(source) as Map<String, dynamic>);
+      LocalNetworkSettingsState.fromMap(json.decode(source));
 
   bool isEqualStateWithoutDhcpReservationList(
       LocalNetworkSettingsState compareState) {
@@ -239,5 +283,10 @@ class LocalNetworkSettingsState extends Equatable {
       hasErrorOnDhcpServerTab:
           hasErrorOnDhcpServerTab ?? this.hasErrorOnDhcpServerTab,
     );
+  }
+
+  @override
+  String toString() {
+    return 'LocalNetworkSettingsState(hostName: $hostName, ipAddress: $ipAddress, subnetMask: $subnetMask, isDHCPEnabled: $isDHCPEnabled, firstIPAddress: $firstIPAddress, lastIPAddress: $lastIPAddress, maxUserLimit: $maxUserLimit, maxUserAllowed: $maxUserAllowed, clientLeaseTime: $clientLeaseTime, minAllowDHCPLeaseMinutes: $minAllowDHCPLeaseMinutes, maxAllowDHCPLeaseMinutes: $maxAllowDHCPLeaseMinutes, minNetworkPrefixLength: $minNetworkPrefixLength, maxNetworkPrefixLength: $maxNetworkPrefixLength, dns1: $dns1, dns2: $dns2, dns3: $dns3, wins: $wins, dhcpReservationList: $dhcpReservationList, errorTextMap: $errorTextMap, hasErrorOnHostNameTab: $hasErrorOnHostNameTab, hasErrorOnIPAddressTab: $hasErrorOnIPAddressTab, hasErrorOnDhcpServerTab: $hasErrorOnDhcpServerTab)';
   }
 }

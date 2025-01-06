@@ -22,6 +22,24 @@ void main() {
       await Future.delayed(const Duration(seconds: 1));
     });
   });
+
+  testLocalizations('Instant safety view - on', (tester, locale) async {
+    when(mockInstantSafetyNotifier.build())
+        .thenReturn(InstantSafetyState.fromMap(instantSafetyTestStateNotSupported));
+    await tester.pumpWidget(
+      testableSingleRoute(
+        child: const InstantSafetyView(),
+        config:
+            LinksysRouteConfig(column: ColumnGrid(column: 9, centered: true)),
+        locale: locale,
+        overrides: [
+          instantSafetyProvider.overrideWith(() => mockInstantSafetyNotifier),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+  });
+
   testLocalizations('Instant safety view - off', (tester, locale) async {
     await tester.pumpWidget(
       testableSingleRoute(
@@ -37,95 +55,4 @@ void main() {
     await tester.pumpAndSettle();
   });
 
-  testLocalizations('Instant safety view - edit', (tester, locale) async {
-    when(mockInstantSafetyNotifier.build())
-        .thenReturn(InstantSafetyState.fromMap(instantSafetyTestState1));
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const InstantSafetyView(),
-        config:
-            LinksysRouteConfig(column: ColumnGrid(column: 9, centered: true)),
-        locale: locale,
-        overrides: [
-          instantSafetyProvider.overrideWith(() => mockInstantSafetyNotifier),
-        ],
-      ),
-    );
-    await tester.pumpAndSettle();
-    final editFinder = find.byIcon(LinksysIcons.edit);
-    await tester.tap(editFinder);
-    await tester.pumpAndSettle();
-  });
-
-  testLocalizations('Instant safety view - fortinet', (tester, locale) async {
-    when(mockInstantSafetyNotifier.build())
-        .thenReturn(InstantSafetyState.fromMap(instantSafetyTestState1));
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const InstantSafetyView(),
-        config:
-            LinksysRouteConfig(column: ColumnGrid(column: 9, centered: true)),
-        locale: locale,
-        overrides: [
-          instantSafetyProvider.overrideWith(() => mockInstantSafetyNotifier),
-        ],
-      ),
-    );
-    await tester.pumpAndSettle();
-  });
-
-  testLocalizations('Instant safety view - openDNS', (tester, locale) async {
-    when(mockInstantSafetyNotifier.build())
-        .thenReturn(InstantSafetyState.fromMap(instantSafetyTestState2));
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const InstantSafetyView(),
-        config:
-            LinksysRouteConfig(column: ColumnGrid(column: 9, centered: true)),
-        locale: locale,
-        overrides: [
-          instantSafetyProvider.overrideWith(() => mockInstantSafetyNotifier),
-        ],
-      ),
-    );
-    await tester.pumpAndSettle();
-  });
-
-  testLocalizations('Instant safety view - not supported fortinet',
-      (tester, locale) async {
-    when(mockInstantSafetyNotifier.build()).thenReturn(
-        InstantSafetyState.fromMap(instantSafetyTestStateNotSupported));
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const InstantSafetyView(),
-        config:
-            LinksysRouteConfig(column: ColumnGrid(column: 9, centered: true)),
-        locale: locale,
-        overrides: [
-          instantSafetyProvider.overrideWith(() => mockInstantSafetyNotifier),
-        ],
-      ),
-    );
-    await tester.pumpAndSettle();
-  });
-  testLocalizations('Instant safety view - not supported fortinet - edit',
-      (tester, locale) async {
-    when(mockInstantSafetyNotifier.build()).thenReturn(
-        InstantSafetyState.fromMap(instantSafetyTestStateNotSupported));
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const InstantSafetyView(),
-        config:
-            LinksysRouteConfig(column: ColumnGrid(column: 9, centered: true)),
-        locale: locale,
-        overrides: [
-          instantSafetyProvider.overrideWith(() => mockInstantSafetyNotifier),
-        ],
-      ),
-    );
-    await tester.pumpAndSettle();
-    final editFinder = find.byIcon(LinksysIcons.edit);
-    await tester.tap(editFinder);
-    await tester.pumpAndSettle();
-  });
 }

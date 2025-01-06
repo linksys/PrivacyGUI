@@ -19,8 +19,6 @@ void main() {
       (tester, locale) async {
     when(mockLocalNetworkSettingsNotifier.build()).thenReturn(
         LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState));
-    when(mockLocalNetworkSettingsNotifier.currentSettings()).thenReturn(
-        LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState));
 
     final widget = testableSingleRoute(
       config: LinksysRouteConfig(column: ColumnGrid(column: 9)),
@@ -37,8 +35,6 @@ void main() {
   testLocalizations('DHCP Server view test - DHCP server disabled',
       (tester, locale) async {
     when(mockLocalNetworkSettingsNotifier.build()).thenReturn(
-        LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState));
-    when(mockLocalNetworkSettingsNotifier.currentSettings()).thenReturn(
         LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState));
 
     final widget = testableSingleRoute(
