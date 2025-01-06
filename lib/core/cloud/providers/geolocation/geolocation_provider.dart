@@ -14,6 +14,7 @@ final geolocationProvider =
 class GeolocationNotifier extends AsyncNotifier<GeolocationState> {
   @override
   Future<GeolocationState> build() {
+    ref.watch(appSettingsProvider.select((state) => state.locale));
     final master = ref
         .watch(deviceManagerProvider)
         .nodeDevices

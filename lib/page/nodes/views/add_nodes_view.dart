@@ -184,6 +184,7 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
                   tags: const ['b'])),
           const AppGap.medium(),
           AppTextButton.noPadding(
+            key: const ValueKey('differentColorModal'),
             loc(context).addNodesLightDifferentColor,
             onTap: () {
               _showLightDifferentColorModal();

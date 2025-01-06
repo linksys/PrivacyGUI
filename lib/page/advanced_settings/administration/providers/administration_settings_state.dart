@@ -78,7 +78,7 @@ class AdministrationSettingsState extends Equatable {
       canUsersConfigure: map['canUsersConfigure'] as bool,
       canUsersDisableWANAccess: map['canUsersDisableWANAccess'] as bool,
       canDisAllowLocalMangementWirelessly:
-          map['canDisAllowLocalMangementWirelessly'] as bool,
+          map['canDisAllowLocalMangementWirelessly'] as bool? ?? true,
     );
   }
 

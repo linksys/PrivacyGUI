@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/factory.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_rule_view.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_list_view.dart';
@@ -101,6 +102,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
         builder: (context, state) => const SelectNetworkView(),
       ),
+      LinksysRoute(
+        name: 'factory',
+        path: '/factory',
+        builder: (context, state) => const FactoryView(),
+      ),
       dashboardRoute,
       pnpRoute,
       pnpTroubleshootingRoute,
@@ -108,7 +114,9 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
     redirect: (context, state) {
       if (state.matchedLocation == '/') {
-        return router._redirectPnpLogic(state);
+        return BuildConfig.factoryMode
+            ? Future.value('/factory')
+            : router._redirectPnpLogic(state);
       } else if (state.matchedLocation.startsWith('/pnp')) {
         return router._goPnpPath(state);
       }

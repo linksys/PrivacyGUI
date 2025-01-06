@@ -50,7 +50,6 @@ class _StaticRoutingDetailViewState
     final rules = widget.args['items'] as List<NamedStaticRouteEntry>? ?? [];
     var rule = widget.args['edit'] as NamedStaticRouteEntry?;
     int? index;
-
     if (rule != null) {
       _isEdit = true;
       _routeNameController.text = rule!.name;
@@ -89,7 +88,7 @@ class _StaticRoutingDetailViewState
     final state = ref.watch(staticRoutingRuleProvider);
     return StyledAppPageView(
       scrollable: true,
-      title: _isEdit ? loc(context).addStaticRoute : loc(context).edit,
+      title: _isEdit ? loc(context).edit : loc(context).addStaticRoute,
       bottomBar: PageBottomBar(
         isPositiveEnabled: _notifier.isRuleValid(),
         positiveLabel: loc(context).save,
