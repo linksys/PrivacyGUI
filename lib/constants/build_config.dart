@@ -49,7 +49,8 @@ class BuildConfig {
 
   static const int refreshTimeInterval =
       int.fromEnvironment('refresh_time', defaultValue: 60);
-
+  static const factoryMode =
+      bool.fromEnvironment('factory', defaultValue: false);
   static load() async {
     logger.d('load build configuration');
     final prefs = await SharedPreferences.getInstance();

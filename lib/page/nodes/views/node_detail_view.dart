@@ -383,15 +383,15 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
               description: _checkEmptyValue(state.upstreamDevice),
             ),
             if (state.isMLO)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: Spacing.medium),
-              child: AppTextButton.noPadding(
-                loc(context).connectedWithMLO,
-                onTap: () {
-                  showMLOCapableModal(context);
-                },
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: Spacing.medium),
+                child: AppTextButton.noPadding(
+                  loc(context).connectedWithMLO,
+                  onTap: () {
+                    showMLOCapableModal(context);
+                  },
+                ),
               ),
-            ),
             const AppGap.medium(),
           ],
         ),
@@ -616,11 +616,15 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               AppTextField(
-                headerText: loc(context).nodeName,
+                semanticLabel: 'node name',
+                hintText: loc(context).nodeName,
                 border: const OutlineInputBorder(),
                 controller: textController,
-                errorText:
-                    overMaxSize ? loc(context).deviceNameExceedMaxSize : null,
+                errorText: isEmpty
+                    ? loc(context).theNameMustNotBeEmpty
+                    : overMaxSize
+                        ? loc(context).deviceNameExceedMaxSize
+                        : null,
                 onSubmitted: (_) {
                   if (!isEmpty && !overMaxSize) {
                     onSubmit();

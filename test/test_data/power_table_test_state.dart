@@ -1,0 +1,32 @@
+final powerTableTestState = {
+  "isPowerTableSelectable": true,
+  "country": "TWN",
+  "supportedCountries": [
+    'CHN',
+    'HKG',
+    'IND',
+    'IDN',
+    'JPN',
+    'KOR',
+    'PHL',
+    'SGP',
+    'TWN',
+    'THA',
+    'XAH',
+    'AUS',
+    'CAN',
+    'EEE',
+    'LAM',
+    'BHR',
+    'EGY',
+    'KWT',
+    'OMN',
+    'QAT',
+    'SAU',
+    'TUR',
+    'ARE',
+    'XME',
+    'NZL',
+    'USA'
+  ]
+};

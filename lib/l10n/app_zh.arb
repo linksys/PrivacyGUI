@@ -530,7 +530,7 @@
   "addNodesSearchingNodesDesc": "注意节点灯的变化",
   "addNodesOnboardingNodes": "引导节点",
   "addNodesOnboardingNodesDesc": "将您的节点上线",
-  "addNodesNoNodesFound": "我们没有找到任何节点。请重试或故障排除。",
+  "addNodesNoNodesFound": "我们没有找到任何节点。请重试或<l>故障排除</l>。",
   "modalTroubleshootNoNodesFoundDesc1": "确保您添加的节点已完全通电，以蓝色常亮指示",
   "modalTroubleshootNoNodesFoundDesc2": "节点在范围内。尝试将它们移近路由器。一旦添加到您的网络中，您可以将它们移得更远。",
   "pnpFwUpdateTitle": "保存您的配置并检查软件更新…",

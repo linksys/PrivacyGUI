@@ -530,7 +530,7 @@
   "addNodesSearchingNodesDesc": "注意節點燈的變化",
   "addNodesOnboardingNodes": "引導節點",
   "addNodesOnboardingNodesDesc": "將您的節點上線",
-  "addNodesNoNodesFound": "我們沒有找到任何節點。請重試或故障排除。",
+  "addNodesNoNodesFound": "我們沒有找到任何節點。請重試或<l>故障排除</l>。",
   "modalTroubleshootNoNodesFoundDesc1": "確保您添加的節點已完全通電，以藍色常亮指示",
   "modalTroubleshootNoNodesFoundDesc2": "節點在範圍內。嘗試將它們移近路由器。一旦添加到您的網路中，您可以將它們移得更遠。",
   "pnpFwUpdateTitle": "保存您的配置並檢查軟體更新…",

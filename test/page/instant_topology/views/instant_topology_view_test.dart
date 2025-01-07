@@ -58,7 +58,7 @@ void main() {
           find.descendant(of: node1Finder, matching: find.byType(Image));
       final node1Image = tester.firstWidget(node1ImageFinder) as Image;
       expect(node1Image.image,
-          CustomTheme.of(context).images.devices.routerMx6200);
+          CustomTheme.of(context).images.devices.routerLn12);
       expect(node1.node.data.location, 'Living room');
 
       final node2Finder = find.widgetWithText(TreeNodeItem, 'Kitchen');
@@ -67,7 +67,7 @@ void main() {
           find.descendant(of: node1Finder, matching: find.byType(Image));
       final node2Image = tester.firstWidget(node2ImageFinder) as Image;
       expect(node2Image.image,
-          CustomTheme.of(context).images.devices.routerMx6200);
+          CustomTheme.of(context).images.devices.routerLn12);
 
       expect(node2.node.data.location, 'Kitchen');
     }, variants: ValueVariant({device480w}));
@@ -103,7 +103,7 @@ void main() {
           find.descendant(of: node1Finder, matching: find.byType(Image));
       final node1Image = tester.firstWidget(node1ImageFinder) as Image;
       expect(node1Image.image,
-          CustomTheme.of(context).images.devices.routerMx6200);
+          CustomTheme.of(context).images.devices.routerLn12);
       expect(node1.node.data.location, 'Living room');
 
       // TreeNodeItem widget
@@ -124,7 +124,7 @@ void main() {
           find.descendant(of: node2Finder, matching: find.byType(Image));
       final node2Image = tester.firstWidget(node2ImageFinder) as Image;
       expect(node2Image.image,
-          CustomTheme.of(context).images.devices.routerMx6200);
+          CustomTheme.of(context).images.devices.routerLn12);
       expect(node2.node.data.location, 'Kitchen');
 
       // TreeNodeItem widget
@@ -145,7 +145,7 @@ void main() {
           of: node3Finder, matching: find.byType(Image), skipOffstage: false);
       final node3Image = tester.firstWidget(node3ImageFinder) as Image;
       expect(node3Image.image,
-          CustomTheme.of(context).images.devices.routerMx6200);
+          CustomTheme.of(context).images.devices.routerLn12);
       expect(node3.node.data.location, 'Basement');
     });
 
@@ -178,7 +178,7 @@ void main() {
           find.descendant(of: node1Finder, matching: find.byType(Image));
       final node1Image = tester.firstWidget(node1ImageFinder) as Image;
       expect(node1Image.image,
-          CustomTheme.of(context).images.devices.routerMx6200);
+          CustomTheme.of(context).images.devices.routerLn12);
       expect(node1.node.data.location, 'Living room');
 
       // TreeNodeItem widget
@@ -198,7 +198,7 @@ void main() {
           find.descendant(of: node2Finder, matching: find.byType(Image));
       final node2Image = tester.firstWidget(node2ImageFinder) as Image;
       expect(node2Image.image,
-          CustomTheme.of(context).images.devices.routerMx6200);
+          CustomTheme.of(context).images.devices.routerLn12);
       expect(node2.node.data.location, 'Kitchen');
 
       // TreeNodeItem widget
@@ -217,7 +217,7 @@ void main() {
           find.descendant(of: node3Finder, matching: find.byType(Image));
       final node3Image = tester.firstWidget(node3ImageFinder) as Image;
       expect(node3Image.image,
-          CustomTheme.of(context).images.devices.routerMx6200);
+          CustomTheme.of(context).images.devices.routerLn12);
       expect(node3.node.data.location, 'Basement');
     });
 
@@ -250,7 +250,7 @@ void main() {
           find.descendant(of: node1Finder, matching: find.byType(Image));
       final node1Image = tester.firstWidget(node1ImageFinder) as Image;
       expect(node1Image.image,
-          CustomTheme.of(context).images.devices.routerMx6200);
+          CustomTheme.of(context).images.devices.routerLn12);
       expect(node1.node.data.location, 'Living room');
 
       // TreeNodeItem widget
@@ -269,7 +269,7 @@ void main() {
           find.descendant(of: node2Finder, matching: find.byType(Image));
       final node2Image = tester.firstWidget(node2ImageFinder) as Image;
       expect(node2Image.image,
-          CustomTheme.of(context).images.devices.routerMx6200);
+          CustomTheme.of(context).images.devices.routerLn12);
       expect(node2.node.data.location, 'Kitchen');
 
       // TreeNodeItem widget
@@ -288,7 +288,7 @@ void main() {
           find.descendant(of: node3Finder, matching: find.byType(Image));
       final node3Image = tester.firstWidget(node3ImageFinder) as Image;
       expect(node3Image.image,
-          CustomTheme.of(context).images.devices.routerMx6200);
+          CustomTheme.of(context).images.devices.routerLn12);
       expect(node3.node.data.location, 'Basement');
 
       // TreeNodeItem widget
@@ -307,7 +307,7 @@ void main() {
           find.descendant(of: node4Finder, matching: find.byType(Image));
       final node4Image = tester.firstWidget(node4ImageFinder) as Image;
       expect(node4Image.image,
-          CustomTheme.of(context).images.devices.routerMx6200);
+          CustomTheme.of(context).images.devices.routerLn12);
       expect(node4.node.data.location, 'Bed room 1');
 
       // TreeNodeItem widget
@@ -326,7 +326,7 @@ void main() {
           find.descendant(of: node5Finder, matching: find.byType(Image));
       final node5Image = tester.firstWidget(node5ImageFinder) as Image;
       expect(node5Image.image,
-          CustomTheme.of(context).images.devices.routerMx6200);
+          CustomTheme.of(context).images.devices.routerLn12);
       expect(node5.node.data.location, 'Bed room 2');
 
       // TreeNodeItem widget
@@ -346,7 +346,7 @@ void main() {
           find.descendant(of: node6Finder, matching: find.byType(Image));
       final node6Image = tester.firstWidget(node6ImageFinder) as Image;
       expect(node6Image.image,
-          CustomTheme.of(context).images.devices.routerMx6200);
+          CustomTheme.of(context).images.devices.routerLn12);
       expect(node6.node.data.location,
           'A super long long long long long long cool name');
     });
@@ -380,7 +380,7 @@ void main() {
           find.descendant(of: node1Finder, matching: find.byType(Image));
       final node1Image = tester.firstWidget(node1ImageFinder) as Image;
       expect(node1Image.image,
-          CustomTheme.of(context).images.devices.routerMx6200);
+          CustomTheme.of(context).images.devices.routerLn12);
       expect(node1.node.data.location, 'Living room');
 
       // TreeNodeItem widget
@@ -399,7 +399,7 @@ void main() {
           find.descendant(of: node2Finder, matching: find.byType(Image));
       final node2Image = tester.firstWidget(node2ImageFinder) as Image;
       expect(node2Image.image,
-          CustomTheme.of(context).images.devices.routerMx6200);
+          CustomTheme.of(context).images.devices.routerLn12);
       expect(node2.node.data.location, 'Kitchen');
 
       // TreeNodeItem widget
@@ -418,7 +418,7 @@ void main() {
           find.descendant(of: node3Finder, matching: find.byType(Image));
       final node3Image = tester.firstWidget(node3ImageFinder) as Image;
       expect(node3Image.image,
-          CustomTheme.of(context).images.devices.routerMx6200);
+          CustomTheme.of(context).images.devices.routerLn12);
       expect(node3.node.data.location, 'Basement');
 
       // TreeNodeItem widget
@@ -437,7 +437,7 @@ void main() {
           find.descendant(of: node4Finder, matching: find.byType(Image));
       final node4Image = tester.firstWidget(node4ImageFinder) as Image;
       expect(node4Image.image,
-          CustomTheme.of(context).images.devices.routerMx6200);
+          CustomTheme.of(context).images.devices.routerLn12);
       expect(node4.node.data.location, 'Bed room 1');
 
       // TreeNodeItem widget
@@ -456,7 +456,7 @@ void main() {
           find.descendant(of: node5Finder, matching: find.byType(Image));
       final node5Image = tester.firstWidget(node5ImageFinder) as Image;
       expect(node5Image.image,
-          CustomTheme.of(context).images.devices.routerMx6200);
+          CustomTheme.of(context).images.devices.routerLn12);
       expect(node5.node.data.location, 'Bed room 2');
 
       // TreeNodeItem widget
@@ -476,7 +476,7 @@ void main() {
           find.descendant(of: node6Finder, matching: find.byType(Image));
       final node6Image = tester.firstWidget(node6ImageFinder) as Image;
       expect(node6Image.image,
-          CustomTheme.of(context).images.devices.routerMx6200);
+          CustomTheme.of(context).images.devices.routerLn12);
       expect(node6.node.data.location,
           'A super long long long long long long cool name');
     });
@@ -510,7 +510,7 @@ void main() {
           find.descendant(of: node1Finder, matching: find.byType(Image));
       final node1Image = tester.firstWidget(node1ImageFinder) as Image;
       expect(node1Image.image,
-          CustomTheme.of(context).images.devices.routerMx6200);
+          CustomTheme.of(context).images.devices.routerLn12);
       expect(node1.node.data.location, 'Living room');
 
       // TreeNodeItem widget
@@ -529,7 +529,7 @@ void main() {
           find.descendant(of: node2Finder, matching: find.byType(Image));
       final node2Image = tester.firstWidget(node2ImageFinder) as Image;
       expect(node2Image.image,
-          CustomTheme.of(context).images.devices.routerMx6200);
+          CustomTheme.of(context).images.devices.routerLn12);
       expect(node2.node.data.location, 'Kitchen');
 
       // TreeNodeItem widget
@@ -548,7 +548,7 @@ void main() {
           find.descendant(of: node3Finder, matching: find.byType(Image));
       final node3Image = tester.firstWidget(node3ImageFinder) as Image;
       expect(node3Image.image,
-          CustomTheme.of(context).images.devices.routerMx6200);
+          CustomTheme.of(context).images.devices.routerLn12);
       expect(node3.node.data.location, 'Basement');
 
       // TreeNodeItem widget
@@ -567,7 +567,7 @@ void main() {
           find.descendant(of: node4Finder, matching: find.byType(Image));
       final node4Image = tester.firstWidget(node4ImageFinder) as Image;
       expect(node4Image.image,
-          CustomTheme.of(context).images.devices.routerMx6200);
+          CustomTheme.of(context).images.devices.routerLn12);
       expect(node4.node.data.location, 'Bed room 1');
 
       // TreeNodeItem widget
@@ -586,7 +586,7 @@ void main() {
           find.descendant(of: node5Finder, matching: find.byType(Image));
       final node5Image = tester.firstWidget(node5ImageFinder) as Image;
       expect(node5Image.image,
-          CustomTheme.of(context).images.devices.routerMx6200);
+          CustomTheme.of(context).images.devices.routerLn12);
       expect(node5.node.data.location, 'Bed room 2');
 
       // TreeNodeItem widget
@@ -606,7 +606,7 @@ void main() {
           find.descendant(of: node6Finder, matching: find.byType(Image));
       final node6Image = tester.firstWidget(node6ImageFinder) as Image;
       expect(node6Image.image,
-          CustomTheme.of(context).images.devices.routerMx6200);
+          CustomTheme.of(context).images.devices.routerLn12);
       expect(node6.node.data.location,
           'A super long long long long long long cool name');
     });
@@ -655,12 +655,12 @@ void main() {
   //     final node1 = tester.firstWidget(node1Finder) as TreeNodeItem;
 
   //     expect(node1.name, 'Living room');
-  //     expect(node1.image, CustomTheme.of(context).images.devices.routerMx6200);
+  //     expect(node1.image, CustomTheme.of(context).images.devices.routerLn12);
 
   //     final node2Finder = find.widgetWithText(TreeNodeItem, 'Kitchen');
   //     final node2 = tester.firstWidget(node2Finder) as TreeNodeItem;
   //     expect(node2.name, 'Kitchen');
-  //     expect(node2.image, CustomTheme.of(context).images.devices.routerMx6200);
+  //     expect(node2.image, CustomTheme.of(context).images.devices.routerLn12);
   //     expect(node2.status, 'Offline');
   //   });
 
@@ -704,19 +704,19 @@ void main() {
   //     final node1 = tester.firstWidget(node1Finder) as TreeNodeItem;
 
   //     expect(node1.name, 'Living room');
-  //     expect(node1.image, CustomTheme.of(context).images.devices.routerMx6200);
+  //     expect(node1.image, CustomTheme.of(context).images.devices.routerLn12);
 
   //     final node2Finder = find.widgetWithText(TreeNodeItem, 'Kitchen');
   //     final node2 = tester.firstWidget(node2Finder) as TreeNodeItem;
   //     expect(node2.name, 'Kitchen');
   //     expect(node2.status, 'Offline');
-  //     expect(node2.image, CustomTheme.of(context).images.devices.routerMx6200);
+  //     expect(node2.image, CustomTheme.of(context).images.devices.routerLn12);
 
   //     final node3Finder = find.widgetWithText(TreeNodeItem, 'Basement');
   //     final node3 = tester.firstWidget(node3Finder) as TreeNodeItem;
   //     expect(node3.name, 'Basement');
   //     expect(node3.status, 'Offline');
-  //     expect(node3.image, CustomTheme.of(context).images.devices.routerMx6200);
+  //     expect(node3.image, CustomTheme.of(context).images.devices.routerLn12);
   //   });
   // });
 }
