@@ -51,6 +51,9 @@ class BuildConfig {
       int.fromEnvironment('refresh_time', defaultValue: 60);
   static const factoryMode =
       bool.fromEnvironment('factory', defaultValue: false);
+  static const copyRightYear = int.fromEnvironment('year', defaultValue: 2025);
+
+  @pragma('vm:entry-point')
   static load() async {
     logger.d('load build configuration');
     final prefs = await SharedPreferences.getInstance();
