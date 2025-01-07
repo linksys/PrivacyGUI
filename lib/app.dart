@@ -214,9 +214,11 @@ class _FadePageTransition extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isWebMobile = kIsWeb && (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.android);
+
     return FadeTransition(
       opacity: _opacityAnimation,
-      child: child,
+      child: isWebMobile ? InteractiveViewer(child: child) : child,
     );
   }
 }

@@ -9,7 +9,7 @@ const officialWebHost = 'https://store.linksys.com';
 const officialSupportHost = 'https://support.linksys.com';
 
 const linkEULA = 'https://www.linksys.com/pages/end-user-license-agreement';
-const linkTerms = '$officialWebHost/terms.html';
+const linkTerms = 'https://www.linksys.com/pages/linksys-smart-wifi-terms-of-service';
 const linkPrivacy =
     'https://www.linksys.com/blogs/support-article/linksys-privacy-policy';
 const linkThirdParty = '$officialSupportHost/kb/article/943-en';

@@ -58,20 +58,7 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
             children: [
               AppText.titleLarge(loc(context).appTitle,
                   color: Color(neutralTonal.get(100))),
-              if (!ResponsiveLayout.isMobileLayout(context))
-                MenuHolder(
-                  builder: (context, controller) {
-                    return controller.displayType == MenuDisplay.top
-                        ? NavigationMenu(
-                            items: controller.items,
-                            selected: controller.selected,
-                            onItemClick: (index) {
-                              controller.select(controller.items[index]);
-                            },
-                          )
-                        : const SizedBox.shrink();
-                  },
-                ),
+                MenuHolder(type: MenuDisplay.top),
               Wrap(
                 children: [
                   if (loginType == LoginType.remote) _networkSelect(),

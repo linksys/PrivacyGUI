@@ -116,6 +116,19 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
         .then((_) => _setTimePeriod(routerRepository));
   }
 
+  void checkAndStartPolling([bool force = false]) {
+    final loginType = ref.read(authProvider).value?.loginType;
+    if (loginType == LoginType.none) {
+      return;
+    }
+    if (!force && (_timer?.isActive ?? false)) {
+      return;
+    } else {
+      stopPolling();
+      startPolling();
+    }
+  }
+
   startPolling() {
     logger.d('prepare start polling data');
     final routerRepository = ref.read(routerRepositoryProvider);
