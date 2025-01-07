@@ -2,9 +2,10 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
-import 'package:privacy_gui/core/jnap/providers/firmware_update_state.dart';
+import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_step_state.dart';
@@ -14,6 +15,7 @@ import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import '../../../mocks/firmware_update_notifier_mocks.dart';
+import '../../../mocks/jnap_service_supported_mocks.dart';
 import '../../../mocks/pnp_notifier_mocks.dart' as Mock;
 import 'package:privacy_gui/page/instant_setup/data/pnp_state.dart';
 import '../../../common/test_responsive_widget.dart';
@@ -22,6 +24,8 @@ import '../../../test_data/device_info_test_data.dart';
 
 void main() async {
   late Mock.MockPnpNotifier mockPnpNotifier;
+  ServiceHelper mockServiceHelper = MockServiceHelper();
+  getIt.registerSingleton<ServiceHelper>(mockServiceHelper);
 
   setUp(() {
     mockPnpNotifier = Mock.MockPnpNotifier();
@@ -37,9 +41,6 @@ void main() async {
     when(mockPnpNotifier.checkAdminPassword(null)).thenAnswer((_) {
       throw ExceptionInvalidAdminPassword();
     });
-    // when(mockPnpNotifier.fetchDeviceInfo()).thenAnswer((_) async {});
-    // when(mockPnpNotifier.checkInternetConnection()).thenAnswer((_) async {});
-    // when(mockPnpNotifier.checkRouterConfigured()).thenAnswer((_) async {});
     when(mockPnpNotifier.fetchData()).thenAnswer((_) async {});
     when(mockPnpNotifier.getDefaultWiFiNameAndPassphrase()).thenReturn((
       name: 'Linksys1234567',
@@ -203,17 +204,11 @@ void main() async {
     await tester.pumpAndSettle();
   });
 
-/*
   testLocalizations('Instant Setup - PnP: Saving changes',
       (tester, locale) async {
     when(mockPnpNotifier.save()).thenAnswer((_) async {
-      await Future.delayed(const Duration(seconds: 3));
+      await Future.delayed(const Duration(seconds: 2));
     });
-    final mockFirmwareUpdateNotifier = MockFirmwareUpdateNotifier();
-    when(mockFirmwareUpdateNotifier.fetchAvailableFirmwareUpdates())
-        .thenAnswer((_) async {});
-    when(mockFirmwareUpdateNotifier.getAvailableUpdateNumber)
-        .thenReturn(() => 0);
 
     await tester.pumpWidget(
       testableSingleRoute(
@@ -221,10 +216,7 @@ void main() async {
         config:
             LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
         locale: locale,
-        overrides: [
-          pnpProvider.overrideWith(() => mockPnpNotifier),
-          firmwareUpdateProvider.overrideWith(() => mockFirmwareUpdateNotifier),
-        ],
+        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
       ),
     );
     await tester.pumpAndSettle();
@@ -242,9 +234,8 @@ void main() async {
     await tester.pumpAndSettle(); // Night mode
     final btnFinder3 = find.byType(FilledButton);
     await tester.tap(btnFinder3.first);
-    await tester.pump(const Duration(seconds: 2));
+    await tester.pump(const Duration(seconds: 1));
   });
-  */
 
   testLocalizations('Instant Setup - PnP: Your network',
       (tester, locale) async {
@@ -287,7 +278,7 @@ void main() async {
     await tester.tap(btnFinder3.first);
     await tester.pumpAndSettle();
   });
-/*
+
   testLocalizations('Instant Setup - PnP: Saved', (tester, locale) async {
     when(mockPnpNotifier.save()).thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 3));
@@ -325,9 +316,11 @@ void main() async {
 
   testLocalizations('Instant Setup - PnP: Check and update firmware version',
       (tester, locale) async {
+    final mockFirmwareUpdateNotifier = MockFirmwareUpdateNotifier();
     when(mockPnpNotifier.save()).thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 3));
     });
+    when(mockFirmwareUpdateNotifier.getAvailableUpdateNumber()).thenReturn(1);
 
     await tester.pumpWidget(
       testableSingleRoute(
@@ -335,7 +328,10 @@ void main() async {
         config:
             LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
         locale: locale,
-        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
+        overrides: [
+          pnpProvider.overrideWith(() => mockPnpNotifier),
+          firmwareUpdateProvider.overrideWith(() => mockFirmwareUpdateNotifier),
+        ],
       ),
     );
     await tester.pumpAndSettle();
@@ -357,24 +353,20 @@ void main() async {
     await tester.pump(const Duration(seconds: 3));
   });
 
-  testLocalizations('Instant Setup - PnP: Wifi ready', (tester, locale) async {
+  testLocalizations('Instant Setup - PnP: Wifi ready',
+      (tester, locale) async {
     when(mockPnpNotifier.build()).thenReturn(PnpState(
       deviceInfo: NodeDeviceInfo.fromJson(jsonDecode(testDeviceInfo)['output']),
-      isUnconfigured: true,
+      isUnconfigured: false,
       stepStateList: const {
-        0: PnpStepState(status: StepViewStatus.data, data: {}),
+        0: PnpStepState(
+          status: StepViewStatus.data,
+          data: {"ssid": "Linksys03056", "password": "8kRnxa257@"},
+        ),
         1: PnpStepState(status: StepViewStatus.data, data: {}),
         2: PnpStepState(status: StepViewStatus.data, data: {}),
-        3: PnpStepState(status: StepViewStatus.data, data: {}),
-        4: PnpStepState(status: StepViewStatus.data, data: {}),
       },
     ));
-    final mockFirmwareUpdateNotifier = MockFirmwareUpdateNotifier();
-    when(mockFirmwareUpdateNotifier.build())
-        .thenReturn(FirmwareUpdateState.empty());
-
-    when(mockFirmwareUpdateNotifier.getAvailableUpdateNumber)
-        .thenReturn(() => 0);
 
     when(mockPnpNotifier.save()).thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 3));
@@ -406,9 +398,8 @@ void main() async {
     await tester.tap(btnFinder3.first);
     await tester.pump(const Duration(seconds: 3));
     await tester.pump(const Duration(seconds: 3));
-    await tester.pump(const Duration(seconds: 3));
   });
-*/
+
   testLocalizations('Instant Setup - PnP: Reconnect to your router wifi',
       (tester, locale) async {
     when(mockPnpNotifier.build()).thenReturn(PnpState(
