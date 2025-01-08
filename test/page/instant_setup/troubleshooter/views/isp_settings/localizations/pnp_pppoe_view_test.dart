@@ -44,12 +44,13 @@ void main() async {
     });
   });
 
-  testLocalizations('pnp PPPoE view - default', (tester, locale) async {
+  testLocalizations('Troubleshooter - PnP PPPoE: default',
+      (tester, locale) async {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const PnpPPPOEView(),
-                config: LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
-
+        config:
+            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
         locale: locale,
         overrides: [
           pnpProvider.overrideWith(() => mockPnpNotifier),
@@ -61,13 +62,13 @@ void main() async {
     await tester.pumpAndSettle();
   });
 
-  testLocalizations('pnp PPPoE view - with Remove VLAN ID',
+  testLocalizations('Troubleshooter - PnP PPPoE: with Remove VLAN ID',
       (tester, locale) async {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const PnpPPPOEView(),
-                config: LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
-
+        config:
+            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
         locale: locale,
         overrides: [
           pnpProvider.overrideWith(() => mockPnpNotifier),

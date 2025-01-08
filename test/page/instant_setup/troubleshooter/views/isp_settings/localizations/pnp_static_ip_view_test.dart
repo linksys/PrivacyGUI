@@ -44,7 +44,8 @@ void main() async {
     });
   });
 
-  testLocalizations('pnp static IP view - default', (tester, locale) async {
+  testLocalizations('Troubleshooter - PnP static IP: default',
+      (tester, locale) async {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const PnpStaticIpView(),
@@ -61,7 +62,8 @@ void main() async {
     await tester.pumpAndSettle();
   });
 
-  testLocalizations('pnp static IP view - with DNS', (tester, locale) async {
+  testLocalizations('Troubleshooter - PnP static IP: with DNS 2',
+      (tester, locale) async {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const PnpStaticIpView(),
