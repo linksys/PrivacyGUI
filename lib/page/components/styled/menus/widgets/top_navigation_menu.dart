@@ -2,16 +2,13 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/theme/custom_theme.dart';
-import 'package:privacygui_widgets/theme/material/color_tonal_palettes.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 
-class NavigationMenu extends StatefulWidget {
+class TopNavigationMenu extends StatefulWidget {
   final List<NaviType> items;
   final void Function(int)? onItemClick;
   final NaviType? selected;
-  const NavigationMenu({
+  const TopNavigationMenu({
     super.key,
     required this.items,
     this.onItemClick,
@@ -19,10 +16,10 @@ class NavigationMenu extends StatefulWidget {
   });
 
   @override
-  State<NavigationMenu> createState() => _NavigationMenuState();
+  State<TopNavigationMenu> createState() => _TopNavigationMenuState();
 }
 
-class _NavigationMenuState extends State<NavigationMenu> {
+class _TopNavigationMenuState extends State<TopNavigationMenu> {
   @override
   void initState() {
     super.initState();
@@ -45,40 +42,6 @@ class _NavigationMenuState extends State<NavigationMenu> {
   }
 
   Widget _createChip(NaviType type) {
-    // return Container(
-    //   decoration: BoxDecoration(
-    //       color: widget.selected == type
-    //           ? Color(primaryTonal.get(40))
-    //           : Color(neutralTonal.get(6)),
-    //       borderRadius: CustomTheme.of(context).radius.asBorderRadius().large),
-    //   child: InkWell(
-    //     hoverColor: Colors.amber,
-    //     onTap: () {
-    //       if (widget.selected == type) {
-    //         return;
-    //       }
-
-    //       widget.onItemClick?.call(widget.items.indexOf(type));
-    //     },
-    //     child: Row(
-    //       children: [
-    //         Padding(
-    //           padding: const EdgeInsets.all(Spacing.small1),
-    //           child:
-    //               Icon(type.resolveIcon(), color: Color(neutralTonal.get(100))),
-    //         ),
-    //         const AppGap.small2(),
-    //         AppText.labelMedium(
-    //           type.resloveLabel(context),
-    //           color: Color(
-    //             neutralTonal.get(100),
-    //           ),
-    //         ),
-    //         const AppGap.small2(),
-    //       ],
-    //     ),
-    //   ),
-    // );
     return Theme(
       data: linksysDarkThemeData.copyWith(),
       child: ChoiceChip(

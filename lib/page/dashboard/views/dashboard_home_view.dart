@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
+import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
@@ -37,7 +38,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     firmware = ref.read(firmwareUpdateProvider.notifier);
     // _pushNotificationCheck();
     _firmwareUpdateCheck();
-    ref.read(menuController).resetToHome();
+    ref.read(menuController).setTo(NaviType.home);    
   }
 
   @override
@@ -48,7 +49,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     final hasLanPort =
         ref.read(dashboardHomeProvider).lanPortConnections.isNotEmpty;
     final isLoading = ref.watch(deviceManagerProvider).deviceList.isEmpty;
-
+    
     return StyledAppPageView(
       scrollable: true,
       appBarStyle: AppBarStyle.none,

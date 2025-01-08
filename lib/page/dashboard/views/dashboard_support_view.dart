@@ -6,6 +6,8 @@ import 'package:privacy_gui/core/cloud/model/cloud_remote_assistance_info.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
+import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
+import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
@@ -30,6 +32,12 @@ class DashboardSupportView extends ArgumentsBaseConsumerStatefulView {
 }
 
 class _DashboardSupportViewState extends ConsumerState<DashboardSupportView> {
+  @override
+  void initState() {
+    super.initState();
+        ref.read(menuController).setTo(NaviType.support);    
+
+  }
 
   @override
   Widget build(BuildContext context) {

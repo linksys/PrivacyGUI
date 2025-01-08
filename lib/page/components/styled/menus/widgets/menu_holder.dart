@@ -1,17 +1,25 @@
 import 'package:equatable/equatable.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
+import 'package:privacy_gui/page/components/styled/menus/widgets/bottom_navigation_menu.dart';
+import 'package:privacy_gui/page/components/styled/menus/widgets/top_navigation_menu.dart';
+import 'package:privacy_gui/page/dashboard/views/dashboard_shell.dart';
+import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_provider.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/theme/material/theme_data.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 
 final menuController = Provider((ref) => MenuController());
 
 class MenuHolder extends ConsumerStatefulWidget {
-  final Widget Function(BuildContext, MenuController) builder;
-  const MenuHolder({super.key, required this.builder});
+  // final Widget Function(BuildContext, MenuController) builder;
+  final MenuDisplay type;
+  const MenuHolder({super.key, required this.type});
 
   @override
   ConsumerState<MenuHolder> createState() => MenuHolderState();
@@ -46,7 +54,27 @@ class MenuHolderState extends ConsumerState<MenuHolder> {
     return ValueListenableBuilder<NavigationMenus>(
         valueListenable: _controller._menuNotifier,
         builder: (context, value, _) {
-          return widget.builder.call(context, _controller);
+          final type = widget.type == _controller.displayType
+              ? widget.type
+              : MenuDisplay.none;
+
+          return switch (type) {
+            MenuDisplay.none => const SizedBox.shrink(),
+            MenuDisplay.top => TopNavigationMenu(
+                items: _controller.items,
+                selected: _controller.selected,
+                onItemClick: (index) {
+                  _controller.select(_controller.items[index]);
+                },
+              ),
+            MenuDisplay.bottom => BottomNavigationMenu(
+                items: _controller.items,
+                selected: _controller.selected,
+                onItemClick: (index) {
+                  _controller.select(_controller.items[index]);
+                },
+              ),
+          };
         });
   }
 }
@@ -66,8 +94,8 @@ class MenuController {
     return _menuNotifier.value.type;
   }
 
-  void resetToHome() {
-    _menuNotifier.value = _menuNotifier.value.copyWith(selected: NaviType.home);
+  void setTo(NaviType type) {
+    _menuNotifier.value = _menuNotifier.value.copyWith(selected: type);
   }
 
   void select(NaviType type) {

@@ -155,20 +155,18 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
   Future<NodeDeviceInfo> checkDeviceInfo(String? serialNumber) async {
     final benchMark = BenchMarkLogger(name: 'checkDeviceInfo');
     benchMark.start();
-    NodeDeviceInfo? nodeDeviceInfo =
-        await _checkDeviceInfoFromCache(serialNumber);
+    NodeDeviceInfo? nodeDeviceInfo = state.deviceInfo;
     if (nodeDeviceInfo == null) {
       final routerRepository = ref.read(routerRepositoryProvider);
       final result = await routerRepository.send(
         JNAPAction.getDeviceInfo,
-        fetchRemote: true,
         retries: 0,
         timeoutMs: 3000,
       );
       nodeDeviceInfo = NodeDeviceInfo.fromJson(result.output);
     }
     benchMark.end();
-    state = state.copyWith(deviceInfo: nodeDeviceInfo);
+    // state = state.copyWith(deviceInfo: nodeDeviceInfo);
     return nodeDeviceInfo;
   }
 

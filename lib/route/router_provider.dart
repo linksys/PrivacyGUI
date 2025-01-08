@@ -6,7 +6,13 @@ import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/build_config.dart';
+import 'package:privacy_gui/constants/pref_key.dart';
+import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
+import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
+import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/factory.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
@@ -58,9 +64,11 @@ import 'package:privacy_gui/page/instant_topology/views/instant_topology_view.da
 import 'package:privacy_gui/page/troubleshooting/_troubleshooting.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
+import 'package:privacy_gui/providers/auth/ra_session_provider.dart';
 import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_logger.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'constants.dart';
 
 part 'route_home.dart';
@@ -169,7 +177,7 @@ class RouterNotifier extends ChangeNotifier {
       await _ref.read(authProvider.notifier).logout();
       return _goPnp(state.uri.query);
     } else {
-      return _authCheck();
+      return _authCheck(state);
     }
   }
 
@@ -184,7 +192,7 @@ class RouterNotifier extends ChangeNotifier {
         state.matchedLocation != RoutePath.selectNetwork) {
       FlutterNativeSplash.remove();
       logger.d('[Route]: Remote: there is no managed network ID');
-      return RoutePath.prepareDashboard;
+      return _prepare(state);
     }
 
     // if have no login type and navigate into dashboard, then back to home
@@ -193,8 +201,9 @@ class RouterNotifier extends ChangeNotifier {
       logger.d('[Route]: No login type but intend to dashboard, lead to Home');
       return _home();
     }
-
-    return state.matchedLocation == RoutePath.home ? _home() : null;
+    return state.matchedLocation == RoutePath.home
+        ? _home()
+        : await (_prepare(state).then((_) => null));
   }
 
   FutureOr<String?> _goPnp(String? query) {
@@ -204,14 +213,16 @@ class RouterNotifier extends ChangeNotifier {
     return path;
   }
 
-  Future<String?> _authCheck() {
-    return _ref.read(authProvider.notifier).init().then((state) {
+  Future<String?> _authCheck(GoRouterState state) {
+    return _ref.read(authProvider.notifier).init().then((authState) async {
       logger.i(
-          '[Route]: Check credentials done: Login type = ${state?.loginType}');
+          '[Route]: Check credentials done: Login type = ${authState?.loginType}, ${authState?.localPassword}');
       FlutterNativeSplash.remove();
-      return switch (state?.loginType ?? LoginType.none) {
-        LoginType.remote => RoutePath.prepareDashboard,
-        LoginType.local => RoutePath.prepareDashboard,
+      return switch (authState?.loginType ?? LoginType.none) {
+        LoginType.remote => await _prepare(state, RoutePath.dashboardHome)
+            .then((path) => path ?? RoutePath.dashboardHome),
+        LoginType.local => await _prepare(state, RoutePath.dashboardHome)
+            .then((path) => path ?? RoutePath.dashboardHome),
         _ => _home(),
       };
     });
@@ -232,4 +243,110 @@ class RouterNotifier extends ChangeNotifier {
     // bypass any pnp views
     return state.uri.toString();
   }
+
+  Future<String?> _prepare(GoRouterState state, [String? goToPath]) async {
+    logger.d('[Prepare]: prepare data. Go to path: $goToPath');
+    await _ref.read(connectivityProvider.notifier).forceUpdate();
+    final prefs = await SharedPreferences.getInstance();
+    String? serialNumber = prefs.getString(pCurrentSN);
+    final loginType =
+        _ref.read(authProvider.select((value) => value.value?.loginType));
+    String? naviPath;
+
+    if (loginType == LoginType.remote) {
+      final networkId = prefs.getString(pSelectedNetworkId);
+      naviPath = await _prepareRemote(networkId, serialNumber);
+    } else if (loginType == LoginType.local) {
+      naviPath = await _prepareLocal(serialNumber);
+    }
+    //
+    if (naviPath != null) {
+      return naviPath;
+    }
+    logger.d('[Prepare]: cache check');
+    await ProviderContainer()
+        .read(linksysCacheManagerProvider)
+        .loadCache(serialNumber: serialNumber ?? '');
+    logger.d('[Prepare]: device info check - $serialNumber');
+    final nodeDeviceInfo = await _ref
+        .read(dashboardManagerProvider.notifier)
+        .checkDeviceInfo(serialNumber)
+        .then<NodeDeviceInfo?>((nodeDeviceInfo) {
+      // Build/Update better actions
+      logger.d('[Prepare]: build better actions');
+      buildBetterActions(nodeDeviceInfo.services);
+      return nodeDeviceInfo;
+    }).onError((error, stackTrace) => null);
+
+    if (nodeDeviceInfo != null) {
+      logger.d('[Prepare]: SN changed: ${nodeDeviceInfo.serialNumber}');
+      await _ref.read(connectivityProvider.notifier).forceUpdate();
+      logger.d('[Prepare]: Force update connectivity finish!');
+
+      _ref
+          .read(pollingProvider.notifier)
+          .checkAndStartPolling(nodeDeviceInfo.serialNumber != serialNumber);
+
+      // RA mode
+      final raMode = prefs.getBool(pRAMode) ?? false;
+      if (raMode) {
+        _ref.read(raSessionProvider.notifier).startMonitorSession();
+      }
+      final naviPath = goToPath ?? state.uri.toString();
+      logger.d('[Prepare]: Prepare go to $naviPath');
+      return naviPath;
+    } else {
+      // TODO #LINKSYS Error handling for unable to get deviceinfo
+      logger.i('[Prepare]: Error handling for unable to get deviceinfo');
+      return _home();
+    }
+  }
+
+  Future<String?> _prepareRemote(
+      String? networkId, String? serialNumber) async {
+    logger.i('[Prepare]: remote - $networkId, $serialNumber');
+    if (_ref.read(selectedNetworkIdProvider) == null) {
+      _ref.read(selectNetworkProvider.notifier).refreshCloudNetworks();
+      if (networkId == null || serialNumber == null) {
+        return RoutePath.selectNetwork;
+      }
+      await _ref
+          .read(dashboardManagerProvider.notifier)
+          .saveSelectedNetwork(serialNumber, networkId);
+    }
+    return null;
+  }
+
+  Future<String?> _prepareLocal(String? serialNumber) async {
+    logger.i('[Prepare]: local - $serialNumber');
+    if (isSearialNumberChanged(serialNumber)) {
+      return null;
+    }
+
+    final routerRepository = _ref.read(routerRepositoryProvider);
+
+    final newSerialNumber = await routerRepository
+        .send(
+          JNAPAction.getDeviceInfo,
+          fetchRemote: true,
+        )
+        .then<String>(
+            (value) => NodeDeviceInfo.fromJson(value.output).serialNumber);
+    if (serialNumber == newSerialNumber) {
+      return null;
+    }
+
+    // Save serial number if serial number changed
+    await _ref
+        .read(dashboardManagerProvider.notifier)
+        .saveSelectedNetwork(newSerialNumber, '');
+
+    return null;
+  }
+
+  bool isSearialNumberChanged(String? serialNumber) =>
+      serialNumber != null &&
+      serialNumber == _getStateDeviceInfo()?.serialNumber;
+  NodeDeviceInfo? _getStateDeviceInfo() =>
+      _ref.read(dashboardManagerProvider).deviceInfo;
 }
