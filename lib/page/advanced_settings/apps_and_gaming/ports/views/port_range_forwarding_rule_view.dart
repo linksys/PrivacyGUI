@@ -58,7 +58,7 @@ class _AddRuleContentViewState
     final state = ref.read(portRangeForwardingListProvider);
     final routerIp = state.routerIp;
     final subnetMask = state.subnetMask;
-    final rules = widget.args['items'] ?? [];
+    final List<PortRangeForwardingRule> rules = widget.args['items'] ?? [];
     var rule = widget.args['edit'] as PortRangeForwardingRule?;
     int? index;
 

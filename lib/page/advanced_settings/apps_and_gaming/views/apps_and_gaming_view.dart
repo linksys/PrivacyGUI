@@ -54,6 +54,7 @@ class _AppsGamingSettingsViewState extends ConsumerState<AppsGamingSettingsView>
         text: loc(context).portRangeForwarding,
       ),
       Tab(
+        key: Key('portRangeTriggering'),
         text: loc(context).portRangeTriggering,
       ),
     ];

@@ -53,7 +53,7 @@ class _AddRuleContentViewState
   void initState() {
     _notifier = ref.read(portRangeTriggeringRuleProvider.notifier);
 
-    final rules = widget.args['items'] ?? [];
+    final List<PortRangeTriggeringRule> rules = widget.args['items'] ?? [];
     var rule = widget.args['edit'];
     int? index;
 
