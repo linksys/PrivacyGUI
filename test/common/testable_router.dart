@@ -50,6 +50,7 @@ Widget testableSingleRoute({
   ThemeData? darkTheme,
   LinksysRouteConfig? config,
   Locale? locale,
+  ProviderContainer? provider,
 }) {
   final router = GoRouter(
     navigatorKey: shellNavigatorKey,
@@ -70,6 +71,7 @@ Widget testableSingleRoute({
     theme: theme,
     darkTheme: darkTheme,
     locale: locale,
+    provider: provider,
   );
 }
 

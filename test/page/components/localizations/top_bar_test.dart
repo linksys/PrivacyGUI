@@ -18,7 +18,7 @@ void main() async {
   late AuthNotifier mockAuthNotifier;
 
   setUp(() {
-    mockAuthNotifier = MockAuthNotifier();
+    mockAuthNotifier = MockSimpleAuthNotifier();
   });
 
   testLocalizations(
