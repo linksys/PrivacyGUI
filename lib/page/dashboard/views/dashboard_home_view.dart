@@ -61,7 +61,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
       child: Shimmer(
         gradient: shimmerGradient,
         child: ShimmerContainer(
-          isLoading: isLoading,
+          isLoading: false,
           child: ResponsiveLayout(
             desktop: Column(
               mainAxisAlignment: MainAxisAlignment.start,

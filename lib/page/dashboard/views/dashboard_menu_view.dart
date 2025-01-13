@@ -43,7 +43,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
   @override
   void initState() {
     super.initState();
-        ref.read(menuController).setTo(NaviType.menu);    
+    ref.read(menuController).setTo(NaviType.menu);
   }
 
   @override
@@ -309,17 +309,16 @@ class AppMenuCard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: Spacing.small2),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (isBeta) ...[
-                    betaLabel(),
-                    const AppGap.small2(),
-                  ],
-                  Expanded(
-                    child: AppText.titleSmall(
-                      title ?? '',
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                  AppText.titleSmall(
+                    title ?? '',
+                    overflow: TextOverflow.ellipsis,
                   ),
+                  if (isBeta) ...[
+                    const AppGap.small1(),
+                    Align(alignment: Alignment.topLeft, child: betaLabel()),
+                  ],
                 ],
               ),
             ),

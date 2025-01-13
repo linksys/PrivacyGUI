@@ -40,11 +40,15 @@ class PortRangeForwardingRuleNotifier
     if (rule == null) {
       return false;
     }
-    return rule.description.isNotEmpty &&
+    return isNameValid(rule.description) &&
         isDeviceIpValidate(rule.internalServerIPAddress) &&
         isPortRangeValid(rule.firstExternalPort, rule.lastExternalPort) &&
         !isPortConflict(
             rule.firstExternalPort, rule.lastExternalPort, rule.protocol);
+  }
+
+  bool isNameValid(String name) {
+    return name.isNotEmpty;
   }
 
   bool isDeviceIpValidate(String ipAddress) {

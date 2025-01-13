@@ -256,6 +256,18 @@ get testTopologyMasterOnlyState => InstantTopologyState(
     ),
 );
 
+get testTopologySingalsSlaveState => InstantTopologyState(
+  root: _onlineRoot
+    ..children.add(
+      _masterNode
+        ..children.clear()
+        ..parent = _onlineRoot
+        ..children.add(_slaveGoodNode..parent = _masterNode)
+        ..children.add(_slavePoorNode..parent = _masterNode)
+        ..children.add(_slaveFairNode..parent = _masterNode),
+    ),
+);
+
 get testTopologyGoodSlaveState => InstantTopologyState(
   root: _onlineRoot
     ..children.add(

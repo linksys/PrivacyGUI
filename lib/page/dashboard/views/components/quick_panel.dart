@@ -80,6 +80,7 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
                         doSomethingWithSpinner(context, notifier.save());
                       });
                     },
+              tips: loc(context).instantPrivacyInfo,
               semantics: 'quick instant privacy switch'),
           if (isCognitive && isSupportNodeLight) ...[
             const Divider(
@@ -97,8 +98,7 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
                         ? loc(context).allDayOff
                         : null,
                 onChanged: (value) {
-                  final notifier =
-                      ref.read(nodeLightSettingsProvider.notifier);
+                  final notifier = ref.read(nodeLightSettingsProvider.notifier);
                   if (value) {
                     notifier.setSettings(NodeLightSettings.night());
                   } else {
@@ -106,6 +106,7 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
                   }
                   doSomethingWithSpinner(context, notifier.save());
                 },
+                tips: loc(context).nightModeTips,
                 semantics: 'quick night mode switch'),
           ]
         ],
@@ -120,27 +121,44 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
     VoidCallback? onTap,
     required bool value,
     required void Function(bool value)? onChanged,
+    String? tips,
     String? semantics,
   }) {
     return SizedBox(
       height: 60,
       child: InkWell(
+        focusColor: Colors.transparent,
+        splashColor: Theme.of(context).colorScheme.primary,
         onTap: onTap,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            if (leading != null) ...[
-              leading,
-              AppGap.small2(),
-            ],
             Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  AppText.labelLarge(title),
-                  if (subTitle != null) AppText.bodySmall(subTitle),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      AppText.labelLarge(title),
+                      if (subTitle != null) AppText.bodySmall(subTitle),
+                    ],
+                  ),
+                  if (leading != null) ...[
+                    AppGap.small1(),
+                    leading,
+                  ],
+                  const AppGap.small2(),
+                  if (tips != null)
+                    Tooltip(
+                      message: tips,
+                      child: Icon(
+                        Icons.info_outline,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    )
                 ],
               ),
             ),

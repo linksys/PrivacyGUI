@@ -273,6 +273,7 @@
   "guestNetwork": "Guest Network",
   "nightModeOnDesc": "Enable Night Mode to turn off node lights automatically from 8PM - 8AM",
   "nightModeOffDesc": "Node lights are always on",
+  "nightModeTips": "When enabled, the LED light will turn off between 8:00 PM and 8:00 AM.",
   "launchCheckInternet": "Checking your internet...",
   "launchInternetConnected": "Internet connected",
   "welcome": "Welcome",
@@ -1074,6 +1075,16 @@
       "ip": {
         "type": "String",
         "example": "192.168.1.1"
+      }
+    }
+  },
+  "wifiBand": "{band} Band",
+  "@wifiBand": {
+    "description": "band",
+    "placeholders": {
+      "band": {
+        "type": "String",
+        "example": "2.4GHz"
       }
     }
   }

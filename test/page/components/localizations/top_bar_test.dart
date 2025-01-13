@@ -222,44 +222,42 @@ void main() async {
     },
   );
 
-  testLocalizations(
-    'General Settings - Language selection modal',
-    (tester, locale) async {
-      final provider = ProviderContainer();
+  testLocalizations('General Settings - Language selection modal',
+      (tester, locale) async {
+    final provider = ProviderContainer();
 
-      await tester.pumpWidget(
-        testableRouter(
-          themeMode: ThemeMode.dark,
-          provider: provider,
-          overrides: [
-            authProvider.overrideWith(() => mockAuthNotifier),
-            appSettingsProvider.overrideWith(() => MockAppSettingsNotifier(
-                AppSettings(themeMode: ThemeMode.dark, locale: locale))),
-          ],
-          router: GoRouter(routes: [
-            LinksysRoute(
-                path: '/',
-                builder: (context, state) => const StyledAppPageView(
-                      child: Center(),
-                    ))
-          ], initialLocation: '/'),
-        ),
-      );
-      mockAuthNotifier.state =
-          const AsyncData(AuthState(loginType: LoginType.none));
-      await tester.pumpAndSettle();
+    await tester.pumpWidget(
+      testableRouter(
+        themeMode: ThemeMode.dark,
+        provider: provider,
+        overrides: [
+          authProvider.overrideWith(() => mockAuthNotifier),
+          appSettingsProvider.overrideWith(() => MockAppSettingsNotifier(
+              AppSettings(themeMode: ThemeMode.dark, locale: locale))),
+        ],
+        router: GoRouter(routes: [
+          LinksysRoute(
+              path: '/',
+              builder: (context, state) => const StyledAppPageView(
+                    child: Center(),
+                  ))
+        ], initialLocation: '/'),
+      ),
+    );
+    mockAuthNotifier.state =
+        const AsyncData(AuthState(loginType: LoginType.none));
+    await tester.pumpAndSettle();
 
-      final settingsFinder = find.byIcon(LinksysIcons.person);
-      await tester.tap(settingsFinder);
-      await tester.pumpAndSettle();
-      final localeTileFinder = find.byType(LanguageTile);
-      await tester.tap(localeTileFinder);
-      await tester.pumpAndSettle();
-    }, screens: [
+    final settingsFinder = find.byIcon(LinksysIcons.person);
+    await tester.tap(settingsFinder);
+    await tester.pumpAndSettle();
+    final localeTileFinder = find.byType(LanguageTile);
+    await tester.tap(localeTileFinder);
+    await tester.pumpAndSettle();
+  }, screens: [
     ...responsiveMobileScreens.map((e) => e.copyWith(height: 1600)).toList(),
     ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1600)).toList()
-  ]
-  );
+  ]);
 }
 
 class MockAppSettingsNotifier extends AppSettingsNotifier {

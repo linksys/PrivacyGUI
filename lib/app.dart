@@ -67,11 +67,32 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     router.routerDelegate.removeListener(_onReceiveRouteChanged);
     router.routerDelegate.addListener(_onReceiveRouteChanged);
 
+    final appLightColorScheme = appSettings.themeColor == null
+        ? null
+        : AppColorScheme.fromSeed(seedColor: appSettings.themeColor!).light;
+    final appLightColorSchemeExt = appSettings.themeColor == null
+        ? lightColorSchemeExt
+        : AppColorScheme.fromSeed(seedColor: appSettings.themeColor!).lightExt;
+
+    final appDarkColorScheme = appSettings.themeColor == null
+        ? null
+        : AppColorScheme.fromSeed(seedColor: appSettings.themeColor!).dark;
+    final appDarkColorSchemeExt = appSettings.themeColor == null
+        ? darkColorSchemeExt
+        : AppColorScheme.fromSeed(seedColor: appSettings.themeColor!).darkExt;
     return MaterialApp.router(
       onGenerateTitle: (context) => loc(context).appTitle,
       theme: linksysLightThemeData.copyWith(
+          colorScheme: appLightColorScheme,
+          extensions: [appLightColorSchemeExt, textSchemeExt],
+          splashColor: appLightColorScheme?.primary,
+          focusColor: Colors.transparent,
           pageTransitionsTheme: pageTransitionsTheme),
       darkTheme: linksysDarkThemeData.copyWith(
+          colorScheme: appDarkColorScheme,
+          extensions: [appDarkColorSchemeExt, textSchemeExt],
+          splashColor: appDarkColorScheme?.primary,
+          focusColor: Colors.transparent,
           pageTransitionsTheme: pageTransitionsTheme),
       themeMode: appSettings.themeMode,
       locale: appSettings.locale ?? systemLocale,
@@ -214,7 +235,9 @@ class _FadePageTransition extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isWebMobile = kIsWeb && (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.android);
+    final isWebMobile = kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.iOS ||
+            defaultTargetPlatform == TargetPlatform.android);
 
     return FadeTransition(
       opacity: _opacityAnimation,

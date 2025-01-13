@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:privacygui_widgets/widgets/text/app_text.dart';
+import 'package:privacygui_widgets/theme/_theme.dart';
 
-StatusLabel betaLabel() => StatusLabel(label: 'Beta');
+StatusLabel betaLabel() => StatusLabel(label: 'BETA');
 
 class StatusLabel extends StatelessWidget {
   final String label;
@@ -18,11 +18,14 @@ class StatusLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-          color: background ?? Theme.of(context).colorScheme.secondaryContainer,
+          color: background ?? Theme.of(context).colorScheme.primary,
           border: Border.all(color: Colors.transparent),
-          borderRadius: BorderRadius.circular(4)),
+          borderRadius: BorderRadius.circular(2)),
       padding: EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
-      child: AppText.bodyExtraSmall(label),
+      child: Text(label,
+          style: Theme.of(context).textSchemeExt.bodyExtraSmall?.copyWith(
+              fontSize: 6,
+              color: labelColor ?? Theme.of(context).colorScheme.onPrimary)),
     );
   }
 }

@@ -36,6 +36,7 @@ class _StaticRoutingDetailViewState
   final _gatewayController = TextEditingController();
   final _destinationIpController = TextEditingController();
 
+  String? _routeNameError;
   String? _destinationIpError;
   String? _subnetMaskError;
   String? _gatewayIpError;
@@ -107,12 +108,23 @@ class _StaticRoutingDetailViewState
             AppTextField.outline(
               headerText: loc(context).routeName,
               controller: _routeNameController,
+              errorText: _routeNameError,
               onChanged: (text) {
                 _notifier.updateRule(
                   state.rule?.copyWith(
                     name: text,
                   ),
                 );
+              },
+              onFocusChanged: (focused) {
+                final text = _routeNameController.text;
+                if (!focused) {
+                  setState(() {
+                    _routeNameError = _notifier.isNameValid(text)
+                        ? null
+                        : loc(context).theNameMustNotBeEmpty;
+                  });
+                }
               },
             ),
             const AppGap.large2(),
@@ -133,23 +145,16 @@ class _StaticRoutingDetailViewState
               },
               onFocusChanged: (focused) {
                 final text = _destinationIpController.text;
-                if (!focused && text.isNotEmpty) {
+                if (!focused) {
                   setState(() {
-                    _notifier.isValidIpAddress(text)
+                    _destinationIpError = _notifier.isValidIpAddress(text)
                         ? null
                         : loc(context).invalidIpAddress;
                   });
                 }
               },
+              errorText: _destinationIpError,
             ),
-            if (_destinationIpError != null)
-              Padding(
-                padding: const EdgeInsets.only(top: Spacing.small2),
-                child: AppText.bodyMedium(
-                  _destinationIpError!,
-                  color: Theme.of(context).colorScheme.error,
-                ),
-              ),
             const AppGap.large2(),
             AppIPFormField(
               semanticLabel: 'subnet Mask',
@@ -170,7 +175,7 @@ class _StaticRoutingDetailViewState
               },
               onFocusChanged: (focused) {
                 final text = _subnetController.text;
-                if (!focused && text.isNotEmpty) {
+                if (!focused) {
                   try {
                     setState(() {
                       _subnetMaskError = _notifier.isValidSubnetMask(
@@ -178,22 +183,15 @@ class _StaticRoutingDetailViewState
                           ? null
                           : loc(context).invalidSubnetMask;
                     });
-                  } on FormatException catch (e) {
+                  } catch (e) {
                     setState(() {
-                      _subnetMaskError = e.message;
+                      _subnetMaskError = loc(context).invalidSubnetMask;
                     });
                   }
                 }
               },
+              errorText: _subnetMaskError,
             ),
-            if (_subnetMaskError != null)
-              Padding(
-                padding: const EdgeInsets.only(top: Spacing.small2),
-                child: AppText.bodyMedium(
-                  _subnetMaskError!,
-                  color: Theme.of(context).colorScheme.error,
-                ),
-              ),
             const AppGap.large2(),
             AppIPFormField(
               semanticLabel: 'gateway',
@@ -222,15 +220,8 @@ class _StaticRoutingDetailViewState
                   });
                 }
               },
+              errorText: _gatewayIpError,
             ),
-            if (_gatewayIpError != null)
-              Padding(
-                padding: const EdgeInsets.only(top: Spacing.small2),
-                child: AppText.bodyMedium(
-                  _gatewayIpError!,
-                  color: Theme.of(context).colorScheme.error,
-                ),
-              ),
             const AppGap.large2(),
             AppDropdownButton<RoutingSettingInterface>(
               title: loc(context).labelInterface,

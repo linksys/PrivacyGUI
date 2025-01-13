@@ -17,7 +17,8 @@ class AppEditableTableSettingsView<T> extends ConsumerStatefulWidget {
   final void Function(int? index, T? data)? onStartEdit;
   final T Function()? getEditItem;
   final Widget Function(BuildContext, WidgetRef, int, T) cellBuilder;
-  final Widget Function(BuildContext, WidgetRef, int, T)? editCellBuilder;
+  final Widget Function(BuildContext, WidgetRef, int, T, String?)?
+      editCellBuilder;
   final int? editRowIndex;
   final T Function() createNewItem;
   final String addLabel;
@@ -27,6 +28,7 @@ class AppEditableTableSettingsView<T> extends ConsumerStatefulWidget {
   final void Function(int? index, T cell)? onDeleted;
   final String? emptyMessage;
   final bool addEnabled;
+  final String? Function(int index)? onValidate;
 
   const AppEditableTableSettingsView({
     super.key,
@@ -49,6 +51,7 @@ class AppEditableTableSettingsView<T> extends ConsumerStatefulWidget {
     this.onDeleted,
     this.emptyMessage,
     this.addEnabled = true,
+    this.onValidate,
   });
 
   @override
@@ -60,6 +63,7 @@ class _AppEditableTableSettingsViewState<T>
     extends ConsumerState<AppEditableTableSettingsView<T>> {
   int? _editRow;
   T? _tempItem;
+  Map<int, String?> errorMap = {};
   @override
   void initState() {
     super.initState();
@@ -124,8 +128,19 @@ class _AppEditableTableSettingsViewState<T>
                 ),
               ],
             )
-          : widget.editCellBuilder?.call(context, ref, index, data) ??
-              SizedBox.shrink(),
+          : Focus(
+              onFocusChange: (focus) {
+                if (!focus) {
+                  setState(() {
+                    final error = widget.onValidate?.call(index);
+                    errorMap[index] = error;
+                  });
+                }
+              },
+              child: widget.editCellBuilder
+                      ?.call(context, ref, index, data, errorMap[index]) ??
+                  SizedBox.shrink(),
+            ),
       bottomWidget: AppTextButton(
         widget.addLabel,
         icon: widget.addIcon ?? LinksysIcons.add,

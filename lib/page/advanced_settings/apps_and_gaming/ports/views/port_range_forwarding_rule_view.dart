@@ -48,6 +48,7 @@ class _AddRuleContentViewState
       TextEditingController();
   final TextEditingController _deviceIpAddressController =
       TextEditingController();
+  String? _descriptionError;
   String? _ipError;
   String? _portError;
   bool _isEdit = false;
@@ -165,6 +166,7 @@ class _AddRuleContentViewState
         onChanged: (value) {
           _notifier.updateRule(state.rule?.copyWith(description: value));
         },
+        errorText: _descriptionError,
       ),
       const AppGap.large2(),
       Row(

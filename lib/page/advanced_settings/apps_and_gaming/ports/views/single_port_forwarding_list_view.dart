@@ -207,18 +207,18 @@ class _SinglePortForwardingContentViewState
       ],
       columnWidths: ResponsiveLayout.isOverLargeLayout(context)
           ? const {
-              0: FractionColumnWidth(.25),
-              1: FractionColumnWidth(.08),
-              2: FractionColumnWidth(.08),
-              3: FractionColumnWidth(.22),
-              4: FractionColumnWidth(.23),
+              0: FractionColumnWidth(.2),
+              1: FractionColumnWidth(.1),
+              2: FractionColumnWidth(.1),
+              3: FractionColumnWidth(.2),
+              4: FractionColumnWidth(.22),
             }
           : const {
               0: FractionColumnWidth(.2),
-              1: FractionColumnWidth(.08),
-              2: FractionColumnWidth(.08),
+              1: FractionColumnWidth(.12),
+              2: FractionColumnWidth(.12),
               3: FractionColumnWidth(.2),
-              4: FractionColumnWidth(.3),
+              4: FractionColumnWidth(.22),
             },
       dataList: [...state.rules],
       editRowIndex: 0,
@@ -232,7 +232,7 @@ class _SinglePortForwardingContentViewState
           _ => AppText.bodySmall(''),
         };
       },
-      editCellBuilder: (context, ref, index, rule) {
+      editCellBuilder: (context, ref, index, rule, error) {
         final stateRule = ref.watch(singlePortForwardingRuleProvider).rule;
 
         return switch (index) {
@@ -248,6 +248,7 @@ class _SinglePortForwardingContentViewState
                       .isRuleValid();
                 });
               },
+              errorText: error,
             ),
           1 => AppTextField.minMaxNumber(
               min: 0,
@@ -280,6 +281,7 @@ class _SinglePortForwardingContentViewState
                       .isRuleValid();
                 });
               },
+              errorText: error,
             ),
           3 => AppDropdownButton(
               initial: stateRule?.protocol,
@@ -312,8 +314,27 @@ class _SinglePortForwardingContentViewState
                       .isRuleValid();
                 });
               },
+              errorText: error,
             ),
           _ => AppText.bodyLarge(''),
+        };
+      },
+      onValidate: (index) {
+        final notifier = ref.read(singlePortForwardingRuleProvider.notifier);
+        return switch (index) {
+          0 => notifier.isNameValid(applicationTextController.text)
+              ? null
+              : loc(context).theNameMustNotBeEmpty,
+          2 => notifier.isPortConflict(
+                  int.tryParse(externalPortTextController.text) ?? 0,
+                  ref.read(singlePortForwardingRuleProvider).rule?.protocol ??
+                      'Both')
+              ? loc(context).rulesOverlapError
+              : null,
+          4 => notifier.isDeviceIpValidate(ipAddressTextController.text)
+              ? null
+              : loc(context).invalidIpAddress,
+          _ => null,
         };
       },
       createNewItem: () => SinglePortForwardingRule(

@@ -121,6 +121,42 @@ void main() async {
       ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1280)).toList()
     ]);
 
+    testLocalizations('Dashboard Home View - no LAN ports - signals',
+        (tester, locale) async {
+      when(mockInstantTopologyNotifier.build())
+          .thenReturn(topologyTestData.testTopologySingalsSlaveState);
+      await tester.pumpWidget(
+        testableRouteShellWidget(
+          child: const DashboardHomeView(),
+          locale: locale,
+          overrides: [
+            dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
+            dashboardManagerProvider
+                .overrideWith(() => mockDashboardManagerNotifier),
+            firmwareUpdateProvider
+                .overrideWith(() => mockFirmwareUpdateNotifier),
+            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
+            nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
+            instantPrivacyProvider
+                .overrideWith(() => mockInstantPrivacyNotifier),
+            instantTopologyProvider
+                .overrideWith(() => mockInstantTopologyNotifier),
+            geolocationProvider.overrideWith(() => mockGeolocationNotifer),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.runAsync(() async {
+        final context = tester.element(find.byType(DashboardHomeView));
+        await precacheImage(
+            CustomTheme.of(context).images.devices.routerLn12, context);
+        await tester.pumpAndSettle();
+      });
+    }, screens: [
+      ...responsiveMobileScreens.map((e) => e.copyWith(height: 2480)).toList(),
+      ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1280)).toList()
+    ]);
+
     testLocalizations('Dashboard Home View - no LAN ports with speed check',
         (tester, locale) async {
       when(mockDashboardHomeNotifier.build()).thenReturn(
@@ -371,49 +407,58 @@ void main() async {
       ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1280)).toList()
     ]);
 
-    testLocalizations('Dashboard Home View - no LAN ports Share WiFi modal',
-        (tester, locale) async {
-      await tester.pumpWidget(
-        testableRouteShellWidget(
-          child: const DashboardHomeView(),
-          locale: locale,
-          overrides: [
-            dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
-            dashboardManagerProvider
-                .overrideWith(() => mockDashboardManagerNotifier),
-            firmwareUpdateProvider
-                .overrideWith(() => mockFirmwareUpdateNotifier),
-            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
-            instantPrivacyProvider
-                .overrideWith(() => mockInstantPrivacyNotifier),
-            instantTopologyProvider
-                .overrideWith(() => mockInstantTopologyNotifier),
-            nodeLightSettingsProvider
-                .overrideWith(() => mockNodeLightSettingsNotifier),
-            geolocationProvider.overrideWith(() => mockGeolocationNotifer),
-          ],
-        ),
-      );
-      await tester.pumpAndSettle();
-      await tester.runAsync(() async {
-        final context = tester.element(find.byType(DashboardHomeView));
-        await precacheImage(
-            CustomTheme.of(context).images.devices.routerLn12, context);
+    testLocalizations(
+      'Dashboard Home View - no LAN ports Share WiFi modal',
+      (tester, locale) async {
+        await tester.pumpWidget(
+          testableRouteShellWidget(
+            child: const DashboardHomeView(),
+            locale: locale,
+            overrides: [
+              dashboardHomeProvider
+                  .overrideWith(() => mockDashboardHomeNotifier),
+              dashboardManagerProvider
+                  .overrideWith(() => mockDashboardManagerNotifier),
+              firmwareUpdateProvider
+                  .overrideWith(() => mockFirmwareUpdateNotifier),
+              deviceManagerProvider
+                  .overrideWith(() => mockDeviceManagerNotifier),
+              nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
+              instantPrivacyProvider
+                  .overrideWith(() => mockInstantPrivacyNotifier),
+              instantTopologyProvider
+                  .overrideWith(() => mockInstantTopologyNotifier),
+              nodeLightSettingsProvider
+                  .overrideWith(() => mockNodeLightSettingsNotifier),
+              geolocationProvider.overrideWith(() => mockGeolocationNotifer),
+            ],
+          ),
+        );
         await tester.pumpAndSettle();
-      });
+        await tester.runAsync(() async {
+          final context = tester.element(find.byType(DashboardHomeView));
+          await precacheImage(
+              CustomTheme.of(context).images.devices.routerLn12, context);
+          await tester.pumpAndSettle();
+        });
 
-      final wifiGridFinder = find.byType(DashboardWiFiGrid).first;
-      final shareWiFiFinder = find.descendant(
-          of: wifiGridFinder,
-          matching: find.byType(AppIconButton),
-          skipOffstage: false);
-      await tester.tap(shareWiFiFinder.first);
-      await tester.pumpAndSettle();
-    }, screens: [
-      ...responsiveMobileScreens.map((e) => e.copyWith(height: 2480)).toList(),
-      ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1280)).toList()
-    ],);
+        final wifiGridFinder = find.byType(DashboardWiFiGrid).first;
+        final shareWiFiFinder = find.descendant(
+            of: wifiGridFinder,
+            matching: find.byType(AppIconButton),
+            skipOffstage: false);
+        await tester.tap(shareWiFiFinder.first);
+        await tester.pumpAndSettle();
+      },
+      screens: [
+        ...responsiveMobileScreens
+            .map((e) => e.copyWith(height: 2480))
+            .toList(),
+        ...responsiveDesktopScreens
+            .map((e) => e.copyWith(height: 1280))
+            .toList()
+      ],
+    );
 
     testLocalizations('Dashboard Home View - no LAN ports offline status',
         (tester, locale) async {

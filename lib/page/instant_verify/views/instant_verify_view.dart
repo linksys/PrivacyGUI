@@ -58,10 +58,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
 
   @override
   Widget build(BuildContext context) {
-    final tabs = [
-      loc(context).instantInfo,
-      loc(context).instantTopology
-    ];
+    final tabs = [loc(context).instantInfo, loc(context).instantTopology];
     final tabContents = [
       _instantInfo(context, ref),
       _instantTopology(),
@@ -418,14 +415,6 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
             ],
           ),
         if (isWan) AppText.labelMedium(loc(context).internet),
-        Container(
-          constraints: const BoxConstraints(maxWidth: 120),
-          width: 120,
-          child: isWan
-              ? Divider(
-                  height: 8, color: Theme.of(context).colorSchemeExt.orange)
-              : null,
-        ),
       ],
     );
   }
@@ -575,8 +564,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
                 children: [
                   AppText.bodySmall(loc(context).wan),
                   AppText.labelMedium(
-                      systemConnectivityState.wanConnection?.ipAddress ??
-                          '--'),
+                      systemConnectivityState.wanConnection?.ipAddress ?? '--'),
                 ],
               ),
             ),
