@@ -207,7 +207,7 @@ class _Ipv6PortServiceListViewState
           _ => AppText.bodySmall(''),
         };
       },
-      editCellBuilder: (context, ref, index, rule) {
+      editCellBuilder: (context, ref, index, rule, error) {
         final stateRule = ref.watch(ipv6PortServiceRuleProvider).rule;
 
         return switch (index) {
@@ -223,6 +223,7 @@ class _Ipv6PortServiceListViewState
                       .isRuleValid();
                 });
               },
+              errorText: error,
             ),
           1 => AppDropdownButton(
               initial: stateRule?.portRanges.firstOrNull?.protocol ?? 'Both',
@@ -259,72 +260,113 @@ class _Ipv6PortServiceListViewState
                       .isRuleValid();
                 });
               },
+              errorText: error,
             ),
-          3 => Row(
+          3 => Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Expanded(
-                  child: AppTextField.minMaxNumber(
-                    min: 0,
-                    max: 65535,
-                    border: OutlineInputBorder(),
-                    controller: firstPortTextController,
-                    onChanged: (value) {
-                      final portRanges = stateRule?.portRanges ?? [];
-                      final portRange = portRanges.firstOrNull;
-                      ref.read(ipv6PortServiceRuleProvider.notifier).updateRule(
-                            stateRule?.copyWith(
-                              portRanges: portRange == null
-                                  ? null
-                                  : [
-                                      portRange.copyWith(
-                                          firstPort: int.tryParse(value) ?? 0)
-                                    ],
-                            ),
-                          );
-                      setState(() {
-                        _isEditRuleValid = ref
-                            .read(ipv6PortServiceRuleProvider.notifier)
-                            .isRuleValid();
-                      });
-                    },
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Expanded(
+                      child: AppTextField.minMaxNumber(
+                        min: 0,
+                        max: 65535,
+                        border: OutlineInputBorder(),
+                        controller: firstPortTextController,
+                        onChanged: (value) {
+                          final portRanges = stateRule?.portRanges ?? [];
+                          final portRange = portRanges.firstOrNull;
+                          ref
+                              .read(ipv6PortServiceRuleProvider.notifier)
+                              .updateRule(
+                                stateRule?.copyWith(
+                                  portRanges: portRange == null
+                                      ? null
+                                      : [
+                                          portRange.copyWith(
+                                              firstPort:
+                                                  int.tryParse(value) ?? 0)
+                                        ],
+                                ),
+                              );
+                          setState(() {
+                            _isEditRuleValid = ref
+                                .read(ipv6PortServiceRuleProvider.notifier)
+                                .isRuleValid();
+                          });
+                        },
+                      ),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.only(
+                          left: Spacing.small1, right: Spacing.small1),
+                      child: AppText.bodySmall(loc(context).to),
+                    ),
+                    Expanded(
+                      child: AppTextField.minMaxNumber(
+                        min: 0,
+                        max: 65535,
+                        border: OutlineInputBorder(),
+                        controller: lastPortTextController,
+                        onChanged: (value) {
+                          final portRanges = stateRule?.portRanges ?? [];
+                          final portRange = portRanges.firstOrNull;
+                          ref
+                              .read(ipv6PortServiceRuleProvider.notifier)
+                              .updateRule(
+                                stateRule?.copyWith(
+                                  portRanges: portRange == null
+                                      ? null
+                                      : [
+                                          portRange.copyWith(
+                                              lastPort:
+                                                  int.tryParse(value) ?? 0)
+                                        ],
+                                ),
+                              );
+                          setState(() {
+                            _isEditRuleValid = ref
+                                .read(ipv6PortServiceRuleProvider.notifier)
+                                .isRuleValid();
+                          });
+                        },
+                      ),
+                    ),
+                  ],
                 ),
-                Padding(
-                  padding: EdgeInsets.only(
-                      left: Spacing.small1, right: Spacing.small1),
-                  child: AppText.bodySmall(loc(context).to),
-                ),
-                Expanded(
-                  child: AppTextField.minMaxNumber(
-                    min: 0,
-                    max: 65535,
-                    border: OutlineInputBorder(),
-                    controller: lastPortTextController,
-                    onChanged: (value) {
-                      final portRanges = stateRule?.portRanges ?? [];
-                      final portRange = portRanges.firstOrNull;
-                      ref.read(ipv6PortServiceRuleProvider.notifier).updateRule(
-                            stateRule?.copyWith(
-                              portRanges: portRange == null
-                                  ? null
-                                  : [
-                                      portRange.copyWith(
-                                          lastPort: int.tryParse(value) ?? 0)
-                                    ],
-                            ),
-                          );
-                      setState(() {
-                        _isEditRuleValid = ref
-                            .read(ipv6PortServiceRuleProvider.notifier)
-                            .isRuleValid();
-                      });
-                    },
-                  ),
-                ),
+                if (error != null)
+                  AppText.bodySmall(
+                    error,
+                    color: Theme.of(context).colorScheme.error,
+                  )
               ],
             ),
           _ => AppText.bodyLarge(''),
+        };
+      },
+      onValidate: (index) {
+        final notifier = ref.read(ipv6PortServiceRuleProvider.notifier);
+        final ruleState = ref.watch(ipv6PortServiceRuleProvider);
+        return switch (index) {
+          0 => notifier.isRuleNameValidate(applicationTextController.text)
+              ? null
+              : loc(context).theNameMustNotBeEmpty,
+          2 => notifier.isDeviceIpValidate(ipAddressTextController.text)
+              ? null
+              : loc(context).invalidIpAddress,
+          3 => notifier.isPortRangeValid(
+                  int.tryParse(firstPortTextController.text) ?? 0,
+                  int.tryParse(lastPortTextController.text) ?? 0)
+              ? !notifier.isPortConflict(
+                      int.tryParse(firstPortTextController.text) ?? 0,
+                      int.tryParse(lastPortTextController.text) ?? 0,
+                      ruleState.rule?.portRanges.firstOrNull?.protocol ??
+                          'Both')
+                  ? null
+                  : loc(context).rulesOverlapError
+              : loc(context).portRangeError,
+          _ => null,
         };
       },
       createNewItem: () => const IPv6FirewallRule(

@@ -101,15 +101,21 @@ class _PortRangeForwardingContentViewState
       //         // ref.read(appsAndGamingProvider.notifier).setChanged(false);
       //       });
       //     }),
-      child: AppBasicLayout(
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const AppGap.large2(),
-            ResponsiveLayout(
-                desktop: _desktopSettingsView(state, submaskToken, prefixIP),
-                mobile: _mobildSettingsView(state, submaskToken, prefixIP)),
-          ],
+      child: Theme(
+        data: Theme.of(context).copyWith(
+            inputDecorationTheme: Theme.of(context)
+                .inputDecorationTheme
+                .copyWith(contentPadding: EdgeInsets.all(Spacing.small1))),
+        child: AppBasicLayout(
+          content: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const AppGap.large2(),
+              ResponsiveLayout(
+                  desktop: _desktopSettingsView(state, submaskToken, prefixIP),
+                  mobile: _mobildSettingsView(state, submaskToken, prefixIP)),
+            ],
+          ),
         ),
       ),
     );
@@ -223,7 +229,7 @@ class _PortRangeForwardingContentViewState
           _ => AppText.bodySmall(''),
         };
       },
-      editCellBuilder: (context, ref, index, rule) {
+      editCellBuilder: (context, ref, index, rule, error) {
         final stateRule = ref.watch(portRangeForwardingRuleProvider).rule;
 
         return switch (index) {
@@ -239,53 +245,62 @@ class _PortRangeForwardingContentViewState
                       .isRuleValid();
                 });
               },
+              errorText: error,
             ),
-          1 => Row(
+          1 => Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Expanded(
-                  child: AppTextField.minMaxNumber(
-                    min: 0,
-                    max: 65535,
-                    border: OutlineInputBorder(),
-                    controller: internalPortTextController,
-                    onChanged: (value) {
-                      ref
-                          .read(portRangeForwardingRuleProvider.notifier)
-                          .updateRule(stateRule?.copyWith(
-                              firstExternalPort: int.tryParse(value) ?? 0));
-                      setState(() {
-                        _isEditRuleValid = ref
-                            .read(portRangeForwardingRuleProvider.notifier)
-                            .isRuleValid();
-                      });
-                    },
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Expanded(
+                      child: AppTextField.minMaxNumber(
+                        min: 0,
+                        max: 65535,
+                        border: OutlineInputBorder(),
+                        controller: internalPortTextController,
+                        onChanged: (value) {
+                          ref
+                              .read(portRangeForwardingRuleProvider.notifier)
+                              .updateRule(stateRule?.copyWith(
+                                  firstExternalPort: int.tryParse(value) ?? 0));
+                          setState(() {
+                            _isEditRuleValid = ref
+                                .read(portRangeForwardingRuleProvider.notifier)
+                                .isRuleValid();
+                          });
+                        },
+                      ),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.only(
+                          left: Spacing.small1, right: Spacing.small1),
+                      child: AppText.bodySmall(loc(context).to),
+                    ),
+                    Expanded(
+                      child: AppTextField.minMaxNumber(
+                        min: 0,
+                        max: 65535,
+                        border: OutlineInputBorder(),
+                        controller: externalPortTextController,
+                        onChanged: (value) {
+                          ref
+                              .read(portRangeForwardingRuleProvider.notifier)
+                              .updateRule(stateRule?.copyWith(
+                                  lastExternalPort: int.tryParse(value) ?? 0));
+                          setState(() {
+                            _isEditRuleValid = ref
+                                .read(portRangeForwardingRuleProvider.notifier)
+                                .isRuleValid();
+                          });
+                        },
+                      ),
+                    ),
+                  ],
                 ),
-                Padding(
-                  padding: EdgeInsets.only(
-                      left: Spacing.small1, right: Spacing.small1),
-                  child: AppText.bodySmall(loc(context).to),
-                ),
-                Expanded(
-                  child: AppTextField.minMaxNumber(
-                    min: 0,
-                    max: 65535,
-                    border: OutlineInputBorder(),
-                    controller: externalPortTextController,
-                    onChanged: (value) {
-                      ref
-                          .read(portRangeForwardingRuleProvider.notifier)
-                          .updateRule(stateRule?.copyWith(
-                              lastExternalPort: int.tryParse(value) ?? 0));
-                      setState(() {
-                        _isEditRuleValid = ref
-                            .read(portRangeForwardingRuleProvider.notifier)
-                            .isRuleValid();
-                      });
-                    },
-                  ),
-                ),
+                if (error != null)
+                  AppText.bodySmall(error,
+                      color: Theme.of(context).colorScheme.error),
               ],
             ),
           2 => AppDropdownButton(
@@ -319,8 +334,35 @@ class _PortRangeForwardingContentViewState
                       .isRuleValid();
                 });
               },
+              errorText: error,
             ),
           _ => AppText.bodyLarge(''),
+        };
+      },
+      onValidate: (index) {
+        final notifier = ref.read(portRangeForwardingRuleProvider.notifier);
+        return switch (index) {
+          0 => notifier.isNameValid(applicationTextController.text)
+              ? null
+              : loc(context).theNameMustNotBeEmpty,
+          1 => notifier.isPortRangeValid(
+                  int.tryParse(internalPortTextController.text) ?? 0,
+                  int.tryParse(externalPortTextController.text) ?? 0)
+              ? notifier.isPortConflict(
+                      int.tryParse(internalPortTextController.text) ?? 0,
+                      int.tryParse(externalPortTextController.text) ?? 0,
+                      ref
+                              .read(portRangeForwardingRuleProvider)
+                              .rule
+                              ?.protocol ??
+                          'Both')
+                  ? null
+                  : loc(context).rulesOverlapError
+              : loc(context).portRangeError,
+          3 => notifier.isDeviceIpValidate(ipAddressTextController.text)
+              ? null
+              : loc(context).invalidIpAddress,
+          _ => null,
         };
       },
       createNewItem: () => PortRangeForwardingRule(

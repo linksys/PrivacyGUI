@@ -4,16 +4,16 @@ import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
-class ThemeTile extends ConsumerStatefulWidget {
-  const ThemeTile({
+class ThemeModeTile extends ConsumerStatefulWidget {
+  const ThemeModeTile({
     super.key,
   });
 
   @override
-  ConsumerState<ConsumerStatefulWidget> createState() => _ThemeTileState();
+  ConsumerState<ConsumerStatefulWidget> createState() => _ThemeModeTileState();
 }
 
-class _ThemeTileState extends ConsumerState<ThemeTile> {
+class _ThemeModeTileState extends ConsumerState<ThemeModeTile> {
   Widget _displayTheme(ThemeMode theme) {
     final icon = switch (theme) {
       ThemeMode.system => LinksysIcons.autoAwesomeMosaic,

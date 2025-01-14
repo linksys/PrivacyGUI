@@ -4,24 +4,30 @@ import 'dart:convert';
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+
 import 'package:privacy_gui/util/extensions.dart';
 
 class AppSettings extends Equatable {
   final ThemeMode themeMode;
   final Locale? locale;
+  final Color? themeColor;
 
   const AppSettings({
     this.themeMode = ThemeMode.system,
     this.locale,
+    this.themeColor,
   });
 
   AppSettings copyWith({
     ThemeMode? themeMode,
-    Locale? locale,
+    ValueGetter<Locale?>? locale,
+    ValueGetter<Color?>? themeColor,
   }) {
     return AppSettings(
       themeMode: themeMode ?? this.themeMode,
-      locale: locale ?? this.locale,
+      locale: locale != null ? locale() : this.locale,
+      themeColor: themeColor != null ? themeColor() : this.themeColor,
     );
   }
 
@@ -32,6 +38,7 @@ class AppSettings extends Equatable {
     return <String, dynamic>{
       'themeMode': themeMode.name,
       'locale': locale?.toLanguageTag(),
+      'themeColor': themeColor?.value,
     };
   }
 
@@ -43,6 +50,7 @@ class AppSettings extends Equatable {
       locale: map['locale'] != null
           ? LocaleExt.fromLanguageTag(map['locale'])
           : null,
+      themeColor: map['themeColor'] != null ? Color(map['themeColor']) : null,
     );
   }
 

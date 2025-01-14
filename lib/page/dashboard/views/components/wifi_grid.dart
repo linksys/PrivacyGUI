@@ -6,7 +6,6 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
-import 'package:privacy_gui/page/dashboard/views/components/shimmer.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
@@ -87,10 +86,10 @@ class DashboardWiFiGrid extends ConsumerWidget {
             children: [
               AppText.bodyMedium(
                 item.isGuest
-                    ? loc(context).guest
-                    : item.radios
+                    ? loc(context).wifiBand(loc(context).guest)
+                    : loc(context).wifiBand(item.radios
                         .map((e) => e.replaceAll('RADIO_', ''))
-                        .join('/'),
+                        .join('/')),
               ),
               AppSwitch(
                 semanticLabel: item.isGuest

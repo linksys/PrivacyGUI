@@ -48,6 +48,9 @@ class _AddRuleContentViewState
       TextEditingController();
   final TextEditingController _ipAddressController = TextEditingController();
   String? _portError;
+  String? _descriptionError;
+  String? _ipError;
+
   bool _isEdit = false;
 
   @override
@@ -152,10 +155,19 @@ class _AddRuleContentViewState
       AppTextField.outline(
         headerText: loc(context).ruleName,
         controller: _ruleNameController,
-        onFocusChanged: _onFocusChange,
+        onFocusChanged: (focus) {
+          setState(() {
+            _descriptionError = focus
+                ? null
+                : _notifier.isRuleNameValidate(_ruleNameController.text)
+                    ? null
+                    : loc(context).theNameMustNotBeEmpty;
+          });
+        },
         onChanged: (value) {
           _notifier.updateRule(state.rule?.copyWith(description: value));
         },
+        errorText: _descriptionError,
       ),
       const AppGap.large2(),
       AppDropdownButton(
@@ -185,6 +197,16 @@ class _AddRuleContentViewState
         onChanged: (value) {
           _notifier.updateRule(state.rule?.copyWith(ipv6Address: value));
         },
+        onFocusChanged: (focus) {
+          setState(() {
+            _ipError = focus
+                ? null
+                : _notifier.isDeviceIpValidate(_ipAddressController.text)
+                    ? null
+                    : loc(context).invalidIpAddress;
+          });
+        },
+        errorText: _ipError,
       ),
       const AppGap.large2(),
       AppTextButton(
@@ -212,7 +234,6 @@ class _AddRuleContentViewState
               max: 65535,
               onFocusChanged: (value) => _onPortFocusChange(value,
                   '${state.rule?.portRanges.firstOrNull?.firstPort ?? 0}'),
-              errorText: _portError != null ? '' : null,
               onChanged: (value) {
                 final portRanges = state.rule?.portRanges ?? [];
                 final portRange = portRanges.firstOrNull;
@@ -244,7 +265,7 @@ class _AddRuleContentViewState
               max: 65535,
               onFocusChanged: (value) => _onPortFocusChange(value,
                   '${state.rule?.portRanges.firstOrNull?.lastPort ?? 0}'),
-              errorText: _portError != null ? '' : null,
+              errorText: _portError,
               onChanged: (value) {
                 final portRanges = state.rule?.portRanges ?? [];
                 final portRange = portRanges.firstOrNull;
@@ -277,18 +298,13 @@ class _AddRuleContentViewState
       bool isValidPortRange = _notifier.isPortRangeValid(firstPort, lastPort);
       bool isRuleOverlap =
           _notifier.isPortConflict(firstPort, lastPort, protocol);
-      _portError = !isValidPortRange
-          ? loc(context).portRangeError
-          : isRuleOverlap
-              ? loc(context).rulesOverlapError
-              : null;
-      _onFocusChange(focus);
-    }
-  }
-
-  void _onFocusChange(bool focus) {
-    if (!focus) {
-      setState(() {});
+      setState(() {
+        _portError = !isValidPortRange
+            ? loc(context).portRangeError
+            : isRuleOverlap
+                ? loc(context).rulesOverlapError
+                : null;
+      });
     }
   }
 }

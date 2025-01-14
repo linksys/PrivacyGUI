@@ -48,7 +48,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
   }
 
   Widget _buildLayout() {
-    return Shimmer(gradient: shimmerGradient, child: widget.child);
+    return widget.child;
   }
 }
 

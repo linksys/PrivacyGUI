@@ -266,9 +266,8 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
     final isLegacy = dateTime == null
         ? true
         : DateTime.now().difference(dateTime).inDays > 1;
-    final dateTimeStr = dateTime == null
-        ? ''
-        : loc(context).formalDateTime(dateTime, dateTime);
+    final dateTimeStr =
+        dateTime == null ? '' : loc(context).formalDateTime(dateTime, dateTime);
     return Container(
       key: const ValueKey('speedCheck'),
       color: Theme.of(context).colorSchemeExt.surfaceContainerLow,
@@ -665,17 +664,6 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                       ],
                     ),
                   if (isWan) AppText.labelMedium(loc(context).internet),
-                  Container(
-                    constraints: const BoxConstraints(maxWidth: 60),
-                    width: 60,
-                    child: isWan
-                        ? Container(
-                            height: 2,
-                            color: connection == null
-                                ? Theme.of(context).colorScheme.outlineVariant
-                                : Color(orangeTonal.get(80)))
-                        : null,
-                  ),
                 ],
               ),
             ],
