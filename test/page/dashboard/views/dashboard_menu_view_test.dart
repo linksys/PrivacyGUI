@@ -14,7 +14,7 @@ void main() {
   late AuthNotifier mockAuthNotifier;
 
   setUp(() {
-    mockAuthNotifier = MockAuthNotifier();
+    mockAuthNotifier = MockSimpleAuthNotifier();
     initBetterActions();
   });
 
