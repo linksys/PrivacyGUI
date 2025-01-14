@@ -101,7 +101,7 @@ class _FaqListViewState extends ConsumerState<FaqListView> {
                         locale: ref.read(appSettingsProvider).locale);
                   }),
                   AppTextButton(loc(context).faqListLoseDevices, onTap: () {
-                    gotoOfficialWebUrl(linkConnectivityLoseChildNode,
+                    gotoOfficialWebUrl(linkConnectivityLoseDevices,
                         locale: ref.read(appSettingsProvider).locale);
                   }),
                   AppTextButton(loc(context).faqListDeviceNoWiFi, onTap: () {

@@ -48,6 +48,41 @@ class DHCPReservationsNotifier
     return state;
   }
 
+  bool isConflict(ReservedListItem item) {
+    return state.reservations.any((e) =>
+        e.reserved &&
+        (e.data.macAddress == item.data.macAddress ||
+            e.data.ipAddress == item.data.ipAddress));
+  }
+
+  void updateReservationItem(
+      ReservedListItem editedItem, String? name, String? ip, String? mac) {
+    final rList = state.reservations;
+    final index = rList.indexOf(editedItem);
+    if (index >= 0) {
+      final newRList = (List<ReservedListItem>.from(rList)
+        ..replaceRange(
+          index,
+          index + 1,
+          [
+            editedItem.copyWith(
+                data: editedItem.data.copyWith(
+              macAddress: mac,
+              ipAddress: ip,
+              description: name,
+            ))
+          ],
+        ));
+      state = state.copyWith(
+        reservations: newRList,
+        // devices: dList
+        //     .where((e) =>
+        //         !newRList.any((r) => r.data.macAddress == e.data.macAddress))
+        //     .toList(),
+      );
+    }
+  }
+
   void updateReservations(ReservedListItem item, [bool isNew = false]) {
     final rList = state.reservations;
     final dList = state.devices;
@@ -75,6 +110,7 @@ class DHCPReservationsNotifier
       );
       return;
     }
+
     hit = dList.firstWhereOrNull((e) =>
         e.data.macAddress == item.data.macAddress &&
         e.data.ipAddress == item.data.ipAddress);
