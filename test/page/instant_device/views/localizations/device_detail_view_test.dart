@@ -50,7 +50,7 @@ void main() {
       (tester, locale) async {
     final externalState =
         ExternalDeviceDetailState.fromMap(deviceDetailsTestState1);
-    final goodSignalItem = externalState.item.copyWith(signalStrength: -68);
+    final goodSignalItem = externalState.item.copyWith(signalStrength: -71);
     when(mockExternalDeviceDetailNotifier.build())
         .thenReturn(externalState.copyWith(item: goodSignalItem));
     final widget = testableSingleRoute(
@@ -73,7 +73,7 @@ void main() {
       (tester, locale) async {
     final externalState =
         ExternalDeviceDetailState.fromMap(deviceDetailsTestState1);
-    final goodSignalItem = externalState.item.copyWith(signalStrength: -74);
+    final goodSignalItem = externalState.item.copyWith(signalStrength: -77);
     when(mockExternalDeviceDetailNotifier.build())
         .thenReturn(externalState.copyWith(item: goodSignalItem));
     final widget = testableSingleRoute(

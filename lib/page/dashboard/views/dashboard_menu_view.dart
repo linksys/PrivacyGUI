@@ -287,7 +287,7 @@ class AppMenuCard extends StatelessWidget {
       identifier: 'now-menu-${title?.kebab()}',
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -308,16 +308,16 @@ class AppMenuCard extends StatelessWidget {
           if (title != null)
             Padding(
               padding: const EdgeInsets.only(top: Spacing.small2),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Wrap(
+                crossAxisAlignment: WrapCrossAlignment.start,
+                spacing: Spacing.small2,
                 children: [
                   AppText.titleSmall(
                     title ?? '',
                     overflow: TextOverflow.ellipsis,
                   ),
                   if (isBeta) ...[
-                    const AppGap.small1(),
-                    Align(alignment: Alignment.topLeft, child: betaLabel()),
+                    betaLabel(),
                   ],
                 ],
               ),

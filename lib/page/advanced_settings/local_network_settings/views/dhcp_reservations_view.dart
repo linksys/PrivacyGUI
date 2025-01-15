@@ -1,6 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/dhcp_reservations_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/dhcp_reservations_state.dart';
@@ -71,13 +72,24 @@ class _DHCPReservationsContentViewState
   Widget build(BuildContext context) {
     final state = ref.watch(dhcpReservationProvider);
     ref.listen(filteredDeviceListProvider, (prev, next) {
-      ref.read(dhcpReservationProvider.notifier).updateDevices(
-          next.where((e) => e.type != WifiConnectionType.guest).toList());
+      ref.read(dhcpReservationProvider.notifier).updateDevices(next
+          .where((e) =>
+              e.ipv4Address.isNotEmpty && e.type != WifiConnectionType.guest)
+          .toList());
     });
 
     return StyledAppPageView(
       scrollable: true,
       title: loc(context).dhcpReservations.capitalizeWords(),
+      onBackTap: !ListEquality()
+              .equals(state.reservations, _preservedState?.reservations)
+          ? () async {
+              final goBack = await showUnsavedAlert(context);
+              if (goBack == true) {
+                context.pop();
+              }
+            }
+          : null,
       bottomBar: PageBottomBar(
           isPositiveEnabled: !ListEquality()
               .equals(state.reservations, _preservedState?.reservations),
@@ -135,11 +147,11 @@ class _DHCPReservationsContentViewState
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Expanded(
-                            child: AppText.labelLarge(loc(context)
-                                .nReservedAddresses(state.reservations
-                                    .where((e) => e.reserved)
-                                    .length)
-                                .capitalizeWords()),
+                            child: AppText.labelLarge(
+                              loc(context).nReservedAddresses(state.reservations
+                                  .where((e) => e.reserved)
+                                  .length),
+                            ),
                           ),
                           if (ResponsiveLayout.isMobileLayout(context))
                             AppIconButton(
@@ -190,22 +202,37 @@ class _DHCPReservationsContentViewState
               itemCount: list.length,
               itemBuilder: (context, index) {
                 final item = list[index];
-                return AppListCard(
-                  color: item.reserved
-                      ? Theme.of(context).colorScheme.secondaryContainer
-                      : Theme.of(context).colorScheme.surface,
-                  borderColor: item.reserved
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.outline,
-                  title: AppText.labelMedium(item.data.description),
-                  leading: AppCheckbox(value: item.reserved),
-                  description: AppText.bodyMedium(
-                      "IP: ${item.data.ipAddress}\nMAC: ${item.data.macAddress}"),
-                  onTap: () {
-                    ref
-                        .read(dhcpReservationProvider.notifier)
-                        .updateReservations(item);
-                  },
+                final isConflictItem =
+                    ref.read(dhcpReservationProvider.notifier).isConflict(item);
+                return Opacity(
+                  opacity: !item.reserved && isConflictItem ? 0.5 : 1,
+                  child: AppListCard(
+                    color: item.reserved
+                        ? Theme.of(context).colorScheme.secondaryContainer
+                        : Theme.of(context).colorScheme.surface,
+                    borderColor: item.reserved
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.outline,
+                    title: AppText.labelMedium(item.data.description),
+                    leading: AppCheckbox(value: item.reserved),
+                    trailing: item.reserved
+                        ? AppIconButton(
+                            icon: LinksysIcons.edit,
+                            onTap: () {
+                              _showManualAddReservationModal(item);
+                            },
+                          )
+                        : null,
+                    description: AppText.bodyMedium(
+                        "IP: ${item.data.ipAddress}\nMAC: ${item.data.macAddress}"),
+                    onTap: (!item.reserved && isConflictItem)
+                        ? null
+                        : () {
+                            ref
+                                .read(dhcpReservationProvider.notifier)
+                                .updateReservations(item);
+                          },
+                  ),
                 );
               },
               separatorBuilder: (BuildContext context, int index) {
@@ -244,33 +271,39 @@ class _DHCPReservationsContentViewState
   // }
 
   Future _showManualAddReservationModal([
-    DHCPReservation? item,
+    ReservedListItem? item,
   ]) {
     final reservationList = ref.watch(dhcpReservationProvider).reservations;
     final routerIp = ref.watch(localNetworkSettingProvider).ipAddress;
     final subnetMask = ref.watch(localNetworkSettingProvider).subnetMask;
     final subnetToken = subnetMask.split('.');
-    final deviceNameController = TextEditingController();
-    final ipController = TextEditingController()..text = routerIp;
-    final macController = TextEditingController();
+    final deviceNameController = TextEditingController()
+      ..text = item?.data.description ?? '';
+    final ipController = TextEditingController()
+      ..text = item?.data.ipAddress ?? routerIp;
+    final macController = TextEditingController()
+      ..text = item?.data.macAddress ?? '';
 
     bool enableSave = false;
     bool isNameValid(String name) => !HostNameRule().validate(name);
     bool isIpValid(String ip) =>
         IpAddressAsLocalIpValidator(routerIp, subnetMask).validate(ip) &&
-        !reservationList.any((e) => e.data.ipAddress == ip);
+        !reservationList.any(
+            (e) => e == item ? false : (e.reserved && e.data.ipAddress == ip));
     bool isMacValid(String mac) =>
         MACAddressWithReservedRule().validate(mac) &&
-        !reservationList
-            .any((e) => e.data.macAddress.toUpperCase() == mac.toUpperCase());
+        !reservationList.any((e) => e == item
+            ? false
+            : (e.reserved &&
+                e.data.macAddress.toUpperCase() == mac.toUpperCase()));
     bool updateEnableSave() {
       final name = deviceNameController.text;
       final ip = ipController.text;
       final mac = macController.text;
       bool allFilled = name.isNotEmpty && ip.isNotEmpty && mac.isNotEmpty;
-      bool edited = name != item?.description ||
-          ip != item?.ipAddress ||
-          mac != item?.macAddress;
+      bool edited = name != item?.data.description ||
+          ip != item?.data.ipAddress ||
+          mac != item?.data.macAddress;
 
       return allFilled &&
           edited &&
@@ -280,7 +313,10 @@ class _DHCPReservationsContentViewState
     }
 
     return showSubmitAppDialog(context,
-        title: loc(context).manuallyAddReservation,
+        title: item == null
+            ? loc(context).manuallyAddReservation
+            : loc(context).edit,
+        positiveLabel: item == null ? loc(context).save : loc(context).update,
         contentBuilder: (context, setState, onSubmit) {
           return Column(
             mainAxisSize: MainAxisSize.min,
@@ -340,14 +376,18 @@ class _DHCPReservationsContentViewState
           final name = deviceNameController.text;
           final ip = ipController.text;
           final mac = macController.text;
-          ref.read(dhcpReservationProvider.notifier).updateReservations(
-                ReservedListItem(
-                  reserved: true,
-                  data: DHCPReservation(
-                      macAddress: mac, ipAddress: ip, description: name),
-                ),
-                true,
-              );
+          item == null
+              ? ref.read(dhcpReservationProvider.notifier).updateReservations(
+                    ReservedListItem(
+                      reserved: true,
+                      data: DHCPReservation(
+                          macAddress: mac, ipAddress: ip, description: name),
+                    ),
+                    true,
+                  )
+              : ref
+                  .read(dhcpReservationProvider.notifier)
+                  .updateReservationItem(item, name, ip, mac);
         },
         checkPositiveEnabled: () => enableSave);
   }

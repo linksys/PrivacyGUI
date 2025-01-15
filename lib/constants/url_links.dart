@@ -40,7 +40,7 @@ const linkHardwareHowToFactoryReset = '$officialSupportHost/kb/article/201-en';
 const linkHardwareLightsNotWorking = '$officialSupportHost/kb/article/6807-en';
 const linkHardwareNodeNotTureOn = '$officialSupportHost/kb/article/6807-en';
 const linkHardwareEthernetPortNotWorking =
-    '$officialSupportHost/kb/article/6807-en';
+    '$officialSupportHost/kb/article/6873-en';
 const linkCheckIfAutoFirmwareOn = '$officialSupportHost/kb/article/6810-en';
 // Explanation
 const linksysCertExplanation =
