@@ -26,7 +26,6 @@ const linkConnectivityDeviceNoBestNode =
 // FAQ Speed
 const linkSpeedMyInternetSlow = '$officialSupportHost/kb/article/6873-en';
 const linkSpeedSpecificDeviceSlow = '$officialSupportHost/kb/article/6873-en';
-const linkSpeedSlowAfterAddNode = '$officialSupportHost/kb/article/6873-en';
 // FAQ Password And Access
 const linkPasswordLoginByRouterPassword =
     '$officialSupportHost/kb/article/6802-en';
