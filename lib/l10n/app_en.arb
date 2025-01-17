@@ -440,7 +440,7 @@
   "thirdPartyLicenses": "Third Party Licenses",
   "privacyAndSecurity": "Privacy & Security",
   "macFiltering": "MAC Filtering",
-  "wifiMacFilters": "WiFi MAC Filters",
+  "wifiMacFiltering": "WiFi MAC Filtering",
   "filteredDevices": "Filtered devices",
   "allowAccess": "Allow access",
   "denyAccess": "Deny access",
@@ -1087,5 +1087,11 @@
         "example": "2.4GHz"
       }
     }
-  }
+  },
+  "turnOnMacFiltering": "Turn on MAC filtering?",
+  "turnOnMacFilteringDesc": "Listed MAC addresses will not be allowed to connect.",
+  "turnOffMacFiltering": "Turn off MAC filtering?",
+  "turnOffMacFilteringDesc": "This will allow all MAC addresses to connect.",
+  "instantPrivacyDisableWarning": "Instant-Privacy will be turnned off once MAC filtering is enabled",
+  "macFilteringDisableWarning": "MAC filtering will be turnned off once Instant-Privacy is enabled"
 }

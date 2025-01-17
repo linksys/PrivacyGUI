@@ -50,9 +50,13 @@ class InstantPrivacyNotifier extends Notifier<InstantPrivacyState> {
         : [];
 
     final myMac = await getMyMACAddress();
+    final mode = MacFilterMode.reslove(settings.macFilterMode);
+    final macAddresses =
+        settings.macAddresses.map((e) => e.toUpperCase()).toList();
     state = state.copyWith(
-      mode: MacFilterMode.reslove(settings.macFilterMode),
-      macAddresses: settings.macAddresses.map((e) => e.toUpperCase()).toList(),
+      mode: mode,
+      macAddresses: mode == MacFilterMode.allow ? macAddresses : [],
+      denyMacAddresses: mode == MacFilterMode.deny ? macAddresses : [],
       maxMacAddresses: settings.maxMACAddresses,
       bssids: staBSSIDS,
       myMac: myMac,
@@ -65,7 +69,7 @@ class InstantPrivacyNotifier extends Notifier<InstantPrivacyState> {
     return ref.read(pollingProvider.notifier).forcePolling();
   }
 
-  Future save() async {
+  Future<InstantPrivacyState> save() async {
     var macAddresses = [];
     if (state.mode == MacFilterMode.allow) {
       final nodesMacAddresses = ref
@@ -78,6 +82,10 @@ class InstantPrivacyNotifier extends Notifier<InstantPrivacyState> {
         ...nodesMacAddresses,
         ...state.bssids,
       ].unique();
+    } else if (state.mode == MacFilterMode.deny) {
+      macAddresses = [
+        ...state.macAddresses,
+      ];
     }
     await ref.read(routerRepositoryProvider).send(
           JNAPAction.setMACFilterSettings,
@@ -89,7 +97,7 @@ class InstantPrivacyNotifier extends Notifier<InstantPrivacyState> {
           fetchRemote: true,
           cacheLevel: CacheLevel.noCache,
         );
-    await fetch(fetchRemote: true);
+    return fetch(fetchRemote: true);
   }
 
   Future<String?> getMyMACAddress() {
@@ -113,20 +121,20 @@ class InstantPrivacyNotifier extends Notifier<InstantPrivacyState> {
         mode: isEnabled ? MacFilterMode.allow : MacFilterMode.disabled);
   }
 
-  setAccess(String value) {
-    final status =
-        MacFilterMode.values.firstWhereOrNull((e) => e.name == value);
-    if (status != null) {
-      state = state.copyWith(mode: status);
-    }
+  setAccess(MacFilterMode value) {
+    state = state.copyWith(mode: value);
   }
 
-  setSelection(List<String> selections) {
+  setSelection(List<String> selections, [bool isDeny = false]) {
     selections = selections.map((e) => e.toUpperCase()).toList();
-    final List<String> unique = List.from(state.macAddresses)
-      ..addAll(selections)
-      ..unique();
-    state = state.copyWith(macAddresses: unique);
+    final List<String> unique =
+        List.from(isDeny ? state.denyMacAddresses : state.macAddresses)
+          ..addAll(selections)
+          ..unique();
+    state = state.copyWith(
+      macAddresses: isDeny ? [] : unique,
+      denyMacAddresses: isDeny ? unique : [],
+    );
   }
 
   removeSelection(List<String> selection) {

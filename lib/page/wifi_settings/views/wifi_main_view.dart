@@ -7,6 +7,7 @@ import 'package:privacy_gui/page/components/styled/styled_tab_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_view_provider.dart';
+import 'package:privacy_gui/page/wifi_settings/views/mac_filtering_view.dart';
 import 'package:privacy_gui/page/wifi_settings/views/wifi_list_view.dart';
 
 class WiFiMainView extends ArgumentsConsumerStatefulView {
@@ -25,7 +26,7 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView>
   void initState() {
     super.initState();
 
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(() async {
       if (_tabController.indexIsChanging &&
           _tabController.previousIndex != _tabController.index &&
@@ -56,10 +57,15 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView>
 
   @override
   Widget build(BuildContext context) {
-    final tabs = [loc(context).wifi, loc(context).advanced];
+    final tabs = [
+      loc(context).wifi,
+      loc(context).advanced,
+      loc(context).macFiltering
+    ];
     final tabContents = [
       WiFiListView(args: widget.args),
-      const WifiAdvancedSettingsView()
+      const WifiAdvancedSettingsView(),
+      const MacFilteringView(),
     ];
     return StyledAppTabPageView(
       title: loc(context).incredibleWiFi,
@@ -113,6 +119,7 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView>
     return switch (index) {
       0 => ref.read(wifiViewProvider).isWifiListViewStateChanged,
       1 => ref.read(wifiViewProvider).isWifiAdvancedSettingsViewStateChanged,
+      2 => ref.read(wifiViewProvider).isMacFilteringViewStateChanged,
       _ => false,
     };
   }

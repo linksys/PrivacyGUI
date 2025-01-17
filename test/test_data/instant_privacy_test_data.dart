@@ -1,6 +1,7 @@
 const instantPrivacyInitState = {
   "status": "disabled",
   "macAddresses": [],
+  "denyMacAddresses": [],
   "maxMacAddresses": 56,
   "bssids": [],
   "myMac": "3C:22:FB:E4:4F:18"
@@ -17,6 +18,7 @@ const instantPrivacyOnState = {
     "5C:52:1E:5C:20:66",
     "C8:D7:78:59:C9:82",
   ],
+  "denyMacAddresses": [],
   "maxMacAddresses": 56,
   "bssids": [],
   "myMac": "3C:22:FB:E4:4F:18"

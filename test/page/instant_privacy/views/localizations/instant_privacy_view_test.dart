@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
@@ -16,11 +17,11 @@ import '../../../../common/test_responsive_widget.dart';
 import '../../../../common/testable_router.dart';
 import '../../../../mocks/_index.dart';
 import '../../../../mocks/jnap_service_supported_mocks.dart';
-import '../../../../test_data/device_list_test_state.dart';
+import '../../../../test_data/_index.dart';
 import '../../../../test_data/instant_privacy_test_data.dart';
 
 void main() {
-  late InstantPrivacyNotifier mockInstantPrivacyNotifier;
+  late MockInstantPrivacyNotifier mockInstantPrivacyNotifier;
   late DeviceListNotifier mockDeviceListNotifier;
 
   ServiceHelper mockServiceHelper = MockServiceHelper();
@@ -47,6 +48,40 @@ void main() {
       when(mockDeviceListNotifier.build()).thenReturn(
           DeviceListState.fromMap(instantPrivacyDeviceListTestState));
 
+      await tester.pumpWidget(
+        testableSingleRoute(
+          child: const InstantPrivacyView(),
+          locale: locale,
+          overrides: [
+            instantPrivacyProvider
+                .overrideWith(() => mockInstantPrivacyNotifier),
+            deviceListProvider.overrideWith(() => mockDeviceListNotifier),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+    },
+    screens: [
+      ...responsiveMobileScreens.map((e) => e.copyWith(height: 1280)).toList(),
+      ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1080)).toList()
+    ],
+  );
+
+  testLocalizations(
+    'Instant-Privacy view - MAC filtering warning',
+    (tester, locale) async {
+      when(mockDeviceListNotifier.build()).thenReturn(
+          DeviceListState.fromMap(instantPrivacyDeviceListTestState));
+
+      when(mockInstantPrivacyNotifier.build())
+          .thenReturn(InstantPrivacyState.fromMap(instantPrivacyDenyTestState));
+      when(mockInstantPrivacyNotifier.fetch(
+              fetchRemote: anyNamed('fetchRemote')))
+          .thenAnswer((_) {
+        return Future.delayed(Durations.extralong1, () {
+          return InstantPrivacyState.fromMap(instantPrivacyDenyTestState);
+        });
+      });
       await tester.pumpWidget(
         testableSingleRoute(
           child: const InstantPrivacyView(),

@@ -11,15 +11,18 @@ final wifiViewProvider =
 class WiFiViewState extends Equatable {
   final bool isWifiListViewStateChanged;
   final bool isWifiAdvancedSettingsViewStateChanged;
+  final bool isMacFilteringViewStateChanged;
 
   const WiFiViewState({
     this.isWifiListViewStateChanged = false,
     this.isWifiAdvancedSettingsViewStateChanged = false,
+    this.isMacFilteringViewStateChanged = false,
   });
 
   WiFiViewState copyWith({
     bool? isWifiListViewStateChanged,
     bool? isWifiAdvancedSettingsViewStateChanged,
+    bool? isMacFilteringViewStateChanged,
   }) {
     return WiFiViewState(
       isWifiListViewStateChanged:
@@ -27,6 +30,8 @@ class WiFiViewState extends Equatable {
       isWifiAdvancedSettingsViewStateChanged:
           isWifiAdvancedSettingsViewStateChanged ??
               this.isWifiAdvancedSettingsViewStateChanged,
+      isMacFilteringViewStateChanged:
+          isMacFilteringViewStateChanged ?? this.isMacFilteringViewStateChanged,
     );
   }
 
@@ -35,6 +40,7 @@ class WiFiViewState extends Equatable {
       'isWifiListViewStateChanged': isWifiListViewStateChanged,
       'isWifiAdvancedSettingsViewStateChanged':
           isWifiAdvancedSettingsViewStateChanged,
+      'isMacFilteringViewStateChanged': isMacFilteringViewStateChanged,
     };
   }
 
@@ -43,6 +49,8 @@ class WiFiViewState extends Equatable {
       isWifiListViewStateChanged: map['isWifiListViewStateChanged'] as bool,
       isWifiAdvancedSettingsViewStateChanged:
           map['isWifiAdvancedSettingsViewStateChanged'] as bool,
+      isMacFilteringViewStateChanged:
+          map['isMacFilteringViewStateChanged'] as bool,
     );
   }
 
@@ -58,6 +66,7 @@ class WiFiViewState extends Equatable {
   List<Object> get props => [
         isWifiListViewStateChanged,
         isWifiAdvancedSettingsViewStateChanged,
+        isMacFilteringViewStateChanged,
       ];
 }
 
@@ -78,5 +87,9 @@ class WiFiViewNotifier extends Notifier<WiFiViewState> {
 
   void setWifiAdvancedSettingsViewChanged(bool value) {
     state = state.copyWith(isWifiAdvancedSettingsViewStateChanged: value);
+  }
+
+  void setMacFilteringViewChanged(bool value) {
+    state = state.copyWith(isMacFilteringViewStateChanged: value);
   }
 }

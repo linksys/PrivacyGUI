@@ -21,6 +21,7 @@ enum MacFilterMode {
 class InstantPrivacyState extends Equatable {
   final MacFilterMode mode;
   final List<String> macAddresses;
+  final List<String> denyMacAddresses;
   final int maxMacAddresses;
   final List<String> bssids;
   final String? myMac;
@@ -29,6 +30,7 @@ class InstantPrivacyState extends Equatable {
   List<Object?> get props => [
         mode,
         macAddresses,
+        denyMacAddresses,
         maxMacAddresses,
         bssids,
         myMac,
@@ -37,6 +39,7 @@ class InstantPrivacyState extends Equatable {
   const InstantPrivacyState({
     required this.mode,
     required this.macAddresses,
+    required this.denyMacAddresses,
     required this.maxMacAddresses,
     this.bssids = const [],
     this.myMac,
@@ -46,6 +49,7 @@ class InstantPrivacyState extends Equatable {
     return const InstantPrivacyState(
       mode: MacFilterMode.disabled,
       macAddresses: [],
+      denyMacAddresses: [],
       maxMacAddresses: 32,
     );
   }
@@ -53,6 +57,7 @@ class InstantPrivacyState extends Equatable {
   InstantPrivacyState copyWith({
     MacFilterMode? mode,
     List<String>? macAddresses,
+    List<String>? denyMacAddresses,
     int? maxMacAddresses,
     List<String>? bssids,
     String? myMac,
@@ -60,6 +65,7 @@ class InstantPrivacyState extends Equatable {
     return InstantPrivacyState(
       mode: mode ?? this.mode,
       macAddresses: macAddresses ?? this.macAddresses,
+      denyMacAddresses: denyMacAddresses ?? this.denyMacAddresses,
       maxMacAddresses: maxMacAddresses ?? this.maxMacAddresses,
       bssids: bssids ?? this.bssids,
       myMac: myMac ?? this.myMac,
@@ -70,6 +76,7 @@ class InstantPrivacyState extends Equatable {
     return <String, dynamic>{
       'status': mode.name,
       'macAddresses': macAddresses,
+      'denyMacAddresses': denyMacAddresses,
       'maxMacAddresses': maxMacAddresses,
       'bssids': bssids,
       'myMac': myMac,
@@ -80,8 +87,9 @@ class InstantPrivacyState extends Equatable {
     return InstantPrivacyState(
       mode: MacFilterMode.reslove(map['status']),
       macAddresses: List.from(map['macAddresses']),
+      denyMacAddresses: List.from(map['denyMacAddresses']),
       maxMacAddresses: map['maxMacAddresses'] as int,
-      bssids: map['bssids']  == null ? [] : List.from(map['bssids']),
+      bssids: map['bssids'] == null ? [] : List.from(map['bssids']),
       myMac: map['myMac'],
     );
   }

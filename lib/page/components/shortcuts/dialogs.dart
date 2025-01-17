@@ -447,3 +447,33 @@ Future<bool?> showInstantPrivacyConfirmDialog(
     ],
   );
 }
+
+Future<bool?> showMacFilteringConfirmDialog(
+    BuildContext context, bool enable) {
+  return showSimpleAppDialog<bool>(
+    context,
+    dismissible: false,
+    title: enable
+        ? loc(context).turnOnMacFiltering
+        : loc(context).turnOffMacFiltering,
+    content: AppText.bodyMedium(enable
+        ? loc(context).turnOnMacFilteringDesc
+        : loc(context).turnOffMacFilteringDesc),
+    actions: [
+      AppTextButton(
+        loc(context).cancel,
+        color: Theme.of(context).colorScheme.onSurface,
+        onTap: () {
+          context.pop();
+        },
+      ),
+      AppTextButton(
+        enable ? loc(context).turnOn : loc(context).turnOff,
+        color: Theme.of(context).colorScheme.primary,
+        onTap: () {
+          context.pop(true);
+        },
+      ),
+    ],
+  );
+}
