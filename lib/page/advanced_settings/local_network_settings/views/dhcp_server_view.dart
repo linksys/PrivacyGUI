@@ -131,6 +131,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
             header: AppText.bodySmall(loc(context).startIpAddress),
             controller: _startIpAddressController,
             border: const OutlineInputBorder(),
+            autoFocus: true,
             errorText: LocalNetworkErrorPrompt.getErrorText(
                 context: context,
                 error: LocalNetworkErrorPrompt.resolve(state

@@ -440,7 +440,7 @@
   "thirdPartyLicenses": "Third Party Licenses",
   "privacyAndSecurity": "Privacy & Security",
   "macFiltering": "MAC Filtering",
-  "wifiMacFilters": "WiFi MAC Filters",
+  "wifiMacFiltering": "WiFi MAC Filtering",
   "filteredDevices": "Filtered devices",
   "allowAccess": "Allow access",
   "denyAccess": "Deny access",
@@ -907,7 +907,7 @@
   "ssid": "SSID",
   "instantPrivacyDescription": "Instant-Privacy will stop any new devices from connecting to the network until the feature is disabled.",
   "theDevicesAllowedToConnect": "These are the only devices allowed to connect.",
-  "instantPrivacyInfo": "Enabling this feature will prevent any new devices from connecting to your network. If you need to add new devices to your network please disable this Instant-Privacy, connect the new devices, and then turn Instant-Privacy back on.",
+  "instantPrivacyInfo": "Enabling Instant-Privacy prevents new devices from connecting to your network. To add a new device, disable Instant-Privacy, then re-enable it for enhanced security.",
   "turnOnInstantPrivacy": "Turn on Instant-Privacy?",
   "turnOnInstantPrivacyDesc": "No new devices will be allowed to connect.",
   "turnOffInstantPrivacy": "Turn off Instant-Privacy?",
@@ -1087,5 +1087,11 @@
         "example": "2.4GHz"
       }
     }
-  }
+  },
+  "turnOnMacFiltering": "Turn on MAC filtering?",
+  "turnOnMacFilteringDesc": "Listed MAC addresses will not be allowed to connect.",
+  "turnOffMacFiltering": "Turn off MAC filtering?",
+  "turnOffMacFilteringDesc": "This will allow all MAC addresses to connect.",
+  "instantPrivacyDisableWarning": "Instant-Privacy will be turnned off once MAC filtering is enabled",
+  "macFilteringDisableWarning": "MAC filtering will be turnned off once Instant-Privacy is enabled"
 }

@@ -86,7 +86,7 @@ class DashboardWiFiGrid extends ConsumerWidget {
             children: [
               AppText.bodyMedium(
                 item.isGuest
-                    ? loc(context).wifiBand(loc(context).guest)
+                    ? loc(context).guestWifi
                     : loc(context).wifiBand(item.radios
                         .map((e) => e.replaceAll('RADIO_', ''))
                         .join('/')),

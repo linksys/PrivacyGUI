@@ -168,6 +168,7 @@ class _LocalNetworkSettingsViewState
               error: LocalNetworkErrorPrompt.resolve(
                   state.errorTextMap[LocalNetworkErrorPrompt.hostName.name])),
           border: const OutlineInputBorder(),
+          focusNode: FocusNode()..requestFocus(),
           onChanged: (value) {
             _notifier.updateHostName(value);
             _notifier.updateErrorPrompts(
@@ -199,6 +200,7 @@ class _LocalNetworkSettingsViewState
                   error: LocalNetworkErrorPrompt.resolve(state
                       .errorTextMap[LocalNetworkErrorPrompt.ipAddress.name])),
               border: const OutlineInputBorder(),
+              autoFocus: true,
               onChanged: (value) {
                 _notifier.routerIpAddressChanged(context, value, state);
               },

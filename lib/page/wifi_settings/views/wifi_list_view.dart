@@ -407,7 +407,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
                         textField: false,
                         explicitChildNodes: true,
                         child: AppPasswordField(
-                          semanticLabel: 'wifi password',
+                          semanticLabel: '${radio.radioID.value} wifi password',
                           readOnly: true,
                           border: InputBorder.none,
                           controller:
