@@ -283,4 +283,86 @@ void main() {
       ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1240)).toList()
     ],
   );
+
+  testLocalizations(
+    'DHCP reservations - edit reservation',
+    (tester, locale) async {
+      DHCPReservationState dhcpReservationState =
+          DHCPReservationState.fromMap(dhcpReservationTestState);
+      when(mockDHCPReservationsNotifier.build()).thenReturn(dhcpReservationState
+          .copyWith(reservations: [
+        dhcpReservationState.devices.first.copyWith(reserved: true)
+      ]));
+
+      final widget = testableSingleRoute(
+        overrides: [
+          localNetworkSettingProvider
+              .overrideWith(() => mockLocalNetworkSettingsNotifier),
+          dhcpReservationProvider
+              .overrideWith(() => mockDHCPReservationsNotifier),
+          deviceFilterConfigProvider
+              .overrideWith(() => mockDeviceFilterConfigNotifier),
+          deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
+          wifiListProvider.overrideWith(() => mockWifiListNotifier),
+          dashboardManagerProvider
+              .overrideWith(() => mockDashboardManagerNotifier),
+        ],
+        locale: locale,
+        child: const DHCPReservationsView(),
+      );
+      await tester.pumpWidget(widget);
+
+      final editBtnFinder = find.byIcon(LinksysIcons.edit);
+      await tester.tap(editBtnFinder.first);
+      await tester.pumpAndSettle();
+    },
+    screens: [
+      ...responsiveMobileScreens.map((e) => e).toList(),
+      ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1240)).toList()
+    ],
+  );
+
+  testLocalizations(
+    'DHCP reservations - can not be added state',
+    (tester, locale) async {
+      DHCPReservationState dhcpReservationState =
+          DHCPReservationState.fromMap(dhcpReservationTestState);
+
+      when(mockDHCPReservationsNotifier.build())
+          .thenReturn(dhcpReservationState.copyWith(reservations: [
+        dhcpReservationState.devices.first.copyWith(
+          reserved: true,
+          data: dhcpReservationState.devices.first.data
+              .copyWith(ipAddress: "10.175.1.144"),
+        ),
+        dhcpReservationState.devices[1],
+      ]));
+
+      when(mockDHCPReservationsNotifier
+              .isConflict(dhcpReservationState.devices[1]))
+          .thenAnswer((invocation) => true);
+
+      final widget = testableSingleRoute(
+        overrides: [
+          localNetworkSettingProvider
+              .overrideWith(() => mockLocalNetworkSettingsNotifier),
+          dhcpReservationProvider
+              .overrideWith(() => mockDHCPReservationsNotifier),
+          deviceFilterConfigProvider
+              .overrideWith(() => mockDeviceFilterConfigNotifier),
+          deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
+          wifiListProvider.overrideWith(() => mockWifiListNotifier),
+          dashboardManagerProvider
+              .overrideWith(() => mockDashboardManagerNotifier),
+        ],
+        locale: locale,
+        child: const DHCPReservationsView(),
+      );
+      await tester.pumpWidget(widget);
+    },
+    screens: [
+      ...responsiveMobileScreens.map((e) => e).toList(),
+      ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1240)).toList()
+    ],
+  );
 }
