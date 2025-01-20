@@ -47,7 +47,9 @@ class _FakeWifiAdvancedSettingsState_1 extends _i1.SmartFake
 /// A class which mocks [WifiAdvancedSettingsNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockWifiAdvancedSettingsNotifier extends _i2.Notifier<_i3.WifiAdvancedSettingsState> with _i1.Mock
+class MockWifiAdvancedSettingsNotifier extends _i2.Notifier<
+        _i3.WifiAdvancedSettingsState>
+    with _i1.Mock
     implements _i3.WifiAdvancedSettingsNotifier {
   @override
   _i2.NotifierProviderRef<_i3.WifiAdvancedSettingsState> get ref =>
@@ -209,6 +211,26 @@ class MockWifiAdvancedSettingsNotifier extends _i2.Notifier<_i3.WifiAdvancedSett
         Invocation.method(
           #setAirtimeFairnessEnabled,
           [value],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  void listenSelf(
+    void Function(
+      _i3.WifiAdvancedSettingsState?,
+      _i3.WifiAdvancedSettingsState,
+    )? listener, {
+    void Function(
+      Object,
+      StackTrace,
+    )? onError,
+  }) =>
+      super.noSuchMethod(
+        Invocation.method(
+          #listenSelf,
+          [listener],
+          {#onError: onError},
         ),
         returnValueForMissingStub: null,
       );

@@ -131,11 +131,6 @@ class _FaqListViewState extends ConsumerState<FaqListView> {
                     gotoOfficialWebUrl(linkSpeedSpecificDeviceSlow,
                         locale: ref.read(appSettingsProvider).locale);
                   }),
-                  AppTextButton(loc(context).faqListSlowAfterAddNode,
-                      onTap: () {
-                    gotoOfficialWebUrl(linkSpeedSlowAfterAddNode,
-                        locale: ref.read(appSettingsProvider).locale);
-                  }),
                 ],
               ),
             ),

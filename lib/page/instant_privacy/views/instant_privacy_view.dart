@@ -5,6 +5,8 @@ import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/customs/animated_refresh_container.dart';
+import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
+import 'package:privacy_gui/page/components/mixin/preserved_state_mixin.dart';
 import 'package:privacy_gui/page/components/shared_widgets.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
@@ -19,6 +21,7 @@ import 'package:privacygui_widgets/theme/_theme.dart';
 
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
@@ -32,7 +35,10 @@ class InstantPrivacyView extends ArgumentsConsumerStatefulView {
   ConsumerState<InstantPrivacyView> createState() => _InstantPrivacyViewState();
 }
 
-class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView> {
+class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
+    with
+        PreservedStateMixin<InstantPrivacyState, InstantPrivacyView>,
+        PageSnackbarMixin {
   late final InstantPrivacyNotifier _notifier;
   bool _isRefreshing = false;
 
@@ -41,7 +47,10 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView> {
     _notifier = ref.read(instantPrivacyProvider.notifier);
     doSomethingWithSpinner(
       context,
-      _notifier.fetch().then((value) => _notifier.doPolling()),
+      _notifier.fetch().then((value) {
+        preservedState = value;
+        _notifier.doPolling();
+      }),
     );
     super.initState();
   }
@@ -75,6 +84,10 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView> {
         children: [
           AppText.bodyLarge(loc(context).instantPrivacyDescription),
           const AppGap.large4(),
+          if (preservedState?.mode == MacFilterMode.deny) ...[
+            _warningCard(),
+            const AppGap.small2(),
+          ],
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -108,6 +121,10 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (preservedState?.mode == MacFilterMode.deny) ...[
+            _warningCard(),
+            const AppGap.small2(),
+          ],
           AppText.bodyLarge(loc(context).instantPrivacyDescription),
           const AppGap.medium(),
           _enableTile(state),
@@ -118,6 +135,17 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView> {
           const AppGap.large2(),
         ],
       ),
+    );
+  }
+
+  Widget _warningCard() {
+    return AppSettingCard(
+      title: loc(context).macFilteringDisableWarning,
+      leading: Icon(
+        LinksysIcons.infoCircle,
+        color: Theme.of(context).colorScheme.error,
+      ),
+      borderColor: Theme.of(context).colorScheme.error,
     );
   }
 
@@ -318,7 +346,7 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView> {
         Expanded(child: AppText.labelLarge(loc(context).instantPrivacy)),
         AppSwitch(
           semanticLabel: 'instant privacy',
-          value: state.mode != MacFilterMode.disabled,
+          value: state.mode == MacFilterMode.allow,
           onChanged: _isRefreshing
               ? null
               : (value) {
@@ -345,7 +373,12 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView> {
       doSomethingWithSpinner(
         context,
         _notifier.save(),
-      );
+      ).then((state) {
+        preservedState = state;
+        showChangesSavedSnackBar();
+      }).onError((error, stackTrace) {
+        showErrorMessageSnackBar(error);
+      });
     });
   }
 
