@@ -1020,7 +1020,7 @@ void main() {
                 .overrideWith(() => mockPortRangeTriggeringListNotifier),
           ],
           locale: locale,
-          child: const PortRangeForwardingRuleView(),
+          child: const AppsGamingSettingsView(),
         );
         await tester.pumpWidget(widget);
 
@@ -1736,7 +1736,7 @@ void main() {
                 .overrideWith(() => mockPortRangeTriggeringRuleNotifier),
           ],
           locale: locale,
-          child: const AppsGamingSettingsView(),
+          child: const PortRangeTriggeringRuleView(),
         );
         await tester.pumpWidget(widget);
 

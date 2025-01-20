@@ -9,6 +9,7 @@ import 'package:privacy_gui/page/instant_topology/views/instant_topology_view.da
 import 'package:privacy_gui/page/instant_topology/views/widgets/tree_node_item.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 
+import '../../../common/config.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
 import '../../../mocks/jnap_service_supported_mocks.dart';
@@ -213,7 +214,10 @@ void main() async {
           find.byType(PopupMenuItem<NodeInstantActions>);
       await tester.tap(popupMenuItemFinder.at(1));
       await tester.pumpAndSettle();
-    });
+    },screens: [
+      ...responsiveMobileScreens.map((e) => e.copyWith(height: 1280)).toList(),
+      ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1280)).toList()
+    ]);
 
     testLocalizations('Instant-Topology view - factory reset parent alert ',
         (tester, locale) async {
@@ -273,7 +277,10 @@ void main() async {
           find.byType(PopupMenuItem<NodeInstantActions>);
       await tester.tap(popupMenuItemFinder.at(2));
       await tester.pumpAndSettle();
-    });
+    },screens: [
+      ...responsiveMobileScreens.map((e) => e.copyWith(height: 1280)).toList(),
+      ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1280)).toList()
+    ]);
 
     testLocalizations('Instant-Topology view - firmware update available',
         (tester, locale) async {

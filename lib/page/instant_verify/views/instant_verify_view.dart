@@ -22,7 +22,6 @@ import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
-import 'package:privacy_gui/page/dashboard/views/components/shimmer.dart';
 import 'package:privacy_gui/page/health_check/_health_check.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_provider.dart';
 import 'package:privacy_gui/page/instant_verify/views/components/ping_network_modal.dart';
@@ -424,7 +423,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppText.titleSmall(title),
+        Expanded(child: AppText.titleSmall(title)),
         if (action != null) action,
       ],
     );

@@ -307,7 +307,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final textInputFind = find.byType(TextInput);
+    final textInputFind = find.byType(AppTextField);
     await tester.enterText(textInputFind.at(1), '99');
     await tester.enterText(textInputFind.at(2), '55');
     await tester.tap(textInputFind.first);
