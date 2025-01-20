@@ -45,7 +45,7 @@ void main() {
       return state;
     });
     await tester.pumpWidget(
-      testableSingleRoute(
+      testableRouteShellWidget(
         child: const DMZSettingsView(),
         config: LinksysRouteConfig(
           column: ColumnGrid(column: 9),
@@ -63,7 +63,7 @@ void main() {
   ]);
   testLocalizations('DMZ settings view - enabled', (tester, locale) async {
     await tester.pumpWidget(
-      testableSingleRoute(
+      testableRouteShellWidget(
         child: const DMZSettingsView(),
         config: LinksysRouteConfig(
           column: ColumnGrid(column: 9),
@@ -97,7 +97,7 @@ void main() {
       return state;
     });
     await tester.pumpWidget(
-      testableSingleRoute(
+      testableRouteShellWidget(
         child: const DMZSettingsView(),
         config: LinksysRouteConfig(
           column: ColumnGrid(column: 9),
@@ -132,7 +132,7 @@ void main() {
       return state;
     });
     await tester.pumpWidget(
-      testableSingleRoute(
+      testableRouteShellWidget(
         child: const DMZSettingsView(),
         config: LinksysRouteConfig(
           column: ColumnGrid(column: 9),
@@ -168,7 +168,7 @@ void main() {
       return state;
     });
     await tester.pumpWidget(
-      testableSingleRoute(
+      testableRouteShellWidget(
         child: const DMZSettingsView(),
         config: LinksysRouteConfig(
           column: ColumnGrid(column: 9),
@@ -204,7 +204,7 @@ void main() {
       return state;
     });
     await tester.pumpWidget(
-      testableSingleRoute(
+      testableRouteShellWidget(
         child: const DMZSettingsView(),
         config: LinksysRouteConfig(
           column: ColumnGrid(column: 9),
@@ -232,7 +232,7 @@ void main() {
       return state;
     });
     await tester.pumpWidget(
-      testableSingleRoute(
+      testableRouteShellWidget(
         child: const DMZSettingsView(),
         config: LinksysRouteConfig(
           column: ColumnGrid(column: 9),
@@ -260,7 +260,7 @@ void main() {
     when(mockDeviceListNotifier.build())
         .thenReturn(DeviceListState.fromMap(deviceListTestState));
     await tester.pumpWidget(
-      testableSingleRoute(
+      testableRouteShellWidget(
         child: const SelectDeviceView(args: {
           'type': 'ipv4AndMac',
           'selectMode': 'single',
@@ -292,7 +292,7 @@ void main() {
       return state;
     });
     await tester.pumpWidget(
-      testableSingleRoute(
+      testableRouteShellWidget(
         child: const DMZSettingsView(),
         config: LinksysRouteConfig(
           column: ColumnGrid(column: 9),
@@ -326,7 +326,7 @@ void main() {
       throw const JNAPError(result: 'ErrorMissingDestination');
     });
     await tester.pumpWidget(
-      testableSingleRoute(
+      testableRouteShellWidget(
         child: const DMZSettingsView(),
         config: LinksysRouteConfig(
           column: ColumnGrid(column: 9),

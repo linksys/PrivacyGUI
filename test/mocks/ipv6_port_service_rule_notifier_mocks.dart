@@ -50,7 +50,7 @@ class _FakeIpv6PortServiceRuleState_1 extends _i1.SmartFake
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockIpv6PortServiceRuleNotifier extends _i2.Notifier<
-    _i3.Ipv6PortServiceRuleState>
+        _i3.Ipv6PortServiceRuleState>
     with _i1.Mock
     implements _i4.Ipv6PortServiceRuleNotifier {
   @override
@@ -144,6 +144,16 @@ class MockIpv6PortServiceRuleNotifier extends _i2.Notifier<
         Invocation.method(
           #isRuleValid,
           [],
+        ),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  bool isRuleNameValidate(String? ruleName) => (super.noSuchMethod(
+        Invocation.method(
+          #isRuleNameValidate,
+          [ruleName],
         ),
         returnValue: false,
         returnValueForMissingStub: false,

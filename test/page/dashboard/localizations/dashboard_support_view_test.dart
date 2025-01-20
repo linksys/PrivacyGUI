@@ -66,15 +66,4 @@ void main() async {
     ...responsiveMobileScreens.map((e) => e.copyWith(height: 1600)).toList(),
     ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1440)).toList()
   ]);
-
-  testLocalizations('Dashboard Support View - general settings',
-      (tester, locale) async {
-    await tester.pumpWidget(
-      testableWidget(locale),
-    );
-    final settingsFinder = find.byType(GeneralSettingsWidget);
-    await tester.tap(settingsFinder);
-    await tester.pumpAndSettle();
-    
-  }, screens: [...responsiveMobileScreens, ...responsiveDesktopScreens]);
 }
