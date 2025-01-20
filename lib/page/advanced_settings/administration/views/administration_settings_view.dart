@@ -30,7 +30,9 @@ class _AdministrationSettingsViewState
     doSomethingWithSpinner(context,
             ref.read(administrationSettingsProvider.notifier).fetch(true))
         .then((value) {
-      _preservedState = value;
+      setState(() {
+        _preservedState = value;
+      });
     });
   }
 
