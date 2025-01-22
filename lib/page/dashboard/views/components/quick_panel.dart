@@ -135,8 +135,7 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Wrap(
                 children: [
                   Column(
                     mainAxisSize: MainAxisSize.min,
@@ -147,10 +146,14 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
                     ],
                   ),
                   if (leading != null) ...[
-                    AppGap.small1(),
+                    const SizedBox(
+                      width: Spacing.small1,
+                    ),
                     leading,
                   ],
-                  const AppGap.small2(),
+                  const SizedBox(
+                    width: Spacing.small2,
+                  ),
                   if (tips != null)
                     Tooltip(
                       message: tips,
