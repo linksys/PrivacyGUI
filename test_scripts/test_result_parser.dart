@@ -3,19 +3,24 @@ import 'dart:io';
 
 import 'package:collection/collection.dart';
 
-part 'html_generate_functions.dart';
-
+/// 0 -> input test result json file path
+/// 1 -> locs
+/// 2 -> screen sizes
 void main(List<String> args) {
   print(args);
   var testResultJsonPath = './reports/tests.json';
   var testResultHtmlOutputPath = './reports/reports.html';
-
+  var fileSuffix = '';
   // use default path if no args input
   if (args.isNotEmpty) {
     testResultJsonPath = args[0];
   }
   if (args.length > 1) {
-    testResultHtmlOutputPath = args[1];
+    final locs = args[1];
+    final screenSizes = args[2];
+    fileSuffix = '-$locs-$screenSizes';
+    testResultHtmlOutputPath =
+        'snapshots/localizations-test-reports$fileSuffix.html';
   }
   File file = File(testResultJsonPath);
 
@@ -47,12 +52,43 @@ void main(List<String> args) {
         groups.removeWhere((element) => element['name'] == '');
       }
     }
-    final htmlReport = generateHTMLReport(testResult);
-    final reportHTMLFile = File(testResultHtmlOutputPath);
-    if (!reportHTMLFile.existsSync()) {
-      reportHTMLFile.createSync(recursive: true);
+    //
+    // final htmlReport = generateHTMLReport(testResult);
+    // final reportHTMLFile = File(testResultHtmlOutputPath);
+    // if (!reportHTMLFile.existsSync()) {
+    //   reportHTMLFile.createSync(recursive: true);
+    // }
+    // reportHTMLFile.writeAsStringSync(htmlReport);
+    //
+    final encoder = JsonEncoder.withIndent('  ');
+    
+    final reportJsonFile =
+        File('snapshots/localizations-test-reports$fileSuffix.json');
+    if (!reportJsonFile.existsSync()) {
+      reportJsonFile.createSync(recursive: true);
     }
-    reportHTMLFile.writeAsStringSync(htmlReport);
+
+    // !!! For debug
+    // final reportRawJsonFile =
+    //     File('snapshots/localizations-test-reports-raw$fileSuffix.json');
+    // if (!reportRawJsonFile.existsSync()) {
+    //   reportRawJsonFile.createSync(recursive: true);
+    // }
+    // // RAW json files
+    // reportRawJsonFile.writeAsStringSync(encoder.convert(testResult));
+
+    // Extract all test cases as flat list
+    final suitesJson = testResult['suites'] as List<Map<String, dynamic>>;
+    final groupsJson = suitesJson
+        .map((e) => List.from(e['groups']))
+        .reduce((value, list) => value..addAll(list));
+    final testsJson = groupsJson
+        .map((e) => List.from(e['tests']))
+        .reduce((value, list) => value..addAll(list));
+    reportJsonFile.writeAsStringSync(encoder.convert(testsJson));
+
+    //
+
     if (!testResult['result']['success']) {
       exit(1);
     }
@@ -88,8 +124,7 @@ handleTestRecord(String record, Map<String, dynamic> testResult) {
     }
     addOrAppendData<Map<String, dynamic>>(targetSuite, 'groups', groupJson);
   } else if (json['test'] != null) {
-
-    final testJson = json['test'];
+    final Map<String, dynamic> testJson = json['test'];
     final suiteID = testJson['suiteID'];
     final groupIDs = List.from(testJson['groupIDs']);
     final suites = testResult['suites'] as List<Map<String, dynamic>>;
@@ -98,6 +133,8 @@ handleTestRecord(String record, Map<String, dynamic> testResult) {
     if (targetSuite == null) {
       return;
     }
+    final testFilePath = targetSuite['path'] ?? '';
+    testJson['testCaseFilePath'] = testFilePath;
 
     final groups = targetSuite['groups'] as List<Map<String, dynamic>>?;
     if (groups == null) {
@@ -105,12 +142,26 @@ handleTestRecord(String record, Map<String, dynamic> testResult) {
     }
     final targetGroups =
         groups.where((element) => groupIDs.contains(element['id']));
-
+    var groupName = '';
     for (var element in targetGroups) {
+      if (groupName.isEmpty) {
+        groupName = element['name'];
+      }
       testJson['name'] =
           (testJson['name'] as String? ?? '').replaceFirst(element['name'], '');
       addOrAppendData<Map<String, dynamic>>(element, 'tests', testJson);
     }
+    testJson['groupName'] = groupName;
+    // remove unwanted data
+    testJson.remove('groupIDs');
+    testJson.remove('line');
+    testJson.remove('suiteID');
+    testJson.remove('column');
+    testJson.remove('url');
+    testJson.remove('root_line');
+    testJson.remove('root_column');
+    testJson.remove('root_url');
+    extractInfo(testJson);
   } else if (json['testID'] != null) {
     if (json['hidden'] ?? false) {
       return;
@@ -146,6 +197,23 @@ handleTestRecord(String record, Map<String, dynamic> testResult) {
   }
 }
 
+extractInfo(Map<String, dynamic> test) {
+  final name = test['name'];
+  final regex = RegExp(r'(.*) \(variant: (.*)-(.*)_.*');
+  final match = regex.firstMatch(name);
+  final tsName = match?.group(1)?.trim();
+  final deviceType = match?.group(2);
+  final locale = match?.group(3);
+  String? link;
+  if (tsName != null && locale != null && deviceType != null) {
+    link = './$locale/$deviceType/$tsName-$deviceType-$locale.png';
+    test['filePath'] = link;
+    test['locale'] = locale;
+    test['deviceType'] = deviceType;
+    test['tsName'] = tsName;
+  }
+}
+
 addOrAppendData<T>(Map<String, dynamic> json, String key, T data) {
   if (json[key] == null) {
     List<T> list = [];
@@ -169,17 +237,5 @@ findTests(
         }
       }
     }
-  }
-}
-
-String formatPercentage(double num, int postion) {
-  if ((num.toString().length - num.toString().lastIndexOf(".") - 1) < postion) {
-    return num.toStringAsFixed(postion)
-        .substring(0, num.toString().lastIndexOf(".") + postion + 1)
-        .toString();
-  } else {
-    return num.toString()
-        .substring(0, num.toString().lastIndexOf(".") + postion + 1)
-        .toString();
   }
 }
