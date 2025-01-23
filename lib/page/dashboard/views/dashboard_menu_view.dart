@@ -158,7 +158,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
           disabledOnBridge: true,
           status: safetyState.safeBrowsingType == InstantSafetyType.off,
           onTap: () {
-            _navigateTo(RouteNamed.menuInstantTopology);
+            _navigateTo(RouteNamed.menuInstantSafety);
           }),
       AppSectionItemData(
           title: loc(context).instantPrivacy,

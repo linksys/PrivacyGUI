@@ -5,7 +5,7 @@ do
         s) screens=${OPTARG};;
         f) file=${OPTARG};;
         c) copy=true;;
-        o) overlay=true;;
+        v) version=${OPTARG};;
     esac
 done
 if [ -z "$locales" ]; then
@@ -14,21 +14,34 @@ fi
 if [ -z "$screens" ]; then
   screens="480,1280"
 fi
-if [ -z "$overlay" ]; then
-  overlay="false"
+if [ -z "$version" ]; then
+  version="0.0.1.1"
 fi
 echo "*********************Generating Localization snapshots********************"
 echo "Locales: $locales"
 echo "Screens: $screens"
-echo "Show overlay: $overlay"
+echo "Version: $version"
 
 mkdir ./snapshots/
 if [ -z "$file" ]; then
   locStr=${locales//,/_}
   screenStr=${screens//,/_}
-  flutter test --file-reporter json:snapshots/tests.json --tags=loc --update-goldens --dart-define=locales="$locales" --dart-define=screens="$screens" --dart-define=overlay="$overlay"
-  dart test_scripts/test_result_parser.dart snapshots/tests.json "snapshots/localizations-test-reports-$locStr-$screenStr.html"
-  rm snapshots/tests.json
+  IFS=',' read -ra LOCS <<< "$locales"
+  IFS=',' read -ra SCREENS <<< "$screens"
+  g=1
+  for screen in "${SCREENS[@]}"; do
+    for((i=0; i < ${#LOCS[@]}; i+=g))
+    do
+      part=( "${LOCS[@]:i:g}" )
+      locale=$(IFS=, ; echo "${part[*]}")
+      echo "Start run screenshot testing with screen: $screen, locales: $locale"
+      flutter test --file-reporter json:snapshots/tests.json --tags=loc --update-goldens --dart-define=locales="$locale" --dart-define=screens="$screen" --dart-define=overlay="$overlay"
+      dart test_scripts/test_result_parser.dart snapshots/tests.json "$locale" "$screen"
+      rm snapshots/tests.json
+    done
+  done
+  
+  dart test_scripts/combine_results.dart snapshots "$version"
 else
   echo "Target file: $file"
   flutter test $file --tags=loc --update-goldens --dart-define=locales="$locales" --dart-define=screens="$screens" --dart-define=overlay="$overlay"
