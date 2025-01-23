@@ -220,10 +220,17 @@ class MockInstantPrivacyNotifier extends _i2.Notifier<
       );
 
   @override
-  dynamic removeSelection(List<String>? selection) => super.noSuchMethod(
+  dynamic removeSelection(
+    List<String>? selection, [
+    bool? isDeny = false,
+  ]) =>
+      super.noSuchMethod(
         Invocation.method(
           #removeSelection,
-          [selection],
+          [
+            selection,
+            isDeny,
+          ],
         ),
         returnValueForMissingStub: null,
       );

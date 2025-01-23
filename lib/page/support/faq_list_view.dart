@@ -213,7 +213,7 @@ class _FaqListViewState extends ConsumerState<FaqListView> {
       children: [
         Row(
           children: [
-            children,
+            Expanded(child: children),
           ],
         ),
       ],

@@ -47,7 +47,7 @@ void main() {
     await tester.pumpAndSettle();
     // Input new password
     final passwordFinder = find.byType(AppPasswordField);
-    await tester.enterText(passwordFinder, 'Linksys');
+    await tester.enterText(passwordFinder.first, 'Linksys');
     await tester.pumpAndSettle();
   });
 
@@ -65,11 +65,11 @@ void main() {
     await tester.pumpAndSettle();
     // Input new password
     final passwordFinder = find.byType(AppPasswordField);
-    await tester.enterText(passwordFinder, 'Linksys');
+    await tester.enterText(passwordFinder.first, 'Linksys');
     await tester.pumpAndSettle();
     // Tap eye icon
     final secureIconFinder = find.byIcon(LinksysIcons.visibility);
-    await tester.tap(secureIconFinder);
+    await tester.tap(secureIconFinder.first);
     await tester.pumpAndSettle();
   });
 
@@ -88,11 +88,12 @@ void main() {
     await tester.pumpAndSettle();
     // Input new password
     final passwordFinder = find.byType(AppPasswordField);
-    await tester.enterText(passwordFinder, 'Linksys');
+    await tester.enterText(passwordFinder.first, 'Linksys');
+    await tester.enterText(passwordFinder.last, 'Linksys');
     await tester.pumpAndSettle();
     // Tap eye icon
     final secureIconFinder = find.byIcon(LinksysIcons.visibility);
-    await tester.tap(secureIconFinder);
+    await tester.tap(secureIconFinder.first);
     await tester.pumpAndSettle();
     // Input hint
     final hintFinder = find.byType(AppTextField).last;
@@ -119,7 +120,8 @@ void main() {
     await tester.pumpAndSettle();
     // Input new password
     final passwordFinder = find.byType(AppPasswordField);
-    await tester.enterText(passwordFinder, 'Linksys123!');
+    await tester.enterText(passwordFinder.first, 'Linksys123!');
+    await tester.enterText(passwordFinder.last, 'Linksys123!');
     await tester.pumpAndSettle();
     // Tap save
     final saveFinder = find.byType(AppFilledButton);

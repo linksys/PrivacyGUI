@@ -259,6 +259,9 @@ void main() {
       await tester.pumpWidget(widget);
 
       await tester.pump(Duration(seconds: 2));
+      await tester.fling(
+          find.byType(TabBar), const Offset(-200.0, 0.0), 10000.0);
+      await tester.pumpAndSettle();
       final dhcpServerTabFinder = find.byType(Tab);
       await tester.tap(dhcpServerTabFinder.at(2));
       await tester.pumpAndSettle();

@@ -137,11 +137,15 @@ class InstantPrivacyNotifier extends Notifier<InstantPrivacyState> {
     );
   }
 
-  removeSelection(List<String> selection) {
+  removeSelection(List<String> selection, [bool isDeny = false]) {
     selection = selection.map((e) => e.toUpperCase()).toList();
-    final list = List<String>.from(state.macAddresses)
-      ..removeWhere((element) => selection.contains(element));
-    state = state.copyWith(macAddresses: list);
+    final list =
+        List<String>.from(isDeny ? state.denyMacAddresses : state.macAddresses)
+          ..removeWhere((element) => selection.contains(element));
+    state = state.copyWith(
+      macAddresses: isDeny ? null : list,
+      denyMacAddresses: isDeny ? list : null,
+    );
   }
 
   setMacAddressList(List<String> macAddressList) {
