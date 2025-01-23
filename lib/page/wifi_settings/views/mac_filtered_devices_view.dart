@@ -48,26 +48,24 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
     return StyledAppPageView(
       title: loc(context).filteredDevices,
       scrollable: true,
-      actions: !_isEdit
-          ? [
-              AppTextButton(
-                loc(context).edit,
-                icon: LinksysIcons.edit,
-                onTap: state.macAddresses.isNotEmpty
-                    ? () {
-                        _toggleEdit();
-                      }
-                    : null,
-              )
-            ]
-          : null,
+      actions: [
+        AppTextButton(
+          loc(context).edit,
+          icon: LinksysIcons.edit,
+          onTap: state.denyMacAddresses.isNotEmpty
+              ? () {
+                  _toggleEdit();
+                }
+              : null,
+        )
+      ],
       bottomBar: _isEdit
           ? InversePageBottomBar(
               isPositiveEnabled: true,
               onPositiveTap: () {
                 ref
                     .read(instantPrivacyProvider.notifier)
-                    .removeSelection(_selectedMACs);
+                    .removeSelection(_selectedMACs, true);
                 _toggleEdit();
               },
               positiveLabel: loc(context).remove,
@@ -131,10 +129,14 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
       'type': 'mac',
       'selected': ref.read(instantPrivacyProvider).denyMacAddresses
     });
+    final temp = ref.read(instantPrivacyProvider).denyMacAddresses;
     if (results != null) {
-      ref
-          .read(instantPrivacyProvider.notifier)
-          .setSelection(results.map((e) => e.macAddress).toList(), true);
+      final newMacs = results.map((e) => e.macAddress).toList();
+      // temp and newMacs do XOR
+      final added = newMacs.toSet().difference(temp.toSet());
+      final removed = temp.toSet().difference(newMacs.toSet());
+      ref.read(instantPrivacyProvider.notifier).setSelection(
+          [...added, ...temp..removeWhere((e) => removed.contains(e))], true);
     }
   }
 

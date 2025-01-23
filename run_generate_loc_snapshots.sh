@@ -27,19 +27,19 @@ if [ -z "$file" ]; then
   locStr=${locales//,/_}
   screenStr=${screens//,/_}
   IFS=',' read -ra LOCS <<< "$locales"
-  IFS=',' read -ra SCREENS <<< "$screens"
+  # IFS=',' read -ra SCREENS <<< "$screens"
   g=1
-  for screen in "${SCREENS[@]}"; do
+  # for screen in "${SCREENS[@]}"; do
     for((i=0; i < ${#LOCS[@]}; i+=g))
     do
       part=( "${LOCS[@]:i:g}" )
       locale=$(IFS=, ; echo "${part[*]}")
-      echo "Start run screenshot testing with screen: $screen, locales: $locale"
-      flutter test --file-reporter json:snapshots/tests.json --tags=loc --update-goldens --dart-define=locales="$locale" --dart-define=screens="$screen" --dart-define=overlay="$overlay"
-      dart test_scripts/test_result_parser.dart snapshots/tests.json "$locale" "$screen"
+      echo "Start run screenshot testing with screen: $screens, locales: $locale"
+      flutter test --file-reporter json:snapshots/tests.json --tags=loc --update-goldens --dart-define=locales="$locale" --dart-define=screens="$screens"
+      dart test_scripts/test_result_parser.dart snapshots/tests.json "$locale" "$screenStr"
       rm snapshots/tests.json
     done
-  done
+  # done
   
   dart test_scripts/combine_results.dart snapshots "$version"
 else
