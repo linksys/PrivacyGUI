@@ -199,7 +199,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
               vertical: Spacing.medium, horizontal: Spacing.large2),
           child: Row(
             children: [
-              AppText.labelLarge(loc(context).dhcpReservations),
+              Expanded(child: AppText.labelLarge(loc(context).dhcpReservations),),
               const Spacer(),
               AppText.labelLarge("${state.dhcpReservationList.length}"),
               const AppGap.medium(),

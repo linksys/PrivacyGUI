@@ -18,6 +18,7 @@ import 'package:privacygui_widgets/widgets/bullet_list/bullet_list.dart';
 import 'package:privacygui_widgets/widgets/bullet_list/bullet_style.dart';
 import 'package:privacygui_widgets/widgets/card/node_list_card.dart';
 import 'package:privacygui_widgets/widgets/dialogs/multiple_page_alert_dialog.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -78,10 +79,10 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
           content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          Wrap(
+            spacing: Spacing.small1,
             children: [
               AppText.bodyMedium(loc(context).pnpYourNetworkDesc),
-              const AppGap.small1(),
               AppTextButton.noPadding(
                 loc(context).refresh,
                 onTap: () {

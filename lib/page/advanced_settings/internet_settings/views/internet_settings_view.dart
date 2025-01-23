@@ -910,9 +910,11 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
             ),
             child: Row(
               children: [
-                AppText.titleMedium(
-                    loc(context).macAddressClone.capitalizeWords()),
-                const Spacer(),
+                Expanded(
+                  child: AppText.titleMedium(
+                      loc(context).macAddressClone.capitalizeWords()),
+                ),
+                AppGap.small1(),
                 AppSwitch(
                   semanticLabel: 'mac address clone',
                   value: state.macClone,
