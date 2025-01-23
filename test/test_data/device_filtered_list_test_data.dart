@@ -5,7 +5,7 @@ const deviceFilteredTestData = [
     "icon": "phone",
     "upstreamDevice": "Room 1",
     "upstreamDeviceID": "6ceb2fde-ca55-4567-bd43-d8ec5e5660f9",
-    "upstreamIcon": "routerMr7500",
+    "upstreamIcon": "routerLn12",
     "ipv4Address": "10.254.1.232",
     "ipv6Address": "",
     "macAddress": "AA:07:17:16:09:33",
@@ -17,7 +17,7 @@ const deviceFilteredTestData = [
     "isOnline": true,
     "isWired": false,
     "type": "main",
-    "ssid": ""
+    "ssid": "Linksys03041"
   },
   {
     "deviceId": "737c5787-ee8d-4546-9c6a-e523e3c163af",
@@ -37,7 +37,7 @@ const deviceFilteredTestData = [
     "isOnline": true,
     "isWired": false,
     "type": "main",
-    "ssid": "HAO-9F-5G"
+    "ssid": "Linksys03041"
   },
   {
     "deviceId": "5dd8edba-a1d2-4f7c-8c97-45c4b796b519",
@@ -57,7 +57,7 @@ const deviceFilteredTestData = [
     "isOnline": true,
     "isWired": false,
     "type": "main",
-    "ssid": "HAO-9F"
+    "ssid": "Linksys03041"
   },
   {
     "deviceId": "27342e91-c4bf-4abe-8397-7eb91bf9c508",
@@ -77,7 +77,7 @@ const deviceFilteredTestData = [
     "isOnline": true,
     "isWired": false,
     "type": "main",
-    "ssid": "HAO-9F"
+    "ssid": "Linksys03041"
   },
   {
     "deviceId": "5e0aea97-42a0-4261-aeb7-446571b1867d",
@@ -97,7 +97,7 @@ const deviceFilteredTestData = [
     "isOnline": true,
     "isWired": false,
     "type": "main",
-    "ssid": "HAO-9F-5G"
+    "ssid": "Linksys03041"
   },
   {
     "deviceId": "7739d6ba-710c-444a-8f89-6f423b38dbcf",
@@ -117,7 +117,7 @@ const deviceFilteredTestData = [
     "isOnline": true,
     "isWired": false,
     "type": "main",
-    "ssid": "HAO-9F-5G"
+    "ssid": "Linksys03041"
   },
   {
     "deviceId": "ec8c3407-8afb-4af7-bd6a-c2707bade0db",
@@ -137,7 +137,7 @@ const deviceFilteredTestData = [
     "isOnline": true,
     "isWired": false,
     "type": "main",
-    "ssid": "HAO-9F"
+    "ssid": "Linksys03041"
   },
   {
     "deviceId": "70a97071-9ade-497f-961d-cae7a948d696",
@@ -157,7 +157,7 @@ const deviceFilteredTestData = [
     "isOnline": true,
     "isWired": false,
     "type": "main",
-    "ssid": "HAO-9F"
+    "ssid": "Linksys03041"
   },
   {
     "deviceId": "577c8f2a-e6a2-4ae4-a5c5-f42df3926734",
@@ -177,7 +177,7 @@ const deviceFilteredTestData = [
     "isOnline": true,
     "isWired": false,
     "type": "main",
-    "ssid": "HAO-9F"
+    "ssid": "Linksys03041"
   },
   {
     "deviceId": "3984746d-ffde-4f94-af2b-0fef35b0ed79",
@@ -197,7 +197,7 @@ const deviceFilteredTestData = [
     "isOnline": true,
     "isWired": false,
     "type": "main",
-    "ssid": "HAO-9F"
+    "ssid": "Linksys03041"
   },
   {
     "deviceId": "10839c8e-5798-40be-8c15-6c76177f50dd",
@@ -217,7 +217,7 @@ const deviceFilteredTestData = [
     "isOnline": true,
     "isWired": false,
     "type": "main",
-    "ssid": "HAO-9F-5G"
+    "ssid": "Linksys03041"
   },
   {
     "deviceId": "cad11a55-b7dc-441a-a0c5-02f60b1d6925",
@@ -237,7 +237,7 @@ const deviceFilteredTestData = [
     "isOnline": true,
     "isWired": false,
     "type": "main",
-    "ssid": "HAO-9F"
+    "ssid": "Linksys03041"
   },
   {
     "deviceId": "1dbaa0de-b733-48a6-acde-1b8348e64f70",
@@ -257,7 +257,7 @@ const deviceFilteredTestData = [
     "isOnline": true,
     "isWired": false,
     "type": "main",
-    "ssid": "HAO-9F"
+    "ssid": "Linksys03041"
   },
   {
     "deviceId": "e21440bc-200f-4436-a411-072ef91b72e3",
@@ -277,7 +277,7 @@ const deviceFilteredTestData = [
     "isOnline": true,
     "isWired": false,
     "type": "main",
-    "ssid": "HAO-9F-5G"
+    "ssid": "Linksys03041"
   },
   {
     "deviceId": "e0fc410b-34df-47fb-9c14-078bcb2ac5c9",
@@ -297,7 +297,7 @@ const deviceFilteredTestData = [
     "isOnline": true,
     "isWired": false,
     "type": "main",
-    "ssid": "HAO-9F"
+    "ssid": "Linksys03041"
   }
 ];
 
@@ -340,7 +340,7 @@ const deviceFilteredOfflineTestData = [
     "isOnline": false,
     "isWired": false,
     "type": "main",
-    "ssid": "HAO-9F-5G"
+    "ssid": ""
   },
   {
     "deviceId": "5dd8edba-a1d2-4f7c-8c97-45c4b796b519",
@@ -360,7 +360,7 @@ const deviceFilteredOfflineTestData = [
     "isOnline": false,
     "isWired": false,
     "type": "main",
-    "ssid": "HAO-9F"
+    "ssid": ""
   },
   {
     "deviceId": "27342e91-c4bf-4abe-8397-7eb91bf9c508",
@@ -380,7 +380,7 @@ const deviceFilteredOfflineTestData = [
     "isOnline": false,
     "isWired": false,
     "type": "main",
-    "ssid": "HAO-9F"
+    "ssid": ""
   },
   {
     "deviceId": "5e0aea97-42a0-4261-aeb7-446571b1867d",
@@ -400,7 +400,7 @@ const deviceFilteredOfflineTestData = [
     "isOnline": false,
     "isWired": false,
     "type": "main",
-    "ssid": "HAO-9F-5G"
+    "ssid": ""
   },
   {
     "deviceId": "7739d6ba-710c-444a-8f89-6f423b38dbcf",
@@ -420,7 +420,7 @@ const deviceFilteredOfflineTestData = [
     "isOnline": false,
     "isWired": false,
     "type": "main",
-    "ssid": "HAO-9F-5G"
+    "ssid": ""
   },
   {
     "deviceId": "ec8c3407-8afb-4af7-bd6a-c2707bade0db",
@@ -440,7 +440,7 @@ const deviceFilteredOfflineTestData = [
     "isOnline": false,
     "isWired": false,
     "type": "main",
-    "ssid": "HAO-9F"
+    "ssid": ""
   },
   {
     "deviceId": "70a97071-9ade-497f-961d-cae7a948d696",
@@ -460,7 +460,7 @@ const deviceFilteredOfflineTestData = [
     "isOnline": false,
     "isWired": false,
     "type": "main",
-    "ssid": "HAO-9F"
+    "ssid": ""
   },
   {
     "deviceId": "577c8f2a-e6a2-4ae4-a5c5-f42df3926734",
@@ -480,7 +480,7 @@ const deviceFilteredOfflineTestData = [
     "isOnline": false,
     "isWired": false,
     "type": "main",
-    "ssid": "HAO-9F"
+    "ssid": ""
   },
   {
     "deviceId": "3984746d-ffde-4f94-af2b-0fef35b0ed79",
@@ -500,7 +500,7 @@ const deviceFilteredOfflineTestData = [
     "isOnline": false,
     "isWired": false,
     "type": "main",
-    "ssid": "HAO-9F"
+    "ssid": ""
   },
   {
     "deviceId": "10839c8e-5798-40be-8c15-6c76177f50dd",
@@ -520,7 +520,7 @@ const deviceFilteredOfflineTestData = [
     "isOnline": false,
     "isWired": false,
     "type": "main",
-    "ssid": "HAO-9F-5G"
+    "ssid": ""
   },
   {
     "deviceId": "cad11a55-b7dc-441a-a0c5-02f60b1d6925",
@@ -540,7 +540,7 @@ const deviceFilteredOfflineTestData = [
     "isOnline": false,
     "isWired": false,
     "type": "main",
-    "ssid": "HAO-9F"
+    "ssid": ""
   },
   {
     "deviceId": "1dbaa0de-b733-48a6-acde-1b8348e64f70",
@@ -560,7 +560,7 @@ const deviceFilteredOfflineTestData = [
     "isOnline": false,
     "isWired": false,
     "type": "main",
-    "ssid": "HAO-9F"
+    "ssid": "Linksys03041"
   },
   {
     "deviceId": "e21440bc-200f-4436-a411-072ef91b72e3",
@@ -580,7 +580,7 @@ const deviceFilteredOfflineTestData = [
     "isOnline": false,
     "isWired": false,
     "type": "main",
-    "ssid": "HAO-9F-5G"
+    "ssid": ""
   },
   {
     "deviceId": "e0fc410b-34df-47fb-9c14-078bcb2ac5c9",
@@ -600,6 +600,6 @@ const deviceFilteredOfflineTestData = [
     "isOnline": false,
     "isWired": false,
     "type": "main",
-    "ssid": "HAO-9F"
+    "ssid": ""
   }
 ];

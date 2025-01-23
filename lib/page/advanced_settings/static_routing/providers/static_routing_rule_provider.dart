@@ -38,11 +38,15 @@ class StaticRoutingRuleNotifier extends Notifier<StaticRoutingRuleState> {
     if (rule == null) {
       return false;
     }
-    return rule.name.isNotEmpty &&
+    return isNameValid(rule.name) &&
         isValidSubnetMask(rule.settings.networkPrefixLength) &&
         IpAddressValidator().validate(rule.settings.destinationLAN) &&
         isValidIpAddress(
             rule.settings.gateway ?? '', rule.settings.interface == 'LAN');
+  }
+
+  bool isNameValid(String name) {
+    return name.isNotEmpty;
   }
 
   bool isValidSubnetMask(int perfixLength) {

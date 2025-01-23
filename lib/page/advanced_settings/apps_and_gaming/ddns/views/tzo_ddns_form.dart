@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/core/jnap/models/tzo_settings.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacygui_widgets/widgets/gap/gap.dart';
 import 'package:privacygui_widgets/widgets/input_field/app_text_field.dart';
 
 class TzoDNSForm extends StatefulWidget {
@@ -45,23 +46,34 @@ class _TzoDNSFormState extends State<TzoDNSForm> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        AppTextField(
+        AppTextField.outline(
           headerText: loc(context).username,
           controller: _usernameController,
+          errorText: _usernameController.text.isEmpty
+              ? loc(context).invalidUsername
+              : null,
           onChanged: (value) {
             widget.onFormChanged.call(widget.value?.copyWith(username: value));
           },
         ),
-        AppTextField(
+        const AppGap.medium(),
+        AppTextField.outline(
           headerText: loc(context).password,
           controller: _passwordController,
+          errorText: _passwordController.text.isEmpty
+              ? loc(context).invalidPassword
+              : null,
           onChanged: (value) {
             widget.onFormChanged.call(widget.value?.copyWith(password: value));
           },
         ),
-        AppTextField(
+        const AppGap.medium(),
+        AppTextField.outline(
           headerText: loc(context).hostName,
           controller: _hostnameController,
+          errorText: _hostnameController.text.isEmpty
+              ? loc(context).invalidHostname
+              : null,
           onChanged: (value) {
             widget.onFormChanged.call(widget.value?.copyWith(hostName: value));
           },

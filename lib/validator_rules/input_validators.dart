@@ -23,6 +23,9 @@ class InputValidator {
   ValidationRule? getRule(String name) {
     return rules.firstWhereOrNull((element) => element.name == name);
   }
+  ValidationRule? getRuleByIndex(int index) {
+    return index >= rules.length || index < 0 ? null : rules[index];
+  }
 }
 
 class ComplexPasswordValidator extends InputValidator {

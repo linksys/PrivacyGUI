@@ -82,4 +82,8 @@ class AppsAndGamingViewNotifier extends Notifier<AppsAndGamingViewState> {
         ref.read(portRangeTriggeringListProvider) !=
             state.preservePortRangeTriggeringListState;
   }
+
+  bool isDataValid() {
+    return ref.read(ddnsProvider.notifier).isDataValid();
+  }
 }

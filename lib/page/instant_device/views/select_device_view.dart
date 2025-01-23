@@ -55,6 +55,8 @@ class _SelectDeviceViewState extends ConsumerState<SelectDeviceView> {
   late final bool _onlineOnly;
 
   final List<DeviceListItem> selected = [];
+  int _extraCount = 0;
+
   @override
   void initState() {
     super.initState();
@@ -66,7 +68,12 @@ class _SelectDeviceViewState extends ConsumerState<SelectDeviceView> {
     final selectedItems = selectedValues
         .map((value) {
           return devices
-              .firstWhereOrNull((device) => _subMessage(device) == value);
+                  .firstWhereOrNull((device) => _subMessage(device) == value) ??
+              () {
+                // counting devices that not in device list
+                _extraCount++;
+                return setItemData(DeviceListItem(name: '--'), value);
+              }();
         })
         .whereType<DeviceListItem>()
         .toList();
@@ -90,7 +97,7 @@ class _SelectDeviceViewState extends ConsumerState<SelectDeviceView> {
       bottomBar: _selectMode == SelectMode.multiple
           ? PageBottomBar(
               isPositiveEnabled: selected.isNotEmpty,
-              positiveLabel: loc(context).nAdd(selected.length),
+              positiveLabel: loc(context).nAdd(selected.length - _extraCount),
               onPositiveTap: () {
                 context.pop(selected);
               })
@@ -171,6 +178,24 @@ class _SelectDeviceViewState extends ConsumerState<SelectDeviceView> {
         selected.add(item);
       }
     });
+  }
+
+  DeviceListItem setItemData(DeviceListItem item, String value) {
+    if (_subType == DisplaySubType.mac) {
+      return item.copyWith(macAddress: value);
+    } else if (_subType == DisplaySubType.ipv4) {
+      return item.copyWith(ipv4Address: value);
+    } else if (_subType == DisplaySubType.ipv6) {
+      return item.copyWith(ipv6Address: value);
+    } else if (_subType == DisplaySubType.ipv4AndMac) {
+      final token = value.split(',');
+      if (token.length != 2) {
+        return item;
+      }
+      return item.copyWith(ipv4Address: token[0], macAddress: token[1]);
+    } else {
+      return item;
+    }
   }
 
   String? _subMessage(DeviceListItem item) => switch (_subType) {

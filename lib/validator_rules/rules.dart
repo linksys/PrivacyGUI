@@ -22,16 +22,25 @@ abstract class RegExValidationRule extends ValidationRule {
 
 class EmailRule extends RegExValidationRule {
   @override
+  String get name => 'EmailRule';
+
+  @override
   RegExp get _rule => RegExp(
       r"^[a-zA-Z0-9.!#$%&‘*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$");
 }
 
 class DigitalCheckRule extends RegExValidationRule {
   @override
+  String get name => 'DigitalCheckRule';
+
+  @override
   RegExp get _rule => RegExp(r".*\d+.*");
 }
 
 class SpecialCharCheckRule extends RegExValidationRule {
+  @override
+  String get name => 'SpecialCharCheckRule';
+
   @override
   RegExp get _rule => RegExp(r".*[^a-zA-Z0-9 ]+.*");
 // From current linksys app
@@ -40,6 +49,9 @@ class SpecialCharCheckRule extends RegExValidationRule {
 }
 
 class WiFiPasswordRule extends RegExValidationRule {
+  @override
+  String get name => 'WiFiPasswordRule';
+
   final bool ignoreLength;
   final bool ignoreWhiteSpaceSurround;
   WiFiPasswordRule({
@@ -54,16 +66,25 @@ class WiFiPasswordRule extends RegExValidationRule {
 
 class WiFiSsidRule extends RegExValidationRule {
   @override
+  String get name => 'WiFiSsidRule';
+
+  @override
   RegExp get _rule => RegExp(r"^(?! ).{1,32}(?<! )$");
 }
 
 class IpAddressRule extends RegExValidationRule {
+  @override
+  String get name => 'IpAddressRule';
+
   @override
   RegExp get _rule => RegExp(
       r"^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$");
 }
 
 class NoSurroundWhitespaceRule extends RegExValidationRule {
+  @override
+  String get name => 'NoSurroundWhitespaceRule';
+
   @override
   bool notCheck = true;
 
@@ -73,33 +94,91 @@ class NoSurroundWhitespaceRule extends RegExValidationRule {
 
 class AndroidNameRule extends RegExValidationRule {
   @override
+  String get name => 'AndroidNameRule';
+
+  @override
   RegExp get _rule =>
       RegExp(r"^Android$|^android-[a-fA-F0-9]{16}.*|^Android-[0-9]+");
 }
 
 class AsciiRule extends RegExValidationRule {
   @override
+  String get name => 'AsciiRule';
+
+  @override
   RegExp get _rule => RegExp(r'^[\x20-\x7E]+$');
 }
 
 class WhiteSpaceRule extends RegExValidationRule {
+  @override
+  String get name => 'WhiteSpaceRule';
+
   @override
   RegExp get _rule => RegExp(r'.*[\s]+.*');
 }
 
 class HostNameRule extends RegExValidationRule {
   @override
+  String get name => 'HostNameRule';
+
+  @override
   RegExp get _rule => RegExp(r'[^a-zA-Z0-9-]+|^-|-$');
 }
 
 class ConsecutiveCharRule extends RegExValidationRule {
+  @override
+  String get name => 'ConsecutiveCharRule';
+
   @override
   RegExp get _rule => RegExp(r'(.)\1{1}');
 }
 
 class MACAddressRule extends RegExValidationRule {
   @override
+  String get name => 'MACAddressRule';
+
+  @override
   RegExp get _rule => RegExp(r"^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$");
+}
+
+class MACAddressWithReservedRule extends ValidationRule {
+  @override
+  String get name => 'MACAddressWithReservedRule';
+
+  @override
+  bool validate(String input) {
+    // 1. check if mac address is in a valid format
+    if (!MACAddressRule().validate(input)) {
+      return false;
+    }
+    // 2. check if it's all zeros
+    if (input == '00:00:00:00:00:00') {
+      return false;
+    }
+    // 3. check if it's a multicast (the least significant bit of the most significant address octet is set to 1)
+    var firstOctet = input.split(':')[0],
+        firstOctetInBinary =
+            int.parse(firstOctet, radix: 16).toString().padRight(2),
+        leastSignificantBit =
+            firstOctetInBinary.substring(firstOctetInBinary.length - 1);
+    if (leastSignificantBit == '1') {
+      return false;
+    }
+    // 4. check if second character is 0, 2, 4, 6, 8, A, C, E
+    var secondCharacter =
+        firstOctet.substring(firstOctet.length - 1).toUpperCase();
+    if (secondCharacter != '0' &&
+        secondCharacter != '2' &&
+        secondCharacter != '4' &&
+        secondCharacter != '6' &&
+        secondCharacter != '8' &&
+        secondCharacter != 'A' &&
+        secondCharacter != 'C' &&
+        secondCharacter != 'E') {
+      return false;
+    }
+    return true;
+  }
 }
 
 class LengthRule extends ValidationRule {
@@ -107,6 +186,8 @@ class LengthRule extends ValidationRule {
   final int max;
 
   LengthRule({this.min = 10, this.max = 0});
+  @override
+  String get name => 'LengthRule';
 
   @override
   bool validate(String input) {
@@ -119,6 +200,9 @@ class LengthRule extends ValidationRule {
 
 class HybridCaseRule extends ValidationRule {
   @override
+  String get name => 'HybridCaseRule';
+
+  @override
   bool validate(String input) {
     return input != input.toUpperCase() && input != input.toLowerCase();
   }
@@ -126,10 +210,16 @@ class HybridCaseRule extends ValidationRule {
 
 class IpAddressHasFourOctetsRule extends ValidationRule {
   @override
+  String get name => 'IpAddressHasFourOctetsRule';
+
+  @override
   bool validate(String input) => input.split('.').length == 4;
 }
 
 class SubnetMaskRule extends ValidationRule {
+  @override
+  String get name => 'SubnetMaskRule';
+
   final int minNetworkPrefixLength;
   final int maxNetworkPrefixLength;
 
@@ -154,12 +244,16 @@ class SubnetMaskRule extends ValidationRule {
 
 class RequiredRule extends ValidationRule {
   @override
+  String get name => 'RequiredRule';
+  @override
   bool validate(String input) {
     return input.isNotEmpty;
   }
 }
 
 class IpAddressNoReservedRule extends ValidationRule {
+  @override
+  String get name => 'IpAddressNoReservedRule';
   @override
   bool validate(String input) {
     return input != '0.0.0.0' &&
@@ -169,6 +263,8 @@ class IpAddressNoReservedRule extends ValidationRule {
 }
 
 class HostValidForGivenRouterIPAddressAndSubnetMaskRule extends ValidationRule {
+  @override
+  String get name => 'HostValidForGivenRouterIPAddressAndSubnetMaskRule';
   final String routerIPAddress;
   final String subnetMask;
 
@@ -198,6 +294,8 @@ class NotRouterIpAddressRule extends ValidationRule {
   final String routerIpAddress;
 
   bool get notCheck => true;
+  @override
+  String get name => 'NotRouterIpAddressRule';
 
   NotRouterIpAddressRule(this.routerIpAddress);
 
@@ -225,7 +323,8 @@ class IntegerRule extends ValidationRule {
   final int max;
 
   IntegerRule({this.min = -1, this.max = -1});
-
+  @override
+  String get name => 'IntegerRule';
   @override
   bool validate(String input) {
     final num = int.tryParse(input);

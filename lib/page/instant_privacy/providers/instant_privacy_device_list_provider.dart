@@ -21,6 +21,7 @@ final instantPrivacyDeviceListProvider = Provider((ref) {
               DeviceListItem(macAddress: e))
           .where((device) =>
               !macFilteringState.bssids.contains(device.macAddress) &&
+              deviceList.any((e) => e.macAddress == device.macAddress) &&
               !nodeList.any((e) => e.getMacAddress() == device.macAddress))
           .toList()
       : deviceList

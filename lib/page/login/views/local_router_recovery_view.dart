@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/bottom_bar.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
@@ -14,7 +13,6 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
-
 import 'package:pin_code_fields/pin_code_fields.dart';
 
 class LocalRouterRecoveryView extends ArgumentsConsumerStatefulView {
@@ -79,6 +77,7 @@ class _LocalRouterRecoveryViewState
                         controller: _otpController,
                         keyboardType: TextInputType.number,
                         autoDismissKeyboard: false,
+                        autoDisposeControllers: false,
                         cursorColor: Theme.of(context).colorScheme.onSurface,
                         pinTheme: PinTheme(
                           shape: PinCodeFieldShape.box,

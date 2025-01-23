@@ -270,6 +270,10 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
           error: jsonEncode(result),
         );
         setErrorMessage(jnapError);
+      } else {
+        // For test cases: login local view's state is an AsyncValue,
+        // a setState needs to be called for refreshing the view and transitioning state from loading to data
+        setState(() {});
       }
     });
   }

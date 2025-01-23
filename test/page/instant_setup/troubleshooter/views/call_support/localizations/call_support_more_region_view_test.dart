@@ -1,18 +1,14 @@
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/call_support/call_support_main_region_view.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/call_support/call_support_more_region_view.dart';
-
 import 'package:privacygui_widgets/widgets/card/card.dart';
-
 import '../../../../../../common/test_responsive_widget.dart';
 import '../../../../../../common/testable_router.dart';
 
 void main() async {
-
   setUp(() {});
 
-  testLocalizations('call support more view - Latin America',
+  testLocalizations('Troubleshooter - call support more: Latin America',
       (tester, locale) async {
     await tester.pumpWidget(
       testableSingleRoute(
@@ -26,7 +22,7 @@ void main() async {
     await tester.pumpAndSettle();
   });
 
-  testLocalizations('call support more view - Mexico detail',
+  testLocalizations('Troubleshooter - call support more: Mexico detail',
       (tester, locale) async {
     await tester.pumpWidget(
       testableSingleRoute(
@@ -43,7 +39,8 @@ void main() async {
     await tester.pumpAndSettle();
   });
 
-  testLocalizations('call support more view - Europe', (tester, locale) async {
+  testLocalizations('Troubleshooter - call support more: Europe',
+      (tester, locale) async {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const CallSupportMoreRegionView(
@@ -56,7 +53,7 @@ void main() async {
     await tester.pumpAndSettle();
   });
 
-  testLocalizations('call support more view - Belgium detail',
+  testLocalizations('Troubleshooter - call support more: Belgium detail',
       (tester, locale) async {
     await tester.pumpWidget(
       testableSingleRoute(
@@ -73,7 +70,7 @@ void main() async {
     await tester.pumpAndSettle();
   });
 
-  testLocalizations('call support more view - Denmark detail',
+  testLocalizations('Troubleshooter - call support more: Denmark detail',
       (tester, locale) async {
     await tester.pumpWidget(
       testableSingleRoute(
@@ -90,7 +87,7 @@ void main() async {
     await tester.pumpAndSettle();
   });
 
-  testLocalizations('call support more view - Netherlands detail',
+  testLocalizations('Troubleshooter - call support more: Netherlands detail',
       (tester, locale) async {
     await tester.pumpWidget(
       testableSingleRoute(
@@ -107,7 +104,7 @@ void main() async {
     await tester.pumpAndSettle();
   });
 
-  testLocalizations('call support more view - Norway detail',
+  testLocalizations('Troubleshooter - call support more: Norway detail',
       (tester, locale) async {
     await tester.pumpWidget(
       testableSingleRoute(
@@ -124,7 +121,7 @@ void main() async {
     await tester.pumpAndSettle();
   });
 
-  testLocalizations('call support more view - Sweden detail',
+  testLocalizations('Troubleshooter - call support more: Sweden detail',
       (tester, locale) async {
     await tester.pumpWidget(
       testableSingleRoute(
@@ -141,7 +138,7 @@ void main() async {
     await tester.pumpAndSettle();
   });
 
-  testLocalizations('call support more view - UK detail',
+  testLocalizations('Troubleshooter - call support more: UK detail',
       (tester, locale) async {
     await tester.pumpWidget(
       testableSingleRoute(
@@ -158,7 +155,8 @@ void main() async {
     await tester.pumpAndSettle();
   });
 
-  testLocalizations('call support more view - Middle Ease And Africa',
+  testLocalizations(
+      'Troubleshooter - call support more: Middle Ease And Africa',
       (tester, locale) async {
     await tester.pumpWidget(
       testableSingleRoute(
@@ -172,7 +170,7 @@ void main() async {
     await tester.pumpAndSettle();
   });
 
-  testLocalizations('call support more view - Saudi Arabia detail',
+  testLocalizations('Troubleshooter - call support more: Saudi Arabia detail',
       (tester, locale) async {
     await tester.pumpWidget(
       testableSingleRoute(
@@ -189,7 +187,8 @@ void main() async {
     await tester.pumpAndSettle();
   });
 
-  testLocalizations('call support more view - United Arab Emirates detail',
+  testLocalizations(
+      'Troubleshooter - call support more: United Arab Emirates detail',
       (tester, locale) async {
     await tester.pumpWidget(
       testableSingleRoute(
@@ -206,7 +205,8 @@ void main() async {
     await tester.pumpAndSettle();
   });
 
-  testLocalizations('call support more view - Asia Pacific', (tester, locale) async {
+  testLocalizations('Troubleshooter - call support more: Asia Pacific',
+      (tester, locale) async {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const CallSupportMoreRegionView(
@@ -219,7 +219,7 @@ void main() async {
     await tester.pumpAndSettle();
   });
 
-  testLocalizations('call support more view - Taiwan detail',
+  testLocalizations('Troubleshooter - call support more: Taiwan detail',
       (tester, locale) async {
     await tester.pumpWidget(
       testableSingleRoute(
@@ -236,7 +236,7 @@ void main() async {
     await tester.pumpAndSettle();
   });
 
-  testLocalizations('call support more view - Hong Kong detail',
+  testLocalizations('Troubleshooter - call support more: Hong Kong detail',
       (tester, locale) async {
     await tester.pumpWidget(
       testableSingleRoute(
@@ -253,7 +253,7 @@ void main() async {
     await tester.pumpAndSettle();
   });
 
-  testLocalizations('call support more view - China detail',
+  testLocalizations('Troubleshooter - call support more: China detail',
       (tester, locale) async {
     await tester.pumpWidget(
       testableSingleRoute(
@@ -270,7 +270,7 @@ void main() async {
     await tester.pumpAndSettle();
   });
 
-  testLocalizations('call support more view - Japan detail',
+  testLocalizations('Troubleshooter - call support more: Japan detail',
       (tester, locale) async {
     await tester.pumpWidget(
       testableSingleRoute(
@@ -287,7 +287,7 @@ void main() async {
     await tester.pumpAndSettle();
   });
 
-  testLocalizations('call support more view - Singapore detail',
+  testLocalizations('Troubleshooter - call support more: Singapore detail',
       (tester, locale) async {
     await tester.pumpWidget(
       testableSingleRoute(
@@ -304,7 +304,7 @@ void main() async {
     await tester.pumpAndSettle();
   });
 
-  testLocalizations('call support more view - Australia detail',
+  testLocalizations('Troubleshooter - call support more: Australia detail',
       (tester, locale) async {
     await tester.pumpWidget(
       testableSingleRoute(
@@ -321,7 +321,7 @@ void main() async {
     await tester.pumpAndSettle();
   });
 
-  testLocalizations('call support more view - New Zealand detail',
+  testLocalizations('Troubleshooter - call support more: New Zealand detail',
       (tester, locale) async {
     await tester.pumpWidget(
       testableSingleRoute(

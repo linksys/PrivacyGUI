@@ -50,7 +50,8 @@ class _FakeInstantPrivacyState_1 extends _i1.SmartFake
 /// A class which mocks [InstantPrivacyNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockInstantPrivacyNotifier extends _i2.Notifier<_i3.InstantPrivacyState>
+class MockInstantPrivacyNotifier extends _i2.Notifier<
+        _i3.InstantPrivacyState>
     with _i1.Mock
     implements _i4.InstantPrivacyNotifier {
   @override
@@ -151,14 +152,38 @@ class MockInstantPrivacyNotifier extends _i2.Notifier<_i3.InstantPrivacyState>
       ) as _i5.Future<dynamic>);
 
   @override
-  _i5.Future<dynamic> save() => (super.noSuchMethod(
+  _i5.Future<_i3.InstantPrivacyState> save() => (super.noSuchMethod(
         Invocation.method(
           #save,
           [],
         ),
-        returnValue: _i5.Future<dynamic>.value(),
-        returnValueForMissingStub: _i5.Future<dynamic>.value(),
-      ) as _i5.Future<dynamic>);
+        returnValue: _i5.Future<_i3.InstantPrivacyState>.value(
+            _FakeInstantPrivacyState_1(
+          this,
+          Invocation.method(
+            #save,
+            [],
+          ),
+        )),
+        returnValueForMissingStub: _i5.Future<_i3.InstantPrivacyState>.value(
+            _FakeInstantPrivacyState_1(
+          this,
+          Invocation.method(
+            #save,
+            [],
+          ),
+        )),
+      ) as _i5.Future<_i3.InstantPrivacyState>);
+
+  @override
+  _i5.Future<String?> getMyMACAddress() => (super.noSuchMethod(
+        Invocation.method(
+          #getMyMACAddress,
+          [],
+        ),
+        returnValue: _i5.Future<String?>.value(),
+        returnValueForMissingStub: _i5.Future<String?>.value(),
+      ) as _i5.Future<String?>);
 
   @override
   dynamic setEnable(bool? isEnabled) => super.noSuchMethod(
@@ -170,7 +195,7 @@ class MockInstantPrivacyNotifier extends _i2.Notifier<_i3.InstantPrivacyState>
       );
 
   @override
-  dynamic setAccess(String? value) => super.noSuchMethod(
+  dynamic setAccess(_i3.MacFilterMode? value) => super.noSuchMethod(
         Invocation.method(
           #setAccess,
           [value],
@@ -179,19 +204,33 @@ class MockInstantPrivacyNotifier extends _i2.Notifier<_i3.InstantPrivacyState>
       );
 
   @override
-  dynamic setSelection(List<String>? selections) => super.noSuchMethod(
+  dynamic setSelection(
+    List<String>? selections, [
+    bool? isDeny = false,
+  ]) =>
+      super.noSuchMethod(
         Invocation.method(
           #setSelection,
-          [selections],
+          [
+            selections,
+            isDeny,
+          ],
         ),
         returnValueForMissingStub: null,
       );
 
   @override
-  dynamic removeSelection(List<String>? selection) => super.noSuchMethod(
+  dynamic removeSelection(
+    List<String>? selection, [
+    bool? isDeny = false,
+  ]) =>
+      super.noSuchMethod(
         Invocation.method(
           #removeSelection,
-          [selection],
+          [
+            selection,
+            isDeny,
+          ],
         ),
         returnValueForMissingStub: null,
       );
@@ -201,6 +240,26 @@ class MockInstantPrivacyNotifier extends _i2.Notifier<_i3.InstantPrivacyState>
         Invocation.method(
           #setMacAddressList,
           [macAddressList],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  void listenSelf(
+    void Function(
+      _i3.InstantPrivacyState?,
+      _i3.InstantPrivacyState,
+    )? listener, {
+    void Function(
+      Object,
+      StackTrace,
+    )? onError,
+  }) =>
+      super.noSuchMethod(
+        Invocation.method(
+          #listenSelf,
+          [listener],
+          {#onError: onError},
         ),
         returnValueForMissingStub: null,
       );

@@ -28,12 +28,13 @@ void main() async {
     });
   });
 
-  testLocalizations('pnp modem lights off view', (tester, locale) async {
+  testLocalizations('Troubleshooter - PnP modem lights off',
+      (tester, locale) async {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const PnpModemLightsOffView(),
-                config: LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
-
+        config:
+            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
         locale: locale,
         overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
       ),
@@ -41,13 +42,13 @@ void main() async {
     await tester.pumpAndSettle();
   });
 
-  testLocalizations('pnp modem lights off view - show tips',
+  testLocalizations('Troubleshooter - PnP modem lights off: show tips',
       (tester, locale) async {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const PnpModemLightsOffView(),
-                config: LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
-
+        config:
+            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
         locale: locale,
         overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
       ),

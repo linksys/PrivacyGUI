@@ -12,31 +12,37 @@ class FirmwareUpdateState extends Equatable {
   final List<FirmwareUpdateStatus>? nodesStatus;
   final bool isUpdating;
   final bool isRetryMaxReached;
+  final bool isWaitingChildrenAfterUpdating;
 
   const FirmwareUpdateState({
     required this.settings,
     required this.nodesStatus,
     this.isUpdating = false,
     this.isRetryMaxReached = false,
+    this.isWaitingChildrenAfterUpdating = false,
   });
 
   factory FirmwareUpdateState.empty() => FirmwareUpdateState(
-      settings: FirmwareUpdateSettings(
+        settings: FirmwareUpdateSettings(
           updatePolicy: FirmwareUpdateSettings.firmwareUpdatePolicyAuto,
-          autoUpdateWindow: FirmwareAutoUpdateWindow.simple()),
-      nodesStatus: const []);
+          autoUpdateWindow: FirmwareAutoUpdateWindow.simple(),
+        ),
+        nodesStatus: const [],
+      );
 
   FirmwareUpdateState copyWith({
     FirmwareUpdateSettings? settings,
     List<FirmwareUpdateStatus>? nodesStatus,
     bool? isUpdating,
     bool? isRetryMaxReached,
+    bool? isWaitingChildrenAfterUpdating,
   }) {
     return FirmwareUpdateState(
       settings: settings ?? this.settings,
       nodesStatus: nodesStatus ?? this.nodesStatus,
       isUpdating: isUpdating ?? this.isUpdating,
       isRetryMaxReached: isRetryMaxReached ?? this.isRetryMaxReached,
+      isWaitingChildrenAfterUpdating: isWaitingChildrenAfterUpdating ?? this.isWaitingChildrenAfterUpdating,
     );
   }
 
@@ -46,6 +52,7 @@ class FirmwareUpdateState extends Equatable {
       'nodesStatus': nodesStatus?.map((x) => x.toMap()).toList(),
       'isUpdating': isUpdating,
       'isRetryMaxReached': isRetryMaxReached,
+      'isWaitingChildrenAfterUpdating': isWaitingChildrenAfterUpdating,
     };
   }
 
@@ -62,8 +69,9 @@ class FirmwareUpdateState extends Equatable {
               ),
             )
           : null,
-      isUpdating: map['isUpdating'] as bool,
-      isRetryMaxReached: map['isRetryMaxReached'] as bool,
+      isUpdating: map['isUpdating'] as bool? ?? false,
+      isRetryMaxReached: map['isRetryMaxReached'] as bool? ?? false,
+      isWaitingChildrenAfterUpdating: map['isChildAllUp'] as bool? ?? false,
     );
   }
 
@@ -82,6 +90,7 @@ class FirmwareUpdateState extends Equatable {
       nodesStatus,
       isUpdating,
       isRetryMaxReached,
+      isWaitingChildrenAfterUpdating,
     ];
   }
 }

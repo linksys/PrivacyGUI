@@ -10,7 +10,6 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_state.dart';
 import 'package:privacy_gui/page/instant_safety/providers/instant_safety_provider.dart';
-import 'package:privacy_gui/providers/redirection/redirection_provider.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacy_gui/validator_rules/input_validators.dart';
 
@@ -31,8 +30,6 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
 
   @override
   LocalNetworkSettingsState build() => LocalNetworkSettingsState.init();
-
-  LocalNetworkSettingsState currentSettings() => state.copyWith();
 
   Future<LocalNetworkSettingsState> fetch({bool fetchRemote = false}) async {
     final repo = ref.read(routerRepositoryProvider);
@@ -120,19 +117,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
       await fetch(fetchRemote: true);
       // Update instant safety
       await ref.read(instantSafetyProvider.notifier).fetchLANSettings();
-    }).catchError(
-      (error) {
-        if (kIsWeb &&
-            previousIPAddress != null &&
-            previousIPAddress != newSettings.ipAddress) {
-          ref.read(redirectionProvider.notifier).state =
-              'https://${newSettings.ipAddress}';
-        } else {
-          throw error;
-        }
-      },
-      test: (error) => error is JNAPSideEffectError,
-    );
+    });
   }
 
   Future<List<DHCPReservation>> saveReservations(
@@ -153,6 +138,41 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
       errorTextMap.remove(key);
     }
     state = state.copyWith(errorTextMap: errorTextMap);
+    updateHasErrorOnTabs();
+  }
+
+  void updateHasErrorOnTabs() {
+    bool hasErrorOnHostNameTab = false;
+    bool hasErrorOnIPAddressTab = false;
+    bool hasErrorOnDhcpServerTab = false;
+    for (String errorKey in state.errorTextMap.keys) {
+      final key = LocalNetworkErrorPrompt.resolve(errorKey);
+      switch (key) {
+        case LocalNetworkErrorPrompt.hostName:
+          hasErrorOnHostNameTab = true;
+          break;
+        case LocalNetworkErrorPrompt.ipAddress:
+        case LocalNetworkErrorPrompt.subnetMask:
+          hasErrorOnIPAddressTab = true;
+          break;
+        case LocalNetworkErrorPrompt.startIpAddress:
+        case LocalNetworkErrorPrompt.maxUserAllowed:
+        case LocalNetworkErrorPrompt.leaseTime:
+        case LocalNetworkErrorPrompt.dns1:
+        case LocalNetworkErrorPrompt.dns2:
+        case LocalNetworkErrorPrompt.dns3:
+        case LocalNetworkErrorPrompt.wins:
+          hasErrorOnDhcpServerTab = true;
+          break;
+        default:
+          break;
+      }
+    }
+    state = state.copyWith(
+      hasErrorOnHostNameTab: hasErrorOnHostNameTab,
+      hasErrorOnIPAddressTab: hasErrorOnIPAddressTab,
+      hasErrorOnDhcpServerTab: hasErrorOnDhcpServerTab,
+    );
   }
 
   void updateDHCPReservationList(
@@ -236,16 +256,20 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     updateState(maxUserAllowedResult.$2);
     // Update error
     updateErrorPrompts(
-      'StartIpAddress',
-      startIpResult.$1 ? null : loc(context).invalidIpOrSameAsHostIp,
+      LocalNetworkErrorPrompt.startIpAddress.name,
+      startIpResult.$1
+          ? null
+          : newRouterIpAddress == startIpResult.$2.firstIPAddress
+              ? LocalNetworkErrorPrompt.startIpAddress.name
+              : LocalNetworkErrorPrompt.startIpAddressRange.name,
     );
     updateErrorPrompts(
-      'ipAddress',
-      routerIpAddressResult.$1 ? null : loc(context).invalidIpAddress,
+      LocalNetworkErrorPrompt.ipAddress.name,
+      routerIpAddressResult.$1 ? null : LocalNetworkErrorPrompt.ipAddress.name,
     );
     updateErrorPrompts(
-      'MaxUserAllowed',
-      maxUserAllowedResult.$1 ? null : loc(context).invalidNumber,
+      LocalNetworkErrorPrompt.maxUserAllowed.name,
+      maxUserAllowedResult.$1 ? null : LocalNetworkErrorPrompt.maxUserAllowed.name,
     );
   }
 
@@ -257,26 +281,33 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     // Verify subnet mask
     final subnetMaskResult = subnetMaskFinished(subnetMask, settings);
     updateState(subnetMaskResult.$2);
-    // Verify start ip
-    final startIpResult = startIpFinished(
-        subnetMaskResult.$2.firstIPAddress, subnetMaskResult.$2);
-    updateState(startIpResult.$2);
-    // Verify max user allowed
-    final maxUserAllowedResult = maxUserAllowedFinished(
-        '${startIpResult.$2.maxUserAllowed}', startIpResult.$2);
-    updateState(maxUserAllowedResult.$2);
+    if (subnetMaskResult.$1 == true) {
+      // Verify start ip
+      final startIpResult = startIpFinished(
+          subnetMaskResult.$2.firstIPAddress, subnetMaskResult.$2);
+      updateState(startIpResult.$2);
+      // Verify max user allowed
+      final maxUserAllowedResult = maxUserAllowedFinished(
+          '${startIpResult.$2.maxUserAllowed}', startIpResult.$2);
+      updateState(maxUserAllowedResult.$2);
+      // Update error
+      updateErrorPrompts(
+        LocalNetworkErrorPrompt.startIpAddress.name,
+        startIpResult.$1
+            ? null
+            : startIpResult.$2.ipAddress == startIpResult.$2.firstIPAddress
+                ? LocalNetworkErrorPrompt.startIpAddress.name
+                : LocalNetworkErrorPrompt.startIpAddressRange.name,
+      );
+      updateErrorPrompts(
+        LocalNetworkErrorPrompt.maxUserAllowed.name,
+        maxUserAllowedResult.$1 ? null : LocalNetworkErrorPrompt.maxUserAllowed.name,
+      );
+    }
     // Update error
     updateErrorPrompts(
-      'subnetMask',
-      subnetMaskResult.$1 ? null : loc(context).invalidSubnetMask,
-    );
-    updateErrorPrompts(
-      'StartIpAddress',
-      startIpResult.$1 ? null : loc(context).invalidIpOrSameAsHostIp,
-    );
-    updateErrorPrompts(
-      'MaxUserAllowed',
-      maxUserAllowedResult.$1 ? null : loc(context).invalidNumber,
+      LocalNetworkErrorPrompt.subnetMask.name,
+      subnetMaskResult.$1 ? null : LocalNetworkErrorPrompt.subnetMask.name,
     );
   }
 
@@ -294,12 +325,16 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     updateState(maxUserAllowedResult.$2);
     // Update error
     updateErrorPrompts(
-      'StartIpAddress',
-      startIpResult.$1 ? null : loc(context).invalidIpOrSameAsHostIp,
+      LocalNetworkErrorPrompt.startIpAddress.name,
+      startIpResult.$1
+          ? null
+          : startIpResult.$2.ipAddress == startIpResult.$2.firstIPAddress
+              ? LocalNetworkErrorPrompt.startIpAddress.name
+              : LocalNetworkErrorPrompt.startIpAddressRange.name,
     );
     updateErrorPrompts(
-      'MaxUserAllowed',
-      maxUserAllowedResult.$1 ? null : loc(context).invalidNumber,
+      LocalNetworkErrorPrompt.maxUserAllowed.name,
+      maxUserAllowedResult.$1 ? null : LocalNetworkErrorPrompt.maxUserAllowed.name,
     );
   }
 
@@ -314,8 +349,8 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     updateState(maxUserAllowedResult.$2);
     // Update error
     updateErrorPrompts(
-      'MaxUserAllowed',
-      maxUserAllowedResult.$1 ? null : loc(context).invalidNumber,
+      LocalNetworkErrorPrompt.maxUserAllowed.name,
+      maxUserAllowedResult.$1 ? null : LocalNetworkErrorPrompt.maxUserAllowed.name,
     );
   }
 

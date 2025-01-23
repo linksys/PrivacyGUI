@@ -60,25 +60,28 @@ class NightModeStep extends PnpStep {
           : loc(context).nightModeOffDesc;
       return Align(
         alignment: Alignment.centerLeft,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AppSwitch(
-              semanticLabel: 'node light',
-              value: _isEnabled,
-              onChanged: (value) {
-                // update(ref, key: 'isEnabled', value: value);
-                setState(() {
-                  _isEnabled = value;
-                });
-              },
-            ),
-            const AppGap.large3(),
-            AppText.bodyLarge(desc),
-            const AppGap.medium(),
-          ],
+        child: Semantics(
+          explicitChildNodes: true,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AppSwitch(
+                semanticLabel: 'node light',
+                value: _isEnabled,
+                onChanged: (value) {
+                  // update(ref, key: 'isEnabled', value: value);
+                  setState(() {
+                    _isEnabled = value;
+                  });
+                },
+              ),
+              const AppGap.large3(),
+              AppText.bodyLarge(desc),
+              const AppGap.medium(),
+            ],
+          ),
         ),
       );
     });

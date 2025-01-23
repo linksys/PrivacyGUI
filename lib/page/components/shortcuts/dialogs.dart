@@ -7,6 +7,7 @@ import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart'
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/providers/redirection/redirection_provider.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/bullet_list/bullet_list.dart';
@@ -116,6 +117,7 @@ Future<T?> showSubmitAppDialog<T>(
             });
             context.pop(value);
           }).onError((error, stackTrace) {
+            logger.e('submit app error: $error', stackTrace: stackTrace);
             setState(() {
               isLoading = false;
             });
@@ -332,6 +334,28 @@ Future<T?> showRouterNotFoundAlert<T>(BuildContext context, WidgetRef ref,
       ]);
 }
 
+Future<T?> showRedirectNewIpAlert<T>(BuildContext context, WidgetRef ref, String ip) {
+  logger.d('[RedirectNewIpAlert] show Redirect new IP alert');
+  return showSimpleAppDialog<T>(context,
+      dismissible: false,
+      title: loc(context).redirect,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppText.bodyLarge(loc(context).redirectDescription(ip)),
+        ],
+      ),
+      actions: [
+        AppFilledButton(
+          loc(context).redirect,
+          onTap: ()  {
+            ref.read(redirectionProvider.notifier).state = 'https://$ip';
+          },
+        ),
+      ]);
+}
+
 Future<bool?> showFactoryResetModal(BuildContext context, bool isParent) {
   return showMessageAppDialog<bool>(context,
       icon: Icon(
@@ -392,4 +416,64 @@ Future showMLOCapableModal(BuildContext context) {
       title: loc(context).mlo,
       message:
           '${loc(context).mloCapableModalDesc1}\n\n${loc(context).mloCapableModalDesc2}');
+}
+
+Future<bool?> showInstantPrivacyConfirmDialog(
+    BuildContext context, bool enable) {
+  return showSimpleAppDialog<bool>(
+    context,
+    dismissible: false,
+    title: enable
+        ? loc(context).turnOnInstantPrivacy
+        : loc(context).turnOffInstantPrivacy,
+    content: AppText.bodyMedium(enable
+        ? loc(context).instantPrivacyDescription
+        : loc(context).turnOffInstantPrivacyDesc),
+    actions: [
+      AppTextButton(
+        loc(context).cancel,
+        color: Theme.of(context).colorScheme.onSurface,
+        onTap: () {
+          context.pop();
+        },
+      ),
+      AppTextButton(
+        enable ? loc(context).turnOn : loc(context).turnOff,
+        color: Theme.of(context).colorScheme.primary,
+        onTap: () {
+          context.pop(true);
+        },
+      ),
+    ],
+  );
+}
+
+Future<bool?> showMacFilteringConfirmDialog(
+    BuildContext context, bool enable) {
+  return showSimpleAppDialog<bool>(
+    context,
+    dismissible: false,
+    title: enable
+        ? loc(context).turnOnMacFiltering
+        : loc(context).turnOffMacFiltering,
+    content: AppText.bodyMedium(enable
+        ? loc(context).turnOnMacFilteringDesc
+        : loc(context).turnOffMacFilteringDesc),
+    actions: [
+      AppTextButton(
+        loc(context).cancel,
+        color: Theme.of(context).colorScheme.onSurface,
+        onTap: () {
+          context.pop();
+        },
+      ),
+      AppTextButton(
+        enable ? loc(context).turnOn : loc(context).turnOff,
+        color: Theme.of(context).colorScheme.primary,
+        onTap: () {
+          context.pop(true);
+        },
+      ),
+    ],
+  );
 }

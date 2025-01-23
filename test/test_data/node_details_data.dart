@@ -1,3 +1,64 @@
+const nodeDetailsCherry7TestState = {
+  "deviceId": "6c73112b-b6d1-4bfd-9a8c-80691abb46cc",
+  "location": "Linksys03041",
+  "isMaster": true,
+  "isOnline": true,
+  "connectedDevices": [
+    {
+      "deviceId": "807fc47c-fad4-4c5e-92b1-fe580415bfd5",
+      "name": "ASTWP-29134",
+      "icon": "computer",
+      "upstreamDevice": "",
+      "upstreamDeviceID": "",
+      "upstreamIcon": "genericDevice",
+      "ipv4Address": "10.216.1.30",
+      "ipv6Address": "",
+      "macAddress": "3C:22:FB:E4:4F:18",
+      "manufacturer": "Apple Inc.",
+      "model": "MacBook Pro",
+      "operatingSystem": "macOS",
+      "band": "5GHz",
+      "signalStrength": -37,
+      "isOnline": true,
+      "isWired": false,
+      "type": "main",
+      "ssid": "Linksys03041",
+      "isMLO": false
+    },
+    {
+      "deviceId": "1f898033-cac6-428f-81c0-4a1e3137bfaf",
+      "name": "DESKTOP-MOB04KQ",
+      "icon": "computer",
+      "upstreamDevice": "10.216.1.103",
+      "upstreamDeviceID": "",
+      "upstreamIcon": "genericDevice",
+      "ipv4Address": "",
+      "ipv6Address": "",
+      "macAddress": "44:E5:17:06:9D:5C",
+      "manufacturer": "",
+      "model": "",
+      "operatingSystem": "Windows",
+      "band": "Ethernet",
+      "signalStrength": -1,
+      "isOnline": true,
+      "isWired": true,
+      "type": "main",
+      "ssid": "",
+      "isMLO": false
+    },
+  ],
+  "upstreamDevice": "INTERNET",
+  "isWiredConnection": true,
+  "signalStrength": 0,
+  "serialNumber": "65G10M27E03041",
+  "modelNumber": "LN16",
+  "firmwareVersion": "1.0.5.216445",
+  "hardwareVersion": "1",
+  "lanIpAddress": "10.216.1.1",
+  "wanIpAddress": "192.168.1.88",
+  "blinkingStatus": "Blink Node",
+  "isMLO": false
+};
 const fakeNodeDetailsState1 = {
   "deviceId": "ef07238c-4870-46fb-a524-80691a13160e",
   "location": "Router123",
@@ -62,7 +123,7 @@ const fakeNodeDetailsState1 = {
       "isOnline": true,
       "isWired": false,
       "type": "main",
-      "ssid": "HAO-9F-5G"
+      "ssid": "Linksys03041-5G"
     },
     {
       "deviceId": "4d8921cb-cd9e-4967-be9f-59d17df9b9f3",
@@ -162,7 +223,7 @@ const fakeNodeDetailsState1 = {
       "isOnline": false,
       "isWired": true,
       "type": "main",
-      "ssid": "HAO-9F"
+      "ssid": "Linksys03041"
     },
     {
       "deviceId": "b77280dc-77a4-4ec1-9f4b-0d9c345851f9",
@@ -202,7 +263,7 @@ const fakeNodeDetailsState1 = {
       "isOnline": false,
       "isWired": true,
       "type": "main",
-      "ssid": "HAO-9F"
+      "ssid": "Linksys03041"
     },
     {
       "deviceId": "ada84782-29a9-417f-b754-7d8be56dd3c7",
@@ -282,7 +343,7 @@ const fakeNodeDetailsState1 = {
       "isOnline": true,
       "isWired": false,
       "type": "main",
-      "ssid": "HAO-9F"
+      "ssid": "Linksys03041"
     },
     {
       "deviceId": "27342e91-c4bf-4abe-8397-7eb91bf9c508",
@@ -302,7 +363,7 @@ const fakeNodeDetailsState1 = {
       "isOnline": true,
       "isWired": false,
       "type": "main",
-      "ssid": "HAO-9F"
+      "ssid": "Linksys03041"
     },
     {
       "deviceId": "5e0aea97-42a0-4261-aeb7-446571b1867d",
@@ -322,7 +383,7 @@ const fakeNodeDetailsState1 = {
       "isOnline": true,
       "isWired": false,
       "type": "main",
-      "ssid": "HAO-9F-5G"
+      "ssid": "Linksys03041-5G"
     },
     {
       "deviceId": "7739d6ba-710c-444a-8f89-6f423b38dbcf",
@@ -342,7 +403,7 @@ const fakeNodeDetailsState1 = {
       "isOnline": true,
       "isWired": false,
       "type": "main",
-      "ssid": "HAO-9F-5G"
+      "ssid": "Linksys03041-5G"
     },
     {
       "deviceId": "a319ceb9-7663-474b-b3f3-74376b902c48",
@@ -362,7 +423,7 @@ const fakeNodeDetailsState1 = {
       "isOnline": true,
       "isWired": false,
       "type": "main",
-      "ssid": "HAO-9F-5G"
+      "ssid": "Linksys03041-5G"
     },
     {
       "deviceId": "17ea7479-3130-40ae-b764-802d7fb6ee65",
@@ -382,7 +443,7 @@ const fakeNodeDetailsState1 = {
       "isOnline": true,
       "isWired": false,
       "type": "main",
-      "ssid": "HAO-9F-5G"
+      "ssid": "Linksys03041-5G"
     },
     {
       "deviceId": "aa430b95-48d4-4482-b197-b1e5573d18a7",
@@ -442,7 +503,7 @@ const fakeNodeDetailsState1 = {
       "isOnline": true,
       "isWired": false,
       "type": "main",
-      "ssid": "HAO-9F"
+      "ssid": "Linksys03041"
     },
     {
       "deviceId": "c0dde034-ab51-42b8-bc80-ca37d57a0cb0",
@@ -502,7 +563,7 @@ const fakeNodeDetailsState1 = {
       "isOnline": true,
       "isWired": false,
       "type": "main",
-      "ssid": "HAO-9F"
+      "ssid": "Linksys03041"
     },
     {
       "deviceId": "577c8f2a-e6a2-4ae4-a5c5-f42df3926734",
@@ -522,7 +583,7 @@ const fakeNodeDetailsState1 = {
       "isOnline": true,
       "isWired": false,
       "type": "main",
-      "ssid": "HAO-9F"
+      "ssid": "Linksys03041"
     },
     {
       "deviceId": "179236c6-aaec-4351-9acc-e8475fdedccb",
@@ -602,7 +663,7 @@ const fakeNodeDetailsState1 = {
       "isOnline": true,
       "isWired": false,
       "type": "main",
-      "ssid": "HAO-9F"
+      "ssid": "Linksys03041"
     },
     {
       "deviceId": "10839c8e-5798-40be-8c15-6c76177f50dd",
@@ -622,7 +683,7 @@ const fakeNodeDetailsState1 = {
       "isOnline": true,
       "isWired": false,
       "type": "main",
-      "ssid": "HAO-9F-5G"
+      "ssid": "Linksys03041-5G"
     },
     {
       "deviceId": "cad11a55-b7dc-441a-a0c5-02f60b1d6925",
@@ -642,7 +703,7 @@ const fakeNodeDetailsState1 = {
       "isOnline": true,
       "isWired": false,
       "type": "main",
-      "ssid": "HAO-9F"
+      "ssid": "Linksys03041"
     },
     {
       "deviceId": "3012d803-9726-4d45-90f2-5279526bd4f7",
@@ -662,7 +723,7 @@ const fakeNodeDetailsState1 = {
       "isOnline": true,
       "isWired": false,
       "type": "main",
-      "ssid": "HAO-9F-5G"
+      "ssid": "Linksys03041-5G"
     },
     {
       "deviceId": "0e91f5b9-462a-4b5a-b0db-bb82be990d80",
@@ -682,7 +743,7 @@ const fakeNodeDetailsState1 = {
       "isOnline": true,
       "isWired": false,
       "type": "main",
-      "ssid": "HAO-9F-5G"
+      "ssid": "Linksys03041-5G"
     },
     {
       "deviceId": "9d79fe63-5a62-42cf-ad1a-33bdd1ae0d68",
@@ -742,7 +803,7 @@ const fakeNodeDetailsState1 = {
       "isOnline": true,
       "isWired": false,
       "type": "main",
-      "ssid": "HAO-9F"
+      "ssid": "Linksys03041"
     },
     {
       "deviceId": "e21440bc-200f-4436-a411-072ef91b72e3",
@@ -762,7 +823,7 @@ const fakeNodeDetailsState1 = {
       "isOnline": true,
       "isWired": false,
       "type": "main",
-      "ssid": "HAO-9F-5G"
+      "ssid": "Linksys03041-5G"
     },
     {
       "deviceId": "e0fc410b-34df-47fb-9c14-078bcb2ac5c9",
@@ -782,7 +843,7 @@ const fakeNodeDetailsState1 = {
       "isOnline": true,
       "isWired": false,
       "type": "main",
-      "ssid": "HAO-9F"
+      "ssid": "Linksys03041"
     }
   ],
   "upstreamDevice": "INTERNET",
@@ -800,7 +861,7 @@ const fakeNodeDetailsState1 = {
 
 const fakeNodeDetailsState2 = {
   "deviceId": "ef07238c-4870-46fb-a524-80691a13160e",
-  "location": "Router123",
+  "location": "Linksys03048",
   "isMaster": false,
   "isOnline": true,
   "connectedDevices": [
@@ -862,7 +923,7 @@ const fakeNodeDetailsState2 = {
       "isOnline": true,
       "isWired": false,
       "type": "main",
-      "ssid": "HAO-9F-5G"
+      "ssid": "Linksys03041-5G"
     },
     {
       "deviceId": "4d8921cb-cd9e-4967-be9f-59d17df9b9f3",
@@ -962,7 +1023,7 @@ const fakeNodeDetailsState2 = {
       "isOnline": false,
       "isWired": true,
       "type": "main",
-      "ssid": "HAO-9F"
+      "ssid": "Linksys03041"
     },
     {
       "deviceId": "b77280dc-77a4-4ec1-9f4b-0d9c345851f9",
@@ -1002,7 +1063,7 @@ const fakeNodeDetailsState2 = {
       "isOnline": false,
       "isWired": true,
       "type": "main",
-      "ssid": "HAO-9F"
+      "ssid": "Linksys03041"
     },
     {
       "deviceId": "ada84782-29a9-417f-b754-7d8be56dd3c7",
@@ -1082,7 +1143,7 @@ const fakeNodeDetailsState2 = {
       "isOnline": true,
       "isWired": false,
       "type": "main",
-      "ssid": "HAO-9F"
+      "ssid": "Linksys03041"
     },
     {
       "deviceId": "27342e91-c4bf-4abe-8397-7eb91bf9c508",
@@ -1102,7 +1163,7 @@ const fakeNodeDetailsState2 = {
       "isOnline": true,
       "isWired": false,
       "type": "main",
-      "ssid": "HAO-9F"
+      "ssid": "Linksys03041"
     },
     {
       "deviceId": "5e0aea97-42a0-4261-aeb7-446571b1867d",
@@ -1122,7 +1183,7 @@ const fakeNodeDetailsState2 = {
       "isOnline": true,
       "isWired": false,
       "type": "main",
-      "ssid": "HAO-9F-5G"
+      "ssid": "Linksys03041-5G"
     },
     {
       "deviceId": "7739d6ba-710c-444a-8f89-6f423b38dbcf",
@@ -1142,7 +1203,7 @@ const fakeNodeDetailsState2 = {
       "isOnline": true,
       "isWired": false,
       "type": "main",
-      "ssid": "HAO-9F-5G"
+      "ssid": "Linksys03041-5G"
     },
     {
       "deviceId": "a319ceb9-7663-474b-b3f3-74376b902c48",
@@ -1162,7 +1223,7 @@ const fakeNodeDetailsState2 = {
       "isOnline": true,
       "isWired": false,
       "type": "main",
-      "ssid": "HAO-9F-5G"
+      "ssid": "Linksys03041-5G"
     },
     {
       "deviceId": "17ea7479-3130-40ae-b764-802d7fb6ee65",
@@ -1182,7 +1243,7 @@ const fakeNodeDetailsState2 = {
       "isOnline": true,
       "isWired": false,
       "type": "main",
-      "ssid": "HAO-9F-5G"
+      "ssid": "Linksys03041-5G"
     },
     {
       "deviceId": "aa430b95-48d4-4482-b197-b1e5573d18a7",
@@ -1242,7 +1303,7 @@ const fakeNodeDetailsState2 = {
       "isOnline": true,
       "isWired": false,
       "type": "main",
-      "ssid": "HAO-9F"
+      "ssid": "Linksys03041"
     },
     {
       "deviceId": "c0dde034-ab51-42b8-bc80-ca37d57a0cb0",
@@ -1302,7 +1363,7 @@ const fakeNodeDetailsState2 = {
       "isOnline": true,
       "isWired": false,
       "type": "main",
-      "ssid": "HAO-9F"
+      "ssid": "Linksys03041"
     },
     {
       "deviceId": "577c8f2a-e6a2-4ae4-a5c5-f42df3926734",
@@ -1322,7 +1383,7 @@ const fakeNodeDetailsState2 = {
       "isOnline": true,
       "isWired": false,
       "type": "main",
-      "ssid": "HAO-9F"
+      "ssid": "Linksys03041"
     },
     {
       "deviceId": "179236c6-aaec-4351-9acc-e8475fdedccb",
@@ -1402,7 +1463,7 @@ const fakeNodeDetailsState2 = {
       "isOnline": true,
       "isWired": false,
       "type": "main",
-      "ssid": "HAO-9F"
+      "ssid": "Linksys03041"
     },
     {
       "deviceId": "10839c8e-5798-40be-8c15-6c76177f50dd",
@@ -1422,7 +1483,7 @@ const fakeNodeDetailsState2 = {
       "isOnline": true,
       "isWired": false,
       "type": "main",
-      "ssid": "HAO-9F-5G"
+      "ssid": "Linksys03041-5G"
     },
     {
       "deviceId": "cad11a55-b7dc-441a-a0c5-02f60b1d6925",
@@ -1442,7 +1503,7 @@ const fakeNodeDetailsState2 = {
       "isOnline": true,
       "isWired": false,
       "type": "main",
-      "ssid": "HAO-9F"
+      "ssid": "Linksys03041"
     },
     {
       "deviceId": "3012d803-9726-4d45-90f2-5279526bd4f7",
@@ -1462,7 +1523,7 @@ const fakeNodeDetailsState2 = {
       "isOnline": true,
       "isWired": false,
       "type": "main",
-      "ssid": "HAO-9F-5G"
+      "ssid": "Linksys03041-5G"
     },
     {
       "deviceId": "0e91f5b9-462a-4b5a-b0db-bb82be990d80",
@@ -1482,7 +1543,7 @@ const fakeNodeDetailsState2 = {
       "isOnline": true,
       "isWired": false,
       "type": "main",
-      "ssid": "HAO-9F-5G"
+      "ssid": "Linksys03041-5G"
     },
     {
       "deviceId": "9d79fe63-5a62-42cf-ad1a-33bdd1ae0d68",
@@ -1542,7 +1603,7 @@ const fakeNodeDetailsState2 = {
       "isOnline": true,
       "isWired": false,
       "type": "main",
-      "ssid": "HAO-9F"
+      "ssid": "Linksys03041"
     },
     {
       "deviceId": "e21440bc-200f-4436-a411-072ef91b72e3",
@@ -1562,7 +1623,7 @@ const fakeNodeDetailsState2 = {
       "isOnline": true,
       "isWired": false,
       "type": "main",
-      "ssid": "HAO-9F-5G"
+      "ssid": "Linksys03041-5G"
     },
     {
       "deviceId": "e0fc410b-34df-47fb-9c14-078bcb2ac5c9",
@@ -1582,14 +1643,14 @@ const fakeNodeDetailsState2 = {
       "isOnline": true,
       "isWired": false,
       "type": "main",
-      "ssid": "HAO-9F"
+      "ssid": "Linksys03041"
     }
   ],
-  "upstreamDevice": "Parent Router",
+  "upstreamDevice": "Linksys03041",
   "isWiredConnection": false,
   "signalStrength": -54,
   "serialNumber": "59A10M23D00060",
-  "modelNumber": "MBE70",
+  "modelNumber": "LN16",
   "firmwareVersion": "1.0.10.215314",
   "hardwareVersion": "1",
   "lanIpAddress": "192.168.2.144",

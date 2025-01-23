@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:privacy_gui/core/jnap/models/device.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/page/nodes/providers/add_nodes_provider.dart';
 import 'package:privacy_gui/page/nodes/providers/add_nodes_state.dart';
 import 'package:privacy_gui/page/nodes/views/add_nodes_view.dart';
@@ -23,7 +23,7 @@ void main() async {
     when(mockAddNodesNotifier.build()).thenReturn(const AddNodesState());
   });
 
-  testLocalizations('add nodes view - main', (tester, locale) async {
+  testLocalizations('Instant-Piar - add nodes view', (tester, locale) async {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const AddNodesView(),
@@ -38,7 +38,7 @@ void main() async {
     await tester.pumpAndSettle();
   });
 
-  testLocalizations('add nodes view - lights has different color modal',
+  testLocalizations('Instant-Piar - lights has different color modal',
       (tester, locale) async {
     await tester.pumpWidget(
       testableSingleRoute(
@@ -57,7 +57,7 @@ void main() async {
     await tester.pumpAndSettle();
   });
 
-  testLocalizations('add nodes view - searching nodes', (tester, locale) async {
+  testLocalizations('Instant-Piar - searching nodes', (tester, locale) async {
     final simple = SearchingMockAddNodesNotifier();
     await tester.pumpWidget(
       testableSingleRoute(
@@ -77,8 +77,7 @@ void main() async {
     await tester.pump(const Duration(seconds: 2));
   });
 
-  testLocalizations('add nodes view - onboarding nodes',
-      (tester, locale) async {
+  testLocalizations('Instant-Piar - onboarding nodes', (tester, locale) async {
     final simple = OnboardingMockAddNodesNotifier();
     await tester.pumpWidget(
       testableSingleRoute(
@@ -98,7 +97,7 @@ void main() async {
     await tester.pump(const Duration(seconds: 2));
   });
 
-  testLocalizations('add nodes view - no nodes found results',
+  testLocalizations('Instant-Piar - no nodes found results',
       (tester, locale) async {
     when(mockAddNodesNotifier.build()).thenReturn(
         const AddNodesState(onboardingProceed: true, addedNodes: []));
@@ -117,7 +116,7 @@ void main() async {
     await tester.pumpAndSettle();
   });
 
-  testLocalizations('add nodes view - troubleshoot modal',
+  testLocalizations('Instant-Piar - troubleshoot modal',
       (tester, locale) async {
     when(mockAddNodesNotifier.build()).thenReturn(
         const AddNodesState(onboardingProceed: true, addedNodes: []));
@@ -142,7 +141,7 @@ void main() async {
   });
 
   testLocalizations(
-      'add nodes view - troubleshoot light is a different color modal',
+      'Instant-Piar - troubleshoot light is a different color modal',
       (tester, locale) async {
     when(mockAddNodesNotifier.build()).thenReturn(
         const AddNodesState(onboardingProceed: true, addedNodes: []));
@@ -164,15 +163,32 @@ void main() async {
     // await tester.tap(styledTextFinder);
     fireOnTapByIndex(styledTextFinder, 0);
     await tester.pumpAndSettle();
-    final textBtnFinder = find.byType(AppTextButton).at(1);
+    final textBtnFinder = find
+        .descendant(
+            of: find.byType(Dialog), matching: find.byType(AppTextButton))
+        .at(0);
     await tester.tap(textBtnFinder);
     await tester.pumpAndSettle();
   });
 
-  testLocalizations('add nodes view - results', (tester, locale) async {
+  testLocalizations('Instant-Piar - results', (tester, locale) async {
     when(mockAddNodesNotifier.build()).thenReturn(AddNodesState(
-        onboardingProceed: true,
-        childNodes: [RawDevice.fromJson(singleDeviceData)]));
+      onboardingProceed: true,
+      childNodes: [
+        LinksysDevice.fromJson(singleDeviceData),
+        LinksysDevice.fromMap(slaveCherry7TestData1),
+        LinksysDevice.fromMap(slaveCherry7TestData2),
+        LinksysDevice.fromMap(slaveCherry7TestData3),
+        LinksysDevice.fromMap(slaveCherry7TestData4),
+      ],
+      addedNodes: [
+        LinksysDevice.fromJson(singleDeviceData),
+        LinksysDevice.fromMap(slaveCherry7TestData1),
+        LinksysDevice.fromMap(slaveCherry7TestData2),
+        LinksysDevice.fromMap(slaveCherry7TestData3),
+        LinksysDevice.fromMap(slaveCherry7TestData4),
+      ],
+    ));
 
     // Pre-cached images to make image display proporly
     await tester.runAsync(() async {

@@ -28,7 +28,8 @@ void main() async {
     });
   });
 
-  testLocalizations('pnp unplug modem view', (tester, locale) async {
+  testLocalizations('Troubleshooter - PnP unplug modem',
+      (tester, locale) async {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const PnpUnplugModemView(),
@@ -41,7 +42,7 @@ void main() async {
     await tester.pumpAndSettle();
   });
 
-  testLocalizations('pnp unplug modem view - show tips',
+  testLocalizations('Troubleshooter - PnP unplug modem: show tips',
       (tester, locale) async {
     await tester.pumpWidget(
       testableSingleRoute(

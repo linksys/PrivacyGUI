@@ -6,7 +6,6 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
-import 'package:privacy_gui/page/dashboard/views/components/shimmer.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
@@ -41,38 +40,35 @@ class DashboardWiFiGrid extends ConsumerWidget {
           : mainAxisCount * itemHeight +
               ((mainAxisCount == 0 ? 1 : mainAxisCount) - 1) * mainSpacing +
               100,
-      child: ShimmerContainer(
-        isLoading: isLoading,
-        child: GridView.builder(
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            mainAxisSpacing: Spacing.medium,
-            crossAxisSpacing: mainSpacing,
-            // childAspectRatio: (3 / 2),
-            mainAxisExtent: itemHeight,
-          ),
-          physics: const NeverScrollableScrollPhysics(),
-          shrinkWrap: true,
-          itemCount: isLoading ? 4 : items.length,
-          itemBuilder: (context, index) {
-            final item = isLoading ? null : items[index];
-            return SizedBox(
-                height: itemHeight,
-                child: _wifiCard(
-                    context,
-                    ref,
-                    item ??
-                        DashboardWiFiItem(
-                            ssid: 'ssid',
-                            password: 'password',
-                            radios: const ['6GHz'],
-                            isGuest: false,
-                            isEnabled: true,
-                            numOfConnectedDevices: 7),
-                    index,
-                    canBeDisabled));
-          },
+      child: GridView.builder(
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: crossAxisCount,
+          mainAxisSpacing: Spacing.medium,
+          crossAxisSpacing: mainSpacing,
+          // childAspectRatio: (3 / 2),
+          mainAxisExtent: itemHeight,
         ),
+        physics: const NeverScrollableScrollPhysics(),
+        shrinkWrap: true,
+        itemCount: isLoading ? 4 : items.length,
+        itemBuilder: (context, index) {
+          final item = isLoading ? null : items[index];
+          return SizedBox(
+              height: itemHeight,
+              child: _wifiCard(
+                  context,
+                  ref,
+                  item ??
+                      DashboardWiFiItem(
+                          ssid: 'ssid',
+                          password: 'password',
+                          radios: const ['6GHz'],
+                          isGuest: false,
+                          isEnabled: true,
+                          numOfConnectedDevices: 7),
+                  index,
+                  canBeDisabled));
+        },
       ),
     );
   }
@@ -90,10 +86,10 @@ class DashboardWiFiGrid extends ConsumerWidget {
             children: [
               AppText.bodyMedium(
                 item.isGuest
-                    ? loc(context).guest
-                    : item.radios
+                    ? loc(context).guestWifi
+                    : loc(context).wifiBand(item.radios
                         .map((e) => e.replaceAll('RADIO_', ''))
-                        .join('/'),
+                        .join('/')),
               ),
               AppSwitch(
                 semanticLabel: item.isGuest

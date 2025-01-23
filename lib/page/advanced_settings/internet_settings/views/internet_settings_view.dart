@@ -21,7 +21,9 @@ import 'package:privacy_gui/page/components/styled/styled_tab_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/providers/redirection/redirection_provider.dart';
 import 'package:privacy_gui/util/error_code_helper.dart';
-import 'package:privacy_gui/util/url_helper/url_helper.dart';
+import 'package:privacy_gui/util/url_helper/url_helper.dart'
+    if (dart.library.io) 'package:privacy_gui/util/url_helper/url_helper_mobile.dart'
+    if (dart.library.html) 'package:privacy_gui/util/url_helper/url_helper_web.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacy_gui/validator_rules/_validator_rules.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
@@ -116,7 +118,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
       _notifier.fetch().then(
         (value) {
           setState(() {
-            originalState = ref.read(internetSettingsProvider).copyWith();
+            originalState = value;
             initUI(originalState);
           });
         },
@@ -782,8 +784,6 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
     final type = WanType.resolve(ipv4Setting.ipv4ConnectionType);
     final isDomainNameEditable = switch (type) {
       WanType.static => true,
-      WanType.pptp => true,
-      // WanType.bridge => true,
       _ => false,
     };
     return isEditing && isDomainNameEditable
@@ -798,14 +798,9 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
               controller: _staticDomainNameController,
               border: const OutlineInputBorder(),
               onChanged: (value) {
-                // if (!focused) {
-                //   setState(() {
-                //     state = state.copyWith(
-                //       ipv4Setting: ipv4Setting.copyWith(
-                //           domainName: () => _staticDomainNameController.text),
-                //     );
-                //   });
-                // }
+                _notifier.updateIpv4Settings(ipv4Setting.copyWith(
+                  domainName: () => value.isEmpty ? null : value,
+                ));
               },
             ),
           )
@@ -915,9 +910,11 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
             ),
             child: Row(
               children: [
-                AppText.titleMedium(
-                    loc(context).macAddressClone.capitalizeWords()),
-                const Spacer(),
+                Expanded(
+                  child: AppText.titleMedium(
+                      loc(context).macAddressClone.capitalizeWords()),
+                ),
+                AppGap.small1(),
                 AppSwitch(
                   semanticLabel: 'mac address clone',
                   value: state.macClone,
@@ -1519,8 +1516,11 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
                     isIPv6AutomaticEnabled: true,
                   ));
                 } else {
-                  _notifier.updateIpv6Settings(
-                      ipv6Setting.copyWith(isIPv6AutomaticEnabled: value));
+                  _notifier.updateIpv6Settings(ipv6Setting.copyWith(
+                      isIPv6AutomaticEnabled: value,
+                      ipv6rdTunnelMode: () =>
+                          ipv6Setting.ipv6rdTunnelMode ??
+                          IPv6rdTunnelMode.disabled));
                 }
                 setState(() {
                   initUI(ref.read(internetSettingsProvider));
@@ -1583,6 +1583,8 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
     final isEnable = !ipv6Setting.isIPv6AutomaticEnabled &&
         ipv6Setting.ipv6rdTunnelMode == IPv6rdTunnelMode.manual;
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Padding(
           padding: inputPadding,
@@ -1828,35 +1830,32 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
   }
 
   _showRenewIPAlert(InternetSettingsViewType type) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: AppText.titleLarge(loc(context).releaseAndRenewIpAddress),
-          content: AppText.bodyMedium(
-              loc(context).releaseAndRenewIpAddressDescription),
-          actions: [
-            AppTextButton(
-              loc(context).cancel,
-              color: Theme.of(context).colorScheme.onSurface,
-              onTap: () {
-                context.pop();
-              },
-            ),
-            AppTextButton(
-              loc(context).releaseAndRenew,
-              onTap: () {
-                context.pop();
-                if (type == InternetSettingsViewType.ipv4) {
-                  _releaseAndRenewIpv4();
-                } else {
-                  _releaseAndRenewIpv6();
-                }
-              },
-            ),
-          ],
-        );
-      },
+    showSimpleAppDialog(
+      context,
+      dismissible: false,
+      title: loc(context).releaseAndRenewIpAddress,
+      content:
+          AppText.bodyMedium(loc(context).releaseAndRenewIpAddressDescription),
+      actions: [
+        AppTextButton(
+          loc(context).cancel,
+          color: Theme.of(context).colorScheme.onSurface,
+          onTap: () {
+            context.pop();
+          },
+        ),
+        AppTextButton(
+          loc(context).releaseAndRenew,
+          onTap: () {
+            context.pop();
+            if (type == InternetSettingsViewType.ipv4) {
+              _releaseAndRenewIpv4();
+            } else {
+              _releaseAndRenewIpv6();
+            }
+          },
+        ),
+      ],
     );
   }
 

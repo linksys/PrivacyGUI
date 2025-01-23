@@ -31,7 +31,29 @@ void main() {
         ),
         locale: locale,
         overrides: [
-          administrationSettingsProvider.overrideWith(() => mockAdministrationSettingsNotifier)
+          administrationSettingsProvider
+              .overrideWith(() => mockAdministrationSettingsNotifier)
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+  });
+
+  testLocalizations('Administration settings view - no LAN ports',
+      (tester, locale) async {
+    when(mockAdministrationSettingsNotifier.build()).thenReturn(
+        AdministrationSettingsState.fromMap(administrationSettingsTestState)
+            .copyWith(canDisAllowLocalMangementWirelessly: false));
+    await tester.pumpWidget(
+      testableSingleRoute(
+        child: const AdministrationSettingsView(),
+        config: LinksysRouteConfig(
+          column: ColumnGrid(column: 9),
+        ),
+        locale: locale,
+        overrides: [
+          administrationSettingsProvider
+              .overrideWith(() => mockAdministrationSettingsNotifier)
         ],
       ),
     );

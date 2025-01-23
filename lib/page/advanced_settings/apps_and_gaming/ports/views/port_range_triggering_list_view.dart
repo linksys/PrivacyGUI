@@ -228,7 +228,7 @@ class _PortRangeTriggeringContentViewState
           _ => AppText.bodyLarge(''),
         };
       },
-      editCellBuilder: (context, ref, index, rule) {
+      editCellBuilder: (context, ref, index, rule, error) {
         final stateRule = ref.watch(portRangeTriggeringRuleProvider).rule;
 
         return switch (index) {
@@ -244,104 +244,149 @@ class _PortRangeTriggeringContentViewState
                       .isRuleValid();
                 });
               },
+              errorText: error,
             ),
-          1 => Row(
+          1 => Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Expanded(
-                  child: AppTextField.minMaxNumber(
-                    min: 0,
-                    max: 65535,
-                    border: OutlineInputBorder(),
-                    controller: firstTriggerPortController,
-                    onChanged: (value) {
-                      ref
-                          .read(portRangeTriggeringRuleProvider.notifier)
-                          .updateRule(stateRule?.copyWith(
-                              firstTriggerPort: int.tryParse(value) ?? 0));
-                      setState(() {
-                        _isEditRuleValid = ref
-                            .read(portRangeTriggeringRuleProvider.notifier)
-                            .isRuleValid();
-                      });
-                    },
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Expanded(
+                      child: AppTextField.minMaxNumber(
+                        min: 0,
+                        max: 65535,
+                        border: OutlineInputBorder(),
+                        controller: firstTriggerPortController,
+                        onChanged: (value) {
+                          ref
+                              .read(portRangeTriggeringRuleProvider.notifier)
+                              .updateRule(stateRule?.copyWith(
+                                  firstTriggerPort: int.tryParse(value) ?? 0));
+                          setState(() {
+                            _isEditRuleValid = ref
+                                .read(portRangeTriggeringRuleProvider.notifier)
+                                .isRuleValid();
+                          });
+                        },
+                      ),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.only(
+                          left: Spacing.small1, right: Spacing.small1),
+                      child: AppText.bodySmall(loc(context).to),
+                    ),
+                    Expanded(
+                      child: AppTextField.minMaxNumber(
+                        min: 0,
+                        max: 65535,
+                        border: OutlineInputBorder(),
+                        controller: lastTriggerPortController,
+                        onChanged: (value) {
+                          ref
+                              .read(portRangeTriggeringRuleProvider.notifier)
+                              .updateRule(stateRule?.copyWith(
+                                  lastTriggerPort: int.tryParse(value) ?? 0));
+                          setState(() {
+                            _isEditRuleValid = ref
+                                .read(portRangeTriggeringRuleProvider.notifier)
+                                .isRuleValid();
+                          });
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                if (error != null)
+                  AppText.bodySmall(
+                    error,
+                    color: Theme.of(context).colorScheme.error,
                   ),
-                ),
-                Padding(
-                  padding: EdgeInsets.only(
-                      left: Spacing.small1, right: Spacing.small1),
-                  child: AppText.bodySmall(loc(context).to),
-                ),
-                Expanded(
-                  child: AppTextField.minMaxNumber(
-                    min: 0,
-                    max: 65535,
-                    border: OutlineInputBorder(),
-                    controller: lastTriggerPortController,
-                    onChanged: (value) {
-                      ref
-                          .read(portRangeTriggeringRuleProvider.notifier)
-                          .updateRule(stateRule?.copyWith(
-                              lastTriggerPort: int.tryParse(value) ?? 0));
-                      setState(() {
-                        _isEditRuleValid = ref
-                            .read(portRangeTriggeringRuleProvider.notifier)
-                            .isRuleValid();
-                      });
-                    },
-                  ),
-                ),
               ],
             ),
-          2 => Row(
+          2 => Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Expanded(
-                  child: AppTextField.minMaxNumber(
-                    min: 0,
-                    max: 65535,
-                    border: OutlineInputBorder(),
-                    controller: firstForwardedPortController,
-                    onChanged: (value) {
-                      ref
-                          .read(portRangeTriggeringRuleProvider.notifier)
-                          .updateRule(stateRule?.copyWith(
-                              firstForwardedPort: int.tryParse(value) ?? 0));
-                      setState(() {
-                        _isEditRuleValid = ref
-                            .read(portRangeTriggeringRuleProvider.notifier)
-                            .isRuleValid();
-                      });
-                    },
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Expanded(
+                      child: AppTextField.minMaxNumber(
+                        min: 0,
+                        max: 65535,
+                        border: OutlineInputBorder(),
+                        controller: firstForwardedPortController,
+                        onChanged: (value) {
+                          ref
+                              .read(portRangeTriggeringRuleProvider.notifier)
+                              .updateRule(stateRule?.copyWith(
+                                  firstForwardedPort:
+                                      int.tryParse(value) ?? 0));
+                          setState(() {
+                            _isEditRuleValid = ref
+                                .read(portRangeTriggeringRuleProvider.notifier)
+                                .isRuleValid();
+                          });
+                        },
+                      ),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.only(
+                          left: Spacing.small1, right: Spacing.small1),
+                      child: AppText.bodySmall(loc(context).to),
+                    ),
+                    Expanded(
+                      child: AppTextField.minMaxNumber(
+                        min: 0,
+                        max: 65535,
+                        border: OutlineInputBorder(),
+                        controller: lastForwardedPortController,
+                        onChanged: (value) {
+                          ref
+                              .read(portRangeTriggeringRuleProvider.notifier)
+                              .updateRule(stateRule?.copyWith(
+                                  lastForwardedPort: int.tryParse(value) ?? 0));
+                          setState(() {
+                            _isEditRuleValid = ref
+                                .read(portRangeTriggeringRuleProvider.notifier)
+                                .isRuleValid();
+                          });
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                if (error != null)
+                  AppText.bodySmall(
+                    error,
+                    color: Theme.of(context).colorScheme.error,
                   ),
-                ),
-                Padding(
-                  padding: EdgeInsets.only(
-                      left: Spacing.small1, right: Spacing.small1),
-                  child: AppText.bodySmall(loc(context).to),
-                ),
-                Expanded(
-                  child: AppTextField.minMaxNumber(
-                    min: 0,
-                    max: 65535,
-                    border: OutlineInputBorder(),
-                    controller: lastForwardedPortController,
-                    onChanged: (value) {
-                      ref
-                          .read(portRangeTriggeringRuleProvider.notifier)
-                          .updateRule(stateRule?.copyWith(
-                              lastForwardedPort: int.tryParse(value) ?? 0));
-                      setState(() {
-                        _isEditRuleValid = ref
-                            .read(portRangeTriggeringRuleProvider.notifier)
-                            .isRuleValid();
-                      });
-                    },
-                  ),
-                ),
               ],
             ),
           _ => AppText.bodyLarge(''),
+        };
+      },
+      onValidate: (index) {
+        final notifier = ref.read(portRangeTriggeringRuleProvider.notifier);
+        return switch (index) {
+          0 => notifier.isNameValid(applicationTextController.text)
+              ? null
+              : loc(context).theNameMustNotBeEmpty,
+          1 => notifier.isPortRangeValid(
+                  int.tryParse(firstTriggerPortController.text) ?? 0,
+                  int.tryParse(lastTriggerPortController.text) ?? 0)
+              ? null
+              : loc(context).portRangeError,
+          2 => notifier.isPortRangeValid(
+                  int.tryParse(firstForwardedPortController.text) ?? 0,
+                  int.tryParse(lastForwardedPortController.text) ?? 0)
+              ? notifier.isForwardedPortConflict(
+                      int.tryParse(firstForwardedPortController.text) ?? 0,
+                      int.tryParse(lastForwardedPortController.text) ?? 0)
+                  ? null
+                  : loc(context).rulesOverlapError
+              : loc(context).portRangeError,
+          _ => null,
         };
       },
       createNewItem: () => const PortRangeTriggeringRule(

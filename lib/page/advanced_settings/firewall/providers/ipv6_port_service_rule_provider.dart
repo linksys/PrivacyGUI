@@ -34,7 +34,7 @@ class Ipv6PortServiceRuleNotifier extends Notifier<Ipv6PortServiceRuleState>
     if (rule == null) {
       return false;
     }
-    return rule.description.isNotEmpty &&
+    return isRuleNameValidate(rule.description) &&
         isDeviceIpValidate(rule.ipv6Address) &&
         isPortRangeValid(
           rule.portRanges.first.firstPort,
@@ -46,6 +46,11 @@ class Ipv6PortServiceRuleNotifier extends Notifier<Ipv6PortServiceRuleState>
           rule.portRanges.first.protocol,
         );
   }
+
+  bool isRuleNameValidate(String ruleName) {
+    return ruleName.isNotEmpty;
+  }
+
 
   bool isDeviceIpValidate(String ipAddress) {
     return ipAddress.isNotEmpty;

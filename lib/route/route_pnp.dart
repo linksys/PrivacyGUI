@@ -7,6 +7,7 @@ final explanationRoute = LinksysRoute(
     column: ColumnGrid(
       column: 12,
     ),
+    noNaviRail: true,
   ),
   builder: (context, state) => ExplanationView(
     args: state.uri.queryParameters,
@@ -18,9 +19,12 @@ final pnpRoute = LinksysRoute(
   path: RoutePath.pnp,
   config: LinksysRouteConfig(
     column: ColumnGrid(column: 6, centered: true),
+    noNaviRail: true,
   ),
   builder: (context, state) => PnpAdminView(
-    args: state.uri.queryParameters,
+    args: <String, dynamic>{}
+      ..addAll(state.extra as Map<String, dynamic>? ?? <String, dynamic>{})
+      ..addAll(state.uri.queryParameters),
   ),
   routes: [
     LinksysRoute(
@@ -28,6 +32,7 @@ final pnpRoute = LinksysRoute(
       path: RoutePath.pnpConfig,
       config: LinksysRouteConfig(
         column: ColumnGrid(column: 6, centered: true),
+        noNaviRail: true,
       ),
       builder: (context, state) => const PnpSetupView(),
       routes: [],
@@ -40,6 +45,7 @@ final pnpTroubleshootingRoute = LinksysRoute(
   path: RoutePath.pnpNoInternetConnection,
   config: LinksysRouteConfig(
     column: ColumnGrid(column: 6, centered: true),
+    noNaviRail: true,
   ),
   builder: (context, state) => PnpNoInternetConnectionView(
     args: state.extra as Map<String, dynamic>? ?? {},
@@ -50,6 +56,7 @@ final pnpTroubleshootingRoute = LinksysRoute(
       path: RoutePath.callSupportMainRegion,
       config: LinksysRouteConfig(
         column: ColumnGrid(column: 12),
+        noNaviRail: true,
       ),
       builder: (context, state) => const CallSupportMainRegionView(),
       routes: [
@@ -58,6 +65,7 @@ final pnpTroubleshootingRoute = LinksysRoute(
           path: RoutePath.callSupportMoreRegion,
           config: LinksysRouteConfig(
             column: ColumnGrid(column: 12),
+            noNaviRail: true,
           ),
           builder: (context, state) => CallSupportMoreRegionView(
             args: state.extra as Map<String, dynamic>? ?? {},
@@ -70,6 +78,7 @@ final pnpTroubleshootingRoute = LinksysRoute(
       path: RoutePath.pnpUnplugModem,
       config: LinksysRouteConfig(
         column: ColumnGrid(column: 6, centered: true),
+        noNaviRail: true,
       ),
       builder: (context, state) => const PnpUnplugModemView(),
       routes: [
@@ -86,6 +95,7 @@ final pnpTroubleshootingRoute = LinksysRoute(
               path: RoutePath.pnpWaitingModem,
               config: LinksysRouteConfig(
                 column: ColumnGrid(column: 6, centered: true),
+                noNaviRail: true,
               ),
               builder: (context, state) => const PnpWaitingModemView(),
             )
@@ -98,6 +108,7 @@ final pnpTroubleshootingRoute = LinksysRoute(
       path: RoutePath.pnpIspAuth,
       config: LinksysRouteConfig(
         column: ColumnGrid(column: 6, centered: true),
+        noNaviRail: true,
       ),
       builder: (context, state) => PnpIspAuthView(
         args: state.extra as Map<String, dynamic>? ?? {},
@@ -108,6 +119,7 @@ final pnpTroubleshootingRoute = LinksysRoute(
       path: RoutePath.pnpIspSaveSettings,
       config: LinksysRouteConfig(
         column: ColumnGrid(column: 6, centered: true),
+        noNaviRail: true,
       ),
       builder: (context, state) => PnpIspSaveSettingsView(
         args: state.extra as Map<String, dynamic>? ?? {},
@@ -118,6 +130,7 @@ final pnpTroubleshootingRoute = LinksysRoute(
       path: RoutePath.pnpIspTypeSelection,
       config: LinksysRouteConfig(
         column: ColumnGrid(column: 6, centered: true),
+        noNaviRail: true,
       ),
       builder: (context, state) => const PnpIspTypeSelectionView(),
       routes: [
@@ -134,6 +147,7 @@ final pnpTroubleshootingRoute = LinksysRoute(
           path: RoutePath.pnpPPPOE,
           config: LinksysRouteConfig(
             column: ColumnGrid(column: 6, centered: true),
+            noNaviRail: true,
           ),
           builder: (context, state) => PnpPPPOEView(
             args: state.extra as Map<String, dynamic>? ?? {},

@@ -1,17 +1,14 @@
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/call_support/call_support_main_region_view.dart';
-
 import 'package:privacygui_widgets/widgets/card/card.dart';
-
 import '../../../../../../common/test_responsive_widget.dart';
 import '../../../../../../common/testable_router.dart';
 
 void main() async {
-
   setUp(() {});
 
-  testLocalizations('call support view - main', (tester, locale) async {
+  testLocalizations('Troubleshooter - call support main',
+      (tester, locale) async {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const CallSupportMainRegionView(),
@@ -21,7 +18,8 @@ void main() async {
     );
     await tester.pumpAndSettle();
   });
-  testLocalizations('call support view - America detail', (tester, locale) async {
+  testLocalizations('Troubleshooter - call support main: America detail',
+      (tester, locale) async {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const CallSupportMainRegionView(),
@@ -35,7 +33,8 @@ void main() async {
     await tester.pumpAndSettle();
   });
 
-  testLocalizations('call support view - Canada detail', (tester, locale) async {
+  testLocalizations('Troubleshooter - call support main: Canada detail',
+      (tester, locale) async {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const CallSupportMainRegionView(),

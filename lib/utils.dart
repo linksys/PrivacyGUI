@@ -582,7 +582,7 @@ extension NodeSignalLevelExt on NodeSignalLevel {
   Color? resolveColor(BuildContext context) {
     return switch (this) {
       NodeSignalLevel.excellent => Theme.of(context).colorSchemeExt.green,
-      NodeSignalLevel.good => Theme.of(context).colorSchemeExt.orange,
+      NodeSignalLevel.good => Theme.of(context).colorSchemeExt.green,
       NodeSignalLevel.poor => Theme.of(context).colorScheme.error,
       NodeSignalLevel.fair => Theme.of(context).colorScheme.error,
       NodeSignalLevel.wired => Theme.of(context).colorScheme.onSurface,
