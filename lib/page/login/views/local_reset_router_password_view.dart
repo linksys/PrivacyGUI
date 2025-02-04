@@ -229,6 +229,7 @@ class _LocalResetRouterPasswordViewState
       showAdaptiveDialog(
         context: context,
         builder: (BuildContext context) => AlertDialog.adaptive(
+          key: const ValueKey('resetSavedDialog'),
           title: AppText.titleLarge(dialogTitle),
           content: AppText.bodyMedium(dialogContent),
           actions: [
