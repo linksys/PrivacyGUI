@@ -621,55 +621,57 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
     final result = await showSubmitAppDialog<String>(
       context,
       title: loc(context).wifiPassword,
-      contentBuilder: (context, setState, onSubmit) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AppPasswordField.withValidator(
-            semanticLabel: 'wifi password',
-            autofocus: true,
-            controller: controller,
-            border: const OutlineInputBorder(),
-            validations: [
-              Validation(
-                description: loc(context).wifiPasswordLimit,
-                validator: ((text) =>
-                    wifiPasswordValidator.getRuleByIndex(0)?.validate(text) ??
-                    false),
-              ),
-              Validation(
-                description: loc(context).routerPasswordRuleStartEndWithSpace,
-                validator: ((text) =>
-                    wifiPasswordValidator.getRuleByIndex(1)?.validate(text) ??
-                    false),
-              ),
-              Validation(
-                description:
-                    loc(context).routerPasswordRuleUnsupportSpecialChar,
-                validator: ((text) =>
-                    wifiPasswordValidator.getRuleByIndex(2)?.validate(text) ??
-                    false),
-              ),
-              Validation(
-                description: loc(context).routerPasswordRuleStartEndWithSpace,
-                validator: ((text) =>
-                    NoSurroundWhitespaceRule().validate(text)),
-              ),
-              Validation(
-                description:
-                    loc(context).routerPasswordRuleUnsupportSpecialChar,
-                validator: ((text) => AsciiRule().validate(text)),
-              ),
-            ],
-            onValidationChanged: (isValid) => setState(() {
-              isPasswordValid = isValid;
-            }),
-            onSubmitted: (_) {
-              if (wifiPasswordValidator.validate(controller.text)) {
-                context.pop(controller.text);
-              }
-            },
-          )
-        ],
+      contentBuilder: (context, setState, onSubmit) => SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppPasswordField.withValidator(
+              semanticLabel: 'wifi password',
+              autofocus: true,
+              controller: controller,
+              border: const OutlineInputBorder(),
+              validations: [
+                Validation(
+                  description: loc(context).wifiPasswordLimit,
+                  validator: ((text) =>
+                      wifiPasswordValidator.getRuleByIndex(0)?.validate(text) ??
+                      false),
+                ),
+                Validation(
+                  description: loc(context).routerPasswordRuleStartEndWithSpace,
+                  validator: ((text) =>
+                      wifiPasswordValidator.getRuleByIndex(1)?.validate(text) ??
+                      false),
+                ),
+                Validation(
+                  description:
+                      loc(context).routerPasswordRuleUnsupportSpecialChar,
+                  validator: ((text) =>
+                      wifiPasswordValidator.getRuleByIndex(2)?.validate(text) ??
+                      false),
+                ),
+                Validation(
+                  description: loc(context).routerPasswordRuleStartEndWithSpace,
+                  validator: ((text) =>
+                      NoSurroundWhitespaceRule().validate(text)),
+                ),
+                Validation(
+                  description:
+                      loc(context).routerPasswordRuleUnsupportSpecialChar,
+                  validator: ((text) => AsciiRule().validate(text)),
+                ),
+              ],
+              onValidationChanged: (isValid) => setState(() {
+                isPasswordValid = isValid;
+              }),
+              onSubmitted: (_) {
+                if (wifiPasswordValidator.validate(controller.text)) {
+                  context.pop(controller.text);
+                }
+              },
+            )
+          ],
+        ),
       ),
       event: () async => controller.text,
       checkPositiveEnabled: () => isPasswordValid,

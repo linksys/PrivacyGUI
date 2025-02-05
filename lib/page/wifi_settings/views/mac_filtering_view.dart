@@ -23,6 +23,7 @@ import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/info_card.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
 class MacFilteringView extends ArgumentsConsumerStatefulView {
@@ -49,6 +50,9 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView>
       _notifier.fetch().then((value) async {
         await _notifier.doPolling();
         preservedState = value;
+        ref
+            .read(wifiViewProvider.notifier)
+            .setMacFilteringViewChanged(value != preservedState);
       }),
     );
     super.initState();
@@ -153,6 +157,7 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView>
 
   Widget _infoCard(int length) {
     return AppInfoCard(
+      padding: const EdgeInsets.all(Spacing.medium),
       onTap: () {
         context.pushNamed(RouteNamed.macFilteringInput);
       },
