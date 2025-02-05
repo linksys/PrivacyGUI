@@ -169,6 +169,36 @@ const List<Map<String, dynamic>> iconRules = [
     'iconClass': 'routerMbe7100',
   },
   {
+    'description': 'Linksys SPNM61 (SPNM61/Pinnacle 2.1)',
+    'test': {
+      'model': {
+        'manufacturer': 'Linksys',
+        'modelNumber': '^spnm61',
+      },
+    },
+    'iconClass': 'routerSpnm61',
+  },
+  {
+    'description': 'Linksys SPNM62 (SPNM62/Pinnacle 2.2)',
+    'test': {
+      'model': {
+        'manufacturer': 'Linksys',
+        'modelNumber': '^spnm62',
+      },
+    },
+    'iconClass': 'routerSpnm62',
+  },
+  {
+    'description': 'Linksys SPNM60 (SPNM60/Pinnacle 2.0)',
+    'test': {
+      'model': {
+        'manufacturer': 'Linksys',
+        'modelNumber': '^spnm60',
+      },
+    },
+    'iconClass': 'routerSpnm60',
+  },
+  {
     'description': 'Linksys Router (modelNumber passthrough)',
     'test': {
       'model': {
@@ -683,10 +713,13 @@ String _iconMapping(String iconClass, {String? fallback}) {
       return 'routerLn11';
     case 'routerLn12':
     case 'routerLn16':
+    case 'routerSpnm60':
+    case 'routerSpnm61':
+    case 'routerSpnm62':
       return 'routerLn12';
     default:
       // do router check
-      return fallback ?? 'routerLn11';
+      return fallback ?? 'routerLn12';
   }
 }
 

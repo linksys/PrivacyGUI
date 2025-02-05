@@ -112,7 +112,8 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView>
                     children: [
                       _enableTile(state),
                       const AppGap.small2(),
-                      _infoCard(deviceList.length),
+                      _infoCard(
+                          state.mode == MacFilterMode.deny, deviceList.length),
                     ],
                   ),
                 ),
@@ -137,7 +138,7 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView>
           ],
           _enableTile(state),
           const AppGap.small2(),
-          _infoCard(deviceList.length),
+          _infoCard(state.mode == MacFilterMode.deny, deviceList.length),
           const AppGap.large2(),
         ],
       ),
@@ -155,15 +156,20 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView>
     );
   }
 
-  Widget _infoCard(int length) {
-    return AppInfoCard(
-      padding: const EdgeInsets.all(Spacing.medium),
-      onTap: () {
-        context.pushNamed(RouteNamed.macFilteringInput);
-      },
-      title: loc(context).nDevices(length).capitalizeWords(),
-      description: loc(context).denyAccessDesc,
-      trailing: Icon(LinksysIcons.chevronRight),
+  Widget _infoCard(bool enabled, int length) {
+    return Opacity(
+      opacity: enabled ? 1 : .5,
+      child: AppInfoCard(
+        padding: const EdgeInsets.all(Spacing.medium),
+      onTap: enabled
+            ? () {
+                context.pushNamed(RouteNamed.macFilteringInput);
+              }
+            : null,
+        title: loc(context).nDevices(length).capitalizeWords(),
+        description: loc(context).denyAccessDesc,
+        trailing: Icon(LinksysIcons.chevronRight),
+      ),
     );
   }
 
