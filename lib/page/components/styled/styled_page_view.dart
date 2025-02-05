@@ -274,7 +274,8 @@ class StyledAppPageView extends ConsumerWidget {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
+                      Flexible(
+                        fit: FlexFit.loose,
                         child: AppText.titleLarge(
                           title,
                           maxLines: 2,
