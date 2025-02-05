@@ -244,7 +244,6 @@ class _PortRangeTriggeringContentViewState
                       .isRuleValid();
                 });
               },
-              errorText: error,
             ),
           1 => Column(
               mainAxisSize: MainAxisSize.min,
@@ -297,11 +296,6 @@ class _PortRangeTriggeringContentViewState
                     ),
                   ],
                 ),
-                if (error != null)
-                  AppText.bodySmall(
-                    error,
-                    color: Theme.of(context).colorScheme.error,
-                  ),
               ],
             ),
           2 => Column(
@@ -356,11 +350,6 @@ class _PortRangeTriggeringContentViewState
                     ),
                   ],
                 ),
-                if (error != null)
-                  AppText.bodySmall(
-                    error,
-                    color: Theme.of(context).colorScheme.error,
-                  ),
               ],
             ),
           _ => AppText.bodyLarge(''),

@@ -223,7 +223,6 @@ class _Ipv6PortServiceListViewState
                       .isRuleValid();
                 });
               },
-              errorText: error,
             ),
           1 => AppDropdownButton(
               initial: stateRule?.portRanges.firstOrNull?.protocol ?? 'Both',
@@ -260,7 +259,6 @@ class _Ipv6PortServiceListViewState
                       .isRuleValid();
                 });
               },
-              errorText: error,
             ),
           3 => Column(
               mainAxisSize: MainAxisSize.min,
@@ -335,11 +333,6 @@ class _Ipv6PortServiceListViewState
                     ),
                   ],
                 ),
-                if (error != null)
-                  AppText.bodySmall(
-                    error,
-                    color: Theme.of(context).colorScheme.error,
-                  )
               ],
             ),
           _ => AppText.bodyLarge(''),

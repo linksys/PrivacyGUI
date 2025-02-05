@@ -248,7 +248,6 @@ class _SinglePortForwardingContentViewState
                       .isRuleValid();
                 });
               },
-              errorText: error,
             ),
           1 => AppTextField.minMaxNumber(
               min: 0,
@@ -281,7 +280,6 @@ class _SinglePortForwardingContentViewState
                       .isRuleValid();
                 });
               },
-              errorText: error,
             ),
           3 => AppDropdownButton(
               initial: stateRule?.protocol,
@@ -314,7 +312,6 @@ class _SinglePortForwardingContentViewState
                       .isRuleValid();
                 });
               },
-              errorText: error,
             ),
           _ => AppText.bodyLarge(''),
         };

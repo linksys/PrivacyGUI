@@ -245,7 +245,6 @@ class _PortRangeForwardingContentViewState
                       .isRuleValid();
                 });
               },
-              errorText: error,
             ),
           1 => Column(
               mainAxisSize: MainAxisSize.min,
@@ -298,9 +297,6 @@ class _PortRangeForwardingContentViewState
                     ),
                   ],
                 ),
-                if (error != null)
-                  AppText.bodySmall(error,
-                      color: Theme.of(context).colorScheme.error),
               ],
             ),
           2 => AppDropdownButton(
@@ -334,7 +330,6 @@ class _PortRangeForwardingContentViewState
                       .isRuleValid();
                 });
               },
-              errorText: error,
             ),
           _ => AppText.bodyLarge(''),
         };
