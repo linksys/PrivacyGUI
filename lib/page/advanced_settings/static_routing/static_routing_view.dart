@@ -22,7 +22,6 @@ import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field_display_type.dart';
 import 'package:privacygui_widgets/widgets/radios/radio_list.dart';
-import 'package:privacygui_widgets/widgets/tip/tip.dart';
 
 class StaticRoutingView extends ArgumentsConsumerStatefulView {
   const StaticRoutingView({
@@ -273,7 +272,6 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
                       .isRuleValid();
                 });
               },
-              errorText: error,
             ),
           1 => AppIPFormField(
               displayType: AppIpFormFieldDisplayType.tight,
@@ -292,7 +290,6 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
                       .isRuleValid();
                 });
               },
-              errorText: error,
             ),
           2 => AppIPFormField(
               displayType: AppIpFormFieldDisplayType.tight,
@@ -313,7 +310,6 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
                       .isRuleValid();
                 });
               },
-              errorText: error,
             ),
           3 => AppIPFormField(
               displayType: AppIpFormFieldDisplayType.tight,
@@ -332,7 +328,6 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
                       .isRuleValid();
                 });
               },
-              errorText: error,
             ),
           4 => AppDropdownButton<RoutingSettingInterface>(
               title: loc(context).labelInterface,
@@ -363,18 +358,19 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
       onValidate: (index) {
         final stateRule = ref.watch(staticRoutingRuleProvider).rule;
         return switch (index) {
-          0 =>
-            ref.read(staticRoutingRuleProvider.notifier).isNameValid(routerNameTextController.text)
-                ? null
-                : loc(context).theNameMustNotBeEmpty,
+          0 => ref
+                  .read(staticRoutingRuleProvider.notifier)
+                  .isNameValid(routerNameTextController.text)
+              ? null
+              : loc(context).theNameMustNotBeEmpty,
           1 => ref
                   .read(staticRoutingRuleProvider.notifier)
                   .isValidIpAddress(destinationIPTextController.text)
               ? null
               : loc(context).invalidIpAddress,
-          2 => ref
-                  .read(staticRoutingRuleProvider.notifier)
-                  .isValidSubnetMask(NetworkUtils.subnetMaskToPrefixLength(subnetMaskTextController.text))
+          2 => ref.read(staticRoutingRuleProvider.notifier).isValidSubnetMask(
+                  NetworkUtils.subnetMaskToPrefixLength(
+                      subnetMaskTextController.text))
               ? null
               : loc(context).invalidSubnetMask,
           3 => ref.read(staticRoutingRuleProvider.notifier).isValidIpAddress(

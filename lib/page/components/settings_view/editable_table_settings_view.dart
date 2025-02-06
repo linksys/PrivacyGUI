@@ -6,6 +6,7 @@ import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:privacygui_widgets/widgets/table/table_settings_view.dart';
 import 'package:privacygui_widgets/widgets/text/app_text.dart';
+import 'package:super_tooltip/super_tooltip.dart';
 
 class AppEditableTableSettingsView<T> extends ConsumerStatefulWidget {
   final String? title;
@@ -64,8 +65,14 @@ class _AppEditableTableSettingsViewState<T>
   int? _editRow;
   T? _tempItem;
   Map<int, String?> errorMap = {};
+  Map<int, SuperTooltipController> tipControllerMap = {};
+
   @override
   void initState() {
+    tipControllerMap = List.generate(
+      widget.headers.length,
+      (index) => SuperTooltipController(),
+    ).asMap();
     super.initState();
   }
 
@@ -128,18 +135,43 @@ class _AppEditableTableSettingsViewState<T>
                 ),
               ],
             )
-          : Focus(
-              onFocusChange: (focus) {
-                if (!focus) {
+          : SuperTooltip(
+              controller: tipControllerMap[index],
+              showBarrier: false,
+              shadowOffset: Offset(0, 0),
+              shadowBlurRadius: 5,
+              shadowSpreadRadius: 1,
+              borderColor: Theme.of(context).colorScheme.error,
+              arrowBaseWidth: 10,
+              arrowLength: 8,
+              arrowTipDistance: 35,
+              borderWidth: 1,
+              borderRadius: 5,
+              content: AppText.bodySmall(
+                errorMap[index] ?? '',
+                color: Theme.of(context).colorScheme.error,
+              ),
+              child: Focus(
+                onFocusChange: (focus) {
                   setState(() {
                     final error = widget.onValidate?.call(index);
                     errorMap[index] = error;
                   });
-                }
-              },
-              child: widget.editCellBuilder
-                      ?.call(context, ref, index, data, errorMap[index]) ??
-                  SizedBox.shrink(),
+                  if (!focus) {
+                    Future.delayed(Duration(milliseconds: 100), () {
+                      final controller = tipControllerMap[index];
+                      if (errorMap[index] != null) {
+                        controller?.showTooltip();
+                      } else {
+                        controller?.hideTooltip();
+                      }
+                    });
+                  }
+                },
+                child: widget.editCellBuilder
+                        ?.call(context, ref, index, data, errorMap[index]) ??
+                    SizedBox.shrink(),
+              ),
             ),
       bottomWidget: AppTextButton(
         widget.addLabel,
