@@ -52,7 +52,20 @@ final _masterNode2 = RouterTopologyNode(
   ),
   children: [],
 );
-
+final _masterPinnacleNode = RouterTopologyNode(
+  data: TopologyModel.fromMap(topologyModelJsonTemplate).copyWith(
+    model: 'SPNM60',
+    deviceId: 'ROUTER-MASTER-DEVICEID-000001',
+    location: 'Living room',
+    isMaster: true,
+    isOnline: true,
+    isWiredConnection: true,
+    signalStrength: 0,
+    isRouter: true,
+    connectedDeviceCount: 30,
+  ),
+  children: [],
+);
 final _slaveNode1 = RouterTopologyNode(
   data: TopologyModel.fromMap(topologyModelJsonTemplate).copyWith(
     deviceId: 'ROUTER-SLAVE-DEVICEID-000001',
@@ -550,6 +563,24 @@ get testTopology5OfflineState => InstantTopologyState(
         _slaveOfflineNode5
           ..children.clear()
           ..parent = _masterNode,
+      ])),
+);
+
+get testTopologyPinnacleSlavesDaisyState => InstantTopologyState(
+  root: _onlineRoot
+    ..children.clear()
+    ..children.add(_masterPinnacleNode
+      ..parent = _onlineRoot
+      ..children.clear()
+      ..children.addAll([
+        _slaveNode1
+          ..children.clear()
+          ..parent = _masterPinnacleNode
+          ..children.addAll([
+            _slaveNode2
+              ..children.clear()
+              ..parent = _slaveNode1
+          ]),
       ])),
 );
 

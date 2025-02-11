@@ -10,13 +10,13 @@ import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 class PersonalWiFiStep extends PnpStep {
+  static int id = 0;
   TextEditingController? _ssidEditController;
   TextEditingController? _passwordEditController;
 
   PersonalWiFiStep({
-    required super.index,
     super.saveChanges,
-  });
+  }): super(index: id);
 
   @override
   Future<void> onInit(WidgetRef ref) async {

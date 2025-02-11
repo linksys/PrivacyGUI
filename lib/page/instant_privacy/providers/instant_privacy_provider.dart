@@ -33,7 +33,7 @@ class InstantPrivacyNotifier extends Notifier<InstantPrivacyState> {
           auth: true,
         )
         .then((result) => MACFilterSettings.fromMap(result.output));
-    final List<String> staBSSIDS = ServiceHelper().isSupportGetSTABSSID()
+    final List<String> staBSSIDS = serviceHelper.isSupportGetSTABSSID()
         ? await ref
             .read(routerRepositoryProvider)
             .send(
