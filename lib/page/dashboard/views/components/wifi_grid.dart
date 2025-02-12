@@ -1,4 +1,8 @@
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
@@ -8,11 +12,15 @@ import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dar
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/util/snapshot.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
+import 'package:privacy_gui/util/export_selector/export_base.dart'
+    if (dart.library.io) 'package:privacy_gui/util/export_selector/export_mobile.dart'
+    if (dart.library.html) 'package:privacy_gui/util/export_selector/export_web.dart';
 
 class DashboardWiFiGrid extends ConsumerWidget {
   const DashboardWiFiGrid({super.key});
@@ -147,7 +155,7 @@ class DashboardWiFiGrid extends ConsumerWidget {
                 ],
               ),
               AppIconButton.noPadding(
-                  icon: LinksysIcons.share,
+                  icon: LinksysIcons.qrCode,
                   semanticLabel: 'share',
                   onTap: () {
                     _showWiFiShareModal(context, item);
@@ -164,12 +172,25 @@ class DashboardWiFiGrid extends ConsumerWidget {
   }
 
   _showWiFiShareModal(BuildContext context, DashboardWiFiItem item) {
-    showSimpleAppOkDialog(context,
+    final GlobalKey globalKey = GlobalKey();
+    showSimpleAppDialog(context,
         title: loc(context).shareWiFi,
-        content: WiFiShareDetailView(
-          ssid: item.ssid,
-          password: item.password,
+        content: RepaintBoundary(
+          key: globalKey,
+          child: WiFiShareDetailView(
+            ssid: item.ssid,
+            password: item.password,
+          ),
         ),
-        okLabel: loc(context).close);
+        actions: [
+          AppTextButton(loc(context).close, onTap: () {
+            context.pop();
+          }, color: Theme.of(context).colorScheme.onSurface),
+          AppTextButton(loc(context).downloadQR, onTap: () async {
+            Uint8List pngBytes = await snapshotWidget(globalKey);
+            exportFileFromBytes(
+                fileName: 'share_wifi_${item.ssid})}.png', utf8Bytes: pngBytes);
+          }),
+        ]);
   }
 }
