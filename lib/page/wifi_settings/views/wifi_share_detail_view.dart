@@ -15,6 +15,7 @@ import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 
 import 'package:url_launcher/url_launcher.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -65,8 +66,7 @@ class _WiFiShareDetailViewState extends ConsumerState<WiFiShareDetailView>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _wifiInfoSection(),
-        // const AppGap.large3(),
-        // _optionSection(),
+        const AppGap.medium(),
         AppCard(child: _qrcodeSection()),
       ],
     );
@@ -80,8 +80,11 @@ class _WiFiShareDetailViewState extends ConsumerState<WiFiShareDetailView>
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Align(
-            alignment: Alignment.centerLeft,
-            child: AppText.labelLarge(loc(context).wifiShareQRScan),
+            alignment: Alignment.center,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: Spacing.medium),
+              child: AppText.labelLarge(loc(context).wifiShareQRScan),
+            ),
           ),
           const Divider(),
           const AppGap.large2(),
