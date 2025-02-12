@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:privacy_gui/core/utils/storage.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -19,3 +21,9 @@ Future<ShareResult?> exportFile(
   }
   return result;
 }
+
+Future<ShareResult?> exportFileFromBytes(
+    {required Uint8List utf8Bytes,
+    required String fileName,
+    String? text,
+    String? subject}) async {}

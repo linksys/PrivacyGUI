@@ -6,6 +6,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
@@ -25,7 +26,7 @@ void main() async {
 
   // TODO Revisit again until Flutter SDK 3.27.x
   // https://github.com/flutter/engine/commit/35af5fe80e0212caff4b34b583232d833b5a2596
-  // 
+  //
   if (defaultTargetPlatform != TargetPlatform.iOS &&
       defaultTargetPlatform != TargetPlatform.android) {
     SemanticsBinding.instance.ensureSemantics();
@@ -51,6 +52,10 @@ void main() async {
 
   // GetIt
   dependencySetup();
+  // Path url strategy
+  if (kIsWeb) {
+    usePathUrlStrategy();
+  }
 
   runApp(app());
 }
