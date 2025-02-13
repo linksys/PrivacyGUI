@@ -295,12 +295,16 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
                 data: Theme.of(context).copyWith(
                     inputDecorationTheme: const InputDecorationTheme(
                         isDense: true, contentPadding: EdgeInsets.zero)),
-                child: AppPasswordField(
-                  semanticLabel: 'guest wifi password',
-                  readOnly: true,
-                  border: InputBorder.none,
-                  controller: _advancedPasswordController['guest'],
-                  suffixIconConstraints: const BoxConstraints(),
+                child: Semantics(
+                  textField: false,
+                  explicitChildNodes: true,
+                  child: AppPasswordField(
+                    semanticLabel: 'guest wifi password',
+                    readOnly: true,
+                    border: InputBorder.none,
+                    controller: _advancedPasswordController['guest'],
+                    suffixIconConstraints: const BoxConstraints(),
+                  ),
                 ))),
         trailing: const Icon(LinksysIcons.edit),
         onTap: () {

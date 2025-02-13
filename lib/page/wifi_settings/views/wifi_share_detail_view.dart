@@ -1,18 +1,13 @@
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
-import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/core/utils/storage.dart';
 import 'package:privacy_gui/util/wifi_credential.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/card/list_card.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
@@ -142,22 +137,9 @@ class _WiFiShareDetailViewState extends ConsumerState<WiFiShareDetailView>
           description: widget.ssid,
         ),
         const AppGap.small3(),
-        AppListCard(
-          title: AppText.bodyMedium(loc(context).wifiPassword),
-          description: IntrinsicWidth(
-            child: Theme(
-              data: Theme.of(context).copyWith(
-                  inputDecorationTheme: const InputDecorationTheme(
-                      isDense: true, contentPadding: EdgeInsets.zero)),
-              child: AppPasswordField(
-                semanticLabel: 'wifi password',
-                readOnly: true,
-                border: InputBorder.none,
-                controller: TextEditingController()..text = widget.password,
-                suffixIconConstraints: const BoxConstraints(),
-              ),
-            ),
-          ),
+        AppSettingCard(
+          title: loc(context).wifiPassword,
+          description: widget.password,
           trailing: AppIconButton(
             icon: LinksysIcons.fileCopy,
             semanticLabel: 'file copy',

@@ -1,0 +1,4 @@
+
+void config() {}
+
+void platformPrint() {}
