@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -151,25 +152,34 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
   }
 
   List<PnpStep> buildSteps() {
-    int index = 0;
+    // For Pinnacle
+    final services = ref.read(pnpProvider).deviceInfo?.services;
+    final isGuestWiFiSupport = serviceHelper.isSupportGuestNetwork(services);
+    final isNightModeSupport = serviceHelper.isSupportLedMode(services);
+    // Need a common way to figure out which step to save changes
     return switch ((_forceLogin, _isUnconfigured)) {
       (false, true) => [
-          PersonalWiFiStep(index: index++),
-          GuestWiFiStep(index: index++),
-          NightModeStep(index: index++, saveChanges: _saveChanges),
-          YourNetworkStep(index: index++, saveChanges: _confirmAddedNodes),
+          PersonalWiFiStep(
+              saveChanges: !isGuestWiFiSupport && !isNightModeSupport
+                  ? _saveChanges
+                  : null),
+          if (isGuestWiFiSupport)
+            GuestWiFiStep(
+                saveChanges: !isNightModeSupport ? _saveChanges : null),
+          if (isNightModeSupport) NightModeStep(saveChanges: _saveChanges),
+          YourNetworkStep(saveChanges: _confirmAddedNodes),
         ],
       (true, false) => [
-          PersonalWiFiStep(index: index++),
+          PersonalWiFiStep(),
         ],
       (true, true) => [
-          PersonalWiFiStep(index: index++, saveChanges: _saveChanges),
-          YourNetworkStep(index: index++, saveChanges: _confirmAddedNodes),
+          PersonalWiFiStep(saveChanges: _saveChanges),
+          YourNetworkStep(saveChanges: _confirmAddedNodes),
         ],
       _ => [
-          PersonalWiFiStep(index: index++),
-          GuestWiFiStep(index: index++),
-          NightModeStep(index: index++),
+          PersonalWiFiStep(),
+          if (isGuestWiFiSupport) GuestWiFiStep(),
+          if (isNightModeSupport) NightModeStep(),
         ],
     };
   }

@@ -22,6 +22,9 @@ import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_step_state.dart';
+import 'package:privacy_gui/page/instant_setup/model/impl/guest_wifi_step.dart';
+import 'package:privacy_gui/page/instant_setup/model/impl/night_mode_step.dart';
+import 'package:privacy_gui/page/instant_setup/model/impl/personal_wifi_step.dart';
 import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/connectivity/mixin.dart';
@@ -392,6 +395,10 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
     if (deviceInfo != null) {
       prefs.setString(pPnpConfiguredSN, deviceInfo.serialNumber);
     }
+    final isGuestWiFiSupport = serviceHelper.isSupportGuestNetwork(deviceInfo?.services);
+    final isNightModeSupport = serviceHelper.isSupportLedMode(deviceInfo?.services);
+
+
     // processing data
     final defaultWiFi = getDefaultWiFiNameAndPassphrase();
     final defaultGuestWiFi = getDefaultGuestWiFiNameAndPassPhrase();
@@ -403,7 +410,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
         ? {'adminPassword': defaultWiFi.password}
         : <String, dynamic>{};
     // personal wifi
-    final wifiStateData = getStepState(0).data;
+    final wifiStateData = getStepState(PersonalWiFiStep.id).data;
     final wifiName = wifiStateData['ssid'] as String? ?? defaultWiFi.name;
     final wifiPassphase =
         wifiStateData['password'] as String? ?? defaultWiFi.password;
@@ -420,7 +427,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
     final isWiFiChanged =
         wifiName != defaultWiFi.name || wifiPassphase != defaultWiFi.password;
     // guest wifi
-    final guestWifiStateData = getStepState(1).data;
+    final guestWifiStateData = getStepState(GuestWiFiStep.id).data;
     final isGuestEnabled = guestWifiStateData['isEnabled'] as bool? ?? false;
     final guestWiFiName =
         guestWifiStateData['ssid'] as String? ?? defaultGuestWiFi.name;
@@ -444,7 +451,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
       setGuestRadioSettings = setGuestRadioSettings.copyWith(radios: radios);
     }
     // Night mode
-    final nightModeStateData = getStepState(2).data;
+    final nightModeStateData = getStepState(NightModeStep.id).data;
     final isNightModeEnabled =
         nightModeStateData['isEnabled'] as bool? ?? false;
     var nightModeSettings =
@@ -471,9 +478,9 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
           'simpleWiFiSettings':
               simpleWiFiSettings.map((e) => e.toMap()).toList()
         }),
-      // if (isGuestEnabled)
-      MapEntry(JNAPAction.setGuestRadioSettings, setGuestRadioSettings.toMap()),
-      if (isNightModeEnabled)
+      if (isGuestWiFiSupport)
+        MapEntry(JNAPAction.setGuestRadioSettings, setGuestRadioSettings.toMap()),
+      if (isNightModeSupport && isNightModeEnabled)
         MapEntry(JNAPAction.setLedNightModeSetting, nightModeSettings.toMap()),
       MapEntry(JNAPAction.setFirmwareUpdateSettings, firmwareUpdateSettings),
       if (state.isRouterUnConfigured)
