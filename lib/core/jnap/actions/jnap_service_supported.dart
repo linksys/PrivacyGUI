@@ -5,6 +5,10 @@ import 'package:privacy_gui/di.dart';
 final serviceHelper = getIt<ServiceHelper>();
 
 class ServiceHelper {
+
+  bool isSupportGuestNetwork([List<String>? services]) =>
+      isServiceSupport(JNAPService.guestNetwork, services);
+
   bool isSupportLedMode([List<String>? services]) =>
       isServiceSupport(JNAPService.routerLEDs4, services);
 

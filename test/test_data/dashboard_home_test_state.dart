@@ -642,3 +642,35 @@ const dashboardHomeStateDataInBridge = {
     }
   ]
 };
+
+const dashboardHomePinnacleTestState = {
+  "isWanConnected": true,
+  "isFirstPolling": false,
+  "isHorizontalLayout": false,
+  "isHealthCheckSupported": false,
+  "masterIcon": "routerLn12",
+  "isAnyNodesOffline": true,
+  "uptimes": 18681,
+  "wanPortConnection": "1Gbps",
+  "lanPortConnections": [],
+  "wifis": [
+    {
+      "ssid": "Linksys03041",
+      "password": "7sVzt65hf@",
+      "radios": ["RADIO_2.4GHz"],
+      "isGuest": false,
+      "isEnabled": true,
+      "numOfConnectedDevices": 0
+    },
+    {
+      "ssid": "Linksys03041",
+      "password": "7sVzt65hf@",
+      "radios": ["RADIO_5GHz"],
+      "isGuest": false,
+      "isEnabled": true,
+      "numOfConnectedDevices": 2
+    }
+  ],
+  "wanType": "DHCP",
+  "detectedWANType": "DHCP"
+};

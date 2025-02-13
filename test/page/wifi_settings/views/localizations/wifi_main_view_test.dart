@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
+import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
 import 'package:privacy_gui/page/instant_device/views/select_device_view.dart';
@@ -14,6 +16,7 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 import '../../../../common/_index.dart';
 import '../../../../mocks/_index.dart';
+import '../../../../mocks/jnap_service_supported_mocks.dart';
 import '../../../../mocks/wifi_view_notifier_mocks.dart';
 import '../../../../test_data/_index.dart';
 
@@ -22,6 +25,9 @@ void main() {
   late MockWifiListNotifier mockWiFiListNotifier;
   late MockWifiAdvancedSettingsNotifier mockWiFiAdvancedSettingsNotifier;
   late MockInstantPrivacyNotifier mockInstantPrivacyNotifier;
+
+  ServiceHelper mockServiceHelper = MockServiceHelper();
+  getIt.registerSingleton<ServiceHelper>(mockServiceHelper);
 
   setUp(() {
     mockWiFiViewNotifier = MockWiFiViewNotifier();
@@ -754,6 +760,30 @@ void main() {
               .denyMacAddresses,
         },
       ),
+    );
+    await tester.pumpWidget(widget);
+    await tester.pumpAndSettle();
+  }, screens: [...responsiveMobileScreens, ...responsiveDesktopScreens]);
+
+  testLocalizations('Incredible-WiFi - Wifi list view - No Guest WiFi', (tester, locale) async {
+    when(mockServiceHelper.isSupportGuestNetwork()).thenReturn(false);
+    when(mockServiceHelper.isSupportLedMode()).thenReturn(false);
+    when(mockWiFiListNotifier.build()).thenReturn(
+        WiFiState.fromMap(wifiListGuestEnabledTestState).copyWith());
+    when(mockWiFiListNotifier.fetch()).thenAnswer((realInvocation) async {
+      await Future.delayed(Durations.extralong1);
+      return WiFiState.fromMap(wifiListGuestEnabledTestState);
+    });
+    final widget = testableSingleRoute(
+      overrides: [
+        wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
+        wifiListProvider.overrideWith(() => mockWiFiListNotifier),
+        wifiAdvancedProvider
+            .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
+        instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
+      ],
+      locale: locale,
+      child: const WiFiMainView(),
     );
     await tester.pumpWidget(widget);
     await tester.pumpAndSettle();

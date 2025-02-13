@@ -5,12 +5,12 @@ import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 class NightModeStep extends PnpStep {
+  static int id = 2;
   bool _isEnabled = false;
 
   NightModeStep({
-    required super.index,
     super.saveChanges,
-  });
+  }): super(index: id);
 
   @override
   Future<void> onInit(WidgetRef ref) async {

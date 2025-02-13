@@ -2,6 +2,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
@@ -182,28 +183,31 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
   }
 
   Widget _guestWiFiCard(GuestWiFiItem state, [bool lastInRow = false]) {
-    return Padding(
-      padding: EdgeInsets.only(
-        right: lastInRow ? 0 : ResponsiveLayout.columnPadding(context),
-        bottom: Spacing.medium,
-      ),
-      child: Column(
-        children: [
-          AppCard(
-              padding: const EdgeInsets.symmetric(
-                  vertical: Spacing.small2, horizontal: Spacing.large2),
-              child: Column(children: [
-                _guestWiFiBandCard(state),
-                if (state.isEnabled) ...[
-                  const Divider(),
-                  _guestWiFiNameCard(state),
-                  const Divider(),
-                  _guestWiFiPasswordCard(state),
-                ],
-              ])),
-        ],
-      ),
-    );
+    final isSupportGuestWiFi = serviceHelper.isSupportGuestNetwork();
+    return isSupportGuestWiFi
+        ? Padding(
+            padding: EdgeInsets.only(
+              right: lastInRow ? 0 : ResponsiveLayout.columnPadding(context),
+              bottom: Spacing.medium,
+            ),
+            child: Column(
+              children: [
+                AppCard(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: Spacing.small2, horizontal: Spacing.large2),
+                    child: Column(children: [
+                      _guestWiFiBandCard(state),
+                      if (state.isEnabled) ...[
+                        const Divider(),
+                        _guestWiFiNameCard(state),
+                        const Divider(),
+                        _guestWiFiPasswordCard(state),
+                      ],
+                    ])),
+              ],
+            ),
+          )
+        : SizedBox.shrink();
   }
 
   Widget _mainWiFiCard(WiFiItem radio, bool canBeDisable,

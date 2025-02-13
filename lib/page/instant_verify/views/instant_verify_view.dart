@@ -430,13 +430,16 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
   }
 
   Widget _connectivityContentWidget(BuildContext context, WidgetRef ref) {
+    final isSupportGuestWiFi = serviceHelper.isSupportGuestNetwork();
+
     final systemConnectivityState = ref.watch(instantVerifyProvider);
     final dnsCount = systemConnectivityState.wanConnection?.dnsServer3 != null
         ? 3
         : systemConnectivityState.wanConnection?.dnsServer2 != null
             ? 2
             : 1;
-    final guestWiFi = systemConnectivityState.guestRadioSettings.radios.first;
+    final guestWiFi =
+        systemConnectivityState.guestRadioSettings.radios.firstOrNull;
     return AppCard(
       key: const ValueKey('connectivityCard'),
       padding: const EdgeInsets.all(Spacing.large2),
@@ -533,24 +536,25 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
                       ),
                     ),
                   ),
-                  _appNoBoarderCard(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: AppText.labelMedium(
-                            '${loc(context).guest} | ${guestWiFi.guestSSID}',
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 2,
+                  if (isSupportGuestWiFi)
+                    _appNoBoarderCard(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: AppText.labelMedium(
+                              '${loc(context).guest} | ${guestWiFi?.guestSSID ?? ''}',
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 2,
+                            ),
                           ),
-                        ),
-                        _greenCircle(
-                            context,
-                            systemConnectivityState
-                                .guestRadioSettings.isGuestNetworkEnabled),
-                      ],
+                          _greenCircle(
+                              context,
+                              systemConnectivityState
+                                  .guestRadioSettings.isGuestNetworkEnabled),
+                        ],
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
@@ -749,7 +753,8 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
     final uptime = DateFormatUtils.formatDuration(
         Duration(seconds: dashboardState.uptimes), context);
     final master = devicesState.masterDevice;
-    final guestWiFi = systemConnectivityState.guestRadioSettings.radios.first;
+    final guestWiFi =
+        systemConnectivityState.guestRadioSettings.radios.firstOrNull;
     final isSupportHealthCheck = serviceHelper.isSupportHealthCheck();
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -779,8 +784,9 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
           (e) => pw.Text(
               '${e.band} | ${e.settings.ssid}... ${e.settings.isEnabled ? 'Enabled' : 'Disabled'}'),
         ),
-        pw.Text(
-            'Guest | ${guestWiFi.guestSSID}... ${systemConnectivityState.guestRadioSettings.isGuestNetworkEnabled ? 'Enabled' : 'Disabled'}'),
+        if (guestWiFi != null)
+          pw.Text(
+              'Guest | ${guestWiFi.guestSSID}... ${systemConnectivityState.guestRadioSettings.isGuestNetworkEnabled ? 'Enabled' : 'Disabled'}'),
         pw.Text(
             '${loc(context).wanIPAddress}: ${systemConnectivityState.wanConnection?.ipAddress ?? '--'}'),
         pw.Text(
