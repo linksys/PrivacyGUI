@@ -1094,5 +1094,6 @@
   "turnOffMacFilteringDesc": "This will allow all MAC addresses to connect.",
   "instantPrivacyDisableWarning": "Instant-Privacy will be turnned off once MAC filtering is enabled",
   "macFilteringDisableWarning": "MAC filtering will be turnned off once Instant-Privacy is enabled",
-  "downloadQR": "Download QR"
+  "downloadQR": "Download QR",
+  "pnpScanQR": "Scan QR code or use password to connect"
 }

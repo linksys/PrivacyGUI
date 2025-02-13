@@ -6,7 +6,6 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
@@ -17,6 +16,9 @@ import 'package:privacy_gui/providers/logger_observer.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:privacy_gui/util/platforms/platform_util.dart'
+    if (dart.library.html) 'package:privacy_gui/util/platforms/platform_util_web.dart'
+    if (dart.library.io) 'package:privacy_gui/util/platforms/platform_util_mobile.dart';
 
 void main() async {
   // if (kIsWeb) {
@@ -53,9 +55,7 @@ void main() async {
   // GetIt
   dependencySetup();
   // Path url strategy
-  if (kIsWeb) {
-    usePathUrlStrategy();
-  }
+  config();
 
   runApp(app());
 }

@@ -24,7 +24,7 @@ mixin PageSnackbarMixin<T extends StatefulWidget> on State<T> {
   }
 
   void showSharedCopiedSnackBar() {
-    showSuccessSnackBar(loc(context).sharedCopied);
+    snackbar.showSimpleSnackBar(context, loc(context).sharedCopied);
   }
 
   void showSuccessSnackBar(String message) {

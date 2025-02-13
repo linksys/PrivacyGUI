@@ -1,8 +1,4 @@
-import 'dart:typed_data';
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
@@ -12,7 +8,8 @@ import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dar
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacy_gui/util/snapshot.dart';
+import 'package:privacy_gui/util/qr_code.dart';
+import 'package:privacy_gui/util/wifi_credential.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
@@ -21,12 +18,29 @@ import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacy_gui/util/export_selector/export_base.dart'
     if (dart.library.io) 'package:privacy_gui/util/export_selector/export_mobile.dart'
     if (dart.library.html) 'package:privacy_gui/util/export_selector/export_web.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:super_tooltip/super_tooltip.dart';
 
-class DashboardWiFiGrid extends ConsumerWidget {
+class DashboardWiFiGrid extends ConsumerStatefulWidget {
   const DashboardWiFiGrid({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DashboardWiFiGrid> createState() => _DashboardWiFiGridState();
+}
+
+class _DashboardWiFiGridState extends ConsumerState<DashboardWiFiGrid> {
+  Map<String, SuperTooltipController> toolTipControllers = {};
+
+  @override 
+  void dispose() {
+    toolTipControllers.forEach((key, value) {
+      value.dispose();
+    });
+    super.dispose();
+  }
+  
+  @override
+  Widget build(BuildContext context) {
     final items =
         ref.watch(dashboardHomeProvider.select((value) => value.wifis));
     final isLoading = ref.watch(deviceManagerProvider).deviceList.isEmpty;
@@ -83,6 +97,11 @@ class DashboardWiFiGrid extends ConsumerWidget {
 
   Widget _wifiCard(BuildContext context, WidgetRef ref, DashboardWiFiItem item,
       int index, bool canBeDisabled) {
+    final controller = toolTipControllers[
+            '${item.ssid}${item.radios.join()}${item.isGuest}'] ??
+        SuperTooltipController();
+    toolTipControllers['${item.ssid}${item.radios.join()}${item.isGuest}'] =
+        controller;
     return AppCard(
       padding: const EdgeInsets.symmetric(
           vertical: Spacing.large2, horizontal: Spacing.large2),
@@ -154,12 +173,53 @@ class DashboardWiFiGrid extends ConsumerWidget {
                   ),
                 ],
               ),
-              AppIconButton.noPadding(
-                  icon: LinksysIcons.qrCode,
-                  semanticLabel: 'share',
-                  onTap: () {
-                    _showWiFiShareModal(context, item);
-                  })
+              SuperTooltip(
+                hideTooltipOnTap: true,
+                minimumOutsideMargin: 8,
+                popupDirection: TooltipDirection.up,
+                showBarrier: false,
+                controller: controller,
+                bottom: 200,
+                content: SizedBox(
+                  width: 200,
+                  child: MouseRegion(
+                    onExit: (e) async {
+                      if (controller.isVisible) {
+                        await controller.hideTooltip();
+                      }
+                    },
+                    child: Container(
+                      color: Colors.white,
+                      height: 200,
+                      width: 200,
+                      child: QrImageView(
+                        data: WiFiCredential(
+                          ssid: item.ssid,
+                          password: item.password,
+                          type: SecurityType
+                              .wpa, //TODO: The security type is fixed for now
+                        ).generate(),
+                      ),
+                    ),
+                  ),
+                ),
+                child: MouseRegion(
+                  onEnter: (e) async {
+                    await controller.showTooltip();
+                  },
+                  onExit: (e) async {
+                    if (controller.isVisible) {
+                      await controller.hideTooltip();
+                    }
+                  },
+                  child: AppIconButton.noPadding(
+                      icon: LinksysIcons.qrCode,
+                      semanticLabel: 'share',
+                      onTap: () {
+                        _showWiFiShareModal(context, item);
+                      }),
+                ),
+              )
             ],
           )
         ],
@@ -172,11 +232,9 @@ class DashboardWiFiGrid extends ConsumerWidget {
   }
 
   _showWiFiShareModal(BuildContext context, DashboardWiFiItem item) {
-    final GlobalKey globalKey = GlobalKey();
     showSimpleAppDialog(context,
         title: loc(context).shareWiFi,
-        content: RepaintBoundary(
-          key: globalKey,
+        content: SingleChildScrollView(
           child: WiFiShareDetailView(
             ssid: item.ssid,
             password: item.password,
@@ -187,9 +245,15 @@ class DashboardWiFiGrid extends ConsumerWidget {
             context.pop();
           }, color: Theme.of(context).colorScheme.onSurface),
           AppTextButton(loc(context).downloadQR, onTap: () async {
-            Uint8List pngBytes = await snapshotWidget(globalKey);
-            exportFileFromBytes(
-                fileName: 'share_wifi_${item.ssid})}.png', utf8Bytes: pngBytes);
+            createWiFiQRCode(WiFiCredential(
+                    ssid: item.ssid,
+                    password: item.password,
+                    type: SecurityType.wpa))
+                .then((imageBytes) {
+              exportFileFromBytes(
+                  fileName: 'share_wifi_${item.ssid}.png',
+                  utf8Bytes: imageBytes);
+            });
           }),
         ]);
   }
