@@ -16,7 +16,7 @@
             "name": "linksys - Web (Local)",
             "request": "launch",
             "type": "dart",
-            "args": ["--web-browser-flag", "--disable-web-security", "--web-port", "61672"],
+            "args": ["--web-browser-flag", "--disable-web-security", "--no-web-resources-cdn ", "--web-port", "61672"],
             "toolArgs": ["--dart-define","force=local"],
             "program": "lib/main.dart"
         },
