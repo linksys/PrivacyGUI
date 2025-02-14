@@ -54,8 +54,6 @@ void main() async {
 
   // GetIt
   dependencySetup();
-  // Path url strategy
-  config();
 
   runApp(app());
 }
