@@ -161,7 +161,7 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView>
       opacity: enabled ? 1 : .5,
       child: AppInfoCard(
         padding: const EdgeInsets.all(Spacing.medium),
-      onTap: enabled
+        onTap: enabled
             ? () {
                 context.pushNamed(RouteNamed.macFilteringInput);
               }
@@ -182,8 +182,9 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView>
           semanticLabel: 'wifi mac filtering',
           value: state.mode == MacFilterMode.deny,
           onChanged: (value) {
-            _notifier
-                .setAccess(value ? MacFilterMode.deny : MacFilterMode.disabled);
+            _notifier.setAccess(value
+                ? MacFilterMode.deny
+                : preservedState?.mode ?? MacFilterMode.disabled);
           },
         )
       ],
