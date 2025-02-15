@@ -14,6 +14,7 @@ import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/factory.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_rule_view.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_view.dart';
@@ -163,6 +164,11 @@ class RouterNotifier extends ChangeNotifier {
     bool shouldGoPnp = false;
     final routerType =
         _ref.read(connectivityProvider).connectivityInfo.routerType;
+
+    //
+    final location = Uri.tryParse(getFullLocation(_ref));
+    logger.d('XXXXXX: location: ${location?.toString()}, ${location?.query}');
+    //
     if (BuildConfig.forceCommandType == ForceCommand.local ||
         (routerType != RouterType.others && loginType != LoginType.remote)) {
       shouldGoPnp = await pnp
