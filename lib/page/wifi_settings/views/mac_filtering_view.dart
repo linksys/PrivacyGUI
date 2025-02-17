@@ -184,7 +184,9 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView>
           onChanged: (value) {
             _notifier.setAccess(value
                 ? MacFilterMode.deny
-                : preservedState?.mode ?? MacFilterMode.disabled);
+                : preservedState?.mode == MacFilterMode.deny
+                    ? MacFilterMode.disabled
+                    : preservedState?.mode ?? MacFilterMode.disabled);
           },
         )
       ],
