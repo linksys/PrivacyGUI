@@ -660,16 +660,6 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
                       wifiPasswordValidator.getRuleByIndex(2)?.validate(text) ??
                       false),
                 ),
-                Validation(
-                  description: loc(context).routerPasswordRuleStartEndWithSpace,
-                  validator: ((text) =>
-                      NoSurroundWhitespaceRule().validate(text)),
-                ),
-                Validation(
-                  description:
-                      loc(context).routerPasswordRuleUnsupportSpecialChar,
-                  validator: ((text) => AsciiRule().validate(text)),
-                ),
               ],
               onValidationChanged: (isValid) => setState(() {
                 isPasswordValid = isValid;
