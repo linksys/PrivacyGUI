@@ -259,7 +259,9 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
           value: state.isEnabled,
           onChanged: (value) {
             ref.read(wifiListProvider.notifier).setWiFiEnabled(value);
-            final preservedMainWiFiState = _preservedMainWiFiState;
+            final preservedMainWiFiState = _preservedMainWiFiState?.copyWith(
+                guestWiFi: _preservedMainWiFiState?.guestWiFi
+                    .copyWith(isEnabled: value));
             // if disabled, reset the guest ssid and password
             if (!value && preservedMainWiFiState != null) {
               final guestWifi = preservedMainWiFiState.guestWiFi;
@@ -267,7 +269,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
               ref
                   .read(wifiListProvider.notifier)
                   .setWiFiPassword(guestWifi.password);
-              update(preservedMainWiFiState);
+              updateController(preservedMainWiFiState);
             }
           },
         ),
@@ -658,16 +660,6 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
                       wifiPasswordValidator.getRuleByIndex(2)?.validate(text) ??
                       false),
                 ),
-                Validation(
-                  description: loc(context).routerPasswordRuleStartEndWithSpace,
-                  validator: ((text) =>
-                      NoSurroundWhitespaceRule().validate(text)),
-                ),
-                Validation(
-                  description:
-                      loc(context).routerPasswordRuleUnsupportSpecialChar,
-                  validator: ((text) => AsciiRule().validate(text)),
-                ),
               ],
               onValidationChanged: (isValid) => setState(() {
                 isPasswordValid = isValid;
@@ -970,14 +962,18 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
       ref
           .read(wifiViewProvider.notifier)
           .setWifiListViewStateChanged(state != _preservedMainWiFiState);
-      for (var wifi in state.mainWiFi) {
-        final controller = TextEditingController()..text = wifi.password;
-        _advancedPasswordController.putIfAbsent(
-            wifi.radioID.value, () => controller);
-      }
-      _advancedPasswordController.putIfAbsent('guest',
-          () => TextEditingController()..text = state.guestWiFi.password);
+      updateController(state);
     });
+  }
+
+  void updateController(WiFiState state) {
+    for (var wifi in state.mainWiFi) {
+      final controller = TextEditingController()..text = wifi.password;
+      _advancedPasswordController.putIfAbsent(
+          wifi.radioID.value, () => controller);
+    }
+    _advancedPasswordController.putIfAbsent('guest',
+        () => TextEditingController()..text = state.guestWiFi.password);
   }
 
   List<Widget> _disableBandWarning(WiFiState state) {
