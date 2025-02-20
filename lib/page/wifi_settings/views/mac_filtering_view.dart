@@ -79,7 +79,9 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView>
       appBarStyle: AppBarStyle.none,
       useMainPadding: false,
       bottomBar: PageBottomBar(
-          isPositiveEnabled: isStateChanged(state),
+          isPositiveEnabled: state.mode == MacFilterMode.deny
+              ? isStateChanged(state)
+              : state.mode != preservedState?.mode,
           onPositiveTap: () {
             _showEnableDialog(state.mode != MacFilterMode.disabled);
           }),

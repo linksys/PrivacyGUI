@@ -343,7 +343,7 @@ class _PortRangeForwardingContentViewState
           1 => notifier.isPortRangeValid(
                   int.tryParse(internalPortTextController.text) ?? 0,
                   int.tryParse(externalPortTextController.text) ?? 0)
-              ? notifier.isPortConflict(
+              ? !notifier.isPortConflict(
                       int.tryParse(internalPortTextController.text) ?? 0,
                       int.tryParse(externalPortTextController.text) ?? 0,
                       ref
