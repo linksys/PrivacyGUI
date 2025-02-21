@@ -433,7 +433,10 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
                 onTap: () {
                   logger.d('[PnP]: Tap Next to check the WiFi reconnection');
                   testConnection(success: () async {
-                    logger.i('[PnP]: The customized WiFi has been reconnected');
+                    final isUnconfigured =
+                        ref.read(pnpProvider).isRouterUnConfigured;
+                    logger.i(
+                        '[PnP]: The customized WiFi has been reconnected - $isUnconfigured');
                     final password = ref
                         .read(pnpProvider.notifier)
                         .getDefaultWiFiNameAndPassphrase()
@@ -441,11 +444,19 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
                     await ref
                         .read(pnpProvider.notifier)
                         .checkAdminPassword(password)
-                        .then((value) => _stepController?.stepContinue());
-                    setState(() {
-                      _setupStep = _PnpSetupStep.config;
-                      logger.d('[PnP]: WiFi reconnected. Setup step = config');
-                    });
+                        .then((value) => isUnconfigured
+                            ? _stepController?.stepContinue()
+                            : null);
+                    if (isUnconfigured) {
+                      setState(() {
+                        _setupStep = _PnpSetupStep.config;
+                        logger
+                            .d('[PnP]: WiFi reconnected. Setup step = config');
+                      });
+                    } else {
+                      logger.d('[PnP]: WiFi reconnected. Setup step = fwCheck');
+                      _doFwUpdateCheck();
+                    }
                   });
                 },
               )
@@ -468,15 +479,15 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
       setState(() {
         _needToReconnect = true;
       });
-      if (isUnconfigured) {
-        // if in unconfigured scenario, display the reconnect prompt
-        _currentStep?.canGoNext(false);
-        setState(() {
-          logger.e(
-              '[PnP]: Caught a connection error and the router is unconfigured. Setup step = needReconnect');
-          _setupStep = _PnpSetupStep.needReconnect;
-        });
-      }
+      // if (isUnconfigured) {
+      // if in unconfigured scenario, display the reconnect prompt
+      _currentStep?.canGoNext(false);
+      setState(() {
+        logger.e(
+            '[PnP]: Caught a connection error and the router is unconfigured. Setup step = needReconnect');
+        _setupStep = _PnpSetupStep.needReconnect;
+      });
+      // }
     }, test: (error) => error is ExceptionNeedToReconnect).catchError((error) {
       setState(() {
         logger.e('[PnP]: Caught a saving error: $error. Setup step = config');
@@ -498,14 +509,26 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
           });
         }
       } else {
-        // if is configured scenario, go display WiFi page
-        setState(() {
-          logger.d('[PnP]: The router is configured. Setup step = saved');
-          _setupStep = _PnpSetupStep.saved;
-        });
-        await Future.delayed(const Duration(seconds: 3));
-        logger.d('[PnP]: The router is configured. Setup step = fwCheck');
-        _doFwUpdateCheck();
+        if (_setupStep != _PnpSetupStep.needReconnect) {
+          // if is configured scenario, go display WiFi page
+          setState(() {
+            logger.d('[PnP]: The router is configured. Setup step = saved');
+            _setupStep = _PnpSetupStep.saved;
+          });
+          await Future.delayed(const Duration(seconds: 3));
+          logger.d('[PnP]: The router is configured. Setup step = fwCheck');
+          _doFwUpdateCheck();
+        } else {
+          setState(() {
+            logger.d(
+                '[PnP]: The router is configured but need to reconnect. Setup step = saved');
+            _setupStep = _PnpSetupStep.saved;
+          });
+          await Future.delayed(const Duration(seconds: 3));
+          setState(() {
+            _setupStep = _PnpSetupStep.needReconnect;
+          });
+        }
       }
     });
   }
