@@ -395,9 +395,10 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
     if (deviceInfo != null) {
       prefs.setString(pPnpConfiguredSN, deviceInfo.serialNumber);
     }
-    final isGuestWiFiSupport = serviceHelper.isSupportGuestNetwork(deviceInfo?.services);
-    final isNightModeSupport = serviceHelper.isSupportLedMode(deviceInfo?.services);
-
+    final isGuestWiFiSupport =
+        serviceHelper.isSupportGuestNetwork(deviceInfo?.services);
+    final isNightModeSupport =
+        serviceHelper.isSupportLedMode(deviceInfo?.services);
 
     // processing data
     final defaultWiFi = getDefaultWiFiNameAndPassphrase();
@@ -479,7 +480,8 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
               simpleWiFiSettings.map((e) => e.toMap()).toList()
         }),
       if (isGuestWiFiSupport)
-        MapEntry(JNAPAction.setGuestRadioSettings, setGuestRadioSettings.toMap()),
+        MapEntry(
+            JNAPAction.setGuestRadioSettings, setGuestRadioSettings.toMap()),
       if (isNightModeSupport && isNightModeEnabled)
         MapEntry(JNAPAction.setLedNightModeSetting, nightModeSettings.toMap()),
       MapEntry(JNAPAction.setFirmwareUpdateSettings, firmwareUpdateSettings),
