@@ -135,44 +135,62 @@ class _AppEditableTableSettingsViewState<T>
                 ),
               ],
             )
-          : SuperTooltip(
-              controller: tipControllerMap[index],
-              showBarrier: false,
-              shadowOffset: Offset(0, 0),
-              shadowBlurRadius: 5,
-              shadowSpreadRadius: 1,
-              borderColor: Theme.of(context).colorScheme.error,
-              arrowBaseWidth: 10,
-              arrowLength: 8,
-              arrowTipDistance: 35,
-              borderWidth: 1,
-              borderRadius: 5,
-              content: AppText.bodySmall(
-                errorMap[index] ?? '',
-                color: Theme.of(context).colorScheme.error,
-              ),
-              child: Focus(
-                onFocusChange: (focus) {
-                  setState(() {
-                    final error = widget.onValidate?.call(index);
-                    errorMap[index] = error;
-                  });
-                  if (!focus) {
-                    Future.delayed(Duration(milliseconds: 100), () {
-                      final controller = tipControllerMap[index];
-                      if (errorMap[index] != null) {
-                        controller?.showTooltip();
-                      } else {
-                        controller?.hideTooltip();
+          :
+          // NOTE: SuperTooltip widget will be shown unexpectedly even if
+          // showTooltip is not called. So it will only be installed when the error exists
+          errorMap[index] != null
+              ? SuperTooltip(
+                  controller: tipControllerMap[index],
+                  showBarrier: false,
+                  shadowOffset: Offset(0, 0),
+                  shadowBlurRadius: 5,
+                  shadowSpreadRadius: 1,
+                  borderColor: Theme.of(context).colorScheme.error,
+                  arrowBaseWidth: 10,
+                  arrowLength: 8,
+                  arrowTipDistance: 35,
+                  borderWidth: 1,
+                  borderRadius: 5,
+                  content: AppText.bodySmall(
+                    errorMap[index] ?? '',
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  child: Focus(
+                    // Everytime the focus changes, rebuild the widget
+                    onFocusChange: (focus) {
+                      setState(() {
+                        final error = widget.onValidate?.call(index);
+                        errorMap[index] = error;
+                      });
+                      // The decision to display the error will be made only when the state is unfocused
+                      if (!focus) {
+                        Future.delayed(Duration(milliseconds: 100), () {
+                          final controller = tipControllerMap[index];
+                          if (errorMap[index] != null) {
+                            controller?.showTooltip();
+                          } else {
+                            controller?.hideTooltip();
+                          }
+                        });
                       }
+                    },
+                    child: widget.editCellBuilder?.call(
+                            context, ref, index, data, errorMap[index]) ??
+                        SizedBox.shrink(),
+                  ),
+                )
+              : Focus(
+                  onFocusChange: (focus) {
+                    // Everytime the focus changes, rebuild the widget
+                    setState(() {
+                      final error = widget.onValidate?.call(index);
+                      errorMap[index] = error;
                     });
-                  }
-                },
-                child: widget.editCellBuilder
-                        ?.call(context, ref, index, data, errorMap[index]) ??
-                    SizedBox.shrink(),
-              ),
-            ),
+                  },
+                  child: widget.editCellBuilder
+                          ?.call(context, ref, index, data, errorMap[index]) ??
+                      SizedBox.shrink(),
+                ),
       bottomWidget: AppTextButton(
         widget.addLabel,
         icon: widget.addIcon ?? LinksysIcons.add,
