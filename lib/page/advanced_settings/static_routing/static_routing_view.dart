@@ -47,6 +47,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
       TextEditingController();
   final TextEditingController gatewayTextController = TextEditingController();
   bool _isEditRuleValid = false;
+  int? currentFocus;
 
   @override
   void initState() {
@@ -78,59 +79,65 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
     final state = ref.watch(staticRoutingProvider);
     final submaskToken = state.subnetMask.split('.');
     final prefixIP = state.routerIp;
-    return StyledAppPageView(
-      title: loc(context).advancedRouting,
-      scrollable: true,
-      bottomBar: PageBottomBar(
-          isPositiveEnabled: state != preservedState,
-          onPositiveTap: () {
-            doSomethingWithSpinner(context, _notifier.save()).then((state) {
-              setState(() {
-                preservedState = state;
+    return Theme(
+      data: Theme.of(context).copyWith(
+          inputDecorationTheme: Theme.of(context)
+              .inputDecorationTheme
+              .copyWith(contentPadding: EdgeInsets.all(Spacing.small1))),
+      child: StyledAppPageView(
+        title: loc(context).advancedRouting,
+        scrollable: true,
+        bottomBar: PageBottomBar(
+            isPositiveEnabled: state != preservedState,
+            onPositiveTap: () {
+              doSomethingWithSpinner(context, _notifier.save()).then((state) {
+                setState(() {
+                  preservedState = state;
+                });
+                showChangesSavedSnackBar();
+              }).onError((error, stackTrace) {
+                showErrorMessageSnackBar(error);
               });
-              showChangesSavedSnackBar();
-            }).onError((error, stackTrace) {
-              showErrorMessageSnackBar(error);
-            });
-          }),
-      onBackTap: state != preservedState
-          ? () async {
-              final goBack = await showUnsavedAlert(context);
-              if (goBack == true) {
-                _notifier.fetch();
-                context.pop();
+            }),
+        onBackTap: state != preservedState
+            ? () async {
+                final goBack = await showUnsavedAlert(context);
+                if (goBack == true) {
+                  _notifier.fetch();
+                  context.pop();
+                }
               }
-            }
-          : null,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppRadioList(
-            selected: state.setting.isNATEnabled
-                ? RoutingSettingNetwork.nat
-                : RoutingSettingNetwork.dynamicRouting,
-            itemHeight: 56,
-            items: [
-              AppRadioListItem(
-                title: loc(context).nat,
-                value: RoutingSettingNetwork.nat,
-              ),
-              AppRadioListItem(
-                title: loc(context).dynamicRouting,
-                value: RoutingSettingNetwork.dynamicRouting,
-              ),
-            ],
-            onChanged: (index, value) {
-              if (value != null) {
-                _notifier.updateSettingNetwork(value);
-              }
-            },
-          ),
-          const AppGap.large2(),
-          ResponsiveLayout(
-              desktop: _desktopSettingsView(state, submaskToken, prefixIP),
-              mobile: _mobildSettingsView(state, submaskToken, prefixIP))
-        ],
+            : null,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppRadioList(
+              selected: state.setting.isNATEnabled
+                  ? RoutingSettingNetwork.nat
+                  : RoutingSettingNetwork.dynamicRouting,
+              itemHeight: 56,
+              items: [
+                AppRadioListItem(
+                  title: loc(context).nat,
+                  value: RoutingSettingNetwork.nat,
+                ),
+                AppRadioListItem(
+                  title: loc(context).dynamicRouting,
+                  value: RoutingSettingNetwork.dynamicRouting,
+                ),
+              ],
+              onChanged: (index, value) {
+                if (value != null) {
+                  _notifier.updateSettingNetwork(value);
+                }
+              },
+            ),
+            const AppGap.large2(),
+            ResponsiveLayout(
+                desktop: _desktopSettingsView(state, submaskToken, prefixIP),
+                mobile: _mobildSettingsView(state, submaskToken, prefixIP))
+          ],
+        ),
       ),
     );
   }
@@ -200,6 +207,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
       emptyMessage: loc(context).noStaticRoutes,
       addEnabled: !_notifier.isExceedMax(),
       onStartEdit: (index, rule) {
+        currentFocus = null;
         ref.read(staticRoutingRuleProvider.notifier).init(state.setting.entries,
             rule, index, state.routerIp, state.subnetMask);
         // Edit
@@ -249,9 +257,8 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
           _ => AppText.bodySmall(''),
         };
       },
-      editCellBuilder: (context, ref, index, rule) {
+      editCellBuilder: (context, ref, index, rule, error) {
         final stateRule = ref.watch(staticRoutingRuleProvider).rule;
-
         return switch (index) {
           0 => AppTextField.outline(
               controller: routerNameTextController,
@@ -346,6 +353,32 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
               },
             ),
           _ => AppText.bodyLarge(''),
+        };
+      },
+      onValidate: (index) {
+        final stateRule = ref.watch(staticRoutingRuleProvider).rule;
+        return switch (index) {
+          0 => ref
+                  .read(staticRoutingRuleProvider.notifier)
+                  .isNameValid(routerNameTextController.text)
+              ? null
+              : loc(context).theNameMustNotBeEmpty,
+          1 => ref
+                  .read(staticRoutingRuleProvider.notifier)
+                  .isValidIpAddress(destinationIPTextController.text)
+              ? null
+              : loc(context).invalidIpAddress,
+          2 => ref.read(staticRoutingRuleProvider.notifier).isValidSubnetMask(
+                  NetworkUtils.subnetMaskToPrefixLength(
+                      subnetMaskTextController.text))
+              ? null
+              : loc(context).invalidSubnetMask,
+          3 => ref.read(staticRoutingRuleProvider.notifier).isValidIpAddress(
+                  gatewayTextController.text,
+                  (stateRule?.settings.interface ?? 'LAN') == 'LAN')
+              ? null
+              : loc(context).invalidGatewayIpAddress,
+          _ => null,
         };
       },
       createNewItem: () => NamedStaticRouteEntry(

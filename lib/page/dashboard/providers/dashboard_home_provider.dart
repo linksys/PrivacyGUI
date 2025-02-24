@@ -71,6 +71,7 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
 
     // Get WAN type
     final wanType = deviceManagerState.wanStatus?.wanConnection?.wanType;
+    final detectedWANType = deviceManagerState.wanStatus?.detectedWANType;
 
     // If is first polling
     final isFirstPolling = deviceManagerState.lastUpdateTime == 0;
@@ -102,19 +103,20 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
 
     newState = newState.copyWith(
       wifis: wifiList,
-      uptime: dashboardManagerState.uptimes,
-      wanPortConnection: dashboardManagerState.wanConnection,
+      uptime: () => dashboardManagerState.uptimes,
+      wanPortConnection: () => dashboardManagerState.wanConnection,
       lanPortConnections: dashboardManagerState.lanConnections,
       isWanConnected: isWanConnected,
       isFirstPolling: isFirstPolling,
       masterIcon: masterIcon,
       isAnyNodesOffline: isAnyNodesOffline,
-      uploadResult: uploadResult,
-      downloadResult: downloadResult,
-      speedCheckTimestamp: speedTestTimeStamp,
+      uploadResult: () => uploadResult,
+      downloadResult: () => downloadResult,
+      speedCheckTimestamp: () => speedTestTimeStamp,
       isHorizontalLayout: horizontalPortLayout,
       isHealthCheckSupported: isSpeedCheckSupported,
-      wanType: wanType,
+      wanType: () => wanType,
+      detectedWANType: () => detectedWANType,
     );
 
     logger.d('[State]:[dashboardHome]: ${newState.toJson()}');
@@ -123,16 +125,16 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
     return newState;
   }
 
-  ({String value, String unit}) _formatHealthCheckResult({required int speed}) {
+  DashboardSpeedItem _formatHealthCheckResult({required int speed}) {
     if (speed == 0) {
-      return (
+      return DashboardSpeedItem(
         value: '--',
         unit: '',
       );
     }
     // The speed is in kilobits per second
     String speedText = NetworkUtils.formatBytes(speed * 1024);
-    return (
+    return DashboardSpeedItem(
       value: speedText.split(' ').first,
       unit: speedText.split(' ').last,
     );

@@ -49,7 +49,11 @@ class BuildConfig {
 
   static const int refreshTimeInterval =
       int.fromEnvironment('refresh_time', defaultValue: 60);
+  static const factoryMode =
+      bool.fromEnvironment('factory', defaultValue: false);
+  static const copyRightYear = int.fromEnvironment('year', defaultValue: 2025);
 
+  @pragma('vm:entry-point')
   static load() async {
     logger.d('load build configuration');
     final prefs = await SharedPreferences.getInstance();
@@ -67,7 +71,7 @@ Map<String, dynamic> get cloudEnvironmentConfig =>
     kCloudEnvironmentMap[cloudEnvTarget];
 
 Future<String> getVersion() async {
-  final version = await getBuildNumber() ;
+  final version = await getBuildNumber();
   return version ??
       await PackageInfo.fromPlatform().then((value) => value.version);
 }
@@ -75,7 +79,7 @@ Future<String> getVersion() async {
 Future<String?> getBuildNumber() async {
   String? buildNumber;
   final json = await rootBundle
-      .loadString('assets/resources/versions.json')
+      .loadString('assets/resources/versions.json', cache: false)
       .then((value) => jsonDecode(value))
       .onError((error, stackTrace) => null);
   if (json != null) {

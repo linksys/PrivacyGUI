@@ -5,7 +5,8 @@ import 'package:privacy_gui/constants/url_links.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/general_settings_widget/language_tile.dart';
-import 'package:privacy_gui/page/components/styled/general_settings_widget/theme_tile.dart';
+import 'package:privacy_gui/page/components/styled/general_settings_widget/theme_color_tile.dart';
+import 'package:privacy_gui/page/components/styled/general_settings_widget/theme_mode_tile.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/route/router_provider.dart';
@@ -67,7 +68,7 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
 
                       ref
                           .read(appSettingsProvider.notifier)
-                          .update(appSettings.copyWith(locale: locale));
+                          .update(appSettings.copyWith(locale: () => locale));
                     },
                   ),
                 ),
@@ -77,9 +78,18 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
                   child: Semantics(
                     identifier: 'now-general-settings-theme',
                     label: 'theme',
-                    child: const ThemeTile(),
+                    child: const ThemeModeTile(),
                   ),
                 ),
+                // const AppGap.medium(),
+                // Padding(
+                //   padding: const EdgeInsets.all(Spacing.small2),
+                //   child: Semantics(
+                //     identifier: 'now-general-settings-theme-color',
+                //     label: 'themeColor',
+                //     child: const ThemeColorTile(),
+                //   ),
+                // ),
                 const AppGap.medium(),
                 ..._displayAdditional(loginType),
                 FutureBuilder(

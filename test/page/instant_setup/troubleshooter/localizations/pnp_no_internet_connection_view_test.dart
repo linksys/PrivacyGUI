@@ -33,7 +33,7 @@ void main() async {
     });
   });
 
-  testLocalizations('pnp no internet connection view - no ssid ',
+  testLocalizations('Troubleshooter - PnP no internet connection: no SSID',
       (tester, locale) async {
     await tester.pumpWidget(
       testableSingleRoute(
@@ -47,7 +47,7 @@ void main() async {
     await tester.pumpAndSettle();
   });
 
-  testLocalizations('pnp no internet connection view - with ssid',
+  testLocalizations('Troubleshooter - PnP no internet connection: has SSID',
       (tester, locale) async {
     await tester.pumpWidget(
       testableSingleRoute(
@@ -63,7 +63,8 @@ void main() async {
     await tester.pumpAndSettle();
   });
 
-  testLocalizations('pnp no internet connection view - need help',
+  testLocalizations(
+      'Troubleshooter - PnP no internet connection: has SSID and need help',
       (tester, locale) async {
     when(mockPnpTroubleshooterNotifier.build())
         .thenReturn(PnpTroubleshooterState(hasResetModem: true));

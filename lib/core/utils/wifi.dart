@@ -22,7 +22,7 @@ NodeSignalLevel getWifiSignalLevel(int? signalStrength) {
   }
   var signalThreshold =
       signalStrength > 0 ? signalThresholdSNR : signalThresholdRSSI;
-  var index = signalThreshold.indexWhere((element) => signalStrength > element);
+  var index = signalThreshold.indexWhere((element) => signalStrength >= element);
   if (index == -1) {
     return NodeSignalLevel.poor;
   } else {

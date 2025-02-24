@@ -783,7 +783,7 @@ const deviceListTestState = {
   ]
 };
 
-const instantPrivacyDeviceListTestState1 = {
+const instantPrivacyDeviceListTestState = {
   "devices": [
     {
       "deviceId": "290a9b5e-2e5d-452b-a18b-8cb4d6a303e3",
@@ -845,11 +845,6 @@ const instantPrivacyDeviceListTestState1 = {
       "type": "main",
       "ssid": "ssid-2"
     },
-  ]
-};
-
-const instantPrivacyDeviceListTestState2 = {
-  "devices": [
     {
       "deviceId": "af970fcb-29bb-4e63-a075-4b58bb6f45dd",
       "name": "4KTV-3MUP",
@@ -909,6 +904,26 @@ const instantPrivacyDeviceListTestState2 = {
       "isWired": true,
       "type": "main",
       "ssid": ""
+    },
+    {
+      "deviceId": "e21440bc-200f-4436-a411-072ef91b72e3",
+      "name": "ASTWP-29134",
+      "icon": "computer",
+      "upstreamDevice": "Room 1",
+      "upstreamDeviceID": "78705b46-ca02-8be2-af38-80691a202892",
+      "upstreamIcon": "routerMx5300",
+      "ipv4Address": "10.254.1.30",
+      "ipv6Address": "",
+      "macAddress": "3C:22:FB:E4:4F:18",
+      "manufacturer": "Apple Inc.",
+      "model": "MacBook Pro",
+      "operatingSystem": "macOS",
+      "band": "5GHz",
+      "signalStrength": -25,
+      "isOnline": true,
+      "isWired": false,
+      "type": "main",
+      "ssid": "HAO-9F-5G"
     },
   ]
 };

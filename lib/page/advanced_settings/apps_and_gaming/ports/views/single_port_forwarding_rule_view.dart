@@ -49,6 +49,8 @@ class _AddRuleContentViewState
 
   String? _ipError;
   String? _portError;
+  String? _descriptionError;
+
   bool _isEdit = false;
 
   @override
@@ -161,7 +163,12 @@ class _AddRuleContentViewState
         onChanged: (value) {
           _notifier.updateRule(state.rule?.copyWith(description: value));
         },
-        onFocusChanged: _onFocusChange,
+        onFocusChanged: (focus) {
+          setState(() {
+          _descriptionError = _notifier.isNameValid(state.rule?.description ?? '') ? null : loc(context).theNameMustNotBeEmpty;
+          });
+        },
+        errorText: _descriptionError,
       ),
       const AppGap.large2(),
       AppText.bodyMedium(loc(context).ports),

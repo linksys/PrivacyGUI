@@ -47,18 +47,28 @@ class _TracerouteModalState extends ConsumerState<TracerouteModal> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        AppText.bodySmall(loc(context).dnsIpAddress),
+        AppText.bodySmall(loc(context).ipAddress),
         const AppGap.small2(),
-        AppIPFormField(
-          border: const OutlineInputBorder(),
-          controller: _controller,
-          onChanged: (value) {
-            setState(() {
-              _validIP = IpAddressValidator().validate(value);
-            });
-          },
+        Opacity(
+          opacity: isRunning ? .5 : 1,
+          child: AbsorbPointer(
+            absorbing: isRunning ? true : false,
+            child: AppIPFormField(
+              border: const OutlineInputBorder(),
+              controller: _controller,
+              onChanged: (value) {
+                setState(() {
+                  _validIP = IpAddressValidator().validate(value);
+                });
+              },
+            ),
+          ),
         ),
         const AppGap.large1(),
+        if (isRunning && _tracerouteLog.isEmpty)
+          Center(
+              child: SizedBox(
+                  width: 36, height: 36, child: CircularProgressIndicator())),
         if (_tracerouteLog.isNotEmpty)
           Expanded(
             child: SingleChildScrollView(
@@ -75,16 +85,23 @@ class _TracerouteModalState extends ConsumerState<TracerouteModal> {
                 context.pop();
               },
             ),
-            AppTextButton(
-              loc(context).execute,
-              onTap: isRunning || !_validIP
-                  ? null
-                  : () {
-                      ref
-                          .read(instantVerifyProvider.notifier)
-                          .traceroute(host: _controller.text, pingCount: 5);
-                      _getTracerouteStatus();
-                    },
+            Stack(
+              children: [
+                AppTextButton(
+                  loc(context).execute,
+                  onTap: isRunning || !_validIP
+                      ? null
+                      : () {
+                          setState(() {
+                            _tracerouteLog = '';
+                          });
+                          ref
+                              .read(instantVerifyProvider.notifier)
+                              .traceroute(host: _controller.text, pingCount: 5);
+                          _getTracerouteStatus();
+                        },
+                ),
+              ],
             )
           ],
         ),

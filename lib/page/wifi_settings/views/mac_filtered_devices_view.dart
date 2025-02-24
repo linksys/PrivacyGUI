@@ -8,12 +8,14 @@ import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/displayed_mac_filtering_devices_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/validator_rules/_validator_rules.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
+import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
@@ -46,26 +48,24 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
     return StyledAppPageView(
       title: loc(context).filteredDevices,
       scrollable: true,
-      actions: !_isEdit
-          ? [
-              AppTextButton(
-                loc(context).edit,
-                icon: LinksysIcons.edit,
-                onTap: state.macAddresses.isNotEmpty
-                    ? () {
-                        _toggleEdit();
-                      }
-                    : null,
-              )
-            ]
-          : null,
+      actions: [
+        AppTextButton(
+          loc(context).edit,
+          icon: LinksysIcons.edit,
+          onTap: state.denyMacAddresses.isNotEmpty
+              ? () {
+                  _toggleEdit();
+                }
+              : null,
+        )
+      ],
       bottomBar: _isEdit
           ? InversePageBottomBar(
               isPositiveEnabled: true,
               onPositiveTap: () {
                 ref
                     .read(instantPrivacyProvider.notifier)
-                    .removeSelection(_selectedMACs);
+                    .removeSelection(_selectedMACs, true);
                 _toggleEdit();
               },
               positiveLabel: loc(context).remove,
@@ -74,7 +74,12 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
                 _toggleEdit();
               },
             )
-          : null,
+          : PageBottomBar(
+              isPositiveEnabled: true,
+              onPositiveTap: () {
+                context.pop();
+              },
+              positiveLabel: loc(context).done),
       child: AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
         content: Column(
@@ -104,7 +109,7 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
               padding: const EdgeInsets.symmetric(vertical: Spacing.medium),
               child: AppText.labelLarge(loc(context).filteredDevices),
             ),
-            _buildFilteredDevices(state),
+            _buildFilteredDevices(),
           ],
         ),
       ),
@@ -122,17 +127,22 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
     final results = await context
         .pushNamed<List<DeviceListItem>?>(RouteNamed.devicePicker, extra: {
       'type': 'mac',
-      'selected': ref.read(instantPrivacyProvider).macAddresses
+      'selected': ref.read(instantPrivacyProvider).denyMacAddresses
     });
+    final temp = ref.read(instantPrivacyProvider).denyMacAddresses;
     if (results != null) {
-      ref
-          .read(instantPrivacyProvider.notifier)
-          .setSelection(results.map((e) => e.macAddress).toList());
+      final newMacs = results.map((e) => e.macAddress).toList();
+      // temp and newMacs do XOR
+      final added = newMacs.toSet().difference(temp.toSet());
+      final removed = temp.toSet().difference(newMacs.toSet());
+      ref.read(instantPrivacyProvider.notifier).setSelection(
+          [...added, ...temp..removeWhere((e) => removed.contains(e))], true);
     }
   }
 
-  Widget _buildFilteredDevices(InstantPrivacyState state) {
-    return state.macAddresses.isEmpty
+  Widget _buildFilteredDevices() {
+    final state = ref.watch(macFilteringDeviceListProvider);
+    return state.isEmpty
         ? SizedBox(
             height: 180,
             child: AppCard(
@@ -143,55 +153,48 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
             ),
           )
         : SizedBox(
-            height: 76.0 * state.macAddresses.length +
-                Spacing.small2 * state.macAddresses.length,
+            height: 76.0 * state.length + Spacing.small2 * state.length,
             child: ListView.separated(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: state.macAddresses.length,
+              itemCount: state.length,
               itemBuilder: (context, index) {
-                final device = state.macAddresses[index];
+                final device = state[index];
                 return SizedBox(
                   height: 76,
-                  child: AppCard(
-                    color: _selectedMACs.contains(device)
+                  child: AppSettingCard(
+                    color: _selectedMACs.contains(device.macAddress)
                         ? Theme.of(context).colorScheme.primaryContainer
                         : null,
-                    borderColor: _selectedMACs.contains(device)
+                    borderColor: _selectedMACs.contains(device.macAddress)
                         ? Theme.of(context).colorScheme.primary
                         : null,
                     onTap: _isEdit
                         ? () {
                             setState(() {
-                              if (_selectedMACs.contains(device)) {
-                                _selectedMACs.remove(device);
+                              if (_selectedMACs.contains(device.macAddress)) {
+                                _selectedMACs.remove(device.macAddress);
                               } else {
-                                _selectedMACs.add(device);
+                                _selectedMACs.add(device.macAddress);
                               }
                             });
                           }
                         : null,
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: [
-                          if (_isEdit)
-                            IgnorePointer(
-                              child: AppCheckbox(
-                                value: _selectedMACs.contains(device),
-                                onChanged: (value) {},
-                              ),
+                    leading: _isEdit
+                        ? IgnorePointer(
+                            child: AppCheckbox(
+                              value: _selectedMACs.contains(device.macAddress),
+                              onChanged: (value) {},
                             ),
-                          Expanded(child: AppText.labelLarge(device)),
-                        ],
-                      ),
-                    ),
+                          )
+                        : null,
+                    title: device.name,
+                    description: device.macAddress,
                   ),
                 );
               },
               separatorBuilder: (BuildContext context, int index) {
-                if (index != state.macAddresses.length - 1) {
+                if (index != state.length - 1) {
                   return const AppGap.small2();
                 } else {
                   return const Center();
@@ -229,7 +232,7 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
       checkPositiveEnabled: () => isValid,
     );
     if (result != null) {
-      ref.read(instantPrivacyProvider.notifier).setSelection([result]);
+      ref.read(instantPrivacyProvider.notifier).setSelection([result], true);
     }
   }
 }

@@ -47,19 +47,29 @@ class _PingNetworkModalState extends ConsumerState<PingNetworkModal> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        AppText.bodySmall(loc(context).dnsIpAddress),
+        AppText.bodySmall(loc(context).ipAddress),
         const AppGap.small2(),
-        AppIPFormField(
-          semanticLabel: 'dns ip address',
-          border: const OutlineInputBorder(),
-          controller: _controller,
-          onChanged: (value) {
-            setState(() {
-            _validIP = IpAddressValidator().validate(value);
-            });
-          },
+        Opacity(
+          opacity: isRunning ? .5 : 1,
+          child: AbsorbPointer(
+            absorbing: isRunning ? true : false,
+            child: AppIPFormField(
+              semanticLabel: 'dns ip address',
+              border: const OutlineInputBorder(),
+              controller: _controller,
+              onChanged: (value) {
+                setState(() {
+                  _validIP = IpAddressValidator().validate(value);
+                });
+              },
+            ),
+          ),
         ),
         const AppGap.large1(),
+        if (isRunning && _pingLog.isEmpty)
+          Center(
+              child: SizedBox(
+                  width: 36, height: 36, child: CircularProgressIndicator())),
         if (_pingLog.isNotEmpty)
           Expanded(
             child: SingleChildScrollView(
@@ -81,6 +91,9 @@ class _PingNetworkModalState extends ConsumerState<PingNetworkModal> {
               onTap: isRunning || !_validIP
                   ? null
                   : () {
+                      setState(() {
+                        _pingLog = '';
+                      });
                       ref
                           .read(instantVerifyProvider.notifier)
                           .ping(host: _controller.text, pingCount: 5);

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/page/components/styled/status_label.dart';
 import 'package:privacy_gui/page/components/styled/top_bar.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
@@ -130,6 +131,7 @@ class StyledAppPageView extends ConsumerWidget {
   final bool largeMenu;
   final Widget? topbar;
   final bool useMainPadding;
+  final String? markLabel;
 
   const StyledAppPageView({
     super.key,
@@ -156,6 +158,7 @@ class StyledAppPageView extends ConsumerWidget {
     this.largeMenu = false,
     this.topbar,
     this.useMainPadding = true,
+    this.markLabel,
   });
 
   @override
@@ -267,10 +270,23 @@ class StyledAppPageView extends ConsumerWidget {
               ? null
               : Semantics(
                   label: 'page title',
-                  child: AppText.titleLarge(
-                    title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Flexible(
+                        fit: FlexFit.loose,
+                        child: AppText.titleLarge(
+                          title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (markLabel != null) ...[
+                        const AppGap.small2(),
+                        StatusLabel(label: markLabel!),
+                      ],
+                    ],
                   ),
                 ),
           toolbarHeight: toolbarHeight,
@@ -290,7 +306,21 @@ class StyledAppPageView extends ConsumerWidget {
           title: title == null
               ? null
               : Semantics(
-                  label: 'page title', child: AppText.titleLarge(title)),
+                  label: 'page title', child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AppText.titleLarge(
+                        title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (markLabel != null) ...[
+                        const AppGap.small2(),
+                        StatusLabel(label: markLabel!),
+                      ],
+                    ],
+                  ),),
           toolbarHeight: toolbarHeight,
           onBackTap: isBackEnabled()
               ? (onBackTap ??

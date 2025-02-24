@@ -49,7 +49,9 @@ class _FakeStaticRoutingRuleState_1 extends _i1.SmartFake
 /// A class which mocks [StaticRoutingRuleNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockStaticRoutingRuleNotifier extends _i2.Notifier<_i3.StaticRoutingRuleState> with _i1.Mock
+class MockStaticRoutingRuleNotifier extends _i2.Notifier<
+    _i3.StaticRoutingRuleState>
+    with _i1.Mock
     implements _i4.StaticRoutingRuleNotifier {
   @override
   _i2.NotifierProviderRef<_i3.StaticRoutingRuleState> get ref =>
@@ -177,6 +179,26 @@ class MockStaticRoutingRuleNotifier extends _i2.Notifier<_i3.StaticRoutingRuleSt
         returnValue: false,
         returnValueForMissingStub: false,
       ) as bool);
+
+  @override
+  void listenSelf(
+    void Function(
+      _i3.StaticRoutingRuleState?,
+      _i3.StaticRoutingRuleState,
+    )? listener, {
+    void Function(
+      Object,
+      StackTrace,
+    )? onError,
+  }) =>
+      super.noSuchMethod(
+        Invocation.method(
+          #listenSelf,
+          [listener],
+          {#onError: onError},
+        ),
+        returnValueForMissingStub: null,
+      );
 
   @override
   bool updateShouldNotify(

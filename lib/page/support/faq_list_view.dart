@@ -3,6 +3,8 @@ import 'package:privacy_gui/constants/url_links.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
+import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
+import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
@@ -15,14 +17,22 @@ import 'package:privacygui_widgets/widgets/card/expansion_card.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 
-class FaqListView extends ArgumentsConsumerStatelessView {
-  const FaqListView({
-    Key? key,
-    super.args,
-  }) : super(key: key);
+class FaqListView extends ArgumentsConsumerStatefulView {
+  const FaqListView({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<FaqListView> createState() => _FaqListViewState();
+}
+
+class _FaqListViewState extends ConsumerState<FaqListView> {
+  @override
+  void initState() {
+    super.initState();
+    ref.read(menuController).setTo(NaviType.support);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return StyledAppPageView(
       title: loc(context).faqs,
       backState: StyledBackState.none,
@@ -91,7 +101,7 @@ class FaqListView extends ArgumentsConsumerStatelessView {
                         locale: ref.read(appSettingsProvider).locale);
                   }),
                   AppTextButton(loc(context).faqListLoseDevices, onTap: () {
-                    gotoOfficialWebUrl(linkConnectivityLoseChildNode,
+                    gotoOfficialWebUrl(linkConnectivityLoseDevices,
                         locale: ref.read(appSettingsProvider).locale);
                   }),
                   AppTextButton(loc(context).faqListDeviceNoWiFi, onTap: () {
@@ -121,11 +131,6 @@ class FaqListView extends ArgumentsConsumerStatelessView {
                     gotoOfficialWebUrl(linkSpeedSpecificDeviceSlow,
                         locale: ref.read(appSettingsProvider).locale);
                   }),
-                  AppTextButton(loc(context).faqListSlowAfterAddNode,
-                      onTap: () {
-                    gotoOfficialWebUrl(linkSpeedSlowAfterAddNode,
-                        locale: ref.read(appSettingsProvider).locale);
-                  }),
                 ],
               ),
             ),
@@ -150,11 +155,6 @@ class FaqListView extends ArgumentsConsumerStatelessView {
                     gotoOfficialWebUrl(linkPasswordChangeWiFiNamePassword,
                         locale: ref.read(appSettingsProvider).locale);
                   }),
-                  AppTextButton(loc(context).faqListAccessByWebBrowser,
-                      onTap: () {
-                    gotoOfficialWebUrl(linkPasswordAccessByWebBrowser,
-                        locale: ref.read(appSettingsProvider).locale);
-                  }),
                 ],
               ),
             ),
@@ -173,11 +173,6 @@ class FaqListView extends ArgumentsConsumerStatelessView {
                     gotoOfficialWebUrl(linkHardwareHowToFactoryReset,
                         locale: ref.read(appSettingsProvider).locale);
                   }),
-                  AppTextButton(loc(context).faqListNodeKeepRestarting,
-                      onTap: () {
-                    gotoOfficialWebUrl(linkHardwareNodeKeepRestarting,
-                        locale: ref.read(appSettingsProvider).locale);
-                  }),
                   AppTextButton(loc(context).faqListLightsNotWorking,
                       onTap: () {
                     gotoOfficialWebUrl(linkHardwareLightsNotWorking,
@@ -190,6 +185,11 @@ class FaqListView extends ArgumentsConsumerStatelessView {
                   AppTextButton(loc(context).faqListEthernetPortNotWorking,
                       onTap: () {
                     gotoOfficialWebUrl(linkHardwareEthernetPortNotWorking,
+                        locale: ref.read(appSettingsProvider).locale);
+                  }),
+                  AppTextButton(loc(context).faqListCheckIfFirmwareAutoUpdate,
+                      onTap: () {
+                    gotoOfficialWebUrl(linkCheckIfAutoFirmwareOn,
                         locale: ref.read(appSettingsProvider).locale);
                   }),
                 ],
@@ -213,7 +213,7 @@ class FaqListView extends ArgumentsConsumerStatelessView {
       children: [
         Row(
           children: [
-            children,
+            Expanded(child: children),
           ],
         ),
       ],

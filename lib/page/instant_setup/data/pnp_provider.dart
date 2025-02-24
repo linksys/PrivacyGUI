@@ -22,6 +22,9 @@ import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_step_state.dart';
+import 'package:privacy_gui/page/instant_setup/model/impl/guest_wifi_step.dart';
+import 'package:privacy_gui/page/instant_setup/model/impl/night_mode_step.dart';
+import 'package:privacy_gui/page/instant_setup/model/impl/personal_wifi_step.dart';
 import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/connectivity/mixin.dart';
@@ -82,7 +85,7 @@ abstract class BasePnpNotifier extends Notifier<PnpState> {
 
   Future fetchDeviceInfo();
   Future checkAdminPassword(String? password);
-  Future checkInternetConnection();
+  Future checkInternetConnection([int retries = 1]);
   Future checkRouterConfigured();
   Future<bool> pnpCheck();
   Future<bool> isRouterPasswordSet();
@@ -100,94 +103,94 @@ abstract class BasePnpNotifier extends Notifier<PnpState> {
   ({String name, String password}) getDefaultGuestWiFiNameAndPassPhrase();
 }
 
-class MockPnpNotifier extends BasePnpNotifier {
-  @override
-  Future checkAdminPassword(String? password) {
-    if (password == 'Linksys123!') {
-      return Future.delayed(const Duration(seconds: 1));
-    }
-    return Future.delayed(const Duration(seconds: 3))
-        .then((value) => throw ExceptionInvalidAdminPassword());
-  }
+// class MockPnpNotifier extends BasePnpNotifier {
+//   @override
+//   Future checkAdminPassword(String? password) {
+//     if (password == 'Linksys123!') {
+//       return Future.delayed(const Duration(seconds: 1));
+//     }
+//     return Future.delayed(const Duration(seconds: 3))
+//         .then((value) => throw ExceptionInvalidAdminPassword());
+//   }
 
-  @override
-  Future checkInternetConnection() {
-    return Future.delayed(const Duration(seconds: 1))
-        .then((value) => throw ExceptionNoInternetConnection());
-  }
+//   @override
+//   Future checkInternetConnection([int retries = 1]) {
+//     return Future.delayed(const Duration(seconds: 1))
+//         .then((value) => throw ExceptionNoInternetConnection());
+//   }
 
-  @override
-  Future fetchDeviceInfo() {
-    return Future.delayed(const Duration(seconds: 1));
-  }
+//   @override
+//   Future fetchDeviceInfo() {
+//     return Future.delayed(const Duration(seconds: 1));
+//   }
 
-  @override
-  Future<bool> pnpCheck() {
-    return Future.delayed(const Duration(seconds: 1)).then((value) => true);
-  }
+//   @override
+//   Future<bool> pnpCheck() {
+//     return Future.delayed(const Duration(seconds: 1)).then((value) => true);
+//   }
 
-  @override
-  Future<bool> isRouterPasswordSet() {
-    return Future.delayed(const Duration(seconds: 1)).then((value) => true);
-  }
+//   @override
+//   Future<bool> isRouterPasswordSet() {
+//     return Future.delayed(const Duration(seconds: 1)).then((value) => true);
+//   }
 
-  @override
-  Future fetchData() {
-    return Future.delayed(const Duration(seconds: 1));
-  }
+//   @override
+//   Future fetchData() {
+//     return Future.delayed(const Duration(seconds: 1));
+//   }
 
-  @override
-  ({String name, String password, String security})
-      getDefaultWiFiNameAndPassphrase() {
-    return (
-      name: 'Linksys1234567',
-      password: 'Linksys123456@',
-      security: 'WPA2/WPA3-Mixed-Personal'
-    );
-  }
+//   @override
+//   ({String name, String password, String security})
+//       getDefaultWiFiNameAndPassphrase() {
+//     return (
+//       name: 'Linksys1234567',
+//       password: 'Linksys123456@',
+//       security: 'WPA2/WPA3-Mixed-Personal'
+//     );
+//   }
 
-  @override
-  ({String name, String password}) getDefaultGuestWiFiNameAndPassPhrase() {
-    return (
-      name: 'Guest-Linksys1234567',
-      password: 'GuestLinksys123456@',
-    );
-  }
+//   @override
+//   ({String name, String password}) getDefaultGuestWiFiNameAndPassPhrase() {
+//     return (
+//       name: 'Guest-Linksys1234567',
+//       password: 'GuestLinksys123456@',
+//     );
+//   }
 
-  @override
-  Future save() {
-    return Future.delayed(const Duration(seconds: 5));
-    // .then((value) => throw ErrorNeedToReconnect());
-  }
+//   @override
+//   Future save() {
+//     return Future.delayed(const Duration(seconds: 5));
+//     // .then((value) => throw ErrorNeedToReconnect());
+//   }
 
-  @override
-  Future checkRouterConfigured() {
-    state = state.copyWith(isUnconfigured: true);
+//   @override
+//   Future checkRouterConfigured() {
+//     state = state.copyWith(isUnconfigured: true);
 
-    return Future.delayed(const Duration(seconds: 1))
-        .then((value) => throw ExceptionRouterUnconfigured());
-  }
+//     return Future.delayed(const Duration(seconds: 1))
+//         .then((value) => throw ExceptionRouterUnconfigured());
+//   }
 
-  @override
-  Future testConnectionReconnected() {
-    return Future.delayed(const Duration(seconds: 1)).then((value) => true);
-  }
+//   @override
+//   Future testConnectionReconnected() {
+//     return Future.delayed(const Duration(seconds: 1)).then((value) => true);
+//   }
 
-  @override
-  Future fetchDevices() {
-    return Future.delayed(const Duration(seconds: 1)).then((_) {});
-  }
+//   @override
+//   Future fetchDevices() {
+//     return Future.delayed(const Duration(seconds: 1)).then((_) {});
+//   }
 
-  @override
-  void setAttachedPassword(String? password) {
-    state = state.copyWith(attachedPassword: password);
-  }
+//   @override
+//   void setAttachedPassword(String? password) {
+//     state = state.copyWith(attachedPassword: password);
+//   }
 
-  @override
-  void setForceLogin(bool force) {
-    state = state.copyWith(forceLogin: force);
-  }
-}
+//   @override
+//   void setForceLogin(bool force) {
+//     state = state.copyWith(forceLogin: force);
+//   }
+// }
 
 class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
   @override
@@ -198,6 +201,8 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
           JNAPAction.getDeviceInfo,
           type: CommandType.local,
           fetchRemote: true,
+          retries: 0,
+          timeoutMs: 3000,
         )
         .then((result) => NodeDeviceInfo.fromJson(result.output));
     // check current sn and clear it
@@ -228,19 +233,24 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
 
   /// check internet connection within 30 seconds
   @override
-  Future checkInternetConnection() async {
+  Future checkInternetConnection([int retries = 1]) async {
     final isNode = isNodeModel(
         modelNumber: state.deviceInfo?.modelNumber ?? '',
         hardwareVersion: state.deviceInfo?.hardwareVersion ?? '1');
     // getInternetConnectionStatus for Node router
     Future<bool> isInternetConnected() async {
       bool isConnected = false;
-      for (int i = 0; i < 30; i++) {
+      for (int i = 0; i < retries; i++) {
+        logger.i(
+            '[PnP]: Check internet connections MAX retries <$retries>, i=$i');
         isConnected = await ref
             .read(routerRepositoryProvider)
-            .send(JNAPAction.getInternetConnectionStatus, auth: true, retries: 0)
+            .send(JNAPAction.getInternetConnectionStatus,
+                auth: true, retries: 0)
             .then((result) {
           return result.output['connectionStatus'] == 'InternetConnected';
+        }).onError((error, stackTrece) {
+          return false;
         });
         if (isConnected) {
           break;
@@ -385,6 +395,11 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
     if (deviceInfo != null) {
       prefs.setString(pPnpConfiguredSN, deviceInfo.serialNumber);
     }
+    final isGuestWiFiSupport =
+        serviceHelper.isSupportGuestNetwork(deviceInfo?.services);
+    final isNightModeSupport =
+        serviceHelper.isSupportLedMode(deviceInfo?.services);
+
     // processing data
     final defaultWiFi = getDefaultWiFiNameAndPassphrase();
     final defaultGuestWiFi = getDefaultGuestWiFiNameAndPassPhrase();
@@ -396,7 +411,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
         ? {'adminPassword': defaultWiFi.password}
         : <String, dynamic>{};
     // personal wifi
-    final wifiStateData = getStepState(0).data;
+    final wifiStateData = getStepState(PersonalWiFiStep.id).data;
     final wifiName = wifiStateData['ssid'] as String? ?? defaultWiFi.name;
     final wifiPassphase =
         wifiStateData['password'] as String? ?? defaultWiFi.password;
@@ -413,7 +428,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
     final isWiFiChanged =
         wifiName != defaultWiFi.name || wifiPassphase != defaultWiFi.password;
     // guest wifi
-    final guestWifiStateData = getStepState(1).data;
+    final guestWifiStateData = getStepState(GuestWiFiStep.id).data;
     final isGuestEnabled = guestWifiStateData['isEnabled'] as bool? ?? false;
     final guestWiFiName =
         guestWifiStateData['ssid'] as String? ?? defaultGuestWiFi.name;
@@ -437,7 +452,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
       setGuestRadioSettings = setGuestRadioSettings.copyWith(radios: radios);
     }
     // Night mode
-    final nightModeStateData = getStepState(2).data;
+    final nightModeStateData = getStepState(NightModeStep.id).data;
     final isNightModeEnabled =
         nightModeStateData['isEnabled'] as bool? ?? false;
     var nightModeSettings =
@@ -464,9 +479,10 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
           'simpleWiFiSettings':
               simpleWiFiSettings.map((e) => e.toMap()).toList()
         }),
-      // if (isGuestEnabled)
-      MapEntry(JNAPAction.setGuestRadioSettings, setGuestRadioSettings.toMap()),
-      if (isNightModeEnabled)
+      if (isGuestWiFiSupport)
+        MapEntry(
+            JNAPAction.setGuestRadioSettings, setGuestRadioSettings.toMap()),
+      if (isNightModeSupport && isNightModeEnabled)
         MapEntry(JNAPAction.setLedNightModeSetting, nightModeSettings.toMap()),
       MapEntry(JNAPAction.setFirmwareUpdateSettings, firmwareUpdateSettings),
       if (state.isRouterUnConfigured)
@@ -527,7 +543,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
   }
 
   @override
-  Future checkRouterConfigured() async {
+  Future<void> checkRouterConfigured() async {
     final isFirstFetch = state.isUnconfigured == null;
     final repo = ref.read(routerRepositoryProvider);
     final isUnconfigured = await repo

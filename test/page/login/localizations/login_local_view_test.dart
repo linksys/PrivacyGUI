@@ -1,46 +1,45 @@
 import 'dart:convert';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
-import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
-import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/login/views/login_local_view.dart';
+import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
-
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
+import '../../../mocks/_index.dart';
 import '../../../mocks/jnap_service_supported_mocks.dart';
-import '../../../mocks/router_repository_mocks.dart';
 import '../../../test_data/device_info_test_data.dart';
-import '../../../mocks/dashboard_manager_notifier_mocks.dart';
 
 void main() async {
-  late DashboardManagerNotifier mockDashboardManagerNotifier;
-  late MockRouterRepository mockRouterRepository;
+  late MockDashboardManagerNotifier mockDashboardManagerNotifier;
+  late MockAuthNotifier mockAuthNotifier;
 
   ServiceHelper mockServiceHelper = MockServiceHelper();
   getIt.registerSingleton<ServiceHelper>(mockServiceHelper);
-  
+
   setUp(() {
     mockDashboardManagerNotifier = MockDashboardManagerNotifier();
     when(mockDashboardManagerNotifier.checkDeviceInfo(null)).thenAnswer(
-        (realInvocation) async =>
-            NodeDeviceInfo.fromJson(jsonDecode(testDeviceInfo)['output']));
+      (realInvocation) async =>
+          NodeDeviceInfo.fromJson(jsonDecode(testDeviceInfo)['output']),
+    );
+
+    mockAuthNotifier = MockAuthNotifier();
+    when(mockAuthNotifier.build()).thenAnswer(
+      (_) async => Future.value(
+        AuthState.empty().copyWith(localPasswordHint: 'Linksys'),
+      ),
+    );
+    when(mockAuthNotifier.getPasswordHint()).thenAnswer((_) async {});
+    when(mockAuthNotifier.getAdminPasswordAuthStatus(any))
+        .thenAnswer((_) async => null);
   });
 
-  mockRouterRepository = MockRouterRepository();
-  when(mockRouterRepository.send(JNAPAction.getAdminPasswordHint))
-      .thenAnswer((realInvocation) async => JNAPSuccess.fromJson(const {
-            "result": "OK",
-            "output": {"passwordHint": "Link123"}
-          }));
   testLocalizations(
     'login local view - init state',
     (tester, locale) async {
@@ -51,8 +50,7 @@ void main() async {
           overrides: [
             dashboardManagerProvider
                 .overrideWith(() => mockDashboardManagerNotifier),
-            routerRepositoryProvider
-                .overrideWith((ref) => mockRouterRepository),
+            authProvider.overrideWith(() => mockAuthNotifier),
           ],
         ),
       );
@@ -60,8 +58,9 @@ void main() async {
       await tester.pumpAndSettle();
     },
   );
+
   testLocalizations(
-    'login local view - input password',
+    'login local view - input password masked',
     (tester, locale) async {
       await tester.pumpWidget(
         testableSingleRoute(
@@ -70,8 +69,7 @@ void main() async {
           overrides: [
             dashboardManagerProvider
                 .overrideWith(() => mockDashboardManagerNotifier),
-            routerRepositoryProvider
-                .overrideWith((ref) => mockRouterRepository),
+            authProvider.overrideWith(() => mockAuthNotifier),
           ],
         ),
       );
@@ -93,8 +91,7 @@ void main() async {
           overrides: [
             dashboardManagerProvider
                 .overrideWith(() => mockDashboardManagerNotifier),
-            routerRepositoryProvider
-                .overrideWith((ref) => mockRouterRepository),
+            authProvider.overrideWith(() => mockAuthNotifier),
           ],
         ),
       );
@@ -110,23 +107,16 @@ void main() async {
   );
 
   testLocalizations(
-    'login local view - failed to login',
+    'login local view - failed to login with auth status',
     (tester, locale) async {
-      when(mockRouterRepository.send(
-        JNAPAction.checkAdminPassword,
-        data: anyNamed('data'),
-        extraHeaders: anyNamed('extraHeaders'),
-        auth: false,
-        type: null,
-        fetchRemote: false,
-        cacheLevel: CacheLevel.noCache,
-        timeoutMs: 10000,
-        retries: 1,
-        sideEffectOverrides: null,
-      )).thenThrow(JNAPError.fromJson(const {
-        "result": "ErrorInvalidAdminPassword",
-        "output": {"attemptsRemaining": 4, "delayTimeRemaining": 5}
-      }));
+      when(mockAuthNotifier.getAdminPasswordAuthStatus(any))
+          .thenAnswer((_) async {
+        return {
+          "attemptsRemaining": 4,
+          "delayTimeRemaining": 5,
+        };
+      });
+
       await tester.pumpWidget(
         testableSingleRoute(
           child: const LoginLocalView(),
@@ -134,22 +124,61 @@ void main() async {
           overrides: [
             dashboardManagerProvider
                 .overrideWith(() => mockDashboardManagerNotifier),
-            routerRepositoryProvider
-                .overrideWith((ref) => mockRouterRepository),
+            authProvider.overrideWith(() => mockAuthNotifier),
           ],
         ),
       );
       await tester.pumpAndSettle();
+    },
+  );
 
-      final passwordFinder = find.byType(AppPasswordField);
-      await tester.enterText(passwordFinder, 'Password!!!');
-      await tester.pumpAndSettle();
-      final secureFinder = find.byIcon(LinksysIcons.visibility);
-      await tester.tap(secureFinder);
-      await tester.pumpAndSettle();
+  testLocalizations(
+    'login local view - failed to login with auth status and too many attempts',
+    (tester, locale) async {
+      when(mockAuthNotifier.getAdminPasswordAuthStatus(any))
+          .thenAnswer((_) async {
+        return {
+          "attemptsRemaining": 0,
+        };
+      });
 
-      final loginFinder = find.byType(AppFilledButton);
-      await tester.tap(loginFinder);
+      await tester.pumpWidget(
+        testableSingleRoute(
+          child: const LoginLocalView(),
+          locale: locale,
+          overrides: [
+            dashboardManagerProvider
+                .overrideWith(() => mockDashboardManagerNotifier),
+            authProvider.overrideWith(() => mockAuthNotifier),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+    },
+  );
+
+  testLocalizations(
+    'login local view - failed to login without auth status',
+    (tester, locale) async {
+      when(mockAuthNotifier.getAdminPasswordAuthStatus(any))
+          .thenAnswer((_) async {
+        return {
+          "attemptsRemaining": null,
+          "delayTimeRemaining": 5,
+        };
+      });
+
+      await tester.pumpWidget(
+        testableSingleRoute(
+          child: const LoginLocalView(),
+          locale: locale,
+          overrides: [
+            dashboardManagerProvider
+                .overrideWith(() => mockDashboardManagerNotifier),
+            authProvider.overrideWith(() => mockAuthNotifier),
+          ],
+        ),
+      );
       await tester.pumpAndSettle();
     },
   );

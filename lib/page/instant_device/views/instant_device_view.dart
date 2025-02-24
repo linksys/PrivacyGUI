@@ -45,6 +45,8 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
 
   @override
   Widget build(BuildContext context) {
+    MediaQuery.of(context);
+
     final filteredDeviceList = ref.watch(filteredDeviceListProvider);
     final isOnlineFilter = ref.watch(
         deviceFilterConfigProvider.select((value) => value.connectionFilter));
@@ -251,9 +253,9 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
           .read(deviceManagerProvider.notifier)
           .deleteDevices(deviceIds: selectedList)
           .then((_) {
-            setState(() {
-                _selectedList = [];
-              });
+        setState(() {
+          _selectedList = [];
+        });
         showSimpleSnackBar(context, loc(context).deviceDeleted);
       }).onError((error, stackTrace) {
         showFailedSnackBar(context, loc(context).generalError);

@@ -17,6 +17,7 @@ export 'ipv6_port_service_rule_notifier_mocks.dart';
 export 'linksys_http_client_mocks.dart';
 export 'local_network_settings_notifier_mocks.dart';
 export 'mock_auth_notifier.dart';
+export 'auth_notifier_mocks.dart';
 export 'node_detail_notifier_mocks.dart';
 export 'pnp_notifier_mocks.dart';
 export 'pnp_troubleshooter_notifier_mocks.dart';

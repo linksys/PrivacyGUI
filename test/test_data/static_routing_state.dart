@@ -1,3 +1,12 @@
+final staticRoutingEmptyState = {
+  "setting": {
+    "isNATEnabled": true,
+    "isDynamicRoutingEnabled": false,
+    "maxStaticRouteEntries": 20,
+    "entries": []
+  }
+};
+
 final staticRoutingState1 = {
   "setting": {
     "isNATEnabled": true,

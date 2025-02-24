@@ -39,9 +39,13 @@ class SinglePortForwardingRuleNotifier
     if (rule == null) {
       return false;
     }
-    return rule.description.isNotEmpty &&
+    return isNameValid(rule.description) &&
         isDeviceIpValidate(rule.internalServerIPAddress) &&
         !isPortConflict(rule.externalPort, rule.protocol);
+  }
+
+  bool isNameValid(String name) {
+    return name.isNotEmpty;
   }
 
   bool isDeviceIpValidate(String ipAddress) {

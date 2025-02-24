@@ -6,8 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:privacy_gui/constants/_constants.dart';
-import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
-import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/layouts/root_container.dart';
@@ -22,7 +20,6 @@ import 'package:privacy_gui/util/languages.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class LinksysApp extends ConsumerStatefulWidget {
   const LinksysApp({Key? key}) : super(key: key);
@@ -48,6 +45,7 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     _connectivityNotifier.forceUpdate().then((value) => _initAuth());
     _routerDelegate = ref.read(routerProvider).routerDelegate;
     ref.read(appSettingsProvider.notifier).load();
+    getVersion();
   }
 
   @override
@@ -69,11 +67,32 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     router.routerDelegate.removeListener(_onReceiveRouteChanged);
     router.routerDelegate.addListener(_onReceiveRouteChanged);
 
+    final appLightColorScheme = appSettings.themeColor == null
+        ? null
+        : AppColorScheme.fromSeed(seedColor: appSettings.themeColor!).light;
+    final appLightColorSchemeExt = appSettings.themeColor == null
+        ? lightColorSchemeExt
+        : AppColorScheme.fromSeed(seedColor: appSettings.themeColor!).lightExt;
+
+    final appDarkColorScheme = appSettings.themeColor == null
+        ? null
+        : AppColorScheme.fromSeed(seedColor: appSettings.themeColor!).dark;
+    final appDarkColorSchemeExt = appSettings.themeColor == null
+        ? darkColorSchemeExt
+        : AppColorScheme.fromSeed(seedColor: appSettings.themeColor!).darkExt;
     return MaterialApp.router(
       onGenerateTitle: (context) => loc(context).appTitle,
       theme: linksysLightThemeData.copyWith(
+          colorScheme: appLightColorScheme,
+          extensions: [appLightColorSchemeExt, textSchemeExt],
+          splashColor: appLightColorScheme?.primary,
+          focusColor: Colors.transparent,
           pageTransitionsTheme: pageTransitionsTheme),
       darkTheme: linksysDarkThemeData.copyWith(
+          colorScheme: appDarkColorScheme,
+          extensions: [appDarkColorSchemeExt, textSchemeExt],
+          splashColor: appDarkColorScheme?.primary,
+          focusColor: Colors.transparent,
           pageTransitionsTheme: pageTransitionsTheme),
       themeMode: appSettings.themeMode,
       locale: appSettings.locale ?? systemLocale,
@@ -216,9 +235,13 @@ class _FadePageTransition extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isWebMobile = kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.iOS ||
+            defaultTargetPlatform == TargetPlatform.android);
+
     return FadeTransition(
       opacity: _opacityAnimation,
-      child: child,
+      child: isWebMobile ? InteractiveViewer(child: child) : child,
     );
   }
 }

@@ -37,10 +37,12 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
     RequiredRule(),
   ]);
 
-  bool _internetConnected = false;
+  bool _showInternetConnected = false;
   bool _isCheckingInternet = false;
-  bool _hasCheckingRouterConfigured = false;
-  bool _isFactoryReset = false;
+  // The first thing to do when entering this page is checking factory reset, so just show the spinner
+  bool _isCheckingFactoryReset = true;
+  // It will be true only if admin password check fails
+  bool _hasDefaultPasswordChanged = false;
   bool _processing = false;
   String? _inputError;
   Object? _error;
@@ -147,40 +149,107 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
 
   @override
   Widget build(BuildContext context) {
-    return _internetConnected ? _internetConnectedView() : !_isCheckingInternet ? _mainView() : _checkInternetView();
+    // In order to let users see internet connected screen, 
+    // this has a higher priority when both showInternetConnected and isCheckingInternet are true
+    if (_showInternetConnected) {
+      return _internetConnectedView();
+    } else {
+      if (_isCheckingInternet) {
+        return _checkInternetView();
+      } else {
+        return _isCheckingFactoryReset
+            ? _checkFactorySettingView()
+            : _mainView();
+      }
+    }
   }
 
   Widget _internetConnectedView() {
-return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  LinksysIcons.globe,
-                  semanticLabel: 'globe',
-                  color: Theme.of(context).colorScheme.primary,
-                  size: 48,
-                ),
-                const AppGap.medium(),
-                AppText.titleMedium(loc(context).launchInternetConnected),
-              ],
-            ),
-          );
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            LinksysIcons.globe,
+            semanticLabel: 'globe',
+            color: Theme.of(context).colorScheme.primary,
+            size: 48,
+          ),
+          const AppGap.medium(),
+          AppText.titleMedium(loc(context).launchInternetConnected),
+        ],
+      ),
+    );
   }
+
+  Widget _checkFactorySettingView() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const AppSpinner(
+            semanticLabel: 'Initialize spinner',
+          ),
+          const AppGap.medium(),
+          AppText.titleMedium(loc(context).processing),
+        ],
+      ),
+    );
+  }
+
   Widget _checkInternetView() {
-    
-        return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const AppSpinner(
-                  semanticLabel: 'Check Internet spinner',
-                ),
-                const AppGap.medium(),
-                AppText.titleMedium(loc(context).launchCheckInternet),
-              ],
-            ),
-          );
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const AppSpinner(
+            semanticLabel: 'Check Internet spinner',
+          ),
+          const AppGap.medium(),
+          AppText.titleMedium(loc(context).launchCheckInternet),
+        ],
+      ),
+    );
+  }
+
+  Widget _mainView() {
+    final deviceInfo =
+        ref.watch(pnpProvider.select((value) => value.deviceInfo));
+    final isUnconfiguredRouter = ref.read(pnpProvider).isUnconfigured ?? false;
+    return StyledAppPageView(
+      scrollable: true,
+      appBarStyle: AppBarStyle.none,
+      backState: StyledBackState.none,
+      enableSafeArea: (bottom: true, top: false, left: true, right: false),
+      child: Center(
+        child: AppCard(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Image(
+                image: CustomTheme.of(context).images.devices.getByName(
+                      routerIconTestByModel(
+                        modelNumber: deviceInfo?.modelNumber ?? 'LN11',
+                      ),
+                    ),
+                height: 160,
+                width: 160,
+                fit: BoxFit.contain,
+              ),
+              AnimatedContainer(
+                duration: const Duration(seconds: 1),
+                child: isUnconfiguredRouter && !_hasDefaultPasswordChanged
+                    ? _unconfiguredView()
+                    : _routerPasswordView(),
+              )
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _unconfiguredView() {
@@ -206,7 +275,7 @@ return Center(
                 '[PnP]: ${_password == null ? 'There is no admin password, bring up the input view' : 'The given password is invalid'}',
               );
               setState(() {
-                _isFactoryReset = false;
+                _hasDefaultPasswordChanged = true;
               });
             });
           },
@@ -273,61 +342,6 @@ return Center(
     );
   }
 
-  Widget _mainView() {
-    final deviceInfo =
-        ref.watch(pnpProvider.select((value) => value.deviceInfo));
-    return !_hasCheckingRouterConfigured
-        ? Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const AppSpinner(
-                  semanticLabel: 'Initialize spinner',
-                ),
-                const AppGap.medium(),
-                AppText.titleMedium(loc(context).processing),
-              ],
-            ),
-          )
-        : StyledAppPageView(
-            scrollable: true,
-            appBarStyle: AppBarStyle.none,
-            backState: StyledBackState.none,
-            enableSafeArea: (
-              bottom: true,
-              top: false,
-              left: true,
-              right: false
-            ),
-            child: Center(
-              child: AppCard(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Image(
-                      image: CustomTheme.of(context).images.devices.getByName(
-                          routerIconTestByModel(
-                              modelNumber: deviceInfo?.modelNumber ?? 'LN11')),
-                      height: 160,
-                      width: 160,
-                      fit: BoxFit.contain,
-                    ),
-                    AnimatedContainer(
-                      duration: const Duration(seconds: 1),
-                      child: _isFactoryReset
-                          ? _unconfiguredView()
-                          : _routerPasswordView(),
-                    )
-                  ],
-                ),
-              ),
-            ),
-          );
-  }
-
   void _doLogin() {
     setState(() {
       _processing = true;
@@ -353,20 +367,20 @@ return Center(
   Future _checkRouterConfigured() {
     logger.i('[PnP]: Check the router configured');
     setState(() {
-      _hasCheckingRouterConfigured = false;
+      _isCheckingFactoryReset = true;
     });
     return pnp.checkRouterConfigured().then((_) {}).catchError(
         (error, stackTrace) {
       logger.e('[PnP]: The router is unconfigured');
       setState(() {
-        _isFactoryReset = true;
+        // _hasDefaultPasswordChanged = false;
         _inputError = '';
         _password = defaultAdminPassword;
       });
       throw error;
     }, test: (error) => error is ExceptionRouterUnconfigured).whenComplete(() {
       setState(() {
-        _hasCheckingRouterConfigured = true;
+        _isCheckingFactoryReset = false;
       });
     });
   }
@@ -378,7 +392,7 @@ return Center(
     return pnp.checkInternetConnection().then((_) async {
       logger.i('[PnP]: Check the Internet connection - OK');
       setState(() {
-        _internetConnected = true;
+        _showInternetConnected = true;
       });
       await Future.delayed(const Duration(seconds: 1)).then((_) {
         setState(() {

@@ -20,8 +20,8 @@ import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/styled_tab_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
-import 'package:privacy_gui/page/dashboard/views/components/shimmer.dart';
 import 'package:privacy_gui/page/health_check/_health_check.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_provider.dart';
 import 'package:privacy_gui/page/instant_verify/views/components/ping_network_modal.dart';
@@ -302,48 +302,45 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
     return Container(
       width: double.infinity,
       constraints: const BoxConstraints(minHeight: 110),
-      child: ShimmerContainer(
-        isLoading: isLoading,
-        child: AppCard(
-            key: const ValueKey('portCard'),
-            padding: EdgeInsets.zero,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: Spacing.small2,
-                    vertical: Spacing.large3,
-                  ),
-                  child: Row(
-                    // mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ...state.lanPortConnections
-                          .mapIndexed((index, e) => Expanded(
-                                child: _portWidget(
-                                    context,
-                                    e == 'None' ? null : e,
-                                    loc(context).indexedPort(index + 1),
-                                    false),
-                              ))
-                          .toList(),
-                      Expanded(
-                        child: _portWidget(
-                            context,
-                            state.wanPortConnection == 'None'
-                                ? null
-                                : state.wanPortConnection,
-                            loc(context).wan,
-                            true),
-                      )
-                    ],
-                  ),
+      child: AppCard(
+          key: const ValueKey('portCard'),
+          padding: EdgeInsets.zero,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: Spacing.small2,
+                  vertical: Spacing.large3,
                 ),
-              ],
-            )),
-      ),
+                child: Row(
+                  // mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ...state.lanPortConnections
+                        .mapIndexed((index, e) => Expanded(
+                              child: _portWidget(
+                                  context,
+                                  e == 'None' ? null : e,
+                                  loc(context).indexedPort(index + 1),
+                                  false),
+                            ))
+                        .toList(),
+                    Expanded(
+                      child: _portWidget(
+                          context,
+                          state.wanPortConnection == 'None'
+                              ? null
+                              : state.wanPortConnection,
+                          loc(context).wan,
+                          true),
+                    )
+                  ],
+                ),
+              ),
+            ],
+          )),
     );
   }
 
@@ -417,14 +414,6 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
             ],
           ),
         if (isWan) AppText.labelMedium(loc(context).internet),
-        Container(
-          constraints: const BoxConstraints(maxWidth: 120),
-          width: 120,
-          child: isWan
-              ? Divider(
-                  height: 8, color: Theme.of(context).colorSchemeExt.orange)
-              : null,
-        ),
       ],
     );
   }
@@ -434,20 +423,23 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppText.titleSmall(title),
+        Expanded(child: AppText.titleSmall(title)),
         if (action != null) action,
       ],
     );
   }
 
   Widget _connectivityContentWidget(BuildContext context, WidgetRef ref) {
+    final isSupportGuestWiFi = serviceHelper.isSupportGuestNetwork();
+
     final systemConnectivityState = ref.watch(instantVerifyProvider);
     final dnsCount = systemConnectivityState.wanConnection?.dnsServer3 != null
         ? 3
         : systemConnectivityState.wanConnection?.dnsServer2 != null
             ? 2
             : 1;
-    final guestWiFi = systemConnectivityState.guestRadioSettings.radios.first;
+    final guestWiFi =
+        systemConnectivityState.guestRadioSettings.radios.firstOrNull;
     return AppCard(
       key: const ValueKey('connectivityCard'),
       padding: const EdgeInsets.all(Spacing.large2),
@@ -544,24 +536,25 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
                       ),
                     ),
                   ),
-                  _appNoBoarderCard(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: AppText.labelMedium(
-                            '${loc(context).guest} | ${guestWiFi.guestSSID}',
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 2,
+                  if (isSupportGuestWiFi)
+                    _appNoBoarderCard(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: AppText.labelMedium(
+                              '${loc(context).guest} | ${guestWiFi?.guestSSID ?? ''}',
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 2,
+                            ),
                           ),
-                        ),
-                        _greenCircle(
-                            context,
-                            systemConnectivityState
-                                .guestRadioSettings.isGuestNetworkEnabled),
-                      ],
+                          _greenCircle(
+                              context,
+                              systemConnectivityState
+                                  .guestRadioSettings.isGuestNetworkEnabled),
+                        ],
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
@@ -574,9 +567,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
                 children: [
                   AppText.bodySmall(loc(context).wan),
                   AppText.labelMedium(
-                      systemConnectivityState.wanExternal?.publicWanIPv4 ??
-                          systemConnectivityState.wanConnection?.ipAddress ??
-                          '--'),
+                      systemConnectivityState.wanConnection?.ipAddress ?? '--'),
                 ],
               ),
             ),
@@ -762,7 +753,8 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
     final uptime = DateFormatUtils.formatDuration(
         Duration(seconds: dashboardState.uptimes), context);
     final master = devicesState.masterDevice;
-    final guestWiFi = systemConnectivityState.guestRadioSettings.radios.first;
+    final guestWiFi =
+        systemConnectivityState.guestRadioSettings.radios.firstOrNull;
     final isSupportHealthCheck = serviceHelper.isSupportHealthCheck();
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -792,8 +784,9 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
           (e) => pw.Text(
               '${e.band} | ${e.settings.ssid}... ${e.settings.isEnabled ? 'Enabled' : 'Disabled'}'),
         ),
-        pw.Text(
-            'Guest | ${guestWiFi.guestSSID}... ${systemConnectivityState.guestRadioSettings.isGuestNetworkEnabled ? 'Enabled' : 'Disabled'}'),
+        if (guestWiFi != null)
+          pw.Text(
+              'Guest | ${guestWiFi.guestSSID}... ${systemConnectivityState.guestRadioSettings.isGuestNetworkEnabled ? 'Enabled' : 'Disabled'}'),
         pw.Text(
             '${loc(context).wanIPAddress}: ${systemConnectivityState.wanConnection?.ipAddress ?? '--'}'),
         pw.Text(

@@ -34,10 +34,14 @@ class PortRangeTriggeringRuleNotifier
     if (rule == null) {
       return false;
     }
-    return rule.description.isNotEmpty &&
+    return isNameValid(rule.description) &&
         isPortRangeValid(rule.firstForwardedPort, rule.lastForwardedPort) &&
         isPortRangeValid(rule.firstTriggerPort, rule.lastTriggerPort) &&
-        !isTriggeredPortConflict(rule.firstTriggerPort, rule.lastTriggerPort);
+        !isForwardedPortConflict(rule.firstTriggerPort, rule.lastTriggerPort);
+  }
+
+  bool isNameValid(String name) {
+    return name.isNotEmpty;
   }
 
   bool isTriggeredPortConflict(int firstPort, int lastPort) {

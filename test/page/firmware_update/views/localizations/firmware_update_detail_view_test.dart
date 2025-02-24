@@ -16,12 +16,13 @@ void main() {
     mockFirmwareUpdateNotifier = MockFirmwareUpdateNotifier();
   });
 
-  testLocalizations('Firmware update detail view test - 1 node with 1 update',
+  testLocalizations('Firmware update detail view - 1 node with 1 update',
       (tester, locale) async {
     when(mockFirmwareUpdateNotifier.build())
         .thenReturn(FirmwareUpdateState.empty());
     when(mockFirmwareUpdateNotifier.getIDStatusRecords())
         .thenReturn(testFirmwareUpdateStatusRecords1);
+    when(mockFirmwareUpdateNotifier.getAvailableUpdateNumber()).thenReturn(1);
     final widget = testableSingleRoute(
       config: LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
       overrides: [
@@ -33,12 +34,13 @@ void main() {
     await tester.pumpWidget(widget);
   });
 
-  testLocalizations('Firmware update detail view test - 2 node with 1 update',
+  testLocalizations('Firmware update detail view - 2 node with 1 update',
       (tester, locale) async {
     when(mockFirmwareUpdateNotifier.build())
         .thenReturn(FirmwareUpdateState.empty());
     when(mockFirmwareUpdateNotifier.getIDStatusRecords())
         .thenReturn(testFirmwareUpdateStatusRecords2);
+    when(mockFirmwareUpdateNotifier.getAvailableUpdateNumber()).thenReturn(1);
     final widget = testableSingleRoute(
       config: LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
       overrides: [
@@ -51,7 +53,7 @@ void main() {
   });
 
   testLocalizations(
-      'Firmware update detail view test - updating in 1 node with Checking',
+      'Firmware update detail view - updating in 1 node with Checking',
       (tester, locale) async {
     when(mockFirmwareUpdateNotifier.build())
         .thenReturn(FirmwareUpdateState.empty().copyWith(isUpdating: true));
@@ -69,7 +71,7 @@ void main() {
   });
 
   testLocalizations(
-      'Firmware update detail view test - updating in 1 node with Installing',
+      'Firmware update detail view - updating in 1 node with Installing',
       (tester, locale) async {
     when(mockFirmwareUpdateNotifier.build())
         .thenReturn(FirmwareUpdateState.empty().copyWith(isUpdating: true));
@@ -87,7 +89,7 @@ void main() {
   });
 
   testLocalizations(
-      'Firmware update detail view test - updating in 1 node with Rebooting',
+      'Firmware update detail view - updating in 1 node with Rebooting',
       (tester, locale) async {
     when(mockFirmwareUpdateNotifier.build())
         .thenReturn(FirmwareUpdateState.empty().copyWith(isUpdating: true));
@@ -104,12 +106,13 @@ void main() {
     await tester.pumpWidget(widget);
   });
 
-  testLocalizations('Firmware update detail view test - 2 node with 2 updates',
+  testLocalizations('Firmware update detail view - 2 node with 2 updates',
       (tester, locale) async {
     when(mockFirmwareUpdateNotifier.build())
         .thenReturn(FirmwareUpdateState.empty());
     when(mockFirmwareUpdateNotifier.getIDStatusRecords())
         .thenReturn(testFirmwareUpdateStatusRecords6);
+    when(mockFirmwareUpdateNotifier.getAvailableUpdateNumber()).thenReturn(1);
     final widget = testableSingleRoute(
       config: LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
       overrides: [
@@ -121,8 +124,7 @@ void main() {
     await tester.pumpWidget(widget);
   });
 
-  testLocalizations(
-      'Firmware update detail view test - updating in 2 nodes',
+  testLocalizations('Firmware update detail view - updating in 2 nodes',
       (tester, locale) async {
     when(mockFirmwareUpdateNotifier.build())
         .thenReturn(FirmwareUpdateState.empty().copyWith(isUpdating: true));
@@ -139,8 +141,7 @@ void main() {
     await tester.pumpWidget(widget);
   });
 
-  testLocalizations(
-      'Firmware update detail view test - updating in 3 nodes',
+  testLocalizations('Firmware update detail view - updating in 3 nodes',
       (tester, locale) async {
     when(mockFirmwareUpdateNotifier.build())
         .thenReturn(FirmwareUpdateState.empty().copyWith(isUpdating: true));
@@ -157,13 +158,29 @@ void main() {
     await tester.pumpWidget(widget);
   });
 
-  testLocalizations(
-      'Firmware update detail view test - updating in 4 nodes',
+  testLocalizations('Firmware update detail view - updating in 4 nodes',
       (tester, locale) async {
     when(mockFirmwareUpdateNotifier.build())
         .thenReturn(FirmwareUpdateState.empty().copyWith(isUpdating: true));
     when(mockFirmwareUpdateNotifier.getIDStatusRecords())
         .thenReturn(testFirmwareUpdateStatusRecords9);
+    final widget = testableSingleRoute(
+      config: LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
+      overrides: [
+        firmwareUpdateProvider.overrideWith(() => mockFirmwareUpdateNotifier),
+      ],
+      locale: locale,
+      child: const FirmwareUpdateDetailView(),
+    );
+    await tester.pumpWidget(widget);
+  });
+
+  testLocalizations('Firmware update detail view - 2 node with no updates',
+      (tester, locale) async {
+    when(mockFirmwareUpdateNotifier.build())
+        .thenReturn(FirmwareUpdateState.empty());
+    when(mockFirmwareUpdateNotifier.getIDStatusRecords())
+        .thenReturn(testFirmwareUpdateStatusRecords10);
     final widget = testableSingleRoute(
       config: LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
       overrides: [

@@ -6,6 +6,7 @@ import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:privacygui_widgets/widgets/table/table_settings_view.dart';
 import 'package:privacygui_widgets/widgets/text/app_text.dart';
+import 'package:super_tooltip/super_tooltip.dart';
 
 class AppEditableTableSettingsView<T> extends ConsumerStatefulWidget {
   final String? title;
@@ -17,7 +18,8 @@ class AppEditableTableSettingsView<T> extends ConsumerStatefulWidget {
   final void Function(int? index, T? data)? onStartEdit;
   final T Function()? getEditItem;
   final Widget Function(BuildContext, WidgetRef, int, T) cellBuilder;
-  final Widget Function(BuildContext, WidgetRef, int, T)? editCellBuilder;
+  final Widget Function(BuildContext, WidgetRef, int, T, String?)?
+      editCellBuilder;
   final int? editRowIndex;
   final T Function() createNewItem;
   final String addLabel;
@@ -27,6 +29,7 @@ class AppEditableTableSettingsView<T> extends ConsumerStatefulWidget {
   final void Function(int? index, T cell)? onDeleted;
   final String? emptyMessage;
   final bool addEnabled;
+  final String? Function(int index)? onValidate;
 
   const AppEditableTableSettingsView({
     super.key,
@@ -49,6 +52,7 @@ class AppEditableTableSettingsView<T> extends ConsumerStatefulWidget {
     this.onDeleted,
     this.emptyMessage,
     this.addEnabled = true,
+    this.onValidate,
   });
 
   @override
@@ -60,8 +64,15 @@ class _AppEditableTableSettingsViewState<T>
     extends ConsumerState<AppEditableTableSettingsView<T>> {
   int? _editRow;
   T? _tempItem;
+  Map<int, String?> errorMap = {};
+  Map<int, SuperTooltipController> tipControllerMap = {};
+
   @override
   void initState() {
+    tipControllerMap = List.generate(
+      widget.headers.length,
+      (index) => SuperTooltipController(),
+    ).asMap();
     super.initState();
   }
 
@@ -124,8 +135,62 @@ class _AppEditableTableSettingsViewState<T>
                 ),
               ],
             )
-          : widget.editCellBuilder?.call(context, ref, index, data) ??
-              SizedBox.shrink(),
+          :
+          // NOTE: SuperTooltip widget will be shown unexpectedly even if
+          // showTooltip is not called. So it will only be installed when the error exists
+          errorMap[index] != null
+              ? SuperTooltip(
+                  controller: tipControllerMap[index],
+                  showBarrier: false,
+                  shadowOffset: Offset(0, 0),
+                  shadowBlurRadius: 5,
+                  shadowSpreadRadius: 1,
+                  borderColor: Theme.of(context).colorScheme.error,
+                  arrowBaseWidth: 10,
+                  arrowLength: 8,
+                  arrowTipDistance: 35,
+                  borderWidth: 1,
+                  borderRadius: 5,
+                  content: AppText.bodySmall(
+                    errorMap[index] ?? '',
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  child: Focus(
+                    // Everytime the focus changes, rebuild the widget
+                    onFocusChange: (focus) {
+                      setState(() {
+                        final error = widget.onValidate?.call(index);
+                        errorMap[index] = error;
+                      });
+                      // The decision to display the error will be made only when the state is unfocused
+                      if (!focus) {
+                        Future.delayed(Duration(milliseconds: 100), () {
+                          final controller = tipControllerMap[index];
+                          if (errorMap[index] != null) {
+                            controller?.showTooltip();
+                          } else {
+                            controller?.hideTooltip();
+                          }
+                        });
+                      }
+                    },
+                    child: widget.editCellBuilder?.call(
+                            context, ref, index, data, errorMap[index]) ??
+                        SizedBox.shrink(),
+                  ),
+                )
+              : Focus(
+                  onFocusChange: (focus) {
+                    // Everytime the focus changes, rebuild the widget
+                    setState(() {
+                      final error = widget.onValidate?.call(index);
+                      errorMap[index] = error;
+                    });
+                  },
+                  child: widget.editCellBuilder
+                          ?.call(context, ref, index, data, errorMap[index]) ??
+                      SizedBox.shrink(),
+                ),
       bottomWidget: AppTextButton(
         widget.addLabel,
         icon: widget.addIcon ?? LinksysIcons.add,

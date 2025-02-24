@@ -14,10 +14,11 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/node_list_card.dart';
 
 class YourNetworkStep extends PnpStep {
+  static int id = 3;
+
   YourNetworkStep({
-    required super.index,
     super.saveChanges,
-  }) {
+  }):super(index: id) {
     canBack(false);
   }
 

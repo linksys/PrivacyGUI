@@ -178,12 +178,13 @@ const internetSettingsStateStatic = {
       {"wanType": "DHCP", "wanIPv6Type": "Pass-through"},
       {"wanType": "PPPoE", "wanIPv6Type": "PPPoE"}
     ],
-    "mtu": 0,
+    "mtu": 1500,
     "staticIpAddress": "111.222.111.123",
     "staticGateway": "111.222.111.1",
     "staticDns1": "8.8.8.8",
     "staticDns2": "8.8.4.4",
-    "networkPrefixLength": 24
+    "networkPrefixLength": 24,
+    "domainName": "linksys.com"
   },
   "ipv6Setting": {
     "ipv6ConnectionType": "Automatic",
@@ -191,8 +192,8 @@ const internetSettingsStateStatic = {
     "duid": "00:02:03:09:05:05:80:69:1A:A7:14:FF",
     "isIPv6AutomaticEnabled": true
   },
-  "macClone": false,
-  "macCloneAddress": ""
+  "macClone": true,
+  "macCloneAddress": "aa:bb:cc:11:22:33"
 };
 
 const internetSettingsStatePppoe = {
@@ -449,4 +450,68 @@ const internetSettingsStateIpv6Automatic = {
   },
   "macClone": false,
   "macCloneAddress": ""
+};
+
+const internetSettingsStateIpv6PassThrough = {
+  "ipv4Setting": {
+    "ipv4ConnectionType": "DHCP",
+    "supportedIPv4ConnectionType": [
+      "DHCP",
+      "Static",
+      "PPPoE",
+      "PPTP",
+      "L2TP",
+      "Bridge"
+    ],
+    "supportedWANCombinations": [
+      {"wanType": "DHCP", "wanIPv6Type": "Automatic"},
+      {"wanType": "Static", "wanIPv6Type": "Automatic"},
+      {"wanType": "PPPoE", "wanIPv6Type": "Automatic"},
+      {"wanType": "L2TP", "wanIPv6Type": "Automatic"},
+      {"wanType": "PPTP", "wanIPv6Type": "Automatic"},
+      {"wanType": "Bridge", "wanIPv6Type": "Automatic"},
+      {"wanType": "DHCP", "wanIPv6Type": "Pass-through"},
+      {"wanType": "PPPoE", "wanIPv6Type": "PPPoE"}
+    ],
+    "mtu": 0
+  },
+  "ipv6Setting": {
+    "ipv6ConnectionType": "Pass-through",
+    "supportedIPv6ConnectionType": ["Automatic", "PPPoE", "Pass-through"],
+    "duid": "00:02:03:09:05:05:80:69:1A:BB:46:FC",
+    "isIPv6AutomaticEnabled": false
+  },
+  "macClone": false
+};
+
+const internetSettingsStateIpv6PPPoE = {
+  "ipv4Setting": {
+    "ipv4ConnectionType": "DHCP",
+    "supportedIPv4ConnectionType": [
+      "DHCP",
+      "Static",
+      "PPPoE",
+      "PPTP",
+      "L2TP",
+      "Bridge"
+    ],
+    "supportedWANCombinations": [
+      {"wanType": "DHCP", "wanIPv6Type": "Automatic"},
+      {"wanType": "Static", "wanIPv6Type": "Automatic"},
+      {"wanType": "PPPoE", "wanIPv6Type": "Automatic"},
+      {"wanType": "L2TP", "wanIPv6Type": "Automatic"},
+      {"wanType": "PPTP", "wanIPv6Type": "Automatic"},
+      {"wanType": "Bridge", "wanIPv6Type": "Automatic"},
+      {"wanType": "DHCP", "wanIPv6Type": "Pass-through"},
+      {"wanType": "PPPoE", "wanIPv6Type": "PPPoE"}
+    ],
+    "mtu": 0
+  },
+  "ipv6Setting": {
+    "ipv6ConnectionType": "PPPoE",
+    "supportedIPv6ConnectionType": ["Automatic", "PPPoE", "Pass-through"],
+    "duid": "00:02:03:09:05:05:80:69:1A:BB:46:FC",
+    "isIPv6AutomaticEnabled": false
+  },
+  "macClone": false
 };

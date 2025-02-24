@@ -47,13 +47,14 @@ class _AddRuleContentViewState
 
   String? _triggeredPortError;
   String? _forwardedPortError;
+  String? _descriptionError;
   bool _isEdit = false;
 
   @override
   void initState() {
     _notifier = ref.read(portRangeTriggeringRuleProvider.notifier);
 
-    final rules = widget.args['items'] ?? [];
+    final List<PortRangeTriggeringRule> rules = widget.args['items'] ?? [];
     var rule = widget.args['edit'];
     int? index;
 
@@ -147,10 +148,20 @@ class _AddRuleContentViewState
       AppTextField.outline(
         headerText: loc(context).ruleName,
         controller: _ruleNameController,
-        onFocusChanged: _onFocusChange,
+        onFocusChanged: (focus) {
+          if (!focus) {
+            setState(() {
+              _descriptionError =
+                  _notifier.isNameValid(_ruleNameController.text)
+                      ? null
+                      : loc(context).theNameMustNotBeEmpty;
+            });
+          }
+        },
         onChanged: (value) {
           _notifier.updateRule(state.rule?.copyWith(description: value));
         },
+        errorText: _descriptionError,
       ),
       const AppGap.large2(),
       AppText.bodyMedium(loc(context).triggeredRange),
@@ -254,13 +265,10 @@ class _AddRuleContentViewState
       final firstPort = int.tryParse(_firstForwardedPortController.text) ?? 0;
       final lastPort = int.tryParse(_lastForwardedPortController.text) ?? 0;
       bool isValidPortRange = lastPort - firstPort >= 0;
-      bool isRuleOverlap =
-          _notifier.isForwardedPortConflict(firstPort, lastPort);
+     
       _forwardedPortError = !isValidPortRange
           ? loc(context).portRangeError
-          : isRuleOverlap
-              ? loc(context).rulesOverlapError
-              : null;
+          : null;
       _onFocusChange(focus);
     }
   }

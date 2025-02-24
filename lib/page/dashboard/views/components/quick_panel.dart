@@ -8,9 +8,8 @@ import 'package:privacy_gui/core/jnap/providers/node_light_settings_provider.dar
 import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/page/components/styled/status_label.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
-import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
-import 'package:privacy_gui/page/dashboard/views/components/shimmer.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_device_list_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
@@ -46,24 +45,28 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
         hardwareVersion: master?.data.hardwareVersion ?? '1');
     final isBridge = ref.watch(dashboardHomeProvider).isBridgeMode;
 
-    return ShimmerContainer(
-      isLoading: isLoading,
-      child: AppCard(
-        padding: EdgeInsets.all(Spacing.large2),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            toggleTileWidget(
-                title: loc(context).instantPrivacy,
-                value: privacyState.mode == MacFilterMode.allow,
-                onTap: isBridge
-                    ? null
-                    : () {
-                        context.pushNamed(RouteNamed.menuInstantPrivacy);
-                      },
-                onChanged: isBridge
-                    ? null
-                    : (value) {
+    return AppCard(
+      padding: EdgeInsets.all(Spacing.large2),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          toggleTileWidget(
+              title: loc(context).instantPrivacy,
+              value: privacyState.mode == MacFilterMode.allow,
+              leading: betaLabel(),
+              onTap: isBridge
+                  ? null
+                  : () {
+                      context.pushNamed(RouteNamed.menuInstantPrivacy);
+                    },
+              onChanged: isBridge
+                  ? null
+                  : (value) {
+                      showInstantPrivacyConfirmDialog(context, value)
+                          .then((isOk) {
+                        if (isOk != true) {
+                          return;
+                        }
                         final notifier =
                             ref.read(instantPrivacyProvider.notifier);
                         if (value) {
@@ -75,68 +78,95 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
                         }
                         notifier.setEnable(value);
                         doSomethingWithSpinner(context, notifier.save());
-                      },
-                semantics: 'quick instant privacy switch'),
-            if (isCognitive && isSupportNodeLight) ...[
-              const Divider(
-                height: 48,
-                thickness: 1.0,
-              ),
-              toggleTileWidget(
-                  title: loc(context).nightMode,
-                  value: nodeLightState.isNightModeEnable,
-                  subTitle: NodeLightStatus.getStatus(nodeLightState) ==
-                          NodeLightStatus.night
-                      ? loc(context).nightModeTime
-                      : NodeLightStatus.getStatus(nodeLightState) ==
-                              NodeLightStatus.off
-                          ? loc(context).allDayOff
-                          : null,
-                  onChanged: (value) {
-                    final notifier =
-                        ref.read(nodeLightSettingsProvider.notifier);
-                    if (value) {
-                      notifier.setSettings(NodeLightSettings.night());
-                    } else {
-                      notifier.setSettings(NodeLightSettings.on());
-                    }
-                    doSomethingWithSpinner(context, notifier.save());
-                  },
-                  semantics: 'quick night mode switch'),
-            ]
-          ],
-        ),
+                      });
+                    },
+              tips: loc(context).instantPrivacyInfo,
+              semantics: 'quick instant privacy switch'),
+          if (isCognitive && isSupportNodeLight) ...[
+            const Divider(
+              height: 48,
+              thickness: 1.0,
+            ),
+            toggleTileWidget(
+                title: loc(context).nightMode,
+                value: nodeLightState.isNightModeEnable,
+                subTitle: NodeLightStatus.getStatus(nodeLightState) ==
+                        NodeLightStatus.night
+                    ? loc(context).nightModeTime
+                    : NodeLightStatus.getStatus(nodeLightState) ==
+                            NodeLightStatus.off
+                        ? loc(context).allDayOff
+                        : null,
+                onChanged: (value) {
+                  final notifier = ref.read(nodeLightSettingsProvider.notifier);
+                  if (value) {
+                    notifier.setSettings(NodeLightSettings.night());
+                  } else {
+                    notifier.setSettings(NodeLightSettings.on());
+                  }
+                  doSomethingWithSpinner(context, notifier.save());
+                },
+                tips: loc(context).nightModeTips,
+                semantics: 'quick night mode switch'),
+          ]
+        ],
       ),
     );
   }
 
   Widget toggleTileWidget({
     required String title,
+    Widget? leading,
     String? subTitle,
     VoidCallback? onTap,
     required bool value,
     required void Function(bool value)? onChanged,
+    String? tips,
     String? semantics,
   }) {
     return SizedBox(
       height: 60,
       child: InkWell(
+        focusColor: Colors.transparent,
+        splashColor: Theme.of(context).colorScheme.primary,
         onTap: onTap,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Wrap(
                 children: [
-                  AppText.labelLarge(title),
-                  if (subTitle != null) AppText.bodySmall(subTitle),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      AppText.labelLarge(title),
+                      if (subTitle != null) AppText.bodySmall(subTitle),
+                    ],
+                  ),
+                  if (leading != null) ...[
+                    const SizedBox(
+                      width: Spacing.small1,
+                    ),
+                    leading,
+                  ],
+                  const SizedBox(
+                    width: Spacing.small2,
+                  ),
+                  if (tips != null)
+                    Tooltip(
+                      message: tips,
+                      child: Icon(
+                        Icons.info_outline,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    )
                 ],
               ),
             ),
             AppSwitch(
+              key: ValueKey(semantics),
               value: value,
               onChanged: onChanged,
               semanticLabel: semantics,

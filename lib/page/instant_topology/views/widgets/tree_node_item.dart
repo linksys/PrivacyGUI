@@ -254,7 +254,7 @@ class SimpleTreeNodeItem extends StatelessWidget {
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   AppText.titleMedium(
                     node.data.location,
@@ -264,7 +264,12 @@ class SimpleTreeNodeItem extends StatelessWidget {
                   AppText.bodySmall(node.data.isOnline
                       ? loc(context).nDevices(node.data.connectedDeviceCount)
                       : loc(context).offline),
-                  if (extra != null) AppText.bodySmall(extra!),
+                  if (extra != null)
+                    AppText.bodySmall(
+                      extra!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                 ],
               ),
             ),

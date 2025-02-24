@@ -2,9 +2,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
 import 'package:privacy_gui/core/jnap/models/ddns_settings_model.dart';
+import 'package:privacy_gui/core/jnap/models/dyn_dns_settings.dart';
+import 'package:privacy_gui/core/jnap/models/no_ip_settings.dart';
+import 'package:privacy_gui/core/jnap/models/tzo_settings.dart';
 import 'package:privacy_gui/core/jnap/models/wan_status.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/providers/ddns_state.dart';
 
 final ddnsProvider =
@@ -71,6 +75,7 @@ class DDNSNotifier extends Notifier<DDNSState> {
         ipAddress: wanStatus?.wanConnection?.ipAddress,
       );
     });
+    logger.d('[State]:[DDNS]: ${state.toJson()}');
     return state;
   }
 
@@ -114,5 +119,21 @@ class DDNSNotifier extends Notifier<DDNSState> {
   void setProviderSettings(dynamic settings) {
     final provider = state.provider.applySettings(settings);
     state = state.copyWith(provider: provider);
+
+  }
+
+  bool isDataValid() {
+    return switch (state.provider.settings) {
+      final DynDNSSettings settings => settings.username.isNotEmpty &&
+          settings.password.isNotEmpty &&
+          settings.hostName.isNotEmpty,
+          final NoIPSettings settings => settings.username.isNotEmpty &&
+          settings.password.isNotEmpty &&
+          settings.hostName.isNotEmpty,
+          final TZOSettings settings => settings.username.isNotEmpty &&
+          settings.password.isNotEmpty &&
+          settings.hostName.isNotEmpty,
+      _ => true,
+    };
   }
 }

@@ -89,7 +89,7 @@ final menus = [
     name: RouteNamed.menuIncredibleWiFi,
     path: RoutePath.menuIncredibleWiFi,
     config:
-        LinksysRouteConfig(column: ColumnGrid(column: 12), noNaviRail: true),
+        LinksysRouteConfig(column: ColumnGrid(column: 12), noNaviRail: false),
     builder: (context, state) => WiFiMainView(
       args: state.extra as Map<String, dynamic>? ?? const {},
     ),
@@ -116,7 +116,7 @@ final menus = [
     name: RouteNamed.menuInstantVerify,
     path: RoutePath.menuInstantVerify,
     config:
-        LinksysRouteConfig(column: ColumnGrid(column: 12), noNaviRail: true),
+        LinksysRouteConfig(column: ColumnGrid(column: 12), noNaviRail: false),
     builder: (context, state) => InstantVerifyView(
       args: state.extra as Map<String, dynamic>? ?? const {},
     ),

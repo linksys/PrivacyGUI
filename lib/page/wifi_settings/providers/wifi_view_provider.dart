@@ -9,29 +9,48 @@ final wifiViewProvider =
     NotifierProvider<WiFiViewNotifier, WiFiViewState>(() => WiFiViewNotifier());
 
 class WiFiViewState extends Equatable {
-  final bool isCurrentViewStateChanged;
+  final bool isWifiListViewStateChanged;
+  final bool isWifiAdvancedSettingsViewStateChanged;
+  final bool isMacFilteringViewStateChanged;
+
   const WiFiViewState({
-    required this.isCurrentViewStateChanged,
+    this.isWifiListViewStateChanged = false,
+    this.isWifiAdvancedSettingsViewStateChanged = false,
+    this.isMacFilteringViewStateChanged = false,
   });
 
   WiFiViewState copyWith({
-    bool? isCurrentViewStateChanged,
+    bool? isWifiListViewStateChanged,
+    bool? isWifiAdvancedSettingsViewStateChanged,
+    bool? isMacFilteringViewStateChanged,
   }) {
     return WiFiViewState(
-      isCurrentViewStateChanged:
-          isCurrentViewStateChanged ?? this.isCurrentViewStateChanged,
+      isWifiListViewStateChanged:
+          isWifiListViewStateChanged ?? this.isWifiListViewStateChanged,
+      isWifiAdvancedSettingsViewStateChanged:
+          isWifiAdvancedSettingsViewStateChanged ??
+              this.isWifiAdvancedSettingsViewStateChanged,
+      isMacFilteringViewStateChanged:
+          isMacFilteringViewStateChanged ?? this.isMacFilteringViewStateChanged,
     );
   }
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
-      'isCurrentViewStateChanged': isCurrentViewStateChanged,
+      'isWifiListViewStateChanged': isWifiListViewStateChanged,
+      'isWifiAdvancedSettingsViewStateChanged':
+          isWifiAdvancedSettingsViewStateChanged,
+      'isMacFilteringViewStateChanged': isMacFilteringViewStateChanged,
     };
   }
 
   factory WiFiViewState.fromMap(Map<String, dynamic> map) {
     return WiFiViewState(
-      isCurrentViewStateChanged: map['isCurrentViewStateChanged'] as bool,
+      isWifiListViewStateChanged: map['isWifiListViewStateChanged'] as bool,
+      isWifiAdvancedSettingsViewStateChanged:
+          map['isWifiAdvancedSettingsViewStateChanged'] as bool,
+      isMacFilteringViewStateChanged:
+          map['isMacFilteringViewStateChanged'] as bool,
     );
   }
 
@@ -44,16 +63,33 @@ class WiFiViewState extends Equatable {
   bool get stringify => true;
 
   @override
-  List<Object> get props => [isCurrentViewStateChanged];
+  List<Object> get props => [
+        isWifiListViewStateChanged,
+        isWifiAdvancedSettingsViewStateChanged,
+        isMacFilteringViewStateChanged,
+      ];
 }
 
 class WiFiViewNotifier extends Notifier<WiFiViewState> {
   @override
   WiFiViewState build() {
-    return const WiFiViewState(isCurrentViewStateChanged: false);
+    return const WiFiViewState();
   }
 
-  void setChanged(bool value) {
-    state = state.copyWith(isCurrentViewStateChanged: value);
+  bool hasChanged() {
+    return state.isWifiListViewStateChanged ||
+        state.isWifiAdvancedSettingsViewStateChanged;
+  }
+
+  void setWifiListViewStateChanged(bool value) {
+    state = state.copyWith(isWifiListViewStateChanged: value);
+  }
+
+  void setWifiAdvancedSettingsViewChanged(bool value) {
+    state = state.copyWith(isWifiAdvancedSettingsViewStateChanged: value);
+  }
+
+  void setMacFilteringViewChanged(bool value) {
+    state = state.copyWith(isMacFilteringViewStateChanged: value);
   }
 }

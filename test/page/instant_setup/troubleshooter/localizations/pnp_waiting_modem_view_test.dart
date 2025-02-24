@@ -30,7 +30,7 @@ void main() async {
     });
   });
 
-  testLocalizations('pnp waiting modem view - counting',
+  testLocalizations('Troubleshooter - PnP waiting modem: counting',
       (tester, locale) async {
     await tester.pumpWidget(
       testableSingleRoute(
@@ -44,7 +44,8 @@ void main() async {
     await tester.pump(const Duration(seconds: 3));
   });
 
-  testLocalizations('pnp waiting modem view - plug your modem back in',
+  testLocalizations(
+      'Troubleshooter - PnP waiting modem: plug your modem back in',
       (tester, locale) async {
     await tester.pumpWidget(
       testableSingleRoute(
@@ -57,7 +58,7 @@ void main() async {
     );
     await tester.pumpAndSettle();
   });
-  testLocalizations('pnp waiting modem view - waiting modem to start up',
+  testLocalizations('Troubleshooter - PnP waiting modem: wait to start up',
       (tester, locale) async {
     final router = testableRouter(
       router: GoRouter(routes: [
@@ -77,7 +78,7 @@ void main() async {
     await tester.pump(const Duration(seconds: 3));
   });
 
-  testLocalizations('pnp waiting modem view - checking for internet',
+  testLocalizations('Troubleshooter - PnP waiting modem: checking for internet',
       (tester, locale) async {
     final router = testableRouter(
       router: GoRouter(routes: [

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,7 +8,9 @@ import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
+import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/core/utils/icon_device_category.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_provider.dart';
 import 'package:privacy_gui/page/components/shared_widgets.dart';
@@ -16,9 +19,12 @@ import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/dashboard/_dashboard.dart';
+import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacy_gui/page/instant_device/extensions/icon_device_category_ext.dart';
 import 'package:privacy_gui/utils.dart';
+import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
@@ -66,13 +72,11 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
     final state = ref.watch(externalDeviceDetailProvider);
     final dhcpReservationList = ref.watch(localNetworkSettingProvider
         .select((value) => value.dhcpReservationList));
-    final dhcpReservationItem = DHCPReservation(
-      description: state.item.name.replaceAll(RegExp(r' '), ''),
-      ipAddress: state.item.ipv4Address,
-      macAddress: state.item.macAddress,
-    );
+
     setState(() {
-      isReservedIp = dhcpReservationList.contains(dhcpReservationItem);
+      isReservedIp = dhcpReservationList.any((e) =>
+          e.ipAddress == state.item.ipv4Address ||
+          e.macAddress == state.item.macAddress);
     });
     return LayoutBuilder(
       builder: (context, constraint) {
@@ -169,6 +173,8 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
   }
 
   Widget _detailSection(ExternalDeviceDetailState state) {
+    final isBridge = ref.watch(dashboardHomeProvider).isBridgeMode;
+
     return Column(
       children: [
         AppSettingCard(
@@ -177,7 +183,9 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
             vertical: Spacing.medium,
           ),
           title: loc(context).connectTo,
-          description: state.item.upstreamDevice,
+          description: state.item.upstreamDevice.isEmpty
+              ? loc(context).unknown
+              : state.item.upstreamDevice,
         ),
         if (state.item.isOnline && !state.item.isWired) ...[
           const AppGap.small2(),
@@ -236,10 +244,13 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
               horizontal: Spacing.large2, vertical: Spacing.medium),
           title: loc(context).ipAddress,
           description: _formatEmptyValue(state.item.ipv4Address),
-          trailing: state.item.isOnline &&
+          trailing: !isBridge &&
+                  state.item.isOnline &&
+                  state.item.ipv4Address.isNotEmpty &&
                   state.item.type != WifiConnectionType.guest &&
                   isReservedIp != null
               ? AppLoadableWidget.textButton(
+                  spinnerSize: Size(36, 36),
                   title: isReservedIp == true
                       ? loc(context).releaseReservedIp
                       : loc(context).reserveIp,
@@ -247,8 +258,10 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
                       ? 'release reserved ip'
                       : 'reserved ip',
                   padding: const EdgeInsets.only(),
-                  onTap: () async {
-                    await handleReserveDhcp(state.item, isReservedIp!);
+                  showSpinnerWhenTap: false,
+                  onTap: (AppLoadableWidgetController controller) async {
+                    await handleReserveDhcp(
+                        state.item, isReservedIp!, controller);
                   },
                 )
               : null,
@@ -318,6 +331,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
     _iconIndex = _getCurrentIconIndex();
     _errorMessage = _deviceNameController.text.isEmpty ? 'empty' : null;
     return showSubmitAppDialog(context,
+        title: loc(context).deviceNameAndIcon,
         contentBuilder: (context, setState, onSubmit) {
           return _dialogContent(context, setState, onSubmit);
         },
@@ -332,60 +346,63 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
   ) {
     return SizedBox(
       width: 400,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const AppGap.large2(),
-          AppTextField.outline(
-            controller: _deviceNameController,
-            headerText: loc(context).deviceName,
-            errorText: _errorMessage,
-            onChanged: (text) {
-              setState(() {
-                final overMaxSize = utf8.encoder.convert(text).length >= 256;
-                _errorMessage = text.isEmpty
-                    ? loc(context).theNameMustNotBeEmpty
-                    : overMaxSize
-                        ? loc(context).deviceNameExceedMaxSize
-                        : null;
-              });
-            },
-            onSubmitted: (_) {
-              if (_errorMessage != null) {
-                onSubmit();
-              }
-            },
-          ),
-          const AppGap.large3(),
-          AppText.labelLarge(loc(context).selectIcon),
-          const AppGap.large3(),
-          GridView.builder(
-            shrinkWrap: true,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 6,
+      child: Semantics(
+        explicitChildNodes: true,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const AppGap.large2(),
+            AppTextField.outline(
+              controller: _deviceNameController,
+              headerText: loc(context).deviceName,
+              errorText: _errorMessage,
+              onChanged: (text) {
+                setState(() {
+                  final overMaxSize = utf8.encoder.convert(text).length >= 256;
+                  _errorMessage = text.isEmpty
+                      ? loc(context).theNameMustNotBeEmpty
+                      : overMaxSize
+                          ? loc(context).deviceNameExceedMaxSize
+                          : null;
+                });
+              },
+              onSubmitted: (_) {
+                if (_errorMessage != null) {
+                  onSubmit();
+                }
+              },
             ),
-            itemCount: IconDeviceCategory.values.length,
-            itemBuilder: ((context, index) {
-              return InkWell(
-                onTap: () {
-                  setState(() {
-                    _iconIndex = index;
-                  });
-                },
-                child: Icon(
-                  IconDeviceCategoryExt.resolveByName(
-                    IconDeviceCategory.values[index].name,
+            const AppGap.large3(),
+            AppText.labelLarge(loc(context).selectIcon.capitalizeWords()),
+            const AppGap.large3(),
+            GridView.builder(
+              shrinkWrap: true,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 6,
+              ),
+              itemCount: IconDeviceCategory.values.length,
+              itemBuilder: ((context, index) {
+                return InkWell(
+                  onTap: () {
+                    setState(() {
+                      _iconIndex = index;
+                    });
+                  },
+                  child: Icon(
+                    IconDeviceCategoryExt.resolveByName(
+                      IconDeviceCategory.values[index].name,
+                    ),
+                    semanticLabel: IconDeviceCategory.values[index].name,
+                    color: index == _iconIndex
+                        ? Theme.of(context).colorScheme.primary
+                        : null,
                   ),
-                  semanticLabel: IconDeviceCategory.values[index].name,
-                  color: index == _iconIndex
-                      ? Theme.of(context).colorScheme.primary
-                      : null,
-                ),
-              );
-            }),
-          ),
-        ],
+                );
+              }),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -414,11 +431,11 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
     return (value == null || value.isEmpty) ? '--' : value;
   }
 
-  Future<dynamic> handleReserveDhcp(
-      DeviceListItem item, bool isReservedIp) async {
+  Future<dynamic> handleReserveDhcp(DeviceListItem item, bool isReservedIp,
+      AppLoadableWidgetController controller) async {
     final notifier = ref.read(localNetworkSettingProvider.notifier);
     final dhcpReservationItem = DHCPReservation(
-      description: item.name.replaceAll(RegExp(r' '), ''),
+      description: item.name.replaceAll(HostNameRule().rule, ''),
       ipAddress: item.ipv4Address,
       macAddress: item.macAddress,
     );
@@ -426,9 +443,17 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
       // Show dialog to release
       final delete = await _showResevedIpDialog(isReservedIp);
       if (delete) {
+        controller.showSpinner();
         final dhcpReservationList =
             ref.read(localNetworkSettingProvider).dhcpReservationList;
-        final index = dhcpReservationList.indexOf(dhcpReservationItem);
+        final hit = dhcpReservationList.firstWhereOrNull((e) =>
+            e.ipAddress == dhcpReservationItem.ipAddress ||
+            e.macAddress == dhcpReservationItem.macAddress);
+        if (hit == null) {
+          logger.d('not found reserved item!');
+          return;
+        }
+        final index = dhcpReservationList.indexOf(hit);
         notifier.updateDHCPReservationOfIndex(
             dhcpReservationItem.copyWith(ipAddress: 'DELETE'), index);
         await _saveDhcpResevervationSetting();
@@ -437,6 +462,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
       // Show dialog to release
       final reserve = await _showResevedIpDialog(isReservedIp);
       if (reserve) {
+        controller.showSpinner();
         final isOverlap =
             notifier.isReservationOverlap(item: dhcpReservationItem);
         if (isOverlap) {

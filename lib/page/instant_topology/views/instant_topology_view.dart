@@ -3,10 +3,15 @@ import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
+import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
+import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
+import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -186,6 +191,7 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
             _doBlinkNodeLed(ref, node.data.deviceId);
             break;
           case NodeInstantActions.reset:
+            // If the target is a master, send null value to factory reset all nodes
             _doFactoryReset(
                 supportChildReboot && !node.data.isMaster ? node : null);
             break;
@@ -225,25 +231,34 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
   }
 
   _doFactoryReset(RouterTreeNode? node) {
-    showFactoryResetModal(context, (node?.data.isMaster ?? true))
-        .then((result) {
-      if (result == true) {
+    final isMaster = node == null;
+    final targetDeviceIds =
+        node?.toFlatList().map((e) => e.data.deviceId).toList() ?? [];
+    showFactoryResetModal(context, isMaster).then((isAgreed) {
+      if (isAgreed == true) {
         doSomethingWithSpinner(
-            context,
-            ref
-                .read(instantTopologyProvider.notifier)
-                .factoryReset(
-                    node?.toFlatList().map((e) => e.data.deviceId).toList() ??
-                        [])
-                .then((_) async {
-              if (node?.data.isMaster == false) {
-                // A delay to wait for child off
-                await Future.delayed(const Duration(seconds: 5));
+          context,
+          ref
+              .read(instantTopologyProvider.notifier)
+              .factoryReset(targetDeviceIds)
+              .then(
+            (_) async {
+              if (!isMaster) {
+                // Regardless of the result of waiting for disconnection,
+                // the deletion action will be executed (from the bottom)
+                await ref.read(deviceManagerProvider.notifier).deleteDevices(
+                      deviceIds: targetDeviceIds.reversed.toList(),
+                    );
                 await ref.read(pollingProvider.notifier).forcePolling();
-              } else {
-                showRouterNotFoundAlert(context, ref);
               }
-            }));
+            },
+          ),
+        ).then((_) {
+          if (isMaster) {
+            // If the master is restored to factory settings, the current session becomes invalid
+            showRouterNotFoundAlert(context, ref);
+          }
+        });
       }
     });
   }
@@ -406,7 +421,6 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
         .deleteDevices(deviceIds: [targetId]).then((value) {
       setState(() {
         _isLoading = false;
-        context.goNamed(RouteNamed.menuInstantTopology);
       });
     }).onError((error, stackTrace) {
       logger.e(error.toString());

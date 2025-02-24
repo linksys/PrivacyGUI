@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/constants/url_links.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
@@ -41,7 +42,7 @@ class _BottomBarState extends ConsumerState<BottomBar> {
                           child: Semantics(
                               identifier: 'now-bottom-text-copyright',
                               child: AppText.bodySmall(
-                                  loc(context).copyRight(2024))),
+                                  loc(context).copyRight(BuildConfig.copyRightYear))),
                         ),
                         AppTextButton.noPadding(
                           loc(context).endUserLicenseAgreement,

@@ -9,6 +9,9 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
+import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
+import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dart';
+import 'package:privacy_gui/page/components/styled/status_label.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
@@ -40,6 +43,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
   @override
   void initState() {
     super.initState();
+    ref.read(menuController).setTo(NaviType.menu);
   }
 
   @override
@@ -143,7 +147,6 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
           title: loc(context).instantTopology,
           description: loc(context).instantTopologyDesc,
           iconData: LinksysIcons.router,
-          disabledOnBridge: true,
           onTap: () {
             _navigateTo(RouteNamed.menuInstantTopology);
           }),
@@ -170,7 +173,6 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
           title: loc(context).instantDevices,
           description: loc(context).instantDevicesDesc,
           iconData: LinksysIcons.devices,
-          disabledOnBridge: true,
           onTap: () {
             _navigateTo(RouteNamed.menuInstantDevices);
           }),
@@ -284,7 +286,7 @@ class AppMenuCard extends StatelessWidget {
       identifier: 'now-menu-${title?.kebab()}',
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -305,27 +307,17 @@ class AppMenuCard extends StatelessWidget {
           if (title != null)
             Padding(
               padding: const EdgeInsets.only(top: Spacing.small2),
-              child: Row(
+              child: Wrap(
+                crossAxisAlignment: WrapCrossAlignment.start,
+                spacing: Spacing.small2,
                 children: [
-                  if (isBeta) ...[
-                    Container(
-                      decoration: BoxDecoration(
-                          color:
-                              Theme.of(context).colorScheme.secondaryContainer,
-                          border: Border.all(color: Colors.transparent),
-                          borderRadius: BorderRadius.circular(4)),
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
-                      child: AppText.bodyExtraSmall('Beta'),
-                    ),
-                    const AppGap.small2(),
-                  ],
-                  Expanded(
-                    child: AppText.titleSmall(
-                      title ?? '',
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                  AppText.titleSmall(
+                    title ?? '',
+                    overflow: TextOverflow.ellipsis,
                   ),
+                  if (isBeta) ...[
+                    betaLabel(),
+                  ],
                 ],
               ),
             ),

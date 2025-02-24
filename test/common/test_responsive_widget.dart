@@ -91,7 +91,7 @@ void testLocalizations(
       .toList();
   final supportedDevices = (screens ?? responsiveAllScreens)
       .toSet()
-      .where((element) => envScreens.toSet().contains(element))
+      .where((element) => envScreens.toSet().any((e) => e.width == element.width))
       .toList();
   final isScreenIncluded = supportedDevices.isNotEmpty;
   final set = supportedLocales

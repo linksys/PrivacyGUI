@@ -44,18 +44,18 @@ class TimezoneNotifier extends Notifier<TimezoneState> {
       JNAPAction.setTimeSettings,
       data: {
         'timeZoneID': state.timezoneId,
-        'autoAdjustForDST': state.isDaylightSaving,
+        'autoAdjustForDST': (state.supportedTimezones
+                    .firstWhereOrNull((e) => e.timeZoneID == state.timezoneId)
+                    ?.observesDST) ??
+                false
+            ? state.isDaylightSaving
+            : false,
       },
       auth: true,
     )
         .then<void>((value) async {
       await fetch(fetchRemote: true);
       await ref.read(pollingProvider.notifier).forcePolling();
-    }).onError((error, stackTrace) {
-      if (error is JNAPError) {
-        // handle error
-        state = state.copyWith(error: error.error);
-      }
     });
   }
 
@@ -74,8 +74,7 @@ class TimezoneNotifier extends Notifier<TimezoneState> {
     final selected = state.supportedTimezones[index];
     state = state.copyWith(
         timezoneId: selected.timeZoneID,
-        isDaylightSaving:
-            selected.observesDST ? state.isDaylightSaving : false);
+        isDaylightSaving: selected.observesDST ? state.isDaylightSaving : true);
   }
 
   setDaylightSaving(bool isDaylightSaving) {

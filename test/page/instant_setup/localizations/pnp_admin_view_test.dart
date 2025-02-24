@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
@@ -11,7 +10,6 @@ import 'package:privacygui_widgets/theme/_theme.dart';
 import '../../../mocks/pnp_notifier_mocks.dart' as Mock;
 import 'package:privacy_gui/page/instant_setup/data/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/pnp_admin_view.dart';
-
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
 import '../../../test_data/device_info_test_data.dart';
@@ -21,24 +19,20 @@ void main() async {
 
   setUp(() {
     mockPnpNotifier = Mock.MockPnpNotifier();
-    when(mockPnpNotifier.build()).thenReturn(PnpState(
-        deviceInfo:
-            NodeDeviceInfo.fromJson(jsonDecode(testDeviceInfo)['output']),
-        isUnconfigured: true));
-    when(mockPnpNotifier.checkAdminPassword(null)).thenAnswer((_) {
-      throw ExceptionInvalidAdminPassword();
-    });
-    // .thenThrow(ExceptionInvalidAdminPassword());
-    when(mockPnpNotifier.fetchDeviceInfo()).thenAnswer((_) async {});
-    when(mockPnpNotifier.checkInternetConnection()).thenAnswer((_) async {});
-    when(mockPnpNotifier.checkRouterConfigured()).thenAnswer((_) async {});
-    when(mockPnpNotifier.save()).thenAnswer((_) async {});
   });
 
-  testLocalizations('pnp admin view - checking internet ',
+  testLocalizations('Instant Setup - PnP: Checking unconfigured router',
       (tester, locale) async {
-    when(mockPnpNotifier.checkInternetConnection()).thenAnswer((_) async {
-      await Future.delayed(const Duration(seconds: 3));
+    when(mockPnpNotifier.build()).thenReturn(
+      PnpState(
+        deviceInfo: NodeDeviceInfo.fromJson(
+          jsonDecode(testDeviceInfo)['output'],
+        ),
+      ),
+    );
+    when(mockPnpNotifier.fetchDeviceInfo()).thenAnswer((_) async {});
+    when(mockPnpNotifier.checkRouterConfigured()).thenAnswer((_) async {
+      await Future.delayed(const Duration(seconds: 2));
     });
 
     await tester.pumpWidget(
@@ -53,13 +47,19 @@ void main() async {
     await tester.pump(const Duration(seconds: 1));
   });
 
-  testLocalizations('pnp admin view - internet checked ',
+  testLocalizations('Instant Setup - PnP: Router is unconfigured',
       (tester, locale) async {
-    when(mockPnpNotifier.checkInternetConnection()).thenAnswer((_) async {
-      await Future.delayed(const Duration(seconds: 3));
-    });
+    when(mockPnpNotifier.build()).thenReturn(
+      PnpState(
+        deviceInfo: NodeDeviceInfo.fromJson(
+          jsonDecode(testDeviceInfo)['output'],
+        ),
+        isUnconfigured: true,
+      ),
+    );
+    when(mockPnpNotifier.fetchDeviceInfo()).thenAnswer((_) async {});
     when(mockPnpNotifier.checkRouterConfigured()).thenAnswer((_) async {
-      await Future.delayed(const Duration(seconds: 3));
+      throw ExceptionRouterUnconfigured();
     });
 
     await tester.pumpWidget(
@@ -71,30 +71,29 @@ void main() async {
         overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
       ),
     );
-    await tester.pump(const Duration(seconds: 3));
-  });
-
-  testLocalizations('pnp admin view - input router password ',
-      (tester, locale) async {
     await tester.runAsync(() async {
-      await tester.pumpWidget(
-        testableSingleRoute(
-          config:
-              LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
-          child: const PnpAdminView(),
-          locale: locale,
-          overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
-        ),
-      );
-      BuildContext context = tester.element(find.byType(PnpAdminView));
+      final context = tester.element(find.byType(PnpAdminView));
       await precacheImage(
-          CustomTheme.of(context).images.devices.routerMx6200, context);
+          CustomTheme.of(context).images.devices.routerLn12, context);
       await tester.pumpAndSettle();
     });
   });
 
-  testLocalizations('pnp admin view - where is it tapped ',
+  testLocalizations('Instant Setup - PnP: Checking internet connection',
       (tester, locale) async {
+    when(mockPnpNotifier.build()).thenReturn(
+      PnpState(
+        deviceInfo: NodeDeviceInfo.fromJson(
+          jsonDecode(testDeviceInfo)['output'],
+        ),
+      ),
+    );
+    when(mockPnpNotifier.fetchDeviceInfo()).thenAnswer((_) async {});
+    when(mockPnpNotifier.checkRouterConfigured()).thenAnswer((_) async {});
+    when(mockPnpNotifier.checkInternetConnection()).thenAnswer((_) async {
+      await Future.delayed(const Duration(seconds: 2));
+    });
+
     await tester.pumpWidget(
       testableSingleRoute(
         config:
@@ -104,29 +103,92 @@ void main() async {
         overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testLocalizations('Instant Setup - PnP: Internet is connected',
+      (tester, locale) async {
+    when(mockPnpNotifier.build()).thenReturn(
+      PnpState(
+        deviceInfo: NodeDeviceInfo.fromJson(
+          jsonDecode(testDeviceInfo)['output'],
+        ),
+      ),
+    );
+    when(mockPnpNotifier.fetchDeviceInfo()).thenAnswer((_) async {});
+    when(mockPnpNotifier.checkRouterConfigured()).thenAnswer((_) async {});
+    when(mockPnpNotifier.checkInternetConnection()).thenAnswer((_) async {
+      await Future.delayed(const Duration(seconds: 1));
+    });
+
+    await tester.pumpWidget(
+      testableSingleRoute(
+        config:
+            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
+        child: const PnpAdminView(),
+        locale: locale,
+        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
+      ),
+    );
+    await tester.pump(const Duration(seconds: 2));
+  });
+
+  testLocalizations('Instant Setup - PnP: Password input required',
+      (tester, locale) async {
+    when(mockPnpNotifier.build()).thenReturn(
+      PnpState(
+        deviceInfo: NodeDeviceInfo.fromJson(
+          jsonDecode(testDeviceInfo)['output'],
+        ),
+        isUnconfigured: false,
+      ),
+    );
+    when(mockPnpNotifier.fetchDeviceInfo()).thenAnswer((_) async {});
+    when(mockPnpNotifier.checkRouterConfigured()).thenAnswer((_) async {
+      throw ExceptionRouterUnconfigured();
+    });
+
+    await tester.pumpWidget(
+      testableSingleRoute(
+        config:
+            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
+        child: const PnpAdminView(),
+        locale: locale,
+        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
+      ),
+    );
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testLocalizations('Instant Setup - PnP: Tap Where is it',
+      (tester, locale) async {
+    when(mockPnpNotifier.build()).thenReturn(
+      PnpState(
+        deviceInfo: NodeDeviceInfo.fromJson(
+          jsonDecode(testDeviceInfo)['output'],
+        ),
+        isUnconfigured: false,
+      ),
+    );
+    when(mockPnpNotifier.fetchDeviceInfo()).thenAnswer((_) async {});
+    when(mockPnpNotifier.checkRouterConfigured()).thenAnswer((_) async {
+      throw ExceptionRouterUnconfigured();
+    });
+
+    await tester.pumpWidget(
+      testableSingleRoute(
+        config:
+            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
+        child: const PnpAdminView(),
+        locale: locale,
+        overrides: [
+          pnpProvider.overrideWith(() => mockPnpNotifier),
+        ],
+      ),
+    );
+    await tester.pump(const Duration(seconds: 1));
     final btnFinder = find.byType(TextButton);
     await tester.tap(btnFinder);
     await tester.pumpAndSettle();
-  });
-
-  testLocalizations('pnp admin view - factory reset', (tester, locale) async {
-    when(mockPnpNotifier.checkRouterConfigured())
-        .thenThrow(ExceptionRouterUnconfigured());
-    await tester.runAsync(() async {
-      await tester.pumpWidget(
-        testableSingleRoute(
-          config:
-              LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
-          child: const PnpAdminView(),
-          locale: locale,
-          overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
-        ),
-      );
-      BuildContext context = tester.element(find.byType(PnpAdminView));
-      await precacheImage(
-          CustomTheme.of(context).images.devices.routerMx6200, context);
-      await tester.pumpAndSettle();
-    });
   });
 }
