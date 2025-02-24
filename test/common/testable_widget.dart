@@ -22,8 +22,8 @@ Widget testableWidget({
       parent: parent,
       child: MaterialApp(
         navigatorKey: globalKey,
-        theme: theme ?? mockLightThemeData,
-        darkTheme: darkTheme ?? mockDarkThemeData,
+        theme: theme ?? linksysLightThemeData,
+        darkTheme: darkTheme ?? linksysDarkThemeData,
         locale: locale,
         themeMode: themeMode,
         localizationsDelegates: AppLocalizations.localizationsDelegates,

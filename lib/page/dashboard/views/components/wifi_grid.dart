@@ -41,7 +41,6 @@ class _DashboardWiFiGridState extends ConsumerState<DashboardWiFiGrid> {
     });
     super.dispose();
   }
-
   @override
   Widget build(BuildContext context) {
     final items =
