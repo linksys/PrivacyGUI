@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' as service;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
@@ -16,13 +19,20 @@ import 'package:privacy_gui/page/instant_setup/model/impl/your_network_step.dart
 import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
 import 'package:privacy_gui/page/instant_setup/widgets/pnp_stepper.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/util/qr_code.dart';
+import 'package:privacy_gui/util/wifi_credential.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:privacy_gui/util/export_selector/export_base.dart'
+    if (dart.library.io) 'package:privacy_gui/util/export_selector/export_mobile.dart'
+    if (dart.library.html) 'package:privacy_gui/util/export_selector/export_web.dart';
 
 enum _PnpSetupStep {
   init,
@@ -42,7 +52,8 @@ class PnpSetupView extends ConsumerStatefulWidget {
   ConsumerState<PnpSetupView> createState() => _PnpSetupViewState();
 }
 
-class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
+class _PnpSetupViewState extends ConsumerState<PnpSetupView>
+    with PageSnackbarMixin {
   late final List<PnpStep> steps;
   _PnpSetupStep _setupStep = _PnpSetupStep.init;
   String _loadingMessage = '';
@@ -151,25 +162,34 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
   }
 
   List<PnpStep> buildSteps() {
-    int index = 0;
+    // For Pinnacle
+    final services = ref.read(pnpProvider).deviceInfo?.services;
+    final isGuestWiFiSupport = serviceHelper.isSupportGuestNetwork(services);
+    final isNightModeSupport = serviceHelper.isSupportLedMode(services);
+    // Need a common way to figure out which step to save changes
     return switch ((_forceLogin, _isUnconfigured)) {
       (false, true) => [
-          PersonalWiFiStep(index: index++),
-          GuestWiFiStep(index: index++),
-          NightModeStep(index: index++, saveChanges: _saveChanges),
-          YourNetworkStep(index: index++, saveChanges: _confirmAddedNodes),
+          PersonalWiFiStep(
+              saveChanges: !isGuestWiFiSupport && !isNightModeSupport
+                  ? _saveChanges
+                  : null),
+          if (isGuestWiFiSupport)
+            GuestWiFiStep(
+                saveChanges: !isNightModeSupport ? _saveChanges : null),
+          if (isNightModeSupport) NightModeStep(saveChanges: _saveChanges),
+          YourNetworkStep(saveChanges: _confirmAddedNodes),
         ],
       (true, false) => [
-          PersonalWiFiStep(index: index++),
+          PersonalWiFiStep(),
         ],
       (true, true) => [
-          PersonalWiFiStep(index: index++, saveChanges: _saveChanges),
-          YourNetworkStep(index: index++, saveChanges: _confirmAddedNodes),
+          PersonalWiFiStep(saveChanges: _saveChanges),
+          YourNetworkStep(saveChanges: _confirmAddedNodes),
         ],
       _ => [
-          PersonalWiFiStep(index: index++),
-          GuestWiFiStep(index: index++),
-          NightModeStep(index: index++),
+          PersonalWiFiStep(),
+          if (isGuestWiFiSupport) GuestWiFiStep(),
+          if (isNightModeSupport) NightModeStep(),
         ],
     };
   }
@@ -267,47 +287,123 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
       );
 
   Widget _showWiFi() {
-    final wifiSSID = ref
-            .read(pnpProvider)
-            .stepStateList[steps.indexWhere((element) =>
-                element.runtimeType.toString() ==
-                (PersonalWiFiStep).toString())]
-            ?.data['ssid'] as String? ??
-        '';
+    final wifiData =
+        ref.read(pnpProvider).stepStateList[PersonalWiFiStep.id]?.data;
+    final wifiSSID = wifiData?['ssid'] as String? ?? '';
+    final wifiPassword = wifiData?['password'] as String? ?? '';
     return Center(
-      child: AppCard(
-        padding: const EdgeInsets.all(24.0),
-        child: SizedBox(
-          width: double.infinity,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                LinksysIcons.wifi,
-                semanticLabel: 'wifi icon',
-                color: Theme.of(context).colorScheme.primary,
-                size: 48,
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              LinksysIcons.wifi,
+              semanticLabel: 'wifi icon',
+              color: Theme.of(context).colorScheme.primary,
+              size: 48,
+            ),
+            const AppGap.medium(),
+            AppText.headlineSmall(loc(context).pnpWiFiReady(wifiSSID)),
+            const AppGap.medium(),
+            if (_needToReconnect)
+              AppText.bodyMedium(loc(context).pnpWiFiReadyConnectToNewWiFi),
+            const AppGap.medium(),
+            AppText.bodyMedium(loc(context).pnpScanQR),
+            const AppGap.large5(),
+            Center(
+              child: AppCard(
+                  child: Column(
+                children: [
+                  Container(
+                    color: Colors.white,
+                    height: 240,
+                    width: 240,
+                    child: QrImageView(
+                      data: WiFiCredential(
+                        ssid: wifiSSID,
+                        password: wifiPassword,
+                        type: SecurityType
+                            .wpa, //TODO: The security type is fixed for now
+                      ).generate(),
+                    ),
+                  ),
+                  const AppGap.medium(),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      AppTextButton(
+                        loc(context).print,
+                        icon: LinksysIcons.print,
+                        onTap: () {
+                          final ctx = context;
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (mounted) {
+                              createWiFiQRCode(WiFiCredential(
+                                      ssid: wifiSSID,
+                                      password: wifiPassword,
+                                      type: SecurityType.wpa))
+                                  .then((imageBytes) {
+                                printWiFiQRCode(
+                                    ctx, imageBytes, wifiSSID, wifiPassword);
+                              });
+                            }
+                          });
+                        },
+                      ),
+                      AppTextButton(
+                        loc(context).downloadQR,
+                        icon: LinksysIcons.download,
+                        onTap: () async {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (mounted) {
+                              createWiFiQRCode(WiFiCredential(
+                                      ssid: wifiSSID,
+                                      password: wifiPassword,
+                                      type: SecurityType.wpa))
+                                  .then((imageBytes) {
+                                exportFileFromBytes(
+                                    fileName: 'share_wifi_$wifiSSID)}.png',
+                                    utf8Bytes: imageBytes);
+                              });
+                            }
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              )),
+            ),
+            const AppGap.small2(),
+            Center(
+              child: AppSettingCard(
+                title: loc(context).wifiPassword,
+                description: wifiPassword,
+                trailing: AppIconButton(
+                  icon: LinksysIcons.fileCopy,
+                  semanticLabel: 'file copy',
+                  onTap: () {
+                    service.Clipboard.setData(
+                            service.ClipboardData(text: wifiPassword))
+                        .then((value) => showSharedCopiedSnackBar());
+                  },
+                ),
               ),
-              const AppGap.medium(),
-              AppText.headlineSmall(loc(context).pnpWiFiReady(wifiSSID)),
-              const AppGap.medium(),
-              if (_needToReconnect)
-                AppText.bodyMedium(loc(context).pnpWiFiReadyConnectToNewWiFi),
-              const AppGap.large5(),
-              AppFilledButton(
-                loc(context).done,
-                onTap: () {
-                  // Check router connected propor, then go to dashboard
-                  testConnection(success: () {
-                    logger.i(
-                        '[PnP]: The customized WiFi is well connected, go to dashboard!');
-                    context.goNamed(RouteNamed.prepareDashboard);
-                  });
-                },
-              )
-            ],
-          ),
+            ),
+            const AppGap.large5(),
+            AppFilledButton(
+              loc(context).done,
+              onTap: () {
+                // Check router connected propor, then go to dashboard
+                testConnection(success: () {
+                  logger.i(
+                      '[PnP]: The customized WiFi is well connected, go to dashboard!');
+                  context.goNamed(RouteNamed.prepareDashboard);
+                });
+              },
+            )
+          ],
         ),
       ),
     );
@@ -337,7 +433,10 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
                 onTap: () {
                   logger.d('[PnP]: Tap Next to check the WiFi reconnection');
                   testConnection(success: () async {
-                    logger.i('[PnP]: The customized WiFi has been reconnected');
+                    final isUnconfigured =
+                        ref.read(pnpProvider).isRouterUnConfigured;
+                    logger.i(
+                        '[PnP]: The customized WiFi has been reconnected - $isUnconfigured');
                     final password = ref
                         .read(pnpProvider.notifier)
                         .getDefaultWiFiNameAndPassphrase()
@@ -345,11 +444,19 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
                     await ref
                         .read(pnpProvider.notifier)
                         .checkAdminPassword(password)
-                        .then((value) => _stepController?.stepContinue());
-                    setState(() {
-                      _setupStep = _PnpSetupStep.config;
-                      logger.d('[PnP]: WiFi reconnected. Setup step = config');
-                    });
+                        .then((value) => isUnconfigured
+                            ? _stepController?.stepContinue()
+                            : null);
+                    if (isUnconfigured) {
+                      setState(() {
+                        _setupStep = _PnpSetupStep.config;
+                        logger
+                            .d('[PnP]: WiFi reconnected. Setup step = config');
+                      });
+                    } else {
+                      logger.d('[PnP]: WiFi reconnected. Setup step = fwCheck');
+                      _doFwUpdateCheck();
+                    }
                   });
                 },
               )
@@ -372,15 +479,15 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
       setState(() {
         _needToReconnect = true;
       });
-      if (isUnconfigured) {
-        // if in unconfigured scenario, display the reconnect prompt
-        _currentStep?.canGoNext(false);
-        setState(() {
-          logger.e(
-              '[PnP]: Caught a connection error and the router is unconfigured. Setup step = needReconnect');
-          _setupStep = _PnpSetupStep.needReconnect;
-        });
-      }
+      // if (isUnconfigured) {
+      // if in unconfigured scenario, display the reconnect prompt
+      _currentStep?.canGoNext(false);
+      setState(() {
+        logger.e(
+            '[PnP]: Caught a connection error and the router is unconfigured. Setup step = needReconnect');
+        _setupStep = _PnpSetupStep.needReconnect;
+      });
+      // }
     }, test: (error) => error is ExceptionNeedToReconnect).catchError((error) {
       setState(() {
         logger.e('[PnP]: Caught a saving error: $error. Setup step = config');
@@ -402,14 +509,26 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
           });
         }
       } else {
-        // if is configured scenario, go display WiFi page
-        setState(() {
-          logger.d('[PnP]: The router is configured. Setup step = saved');
-          _setupStep = _PnpSetupStep.saved;
-        });
-        await Future.delayed(const Duration(seconds: 3));
-        logger.d('[PnP]: The router is configured. Setup step = fwCheck');
-        _doFwUpdateCheck();
+        if (_setupStep != _PnpSetupStep.needReconnect) {
+          // if is configured scenario, go display WiFi page
+          setState(() {
+            logger.d('[PnP]: The router is configured. Setup step = saved');
+            _setupStep = _PnpSetupStep.saved;
+          });
+          await Future.delayed(const Duration(seconds: 3));
+          logger.d('[PnP]: The router is configured. Setup step = fwCheck');
+          _doFwUpdateCheck();
+        } else {
+          setState(() {
+            logger.d(
+                '[PnP]: The router is configured but need to reconnect. Setup step = saved');
+            _setupStep = _PnpSetupStep.saved;
+          });
+          await Future.delayed(const Duration(seconds: 3));
+          setState(() {
+            _setupStep = _PnpSetupStep.needReconnect;
+          });
+        }
       }
     });
   }

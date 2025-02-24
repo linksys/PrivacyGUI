@@ -104,6 +104,30 @@
 
             EA9350v3        Official Model Number
 
+        Oak Node (Cognitive Mesh) -
+
+            MBE7000          Official Model Number (currently not used)
+            MBE7000 Series   Model Number to show for all SKU Variants (when modelNumber starts with 'MBE70')
+
+        Oak SP1  (Cognitive Mesh) -
+
+            MBE7100          Official Model Number (currently not used)
+            MBE7100 Series   Model Number to show for all SKU Variants (when modelNumber starts with 'MBE71')
+
+        Elm (Cognitive Mesh) -
+
+            LN11             Official Model Number (currently not used)
+            LN11 Series      Model Number to show for all SKU Variants (when modelNumber starts with 'LN11')
+
+        Cherry (Cognitive Mesh) -
+
+            LN12             Official Model Number (currently not used)
+            LN12 Series      Model Number to show for all SKU Variants (when modelNumber starts with 'LN12')
+
+        Pinnacle -
+
+            SPNM60
+
     */
 import 'package:collection/collection.dart';
 import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
@@ -307,6 +331,30 @@ const List<Map<String, dynamic>> _velopModelMap = [
     'pattern': 'ln16',
   },
   {
+    'model': 'SPNM60',
+    'baseModel': 'SPNM60',
+    'seriesModel': 'SPNM60',
+    'isMeshRouter': false,
+    'isCognitiveMesh': true,
+    'pattern': '^spnm60',
+  },
+  {
+    'model': 'SPNM61',
+    'baseModel': 'SPNM61',
+    'seriesModel': 'SPNM61',
+    'isMeshRouter': false,
+    'isCognitiveMesh': true,
+    'pattern': '^spnm61',
+  },
+  {
+    'model': 'SPNM62',
+    'baseModel': 'SPNM62',
+    'seriesModel': 'SPNM62',
+    'isMeshRouter': false,
+    'isCognitiveMesh': true,
+    'pattern': '^spnm62',
+  },
+  {
     'model': 'EA9350',
     'hardwareVersions': ['3'],
     'baseModel': 'EA9350',
@@ -324,38 +372,6 @@ const List<Map<String, dynamic>> _velopModelMap = [
     'baseModel': 'MR8300',
     'isMeshRouter': true,
     'pattern': '^mr'
-  }
-];
-
-// array describing the Children that are compatible with a given Parent Cognitive Mesh Node
-const List<Map<String, dynamic>> _cognitiveMeshCompatibilityMap = [
-  {
-    'parentModel': 'MX6200',
-    'compatibleChildren': [
-      {'model': 'MX6200'},
-      {'model': 'MBE7000'}
-    ]
-  },
-  {
-    'parentModel': 'MBE7000',
-    'compatibleChildren': [
-      {'model': 'MBE7000'},
-      {'model': 'MX6200'}
-    ]
-  },
-  {
-    'parentModel': 'LN11',
-    'compatibleChildren': [
-      {'model': 'LN11'},
-      {'model': 'LN12'}
-    ]
-  },
-  {
-    'parentModel': 'LN12',
-    'compatibleChildren': [
-      {'model': 'LN12'},
-      {'model': 'LN11'}
-    ]
   }
 ];
 

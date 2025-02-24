@@ -24,6 +24,15 @@ import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart'
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockServiceHelper extends _i1.Mock implements _i2.ServiceHelper {
+  bool isSupportGuestNetwork([List<String>? services]) => (super.noSuchMethod(
+        Invocation.method(
+          #isSupportGuestNetwork,
+          [services],
+        ),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
   @override
   bool isSupportLedMode([List<String>? services]) => (super.noSuchMethod(
         Invocation.method(

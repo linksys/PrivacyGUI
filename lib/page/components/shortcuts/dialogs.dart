@@ -98,12 +98,15 @@ Future<T?> showSubmitAppDialog<T>(
   String? negitiveLabel,
   String? positiveLabel,
   bool Function()? checkPositiveEnabled,
+  bool scrollable = false,
+  bool useRootNavigator = true,
   required Future<T> Function() event,
   void Function(Object? error, StackTrace stackTrace)? onError,
 }) {
   bool isLoading = false;
   return showDialog<T?>(
     context: context,
+    useRootNavigator: useRootNavigator,
     barrierDismissible: false,
     builder: (context) {
       return StatefulBuilder(builder: (context, setState) {
@@ -132,6 +135,7 @@ Future<T?> showSubmitAppDialog<T>(
                   width: width ?? kDefaultDialogWidth,
                   child: AppText.titleLarge(title))
               : null,
+          scrollable: scrollable,
           content: SizedBox(
               width: width ?? kDefaultDialogWidth,
               child: switch (isLoading) {
@@ -169,15 +173,19 @@ Future<T?> showSimpleAppDialog<T>(
   Widget? icon,
   String? title,
   Widget? content,
+  bool scrollable = false,
+  bool useRootNavigator = true,
   List<Widget>? actions,
   double? width,
 }) {
   return showDialog<T?>(
     context: context,
     barrierDismissible: dismissible,
+    useRootNavigator: useRootNavigator,
     builder: (context) {
       return AlertDialog(
         semanticLabel: title,
+        scrollable: scrollable,
         icon: icon,
         title: title != null
             ? SizedBox(
@@ -194,6 +202,8 @@ Future<T?> showSimpleAppDialog<T>(
 Future<T?> showSimpleAppOkDialog<T>(
   BuildContext context, {
   bool dismissible = true,
+    bool scrollable = false,
+  bool useRootNavigator = true,
   Widget? icon,
   String? title,
   Widget? content,
@@ -204,6 +214,8 @@ Future<T?> showSimpleAppOkDialog<T>(
     context,
     title: title,
     dismissible: dismissible,
+    scrollable: scrollable,
+    useRootNavigator: useRootNavigator,
     content: content,
     icon: icon,
     width: width,
@@ -221,6 +233,8 @@ Future<T?> showSimpleAppOkDialog<T>(
 Future<T?> showMessageAppDialog<T>(
   BuildContext context, {
   bool dismissible = true,
+    bool scrollable = false,
+  bool useRootNavigator = true,
   Widget? icon,
   String? title,
   required String message,
@@ -230,6 +244,9 @@ Future<T?> showMessageAppDialog<T>(
   return showSimpleAppDialog<T?>(
     context,
     dismissible: dismissible,
+    scrollable: scrollable,
+    useRootNavigator: useRootNavigator,
+    width: width,
     icon: icon,
     title: title,
     content: AppText.bodyMedium(message),
@@ -240,6 +257,8 @@ Future<T?> showMessageAppDialog<T>(
 Future<T?> showMessageAppOkDialog<T>(
   BuildContext context, {
   bool dismissible = true,
+    bool scrollable = false,
+  bool useRootNavigator = true,
   Widget? icon,
   String? title,
   String? message,
@@ -249,6 +268,8 @@ Future<T?> showMessageAppOkDialog<T>(
   return showSimpleAppDialog<T?>(
     context,
     dismissible: dismissible,
+    scrollable: scrollable,
+    useRootNavigator: useRootNavigator,
     title: title,
     icon: icon,
     content: AppText.bodyMedium(message ?? ''),
@@ -334,7 +355,8 @@ Future<T?> showRouterNotFoundAlert<T>(BuildContext context, WidgetRef ref,
       ]);
 }
 
-Future<T?> showRedirectNewIpAlert<T>(BuildContext context, WidgetRef ref, String ip) {
+Future<T?> showRedirectNewIpAlert<T>(
+    BuildContext context, WidgetRef ref, String ip) {
   logger.d('[RedirectNewIpAlert] show Redirect new IP alert');
   return showSimpleAppDialog<T>(context,
       dismissible: false,
@@ -349,7 +371,7 @@ Future<T?> showRedirectNewIpAlert<T>(BuildContext context, WidgetRef ref, String
       actions: [
         AppFilledButton(
           loc(context).redirect,
-          onTap: ()  {
+          onTap: () {
             ref.read(redirectionProvider.notifier).state = 'https://$ip';
           },
         ),
@@ -448,8 +470,7 @@ Future<bool?> showInstantPrivacyConfirmDialog(
   );
 }
 
-Future<bool?> showMacFilteringConfirmDialog(
-    BuildContext context, bool enable) {
+Future<bool?> showMacFilteringConfirmDialog(BuildContext context, bool enable) {
   return showSimpleAppDialog<bool>(
     context,
     dismissible: false,
