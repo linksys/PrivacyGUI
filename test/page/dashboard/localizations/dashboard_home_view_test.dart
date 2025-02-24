@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
@@ -20,6 +22,7 @@ import 'package:privacy_gui/page/dashboard/views/components/wifi_grid.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
 import 'package:privacy_gui/page/instant_topology/providers/_providers.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/custom_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -541,475 +544,125 @@ void main() async {
       ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1280)).toList()
     ]);
 
-    // testLocalizations('Dashboard Home View - 4-ports vertical layout',
-    //     (tester, locale) async {
-    //   when(mockDashboardHomeNotifier.build()).thenReturn(
-    //       DashboardHomeState.fromMap(dashboardHomeStateData)
-    //           .copyWith(isHorizontalLayout: false));
-    //   await tester.runAsync(() async {
-    //     await tester.pumpWidget(
-    //       testableRouteShellWidget(
-    //         child: const DashboardHomeView(),
-    //         locale: locale,
-    //         overrides: [
-    //           dashboardHomeProvider
-    //               .overrideWith(() => mockDashboardHomeNotifier),
-    //           firmwareUpdateProvider
-    //               .overrideWith(() => mockFirmwareUpdateNotifier),
-    //           deviceManagerProvider
-    //               .overrideWith(() => mockDeviceManagerNotifier),
-    //           nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
-    //           instantPrivacyProvider
-    //               .overrideWith(() => mockInstantPrivacyNotifier),
-    //           instantTopologyProvider
-    //               .overrideWith(() => mockInstantTopologyNotifier),
-    //           geolocationProvider.overrideWith(() => mockGeolocationNotifer),
-    //         ],
-    //       ),
-    //     );
-    //     await tester.pumpAndSettle();
+    testLocalizations('Dashboard Home View - hover qr code',
+        (tester, locale) async {
+      when(mockFirmwareUpdateNotifier.build()).thenReturn(
+          FirmwareUpdateState.fromMap(
+              firmwareUpdateHasFirmwareCherry7TestState));
+      when(mockInstantTopologyNotifier.build()).thenReturn(
+          topologyTestData.testTopology2SlavesDaisyAndFwUpdateState);
+      await tester.pumpWidget(
+        testableRouteShellWidget(
+          child: const DashboardHomeView(),
+          locale: locale,
+          overrides: [
+            dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
+            dashboardManagerProvider
+                .overrideWith(() => mockDashboardManagerNotifier),
+            firmwareUpdateProvider
+                .overrideWith(() => mockFirmwareUpdateNotifier),
+            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
+            nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
+            instantPrivacyProvider
+                .overrideWith(() => mockInstantPrivacyNotifier),
+            instantTopologyProvider
+                .overrideWith(() => mockInstantTopologyNotifier),
+            geolocationProvider.overrideWith(() => mockGeolocationNotifer),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.runAsync(() async {
+        final context = tester.element(find.byType(DashboardHomeView));
+        await precacheImage(
+            CustomTheme.of(context).images.devices.routerLn12, context);
+        await tester.pumpAndSettle();
 
-    //     final context = tester.element(find.byType(DashboardHomeView));
-    //     await precacheImage(
-    //         CustomTheme.of(context).images.devices.routerMx6200, context);
-    //     await precacheImage(
-    //         CustomTheme.of(context).images.devices.routerWhw03, context);
-    //     await precacheImage(
-    //         CustomTheme.of(context).images.devices.routerMr7500, context);
-    //     await tester.pumpAndSettle();
-    //   });
-    // }, screens: responsiveDesktopScreens);
+        // Simulate hover enter.
+        final gesture =
+            await tester.createGesture(kind: PointerDeviceKind.mouse);
+        await gesture.addPointer(
+            location: Offset.zero); // Add pointer at the top-left corner
+        addTearDown(gesture.removePointer);
+        await gesture
+            .moveTo(tester.getCenter(find.byIcon(LinksysIcons.qrCode).first));
+        await tester.pumpAndSettle();
+      });
+    }, screens: [
+      ...responsiveMobileScreens.map((e) => e.copyWith(height: 2480)).toList(),
+      ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1280)).toList()
+    ]);
+  });
 
-    // testLocalizations(
-    //     'Dashboard Home View - 4-ports mobile layout with speed check',
-    //     (tester, locale) async {
-    //   when(mockDashboardHomeNotifier.build()).thenReturn(
-    //       DashboardHomeState.fromMap(dashboardHomeStateData)
-    //           .copyWith(isHealthCheckSupported: true));
-    //   await tester.runAsync(() async {
-    //     await tester.pumpWidget(
-    //       testableRouteShellWidget(
-    //         child: const DashboardHomeView(),
-    //         locale: locale,
-    //         overrides: [
-    //           dashboardHomeProvider
-    //               .overrideWith(() => mockDashboardHomeNotifier),
-    //           firmwareUpdateProvider
-    //               .overrideWith(() => mockFirmwareUpdateNotifier),
-    //           deviceManagerProvider
-    //               .overrideWith(() => mockDeviceManagerNotifier),
-    //           nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
-    //           instantPrivacyProvider
-    //               .overrideWith(() => mockInstantPrivacyNotifier),
-    //           instantTopologyProvider
-    //               .overrideWith(() => mockInstantTopologyNotifier),
-    //           geolocationProvider.overrideWith(() => mockGeolocationNotifer),
-    //         ],
-    //       ),
-    //     );
-    //     await tester.pumpAndSettle();
-    //     final context = tester.element(find.byType(DashboardHomeView));
-    //     await precacheImage(
-    //         CustomTheme.of(context).images.devices.routerMx6200, context);
-    //     await precacheImage(
-    //         CustomTheme.of(context).images.devices.routerWhw03, context);
-    //     await precacheImage(
-    //         CustomTheme.of(context).images.devices.routerMr7500, context);
-    //     await tester.pumpAndSettle();
-    //   });
-    // }, screens: responsiveMobileScreens);
+  group('Dashboard Home View (Pinnacle)', () {
+    setUp(() {
+      mockDashboardHomeNotifier = MockDashboardHomeNotifier();
+      mockDashboardManagerNotifier = MockDashboardManagerNotifier();
+      mockFirmwareUpdateNotifier = MockFirmwareUpdateNotifier();
+      mockDeviceManagerNotifier = MockDeviceManagerNotifier();
+      mockInstantPrivacyNotifier = MockInstantPrivacyNotifier();
+      mockInstantTopologyNotifier = MockInstantTopologyNotifier();
+      mockGeolocationNotifer = MockGeolocationNotifier();
+      mockNodeLightSettingsNotifier = MockNodeLightSettingsNotifier();
 
-    // testLocalizations(
-    //     'Dashboard Home View - 4-ports horizontal layout with speed check',
-    //     (tester, locale) async {
-    //   when(mockDashboardHomeNotifier.build()).thenReturn(
-    //       DashboardHomeState.fromMap(dashboardHomeStateData).copyWith(
-    //     isHorizontalLayout: true,
-    //     isHealthCheckSupported: true,
-    //   ));
-    //   await tester.runAsync(() async {
-    //     await tester.pumpWidget(
-    //       testableRouteShellWidget(
-    //         child: const DashboardHomeView(),
-    //         locale: locale,
-    //         overrides: [
-    //           dashboardHomeProvider
-    //               .overrideWith(() => mockDashboardHomeNotifier),
-    //           firmwareUpdateProvider
-    //               .overrideWith(() => mockFirmwareUpdateNotifier),
-    //           deviceManagerProvider
-    //               .overrideWith(() => mockDeviceManagerNotifier),
-    //           nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
-    //           instantPrivacyProvider
-    //               .overrideWith(() => mockInstantPrivacyNotifier),
-    //           instantTopologyProvider
-    //               .overrideWith(() => mockInstantTopologyNotifier),
-    //           geolocationProvider.overrideWith(() => mockGeolocationNotifer),
-    //         ],
-    //       ),
-    //     );
-    //     await tester.pumpAndSettle();
+      when(mockDashboardHomeNotifier.build()).thenReturn(
+          DashboardHomeState.fromMap(dashboardHomePinnacleTestState));
+      when(mockDashboardManagerNotifier.build()).thenReturn(
+          DashboardManagerState.fromMap(dashboardManagerPinnacleTestState));
+      when(mockFirmwareUpdateNotifier.build())
+          .thenReturn(FirmwareUpdateState.fromMap(firmwareUpdateTestData));
+      when(mockDeviceManagerNotifier.build()).thenReturn(
+          DeviceManagerState.fromMap(deviceManagerCherry7TestState));
+      when(mockInstantPrivacyNotifier.build())
+          .thenReturn(InstantPrivacyState.fromMap(instantPrivacyTestState));
+      when(mockInstantTopologyNotifier.build())
+          .thenReturn(topologyTestData.testTopologyPinnacleSlavesDaisyState);
+      when(mockGeolocationNotifer.build()).thenAnswer(
+          (_) async => GeolocationState.fromMap(geolocationTestState));
+      when(mockNodeLightSettingsNotifier.build())
+          .thenReturn(NodeLightSettings(isNightModeEnable: false));
+      when(mockServiceHelper.isSupportLedMode()).thenReturn(true);
+    });
 
-    //     final context = tester.element(find.byType(DashboardHomeView));
-    //     await precacheImage(
-    //         CustomTheme.of(context).images.devices.routerMx6200, context);
-    //     await precacheImage(
-    //         CustomTheme.of(context).images.devices.routerWhw03, context);
-    //     await precacheImage(
-    //         CustomTheme.of(context).images.devices.routerMr7500, context);
-    //     await tester.pumpAndSettle();
-    //   });
-    // }, screens: responsiveDesktopScreens);
+    tearDown(() {
+      topologyTestData.cleanup();
+    });
 
-    // testLocalizations(
-    //     'Dashboard Home View - 4-ports vertical layout with speed check',
-    //     (tester, locale) async {
-    //   when(mockDashboardHomeNotifier.build()).thenReturn(
-    //       DashboardHomeState.fromMap(dashboardHomeStateData).copyWith(
-    //     isHorizontalLayout: false,
-    //     isHealthCheckSupported: true,
-    //   ));
-    //   await tester.runAsync(() async {
-    //     await tester.pumpWidget(
-    //       testableRouteShellWidget(
-    //         child: const DashboardHomeView(),
-    //         locale: locale,
-    //         overrides: [
-    //           dashboardHomeProvider
-    //               .overrideWith(() => mockDashboardHomeNotifier),
-    //           firmwareUpdateProvider
-    //               .overrideWith(() => mockFirmwareUpdateNotifier),
-    //           deviceManagerProvider
-    //               .overrideWith(() => mockDeviceManagerNotifier),
-    //           nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
-    //           instantPrivacyProvider
-    //               .overrideWith(() => mockInstantPrivacyNotifier),
-    //           instantTopologyProvider
-    //               .overrideWith(() => mockInstantTopologyNotifier),
-    //           geolocationProvider.overrideWith(() => mockGeolocationNotifer),
-    //         ],
-    //       ),
-    //     );
-    //     await tester.pumpAndSettle();
-
-    //     final context = tester.element(find.byType(DashboardHomeView));
-    //     await precacheImage(
-    //         CustomTheme.of(context).images.devices.routerMx6200, context);
-    //     await precacheImage(
-    //         CustomTheme.of(context).images.devices.routerWhw03, context);
-    //     await precacheImage(
-    //         CustomTheme.of(context).images.devices.routerMr7500, context);
-    //     await tester.pumpAndSettle();
-    //     final speedCheckFinder = find.byKey(const ValueKey('speedCheck'));
-    //     await tester.scrollUntilVisible(speedCheckFinder, 10,
-    //         scrollable: find
-    //             .descendant(
-    //                 of: find.byType(StyledAppPageView),
-    //                 matching: find.byType(Scrollable))
-    //             .last);
-    //     await tester.pumpAndSettle();
-    //   });
-    // }, screens: responsiveDesktopScreens);
-
-    // testLocalizations(
-    //     'Dashboard Home View - 4-ports mobile layout fw update available',
-    //     (tester, locale) async {
-    //   when(mockFirmwareUpdateNotifier.build()).thenReturn(
-    //       FirmwareUpdateState.fromMap(firmwareUpdateHasFirmwareTestData));
-    //   await tester.runAsync(() async {
-    //     await tester.pumpWidget(
-    //       testableRouteShellWidget(
-    //         child: const DashboardHomeView(),
-    //         locale: locale,
-    //         overrides: [
-    //           dashboardHomeProvider
-    //               .overrideWith(() => mockDashboardHomeNotifier),
-    //           firmwareUpdateProvider
-    //               .overrideWith(() => mockFirmwareUpdateNotifier),
-    //           deviceManagerProvider
-    //               .overrideWith(() => mockDeviceManagerNotifier),
-    //           nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
-    //           instantPrivacyProvider
-    //               .overrideWith(() => mockInstantPrivacyNotifier),
-    //           instantTopologyProvider
-    //               .overrideWith(() => mockInstantTopologyNotifier),
-    //           geolocationProvider.overrideWith(() => mockGeolocationNotifer),
-    //         ],
-    //       ),
-    //     );
-    //     await tester.pumpAndSettle();
-    //     final context = tester.element(find.byType(DashboardHomeView));
-    //     await precacheImage(
-    //         CustomTheme.of(context).images.devices.routerMx6200, context);
-    //     await precacheImage(
-    //         CustomTheme.of(context).images.devices.routerWhw03, context);
-    //     await precacheImage(
-    //         CustomTheme.of(context).images.devices.routerMr7500, context);
-    //     await tester.pumpAndSettle();
-    //   });
-    // }, screens: responsiveMobileScreens);
-
-    // testLocalizations(
-    //     'Dashboard Home View - 4-ports horizontal layout fw update available',
-    //     (tester, locale) async {
-    //   when(mockDashboardHomeNotifier.build()).thenReturn(
-    //       DashboardHomeState.fromMap(dashboardHomeStateData)
-    //           .copyWith(isHorizontalLayout: true));
-    //   when(mockFirmwareUpdateNotifier.build()).thenReturn(
-    //       FirmwareUpdateState.fromMap(firmwareUpdateHasFirmwareTestData));
-    //   await tester.runAsync(() async {
-    //     await tester.pumpWidget(
-    //       testableRouteShellWidget(
-    //         child: const DashboardHomeView(),
-    //         locale: locale,
-    //         overrides: [
-    //           dashboardHomeProvider
-    //               .overrideWith(() => mockDashboardHomeNotifier),
-    //           firmwareUpdateProvider
-    //               .overrideWith(() => mockFirmwareUpdateNotifier),
-    //           deviceManagerProvider
-    //               .overrideWith(() => mockDeviceManagerNotifier),
-    //           nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
-    //           instantPrivacyProvider
-    //               .overrideWith(() => mockInstantPrivacyNotifier),
-    //           instantTopologyProvider
-    //               .overrideWith(() => mockInstantTopologyNotifier),
-    //           geolocationProvider.overrideWith(() => mockGeolocationNotifer),
-    //         ],
-    //       ),
-    //     );
-    //     await tester.pumpAndSettle();
-
-    //     final context = tester.element(find.byType(DashboardHomeView));
-    //     await precacheImage(
-    //         CustomTheme.of(context).images.devices.routerMx6200, context);
-    //     await precacheImage(
-    //         CustomTheme.of(context).images.devices.routerWhw03, context);
-    //     await precacheImage(
-    //         CustomTheme.of(context).images.devices.routerMr7500, context);
-    //     await tester.pumpAndSettle();
-    //   });
-    // }, screens: responsiveDesktopScreens);
-
-    // testLocalizations(
-    //     'Dashboard Home View - 4-ports vertical layout fw update avaliable',
-    //     (tester, locale) async {
-    //   when(mockDashboardHomeNotifier.build()).thenReturn(
-    //       DashboardHomeState.fromMap(dashboardHomeStateData)
-    //           .copyWith(isHorizontalLayout: false));
-    //   when(mockFirmwareUpdateNotifier.build()).thenReturn(
-    //       FirmwareUpdateState.fromMap(firmwareUpdateHasFirmwareTestData));
-    //   await tester.runAsync(() async {
-    //     await tester.pumpWidget(
-    //       testableRouteShellWidget(
-    //         child: const DashboardHomeView(),
-    //         locale: locale,
-    //         overrides: [
-    //           dashboardHomeProvider
-    //               .overrideWith(() => mockDashboardHomeNotifier),
-    //           firmwareUpdateProvider
-    //               .overrideWith(() => mockFirmwareUpdateNotifier),
-    //           deviceManagerProvider
-    //               .overrideWith(() => mockDeviceManagerNotifier),
-    //           nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
-    //           instantPrivacyProvider
-    //               .overrideWith(() => mockInstantPrivacyNotifier),
-    //           instantTopologyProvider
-    //               .overrideWith(() => mockInstantTopologyNotifier),
-    //           geolocationProvider.overrideWith(() => mockGeolocationNotifer),
-    //         ],
-    //       ),
-    //     );
-    //     await tester.pumpAndSettle();
-
-    //     final context = tester.element(find.byType(DashboardHomeView));
-    //     await precacheImage(
-    //         CustomTheme.of(context).images.devices.routerMx6200, context);
-    //     await precacheImage(
-    //         CustomTheme.of(context).images.devices.routerWhw03, context);
-    //     await precacheImage(
-    //         CustomTheme.of(context).images.devices.routerMr7500, context);
-    //     await tester.pumpAndSettle();
-    //   });
-    // }, screens: responsiveDesktopScreens);
-
-    // testLocalizations(
-    //     'Dashboard Home View - 4-ports mobile layout internet offline',
-    //     (tester, locale) async {
-    //   when(mockDashboardHomeNotifier.build()).thenReturn(
-    //       DashboardHomeState.fromMap(dashboardHomeOfflineStateData).copyWith(
-    //     isHorizontalLayout: false,
-    //   ));
-    //   await tester.runAsync(() async {
-    //     await tester.pumpWidget(
-    //       testableRouteShellWidget(
-    //         child: const DashboardHomeView(),
-    //         locale: locale,
-    //         overrides: [
-    //           dashboardHomeProvider
-    //               .overrideWith(() => mockDashboardHomeNotifier),
-    //           firmwareUpdateProvider
-    //               .overrideWith(() => mockFirmwareUpdateNotifier),
-    //           deviceManagerProvider
-    //               .overrideWith(() => mockDeviceManagerNotifier),
-    //           nodeWanStatusProvider
-    //               .overrideWith((ref) => NodeWANStatus.offline),
-    //           instantPrivacyProvider
-    //               .overrideWith(() => mockInstantPrivacyNotifier),
-    //           instantTopologyProvider
-    //               .overrideWith(() => mockInstantTopologyNotifier),
-    //           geolocationProvider.overrideWith(() => mockGeolocationNotifer),
-    //         ],
-    //       ),
-    //     );
-    //     await tester.pumpAndSettle();
-
-    //     final context = tester.element(find.byType(DashboardHomeView));
-    //     await precacheImage(
-    //         CustomTheme.of(context).images.devices.routerMx6200, context);
-    //     await precacheImage(
-    //         CustomTheme.of(context).images.devices.routerWhw03, context);
-    //     await precacheImage(
-    //         CustomTheme.of(context).images.devices.routerMr7500, context);
-    //     await tester.pumpAndSettle();
-    //   });
-    // }, screens: responsiveMobileScreens);
-
-    // testLocalizations(
-    //     'Dashboard Home View - 4-ports horizontal layout internet offline',
-    //     (tester, locale) async {
-    //   when(mockDashboardHomeNotifier.build()).thenReturn(
-    //       DashboardHomeState.fromMap(dashboardHomeOfflineStateData)
-    //           .copyWith(isHorizontalLayout: true));
-    //   await tester.runAsync(() async {
-    //     await tester.pumpWidget(
-    //       testableRouteShellWidget(
-    //         child: const DashboardHomeView(),
-    //         locale: locale,
-    //         overrides: [
-    //           dashboardHomeProvider
-    //               .overrideWith(() => mockDashboardHomeNotifier),
-    //           firmwareUpdateProvider
-    //               .overrideWith(() => mockFirmwareUpdateNotifier),
-    //           deviceManagerProvider
-    //               .overrideWith(() => mockDeviceManagerNotifier),
-    //           nodeWanStatusProvider
-    //               .overrideWith((ref) => NodeWANStatus.offline),
-    //           instantPrivacyProvider
-    //               .overrideWith(() => mockInstantPrivacyNotifier),
-    //           instantTopologyProvider
-    //               .overrideWith(() => mockInstantTopologyNotifier),
-    //           geolocationProvider.overrideWith(() => mockGeolocationNotifer),
-    //         ],
-    //       ),
-    //     );
-    //     await tester.pumpAndSettle();
-
-    //     final context = tester.element(find.byType(DashboardHomeView));
-    //     await precacheImage(
-    //         CustomTheme.of(context).images.devices.routerMx6200, context);
-    //     await precacheImage(
-    //         CustomTheme.of(context).images.devices.routerWhw03, context);
-    //     await precacheImage(
-    //         CustomTheme.of(context).images.devices.routerMr7500, context);
-    //     await tester.pumpAndSettle();
-    //   });
-    // }, screens: responsiveDesktopScreens);
-
-    // testLocalizations(
-    //     'Dashboard Home View - 4-ports vertical layout internet offline',
-    //     (tester, locale) async {
-    //   when(mockDashboardHomeNotifier.build()).thenReturn(
-    //       DashboardHomeState.fromMap(dashboardHomeOfflineStateData).copyWith(
-    //     isHorizontalLayout: false,
-    //   ));
-    //   await tester.runAsync(() async {
-    //     await tester.pumpWidget(
-    //       testableRouteShellWidget(
-    //         child: const DashboardHomeView(),
-    //         locale: locale,
-    //         overrides: [
-    //           dashboardHomeProvider
-    //               .overrideWith(() => mockDashboardHomeNotifier),
-    //           firmwareUpdateProvider
-    //               .overrideWith(() => mockFirmwareUpdateNotifier),
-    //           deviceManagerProvider
-    //               .overrideWith(() => mockDeviceManagerNotifier),
-    //           nodeWanStatusProvider
-    //               .overrideWith((ref) => NodeWANStatus.offline),
-    //           instantPrivacyProvider
-    //               .overrideWith(() => mockInstantPrivacyNotifier),
-    //           instantTopologyProvider
-    //               .overrideWith(() => mockInstantTopologyNotifier),
-    //           geolocationProvider.overrideWith(() => mockGeolocationNotifer),
-    //         ],
-    //       ),
-    //     );
-    //     await tester.pumpAndSettle();
-
-    //     final context = tester.element(find.byType(DashboardHomeView));
-    //     await precacheImage(
-    //         CustomTheme.of(context).images.devices.routerMx6200, context);
-    //     await precacheImage(
-    //         CustomTheme.of(context).images.devices.routerWhw03, context);
-    //     await precacheImage(
-    //         CustomTheme.of(context).images.devices.routerMr7500, context);
-    //     await tester.pumpAndSettle();
-    //   });
-    // }, screens: responsiveDesktopScreens);
-
-    // testLocalizations(
-    //     'Dashboard Home View - 4-ports vertical layout with legacy speed check',
-    //     (tester, locale) async {
-    //   when(mockDashboardHomeNotifier.build()).thenReturn(
-    //       DashboardHomeState.fromMap(dashboardHomeStateData).copyWith(
-    //     isHorizontalLayout: false,
-    //     isHealthCheckSupported: true,
-    //     uploadResult: (unit: 'M', value: '505'),
-    //     downloadResult: (unit: 'M', value: '509'),
-    //     speedCheckTimestamp: 1719802401000,
-    //   ));
-    //   await tester.runAsync(() async {
-    //     await tester.pumpWidget(
-    //       testableRouteShellWidget(
-    //         child: const DashboardHomeView(),
-    //         locale: locale,
-    //         overrides: [
-    //           dashboardHomeProvider
-    //               .overrideWith(() => mockDashboardHomeNotifier),
-    //           firmwareUpdateProvider
-    //               .overrideWith(() => mockFirmwareUpdateNotifier),
-    //           deviceManagerProvider
-    //               .overrideWith(() => mockDeviceManagerNotifier),
-    //           nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
-    //           instantPrivacyProvider
-    //               .overrideWith(() => mockInstantPrivacyNotifier),
-    //           instantTopologyProvider
-    //               .overrideWith(() => mockInstantTopologyNotifier),
-    //           geolocationProvider.overrideWith(() => mockGeolocationNotifer),
-    //         ],
-    //       ),
-    //     );
-    //     await tester.pumpAndSettle();
-
-    //     final context = tester.element(find.byType(DashboardHomeView));
-    //     await precacheImage(
-    //         CustomTheme.of(context).images.devices.routerMx6200, context);
-    //     await precacheImage(
-    //         CustomTheme.of(context).images.devices.routerWhw03, context);
-    //     await precacheImage(
-    //         CustomTheme.of(context).images.devices.routerMr7500, context);
-    //     await tester.pumpAndSettle();
-    //     final speedCheckFinder = find.byKey(const ValueKey('speedCheck'));
-    //     await tester.scrollUntilVisible(speedCheckFinder, 10,
-    //         scrollable: find
-    //             .descendant(
-    //                 of: find.byType(StyledAppPageView),
-    //                 matching: find.byType(Scrollable))
-    //             .last);
-    //     await tester.pumpAndSettle();
-    //   });
-    // }, screens: responsiveDesktopScreens);
+    testLocalizations('Dashboard Home View - no Guest WiFi, no Night mode',
+        (tester, locale) async {
+      when(mockServiceHelper.isSupportGuestNetwork()).thenReturn(false);
+      when(mockServiceHelper.isSupportLedMode()).thenReturn(false);
+      await tester.pumpWidget(
+        testableRouteShellWidget(
+          child: const DashboardHomeView(),
+          locale: locale,
+          overrides: [
+            dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
+            dashboardManagerProvider
+                .overrideWith(() => mockDashboardManagerNotifier),
+            firmwareUpdateProvider
+                .overrideWith(() => mockFirmwareUpdateNotifier),
+            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
+            nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
+            instantPrivacyProvider
+                .overrideWith(() => mockInstantPrivacyNotifier),
+            instantTopologyProvider
+                .overrideWith(() => mockInstantTopologyNotifier),
+            geolocationProvider.overrideWith(() => mockGeolocationNotifer),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.runAsync(() async {
+        final context = tester.element(find.byType(DashboardHomeView));
+        await precacheImage(
+            CustomTheme.of(context).images.devices.routerLn12, context);
+        await tester.pumpAndSettle();
+      });
+    }, screens: [
+      ...responsiveMobileScreens.map((e) => e.copyWith(height: 2480)).toList(),
+      ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1280)).toList()
+    ]);
   });
 
   // group('Dashboard Home View with 2-ports', () {

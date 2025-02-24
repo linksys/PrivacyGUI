@@ -51,7 +51,7 @@ class WiFiState extends Equatable {
           (x) => WiFiItem.fromMap(x),
         ),
       ),
-      guestWiFi: GuestWiFiItem.fromMap(map['guestWiFi']),
+      guestWiFi: GuestWiFiItem.fromMap(map['guestWiFi'] ?? {}),
       canDisableMainWiFi: map['canDisableMainWiFi'],
     );
   }

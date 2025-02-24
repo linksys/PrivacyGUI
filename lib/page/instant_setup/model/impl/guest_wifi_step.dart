@@ -8,14 +8,14 @@ import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 class GuestWiFiStep extends PnpStep {
+  static int id = 1;
   TextEditingController? _ssidEditController;
   TextEditingController? _passwordEditController;
   bool isEnabled = false;
 
   GuestWiFiStep({
-    required super.index,
     super.saveChanges,
-  });
+  }): super(index: id);
 
   @override
   Future<void> onInit(WidgetRef ref) async {

@@ -17,7 +17,6 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/factory.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_rule_view.dart';
-import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_list_view.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_view.dart';
 import 'package:privacy_gui/page/components/picker/region_picker_view.dart';
 import 'package:privacy_gui/page/components/settings_view/editable_card_list_edit_view.dart';
@@ -70,6 +69,9 @@ import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'constants.dart';
+import 'package:privacy_gui/core/jnap/providers/ip_getter/get_local_ip.dart'
+    if (dart.library.io) 'package:privacy_gui/core/jnap/providers/ip_getter/mobile_get_local_ip.dart'
+    if (dart.library.html) 'package:privacy_gui/core/jnap/providers/ip_getter/web_get_local_ip.dart';
 
 part 'route_home.dart';
 part 'route_cloud_login.dart';
@@ -206,9 +208,12 @@ class RouterNotifier extends ChangeNotifier {
         : await (_prepare(state).then((_) => null));
   }
 
-  FutureOr<String?> _goPnp(String? query) {
+  FutureOr<String?> _goPnp(String query) {
     FlutterNativeSplash.remove();
-    final path = '${RoutePath.pnp}?${query ?? ''}';
+    final queryParams = query.isEmpty
+        ? Uri.tryParse(getFullLocation(_ref))?.query ?? ''
+        : query;
+    final path = '${RoutePath.pnp}?$queryParams';
     logger.i('[Route]: Go to PnP, URI=$path');
     return path;
   }

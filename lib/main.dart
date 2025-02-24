@@ -16,6 +16,9 @@ import 'package:privacy_gui/providers/logger_observer.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:privacy_gui/util/platforms/platform_util.dart'
+    if (dart.library.html) 'package:privacy_gui/util/platforms/platform_util_web.dart'
+    if (dart.library.io) 'package:privacy_gui/util/platforms/platform_util_mobile.dart';
 
 void main() async {
   // if (kIsWeb) {
@@ -25,7 +28,7 @@ void main() async {
 
   // TODO Revisit again until Flutter SDK 3.27.x
   // https://github.com/flutter/engine/commit/35af5fe80e0212caff4b34b583232d833b5a2596
-  // 
+  //
   if (defaultTargetPlatform != TargetPlatform.iOS &&
       defaultTargetPlatform != TargetPlatform.android) {
     SemanticsBinding.instance.ensureSemantics();

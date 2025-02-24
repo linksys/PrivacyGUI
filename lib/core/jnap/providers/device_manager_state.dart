@@ -173,7 +173,14 @@ class DeviceManagerState extends Equatable {
 
   // Calculated properties
   List<LinksysDevice> get nodeDevices {
-    return deviceList.where((device) => device.nodeType != null).toList();
+    return deviceList
+        .where(
+          // Note: NodeType is null but isAuthority is true in factory settings
+          // To avoid errors caused by empty node device list while entering
+          // the dashboard on an unconfigured router, isAuthority is also checked
+          (device) => device.nodeType != null || device.isAuthority == true,
+        )
+        .toList();
   }
 
   List<LinksysDevice> get externalDevices {

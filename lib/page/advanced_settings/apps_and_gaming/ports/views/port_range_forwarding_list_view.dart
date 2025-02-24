@@ -298,9 +298,6 @@ class _PortRangeForwardingContentViewState
                     ),
                   ],
                 ),
-                if (error != null)
-                  AppText.bodySmall(error,
-                      color: Theme.of(context).colorScheme.error),
               ],
             ),
           2 => AppDropdownButton(
@@ -348,7 +345,7 @@ class _PortRangeForwardingContentViewState
           1 => notifier.isPortRangeValid(
                   int.tryParse(internalPortTextController.text) ?? 0,
                   int.tryParse(externalPortTextController.text) ?? 0)
-              ? notifier.isPortConflict(
+              ? !notifier.isPortConflict(
                       int.tryParse(internalPortTextController.text) ?? 0,
                       int.tryParse(externalPortTextController.text) ?? 0,
                       ref

@@ -23,6 +23,7 @@ import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/info_card.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
 class MacFilteringView extends ArgumentsConsumerStatefulView {
@@ -49,6 +50,9 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView>
       _notifier.fetch().then((value) async {
         await _notifier.doPolling();
         preservedState = value;
+        ref
+            .read(wifiViewProvider.notifier)
+            .setMacFilteringViewChanged(value != preservedState);
       }),
     );
     super.initState();
@@ -75,7 +79,9 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView>
       appBarStyle: AppBarStyle.none,
       useMainPadding: false,
       bottomBar: PageBottomBar(
-          isPositiveEnabled: isStateChanged(state),
+          isPositiveEnabled: state.mode == MacFilterMode.deny
+              ? isStateChanged(state)
+              : state.mode != preservedState?.mode,
           onPositiveTap: () {
             _showEnableDialog(state.mode != MacFilterMode.disabled);
           }),
@@ -108,7 +114,8 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView>
                     children: [
                       _enableTile(state),
                       const AppGap.small2(),
-                      _infoCard(deviceList.length),
+                      _infoCard(
+                          state.mode == MacFilterMode.deny, deviceList.length),
                     ],
                   ),
                 ),
@@ -133,7 +140,7 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView>
           ],
           _enableTile(state),
           const AppGap.small2(),
-          _infoCard(deviceList.length),
+          _infoCard(state.mode == MacFilterMode.deny, deviceList.length),
           const AppGap.large2(),
         ],
       ),
@@ -151,14 +158,20 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView>
     );
   }
 
-  Widget _infoCard(int length) {
-    return AppInfoCard(
-      onTap: () {
-        context.pushNamed(RouteNamed.macFilteringInput);
-      },
-      title: loc(context).nDevices(length).capitalizeWords(),
-      description: loc(context).denyAccessDesc,
-      trailing: Icon(LinksysIcons.chevronRight),
+  Widget _infoCard(bool enabled, int length) {
+    return Opacity(
+      opacity: enabled ? 1 : .5,
+      child: AppInfoCard(
+        padding: const EdgeInsets.all(Spacing.medium),
+        onTap: enabled
+            ? () {
+                context.pushNamed(RouteNamed.macFilteringInput);
+              }
+            : null,
+        title: loc(context).nDevices(length).capitalizeWords(),
+        description: loc(context).denyAccessDesc,
+        trailing: Icon(LinksysIcons.chevronRight),
+      ),
     );
   }
 
@@ -171,8 +184,11 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView>
           semanticLabel: 'wifi mac filtering',
           value: state.mode == MacFilterMode.deny,
           onChanged: (value) {
-            _notifier
-                .setAccess(value ? MacFilterMode.deny : MacFilterMode.disabled);
+            _notifier.setAccess(value
+                ? MacFilterMode.deny
+                : preservedState?.mode == MacFilterMode.deny
+                    ? MacFilterMode.disabled
+                    : preservedState?.mode ?? MacFilterMode.disabled);
           },
         )
       ],

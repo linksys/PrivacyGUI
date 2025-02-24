@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 
@@ -68,18 +68,22 @@ showSimpleSnackBar(
 
 showSnackBar(BuildContext context,
     {required Widget content, Color? background}) {
+  final useWidth = shellNavigatorKey.currentContext == null;
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       behavior: SnackBarBehavior.floating,
-      margin: ResponsiveLayout.isMobileLayout(context)
-          ? const EdgeInsets.only(
-              left: Spacing.large2,
-              right: Spacing.large2,
-              bottom: Spacing.large2)
-          : EdgeInsets.only(
-              left: ResponsiveLayout.getContentWidth(context) * 0.6,
-              right: Spacing.large2,
-              bottom: Spacing.large2),
+      margin: useWidth
+          ? null
+          : ResponsiveLayout.isMobileLayout(context)
+              ? const EdgeInsets.only(
+                  left: Spacing.large2,
+                  right: Spacing.large2,
+                  bottom: Spacing.large2)
+              : EdgeInsets.only(
+                  left: ResponsiveLayout.getContentWidth(context) * 0.6,
+                  right: Spacing.large2,
+                  bottom: Spacing.large2),
+      width: !useWidth ? null : ResponsiveLayout.getContentWidth(context) * 0.6,
       content: content,
       backgroundColor: Colors.transparent,
       elevation: 0,

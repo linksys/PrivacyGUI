@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/models/dmz_settings.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/dmz/providers/dmz_settings_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/dmz/providers/dmz_settings_state.dart';
@@ -431,7 +430,7 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
     final lastValue = NetworkUtils.ipToNum(_sourceLastIPController.text);
     setState(() {
       _sourceError =
-          lastValue - firstValue > 0 ? null : loc(context).dmzSourceRangeError;
+          lastValue - firstValue >= 0 ? null : loc(context).dmzSourceRangeError;
     });
   }
 

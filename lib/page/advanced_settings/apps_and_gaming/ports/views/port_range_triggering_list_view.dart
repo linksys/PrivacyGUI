@@ -297,11 +297,6 @@ class _PortRangeTriggeringContentViewState
                     ),
                   ],
                 ),
-                if (error != null)
-                  AppText.bodySmall(
-                    error,
-                    color: Theme.of(context).colorScheme.error,
-                  ),
               ],
             ),
           2 => Column(
@@ -356,11 +351,6 @@ class _PortRangeTriggeringContentViewState
                     ),
                   ],
                 ),
-                if (error != null)
-                  AppText.bodySmall(
-                    error,
-                    color: Theme.of(context).colorScheme.error,
-                  ),
               ],
             ),
           _ => AppText.bodyLarge(''),
@@ -380,7 +370,7 @@ class _PortRangeTriggeringContentViewState
           2 => notifier.isPortRangeValid(
                   int.tryParse(firstForwardedPortController.text) ?? 0,
                   int.tryParse(lastForwardedPortController.text) ?? 0)
-              ? notifier.isForwardedPortConflict(
+              ? !notifier.isForwardedPortConflict(
                       int.tryParse(firstForwardedPortController.text) ?? 0,
                       int.tryParse(lastForwardedPortController.text) ?? 0)
                   ? null

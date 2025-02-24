@@ -363,18 +363,19 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
       onValidate: (index) {
         final stateRule = ref.watch(staticRoutingRuleProvider).rule;
         return switch (index) {
-          0 =>
-            ref.read(staticRoutingRuleProvider.notifier).isNameValid(routerNameTextController.text)
-                ? null
-                : loc(context).theNameMustNotBeEmpty,
+          0 => ref
+                  .read(staticRoutingRuleProvider.notifier)
+                  .isNameValid(routerNameTextController.text)
+              ? null
+              : loc(context).theNameMustNotBeEmpty,
           1 => ref
                   .read(staticRoutingRuleProvider.notifier)
                   .isValidIpAddress(destinationIPTextController.text)
               ? null
               : loc(context).invalidIpAddress,
-          2 => ref
-                  .read(staticRoutingRuleProvider.notifier)
-                  .isValidSubnetMask(NetworkUtils.subnetMaskToPrefixLength(subnetMaskTextController.text))
+          2 => ref.read(staticRoutingRuleProvider.notifier).isValidSubnetMask(
+                  NetworkUtils.subnetMaskToPrefixLength(
+                      subnetMaskTextController.text))
               ? null
               : loc(context).invalidSubnetMask,
           3 => ref.read(staticRoutingRuleProvider.notifier).isValidIpAddress(

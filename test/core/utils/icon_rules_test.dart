@@ -46,6 +46,29 @@ void main() {
       final result = iconTest(jsonDecode(deviceJson));
       expect(result, 'routerLn11');
     });
+
+    test('test iconTest - Pinnacle 2.0', () {
+      const deviceJson = '''
+    {"model": {"deviceType": "Infrastructure", "manufacturer": "Linksys", "modelNumber": "SPNM60", "hardwareVersion": "1"}}
+    ''';
+      final result = iconTest(jsonDecode(deviceJson));
+      expect(result, 'routerLn12');
+    });
+    test('test iconTest - Pinnacle 2.1', () {
+      const deviceJson = '''
+    {"model": {"deviceType": "Infrastructure", "manufacturer": "Linksys", "modelNumber": "SPNM61", "hardwareVersion": "1"}}
+    ''';
+      final result = iconTest(jsonDecode(deviceJson));
+      expect(result, 'routerLn12');
+    });
+    test('test iconTest - Pinnacle 2.2', () {
+      const deviceJson = '''
+    {"model": {"deviceType": "Infrastructure", "manufacturer": "Linksys", "modelNumber": "SPNM62", "hardwareVersion": "1"}}
+    ''';
+      final result = iconTest(jsonDecode(deviceJson));
+      expect(result, 'routerLn12');
+    });
+
     test('test iconTest - iPhone', () {
       const device = {
         "model": {
@@ -97,7 +120,7 @@ void main() {
   group('test testRouterIcon series', () {
     test('test routerIconTest - Unknown model number', () {
       final result = routerIconTestByModel(modelNumber: 'MR9500');
-      expect(result, 'routerLn11');
+      expect(result, 'routerLn12');
     });
     test('test routerIconTest - MR9600', () {
       final result = routerIconTestByModel(modelNumber: 'MR9600');

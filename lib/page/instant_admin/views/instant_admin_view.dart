@@ -366,6 +366,8 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
     ];
     showSubmitAppDialog(
       context,
+      scrollable: true,
+      useRootNavigator: false,
       title: loc(context).routerPassword,
       contentBuilder: (context, setState, onSubmit) => SingleChildScrollView(
         child: Column(
@@ -444,6 +446,14 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
       checkPositiveEnabled: () {
         return isPasswordValid && isHintNotContainPassword;
       },
+    );
+  }
+
+  Future<void> _scrollToWidget(GlobalKey key) async {
+    await Scrollable.ensureVisible(
+      key.currentContext!, // Use the GlobalKey's context
+      alignment: 0.5, // Adjust alignment as needed (0.0 = top, 1.0 = bottom)
+      curve: Curves.easeInOut, // Optional animation curve
     );
   }
 

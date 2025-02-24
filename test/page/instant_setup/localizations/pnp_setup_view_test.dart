@@ -29,6 +29,11 @@ void main() async {
 
   setUp(() {
     mockPnpNotifier = Mock.MockPnpNotifier();
+
+    when(mockServiceHelper.isSupportGuestNetwork(any)).thenReturn(true);
+    when(mockServiceHelper.isSupportLedMode(any)).thenReturn(true);
+
+
     when(mockPnpNotifier.build()).thenReturn(PnpState(
         deviceInfo:
             NodeDeviceInfo.fromJson(jsonDecode(testDeviceInfo)['output']),

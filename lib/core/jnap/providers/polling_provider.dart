@@ -164,11 +164,14 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
 
   List<MapEntry<JNAPAction, Map<String, dynamic>>> _buildCoreTransaction(
       {String? mode}) {
+    final isSupportGuestWiFi = serviceHelper.isSupportGuestNetwork();
+
     List<MapEntry<JNAPAction, Map<String, dynamic>>> commands = [
       const MapEntry(JNAPAction.getNodesWirelessNetworkConnections, {}),
       const MapEntry(JNAPAction.getNetworkConnections, {}),
       const MapEntry(JNAPAction.getRadioInfo, {}),
-      const MapEntry(JNAPAction.getGuestRadioSettings, {}),
+      if (isSupportGuestWiFi)
+        const MapEntry(JNAPAction.getGuestRadioSettings, {}),
       const MapEntry(JNAPAction.getDevices, {}),
       const MapEntry(JNAPAction.getFirmwareUpdateSettings, {}),
       if ((mode ?? 'Unconfigured') == 'Master')
