@@ -74,8 +74,8 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
         ref.read(dashboardHomeProvider).lanPortConnections.isNotEmpty;
     final showAllTopology =
         ResponsiveLayout.isMobileLayout(context) || routerLength <= 3;
-    final isLoading = ref.watch(deviceManagerProvider).deviceList.isEmpty;
-
+    // final isLoading = ref.watch(deviceManagerProvider).deviceList.isEmpty;
+    final isLoading = false;
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

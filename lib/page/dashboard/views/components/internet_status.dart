@@ -33,13 +33,14 @@ class _InternetConnectionWidgetState
     final wanStatus = ref.watch(nodeWanStatusProvider);
     final isOnline = wanStatus == NodeWANStatus.online;
 
-    final isLoading = ref
-        .watch(deviceManagerProvider.select((value) => value.deviceList))
-        .isEmpty;
+    // final isLoading = ref
+    //     .watch(deviceManagerProvider.select((value) => value.deviceList))
+    // .isEmpty;
+    final isLoading = false;
     final geolocationState = ref.watch(geolocationProvider);
     final master = isLoading
         ? null
-        : ref.watch(instantTopologyProvider).root.children.first;
+        : ref.watch(instantTopologyProvider).root.children.firstOrNull;
     final masterIcon = ref.watch(dashboardHomeProvider).masterIcon;
     final wanPortConnection =
         ref.watch(dashboardHomeProvider).wanPortConnection;

@@ -34,11 +34,11 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
     final privacyState = ref.watch(instantPrivacyProvider);
     final nodeLightState = ref.watch(nodeLightSettingsProvider);
 
-    final isLoading = ref.watch(deviceManagerProvider).deviceList.isEmpty;
-
+    // final isLoading = ref.watch(deviceManagerProvider).deviceList.isEmpty;
+    final isLoading = false;
     final master = isLoading
         ? null
-        : ref.watch(instantTopologyProvider).root.children.first;
+        : ref.watch(instantTopologyProvider).root.children.firstOrNull;
     bool isSupportNodeLight = serviceHelper.isSupportLedMode();
     bool isCognitive = isCognitiveMeshRouter(
         modelNumber: master?.data.model ?? '',

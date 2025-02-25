@@ -46,8 +46,8 @@ class _DashboardWiFiGridState extends ConsumerState<DashboardWiFiGrid> {
   Widget build(BuildContext context) {
     final items =
         ref.watch(dashboardHomeProvider.select((value) => value.wifis));
-    final isLoading = ref.watch(deviceManagerProvider).deviceList.isEmpty;
-
+    // final isLoading = ref.watch(deviceManagerProvider).deviceList.isEmpty;
+    final isLoading = false;
     final crossAxisCount = ResponsiveLayout.isMobileLayout(context) ? 1 : 2;
     final mainSpacing = ResponsiveLayout.columnPadding(context);
     const itemHeight = 176.0;

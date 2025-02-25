@@ -22,9 +22,10 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(dashboardHomeProvider);
-    final isLoading = ref
-        .watch(deviceManagerProvider.select((value) => value.deviceList))
-        .isEmpty;
+    // final isLoading = ref
+    //     .watch(deviceManagerProvider.select((value) => value.deviceList))
+    //     .isEmpty;
+    final isLoading = false;
     final horizontalLayout = state.isHorizontalLayout;
     final wanStatus = ref.watch(nodeWanStatusProvider);
     final isOnline = wanStatus == NodeWANStatus.online;

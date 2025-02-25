@@ -5,7 +5,20 @@ import 'package:privacy_gui/di.dart';
 final serviceHelper = getIt<ServiceHelper>();
 
 class ServiceHelper {
-
+  ///// @Pinnacle2
+  bool isSupportNodesDiagnostics([List<String>? services]) =>
+      isServiceSupport(JNAPService.nodesDiagnostics, services);
+  bool isSupportFirmwareUpdate([List<String>? services]) =>
+      isServiceSupport(JNAPService.firmwareUpdate, services);
+  bool isSupportPowerTable([List<String>? services]) =>
+      isServiceSupport(JNAPService.powerTable, services);
+  bool isSupportNodesNetworkConnection([List<String>? services]) =>
+      isServiceSupport(JNAPService.nodesNetworkConnections, services);
+  bool isSupportNetworkConnection([List<String>? services]) =>
+      isServiceSupport(JNAPService.networkConnections, services);
+  bool isSupportDeviceList([List<String>? services]) =>
+      isServiceSupport(JNAPService.deviceList, services);
+  ///// @Pinnacle2 end
   bool isSupportGuestNetwork([List<String>? services]) =>
       isServiceSupport(JNAPService.guestNetwork, services);
 

@@ -85,8 +85,9 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
             ))
         .onError((error, stackTrace) {
       logger.e('Polling error: $error, $stackTrace');
-      logger.f('[Auth]: Force to log out because of failed polling');
-      ref.read(authProvider.notifier).logout();
+      //! @Pinnacle2
+      // logger.f('[Auth]: Force to log out because of failed polling');
+      // ref.read(authProvider.notifier).logout();
 
       throw error ?? '';
     });
@@ -167,19 +168,27 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     final isSupportGuestWiFi = serviceHelper.isSupportGuestNetwork();
 
     List<MapEntry<JNAPAction, Map<String, dynamic>>> commands = [
-      const MapEntry(JNAPAction.getNodesWirelessNetworkConnections, {}),
-      const MapEntry(JNAPAction.getNetworkConnections, {}),
+      if (serviceHelper.isSupportNodesNetworkConnection())
+        const MapEntry(JNAPAction.getNodesWirelessNetworkConnections, {}),
+      if (serviceHelper.isSupportNetworkConnection())
+        const MapEntry(JNAPAction.getNetworkConnections, {}),
       const MapEntry(JNAPAction.getRadioInfo, {}),
       if (isSupportGuestWiFi)
         const MapEntry(JNAPAction.getGuestRadioSettings, {}),
-      const MapEntry(JNAPAction.getDevices, {}),
-      const MapEntry(JNAPAction.getFirmwareUpdateSettings, {}),
-      if ((mode ?? 'Unconfigured') == 'Master')
+      //! @Pinnacle2
+      if (serviceHelper.isSupportDeviceList())
+        const MapEntry(JNAPAction.getDevices, {}),
+      if (serviceHelper.isSupportFirmwareUpdate())
+        const MapEntry(JNAPAction.getFirmwareUpdateSettings, {}),
+      if ((mode ?? 'Unconfigured') == 'Master' &&
+          serviceHelper.isSupportNodesDiagnostics())
         const MapEntry(JNAPAction.getBackhaulInfo, {}),
+
       const MapEntry(JNAPAction.getWANStatus, {}),
       const MapEntry(JNAPAction.getEthernetPortConnections, {}),
       const MapEntry(JNAPAction.getSystemStats, {}),
-      const MapEntry(JNAPAction.getPowerTableSettings, {}),
+      if (serviceHelper.isSupportPowerTable())
+        const MapEntry(JNAPAction.getPowerTableSettings, {}),
       const MapEntry(JNAPAction.getLocalTime, {}),
       const MapEntry(JNAPAction.getDeviceInfo, {}),
     ];
@@ -191,11 +200,12 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
       commands
           .add(const MapEntry(JNAPAction.getSupportedHealthCheckModules, {}));
     }
+
     if (serviceHelper.isSupportNodeFirmwareUpdate()) {
       commands.add(
         const MapEntry(JNAPAction.getNodesFirmwareUpdateStatus, {}),
       );
-    } else {
+    } else if (serviceHelper.isSupportFirmwareUpdate()) {
       commands.add(
         const MapEntry(JNAPAction.getFirmwareUpdateStatus, {}),
       );
