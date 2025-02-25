@@ -44,12 +44,12 @@ class __ChangeNodeNameViewState extends ConsumerState<ChangeNodeNameView> {
   @override
   Widget build(BuildContext context) {
     return StyledAppPageView(
-      title: getAppLocalizations(context).deviceName,
+      title: loc(context).deviceName,
       actions: [
         Padding(
           padding: const EdgeInsets.only(right: Spacing.medium),
           child: AppTextButton.noPadding(
-            getAppLocalizations(context).save,
+            loc(context).save,
             onTap: isChanged ? _checkInputData : null,
           ),
         )
@@ -57,7 +57,7 @@ class __ChangeNodeNameViewState extends ConsumerState<ChangeNodeNameView> {
       child: AppBasicLayout(
         content: Column(children: [
           AppTextField(
-            headerText: getAppLocalizations(context).deviceName,
+            headerText: loc(context).deviceName,
             controller: nameController,
             onChanged: _onNameChanged,
           )
