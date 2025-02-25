@@ -37,10 +37,10 @@ class _NodeNameEditViewState extends ConsumerState<NodeNameEditView> {
   @override
   Widget build(BuildContext context) {
     return StyledAppPageView(
-      title: getAppLocalizations(context).name,
+      title: loc(context).name,
       actions: [
         AppTextButton(
-          getAppLocalizations(context).save,
+          loc(context).save,
           onTap: () {
             final newLocation = _controller.text;
             if (newLocation.isNotEmpty) {
@@ -60,7 +60,7 @@ class _NodeNameEditViewState extends ConsumerState<NodeNameEditView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppTextField(
-            headerText: getAppLocalizations(context).name,
+            headerText: loc(context).name,
             controller: _controller,
           )
         ],

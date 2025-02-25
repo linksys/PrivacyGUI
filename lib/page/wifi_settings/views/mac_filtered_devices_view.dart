@@ -147,8 +147,7 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
             height: 180,
             child: AppCard(
               child: Center(
-                child: AppText.bodyMedium(
-                    getAppLocalizations(context).noFilteredDevices),
+                child: AppText.bodyMedium(loc(context).noFilteredDevices),
               ),
             ),
           )

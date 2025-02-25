@@ -67,7 +67,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
   Widget _footer(BuildContext context) {
     return Column(children: [
       AppFilledButton.fillWidth(
-        getAppLocalizations(context).login,
+        loc(context).login,
         identifier: 'now-home-button-login',
         key: const Key('home_view_button_login'),
         onTap: () {
@@ -146,7 +146,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
     bool isLoading = false;
     return StatefulBuilder(builder: (context, setState) {
       return isLoading
-          ? AppFullScreenSpinner(text: getAppLocalizations(context).processing)
+          ? AppFullScreenSpinner(text: loc(context).processing)
           : Padding(
               padding: const EdgeInsets.all(Spacing.medium),
               child: Column(
