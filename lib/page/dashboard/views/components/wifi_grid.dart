@@ -20,7 +20,6 @@ import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacy_gui/util/export_selector/export_base.dart'
     if (dart.library.io) 'package:privacy_gui/util/export_selector/export_mobile.dart'
     if (dart.library.html) 'package:privacy_gui/util/export_selector/export_web.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:super_tooltip/super_tooltip.dart';
 
@@ -182,9 +181,9 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
                                 ref.read(wifiListProvider.notifier);
                             await wifiProvider.fetch();
                             wifiProvider.setWiFiEnabled(value);
-                            await wifiProvider.save().then((value) =>
-                                Navigator.of(context)
-                                    .pop()); // Use Navigator.of(context).pop()
+                            await wifiProvider
+                                .save()
+                                .then((value) => context.pop());
                           } else {
                             showSpinnerDialog(context);
                             final wifiProvider =
@@ -193,8 +192,7 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
                             await wifiProvider
                                 .saveToggleEnabled(
                                     radios: widget.item.radios, enabled: value)
-                                .then((value) => Navigator.of(context)
-                                    .pop()); // Use Navigator.of(context).pop()
+                                .then((value) => context.pop());
                           }
                         }
                       : null,
