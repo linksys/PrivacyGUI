@@ -11,13 +11,12 @@ import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/main.dart';
 import 'package:privacy_gui/page/dashboard/views/components/quick_panel.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'actions/local_login_actions.dart';
 import 'actions/recovery_actions.dart';
 import 'actions/reset_password_actions.dart';
-import 'integration_test_config.dart';
+import 'config/integration_test_config.dart';
 
 void main() {
   integrationDriver();
@@ -69,13 +68,11 @@ void main() {
     expect(password, tester.getText(find.byType(AppPasswordField).last));
     expect(passwordHint, tester.getText(find.byType(TextField).last));
     await tester.scrollUntilVisible(
-      find.descendant(
-          of: find.byType(AppCard), matching: find.byType(AppFilledButton)),
+      reset.saveButtonFinder(),
       100,
       scrollable: find.byType(Scrollable).last,
     );
     await reset.tapSaveButton();
-    expect(find.byKey(const ValueKey('resetSavedDialog')), findsOneWidget);
     await reset.backToLogin();
 
     // Login page

@@ -8,11 +8,10 @@ import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/main.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/stepper/app_stepper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'actions/pnp_setup_actions.dart';
 
 class MyServiceHelper extends ServiceHelper {
   @override
@@ -53,7 +52,7 @@ void main() {
       final setup = TestPnpSetupActions(tester);
       await setup.tapContinueButton();
       // WiFi Personal
-      await setup.showNewPassword();
+      await setup.showPassword();
 
       // Expectations
       expect(false, serviceHelper.isSupportGuestNetwork());
@@ -64,35 +63,7 @@ void main() {
       final steperWidget = tester.widget<AppStepper>(steperFinder);
       expect(steperWidget.steps.length, 2);
 
-      await setup.tapContinueButton(60);
+      await setup.tapContinueButton(seconds: 60);
     });
   });
-}
-
-class TestPnpSetupActions {
-  TestPnpSetupActions(this.tester);
-
-  final WidgetTester tester;
-
-  Future<void> tapContinueButton([int seconds = 5]) async {
-    await tester.tap(find.descendant(
-        of: find.byType(AppCard), matching: find.byType(AppFilledButton)));
-    await tester.pumpFrames(app(), Duration(seconds: seconds));
-  }
-
-  Future<void> showNewPassword() async {
-    final visibleFinder = find.descendant(
-        of: find.byType(AppPasswordField).first,
-        matching: find.byIcon(LinksysIcons.visibility));
-    await tester.tap(visibleFinder);
-    await tester.pumpAndSettle();
-  }
-
-  Future<void> hideNewPassword() async {
-    final visibleFinder = find.descendant(
-        of: find.byType(AppPasswordField).first,
-        matching: find.byIcon(LinksysIcons.visibilityOff));
-    await tester.tap(visibleFinder);
-    await tester.pumpAndSettle();
-  }
 }
