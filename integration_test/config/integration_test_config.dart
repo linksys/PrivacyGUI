@@ -4,5 +4,4 @@ class IntegrationTestConfig {
       String.fromEnvironment('recoveryCode', defaultValue: '00000');
   static const String passwordHint =
       String.fromEnvironment('passwordHint', defaultValue: 'Password hint');
-
 }
