@@ -437,7 +437,11 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
   }
 
   Widget _speedTestButton(BuildContext context, DashboardHomeState state) {
-    return InkResponse(
+    return AppFilledButton(
+      'Start Speed Test',
+      size: Size(122, 40),
+      radius: BorderRadius.circular(40),
+      textStyle: Theme.of(context).textTheme.labelSmall,
       onTap: () {
         if (state.isHealthCheckSupported) {
           context.pushNamed(RouteNamed.dashboardSpeedTest);
@@ -445,11 +449,6 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
           context.pushNamed(RouteNamed.speedTestExternal);
         }
       },
-      child: SvgPicture(
-        CustomTheme.of(context).images.btnCheckSpeeds,
-        width: 64,
-        height: 64,
-      ),
     );
   }
 
