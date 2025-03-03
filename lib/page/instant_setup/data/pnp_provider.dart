@@ -473,7 +473,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
 
     // Build transaction commands
     final transaction = JNAPTransactionBuilder(commands: [
-      MapEntry(closeCommand, closeData),
+      // MapEntry(closeCommand, closeData),
       if (isWiFiChanged)
         MapEntry(JNAPAction.setSimpleWiFiSettings, {
           'simpleWiFiSettings':
@@ -491,32 +491,40 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
 
     return ref
         .read(routerRepositoryProvider)
-        .transaction(
-          transaction,
-          fetchRemote: true,
+        .send(
+          closeCommand,
+          data: closeData,
+          auth: true,
           cacheLevel: CacheLevel.noCache,
-          sideEffectOverrides:
-              const JNAPSideEffectOverrides(maxRetry: 18, retryDelayInSec: 10),
         )
-        .catchError((error) {
-          // Connection error,
-          logger.d('[PnP]: Connection changed. Need to reconnect to the WiFi');
-          throw ExceptionNeedToReconnect();
-        },
-            test: (error) =>
-                error is ClientException || error is JNAPSideEffectError)
-        .onError((error, stackTrace) {
-          if (error is ExceptionNeedToReconnect) {
-            throw error;
-          }
-          // Saving error
-          throw ExceptionSavingChanges(error);
-        })
-        .then((_) async => await Future.delayed(const Duration(seconds: 3)))
-        .then((_) => testConnectionReconnected())
         .then((_) => checkAdminPassword(defaultWiFi.password))
-        .whenComplete(() => prefs.remove(pPnpConfiguredSN));
-    // return Future.delayed(Duration(seconds: 5));
+        .then((_) => ref
+            .read(routerRepositoryProvider)
+            .transaction(
+              transaction,
+              fetchRemote: true,
+              cacheLevel: CacheLevel.noCache,
+              sideEffectOverrides: const JNAPSideEffectOverrides(
+                  maxRetry: 18, retryDelayInSec: 10),
+            )
+            .catchError((error) {
+              // Connection error,
+              logger.d(
+                  '[PnP]: Connection changed. Need to reconnect to the WiFi');
+              throw ExceptionNeedToReconnect();
+            },
+                test: (error) =>
+                    error is ClientException || error is JNAPSideEffectError)
+            .onError((error, stackTrace) {
+              if (error is ExceptionNeedToReconnect) {
+                throw error;
+              }
+              // Saving error
+              throw ExceptionSavingChanges(error);
+            })
+            .then((_) async => await Future.delayed(const Duration(seconds: 3)))
+            .then((_) => testConnectionReconnected())
+            .whenComplete(() => prefs.remove(pPnpConfiguredSN)));
   }
 
   @override
