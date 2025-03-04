@@ -177,14 +177,14 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
             GuestWiFiStep(
                 saveChanges: !isNightModeSupport ? _saveChanges : null),
           if (isNightModeSupport) NightModeStep(saveChanges: _saveChanges),
-          YourNetworkStep(saveChanges: _confirmAddedNodes),
+          // YourNetworkStep(saveChanges: _confirmAddedNodes),
         ],
       (true, false) => [
           PersonalWiFiStep(),
         ],
       (true, true) => [
           PersonalWiFiStep(saveChanges: _saveChanges),
-          YourNetworkStep(saveChanges: _confirmAddedNodes),
+          // YourNetworkStep(saveChanges: _confirmAddedNodes),
         ],
       _ => [
           PersonalWiFiStep(),
@@ -498,38 +498,58 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
     }, test: (error) => error is ExceptionSavingChanges).whenComplete(() async {
       logger.d(
           '[PnP]: Save completed. isUnconfigured = $isUnconfigured, SetupStep = $_setupStep');
-      if (isUnconfigured) {
-        // if is unconfigured scenario and no need to reconnect to the router, continue add nodes flow
-        if (_setupStep != _PnpSetupStep.needReconnect) {
-          _stepController?.stepContinue();
-          setState(() {
-            logger.d(
-                '[PnP]: The router is unconfigured and no need to reconnect. Setup step = config');
-            _setupStep = _PnpSetupStep.config;
-          });
-        }
+      if (_setupStep != _PnpSetupStep.needReconnect) {
+        // if is configured scenario, go display WiFi page
+        setState(() {
+          logger.d('[PnP]: The router is configured. Setup step = saved');
+          _setupStep = _PnpSetupStep.saved;
+        });
+        await Future.delayed(const Duration(seconds: 3));
+        logger.d('[PnP]: The router is configured. Setup step = fwCheck');
+        _doFwUpdateCheck();
       } else {
-        if (_setupStep != _PnpSetupStep.needReconnect) {
-          // if is configured scenario, go display WiFi page
-          setState(() {
-            logger.d('[PnP]: The router is configured. Setup step = saved');
-            _setupStep = _PnpSetupStep.saved;
-          });
-          await Future.delayed(const Duration(seconds: 3));
-          logger.d('[PnP]: The router is configured. Setup step = fwCheck');
-          _doFwUpdateCheck();
-        } else {
-          setState(() {
-            logger.d(
-                '[PnP]: The router is configured but need to reconnect. Setup step = saved');
-            _setupStep = _PnpSetupStep.saved;
-          });
-          await Future.delayed(const Duration(seconds: 3));
-          setState(() {
-            _setupStep = _PnpSetupStep.needReconnect;
-          });
-        }
+        setState(() {
+          logger.d(
+              '[PnP]: The router is configured but need to reconnect. Setup step = saved');
+          _setupStep = _PnpSetupStep.saved;
+        });
+        await Future.delayed(const Duration(seconds: 3));
+        setState(() {
+          _setupStep = _PnpSetupStep.needReconnect;
+        });
       }
+      // if (isUnconfigured) {
+      //   // if is unconfigured scenario and no need to reconnect to the router, continue add nodes flow
+      //   if (_setupStep != _PnpSetupStep.needReconnect) {
+      //     _stepController?.stepContinue();
+      //     setState(() {
+      //       logger.d(
+      //           '[PnP]: The router is unconfigured and no need to reconnect. Setup step = config');
+      //       _setupStep = _PnpSetupStep.config;
+      //     });
+      //   }
+      // } else {
+      //   if (_setupStep != _PnpSetupStep.needReconnect) {
+      //     // if is configured scenario, go display WiFi page
+      //     setState(() {
+      //       logger.d('[PnP]: The router is configured. Setup step = saved');
+      //       _setupStep = _PnpSetupStep.saved;
+      //     });
+      //     await Future.delayed(const Duration(seconds: 3));
+      //     logger.d('[PnP]: The router is configured. Setup step = fwCheck');
+      //     _doFwUpdateCheck();
+      //   } else {
+      //     setState(() {
+      //       logger.d(
+      //           '[PnP]: The router is configured but need to reconnect. Setup step = saved');
+      //       _setupStep = _PnpSetupStep.saved;
+      //     });
+      //     await Future.delayed(const Duration(seconds: 3));
+      //     setState(() {
+      //       _setupStep = _PnpSetupStep.needReconnect;
+      //     });
+      //   }
+      // }
     });
   }
 
