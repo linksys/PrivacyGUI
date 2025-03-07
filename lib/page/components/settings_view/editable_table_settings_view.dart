@@ -21,6 +21,8 @@ class AppEditableTableSettingsView<T> extends ConsumerStatefulWidget {
   final Widget Function(BuildContext, WidgetRef, int, T, String?)?
       editCellBuilder;
   final int? editRowIndex;
+  final int?
+      pivotalIndex; // Once the focus value of the pivotal cell changes, all other cells need to be rechecked
   final T Function() createNewItem;
   final String addLabel;
   final IconData? addIcon;
@@ -44,6 +46,7 @@ class AppEditableTableSettingsView<T> extends ConsumerStatefulWidget {
     required this.cellBuilder,
     this.editCellBuilder,
     this.editRowIndex,
+    this.pivotalIndex,
     required this.createNewItem,
     this.addLabel = '',
     this.addIcon,
@@ -156,37 +159,15 @@ class _AppEditableTableSettingsViewState<T>
                     color: Theme.of(context).colorScheme.error,
                   ),
                   child: Focus(
-                    // Everytime the focus changes, rebuild the widget
-                    onFocusChange: (focus) {
-                      setState(() {
-                        final error = widget.onValidate?.call(index);
-                        errorMap[index] = error;
-                      });
-                      // The decision to display the error will be made only when the state is unfocused
-                      if (!focus) {
-                        Future.delayed(Duration(milliseconds: 100), () {
-                          final controller = tipControllerMap[index];
-                          if (errorMap[index] != null) {
-                            controller?.showTooltip();
-                          } else {
-                            controller?.hideTooltip();
-                          }
-                        });
-                      }
-                    },
+                    onFocusChange: (focus) =>
+                        _focusChangedHandler(focus, index),
                     child: widget.editCellBuilder?.call(
                             context, ref, index, data, errorMap[index]) ??
                         SizedBox.shrink(),
                   ),
                 )
               : Focus(
-                  onFocusChange: (focus) {
-                    // Everytime the focus changes, rebuild the widget
-                    setState(() {
-                      final error = widget.onValidate?.call(index);
-                      errorMap[index] = error;
-                    });
-                  },
+                  onFocusChange: (focus) => _focusChangedHandler(focus, index),
                   child: widget.editCellBuilder
                           ?.call(context, ref, index, data, errorMap[index]) ??
                       SizedBox.shrink(),
@@ -206,6 +187,47 @@ class _AppEditableTableSettingsViewState<T>
             : null,
       ),
     );
+  }
+
+  void _focusChangedHandler(bool focus, int index) {
+    // Everytime the focus changes, rebuild the widget
+    if (index == widget.pivotalIndex) {
+      // Recheck all other cell items
+      setState(() {
+        for (int i = 0; i < widget.headers.length; i++) {
+          final error = widget.onValidate?.call(i);
+          errorMap[i] = error;
+        }
+      });
+      // Immediately show or hide tooltips
+      for (int i = 0; i < widget.headers.length; i++) {
+        Future.delayed(Duration(milliseconds: 100), () {
+          final controller = tipControllerMap[i];
+          if (errorMap[i] != null) {
+            controller?.showTooltip();
+          } else {
+            controller?.hideTooltip();
+          }
+        });
+      }
+    } else {
+      // Check the current focused cell item
+      setState(() {
+        final error = widget.onValidate?.call(index);
+        errorMap[index] = error;
+      });
+      // The decision to display the error will be made only when the state is unfocused
+      if (!focus) {
+        Future.delayed(Duration(milliseconds: 100), () {
+          final controller = tipControllerMap[index];
+          if (errorMap[index] != null) {
+            controller?.showTooltip();
+          } else {
+            controller?.hideTooltip();
+          }
+        });
+      }
+    }
   }
 
   void _editItem(int? index, T? item) {
