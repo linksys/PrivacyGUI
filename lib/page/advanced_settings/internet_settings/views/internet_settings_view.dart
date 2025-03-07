@@ -308,7 +308,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
               onPositiveTap: _showRestartAlert,
             )
           : null,
-      child: AppBasicLayout(
+      child: (context, constraints, scrollController) =>AppBasicLayout(
         content: StyledAppTabPageView(
           padding: EdgeInsets.zero,
           useMainPadding: false,

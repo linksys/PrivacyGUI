@@ -78,7 +78,7 @@ class _PnpIspAuthViewState extends ConsumerState<PnpIspAuthView> {
         ? AppFullScreenSpinner(text: _spinnerText)
         : StyledAppPageView(
             title: loc(context).pnpIspSettingsAuthTitle,
-            child: Column(
+            child:(context, constraints, scrollController) => Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const AppGap.large2(),

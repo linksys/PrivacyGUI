@@ -76,7 +76,7 @@ class _Ipv6PortServiceListViewState
       //         });
       //       });
       //     }),
-      child: AppBasicLayout(
+      child: (context, constraints, scrollController) =>AppBasicLayout(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

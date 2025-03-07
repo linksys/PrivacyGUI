@@ -45,7 +45,7 @@ class _DashboardSupportViewState extends ConsumerState<DashboardSupportView> {
       backState: StyledBackState.none,
       title: loc(context).support,
       enableSafeArea: (left: true, top: false, right: true, bottom: true),
-      child: LayoutBuilder(builder: (context, constraints) {
+      child: (context, constraints, scrollController) =>LayoutBuilder(builder: (context, constraints) {
         return ResponsiveLayout(
             desktop: Row(
               mainAxisSize: MainAxisSize.min,

@@ -45,7 +45,7 @@ class _TroubleshootingPingViewState
     return StyledAppPageView(
       scrollable: true,
       title: 'Troubleshooting',
-      child: AppBasicLayout(
+      child: (context, constraints, scrollController) =>AppBasicLayout(
         content: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,

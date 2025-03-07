@@ -68,7 +68,7 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
       scrollable: true,
       title: loc(context).instantPrivacy,
       markLabel: 'Beta',
-      child: ResponsiveLayout(
+      child: (context, constraints, scrollController) =>ResponsiveLayout(
         desktop: _desktopLayout(state, displayDevices),
         mobile: _mobileLayout(state, displayDevices),
       ),

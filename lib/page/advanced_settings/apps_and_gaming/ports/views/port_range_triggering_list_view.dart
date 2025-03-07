@@ -103,7 +103,7 @@ class _PortRangeTriggeringContentViewState
       //       });
       //       // ref.read(appsAndGamingProvider.notifier).setChanged(false);
       //     }),
-      child: AppBasicLayout(
+      child: (context, constraints, scrollController) =>AppBasicLayout(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

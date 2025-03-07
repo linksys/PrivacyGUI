@@ -81,7 +81,7 @@ class _FirmwareUpdateDetailViewState
         ? _updatingProgressView(ongoingList)
         : StyledAppPageView(
             title: loc(context).firmwareUpdate,
-            child: AppBasicLayout(
+            child:(context, constraints, scrollController) => AppBasicLayout(
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,

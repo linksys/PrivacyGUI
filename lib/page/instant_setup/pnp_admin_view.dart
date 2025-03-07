@@ -221,7 +221,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
       appBarStyle: AppBarStyle.none,
       backState: StyledBackState.none,
       enableSafeArea: (bottom: true, top: false, left: true, right: false),
-      child: Center(
+      child: (context, constraints, scrollController) =>Center(
         child: AppCard(
           padding: const EdgeInsets.all(24.0),
           child: Column(

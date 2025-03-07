@@ -77,37 +77,52 @@ class StyledAppTabPageView extends ConsumerWidget {
         .routes
         .last as LinksysRoute?;
     final config = pageRoute?.config;
-    return useMainPadding
-        ? ValueListenableBuilder<bool>(
-            valueListenable: showColumnOverlayNotifier,
-            builder: (context, showColumnOverlay, _) {
-              return Column(
-                children: [
-                  const PreferredSize(
-                      preferredSize: Size(0, 80), child: TopBar()),
-                  Expanded(
-                    child: AppResponsiveColumnLayout(
-                      column: config?.column?.column,
-                      centered: config?.column?.centered ?? false,
-                      isShowNaviRail:
-                          LinksysRoute.isShowNaviRail(context, config),
-                      // topWidget: const TopBar(),
-                      builder: () => buildMainContent(context, ref),
-                      showColumnOverlay: showColumnOverlay,
-                    ),
-                  ),
-                ],
-              );
-            })
-        : buildMainContent(context, ref);
+    return ValueListenableBuilder<bool>(
+        valueListenable: showColumnOverlayNotifier,
+        builder: (context, showColumnOverlay, _) {
+          return Column(
+            children: [
+              const PreferredSize(preferredSize: Size(0, 80), child: TopBar()),
+              Expanded(
+                  child: buildMainContent(
+                      context, ref, useMainPadding, showColumnOverlay)),
+            ],
+          );
+        });
+    // return useMainPadding
+    //     ? ValueListenableBuilder<bool>(
+    //         valueListenable: showColumnOverlayNotifier,
+    //         builder: (context, showColumnOverlay, _) {
+    //           return Column(
+    //             children: [
+    //               const PreferredSize(
+    //                   preferredSize: Size(0, 80), child: TopBar()),
+    //               Expanded(
+    //                 child: AppResponsiveColumnLayout(
+    //                   column: config?.column?.column,
+    //                   centered: config?.column?.centered ?? false,
+    //                   isShowNaviRail:
+    //                       LinksysRoute.isShowNaviRail(context, config),
+    //                   // topWidget: const TopBar(),
+    //                   builder: () => buildMainContent(context, ref),
+    //                   showColumnOverlay: showColumnOverlay,
+    //                 ),
+    //               ),
+    //             ],
+    //           );
+    //         })
+    //     : buildMainContent(context, ref);
   }
 
-  Widget buildMainContent(BuildContext context, WidgetRef ref) {
+  Widget buildMainContent(BuildContext context, WidgetRef ref,
+      bool useMainPadding, bool showColumnOverlay) {
     return AppPageView(
       // appBar: _buildAppBar(context, ref),
       padding: padding,
       background: Theme.of(context).colorScheme.background,
-      child: AppTabLayout(
+      useContentMainPadding: useMainPadding,
+      isOverlayVisible: showColumnOverlay,
+      child: (_, __) => AppTabLayout(
         flexibleSpace: FlexibleSpaceBar(
           background: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

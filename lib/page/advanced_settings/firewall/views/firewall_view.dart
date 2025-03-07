@@ -97,7 +97,7 @@ class _FirewallViewState extends ConsumerState<FirewallView>
               showErrorMessageSnackBar(error);
             });
           }),
-      child: AppBasicLayout(
+      child: (context, constraints, scrollController) =>AppBasicLayout(
         content: StyledAppTabPageView(
           padding: EdgeInsets.zero,
           useMainPadding: false,

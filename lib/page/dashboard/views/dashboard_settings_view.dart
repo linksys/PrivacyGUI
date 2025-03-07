@@ -42,7 +42,7 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
         FirmwareUpdateSettings.firmwareUpdatePolicyAuto;
     return StyledAppPageView(
       scrollable: true,
-      child: SizedBox(
+      child: (context, constraints, scrollController) =>SizedBox(
         width: double.infinity,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,

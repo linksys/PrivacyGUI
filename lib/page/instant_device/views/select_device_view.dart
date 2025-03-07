@@ -102,7 +102,7 @@ class _SelectDeviceViewState extends ConsumerState<SelectDeviceView> {
                 context.pop(selected);
               })
           : null,
-      child: AppBasicLayout(
+      child: (context, constraints, scrollController) =>AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
         content: GroupList<DeviceListItem>(
             groups: [

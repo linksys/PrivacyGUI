@@ -112,7 +112,7 @@ class _LocalNetworkSettingsViewState
         isPositiveEnabled: _isEdited(state) && !_hasError(state),
         onPositiveTap: _saveSettings,
       ),
-      child: AppBasicLayout(
+      child:(context, constraints, scrollController) => AppBasicLayout(
         content: StyledAppTabPageView(
           padding: EdgeInsets.zero,
           useMainPadding: false,

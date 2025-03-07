@@ -49,7 +49,7 @@ class _PnpPPPOEViewState extends ConsumerState<PnpPPPOEView> {
     return StyledAppPageView(
       title: loc(context).pnpPppoeTitle,
       scrollable: true,
-      child: Column(
+      child:(context, constraints, scrollController) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppText.bodyLarge(

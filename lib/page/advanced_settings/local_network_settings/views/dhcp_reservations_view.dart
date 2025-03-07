@@ -122,7 +122,7 @@ class _DHCPReservationsContentViewState
           },
         )
       ],
-      child: AppBasicLayout(
+      child: (context, constraints, scrollController) =>AppBasicLayout(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

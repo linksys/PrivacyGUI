@@ -34,7 +34,7 @@ class _StaticRoutingListViewState extends ConsumerState<StaticRoutingListView> {
     return StyledAppPageView(
       title: loc(context).staticRouting,
       scrollable: true,
-      child: Column(
+      child: (context, constraints, scrollController) =>Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const AppGap.large2(),

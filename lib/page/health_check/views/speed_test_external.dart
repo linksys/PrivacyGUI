@@ -23,7 +23,7 @@ class SpeedTestExternalView extends StatelessWidget {
     return StyledAppPageView(
       scrollable: true,
       title: loc(context).externalSpeedText,
-      child: AppBasicLayout(
+      child: (context, constraints, scrollController) =>AppBasicLayout(
           content: SizedBox(
         width: 6.col,
         child: Align(

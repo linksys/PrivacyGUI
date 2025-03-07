@@ -29,7 +29,6 @@ import 'package:privacy_gui/page/instant_privacy/views/instant_privacy_view.dart
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_isp_auth_view.dart';
 import 'package:privacy_gui/page/landing/_landing.dart';
 
-import 'package:privacy_gui/page/linkup/views/linkup_view.dart';
 import 'package:privacy_gui/page/login/views/_views.dart';
 import 'package:privacy_gui/page/login/views/local_reset_router_password_view.dart';
 import 'package:privacy_gui/page/login/views/login_cloud_ra_pin_view.dart';
@@ -39,7 +38,6 @@ import 'package:privacy_gui/page/nodes/_nodes.dart';
 import 'package:privacy_gui/page/nodes/views/add_nodes_view.dart';
 import 'package:privacy_gui/page/otp_flow/providers/_providers.dart';
 import 'package:privacy_gui/page/otp_flow/views/_views.dart';
-import 'package:privacy_gui/page/instant_setup/explanation_view.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/call_support/call_support_main_region_view.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/call_support/call_support_more_region_view.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';

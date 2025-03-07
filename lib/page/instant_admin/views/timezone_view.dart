@@ -69,7 +69,7 @@ class _TimezoneContentViewState extends ConsumerState<TimezoneView>
               title: loc(context).savingChanges,
             );
           }),
-      child: AppBasicLayout(
+      child:(context, constraints, scrollController) => AppBasicLayout(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

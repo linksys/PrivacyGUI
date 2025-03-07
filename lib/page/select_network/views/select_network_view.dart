@@ -51,7 +51,7 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
             logger.i('[Auth]: Force to log out because the user does not select a network');
               ref.read(authProvider.notifier).logout();
             },
-      child: AppBasicLayout(
+      child: (context, constraints, scrollController) =>AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
         content: _networkSection(_items, _isLoading, title: 'Network'),
       ),

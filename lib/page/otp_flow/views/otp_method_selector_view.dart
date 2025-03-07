@@ -36,7 +36,7 @@ class _OTPMethodSelectorViewState extends ConsumerState<OTPMethodSelectorView> {
         ref.read(otpProvider.notifier).processBack();
         context.pop();
       },
-      child: AppBasicLayout(
+      child: (context, constraints, scrollController) =>AppBasicLayout(
         header: AppText.titleLarge(
           _createTitle(state),
           // description: _createDescription(state),

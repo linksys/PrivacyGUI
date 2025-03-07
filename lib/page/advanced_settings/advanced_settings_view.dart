@@ -35,32 +35,45 @@ class _AdvancedSettingsViewState extends ConsumerState<AdvancedSettingsView> {
     }
     return StyledAppPageView(
       title: loc(context).advancedSettings,
-      child: ResponsiveLayout(
-          desktop: GridView.builder(
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisSpacing: Spacing.medium,
-              crossAxisSpacing: ResponsiveLayout.columnPadding(context),
-              childAspectRatio: (430 / 56),
-              mainAxisExtent: 56,
-            ),
-            physics: const ScrollPhysics(),
-            itemCount: advancedSettings.length,
-            itemBuilder: (context, index) {
-              return _advancedSettingCard(index);
-            },
-            shrinkWrap: true,
+      scrollable: true,
+      child: (context, constraints, scrollController) => Column(
+        children: [
+          Expanded(
+            child: ResponsiveLayout(
+                desktop: SizedBox(
+                  height: (advancedSettings.length / 2) * 56,
+                  child: GridView.builder(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      mainAxisSpacing: Spacing.medium,
+                      crossAxisSpacing: ResponsiveLayout.columnPadding(context),
+                      childAspectRatio: (430 / 56),
+                      mainAxisExtent: 56,
+                    ),
+                    physics: const ScrollPhysics(),
+                    itemCount: advancedSettings.length,
+                    itemBuilder: (context, index) {
+                      return _advancedSettingCard(index);
+                    },
+                    shrinkWrap: true,
+                  ),
+                ),
+                mobile: SizedBox(
+                  height: advancedSettings.length * 56,
+                  child: ListView.separated(
+                    itemCount: advancedSettings.length,
+                    shrinkWrap: true,
+                    itemBuilder: (context, index) {
+                      return _advancedSettingCard(index);
+                    },
+                    separatorBuilder: (BuildContext context, int index) {
+                      return const AppGap.small2();
+                    },
+                  ),
+                )),
           ),
-          mobile: ListView.separated(
-            itemCount: advancedSettings.length,
-            shrinkWrap: true,
-            itemBuilder: (context, index) {
-              return _advancedSettingCard(index);
-            },
-            separatorBuilder: (BuildContext context, int index) {
-              return const AppGap.small2();
-            },
-          )),
+        ],
+      ),
     );
   }
 

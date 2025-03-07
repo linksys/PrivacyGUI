@@ -58,7 +58,7 @@ class _InstantSafetyViewState extends ConsumerState<InstantSafetyView>
         isPositiveEnabled: _edited(state.safeBrowsingType),
         onPositiveTap: _showRestartAlert,
       ),
-      child: AppBasicLayout(
+      child: (context, constraints, scrollController) =>AppBasicLayout(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

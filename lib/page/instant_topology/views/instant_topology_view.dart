@@ -93,57 +93,56 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
               appBarStyle: _isWidget ? AppBarStyle.none : AppBarStyle.back,
               padding: EdgeInsets.zero,
               title: loc(context).instantTopology,
-              child: AppBasicLayout(
-                content: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Flexible(
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: SizedBox(
-                          width: desiredTreeWidth,
-                          child: TreeView<RouterTreeNode>(
-                            treeController: treeController,
-                            nodeBuilder: (BuildContext context,
-                                TreeEntry<RouterTreeNode> entry) {
-                              return TreeIndentation(
-                                entry: entry,
-                                guide: const IndentGuide.connectingLines(
-                                  indent: 72,
-                                  thickness: 0.5,
-                                ),
-                                child: Padding(
-                                  padding:
-                                      const EdgeInsets.fromLTRB(0, 16, 8, 0),
-                                  child: switch (entry.node.runtimeType) {
-                                    OnlineTopologyNode => Row(
-                                        children: [
-                                          SizedBox(
-                                              width: 200,
-                                              child: _buildHeader(
-                                                  context, ref, entry.node)),
-                                          const Spacer(),
-                                        ],
-                                      ),
-                                    RouterTopologyNode => Row(
-                                        children: [
-                                          _buildNode(context, ref, entry.node),
-                                          const Spacer(),
-                                        ],
-                                      ),
-                                    _ => const Center(),
-                                  },
-                                ),
-                              );
-                            },
-                          ),
+              child:(context, constraints, scrollController) => Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Flexible(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: SizedBox(
+                        width: desiredTreeWidth,
+                        child: TreeView<RouterTreeNode>(
+                          controller:
+                              Scrollable.maybeOf(context)?.widget.controller,
+                          treeController: treeController,
+                          nodeBuilder: (BuildContext context,
+                              TreeEntry<RouterTreeNode> entry) {
+                            return TreeIndentation(
+                              entry: entry,
+                              guide: const IndentGuide.connectingLines(
+                                indent: 72,
+                                thickness: 0.5,
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.fromLTRB(0, 16, 8, 0),
+                                child: switch (entry.node.runtimeType) {
+                                  OnlineTopologyNode => Row(
+                                      children: [
+                                        SizedBox(
+                                            width: 200,
+                                            child: _buildHeader(
+                                                context, ref, entry.node)),
+                                        const Spacer(),
+                                      ],
+                                    ),
+                                  RouterTopologyNode => Row(
+                                      children: [
+                                        _buildNode(context, ref, entry.node),
+                                        const Spacer(),
+                                      ],
+                                    ),
+                                  _ => const Center(),
+                                },
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ),
-                    const AppGap.large1(),
-                  ],
-                ),
+                  ),
+                  const AppGap.large1(),
+                ],
               ),
             );
     });

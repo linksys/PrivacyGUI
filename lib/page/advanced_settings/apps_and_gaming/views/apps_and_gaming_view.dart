@@ -82,7 +82,7 @@ class _AppsGamingSettingsViewState extends ConsumerState<AppsGamingSettingsView>
           );
         },
       ),
-      child: StyledAppTabPageView(
+      child:(context, constraints, scrollController) => StyledAppTabPageView(
         title: loc(context).appsGaming,
         padding: EdgeInsets.zero,
         useMainPadding: false,

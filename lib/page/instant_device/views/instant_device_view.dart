@@ -58,6 +58,7 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
 
     return StyledAppPageView(
       padding: const EdgeInsets.only(),
+      scrollable: true,
       title: loc(context).instantDevices,
       bottomBar: isOnlineFilter
           ? null
@@ -84,9 +85,12 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
           },
         ),
       ],
-      child: ResponsiveLayout(
-        desktop: _desktopLayout(isOnlineFilter, filteredDeviceList),
-        mobile: _mobileLayout(isOnlineFilter, filteredDeviceList),
+      child: (context, constraints, scrollController) => SizedBox(
+        height: constraints.maxHeight,
+        child: ResponsiveLayout(
+          desktop: _desktopLayout(isOnlineFilter, filteredDeviceList),
+          mobile: _mobileLayout(isOnlineFilter, filteredDeviceList),
+        ),
       ),
     );
   }
@@ -102,7 +106,9 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
             padding: const EdgeInsets.all(Spacing.small2),
             margin: const EdgeInsets.only(bottom: Spacing.small3),
             color: Theme.of(context).colorScheme.background,
-            child: const DevicesFilterWidget(),
+            child: const DevicesFilterWidget(
+                // scrollable: false,
+                ),
           ),
         ),
         const AppGap.gutter(),

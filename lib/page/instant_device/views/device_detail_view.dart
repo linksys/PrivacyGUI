@@ -84,7 +84,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
           padding: const EdgeInsets.only(),
           title: state.item.name,
           scrollable: true,
-          child: AppBasicLayout(
+          child:(context, constraints, scrollController) => AppBasicLayout(
             content: ResponsiveLayout(
               desktop: _desktopLayout(state),
               mobile: _mobileLayout(state),

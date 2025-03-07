@@ -114,7 +114,7 @@ class _AddRuleContentViewState
         },
       ),
       scrollable: true,
-      child: AppCard(
+      child: (context, constraints, scrollController) =>AppCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

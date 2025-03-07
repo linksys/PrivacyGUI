@@ -52,7 +52,7 @@ class _PnpNoInternetConnectionState
       scrollable: true,
       backState: StyledBackState.none,
       enableSafeArea: (left: true, top: false, right: true, bottom: true),
-      child: AppBasicLayout(
+      child: (context, constraints, scrollController) =>AppBasicLayout(
         content: _contentView(context),
       ),
     );

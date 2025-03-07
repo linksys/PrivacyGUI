@@ -26,7 +26,7 @@ class _PnpLightOffViewState extends ConsumerState<PnpModemLightsOffView> {
       title: loc(context).pnpModemLightsOffTitle,
       scrollable: true,
       enableSafeArea: (left: true, top: false, right: true, bottom: true),
-      child: Column(
+      child:(context, constraints, scrollController) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppText.bodyLarge(

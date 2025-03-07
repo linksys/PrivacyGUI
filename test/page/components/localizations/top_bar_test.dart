@@ -38,8 +38,8 @@ void main() async {
           router: GoRouter(routes: [
             LinksysRoute(
                 path: '/',
-                builder: (context, state) => const StyledAppPageView(
-                      child: Center(),
+                builder: (context, state) => StyledAppPageView(
+                      child: (context, constraints, scrollController) => Center(),
                     ))
           ], initialLocation: '/'),
         ),
@@ -74,8 +74,8 @@ void main() async {
           router: GoRouter(routes: [
             LinksysRoute(
                 path: '/',
-                builder: (context, state) => const StyledAppPageView(
-                      child: Center(),
+                builder: (context, state) => StyledAppPageView(
+                      child: (context, constraints, scrollController) =>Center(),
                     ))
           ], initialLocation: '/'),
         ),
@@ -107,8 +107,8 @@ void main() async {
           router: GoRouter(routes: [
             LinksysRoute(
                 path: '/',
-                builder: (context, state) => const StyledAppPageView(
-                      child: Center(),
+                builder: (context, state) => StyledAppPageView(
+                      child: (context, constraints, scrollController) =>Center(),
                     ))
           ], initialLocation: '/'),
         ),
@@ -140,8 +140,8 @@ void main() async {
           router: GoRouter(routes: [
             LinksysRoute(
                 path: '/',
-                builder: (context, state) => const StyledAppPageView(
-                      child: Center(),
+                builder: (context, state) => StyledAppPageView(
+                      child: (context, constraints, scrollController) =>Center(),
                     ))
           ], initialLocation: '/'),
         ),
@@ -173,8 +173,8 @@ void main() async {
           router: GoRouter(routes: [
             LinksysRoute(
                 path: '/',
-                builder: (context, state) => const StyledAppPageView(
-                      child: Center(),
+                builder: (context, state) => StyledAppPageView(
+                      child: (context, constraints, scrollController) =>Center(),
                     ))
           ], initialLocation: '/'),
         ),
@@ -206,8 +206,8 @@ void main() async {
           router: GoRouter(routes: [
             LinksysRoute(
                 path: '/',
-                builder: (context, state) => const StyledAppPageView(
-                      child: Center(),
+                builder: (context, state) => StyledAppPageView(
+                      child: (context, constraints, scrollController) =>Center(),
                     ))
           ], initialLocation: '/'),
         ),
@@ -238,8 +238,8 @@ void main() async {
         router: GoRouter(routes: [
           LinksysRoute(
               path: '/',
-              builder: (context, state) => const StyledAppPageView(
-                    child: Center(),
+              builder: (context, state) => StyledAppPageView(
+                    child: (context, constraints, scrollController) =>Center(),
                   ))
         ], initialLocation: '/'),
       ),

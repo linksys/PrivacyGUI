@@ -122,7 +122,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
       backState: StyledBackState.none,
       padding: EdgeInsets.zero,
       enableSafeArea: (bottom: true, top: false, left: true, right: false),
-      child: AppBasicLayout(
+      child: (context, constraints, scrollController) =>AppBasicLayout(
         content: Center(
           child: AppCard(
             showBorder: false,

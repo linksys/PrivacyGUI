@@ -106,7 +106,7 @@ class _AddRuleContentViewState
           context.pop(rule);
         },
       ),
-      child: AppBasicLayout(
+      child: (context, constraints, scrollController) =>AppBasicLayout(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

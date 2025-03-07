@@ -48,7 +48,7 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
       padding: EdgeInsets.zero,
       scrollable: true,
       title: loc(context).ddns,
-      child: AppBasicLayout(
+      child: (context, constraints, scrollController) =>AppBasicLayout(
         content: ResponsiveLayout(
           desktop: Row(
             crossAxisAlignment: CrossAxisAlignment.start,

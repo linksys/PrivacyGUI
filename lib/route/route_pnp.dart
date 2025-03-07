@@ -1,18 +1,5 @@
 part of 'router_provider.dart';
 
-final explanationRoute = LinksysRoute(
-  name: RouteNamed.explanation,
-  path: RoutePath.explanation,
-  config: LinksysRouteConfig(
-    column: ColumnGrid(
-      column: 12,
-    ),
-    noNaviRail: true,
-  ),
-  builder: (context, state) => ExplanationView(
-    args: state.uri.queryParameters,
-  ),
-);
 
 final pnpRoute = LinksysRoute(
   name: RouteNamed.pnp,

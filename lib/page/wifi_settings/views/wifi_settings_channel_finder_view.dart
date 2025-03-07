@@ -34,7 +34,7 @@ class _WifiSettingsChannelFinderViewState
         ? const AppFullScreenSpinner()
         : StyledAppPageView(
             title: 'Channel Finder',
-            child: AppBasicLayout(
+            child: (context, constraints, scrollController) =>AppBasicLayout(
               content: isShowButton
                   ? _channelFinderButton()
                   : _channelFinderResult(state),

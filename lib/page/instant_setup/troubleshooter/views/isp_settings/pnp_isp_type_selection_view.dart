@@ -90,7 +90,7 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
         ? const AppFullScreenSpinner()
         : StyledAppPageView(
             title: loc(context).pnpIspTypeSelectionTitle,
-            child: ListView(
+            child: (context, constraints, scrollController) =>ListView(
               shrinkWrap: true,
               children: [
                 ISPTypeCard(

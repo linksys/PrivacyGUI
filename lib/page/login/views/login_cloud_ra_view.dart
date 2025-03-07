@@ -80,7 +80,7 @@ class _LoginCloudRAViewState extends ConsumerState<LoginCloudRAView> {
       appBarStyle: AppBarStyle.none,
       padding: EdgeInsets.zero,
       scrollable: true,
-      child: AppBasicLayout(
+      child:(context, constraints, scrollController) => AppBasicLayout(
         content: Center(
           child: SizedBox(
             width: 4.col,

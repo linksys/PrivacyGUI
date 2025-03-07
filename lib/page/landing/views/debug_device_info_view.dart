@@ -31,7 +31,7 @@ class _DebugDeviceInfoViewState extends ConsumerState<DebugDeviceInfoView> {
     return StyledAppPageView(
       appBarStyle: AppBarStyle.close,
       scrollable: true,
-      child: AppBasicLayout(
+      child: (context, constraints, scrollController) =>AppBasicLayout(
         header: const BasicHeader(
           title: 'Device Information',
         ),

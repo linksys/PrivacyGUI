@@ -86,7 +86,7 @@ class _LocalResetRouterPasswordViewState
       // scrollable: true,
       appBarStyle: AppBarStyle.none,
       padding: EdgeInsets.zero,
-      child: AppBasicLayout(
+      child:(context, constraints, scrollController) => AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
         content: Center(
           child: Container(

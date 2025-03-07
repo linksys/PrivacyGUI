@@ -40,7 +40,7 @@ class _CallLogViewState extends ConsumerState<CallLogView> {
       scrollable: true,
       actions: widget.actions,
       title: loc(context).callLog,
-      child: ticketList.isEmpty ? emptyView() : ticketListView(ticketList),
+      child: (context, constraints, scrollController) =>ticketList.isEmpty ? emptyView() : ticketListView(ticketList),
     );
   }
 

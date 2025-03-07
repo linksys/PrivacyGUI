@@ -101,7 +101,7 @@ class _PortRangeForwardingContentViewState
       //         // ref.read(appsAndGamingProvider.notifier).setChanged(false);
       //       });
       //     }),
-      child: Theme(
+      child: (context, constraints, scrollController) =>Theme(
         data: Theme.of(context).copyWith(
             inputDecorationTheme: Theme.of(context)
                 .inputDecorationTheme

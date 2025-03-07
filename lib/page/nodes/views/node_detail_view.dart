@@ -110,7 +110,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
           },
         ),
       ],
-      child: AppBasicLayout(
+      child:(context, constraints, scrollController) => AppBasicLayout(
         content: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -167,13 +167,13 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
           useMainPadding: false,
           appBarStyle: AppBarStyle.none,
           scrollable: true,
-          child: infoTab(state),
+          child: (context, constraints, scrollController) =>infoTab(state),
         ),
         StyledAppPageView(
           useMainPadding: false,
           appBarStyle: AppBarStyle.none,
           scrollable: true,
-          child: deviceTab(
+          child:(context, constraints, scrollController) => deviceTab(
             state.deviceId,
             filteredDeviceList,
             constraint.maxHeight - kDefaultToolbarHeight,

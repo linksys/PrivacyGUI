@@ -122,7 +122,7 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                     }
                   }));
             }),
-        child: Column(
+        child: (context, constraints, scrollController) =>Column(
           children: [
             AppInfoCard(
               title: loc(context).dmz,

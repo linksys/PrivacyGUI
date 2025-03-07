@@ -49,7 +49,7 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
     return StyledAppPageView(
       backState: StyledBackState.none,
       title: loc(context).pnpWaitingModemTitle,
-      child: AppBasicLayout(
+      child:(context, constraints, scrollController) => AppBasicLayout(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -74,7 +74,7 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
               ? loc(context).pnpWaitingModemCheckingInternet
               : loc(context).pnpWaitingModemWaitStartUp
           : loc(context).pnpWaitingModemPlugBack,
-      child: Column(
+      child: (context, constraints, scrollController) =>Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (_isCheckingInternet) ...[
