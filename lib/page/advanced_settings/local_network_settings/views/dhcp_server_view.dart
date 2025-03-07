@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -16,8 +17,14 @@ import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 
 class DHCPServerView extends ArgumentsConsumerStatefulView {
-  final LocalNetworkSettingsState? originalState;
-  const DHCPServerView({super.key, super.args, this.originalState});
+  final bool Function() isEdited;
+  final Future<void> Function() onSaveSettings;
+  const DHCPServerView({
+    super.key,
+    super.args,
+    required this.isEdited,
+    required this.onSaveSettings,
+  });
 
   @override
   ConsumerState<DHCPServerView> createState() => _DHCPServerViewState();
@@ -25,7 +32,6 @@ class DHCPServerView extends ArgumentsConsumerStatefulView {
 
 class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
   late LocalNetworkSettingsNotifier _notifier;
-  late LocalNetworkSettingsState _originalState;
   final _startIpAddressController = TextEditingController();
   final _maxUserAllowedController = TextEditingController();
   final _clientLeaseTimeController = TextEditingController();
@@ -41,8 +47,6 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
     super.initState();
 
     _notifier = ref.read(localNetworkSettingProvider.notifier);
-    _originalState =
-        widget.originalState ?? ref.read(localNetworkSettingProvider);
     final state = ref.read(localNetworkSettingProvider);
     _startIpAddressController.text = state.firstIPAddress;
     _maxUserAllowedController.text = '${state.maxUserAllowed}';
@@ -68,11 +72,6 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(localNetworkSettingNeedToSaveProvider, (previous, next) {
-      if (previous == true && next == false) {
-        _originalState = ref.read(localNetworkSettingProvider);
-      }
-    });
     final state = ref.watch(localNetworkSettingProvider);
     setState(() {
       _maxUserAllowedController.text = '${state.maxUserAllowed}';
@@ -199,7 +198,9 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
               vertical: Spacing.medium, horizontal: Spacing.large2),
           child: Row(
             children: [
-              Expanded(child: AppText.labelLarge(loc(context).dhcpReservations),),
+              Expanded(
+                child: AppText.labelLarge(loc(context).dhcpReservations),
+              ),
               const Spacer(),
               AppText.labelLarge("${state.dhcpReservationList.length}"),
               const AppGap.medium(),
@@ -207,8 +208,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
             ],
           ),
           onTap: () {
-            final isEdited =
-                !_originalState.isEqualStateWithoutDhcpReservationList(state);
+            final isEdited = widget.isEdited();
             if (isEdited) {
               _showSaveChangeAlert();
             } else {
@@ -371,14 +371,10 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
           color: Theme.of(context).colorScheme.primary,
           onTap: () {
             context.pop();
-            _saveSettings();
+            widget.onSaveSettings();
           },
         ),
       ],
     );
-  }
-
-  _saveSettings() {
-    ref.read(localNetworkSettingNeedToSaveProvider.notifier).state = true;
   }
 }
