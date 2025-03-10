@@ -259,7 +259,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
       children: [
         AppText.headlineSmall(loc(context).pnpFactoryResetTitle),
         const AppGap.medium(),
-        AppText.bodyLarge(loc(context).pnpFactoryResetDesc),
+        AppText.bodyLarge(loc(context).factoryResetDesc),
         const AppGap.large5(),
         AppFilledButton(
           loc(context).textContinue,

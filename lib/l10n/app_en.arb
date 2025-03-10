@@ -889,7 +889,7 @@
   "poor": "Poor",
   "factoryResetParentTitle": "Reset Parent and all its child/s to Factory Default",
   "factoryResetTitle": "Reset to Factory Default",
-  "factoryResetDesc": "Factory resetting your router will cause all connected devices to disconnect and router will return to its original default configuration. Are you sure you would want to factory reset your router?",
+  "factoryResetDesc": "A factory reset restores your router’s settings, including the Wi-Fi and router password, to the default shown on the label at the bottom of the unit (Wi-Fi Password).",
   "factoryResetOk": "Yes, Factory Reset All",
   "rebootParentTitle": "Reboot Parent and all its child/s",
   "rebootOk": "Yes, Reboot All",
