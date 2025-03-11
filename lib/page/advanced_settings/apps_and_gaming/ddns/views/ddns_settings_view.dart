@@ -36,19 +36,19 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
   @override
   void initState() {
     super.initState();
-    
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(ddnsProvider);
     return StyledAppPageView(
-      useMainPadding: false,
+      hideTopbar: true,
+      useMainPadding: true,
       appBarStyle: AppBarStyle.none,
       padding: EdgeInsets.zero,
       scrollable: true,
       title: loc(context).ddns,
-      child: (context, constraints, scrollController) =>AppBasicLayout(
+      child: (context, constraints) => AppBasicLayout(
         content: ResponsiveLayout(
           desktop: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -130,7 +130,6 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
         DynDNSForm(
           onFormChanged: (settings) {
             ref.read(ddnsProvider.notifier).setProviderSettings(settings);
-            
           },
           value: settings,
         )

@@ -67,7 +67,7 @@ class _TroubleshootingViewState extends ConsumerState<TroubleshootingView> {
                 },
               )
             ],
-            child:(context, constraints, scrollController) => AppBasicLayout(
+            child: (context, constraints) => AppBasicLayout(
               content: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -194,7 +194,8 @@ class _TroubleshootingViewState extends ConsumerState<TroubleshootingView> {
                                 .read(troubleshootingProvider.notifier)
                                 .factoryReset()
                                 .then((value) {
-                                  logger.i('[Auth]: Force to log out because the user choose to factory reset');
+                              logger.i(
+                                  '[Auth]: Force to log out because the user choose to factory reset');
                               ref.read(authProvider.notifier).logout();
                             });
                           } else {}

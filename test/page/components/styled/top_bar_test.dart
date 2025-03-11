@@ -37,8 +37,7 @@ void main() async {
             LinksysRoute(
                 path: '/',
                 builder: (context, state) => StyledAppPageView(
-                    child: (context, constraints, scrollController) =>
-                        Center()))
+                    child: (context, constraints) => Center()))
           ], initialLocation: '/'),
         ),
       );
@@ -66,8 +65,7 @@ void main() async {
             LinksysRoute(
                 path: '/',
                 builder: (context, state) => StyledAppPageView(
-                    child: (context, constraints, scrollController) =>
-                        Center()))
+                    child: (context, constraints) => Center()))
           ], initialLocation: '/'),
         ),
       );
@@ -92,8 +90,7 @@ void main() async {
             LinksysRoute(
                 path: '/',
                 builder: (context, state) => StyledAppPageView(
-                    child: (context, constraints, scrollController) =>
-                        Center()))
+                    child: (context, constraints) => Center()))
           ], initialLocation: '/'),
         ),
       );
@@ -123,8 +120,7 @@ void main() async {
             LinksysRoute(
                 path: '/',
                 builder: (context, state) => StyledAppPageView(
-                    child: (context, constraints, scrollController) =>
-                        Center()))
+                    child: (context, constraints) => Center()))
           ], initialLocation: '/'),
         ),
       );

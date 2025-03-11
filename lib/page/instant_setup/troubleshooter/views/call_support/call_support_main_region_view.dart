@@ -141,7 +141,7 @@ class CallSupportMainRegionView extends ArgumentsConsumerStatelessView {
     return StyledAppPageView(
       title: loc(context).callSupportSelectionTitle,
       enableSafeArea: (left: true, top: false, right: true, bottom: true),
-      child:(context, constraints, scrollController) => ResponsiveLayout(
+      child: (context, constraints) => ResponsiveLayout(
         desktop: _desktopLayout(context),
         mobile: _mobileLayout(),
       ),

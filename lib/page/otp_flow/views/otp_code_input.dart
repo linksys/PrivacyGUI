@@ -84,7 +84,7 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
         // ref.read(otpProvider.notifier).processBack();
         context.pop();
       },
-      child: (context, constraints, scrollController) =>AppBasicLayout(
+      child: (context, constraints) => AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
         header: AppText.titleLarge(
           state.selectedMethod?.method ==

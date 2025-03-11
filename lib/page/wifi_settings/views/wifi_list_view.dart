@@ -97,7 +97,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
             _showSaveConfirmModal();
           }),
       useMainPadding: true,
-      child:(context, constraints, scrollController) => _wifiContentView(),
+      child: (context, constraints) => _wifiContentView(),
     );
   }
 

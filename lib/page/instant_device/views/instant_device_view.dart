@@ -85,9 +85,9 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
           },
         ),
       ],
-      child: (context, constraints, scrollController) => SizedBox(
-        height: constraints.maxHeight,
-        child: ResponsiveLayout(
+      child: (context, constraints) => AppBasicLayout(
+        // height: constraints.maxHeight,
+        content: ResponsiveLayout(
           desktop: _desktopLayout(isOnlineFilter, filteredDeviceList),
           mobile: _mobileLayout(isOnlineFilter, filteredDeviceList),
         ),
@@ -131,13 +131,17 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
       header: Padding(
         padding: const EdgeInsets.only(bottom: Spacing.medium),
         child: ResponsiveLayout(
-          desktop: Row(
+          desktop: Column(
             children: [
-              AppText.labelLarge(
-                loc(context).nDevices(filteredDeviceList.length),
+              Row(
+                children: [
+                  AppText.labelLarge(
+                    loc(context).nDevices(filteredDeviceList.length),
+                  ),
+                  const Spacer(),
+                  _editButton(isOnlineFilter, filteredDeviceList),
+                ],
               ),
-              const Spacer(),
-              _editButton(isOnlineFilter, filteredDeviceList),
             ],
           ),
           mobile: Column(
@@ -175,27 +179,30 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
           ),
         ),
       ),
-      content: DeviceListWidget(
-        devices: filteredDeviceList,
-        isEdit: !isOnlineFilter,
-        enableDeauth: isOnlineFilter,
-        isItemSelected: (item) => _selectedList.contains(item.deviceId),
-        onItemSelected: (value, item) {
-          setState(() {
-            if (value) {
-              _selectedList.add(item.deviceId);
-            } else {
-              _selectedList.remove(item.deviceId);
-            }
-          });
-        },
-        onItemClick: (item) {
-          ref.read(deviceDetailIdProvider.notifier).state = item.deviceId;
-          context.pushNamed(RouteNamed.deviceDetails);
-        },
-        onItemDeauth: (item) {
-          _showConfirmDeauthDialog(item.macAddress);
-        },
+      content: SizedBox(
+        height: filteredDeviceList.length * 84,
+        child: DeviceListWidget(
+          devices: filteredDeviceList,
+          isEdit: !isOnlineFilter,
+          enableDeauth: isOnlineFilter,
+          isItemSelected: (item) => _selectedList.contains(item.deviceId),
+          onItemSelected: (value, item) {
+            setState(() {
+              if (value) {
+                _selectedList.add(item.deviceId);
+              } else {
+                _selectedList.remove(item.deviceId);
+              }
+            });
+          },
+          onItemClick: (item) {
+            ref.read(deviceDetailIdProvider.notifier).state = item.deviceId;
+            context.pushNamed(RouteNamed.deviceDetails);
+          },
+          onItemDeauth: (item) {
+            _showConfirmDeauthDialog(item.macAddress);
+          },
+        ),
       ),
     );
   }

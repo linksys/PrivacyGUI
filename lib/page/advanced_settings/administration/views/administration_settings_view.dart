@@ -73,7 +73,7 @@ class _AdministrationSettingsViewState
                       context, loc(context).unknownErrorCode(error ?? ''));
                 }));
           }),
-      child: (context, constraints, scrollController) => AppBasicLayout(
+      child: (context, constraints) => AppBasicLayout(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

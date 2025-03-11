@@ -62,21 +62,8 @@ class _Ipv6PortServiceListViewState
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(ipv6PortServiceListProvider);
-    return StyledAppPageView(
-      appBarStyle: AppBarStyle.none,
-      scrollable: true,
-      useMainPadding: false,
-      title: loc(context).ipv6PortServices,
-      // bottomBar: PageBottomBar(
-      //     isPositiveEnabled: state != preservedState,
-      //     onPositiveTap: () {
-      //       doSomethingWithSpinner(context, _notifier.save()).then((state) {
-      //         setState(() {
-      //           preservedState = state;
-      //         });
-      //       });
-      //     }),
-      child: (context, constraints, scrollController) =>AppBasicLayout(
+    return StyledAppPageView.innerPage(
+      child: (context, constraints) => AppBasicLayout(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

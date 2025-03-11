@@ -21,7 +21,7 @@ class _NodeRestartViewState extends ConsumerState<NodeRestartView> {
   Widget build(BuildContext context) {
     return StyledAppPageView(
       appBarStyle: AppBarStyle.close,
-      child: (context, constraints, scrollController) =>Visibility(
+      child: (context, constraints) => Visibility(
         visible: true, //TODO: Refactor the build with AsyncValue
         replacement: restartingIndicator(),
         child: restartConfirmation(),

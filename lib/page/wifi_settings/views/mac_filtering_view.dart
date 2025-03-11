@@ -86,7 +86,7 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView>
           onPositiveTap: () {
             _showEnableDialog(state.mode != MacFilterMode.disabled);
           }),
-      child: (context, constraints, scrollController) =>ResponsiveLayout(
+      child: (context, constraints) => ResponsiveLayout(
         desktop: _desktopLayout(state, displayDevices),
         mobile: _mobileLayout(state, displayDevices),
       ),

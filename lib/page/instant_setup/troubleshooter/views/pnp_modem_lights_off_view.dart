@@ -26,7 +26,7 @@ class _PnpLightOffViewState extends ConsumerState<PnpModemLightsOffView> {
       title: loc(context).pnpModemLightsOffTitle,
       scrollable: true,
       enableSafeArea: (left: true, top: false, right: true, bottom: true),
-      child:(context, constraints, scrollController) => Column(
+      child: (context, constraints) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppText.bodyLarge(
@@ -53,7 +53,8 @@ class _PnpLightOffViewState extends ConsumerState<PnpModemLightsOffView> {
                         onTap: () {
                           showSimpleAppOkDialog(
                             context,
-                            content: SingleChildScrollView(child: _bottomSheetContent()),
+                            content: SingleChildScrollView(
+                                child: _bottomSheetContent()),
                           );
                         },
                       ),

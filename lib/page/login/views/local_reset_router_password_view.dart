@@ -86,7 +86,7 @@ class _LocalResetRouterPasswordViewState
       // scrollable: true,
       appBarStyle: AppBarStyle.none,
       padding: EdgeInsets.zero,
-      child:(context, constraints, scrollController) => AppBasicLayout(
+      child: (context, constraints) => AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
         content: Center(
           child: Container(
@@ -118,7 +118,7 @@ class _LocalResetRouterPasswordViewState
                         setState(() {
                           isPasswordValid = isValid;
                           ref.read(routerPasswordProvider.notifier).setValidate(
-                            isPasswordValid && isHintNotContainPassword);
+                              isPasswordValid && isHintNotContainPassword);
                         });
                       },
                       onChanged: (value) {

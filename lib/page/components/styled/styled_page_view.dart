@@ -112,8 +112,8 @@ const double kDefaultBottomHeight = 80;
 
 class StyledAppPageView extends ConsumerStatefulWidget {
   final String? title;
-  final Widget Function(BuildContext context, BoxConstraints constraints,
-      ScrollController? scrollController)? child;
+  final Widget Function(BuildContext context, BoxConstraints constraints)?
+      child;
   final double toolbarHeight;
   final VoidCallback? onBackTap;
   final StyledBackState backState;
@@ -182,6 +182,32 @@ class StyledAppPageView extends ConsumerStatefulWidget {
             (tabs != null &&
                 tabContentViews != null &&
                 tabs.length == tabContentViews.length));
+
+  factory StyledAppPageView.innerPage({
+    Widget Function(BuildContext context, BoxConstraints constraints)? child,
+    EdgeInsets? padding,
+    bool? scrollable = true,
+    ScrollController? controller,
+    PageBottomBar? bottomBar,
+    bool menuOnRight = false,
+    bool largeMenu = false,
+    bool useMainPadding = true,
+    PageContentType pageContentType = PageContentType.flexible,
+  }) {
+    return StyledAppPageView(
+      child: child,
+      padding: padding,
+      scrollable: scrollable,
+      controller: controller,
+      bottomBar: bottomBar,
+      menuOnRight: menuOnRight,
+      largeMenu: largeMenu,
+      useMainPadding: useMainPadding,
+      pageContentType: pageContentType,
+      hideTopbar: true,
+      appBarStyle: AppBarStyle.none,
+    );
+  }
 
   @override
   ConsumerState<StyledAppPageView> createState() => _StyledAppPageViewState();
@@ -296,8 +322,7 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
                         const AppGap.gutter(),
                       ],
                       Expanded(
-                          child: widget.child?.call(
-                                  context, constraints, _scrollController) ??
+                          child: widget.child?.call(context, constraints) ??
                               SizedBox.shrink()),
                     ];
                     return Column(

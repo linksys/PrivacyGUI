@@ -23,6 +23,7 @@ import 'package:privacy_gui/util/qr_code.dart';
 import 'package:privacy_gui/util/wifi_credential.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
+import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
@@ -118,21 +119,20 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
       }
     });
     return StyledAppPageView(
-      appBarStyle: AppBarStyle.none,
-      backState: StyledBackState.none,
-      padding: EdgeInsets.zero,
-      enableSafeArea: (bottom: true, top: false, left: true, right: false),
-      child: (context, constraints, scrollController) =>AppBasicLayout(
-        content: Center(
-          child: AppCard(
-            showBorder: false,
-            color: Theme.of(context).colorScheme.background,
-            padding: EdgeInsets.zero,
-            child: _fetchError ? _errorView() : _buildPnpSetupView(),
-          ),
-        ),
-      ),
-    );
+        appBarStyle: AppBarStyle.none,
+        backState: StyledBackState.none,
+        scrollable: true,
+        padding: EdgeInsets.zero,
+        useMainPadding: false,
+        enableSafeArea: (bottom: true, top: false, left: true, right: false),
+        child: (context, constraints) => AppCard(
+              showBorder: false,
+              color: Theme.of(context).colorScheme.background,
+              padding: EdgeInsets.symmetric(
+                  horizontal: ResponsiveLayout.pageHorizontalPadding(context)),
+              child:
+                  _fetchError ? _errorView() : _buildPnpSetupView(constraints),
+            ));
   }
 
   Widget _errorView() {
@@ -194,7 +194,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
     };
   }
 
-  Widget _buildPnpSetupView() {
+  Widget _buildPnpSetupView(BoxConstraints constraints) {
     final showConfig = _setupStep != _PnpSetupStep.saving &&
         _setupStep != _PnpSetupStep.saved &&
         _setupStep != _PnpSetupStep.needReconnect;
@@ -206,8 +206,10 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
           children: [
             IgnorePointer(
                 ignoring: !showConfig,
-                child:
-                    Opacity(opacity: showConfig ? 1 : 0, child: _configView())),
+                child: Opacity(
+                    opacity: showConfig ? 1 : 0,
+                    child: SizedBox(
+                        height: constraints.maxHeight, child: _configView()))),
             Container(
               color: Theme.of(context).colorScheme.background,
               child: switch (_setupStep) {
@@ -224,7 +226,10 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
 
   Widget _configView() => LayoutBuilder(builder: (context, constraints) {
         return Padding(
-          padding: const EdgeInsets.symmetric(vertical: Spacing.large5),
+          padding: EdgeInsets.symmetric(
+              vertical: ResponsiveLayout.isMobileLayout(context)
+                  ? Spacing.small2
+                  : Spacing.large5),
           child: PnpStepper(
             steps: steps,
             stepperType: StepperType.horizontal,
@@ -292,119 +297,117 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
     final wifiSSID = wifiData?['ssid'] as String? ?? '';
     final wifiPassword = wifiData?['password'] as String? ?? '';
     return Center(
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              LinksysIcons.wifi,
-              semanticLabel: 'wifi icon',
-              color: Theme.of(context).colorScheme.primary,
-              size: 48,
-            ),
-            const AppGap.medium(),
-            AppText.headlineSmall(loc(context).pnpWiFiReady(wifiSSID)),
-            const AppGap.medium(),
-            if (_needToReconnect)
-              AppText.bodyMedium(loc(context).pnpWiFiReadyConnectToNewWiFi),
-            const AppGap.medium(),
-            AppText.bodyMedium(loc(context).pnpScanQR),
-            const AppGap.large5(),
-            Center(
-              child: AppCard(
-                  child: Column(
-                children: [
-                  Container(
-                    color: Colors.white,
-                    height: 240,
-                    width: 240,
-                    child: QrImageView(
-                      data: WiFiCredential(
-                        ssid: wifiSSID,
-                        password: wifiPassword,
-                        type: SecurityType
-                            .wpa, //TODO: The security type is fixed for now
-                      ).generate(),
-                    ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            LinksysIcons.wifi,
+            semanticLabel: 'wifi icon',
+            color: Theme.of(context).colorScheme.primary,
+            size: 48,
+          ),
+          const AppGap.medium(),
+          AppText.headlineSmall(loc(context).pnpWiFiReady(wifiSSID)),
+          const AppGap.medium(),
+          if (_needToReconnect)
+            AppText.bodyMedium(loc(context).pnpWiFiReadyConnectToNewWiFi),
+          const AppGap.medium(),
+          AppText.bodyMedium(loc(context).pnpScanQR),
+          const AppGap.large5(),
+          Center(
+            child: AppCard(
+                child: Column(
+              children: [
+                Container(
+                  color: Colors.white,
+                  height: 240,
+                  width: 240,
+                  child: QrImageView(
+                    data: WiFiCredential(
+                      ssid: wifiSSID,
+                      password: wifiPassword,
+                      type: SecurityType
+                          .wpa, //TODO: The security type is fixed for now
+                    ).generate(),
                   ),
-                  const AppGap.medium(),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      AppTextButton(
-                        loc(context).print,
-                        icon: LinksysIcons.print,
-                        onTap: () {
-                          final ctx = context;
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            if (mounted) {
-                              createWiFiQRCode(WiFiCredential(
-                                      ssid: wifiSSID,
-                                      password: wifiPassword,
-                                      type: SecurityType.wpa))
-                                  .then((imageBytes) {
-                                printWiFiQRCode(
-                                    ctx, imageBytes, wifiSSID, wifiPassword);
-                              });
-                            }
-                          });
-                        },
-                      ),
-                      AppTextButton(
-                        loc(context).downloadQR,
-                        icon: LinksysIcons.download,
-                        onTap: () async {
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            if (mounted) {
-                              createWiFiQRCode(WiFiCredential(
-                                      ssid: wifiSSID,
-                                      password: wifiPassword,
-                                      type: SecurityType.wpa))
-                                  .then((imageBytes) {
-                                exportFileFromBytes(
-                                    fileName: 'share_wifi_$wifiSSID)}.png',
-                                    utf8Bytes: imageBytes);
-                              });
-                            }
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-              )),
-            ),
-            const AppGap.small2(),
-            Center(
-              child: AppSettingCard(
-                title: loc(context).wifiPassword,
-                description: wifiPassword,
-                trailing: AppIconButton(
-                  icon: LinksysIcons.fileCopy,
-                  semanticLabel: 'file copy',
-                  onTap: () {
-                    service.Clipboard.setData(
-                            service.ClipboardData(text: wifiPassword))
-                        .then((value) => showSharedCopiedSnackBar());
-                  },
                 ),
+                const AppGap.medium(),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    AppTextButton(
+                      loc(context).print,
+                      icon: LinksysIcons.print,
+                      onTap: () {
+                        final ctx = context;
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (mounted) {
+                            createWiFiQRCode(WiFiCredential(
+                                    ssid: wifiSSID,
+                                    password: wifiPassword,
+                                    type: SecurityType.wpa))
+                                .then((imageBytes) {
+                              printWiFiQRCode(
+                                  ctx, imageBytes, wifiSSID, wifiPassword);
+                            });
+                          }
+                        });
+                      },
+                    ),
+                    AppTextButton(
+                      loc(context).downloadQR,
+                      icon: LinksysIcons.download,
+                      onTap: () async {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (mounted) {
+                            createWiFiQRCode(WiFiCredential(
+                                    ssid: wifiSSID,
+                                    password: wifiPassword,
+                                    type: SecurityType.wpa))
+                                .then((imageBytes) {
+                              exportFileFromBytes(
+                                  fileName: 'share_wifi_$wifiSSID)}.png',
+                                  utf8Bytes: imageBytes);
+                            });
+                          }
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            )),
+          ),
+          const AppGap.small2(),
+          Center(
+            child: AppSettingCard(
+              title: loc(context).wifiPassword,
+              description: wifiPassword,
+              trailing: AppIconButton(
+                icon: LinksysIcons.fileCopy,
+                semanticLabel: 'file copy',
+                onTap: () {
+                  service.Clipboard.setData(
+                          service.ClipboardData(text: wifiPassword))
+                      .then((value) => showSharedCopiedSnackBar());
+                },
               ),
             ),
-            const AppGap.large5(),
-            AppFilledButton(
-              loc(context).done,
-              onTap: () {
-                // Check router connected propor, then go to dashboard
-                testConnection(success: () {
-                  logger.i(
-                      '[PnP]: The customized WiFi is well connected, go to dashboard!');
-                  context.goNamed(RouteNamed.prepareDashboard);
-                });
-              },
-            )
-          ],
-        ),
+          ),
+          const AppGap.large5(),
+          AppFilledButton(
+            loc(context).done,
+            onTap: () {
+              // Check router connected propor, then go to dashboard
+              testConnection(success: () {
+                logger.i(
+                    '[PnP]: The customized WiFi is well connected, go to dashboard!');
+                context.goNamed(RouteNamed.prepareDashboard);
+              });
+            },
+          )
+        ],
       ),
     );
   }

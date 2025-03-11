@@ -76,10 +76,8 @@ class _WifiAdvancedSettingsViewState
               save();
             }
           }),
-
       useMainPadding: false,
-      child: (context, constraints, scrollController) =>
-          _buildGrid(),
+      child: (context, constraints) => _buildGrid(),
     );
     // });
   }

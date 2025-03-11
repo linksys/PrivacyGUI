@@ -66,7 +66,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
               context.pushNamed(RouteNamed.addNodes);
             })
       ]),
-      child: (context, constraints, scrollController) => Column(
+      child: (context, constraints) => Column(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

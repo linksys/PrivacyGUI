@@ -36,7 +36,7 @@ class _AdvancedSettingsViewState extends ConsumerState<AdvancedSettingsView> {
     return StyledAppPageView(
       title: loc(context).advancedSettings,
       scrollable: true,
-      child: (context, constraints, scrollController) => Column(
+      child: (context, constraints) => Column(
         children: [
           Expanded(
             child: ResponsiveLayout(

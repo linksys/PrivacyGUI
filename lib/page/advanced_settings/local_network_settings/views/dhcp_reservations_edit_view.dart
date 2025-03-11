@@ -80,7 +80,7 @@ class _DHCPReservationsEditViewState
       scrollable: true,
       title: viewTitle(_viewType),
       bottomBar: bottomBar(_viewType),
-      child: (context, constraints, scrollController) =>AppBasicLayout(
+      child: (context, constraints) => AppBasicLayout(
         content: Column(
           children: [
             AppTextField(

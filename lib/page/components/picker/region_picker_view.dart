@@ -28,7 +28,7 @@ class _RegionPickerViewState extends ConsumerState<RegionPickerView> {
   Widget build(BuildContext context) {
     return StyledAppPageView(
       appBarStyle: AppBarStyle.close,
-      child:(context, constraints, scrollController) => AppBasicLayout(
+      child: (context, constraints) => AppBasicLayout(
         header: const BasicHeader(
           title: 'Select region',
           description:

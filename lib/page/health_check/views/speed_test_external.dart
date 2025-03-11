@@ -10,7 +10,6 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/bullet_list/bullet_list.dart';
 import 'package:privacygui_widgets/widgets/bullet_list/bullet_style.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacy_gui/util/url_helper/url_helper.dart'
     if (dart.library.io) 'package:privacy_gui/util/url_helper/url_helper_mobile.dart'
     if (dart.library.html) 'package:privacy_gui/util/url_helper/url_helper_web.dart';
@@ -23,8 +22,7 @@ class SpeedTestExternalView extends StatelessWidget {
     return StyledAppPageView(
       scrollable: true,
       title: loc(context).externalSpeedText,
-      child: (context, constraints, scrollController) =>AppBasicLayout(
-          content: SizedBox(
+      child: (context, constraints) => SizedBox(
         width: 6.col,
         child: Align(
           alignment: Alignment.topCenter,
@@ -62,7 +60,7 @@ class SpeedTestExternalView extends StatelessWidget {
             ],
           ),
         ),
-      )),
+      ),
     );
   }
 

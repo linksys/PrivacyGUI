@@ -5,14 +5,10 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
-import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
-import 'package:privacy_gui/page/components/styled/styled_tab_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/panel/switch_trigger_tile.dart';
 
 class FirewallView extends ArgumentsConsumerStatefulView {
@@ -23,7 +19,8 @@ class FirewallView extends ArgumentsConsumerStatefulView {
 }
 
 class _FirewallViewState extends ConsumerState<FirewallView>
-    with PageSnackbarMixin {
+    with PageSnackbarMixin, SingleTickerProviderStateMixin {
+  late final TabController _tabController;
   FirewallState? _preservedState;
   Ipv6PortServiceListState? _preservedIPv6State;
 
@@ -32,6 +29,8 @@ class _FirewallViewState extends ConsumerState<FirewallView>
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 4, vsync: this);
+
     doSomethingWithSpinner(
         context,
         Future.wait([
@@ -48,6 +47,8 @@ class _FirewallViewState extends ConsumerState<FirewallView>
   @override
   void dispose() {
     super.dispose();
+
+    _tabController.dispose();
   }
 
   @override
@@ -67,7 +68,10 @@ class _FirewallViewState extends ConsumerState<FirewallView>
       _ipv6PortServicesView(firewallState),
     ];
     return StyledAppPageView(
-      appBarStyle: AppBarStyle.none,
+      padding: EdgeInsets.zero,
+      useMainPadding: false,
+      tabController: _tabController,
+      title: loc(context).firewall,
       bottomBar: PageBottomBar(
           isPositiveEnabled: _preservedState != firewallState ||
               _preservedIPv6State != ipv6State,
@@ -97,40 +101,32 @@ class _FirewallViewState extends ConsumerState<FirewallView>
               showErrorMessageSnackBar(error);
             });
           }),
-      child: (context, constraints, scrollController) =>AppBasicLayout(
-        content: StyledAppTabPageView(
-          padding: EdgeInsets.zero,
-          useMainPadding: false,
-          title: loc(context).firewall,
-          onBackTap: _preservedState != firewallState
-              ? () async {
-                  final goBack = await showUnsavedAlert(context);
-                  if (goBack == true) {
-                    ref.read(firewallProvider.notifier).fetch();
-                    context.pop();
-                  }
-                }
-              : null,
-          tabs: tabs
-              .map((e) => Tab(
-                    text: e,
-                  ))
-              .toList(),
-          tabContentViews: tabContents,
-          expandedHeight: 120,
-          onTap: (index) {
-            setState(() {
-              _tabIndex = index;
-            });
-          },
-        ),
-      ),
+      onBackTap: _preservedState != firewallState
+          ? () async {
+              final goBack = await showUnsavedAlert(context);
+              if (goBack == true) {
+                ref.read(firewallProvider.notifier).fetch();
+                context.pop();
+              }
+            }
+          : null,
+      tabs: tabs
+          .map((e) => Tab(
+                text: e,
+              ))
+          .toList(),
+      tabContentViews: tabContents,
+      onTabTap: (index) {
+        setState(() {
+          _tabIndex = index;
+        });
+      },
     );
   }
 
   Widget _firewallView(FirewallState state) {
-    return SingleChildScrollView(
-      child: Column(
+    return StyledAppPageView.innerPage(
+      child: (context, constraints) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppCard(
@@ -162,8 +158,8 @@ class _FirewallViewState extends ConsumerState<FirewallView>
   }
 
   Widget _vpnPassthroughView(FirewallState state) {
-    return SingleChildScrollView(
-      child: Column(
+    return StyledAppPageView.innerPage(
+      child: (context, constraints) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppCard(
@@ -210,8 +206,8 @@ class _FirewallViewState extends ConsumerState<FirewallView>
   }
 
   Widget _internetFiltersView(FirewallState state) {
-    return SingleChildScrollView(
-      child: Column(
+    return StyledAppPageView.innerPage(
+      child: (context, constraints) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppCard(

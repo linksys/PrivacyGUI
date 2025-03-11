@@ -8,7 +8,6 @@ import 'package:privacy_gui/page/components/styled/top_bar.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_column_layout.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:collection/collection.dart';
@@ -18,6 +17,7 @@ import 'package:privacygui_widgets/widgets/page/layout/tab_layout.dart';
 
 import 'consts.dart';
 
+@Deprecated('Migrate into StyledAppPageView')
 class StyledAppTabPageView extends ConsumerWidget {
   static const double kDefaultToolbarHeight = 80;
   final String? title;

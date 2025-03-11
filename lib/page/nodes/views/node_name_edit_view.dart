@@ -55,7 +55,7 @@ class _NodeNameEditViewState extends ConsumerState<NodeNameEditView> {
           },
         ),
       ],
-      child: (context, constraints, scrollController) =>Column(
+      child: (context, constraints) => Column(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

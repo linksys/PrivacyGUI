@@ -27,7 +27,7 @@ class CallSupportMoreRegionView extends ArgumentsConsumerStatelessView {
     return StyledAppPageView(
       title: title,
       enableSafeArea: (left: true, top: false, right: true, bottom: true),
-      child:(context, constraints, scrollController) => ResponsiveLayout(
+      child: (context, constraints) => ResponsiveLayout(
         desktop: _desktopLayout(context, regionList),
         mobile: _mobileLayout(regionList),
       ),

@@ -92,9 +92,10 @@ class _SinglePortForwardingContentViewState
     //       .setChanged(next != preservedState);
     // });
     return StyledAppPageView(
+      hideTopbar: true,
       title: loc(context).singlePortForwarding,
       scrollable: true,
-      useMainPadding: false,
+      useMainPadding: true,
       appBarStyle: AppBarStyle.none,
       padding: EdgeInsets.zero,
       // bottomBar: PageBottomBar(
@@ -107,7 +108,7 @@ class _SinglePortForwardingContentViewState
       //         // ref.read(appsAndGamingProvider.notifier).setChanged(false);
       //       });
       //     }),
-      child: (context, constraints, scrollController) =>AppBasicLayout(
+      child: (context, constraints) => AppBasicLayout(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

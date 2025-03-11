@@ -93,7 +93,7 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
     return StyledAppPageView(
       title: loc(context).instantAdmin,
       scrollable: true,
-      child: (context, constraints,scrollController) => SizedBox(
+      child: (context, constraints) => SizedBox(
         height: constraints.maxHeight,
         child: MasonryGridView.count(
           controller: Scrollable.maybeOf(context)?.widget.controller,

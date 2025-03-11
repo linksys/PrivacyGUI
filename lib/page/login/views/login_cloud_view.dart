@@ -81,7 +81,7 @@ class _LoginCloudViewState extends ConsumerState<LoginCloudView> {
             appBarStyle: AppBarStyle.none,
             padding: EdgeInsets.zero,
             scrollable: true,
-            child:(context, constraints, scrollController) => AppBasicLayout(
+            child: (context, constraints) => AppBasicLayout(
               content: Center(
                 child: SizedBox(
                   width: 4.col,

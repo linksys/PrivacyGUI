@@ -75,7 +75,7 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
     return StyledAppPageView(
       scrollable: true,
       title: loc(context).addNodes,
-      child: (context, constraints, scrollController) =>AppBasicLayout(
+      child: (context, constraints) => AppBasicLayout(
           content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -165,7 +165,7 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
     return StyledAppPageView(
       scrollable: true,
       title: loc(context).addNodes,
-      child: (context, constraints, scrollController) =>AppBasicLayout(
+      child: (context, constraints) => AppBasicLayout(
           content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

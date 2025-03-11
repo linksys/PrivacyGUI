@@ -54,7 +54,7 @@ class __ChangeNodeNameViewState extends ConsumerState<ChangeNodeNameView> {
           ),
         )
       ],
-      child: (context, constraints, scrollController) =>AppBasicLayout(
+      child: (context, constraints) => AppBasicLayout(
         content: Column(children: [
           AppTextField(
             headerText: getAppLocalizations(context).deviceName,

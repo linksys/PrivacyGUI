@@ -87,7 +87,8 @@ class _PortRangeForwardingContentViewState
     // });
     return StyledAppPageView(
       scrollable: true,
-      useMainPadding: false,
+      useMainPadding: true,
+      hideTopbar: true,
       appBarStyle: AppBarStyle.none,
       padding: EdgeInsets.zero,
       title: loc(context).portRangeForwarding,
@@ -101,7 +102,7 @@ class _PortRangeForwardingContentViewState
       //         // ref.read(appsAndGamingProvider.notifier).setChanged(false);
       //       });
       //     }),
-      child: (context, constraints, scrollController) =>Theme(
+      child: (context, constraints) => Theme(
         data: Theme.of(context).copyWith(
             inputDecorationTheme: Theme.of(context)
                 .inputDecorationTheme

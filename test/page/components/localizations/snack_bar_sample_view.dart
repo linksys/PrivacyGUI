@@ -34,7 +34,7 @@ class _SnackBarSampleViewState extends ConsumerState<SnackBarSampleView> {
         isPositiveEnabled: false,
         onPositiveTap: () {},
       ),
-      child: (context, constraints, scrollController) => AppBasicLayout(
+      child: (context, constraints) => AppBasicLayout(
         content: Column(
           spacing: Spacing.small1,
           mainAxisSize: MainAxisSize.min,

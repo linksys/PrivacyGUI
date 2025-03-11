@@ -89,7 +89,8 @@ class _PortRangeTriggeringContentViewState
     // });
     return StyledAppPageView(
       scrollable: true,
-      useMainPadding: false,
+      useMainPadding: true,
+      hideTopbar: true,
       appBarStyle: AppBarStyle.none,
       padding: EdgeInsets.zero,
       title: loc(context).portRangeTriggering,
@@ -103,7 +104,7 @@ class _PortRangeTriggeringContentViewState
       //       });
       //       // ref.read(appsAndGamingProvider.notifier).setChanged(false);
       //     }),
-      child: (context, constraints, scrollController) =>AppBasicLayout(
+      child: (context, constraints) => AppBasicLayout(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

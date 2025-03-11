@@ -40,10 +40,10 @@ class _EditableCardListEditViewState
               context.pop(true);
             }),
         title: _title,
-        child:(context, constraints, scrollController) => AppCard(
-            child: _builder!.call(
-          context,
-          _data!,
-        )));
+        child: (context, constraints) => AppCard(
+                child: _builder!.call(
+              context,
+              _data!,
+            )));
   }
 }

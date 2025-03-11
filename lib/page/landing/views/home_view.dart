@@ -38,7 +38,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
   Widget build(BuildContext context) {
     return StyledAppPageView(
       backState: StyledBackState.none,
-      child: (context, constraints, scrollController) =>_isLoading
+      child: (context, constraints) => _isLoading
           ? const AppFullScreenSpinner(
               text: 'Loading...',
             )

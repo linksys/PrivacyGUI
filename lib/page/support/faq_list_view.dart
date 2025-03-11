@@ -64,7 +64,7 @@ class _FaqListViewState extends ConsumerState<FaqListView> {
       ),
       menuOnRight: true,
       pageContentType: PageContentType.flexible,
-      child: (context, constraints, scrollController) {
+      child: (context, constraints) {
         return SizedBox(
           width: 9.col,
           child: ListView(

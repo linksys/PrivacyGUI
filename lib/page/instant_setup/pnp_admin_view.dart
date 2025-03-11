@@ -149,7 +149,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
 
   @override
   Widget build(BuildContext context) {
-    // In order to let users see internet connected screen, 
+    // In order to let users see internet connected screen,
     // this has a higher priority when both showInternetConnected and isCheckingInternet are true
     if (_showInternetConnected) {
       return _internetConnectedView();
@@ -221,7 +221,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
       appBarStyle: AppBarStyle.none,
       backState: StyledBackState.none,
       enableSafeArea: (bottom: true, top: false, left: true, right: false),
-      child: (context, constraints, scrollController) =>Center(
+      child: (context, constraints) => Center(
         child: AppCard(
           padding: const EdgeInsets.all(24.0),
           child: Column(

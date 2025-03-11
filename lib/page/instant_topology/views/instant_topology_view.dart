@@ -30,7 +30,6 @@ import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/bullet_list/bullet_list.dart';
 import 'package:privacygui_widgets/widgets/bullet_list/bullet_style.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class InstantTopologyView extends ArgumentsConsumerStatefulView {
@@ -89,11 +88,12 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
             )
           : StyledAppPageView(
               // scrollable: true,
-              useMainPadding: !_isWidget,
+              hideTopbar: _isWidget,
+              useMainPadding: true,
               appBarStyle: _isWidget ? AppBarStyle.none : AppBarStyle.back,
               padding: EdgeInsets.zero,
               title: loc(context).instantTopology,
-              child:(context, constraints, scrollController) => Column(
+              child: (context, constraints) => Column(
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -103,8 +103,6 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
                       child: SizedBox(
                         width: desiredTreeWidth,
                         child: TreeView<RouterTreeNode>(
-                          controller:
-                              Scrollable.maybeOf(context)?.widget.controller,
                           treeController: treeController,
                           nodeBuilder: (BuildContext context,
                               TreeEntry<RouterTreeNode> entry) {

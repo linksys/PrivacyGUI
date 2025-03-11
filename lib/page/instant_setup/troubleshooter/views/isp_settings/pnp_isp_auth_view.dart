@@ -61,7 +61,8 @@ class _PnpIspAuthViewState extends ConsumerState<PnpIspAuthView> {
         _inputPasswordError = loc(context).errorIncorrectPassword;
         _isLoading = false;
       });
-    }, test: (error) => error is ExceptionInvalidAdminPassword).onError((error, stackTrace) {
+    }, test: (error) => error is ExceptionInvalidAdminPassword).onError(
+            (error, stackTrace) {
       logger
           .e('[PnP]: Troubleshooter - Login failed - Invalid admin password!');
       // Unexcept error, show password input form with an error
@@ -78,7 +79,7 @@ class _PnpIspAuthViewState extends ConsumerState<PnpIspAuthView> {
         ? AppFullScreenSpinner(text: _spinnerText)
         : StyledAppPageView(
             title: loc(context).pnpIspSettingsAuthTitle,
-            child:(context, constraints, scrollController) => Column(
+            child: (context, constraints) => Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const AppGap.large2(),

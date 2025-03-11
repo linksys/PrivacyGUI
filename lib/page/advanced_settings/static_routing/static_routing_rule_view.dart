@@ -98,7 +98,7 @@ class _StaticRoutingDetailViewState
           context.pop(rule);
         },
       ),
-      child: (context, constraints, scrollController) =>AppCard(
+      child: (context, constraints) => AppCard(
         padding: EdgeInsets.symmetric(
             horizontal: Spacing.large2, vertical: Spacing.large2),
         child: Column(
