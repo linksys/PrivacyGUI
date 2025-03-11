@@ -47,7 +47,7 @@ class _LocalRouterRecoveryViewState
       appBarStyle: AppBarStyle.none,
       padding: EdgeInsets.zero,
       scrollable: true,
-      child: AppBasicLayout(
+      child: (context, constraints) => AppBasicLayout(
         content: Center(
           child: SizedBox(
             width: 4.col,

@@ -35,8 +35,7 @@ class _DashboardSupportViewState extends ConsumerState<DashboardSupportView> {
   @override
   void initState() {
     super.initState();
-        ref.read(menuController).setTo(NaviType.support);    
-
+    ref.read(menuController).setTo(NaviType.support);
   }
 
   @override
@@ -45,7 +44,8 @@ class _DashboardSupportViewState extends ConsumerState<DashboardSupportView> {
       backState: StyledBackState.none,
       title: loc(context).support,
       enableSafeArea: (left: true, top: false, right: true, bottom: true),
-      child: LayoutBuilder(builder: (context, constraints) {
+      child: (context, constraints) =>
+          LayoutBuilder(builder: (context, constraints) {
         return ResponsiveLayout(
             desktop: Row(
               mainAxisSize: MainAxisSize.min,

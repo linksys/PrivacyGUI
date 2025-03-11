@@ -6,9 +6,7 @@ import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/providers/apps_and_gaming_provider.dart';
 import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
-import 'package:privacy_gui/page/components/styled/styled_tab_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/_ddns.dart';
 
@@ -21,10 +19,13 @@ class AppsGamingSettingsView extends ArgumentsConsumerStatefulView {
 }
 
 class _AppsGamingSettingsViewState extends ConsumerState<AppsGamingSettingsView>
-    with PageSnackbarMixin {
+    with PageSnackbarMixin, SingleTickerProviderStateMixin {
+  late final TabController _tabController;
+
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 4, vsync: this);
 
     doSomethingWithSpinner(
             context, ref.read(appsAndGamingProvider.notifier).fetch())
@@ -34,6 +35,8 @@ class _AppsGamingSettingsViewState extends ConsumerState<AppsGamingSettingsView>
   @override
   void dispose() {
     super.dispose();
+
+    _tabController.dispose();
   }
 
   @override
@@ -65,7 +68,9 @@ class _AppsGamingSettingsViewState extends ConsumerState<AppsGamingSettingsView>
       PortRangeTriggeringListView(),
     ];
     return StyledAppPageView(
-      appBarStyle: AppBarStyle.none,
+      title: loc(context).appsGaming,
+      padding: EdgeInsets.zero,
+      tabController: _tabController,
       bottomBar: PageBottomBar(
         isPositiveEnabled:
             ref.read(appsAndGamingProvider.notifier).isChanged() &&
@@ -82,23 +87,17 @@ class _AppsGamingSettingsViewState extends ConsumerState<AppsGamingSettingsView>
           );
         },
       ),
-      child: StyledAppTabPageView(
-        title: loc(context).appsGaming,
-        padding: EdgeInsets.zero,
-        useMainPadding: false,
-        onBackTap: () async {
-          final isCurrentChanged =
-              ref.read(appsAndGamingProvider.notifier).isChanged();
-          if (isCurrentChanged && (await showUnsavedAlert(context) != true)) {
-            return;
-          }
-          context.pop();
-        },
-        tabs: tabs,
-        tabContentViews: tabContents,
-        expandedHeight: 120,
-        onTap: (index) {},
-      ),
+      onBackTap: () async {
+        final isCurrentChanged =
+            ref.read(appsAndGamingProvider.notifier).isChanged();
+        if (isCurrentChanged && (await showUnsavedAlert(context) != true)) {
+          return;
+        }
+        context.pop();
+      },
+      tabs: tabs,
+      tabContentViews: tabContents,
+      onTabTap: (index) {},
     );
   }
 }

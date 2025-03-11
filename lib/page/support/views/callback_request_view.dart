@@ -85,7 +85,7 @@ class _CallbackRequestViewState extends ConsumerState<CallbackRequestView> {
             actions: widget.actions,
             bottomBar: _bottomBar(),
             title: loc(context).support,
-            child: Column(
+            child: (context, constraints) => Column(
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

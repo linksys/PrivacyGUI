@@ -30,7 +30,6 @@ import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/bullet_list/bullet_list.dart';
 import 'package:privacygui_widgets/widgets/bullet_list/bullet_style.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class InstantTopologyView extends ArgumentsConsumerStatefulView {
@@ -89,61 +88,59 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
             )
           : StyledAppPageView(
               // scrollable: true,
-              useMainPadding: !_isWidget,
+              hideTopbar: _isWidget,
+              useMainPadding: true,
               appBarStyle: _isWidget ? AppBarStyle.none : AppBarStyle.back,
               padding: EdgeInsets.zero,
               title: loc(context).instantTopology,
-              child: AppBasicLayout(
-                content: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Flexible(
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: SizedBox(
-                          width: desiredTreeWidth,
-                          child: TreeView<RouterTreeNode>(
-                            treeController: treeController,
-                            nodeBuilder: (BuildContext context,
-                                TreeEntry<RouterTreeNode> entry) {
-                              return TreeIndentation(
-                                entry: entry,
-                                guide: const IndentGuide.connectingLines(
-                                  indent: 72,
-                                  thickness: 0.5,
-                                ),
-                                child: Padding(
-                                  padding:
-                                      const EdgeInsets.fromLTRB(0, 16, 8, 0),
-                                  child: switch (entry.node.runtimeType) {
-                                    OnlineTopologyNode => Row(
-                                        children: [
-                                          SizedBox(
-                                              width: 200,
-                                              child: _buildHeader(
-                                                  context, ref, entry.node)),
-                                          const Spacer(),
-                                        ],
-                                      ),
-                                    RouterTopologyNode => Row(
-                                        children: [
-                                          _buildNode(context, ref, entry.node),
-                                          const Spacer(),
-                                        ],
-                                      ),
-                                    _ => const Center(),
-                                  },
-                                ),
-                              );
-                            },
-                          ),
+              child: (context, constraints) => Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Flexible(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: SizedBox(
+                        width: desiredTreeWidth,
+                        child: TreeView<RouterTreeNode>(
+                          treeController: treeController,
+                          nodeBuilder: (BuildContext context,
+                              TreeEntry<RouterTreeNode> entry) {
+                            return TreeIndentation(
+                              entry: entry,
+                              guide: const IndentGuide.connectingLines(
+                                indent: 72,
+                                thickness: 0.5,
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.fromLTRB(0, 16, 8, 0),
+                                child: switch (entry.node.runtimeType) {
+                                  OnlineTopologyNode => Row(
+                                      children: [
+                                        SizedBox(
+                                            width: 200,
+                                            child: _buildHeader(
+                                                context, ref, entry.node)),
+                                        const Spacer(),
+                                      ],
+                                    ),
+                                  RouterTopologyNode => Row(
+                                      children: [
+                                        _buildNode(context, ref, entry.node),
+                                        const Spacer(),
+                                      ],
+                                    ),
+                                  _ => const Center(),
+                                },
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ),
-                    const AppGap.large1(),
-                  ],
-                ),
+                  ),
+                  const AppGap.large1(),
+                ],
               ),
             );
     });

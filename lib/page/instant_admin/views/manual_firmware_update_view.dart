@@ -48,8 +48,9 @@ class _ManualFirmwareUpdateViewState
 
   Widget _mainContent(FileInfo? file) {
     return StyledAppPageView(
+      scrollable: true,
       title: getAppLocalizations(context).manualFirmwareUpdate,
-      child: AppBasicLayout(
+      child: (context, constraints) => AppBasicLayout(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -140,8 +141,9 @@ class _ManualFirmwareUpdateViewState
 
   Widget _processingView(ManualUpdateStatus? status) {
     return StyledAppPageView(
+      scrollable: true,
       appBarStyle: AppBarStyle.none,
-      child: AppBasicLayout(
+      child: (context, constraints) => AppBasicLayout(
         content: Center(
           child: SizedBox(
             width: 6.col,

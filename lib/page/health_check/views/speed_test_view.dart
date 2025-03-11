@@ -102,7 +102,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
               },
             )
           : null,
-      child: switch (_status) {
+      child: (context, constraints) => switch (_status) {
         'RUNNING' => ResponsiveLayout(
             desktop: Container(
               margin: const EdgeInsets.fromLTRB(0, 0, 0, 40),
@@ -122,7 +122,9 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
             desktop: Container(
               margin: const EdgeInsets.fromLTRB(0, 0, 0, 40),
               child: Container(
-                alignment: state.step != 'error' ? Alignment.topCenter : Alignment.topLeft,
+                alignment: state.step != 'error'
+                    ? Alignment.topCenter
+                    : Alignment.topLeft,
                 child: _finishView(
                   state.step,
                   state.result.firstOrNull?.speedTestResult,

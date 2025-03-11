@@ -80,7 +80,7 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
                 context.pop();
               },
               positiveLabel: loc(context).done),
-      child: AppBasicLayout(
+      child: (context, constraints) => AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

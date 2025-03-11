@@ -83,7 +83,7 @@ void _addLogWithTag({required String message, String tag = appLogTag}) {
   final logList = _webLogCache[tag] ?? [];
   final maxSize =
       tag == routeLogTag ? _maxLogSizeOfRouteTag : _maxLogSizeOfGeneralTag;
-  
+
   if (tag == 'State') {
     final stateMessage = _splitTagAndMessage(message);
     if (stateMessage != null) {
@@ -91,8 +91,8 @@ void _addLogWithTag({required String message, String tag = appLogTag}) {
     }
   } else {
     if (logList.length + 1 > maxSize) {
-    logList.removeAt(0);
-  }
+      logList.removeAt(0);
+    }
     logList.add((DateTime.now().millisecondsSinceEpoch, message));
     _webLogCache[tag] = logList;
   }
@@ -153,17 +153,18 @@ Future<String> getPackageInfo() async {
     'OS: ${defaultTargetPlatform.name}',
   ];
 
-  if (!kIsWeb) {
     appInfo.add(
       '================================= Device Info ==================================',
     );
     appInfo.add(await _getDeviceInfo(DeviceInfoPlugin()));
-  }
 
   return appInfo.join('\n');
 }
 
 Future<String> _getDeviceInfo(DeviceInfoPlugin plugin) async {
+  if (kIsWeb) {
+    return (await plugin.webBrowserInfo).data.toString();
+  }
   if (Platform.isIOS) {
     return _getIosDeviceInfo(await plugin.iosInfo).join('\n');
   } else if (Platform.isAndroid) {

@@ -27,7 +27,7 @@ class SpeedTestSelectionView extends ConsumerWidget {
         .isHealthCheckModuleSupported('SpeedTest');
     return StyledAppPageView(
       title: loc(context).speedTest,
-      child: AppBasicLayout(
+      child: (context, constraints) => AppBasicLayout(
           content: SizedBox(
         width: 6.col,
         child: Column(

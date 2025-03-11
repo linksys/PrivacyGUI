@@ -34,7 +34,7 @@ class _PnpUnplugModemViewState extends ConsumerState<PnpUnplugModemView> {
       title: loc(context).pnpUnplugModemTitle,
       scrollable: true,
       enableSafeArea: (left: true, top: false, right: true, bottom: true),
-      child: Column(
+      child: (context, constraints) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppText.bodyLarge(

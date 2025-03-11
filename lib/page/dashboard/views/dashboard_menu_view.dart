@@ -49,7 +49,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
   @override
   Widget build(BuildContext context) {
     return StyledAppPageView(
-      // scrollable: true,
+      scrollable: true,
       backState: StyledBackState.none,
       title: loc(context).menu,
       menu: PageMenu(title: loc(context).myNetwork, items: [
@@ -66,7 +66,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
               context.pushNamed(RouteNamed.addNodes);
             })
       ]),
-      child: Column(
+      child: (context, constraints) => Column(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -80,22 +80,34 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
   }
 
   Widget _buildMenuGridView(List<AppSectionItemData> items) {
-    return GridView.builder(
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: ResponsiveLayout.isOverMedimumLayout(context) ? 3 : 1,
-        mainAxisSpacing: ResponsiveLayout.isOverMedimumLayout(context)
-            ? Spacing.medium
-            : Spacing.small2,
-        crossAxisSpacing: ResponsiveLayout.columnPadding(context),
-        childAspectRatio: (205 / 152),
-        mainAxisExtent:
-            ResponsiveLayout.isOverMedimumLayout(context) ? 152 : 112,
+    return Scrollbar(
+      thickness: 0,
+      child: SizedBox(
+        height: (items.length /
+                    (ResponsiveLayout.isOverMedimumLayout(context) ? 3 : 1)) *
+                (ResponsiveLayout.isOverMedimumLayout(context) ? 152 : 112) +
+            kDefaultToolbarHeight,
+        child: GridView.builder(
+          controller: Scrollable.maybeOf(context)?.widget.controller,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount:
+                ResponsiveLayout.isOverMedimumLayout(context) ? 3 : 1,
+            mainAxisSpacing: ResponsiveLayout.isOverMedimumLayout(context)
+                ? Spacing.medium
+                : Spacing.small2,
+            crossAxisSpacing: ResponsiveLayout.columnPadding(context),
+            childAspectRatio: (205 / 152),
+            mainAxisExtent:
+                ResponsiveLayout.isOverMedimumLayout(context) ? 152 : 112,
+          ),
+          physics: const NeverScrollableScrollPhysics(),
+          shrinkWrap: true,
+          itemCount: items.length,
+          itemBuilder: (context, index) {
+            return _buildDeviceGridCell(items[index]);
+          },
+        ),
       ),
-      physics: const ScrollPhysics(),
-      itemCount: items.length,
-      itemBuilder: (context, index) {
-        return _buildDeviceGridCell(items[index]);
-      },
     );
   }
 

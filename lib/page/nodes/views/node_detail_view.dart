@@ -18,9 +18,7 @@ import 'package:privacy_gui/page/components/customs/animated_refresh_container.d
 import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/shared_widgets.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
-import 'package:privacy_gui/page/components/styled/styled_tab_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacy_gui/page/instant_device/views/device_list_widget.dart';
@@ -57,10 +55,14 @@ class NodeDetailView extends ArgumentsConsumerStatefulView {
 }
 
 class _NodeDetailViewState extends ConsumerState<NodeDetailView>
-    with PageSnackbarMixin {
+    with PageSnackbarMixin, SingleTickerProviderStateMixin {
+  late final TabController _tabController;
+
   @override
   void initState() {
     super.initState();
+
+    _tabController = TabController(length: 2, vsync: this);
 
     Future.doWhile(() => !mounted).then((value) {
       final state = ref.read(nodeDetailProvider);
@@ -68,6 +70,12 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
           .read(deviceFilterConfigProvider.notifier)
           .initFilter(preselectedNodeId: [state.deviceId]);
     });
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _tabController.dispose();
   }
 
   @override
@@ -110,7 +118,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
           },
         ),
       ],
-      child: AppBasicLayout(
+      child: (context, constraints) => AppBasicLayout(
         content: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -136,8 +144,9 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
 
   Widget _mobileLayout(BoxConstraints constraint, NodeDetailState state,
       List<DeviceListItem> filteredDeviceList, bool isOnlineFilter) {
-    return StyledAppTabPageView(
+    return StyledAppPageView(
       title: state.location,
+      tabController: _tabController,
       actions: [
         AnimatedRefreshContainer(
           builder: (controller) {
@@ -163,17 +172,13 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
         ),
       ],
       tabContentViews: [
-        StyledAppPageView(
-          useMainPadding: false,
-          appBarStyle: AppBarStyle.none,
+        StyledAppPageView.innerPage(
           scrollable: true,
-          child: infoTab(state),
+          child: (context, constraints) => infoTab(state),
         ),
-        StyledAppPageView(
-          useMainPadding: false,
-          appBarStyle: AppBarStyle.none,
+        StyledAppPageView.innerPage(
           scrollable: true,
-          child: deviceTab(
+          child: (context, constraints) => deviceTab(
             state.deviceId,
             filteredDeviceList,
             constraint.maxHeight - kDefaultToolbarHeight,
@@ -181,7 +186,6 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
           ),
         ),
       ],
-      expandedHeight: 120,
     );
   }
 

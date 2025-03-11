@@ -46,6 +46,7 @@ class _TimezoneContentViewState extends ConsumerState<TimezoneView>
     final state = ref.watch(timezoneProvider);
     return StyledAppPageView(
       title: getAppLocalizations(context).timezone,
+      scrollable: true,
       onBackTap: _isEdited(state.timezoneId)
           ? () async {
               final goBack = await showUnsavedAlert(context);
@@ -56,7 +57,7 @@ class _TimezoneContentViewState extends ConsumerState<TimezoneView>
             }
           : null,
       bottomBar: PageBottomBar(
-          isPositiveEnabled: true,
+          isPositiveEnabled: _isEdited(state.timezoneId),
           onPositiveTap: () {
             doSomethingWithSpinner(
               context,
@@ -69,7 +70,7 @@ class _TimezoneContentViewState extends ConsumerState<TimezoneView>
               title: loc(context).savingChanges,
             );
           }),
-      child: AppBasicLayout(
+      child: (context, constraints) => AppBasicLayout(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -86,43 +87,46 @@ class _TimezoneContentViewState extends ConsumerState<TimezoneView>
               ),
             ),
             const AppGap.medium(),
-            Expanded(
-              // height: (70.0) * state.supportedTimezones.length +
-              //     16 * (state.supportedTimezones.length - 1),
+            SizedBox(
+              height: (70.0) * state.supportedTimezones.length +
+                  17 * (state.supportedTimezones.length - 1),
               child: AppCard(
                 child: ListView.separated(
                   shrinkWrap: true,
-                  physics: const ScrollPhysics(),
+                  physics: const NeverScrollableScrollPhysics(),
                   itemCount: state.supportedTimezones.length,
-                  itemBuilder: (context, index) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: AppListCard(
-                        showBorder: false,
-                        padding: EdgeInsets.zero,
-                        title: AppText.labelLarge(
-                          getTimeZoneRegionName(context,
-                              state.supportedTimezones[index].timeZoneID),
-                          color: _notifier.isSelectedTimezone(index)
-                              ? Theme.of(context).colorScheme.primary
+                  itemBuilder: (context, index) => SizedBox(
+                    height: 70.0,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: AppListCard(
+                          showBorder: false,
+                          padding: EdgeInsets.zero,
+                          title: AppText.labelLarge(
+                            getTimeZoneRegionName(context,
+                                state.supportedTimezones[index].timeZoneID),
+                            color: _notifier.isSelectedTimezone(index)
+                                ? Theme.of(context).colorScheme.primary
+                                : null,
+                          ),
+                          description: AppText.bodyMedium(
+                            getTimezoneGMT(
+                                state.supportedTimezones[index].description),
+                            color: _notifier.isSelectedTimezone(index)
+                                ? Theme.of(context).colorScheme.primary
+                                : null,
+                          ),
+                          trailing: _notifier.isSelectedTimezone(index)
+                              ? Icon(
+                                  LinksysIcons.check,
+                                  color: Theme.of(context).colorScheme.primary,
+                                  semanticLabel: 'check icon',
+                                )
                               : null,
-                        ),
-                        description: AppText.bodyMedium(
-                          getTimezoneGMT(
-                              state.supportedTimezones[index].description),
-                          color: _notifier.isSelectedTimezone(index)
-                              ? Theme.of(context).colorScheme.primary
-                              : null,
-                        ),
-                        trailing: _notifier.isSelectedTimezone(index)
-                            ? Icon(
-                                LinksysIcons.check,
-                                color: Theme.of(context).colorScheme.primary,
-                                semanticLabel: 'check icon',
-                              )
-                            : null,
-                        onTap: () {
-                          _notifier.setSelectedTimezone(index);
-                        }),
+                          onTap: () {
+                            _notifier.setSelectedTimezone(index);
+                          }),
+                    ),
                   ),
                   separatorBuilder: (BuildContext context, int index) {
                     return index != (state.supportedTimezones.length - 1)

@@ -76,8 +76,9 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView>
     });
     return StyledAppPageView(
       scrollable: true,
+      hideTopbar: true,
       appBarStyle: AppBarStyle.none,
-      useMainPadding: false,
+      useMainPadding: true,
       bottomBar: PageBottomBar(
           isPositiveEnabled: state.mode == MacFilterMode.deny
               ? isStateChanged(state)
@@ -85,7 +86,7 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView>
           onPositiveTap: () {
             _showEnableDialog(state.mode != MacFilterMode.disabled);
           }),
-      child: ResponsiveLayout(
+      child: (context, constraints) => ResponsiveLayout(
         desktop: _desktopLayout(state, displayDevices),
         mobile: _mobileLayout(state, displayDevices),
       ),

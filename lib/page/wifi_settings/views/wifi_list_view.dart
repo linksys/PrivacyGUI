@@ -87,16 +87,17 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
 
     return StyledAppPageView(
       appBarStyle: AppBarStyle.none,
+      hideTopbar: true,
       scrollable: true,
-      controller: _scrollController,
+      // controller: _scrollController,
       padding: EdgeInsets.zero,
       bottomBar: PageBottomBar(
           isPositiveEnabled: isPositiveEnabled,
           onPositiveTap: () {
             _showSaveConfirmModal();
           }),
-      useMainPadding: false,
-      child: _wifiContentView(),
+      useMainPadding: true,
+      child: (context, constraints) => _wifiContentView(),
     );
   }
 

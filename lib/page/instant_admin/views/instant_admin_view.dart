@@ -92,12 +92,17 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
 
     return StyledAppPageView(
       title: loc(context).instantAdmin,
-      child: MasonryGridView.count(
-        crossAxisCount: ResponsiveLayout.isMobileLayout(context) ? 1 : 2,
-        mainAxisSpacing: Spacing.small2,
-        crossAxisSpacing: ResponsiveLayout.columnPadding(context),
-        itemCount: widgets.length,
-        itemBuilder: (context, index) => widgets[index],
+      scrollable: true,
+      child: (context, constraints) => SizedBox(
+        height: constraints.maxHeight,
+        child: MasonryGridView.count(
+          controller: Scrollable.maybeOf(context)?.widget.controller,
+          crossAxisCount: ResponsiveLayout.isMobileLayout(context) ? 1 : 2,
+          mainAxisSpacing: Spacing.small2,
+          crossAxisSpacing: ResponsiveLayout.columnPadding(context),
+          itemCount: widgets.length,
+          itemBuilder: (context, index) => widgets[index],
+        ),
       ),
     );
   }

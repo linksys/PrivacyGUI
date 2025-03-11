@@ -59,10 +59,10 @@ class _WifiAdvancedSettingsViewState
     final isPositiveEnabled =
         _preservedState != ref.watch(wifiAdvancedProvider);
 
+    // return LayoutBuilder(builder: (context, constraints) {
     return StyledAppPageView(
       appBarStyle: AppBarStyle.none,
-      padding: EdgeInsets.zero,
-      useMainPadding: false,
+      hideTopbar: true,
       bottomBar: PageBottomBar(
           isPositiveEnabled: isPositiveEnabled,
           onPositiveTap: () {
@@ -76,8 +76,10 @@ class _WifiAdvancedSettingsViewState
               save();
             }
           }),
-      child: _buildGrid(),
+      useMainPadding: false,
+      child: (context, constraints) => _buildGrid(),
     );
+    // });
   }
 
   Future save() {
@@ -126,6 +128,8 @@ class _WifiAdvancedSettingsViewState
       if (state.isIptvEnabled != null) _buildIptv(state.isIptvEnabled!),
     ];
     return MasonryGridView.count(
+      padding: EdgeInsets.symmetric(
+          horizontal: ResponsiveLayout.pageHorizontalPadding(context)),
       crossAxisCount: ResponsiveLayout.isMobileLayout(context) ? 1 : 2,
       mainAxisSpacing: Spacing.small2,
       crossAxisSpacing: ResponsiveLayout.columnPadding(context),

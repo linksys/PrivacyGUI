@@ -146,7 +146,7 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
   Widget build(BuildContext context) {
     return StyledAppPageView(
       scrollable: true,
-      child: AppBasicLayout(
+      child: (context, constraints) => AppBasicLayout(
         header: BasicHeader(
           title: getAppLocalizations(context).otpAddPhoneNumber,
         ),
