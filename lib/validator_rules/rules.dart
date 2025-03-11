@@ -69,7 +69,7 @@ class WiFiSsidRule extends RegExValidationRule {
   String get name => 'WiFiSsidRule';
 
   @override
-  RegExp get _rule => RegExp(r"^(?!\s).{1,31}\S$");
+  RegExp get _rule => RegExp(r"^(?!\s).{0,31}\S$");
 }
 
 class IpAddressRule extends RegExValidationRule {
