@@ -328,7 +328,10 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
   }
 
   @override
-  Future fetchData() {
+  Future fetchData() async {
+    // if (state.deviceInfo == null) {
+    //   await fetchDeviceInfo();
+    // }
     bool isSupportNodeLight =
         serviceHelper.isSupportLedMode(state.deviceInfo?.services);
     final transaction = JNAPTransactionBuilder(

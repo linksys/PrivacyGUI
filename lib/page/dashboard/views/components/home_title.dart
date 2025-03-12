@@ -48,6 +48,7 @@ class DashboardHomeTitle extends ConsumerWidget {
                 });
               },
               child: Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   Icon(LinksysIcons.calendar,
                       color: Theme.of(context).colorScheme.onSurface),
