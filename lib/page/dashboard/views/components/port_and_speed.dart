@@ -593,17 +593,6 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                   ],
                 ),
               if (isWan) AppText.labelMedium(loc(context).internet),
-              Container(
-                constraints: const BoxConstraints(maxWidth: 60),
-                width: 60,
-                child: isWan
-                    ? Container(
-                        height: 2,
-                        color: connection == null
-                            ? Theme.of(context).colorScheme.outlineVariant
-                            : Color(orangeTonal.get(80)))
-                    : null,
-              ),
             ],
           )
         : Row(

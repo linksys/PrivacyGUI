@@ -105,7 +105,6 @@ class _InternetConnectionWidgetState
             child: Row(
               children: [
                 Container(
-                  // color: Theme.of(context).colorScheme.onInverseSurface,
                   height: 158,
                   width: ResponsiveLayout.isDesktopLayout(context) ? 176 : 104,
                   // height: 176,
@@ -117,7 +116,7 @@ class _InternetConnectionWidgetState
                     padding: const EdgeInsets.only(
                         top: Spacing.medium,
                         bottom: Spacing.medium,
-                        left: Spacing.large4),
+                        left: Spacing.medium),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,

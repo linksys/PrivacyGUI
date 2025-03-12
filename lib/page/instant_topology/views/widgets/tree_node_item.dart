@@ -220,12 +220,16 @@ class SimpleTreeNodeItem extends StatelessWidget {
   final RouterTreeNode node;
   final String? extra;
   final VoidCallback? onTap;
+  final List<NodeInstantActions> actions;
+  final void Function(NodeInstantActions)? onActionTap;
 
   const SimpleTreeNodeItem({
     super.key,
     required this.node,
     this.extra,
     this.onTap,
+    this.actions = const [],
+    this.onActionTap,
   });
 
   @override
@@ -238,47 +242,95 @@ class SimpleTreeNodeItem extends StatelessWidget {
           : Theme.of(context).colorScheme.surfaceVariant,
       onTap: onTap,
       child: Container(
-        constraints:
-            const BoxConstraints(minWidth: 180, maxWidth: 300, maxHeight: 92),
+        constraints: BoxConstraints(
+            minWidth: 180,
+            maxWidth: 300,
+            maxHeight: actions.isEmpty ? 92 : 144),
         padding: const EdgeInsets.all(Spacing.medium),
-        child: Row(
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Stack(
-              alignment: Alignment.centerRight,
-              children: [
-                SharedWidgets.resolveRouterImage(context, node.data.icon,
-                    size: 64),
-              ],
-            ),
             Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  AppText.titleMedium(
-                    node.data.location,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  Stack(
+                    alignment: Alignment.centerRight,
+                    children: [
+                      SharedWidgets.resolveRouterImage(context, node.data.icon,
+                          size: 64),
+                    ],
                   ),
-                  AppText.bodySmall(node.data.isOnline
-                      ? loc(context).nDevices(node.data.connectedDeviceCount)
-                      : loc(context).offline),
-                  if (extra != null)
-                    AppText.bodySmall(
-                      extra!,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        AppText.titleMedium(
+                          node.data.location,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        AppText.bodySmall(node.data.isOnline
+                            ? loc(context)
+                                .nDevices(node.data.connectedDeviceCount)
+                            : loc(context).offline),
+                        if (extra != null)
+                          AppText.bodySmall(
+                            extra!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                      ],
                     ),
+                  ),
+                  SharedWidgets.resolveSignalStrengthIcon(
+                    context,
+                    node.data.signalStrength,
+                    isOnline: node.data.isOnline,
+                    isWired: node.data.isWiredConnection,
+                  ),
                 ],
               ),
             ),
-            SharedWidgets.resolveSignalStrengthIcon(
-              context,
-              node.data.signalStrength,
-              isOnline: node.data.isOnline,
-              isWired: node.data.isWiredConnection,
-            ),
+            // if (node.data.isOnline && actions.isNotEmpty) ...[
+            //   const AppGap.medium(),
+            //   const Divider(
+            //     height: 0,
+            //   ),
+            //   Container(
+            //     padding: const EdgeInsets.symmetric(
+            //         vertical: 0, horizontal: Spacing.medium),
+            //     child: Row(
+            //       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            //       crossAxisAlignment: CrossAxisAlignment.center,
+            //       children: [
+            //         AppText.labelLarge(loc(context).instantAction),
+            //         PopupMenuButton(
+            //           color: Theme.of(context).colorScheme.surface,
+            //           elevation: 10,
+            //           surfaceTintColor: Theme.of(context).colorScheme.surface,
+            //           itemBuilder: (context) {
+            //             return actions
+            //                 .mapIndexed(
+            //                     (index, e) => PopupMenuItem<NodeInstantActions>(
+            //                         value: e,
+            //                         child: AppText.labelLarge(
+            //                           e.resolveLabel(context),
+            //                           color: e == NodeInstantActions.reset
+            //                               ? Theme.of(context).colorScheme.error
+            //                               : Theme.of(context)
+            //                                   .colorScheme
+            //                                   .onSurface,
+            //                         )))
+            //                 .toList();
+            //           },
+            //           onSelected: onActionTap,
+            //         )
+            //       ],
+            //     ),
+            //   ),
+            // ]
           ],
         ),
       ),
@@ -315,7 +367,7 @@ class _BorderInfoCellState extends State<BorderInfoCell> {
         Container(
           width: widget.width,
           child: Card(
-            margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
+            margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
             color: Theme.of(context).colorScheme.primaryContainer,
             elevation: 0,
             shape: RoundedRectangleBorder(
