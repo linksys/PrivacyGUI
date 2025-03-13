@@ -1,5 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/route/constants.dart';
+
+const List<String> idleCheckWhiteList = [RouteNamed.addNodes];
 
 class IdleChecker extends StatefulWidget {
   final Duration idleTime;

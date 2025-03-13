@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/components/layouts/idle_checker.dart';
-import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/root/root_config.dart';
 import 'package:privacy_gui/providers/root/root_provider.dart';
@@ -20,11 +19,11 @@ import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart
 
 class AppRootContainer extends ConsumerStatefulWidget {
   final Widget? child;
-  final LinksysRouteConfig? routeConfig;
+  final LinksysRoute? route;
   const AppRootContainer({
     super.key,
     this.child,
-    this.routeConfig,
+    this.route,
   });
 
   @override
@@ -41,19 +40,28 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
 
   @override
   Widget build(BuildContext context) {
-    logger.d('Root Container:: build: ${widget.routeConfig}');
+    logger.d('Root Container:: build: ${widget.route}');
     final rootConfig = ref.watch(rootProvider);
+
     return LayoutBuilder(builder: ((context, constraints) {
       return IdleChecker(
         idleTime: const Duration(minutes: 5),
         onIdle: () {
+          // not for debug
           if (!kReleaseMode) {
             return;
           }
+          // not log in yet
           if (ref.read(authProvider).value?.loginType == LoginType.none) {
             return;
           }
+          // not go into dashboard yet
           if (shellNavigatorKey.currentContext == null) {
+            return;
+          }
+          // white list
+          final routeName = widget.route?.name;
+          if (routeName != null && idleCheckWhiteList.contains(routeName)) {
             return;
           }
           logger.d('Idled!');
