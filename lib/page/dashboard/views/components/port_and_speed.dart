@@ -26,8 +26,8 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
         .watch(deviceManagerProvider.select((value) => value.deviceList))
         .isEmpty;
     final horizontalLayout = state.isHorizontalLayout;
-    final wanStatus = ref.watch(nodeWanStatusProvider);
-    final isOnline = wanStatus == NodeWANStatus.online;
+    final wanStatus = ref.watch(internetStatusProvider);
+    final isOnline = wanStatus == InternetStatus.online;
     final hasLanPort = state.lanPortConnections.isNotEmpty;
 
     return ResponsiveLayout(
