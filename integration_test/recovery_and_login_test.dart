@@ -17,6 +17,7 @@ import 'actions/local_login_actions.dart';
 import 'actions/recovery_actions.dart';
 import 'actions/reset_password_actions.dart';
 import 'config/integration_test_config.dart';
+import 'extensions/extensions.dart';
 
 void main() {
   integrationDriver();
@@ -89,10 +90,4 @@ void main() {
     final quickPanelFinder = find.byType(DashboardQuickPanel);
     expect(quickPanelFinder, findsOneWidget);
   });
-}
-
-extension WidgetTesterExt on WidgetTester {
-  String getText(Finder finder) {
-    return (widget(finder) as dynamic).controller?.text ?? '';
-  }
 }

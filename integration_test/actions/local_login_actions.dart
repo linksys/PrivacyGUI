@@ -5,10 +5,10 @@ import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/input_field/app_password_field.dart';
 
-class TestLocalLoginActions {
-  TestLocalLoginActions(this.tester);
+import 'base_actions.dart';
 
-  final WidgetTester tester;
+class TestLocalLoginActions extends CommonBaseActions {
+  TestLocalLoginActions(super.tester);
 
   Finder visibilityFinder() {
     final visibleFinder = find.byIcon(LinksysIcons.visibility);

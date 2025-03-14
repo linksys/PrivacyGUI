@@ -6,10 +6,10 @@ import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/input_field/app_password_field.dart';
 import 'package:privacygui_widgets/widgets/switch/switch.dart';
 
-class TestPrepairPnpSetupActions {
-  TestPrepairPnpSetupActions(this.tester);
+import 'base_actions.dart';
 
-  final WidgetTester tester;
+class TestPrepairPnpSetupActions extends CommonBaseActions {
+  TestPrepairPnpSetupActions(super.tester);
 
   Finder passwordFinder() {
     final passwordFinder = find.byType(AppPasswordField).first;

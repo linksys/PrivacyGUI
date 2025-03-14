@@ -44,7 +44,6 @@ for case in "${cases[@]}"; do
     --dart-define-from-file=$data \
     --no-pub \
     --browser-name chrome \
-    --web-renderer html \
     --web-port 61672 \
     --web-launch-url "https://localhost/$password" \
     --no-headless \

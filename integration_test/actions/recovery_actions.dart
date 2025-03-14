@@ -4,10 +4,10 @@ import 'package:privacy_gui/main.dart';
 import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 
-class TestLocalRecoveryActions {
-  TestLocalRecoveryActions(this.tester);
+import 'base_actions.dart';
 
-  final WidgetTester tester;
+class TestLocalRecoveryActions extends CommonBaseActions {
+  TestLocalRecoveryActions(super.tester);
 
   Finder recoveryFieldFinder() {
     final recoveryFinder = find.byType(PinCodeTextField);

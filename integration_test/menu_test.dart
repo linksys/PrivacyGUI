@@ -1,4 +1,3 @@
-import 'package:flutter/widgets.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,10 +7,11 @@ import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/main.dart';
-import 'package:privacy_gui/page/dashboard/views/components/quick_panel.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import 'actions/prepair_pnp_setup_actions.dart';
+import 'actions/local_login_actions.dart';
+import 'actions/menu_actions.dart';
+import 'actions/topbar_actions.dart';
 import 'config/integration_test_config.dart';
 import 'extensions/extensions.dart';
 
@@ -19,7 +19,6 @@ void main() {
   integrationDriver();
   final widgetsBinding =
       IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-  const String password = IntegrationTestConfig.password;
 
   setUp(() async {
     // init better actions
@@ -38,39 +37,31 @@ void main() {
     dependencySetup();
   });
 
-  testWidgets('Prepaired reset setup flow golden', (tester) async {
+  testWidgets('Menu operations', (tester) async {
     // Load app widget.
     await tester.pumpFrames(app(), Duration(seconds: 3));
-
-    final setup = TestPrepairPnpSetupActions(tester);
-
-    // Login page
-    await setup.inputPassword(password);
-    expect(password, tester.getText(setup.passwordFinder()));
-    await setup.showPassword();
-    await setup.tapLoginButton();
-
-    // Pnp page
-    // Personalize wifi
-    await setup.tapNextButton();
-    // Guest wifi
-    await setup.tapSwitch();
-    await setup.tapSwitch();
-    await setup.tapNextButton();
-    // Night mode
-    await setup.tapNextButton();
-    await tester.pumpFrames(app(), const Duration(seconds: 60));
-    // Done
-    final doneBtnFinder = setup.doneButtonFinder();
-    await tester.scrollUntilVisible(
-      doneBtnFinder,
-      100,
-      scrollable: find.byType(Scrollable).last,
+    // Log in
+    final login = TestLocalLoginActions(tester);
+    await login.inputPassword(IntegrationTestConfig.password);
+    expect(
+      IntegrationTestConfig.password,
+      tester.getText(find.byType(AppPasswordField)),
     );
-    await setup.tapDoneButton();
-
-    // Dashboard
-    final quickPanelFinder = find.byType(DashboardQuickPanel);
-    expect(quickPanelFinder, findsOneWidget);
+    await login.tapLoginButton();
+    // Enter the dashboard screen
+    final topbarActions = TestTopbarActions(tester);
+    await topbarActions.tapMenuButton();
+    // Enter the menu screen
+    final menuActions = TestMenuActions(tester);
+    await menuActions.checkWifiPage();
+    await menuActions.checkAdminPage();
+    await menuActions.checkTopologyPage();
+    await menuActions.checkSafetyPage();
+    await menuActions.checkPrivacyPage();
+    await menuActions.checkDevicesPage();
+    await menuActions.checkAdvancedSettingsPage();
+    await menuActions.checkVerifyPage();
+    await menuActions.checkExternalSpeedTestPage();
+    await menuActions.checkAddNodePage();
   });
 }

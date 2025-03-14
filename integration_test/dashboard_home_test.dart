@@ -11,7 +11,7 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'actions/local_login_actions.dart';
 import 'config/integration_test_config.dart';
-import 'recovery_and_login_test.dart';
+import 'extensions/extensions.dart';
 import 'actions/dashboard_home_actions.dart';
 
 void main() {

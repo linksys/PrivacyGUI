@@ -5,10 +5,10 @@ import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/switch/switch.dart';
 
-class TestPnpSetupActions {
-  TestPnpSetupActions(this.tester);
+import 'base_actions.dart';
 
-  final WidgetTester tester;
+class TestPnpSetupActions extends CommonBaseActions {
+  TestPnpSetupActions(super.tester);
 
   Finder continueButtonFinder() {
     final continueButtonFinder = find.descendant(

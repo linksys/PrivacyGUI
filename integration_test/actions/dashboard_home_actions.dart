@@ -11,12 +11,13 @@ import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:super_tooltip/super_tooltip.dart';
 
-class TestDashboardHomeActions {
-  final WidgetTester tester;
+import 'base_actions.dart';
 
-  TestDashboardHomeActions(this.tester);
+class TestDashboardHomeActions extends CommonBaseActions {
+  TestDashboardHomeActions(super.tester);
 
   Finder topologyCardFinder() {
+    tester;
     final networkCardFinder = find.descendant(
       of: find.byType(DashboardNetworks),
       matching: find.byType(AppCard),
@@ -198,11 +199,11 @@ class TestDashboardHomeActions {
     // Find topology card
     final topologyCard = topologyCardFinder();
     // Scroll the screen
-    await _scrollUntil(topologyCard);
+    await scrollUntil(topologyCard);
     // Tap the card
     await tester.tap(topologyCard);
     await tester.pumpAndSettle();
-    await _tapBackButton();
+    await tapBackButton();
   }
 
   Future<void> checkDeviceListPage() async {
@@ -211,25 +212,25 @@ class TestDashboardHomeActions {
     // Tap the card
     await tester.tap(devicesCard);
     await tester.pumpAndSettle();
-    await _tapBackButton();
+    await tapBackButton();
   }
 
   Future<void> checkMasterNodeDetailPage() async {
     // Find tappable area of master node
     final masterFinder = masterNodeDetailFinder();
     // Scroll the screen
-    await _scrollUntil(masterFinder);
+    await scrollUntil(masterFinder);
     // Tap the node detail
     await tester.tap(masterFinder);
     await tester.pumpAndSettle();
-    await _tapBackButton();
+    await tapBackButton();
   }
 
   Future<void> hoverToNightModeInfoIcon() async {
     // Find night mode info icon
     final iconFinder = nightModeInfoFinder();
     // scroll the screen
-    await _scrollUntil(iconFinder);
+    await scrollUntil(iconFinder);
     await _hoverToCenter(iconFinder);
     expect(nightModeTooltipFinder(), findsOneWidget);
     await tester.pumpFrames(app(), Duration(seconds: 1));
@@ -271,14 +272,14 @@ class TestDashboardHomeActions {
     // Tap the instant privacy
     await tester.tap(inkWellFinder);
     await tester.pumpAndSettle();
-    await _tapBackButton();
+    await tapBackButton();
   }
 
   Future<void> hoverToWifi24gQrIcon() async {
     // Find 2.4G Wifi QR code icon
     final tooltipFinder = wifi24gTooltipFinder();
     // scroll the screen
-    await _scrollUntil(tooltipFinder);
+    await scrollUntil(tooltipFinder);
     await _hoverToCenter(tooltipFinder);
     expect(find.byType(QrImageView), findsOneWidget);
     await tester.pumpAndSettle();
@@ -298,14 +299,14 @@ class TestDashboardHomeActions {
     // Tap the card
     await tester.tap(wifiCardFinder);
     await tester.pumpAndSettle();
-    await _tapBackButton();
+    await tapBackButton();
   }
 
   Future<void> hoverToWifi5gQrIcon() async {
     // Find 5G Wifi switch
     final tooltipFinder = wifi5gTooltipFinder();
     // scroll the screen
-    await _scrollUntil(tooltipFinder);
+    await scrollUntil(tooltipFinder);
     await _hoverToCenter(tooltipFinder);
     // If 5g wifi is disabled, there will be no QR code image
     expect(find.byType(QrImageView), findsAtLeastNWidgets(0));
@@ -326,14 +327,14 @@ class TestDashboardHomeActions {
     // Tap the card
     await tester.tap(wifiCardFinder);
     await tester.pumpAndSettle();
-    await _tapBackButton();
+    await tapBackButton();
   }
 
   Future<void> hoverToGuestWifiQrIcon() async {
     // Find guest Wifi QR code icon
     final tooltipFinder = guestWifiTooltipFinder();
     // scroll the screen
-    await _scrollUntil(tooltipFinder);
+    await scrollUntil(tooltipFinder);
     await _hoverToCenter(tooltipFinder);
     // If guest wifi is disabled, there will be no QR code image
     expect(find.byType(QrImageView), findsAtLeastNWidgets(0));
@@ -354,7 +355,7 @@ class TestDashboardHomeActions {
     // Tap the card
     await tester.tap(wifiCardFinder);
     await tester.pumpAndSettle();
-    await _tapBackButton();
+    await tapBackButton();
   }
 
   Future<void> _tapCancelOnInstantPrivacyDialog() async {
@@ -393,26 +394,5 @@ class TestDashboardHomeActions {
     await tester.pumpAndSettle();
     // Explicitly remove the pointer after the hover action
     await gesture.removePointer();
-  }
-
-  Future<void> _tapBackButton() async {
-    // Find back button
-    final backButtonFinder = find.descendant(
-      of: find.byType(LinksysAppBar),
-      matching: find.byType(AppIconButton),
-    );
-    expect(backButtonFinder, findsOneWidget);
-    // Tap the back button
-    await tester.tap(backButtonFinder);
-    await tester.pumpAndSettle();
-  }
-
-  Future<void> _scrollUntil(Finder finder) async {
-    await tester.scrollUntilVisible(
-      finder,
-      100,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.pumpAndSettle();
   }
 }
