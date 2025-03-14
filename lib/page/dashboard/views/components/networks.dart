@@ -135,10 +135,10 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
 
   Widget _desktopHorizontal(BuildContext context, WidgetRef ref) {
     final topologyState = ref.watch(instantTopologyProvider);
-    final wanStatus = ref.watch(nodeWanStatusProvider);
+    final wanStatus = ref.watch(internetStatusProvider);
 
     final newFirmware = hasNewFirmware(ref);
-    final isOnline = wanStatus == NodeWANStatus.online;
+    final isOnline = wanStatus == InternetStatus.online;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -173,10 +173,10 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
   }
 
   Widget _desktopVertical(BuildContext context, WidgetRef ref) {
-    final wanStatus = ref.watch(nodeWanStatusProvider);
+    final wanStatus = ref.watch(internetStatusProvider);
     final topologyState = ref.watch(instantTopologyProvider);
     final newFirmware = hasNewFirmware(ref);
-    final isOnline = wanStatus == NodeWANStatus.online;
+    final isOnline = wanStatus == InternetStatus.online;
 
     return Row(
       children: [
@@ -209,8 +209,8 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
 
   Widget _mobile(BuildContext context, WidgetRef ref) {
     final newFirmware = hasNewFirmware(ref);
-    final wanStatus = ref.watch(nodeWanStatusProvider);
-    final isOnline = wanStatus == NodeWANStatus.online;
+    final wanStatus = ref.watch(internetStatusProvider);
+    final isOnline = wanStatus == InternetStatus.online;
     final topologyState = ref.watch(instantTopologyProvider);
 
     return Column(

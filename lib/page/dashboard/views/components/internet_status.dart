@@ -30,8 +30,8 @@ class _InternetConnectionWidgetState
   Widget build(BuildContext context) {
     final isFirstPolling = ref
         .watch(dashboardHomeProvider.select((value) => value.isFirstPolling));
-    final wanStatus = ref.watch(nodeWanStatusProvider);
-    final isOnline = wanStatus == NodeWANStatus.online;
+    final wanStatus = ref.watch(internetStatusProvider);
+    final isOnline = wanStatus == InternetStatus.online;
 
     final isLoading = ref
         .watch(deviceManagerProvider.select((value) => value.deviceList))
