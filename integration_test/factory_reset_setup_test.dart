@@ -10,7 +10,7 @@ import 'package:privacy_gui/main.dart';
 import 'package:privacy_gui/page/dashboard/views/components/quick_panel.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'actions/pnp_setup_actions.dart';
+import 'actions/base_actions.dart';
 
 void main() {
   integrationDriver();

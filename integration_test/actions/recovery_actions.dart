@@ -1,13 +1,7 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:pin_code_fields/pin_code_fields.dart';
-import 'package:privacy_gui/main.dart';
-import 'package:privacygui_widgets/widgets/buttons/button.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
+part of 'base_actions.dart';
 
-class TestLocalRecoveryActions {
-  TestLocalRecoveryActions(this.tester);
-
-  final WidgetTester tester;
+class TestLocalRecoveryActions extends CommonBaseActions {
+  TestLocalRecoveryActions(super.tester);
 
   Finder recoveryFieldFinder() {
     final recoveryFinder = find.byType(PinCodeTextField);

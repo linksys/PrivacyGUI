@@ -1,14 +1,9 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:privacy_gui/main.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/buttons/button.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/input_field/app_password_field.dart';
 
-class TestLocalLoginActions {
-  TestLocalLoginActions(this.tester);
 
-  final WidgetTester tester;
+part of 'base_actions.dart';
+
+class TestLocalLoginActions extends CommonBaseActions {
+  TestLocalLoginActions(super.tester);
 
   Finder visibilityFinder() {
     final visibleFinder = find.byIcon(LinksysIcons.visibility);

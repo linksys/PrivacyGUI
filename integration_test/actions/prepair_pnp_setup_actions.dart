@@ -1,15 +1,7 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:privacy_gui/main.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/buttons/button.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/input_field/app_password_field.dart';
-import 'package:privacygui_widgets/widgets/switch/switch.dart';
+part of 'base_actions.dart';
 
-class TestPrepairPnpSetupActions {
-  TestPrepairPnpSetupActions(this.tester);
-
-  final WidgetTester tester;
+class TestPrepairPnpSetupActions extends CommonBaseActions {
+  TestPrepairPnpSetupActions(super.tester);
 
   Finder passwordFinder() {
     final passwordFinder = find.byType(AppPasswordField).first;

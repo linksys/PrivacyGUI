@@ -11,7 +11,7 @@ import 'package:privacy_gui/main.dart';
 import 'package:privacygui_widgets/widgets/stepper/app_stepper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'actions/pnp_setup_actions.dart';
+import 'actions/base_actions.dart';
 
 class MyServiceHelper extends ServiceHelper {
   @override

@@ -1,16 +1,7 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
-import 'package:privacy_gui/main.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/buttons/button.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/input_field/app_password_field.dart';
-import 'package:privacygui_widgets/widgets/input_field/app_text_field.dart';
+part of 'base_actions.dart';
 
-class TestLocalResetPasswordActions {
-  TestLocalResetPasswordActions(this.tester);
-
-  final WidgetTester tester;
+class TestLocalResetPasswordActions extends CommonBaseActions {
+  TestLocalResetPasswordActions(super.tester);
 
   Finder firstVisibilityFinder() {
     final visibilityFinder = find.descendant(

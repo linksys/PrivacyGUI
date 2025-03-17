@@ -1,14 +1,7 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:privacy_gui/main.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/buttons/button.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/switch/switch.dart';
+part of 'base_actions.dart';
 
-class TestPnpSetupActions {
-  TestPnpSetupActions(this.tester);
-
-  final WidgetTester tester;
+class TestPnpSetupActions extends CommonBaseActions {
+  TestPnpSetupActions(super.tester);
 
   Finder continueButtonFinder() {
     final continueButtonFinder = find.descendant(
