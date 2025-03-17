@@ -6,6 +6,9 @@ final serviceHelper = getIt<ServiceHelper>();
 
 class ServiceHelper {
 
+  bool isSupportSetup([List<String>? services]) =>
+      isServiceSupport(JNAPService.setup, services);
+
   bool isSupportGuestNetwork([List<String>? services]) =>
       isServiceSupport(JNAPService.guestNetwork, services);
 

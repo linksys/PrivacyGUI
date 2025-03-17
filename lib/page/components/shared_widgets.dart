@@ -31,7 +31,7 @@ abstract class SharedWidgets {
       {double size = 40}) {
     return Image(
       image: CustomTheme.of(context).images.devices.getByName(iconName) ??
-          CustomTheme.of(context).images.devices.routerLn11,
+          CustomTheme.of(context).images.devices.routerMx6200,
       semanticLabel: 'router image',
       width: size,
       height: size,

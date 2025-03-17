@@ -55,7 +55,7 @@ class _SimpleItemPickerViewState extends ConsumerState<SimpleItemPickerView> {
   @override
   Widget build(BuildContext context) {
     return StyledAppPageView(
-      title: getAppLocalizations(context).connectionType,
+      title: loc(context).connectionType,
       child: (context, constraints) => AppBasicLayout(
         content: Column(
           children: [

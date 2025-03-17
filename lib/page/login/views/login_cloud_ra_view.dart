@@ -99,7 +99,7 @@ class _LoginCloudRAViewState extends ConsumerState<LoginCloudRAView> {
                     AppTextField(
                       border: const OutlineInputBorder(),
                       controller: _usernameController,
-                      hintText: getAppLocalizations(context).username,
+                      hintText: loc(context).username,
                       onChanged: _checkFilledInfo,
                       errorText:
                           _isValidEmail ?? true ? null : 'Invalid Email format',
@@ -116,7 +116,7 @@ class _LoginCloudRAViewState extends ConsumerState<LoginCloudRAView> {
                     AppPasswordField(
                       border: const OutlineInputBorder(),
                       controller: _passwordController,
-                      hintText: getAppLocalizations(context).password,
+                      hintText: loc(context).password,
                       onChanged: (value) {
                         setState(() {
                           _error = '';
@@ -127,7 +127,7 @@ class _LoginCloudRAViewState extends ConsumerState<LoginCloudRAView> {
                     AppTextField(
                       border: const OutlineInputBorder(),
                       controller: _serialController,
-                      hintText: getAppLocalizations(context).serialNumber,
+                      hintText: loc(context).serialNumber,
                       errorText: errorCodeHelper(context, _error),
                       onSubmitted: (_) {
                         _cloudLogin();

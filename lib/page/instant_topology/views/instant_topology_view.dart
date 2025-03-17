@@ -3,15 +3,10 @@ import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
-import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
-import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
-import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
-import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -30,6 +25,7 @@ import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/bullet_list/bullet_list.dart';
 import 'package:privacygui_widgets/widgets/bullet_list/bullet_style.dart';
+import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class InstantTopologyView extends ArgumentsConsumerStatefulView {
@@ -98,52 +94,89 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Flexible(
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: SizedBox(
-                        width: desiredTreeWidth,
-                        child: TreeView<RouterTreeNode>(
-                          treeController: treeController,
-                          nodeBuilder: (BuildContext context,
-                              TreeEntry<RouterTreeNode> entry) {
-                            return TreeIndentation(
-                              entry: entry,
-                              guide: const IndentGuide.connectingLines(
-                                indent: 72,
-                                thickness: 0.5,
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.fromLTRB(0, 16, 8, 0),
-                                child: switch (entry.node.runtimeType) {
-                                  OnlineTopologyNode => Row(
-                                      children: [
-                                        SizedBox(
-                                            width: 200,
-                                            child: _buildHeader(
-                                                context, ref, entry.node)),
-                                        const Spacer(),
-                                      ],
-                                    ),
-                                  RouterTopologyNode => Row(
-                                      children: [
-                                        _buildNode(context, ref, entry.node),
-                                        const Spacer(),
-                                      ],
-                                    ),
-                                  _ => const Center(),
-                                },
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
+                    child: _buildTopology(
+                        context, ref, desiredTreeWidth),
                   ),
                   const AppGap.large1(),
                 ],
               ),
             );
     });
+  }
+
+  Widget _buildTopology(
+      BuildContext context, WidgetRef ref, double largeDesiredTreeWidth) {
+    return ResponsiveLayout.isMobileLayout(context)
+        ? TreeView<RouterTreeNode>(
+            treeController: treeController,
+            physics: ScrollPhysics(),
+            shrinkWrap: true,
+            nodeBuilder:
+                (BuildContext context, TreeEntry<RouterTreeNode> entry) {
+              return TreeIndentation(
+                entry: entry,
+                guide: const IndentGuide.connectingLines(
+                  indent: 36,
+                  thickness: 0.5,
+                ),
+                child: switch (entry.node.runtimeType) {
+                  OnlineTopologyNode => Row(
+                      children: [
+                        SizedBox(
+                            width: 200,
+                            child: _buildHeader(context, ref, entry.node)),
+                        const Spacer(),
+                      ],
+                    ),
+                  RouterTopologyNode => Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: _buildNode(context, ref, entry.node),
+                    ),
+                  _ => const Center(),
+                },
+              );
+            },
+          )
+        : SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SizedBox(
+              width: largeDesiredTreeWidth,
+              child: TreeView<RouterTreeNode>(
+                treeController: treeController,
+                nodeBuilder:
+                    (BuildContext context, TreeEntry<RouterTreeNode> entry) {
+                  return TreeIndentation(
+                    entry: entry,
+                    guide: const IndentGuide.connectingLines(
+                      indent: 72,
+                      thickness: 0.5,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(0, 16, 8, 0),
+                      child: switch (entry.node.runtimeType) {
+                        OnlineTopologyNode => Row(
+                            children: [
+                              SizedBox(
+                                  width: 200,
+                                  child:
+                                      _buildHeader(context, ref, entry.node)),
+                              const Spacer(),
+                            ],
+                          ),
+                        RouterTopologyNode => Row(
+                            children: [
+                              _buildNode(context, ref, entry.node),
+                              const Spacer(),
+                            ],
+                          ),
+                        _ => const Center(),
+                      },
+                    ),
+                  );
+                },
+              ),
+            ),
+          );
   }
 
   Widget _buildNode(BuildContext context, WidgetRef ref, RouterTreeNode node) {
@@ -179,7 +212,8 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
       onActionTap: (action) {
         switch (action) {
           case NodeInstantActions.reboot:
-            _doReboot(supportChildReboot && !node.data.isMaster ? node : null);
+            _doReboot(supportChildReboot && !node.data.isMaster ? node : null,
+                node.isLeaf());
             break;
           case NodeInstantActions.pair:
             _doInstantPair();
@@ -190,23 +224,121 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
           case NodeInstantActions.reset:
             // If the target is a master, send null value to factory reset all nodes
             _doFactoryReset(
-                supportChildReboot && !node.data.isMaster ? node : null);
-            break;
-          default:
+                supportChildReboot && !node.data.isMaster ? node : null,
+                node.isLeaf());
             break;
         }
       },
     );
+    // return ResponsiveLayout.isMobileLayout(context)
+    //     ? SimpleTreeNodeItem(
+    //         node: node,
+    //         actions: node.data.isMaster
+    //             ? [
+    //                 if (hasBlinkFunction &&
+    //                     isCognitiveMeshRouter(
+    //                         modelNumber: node.data.model,
+    //                         hardwareVersion: node.data.hardwareVersion))
+    //                   NodeInstantActions.blink,
+    //                 NodeInstantActions.reboot,
+    //                 if (autoOnboarding) NodeInstantActions.pair,
+    //                 NodeInstantActions.reset,
+    //               ]
+    //             : [
+    //                 if (hasBlinkFunction &&
+    //                     isCognitiveMeshRouter(
+    //                         modelNumber: node.data.model,
+    //                         hardwareVersion: node.data.hardwareVersion))
+    //                   NodeInstantActions.blink,
+    //                 if (supportChildReboot) NodeInstantActions.reboot,
+    //                 if (supportChildFactoryReset) NodeInstantActions.reset,
+    //               ],
+    //         onTap: () {
+    //           onNodeTap(context, ref, node);
+    //         },
+    //         onActionTap: (action) {
+    //           switch (action) {
+    //             case NodeInstantActions.reboot:
+    //               _doReboot(
+    //                   supportChildReboot && !node.data.isMaster ? node : null,
+    //                   node.isLeaf());
+    //               break;
+    //             case NodeInstantActions.pair:
+    //               _doInstantPair();
+    //               break;
+    //             case NodeInstantActions.blink:
+    //               _doBlinkNodeLed(ref, node.data.deviceId);
+    //               break;
+    //             case NodeInstantActions.reset:
+    //               // If the target is a master, send null value to factory reset all nodes
+    //               _doFactoryReset(
+    //                   supportChildReboot && !node.data.isMaster ? node : null,
+    //                   node.isLeaf());
+    //               break;
+    //           }
+    //         },
+    //       )
+    //     : TreeNodeItem(
+    //         node: node,
+    //         actions: node.data.isMaster
+    //             ? [
+    //                 if (hasBlinkFunction &&
+    //                     isCognitiveMeshRouter(
+    //                         modelNumber: node.data.model,
+    //                         hardwareVersion: node.data.hardwareVersion))
+    //                   NodeInstantActions.blink,
+    //                 NodeInstantActions.reboot,
+    //                 if (autoOnboarding) NodeInstantActions.pair,
+    //                 NodeInstantActions.reset,
+    //               ]
+    //             : [
+    //                 if (hasBlinkFunction &&
+    //                     isCognitiveMeshRouter(
+    //                         modelNumber: node.data.model,
+    //                         hardwareVersion: node.data.hardwareVersion))
+    //                   NodeInstantActions.blink,
+    //                 if (supportChildReboot) NodeInstantActions.reboot,
+    //                 if (supportChildFactoryReset) NodeInstantActions.reset,
+    //               ],
+    //         onTap: () {
+    //           onNodeTap(context, ref, node);
+    //         },
+    //         onActionTap: (action) {
+    //           switch (action) {
+    //             case NodeInstantActions.reboot:
+    //               _doReboot(
+    //                   supportChildReboot && !node.data.isMaster ? node : null,
+    //                   node.isLeaf());
+    //               break;
+    //             case NodeInstantActions.pair:
+    //               _doInstantPair();
+    //               break;
+    //             case NodeInstantActions.blink:
+    //               _doBlinkNodeLed(ref, node.data.deviceId);
+    //               break;
+    //             case NodeInstantActions.reset:
+    //               // If the target is a master, send null value to factory reset all nodes
+    //               _doFactoryReset(
+    //                   supportChildReboot && !node.data.isMaster ? node : null,
+    //                   node.isLeaf());
+    //               break;
+    //           }
+    //         },
+    //       );
   }
 
-  _doReboot(RouterTreeNode? node) {
-    showRebootModal(context, (node?.data.isMaster ?? true)).then((result) {
+  _doReboot(RouterTreeNode? node, bool isLastNode) {
+    final isMaster = node?.data.isMaster ?? true;
+    final targetDeviceIds =
+        node?.toFlatList().map((e) => e.data.deviceId).toList() ?? [];
+    showRebootModal(context, isMaster, isLastNode).then((result) {
       if (result == true) {
-        final reboot = Future.sync(
-                () => ref.read(pollingProvider.notifier).stopPolling())
-            .then((_) => ref.read(instantTopologyProvider.notifier).reboot(
-                node?.toFlatList().map((e) => e.data.deviceId).toList() ?? []))
-            .then((_) async {
+        final reboot =
+            Future.sync(() => ref.read(pollingProvider.notifier).stopPolling())
+                .then((_) => ref
+                    .read(instantTopologyProvider.notifier)
+                    .reboot(targetDeviceIds))
+                .then((_) async {
           if (node?.data.isMaster == false) {
             // A delay to wait for child off
             // await Future.delayed(const Duration(seconds: 5));
@@ -227,11 +359,11 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
     });
   }
 
-  _doFactoryReset(RouterTreeNode? node) {
+  _doFactoryReset(RouterTreeNode? node, bool isLastNode) {
     final isMaster = node == null;
     final targetDeviceIds =
         node?.toFlatList().map((e) => e.data.deviceId).toList() ?? [];
-    showFactoryResetModal(context, isMaster).then((isAgreed) {
+    showFactoryResetModal(context, isMaster, isLastNode).then((isAgreed) {
       if (isAgreed == true) {
         doSomethingWithSpinner(
           context,

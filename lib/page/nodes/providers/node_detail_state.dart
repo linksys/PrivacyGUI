@@ -44,9 +44,9 @@ enum NodeLightStatus {
 
   String resolveString(BuildContext context) {
     if (this == NodeLightStatus.on) {
-      return getAppLocalizations(context).on;
+      return loc(context).on;
     } else if (this == NodeLightStatus.off) {
-      return getAppLocalizations(context).off;
+      return loc(context).off;
     } else {
       return 'Night';
     }

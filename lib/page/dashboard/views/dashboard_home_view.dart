@@ -200,6 +200,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
         DashboardQuickPanel(),
         AppGap.medium(),
         DashboardWiFiGrid(),
+        AppGap.medium(),
       ],
     );
   }
