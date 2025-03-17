@@ -200,11 +200,12 @@ class DeviceManagerState extends Equatable {
   }
 
   LinksysDevice get masterDevice {
-    return nodeDevices.firstWhere((device) => device.isAuthority == true);
+    return nodeDevices.firstWhere(
+        (device) => device.isAuthority == true || device.nodeType == 'Master');
   }
 
   List<LinksysDevice> get slaveDevices {
-    return nodeDevices.where((device) => device.isAuthority == false).toList();
+    return nodeDevices.where((device) => device.isAuthority == false && device.nodeType == 'Slave').toList();
   }
 
   const DeviceManagerState({
