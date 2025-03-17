@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/components/styled/status_label.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 
 import 'base_actions.dart';
@@ -110,6 +111,12 @@ class TestMenuActions extends CommonBaseActions {
     return privacyBetaLabelFinder;
   }
 
+  Finder cancelBtnFinder() {
+    final cancelBtnFinder = find.byType(AppOutlinedButton);
+    expect(cancelBtnFinder, findsOneWidget);
+    return cancelBtnFinder;
+  }
+
   Future<void> enterWifiPage() async {
     final finder = wifiCardFinder();
     // Tap the card
@@ -180,64 +187,17 @@ class TestMenuActions extends CommonBaseActions {
     await tester.pumpAndSettle();
   }
 
-  Future<void> checkWifiPage() async {
-    await enterWifiPage();
-    await checkTitle(title);
-    await tapBackButton();
+  Future<void> tapRestartBtn() async {
+    final finder = restartBtnFinder();
+    // Tap the card
+    await tester.tap(finder);
+    await tester.pumpAndSettle();
   }
 
-  Future<void> checkAdminPage() async {
-    await enterAdminPage();
-    await checkTitle(title);
-    await tapBackButton();
-  }
-
-  Future<void> checkTopologyPage() async {
-    await enterTopologyPage();
-    await checkTitle(title);
-    await tapBackButton();
-  }
-
-  Future<void> checkSafetyPage() async {
-    await enterSafetyPage();
-    await checkTitle(title);
-    await tapBackButton();
-  }
-
-  Future<void> checkPrivacyPage() async {
-    privacyBetaLabelFinder(); // Check beta label
-    await enterPrivacyPage();
-    await checkTitle(title);
-    await tapBackButton();
-  }
-
-  Future<void> checkDevicesPage() async {
-    await enterDevicesPage();
-    await checkTitle(title);
-    await tapBackButton();
-  }
-
-  Future<void> checkAdvancedSettingsPage() async {
-    await enterAdvancedSettingsPage();
-    await checkTitle(title);
-    await tapBackButton();
-  }
-
-  Future<void> checkVerifyPage() async {
-    await enterVerifyPage();
-    await checkTitle(title);
-    await tapBackButton();
-  }
-
-  Future<void> checkExternalSpeedTestPage() async {
-    await enterExternalSpeedTestPage();
-    await checkTitle(title);
-    await tapBackButton();
-  }
-
-  Future<void> checkAddNodePage() async {
-    await enterAddNodePage();
-    await checkTitle(title);
-    await tapBackButton();
+  Future<void> tapCancelBtn() async {
+    final finder = cancelBtnFinder();
+    // Tap the card
+    await tester.tap(finder);
+    await tester.pumpAndSettle();
   }
 }
