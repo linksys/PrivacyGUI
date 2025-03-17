@@ -5,23 +5,36 @@ import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 
-enum NodeWANStatus {
+enum InternetStatus {
   online,
   offline,
 }
 
-final nodeWanStatusProvider = StateProvider<NodeWANStatus>((ref) {
+final internetStatusProvider = StateProvider<InternetStatus>((ref) {
   final pollingState = ref.watch(pollingProvider);
   if (pollingState.hasError) {
-    return NodeWANStatus.offline;
+    logger.e('[Internet]: Failed to get the Internet status');
+    return InternetStatus.offline;
   }
-  final wanStatusRaw = pollingState.value?.data[JNAPAction.getWANStatus];
-  logger.d('[WAN] $wanStatusRaw');
-  if (wanStatusRaw != null && wanStatusRaw is JNAPSuccess) {
-    final wanStatus = RouterWANStatus.fromMap(wanStatusRaw.output);
-    return wanStatus.wanStatus == 'Connected'
-        ? NodeWANStatus.online
-        : NodeWANStatus.offline;
+
+  var isConnected = false;
+  final pollingData = pollingState.value?.data;
+  // Read the Internet Connection Status result first
+  var outputData =
+      (pollingData?[JNAPAction.getInternetConnectionStatus] as JNAPSuccess?)
+          ?.output;
+  if (outputData != null) {
+    final connectionStatus = outputData['connectionStatus'];
+    isConnected = connectionStatus == 'InternetConnected';
+  } else {
+    // For non-node models, read the WAN Status result
+    outputData =
+        (pollingData?[JNAPAction.getWANStatus] as JNAPSuccess?)?.output;
+    if (outputData != null) {
+      final wanStatus = RouterWANStatus.fromMap(outputData);
+      isConnected = wanStatus.wanStatus == 'Connected';
+    }
   }
-  return NodeWANStatus.offline;
+  logger.i('[Internet]: Is Internet connected = $isConnected');
+  return isConnected ? InternetStatus.online : InternetStatus.offline;
 });

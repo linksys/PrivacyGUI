@@ -198,7 +198,7 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
                 ),
               ],
             ),
-            const AppGap.medium(),
+            const AppGap.small2(),
             AppText.titleMedium(
               widget.item.ssid,
               maxLines: 1,

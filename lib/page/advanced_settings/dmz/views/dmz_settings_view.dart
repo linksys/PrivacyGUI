@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/dmz/providers/dmz_settings_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/dmz/providers/dmz_settings_state.dart';
+import 'package:privacy_gui/page/components/mixin/preserved_state_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
@@ -30,8 +31,8 @@ class DMZSettingsView extends ArgumentsConsumerStatefulView {
   ConsumerState<DMZSettingsView> createState() => _DMZSettingsViewState();
 }
 
-class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
-  DMZSettingsState? _preservedState;
+class _DMZSettingsViewState extends ConsumerState<DMZSettingsView>
+    with PreservedStateMixin<DMZSettingsState, DMZSettingsView> {
   late TextEditingController _sourceFirstIPController;
   late TextEditingController _sourceLastIPController;
   late TextEditingController _destinationIPController;
@@ -51,7 +52,7 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
     doSomethingWithSpinner(
         context,
         ref.read(dmzSettingsProvider.notifier).fetch(true).then((value) {
-          _preservedState = value;
+          preservedState = value;
           _sourceFirstIPController.text =
               value.settings.sourceRestriction?.firstIPAddress ?? '';
           _sourceLastIPController.text =
@@ -78,7 +79,7 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
     final state = ref.watch(dmzSettingsProvider);
     return StyledAppPageView(
         title: loc(context).dmz,
-        onBackTap: _preservedState != ref.read(dmzSettingsProvider)
+        onBackTap: isStateChanged(state)
             ? () {
                 showUnsavedAlert(context).then((value) {
                   if (value == true) {
@@ -90,15 +91,13 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
             : null,
         scrollable: true,
         bottomBar: PageBottomBar(
-            isPositiveEnabled: _preservedState != state &&
+            isPositiveEnabled: isStateChanged(state) &&
                 (_sourceError == null && _destinationError == null),
             onPositiveTap: () {
               doSomethingWithSpinner(
                   context,
                   ref.read(dmzSettingsProvider.notifier).save().then((value) {
-                    setState(() {
-                      _preservedState = value;
-                    });
+                    preservedState = value;
                     _sourceFirstIPController.text =
                         value.settings.sourceRestriction?.firstIPAddress ?? '';
                     _sourceLastIPController.text =
@@ -263,10 +262,10 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                   ));
             } else {
               _sourceFirstIPController.text =
-                  _preservedState?.settings.sourceRestriction?.firstIPAddress ??
+                  preservedState?.settings.sourceRestriction?.firstIPAddress ??
                       '';
               _sourceLastIPController.text =
-                  _preservedState?.settings.sourceRestriction?.lastIPAddress ??
+                  preservedState?.settings.sourceRestriction?.lastIPAddress ??
                       '';
               ref.read(dmzSettingsProvider.notifier).setSettings(DMZSettings(
                     isDMZEnabled: state.settings.isDMZEnabled,

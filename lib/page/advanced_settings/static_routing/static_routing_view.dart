@@ -206,6 +206,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
       title: loc(context).staticRouting,
       emptyMessage: loc(context).noStaticRoutes,
       addEnabled: !_notifier.isExceedMax(),
+      pivotalIndex: 4, // Changes on the interface may make other values invalid
       onStartEdit: (index, rule) {
         currentFocus = null;
         ref.read(staticRoutingRuleProvider.notifier).init(state.setting.entries,

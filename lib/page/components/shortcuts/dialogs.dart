@@ -378,7 +378,7 @@ Future<T?> showRedirectNewIpAlert<T>(
       ]);
 }
 
-Future<bool?> showFactoryResetModal(BuildContext context, bool isParent) {
+Future<bool?> showFactoryResetModal(BuildContext context, bool isParent, isLast) {
   return showMessageAppDialog<bool>(context,
       icon: Icon(
         LinksysIcons.resetWrench,
@@ -397,7 +397,7 @@ Future<bool?> showFactoryResetModal(BuildContext context, bool isParent) {
           },
         ),
         AppTextButton(
-          loc(context).factoryResetOk,
+          isLast ? loc(context).factoryResetOkSingle : loc(context).factoryResetOk,
           color: Theme.of(context).colorScheme.error,
           onTap: () {
             context.pop(true);
@@ -406,7 +406,7 @@ Future<bool?> showFactoryResetModal(BuildContext context, bool isParent) {
       ]);
 }
 
-Future<bool?> showRebootModal(BuildContext context, bool isParent) {
+Future<bool?> showRebootModal(BuildContext context, bool isParent, bool isLast) {
   return showMessageAppDialog<bool>(context,
       icon: Icon(
         LinksysIcons.restartAlt,
@@ -424,7 +424,7 @@ Future<bool?> showRebootModal(BuildContext context, bool isParent) {
           },
         ),
         AppTextButton(
-          loc(context).rebootOk,
+          isLast ? loc(context).rebootOkSingle : loc(context).rebootOk,
           color: Theme.of(context).colorScheme.error,
           onTap: () {
             context.pop(true);

@@ -138,7 +138,7 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
   //     return await phoneNumberUtil.format(
   //         phoneSample, currentRegion.countryCode);
   //   } else {
-  //     return getAppLocalizations(context).phone;
+  //     return loc(context).phone;
   //   }
   // }
 
@@ -148,7 +148,7 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
       scrollable: true,
       child: (context, constraints) => AppBasicLayout(
         header: BasicHeader(
-          title: getAppLocalizations(context).otpAddPhoneNumber,
+          title: loc(context).otpAddPhoneNumber,
         ),
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -158,7 +158,7 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
                 top: Spacing.large5,
                 bottom: Spacing.small2,
               ),
-              child: AppText.bodyLarge(getAppLocalizations(context).phone),
+              child: AppText.bodyLarge(loc(context).phone),
             ),
             IntrinsicHeight(
               child: Row(
@@ -194,13 +194,13 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
                   // Expanded(
                   //   child: FutureBuilder<String>(
                   //       future: _getPhoneHint(currentRegion.countryCode),
-                  //       initialData: getAppLocalizations(context).phone,
+                  //       initialData: loc(context).phone,
                   //       builder: (context, data) {
                   //         return AppTextField(
                   //           controller: phoneController
                   //             ..text = editPhone?.phoneNumber ?? '',
                   //           hintText:
-                  //               data.data ?? getAppLocalizations(context).phone,
+                  //               data.data ?? loc(context).phone,
                   //           inputType: TextInputType.number,
                   //           onChanged: _onInputChanged,
                   //         );
@@ -223,7 +223,7 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             AppFilledButton.fillWidth(
-              getAppLocalizations(context).sendCode,
+              loc(context).sendCode,
               onTap: hasInput ? _checkPhoneNumber : null,
             ),
           ],

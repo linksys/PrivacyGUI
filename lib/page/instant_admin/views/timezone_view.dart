@@ -45,7 +45,7 @@ class _TimezoneContentViewState extends ConsumerState<TimezoneView>
   Widget build(BuildContext context) {
     final state = ref.watch(timezoneProvider);
     return StyledAppPageView(
-      title: getAppLocalizations(context).timezone,
+      title: loc(context).timezone,
       scrollable: true,
       onBackTap: _isEdited(state.timezoneId)
           ? () async {

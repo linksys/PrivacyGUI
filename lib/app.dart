@@ -9,7 +9,6 @@ import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/layouts/root_container.dart';
-import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_provider.dart';
@@ -122,8 +121,7 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
             },
             child: CustomResponsive(
               child: AppRootContainer(
-                routeConfig:
-                    _currentRoute?.config ?? const LinksysRouteConfig(),
+                route: _currentRoute,
                 child: child,
               ),
             ),

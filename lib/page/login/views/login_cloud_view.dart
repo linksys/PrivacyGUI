@@ -95,13 +95,12 @@ class _LoginCloudViewState extends ConsumerState<LoginCloudView> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          AppText.headlineSmall(
-                              getAppLocalizations(context).login),
+                          AppText.headlineSmall(loc(context).login),
                           const AppGap.large3(),
                           AppTextField(
                             border: const OutlineInputBorder(),
                             controller: _usernameController,
-                            hintText: getAppLocalizations(context).username,
+                            hintText: loc(context).username,
                             onChanged: _checkFilledInfo,
                             errorText: _isValidEmail ?? true
                                 ? null
@@ -119,7 +118,7 @@ class _LoginCloudViewState extends ConsumerState<LoginCloudView> {
                           AppPasswordField(
                             border: const OutlineInputBorder(),
                             controller: _passwordController,
-                            hintText: getAppLocalizations(context).password,
+                            hintText: loc(context).password,
                             errorText: errorCodeHelper(context, _error),
                             onSubmitted: (_) {
                               _cloudLogin();

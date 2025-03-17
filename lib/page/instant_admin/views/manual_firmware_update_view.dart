@@ -49,7 +49,7 @@ class _ManualFirmwareUpdateViewState
   Widget _mainContent(FileInfo? file) {
     return StyledAppPageView(
       scrollable: true,
-      title: getAppLocalizations(context).manualFirmwareUpdate,
+      title: loc(context).manualFirmwareUpdate,
       child: (context, constraints) => AppBasicLayout(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

@@ -65,10 +65,6 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
     final isAnyNodesOffline =
         deviceManagerState.nodeDevices.any((element) => !element.isOnline());
 
-    // Get WAN connection status
-    final isWanConnected =
-        deviceManagerState.wanStatus?.wanStatus == 'Connected';
-
     // Get WAN type
     final wanType = deviceManagerState.wanStatus?.wanConnection?.wanType;
     final detectedWANType = deviceManagerState.wanStatus?.detectedWANType;
@@ -106,7 +102,6 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
       uptime: () => dashboardManagerState.uptimes,
       wanPortConnection: () => dashboardManagerState.wanConnection,
       lanPortConnections: dashboardManagerState.lanConnections,
-      isWanConnected: isWanConnected,
       isFirstPolling: isFirstPolling,
       masterIcon: masterIcon,
       isAnyNodesOffline: isAnyNodesOffline,
