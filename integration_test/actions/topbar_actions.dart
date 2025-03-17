@@ -1,8 +1,4 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:privacy_gui/main.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-
-import 'base_actions.dart';
+part of 'base_actions.dart';
 
 class TestTopbarActions extends CommonBaseActions {
   TestTopbarActions(super.tester);

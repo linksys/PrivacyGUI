@@ -1,4 +1,4 @@
-import 'base_actions.dart';
+part of 'base_actions.dart';
 
 class TestInstantVerifyActions extends CommonBaseActions {
   TestInstantVerifyActions(super.tester);

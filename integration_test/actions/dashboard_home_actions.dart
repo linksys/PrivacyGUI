@@ -1,17 +1,4 @@
-import 'dart:ui';
-import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
-import 'package:privacy_gui/main.dart';
-import 'package:privacy_gui/page/dashboard/views/components/networks.dart';
-import 'package:privacy_gui/page/dashboard/views/components/quick_panel.dart';
-import 'package:privacy_gui/page/dashboard/views/components/wifi_grid.dart';
-import 'package:privacy_gui/page/instant_topology/views/widgets/tree_node_item.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:qr_flutter/qr_flutter.dart';
-import 'package:super_tooltip/super_tooltip.dart';
-
-import 'base_actions.dart';
+part of 'base_actions.dart';
 
 class TestDashboardHomeActions extends CommonBaseActions {
   TestDashboardHomeActions(super.tester);

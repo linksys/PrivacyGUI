@@ -1,36 +1,74 @@
+import 'dart:ui';
+
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pin_code_fields/pin_code_fields.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/main.dart';
+import 'package:privacy_gui/page/components/styled/status_label.dart';
+import 'package:privacy_gui/page/dashboard/views/components/networks.dart';
+import 'package:privacy_gui/page/dashboard/views/components/quick_panel.dart';
+import 'package:privacy_gui/page/dashboard/views/components/wifi_grid.dart';
+import 'package:privacy_gui/page/instant_topology/views/widgets/tree_node_item.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:super_tooltip/super_tooltip.dart';
 
 import '../mixin/common_actions_mixin.dart';
-import '_actions.dart';
+
+part 'dashboard_home_actions.dart';
+part 'local_login_actions.dart';
+part 'menu_actions.dart';
+part 'incredible_wifi_actions.dart';
+part 'instant_admin_actions.dart';
+part 'instant_topology_actions.dart';
+part 'instant_safety_actions.dart';
+part 'instant_privacy_actions.dart';
+part 'instant_devices_actions.dart';
+part 'advanced_settings_actions.dart';
+part 'instant_verify_actions.dart';
+part 'external_speed_test_actions.dart';
+part 'add_nodes_actions.dart';
+part 'pnp_setup_actions.dart';
+part 'prepair_pnp_setup_actions.dart';
+part 'recovery_actions.dart';
+part 'reset_password_actions.dart';
+part 'topbar_actions.dart';
 
 abstract class BaseActions {
   final WidgetTester tester;
   const BaseActions(this.tester);
 }
 
-abstract class CommonBaseActions extends BaseActions with CommonActionsMixin {
+sealed class CommonBaseActions extends BaseActions with CommonActionsMixin {
   CommonBaseActions(super.tester);
 
   String get title {
     final context = getContext();
-    return switch (runtimeType) {
-      TestLocalLoginActions => loc(context).login,
-      TestMenuActions => loc(context).menu,
-      TestLocalRecoveryActions => loc(context).forgotPassword,
-      TestLocalResetPasswordActions => loc(context).localResetRouterPasswordTitle,
-      TestIncredibleWifiActions => loc(context).incredibleWiFi,
-      TestInstantAdminActions => loc(context).instantAdmin,
-      TestInstantTopologyActions => loc(context).instantTopology,
-      TestInstantSafetyActions => loc(context).instantSafety,
-      TestInstantPrivacyActions => loc(context).instantPrivacy,
-      TestInstantDevicesActions => loc(context).instantDevices,
-      TestAdvancedSettingsActions => loc(context).advancedSettings,
-      TestInstantVerifyActions => loc(context).instantVerify,
-      TestExternalSpeedTestActions => loc(context).externalSpeedText,
-      TestAddNodesActions => loc(context).addNodes,
-
-      _ => 'Unknown', // Or throw an error if you want to be strict
+    return switch (this) {
+      TestDashboardHomeActions() => loc(context).home,
+      TestLocalLoginActions() => loc(context).login,
+      TestMenuActions() => loc(context).menu,
+      TestLocalRecoveryActions() => loc(context).forgotPassword,
+      TestLocalResetPasswordActions() => loc(context).localResetRouterPasswordTitle,
+      TestIncredibleWifiActions() => loc(context).incredibleWiFi,
+      TestInstantAdminActions() => loc(context).instantAdmin,
+      TestInstantTopologyActions() => loc(context).instantTopology,
+      TestInstantSafetyActions() => loc(context).instantSafety,
+      TestInstantPrivacyActions() => loc(context).instantPrivacy,
+      TestInstantDevicesActions() => loc(context).instantDevices,
+      TestAdvancedSettingsActions() => loc(context).advancedSettings,
+      TestInstantVerifyActions() => loc(context).instantVerify,
+      TestExternalSpeedTestActions() => loc(context).externalSpeedText,
+      TestAddNodesActions() => loc(context).addNodes,
+      // TODO: Handle this case.
+      TestPnpSetupActions() => throw UnimplementedError(),
+      // TODO: Handle this case.
+      TestPrepairPnpSetupActions() => throw UnimplementedError(),
+      // TODO: Handle this case.
+      TestTopbarActions() => throw UnimplementedError(),
     };
   }
 }

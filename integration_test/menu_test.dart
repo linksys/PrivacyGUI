@@ -9,7 +9,7 @@ import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/main.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'actions/_actions.dart';
+import 'actions/base_actions.dart';
 import 'config/integration_test_config.dart';
 import 'extensions/extensions.dart';
 

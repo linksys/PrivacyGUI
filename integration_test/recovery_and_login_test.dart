@@ -13,9 +13,7 @@ import 'package:privacy_gui/page/dashboard/views/components/quick_panel.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'actions/local_login_actions.dart';
-import 'actions/recovery_actions.dart';
-import 'actions/reset_password_actions.dart';
+import 'actions/base_actions.dart';
 import 'config/integration_test_config.dart';
 import 'extensions/extensions.dart';
 

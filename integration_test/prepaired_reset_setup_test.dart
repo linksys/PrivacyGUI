@@ -11,7 +11,7 @@ import 'package:privacy_gui/main.dart';
 import 'package:privacy_gui/page/dashboard/views/components/quick_panel.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'actions/prepair_pnp_setup_actions.dart';
+import 'actions/base_actions.dart';
 import 'config/integration_test_config.dart';
 import 'extensions/extensions.dart';
 
