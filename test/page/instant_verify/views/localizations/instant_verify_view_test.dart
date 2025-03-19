@@ -80,7 +80,7 @@ void main() {
             firmwareUpdateProvider
                 .overrideWith(() => mockFirmwareUpdateNotifier),
             deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
+            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
             instantPrivacyProvider
                 .overrideWith(() => mockInstantPrivacyNotifier),
             instantTopologyProvider
@@ -126,7 +126,7 @@ void main() {
             firmwareUpdateProvider
                 .overrideWith(() => mockFirmwareUpdateNotifier),
             deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
+            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
             instantPrivacyProvider
                 .overrideWith(() => mockInstantPrivacyNotifier),
             instantTopologyProvider
@@ -167,7 +167,7 @@ void main() {
             firmwareUpdateProvider
                 .overrideWith(() => mockFirmwareUpdateNotifier),
             deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
+            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
             instantPrivacyProvider
                 .overrideWith(() => mockInstantPrivacyNotifier),
             instantTopologyProvider
@@ -208,7 +208,7 @@ void main() {
             firmwareUpdateProvider
                 .overrideWith(() => mockFirmwareUpdateNotifier),
             deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
+            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
             instantPrivacyProvider
                 .overrideWith(() => mockInstantPrivacyNotifier),
             instantTopologyProvider
@@ -251,7 +251,7 @@ void main() {
                   .overrideWith(() => mockFirmwareUpdateNotifier),
               deviceManagerProvider
                   .overrideWith(() => mockDeviceManagerNotifier),
-              nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
+              internetStatusProvider.overrideWith((ref) => InternetStatus.online),
               instantPrivacyProvider
                   .overrideWith(() => mockInstantPrivacyNotifier),
               instantTopologyProvider
@@ -301,7 +301,7 @@ void main() {
                   .overrideWith(() => mockFirmwareUpdateNotifier),
               deviceManagerProvider
                   .overrideWith(() => mockDeviceManagerNotifier),
-              nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
+              internetStatusProvider.overrideWith((ref) => InternetStatus.online),
               instantPrivacyProvider
                   .overrideWith(() => mockInstantPrivacyNotifier),
               instantTopologyProvider
@@ -349,7 +349,7 @@ void main() {
                   .overrideWith(() => mockFirmwareUpdateNotifier),
               deviceManagerProvider
                   .overrideWith(() => mockDeviceManagerNotifier),
-              nodeWanStatusProvider.overrideWith((ref) => NodeWANStatus.online),
+              internetStatusProvider.overrideWith((ref) => InternetStatus.online),
               instantPrivacyProvider
                   .overrideWith(() => mockInstantPrivacyNotifier),
               instantTopologyProvider

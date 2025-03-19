@@ -157,7 +157,6 @@ class DashboardWiFiItem extends Equatable {
 }
 
 class DashboardHomeState extends Equatable {
-  final bool isWanConnected;
   final bool isFirstPolling;
   final bool isHorizontalLayout;
   final bool isHealthCheckSupported;
@@ -174,7 +173,6 @@ class DashboardHomeState extends Equatable {
   final String? detectedWANType;
 
   const DashboardHomeState({
-    this.isWanConnected = false,
     this.isFirstPolling = false,
     this.isHorizontalLayout = false,
     this.isHealthCheckSupported = false,
@@ -193,7 +191,6 @@ class DashboardHomeState extends Equatable {
 
   Map<String, dynamic> toMap() {
     return {
-      'isWanConnected': isWanConnected,
       'isFirstPolling': isFirstPolling,
       'isHorizontalLayout': isHorizontalLayout,
       'isHealthCheckSupported': isHealthCheckSupported,
@@ -213,7 +210,6 @@ class DashboardHomeState extends Equatable {
 
   factory DashboardHomeState.fromMap(Map<String, dynamic> map) {
     return DashboardHomeState(
-      isWanConnected: map['isWanConnected'] ?? false,
       isFirstPolling: map['isFirstPolling'] ?? false,
       isHorizontalLayout: map['isHorizontalLayout'] ?? false,
       isHealthCheckSupported: map['isHealthCheckSupported'] ?? false,
@@ -241,7 +237,6 @@ class DashboardHomeState extends Equatable {
   @override
   List<Object?> get props {
     return [
-      isWanConnected,
       isFirstPolling,
       isHorizontalLayout,
       isHealthCheckSupported,
@@ -260,7 +255,6 @@ class DashboardHomeState extends Equatable {
   }
 
   DashboardHomeState copyWith({
-    bool? isWanConnected,
     bool? isFirstPolling,
     bool? isHorizontalLayout,
     bool? isHealthCheckSupported,
@@ -277,7 +271,6 @@ class DashboardHomeState extends Equatable {
     ValueGetter<String?>? detectedWANType,
   }) {
     return DashboardHomeState(
-      isWanConnected: isWanConnected ?? this.isWanConnected,
       isFirstPolling: isFirstPolling ?? this.isFirstPolling,
       isHorizontalLayout: isHorizontalLayout ?? this.isHorizontalLayout,
       isHealthCheckSupported: isHealthCheckSupported ?? this.isHealthCheckSupported,
@@ -297,7 +290,7 @@ class DashboardHomeState extends Equatable {
 
   @override
   String toString() {
-    return 'DashboardHomeState(isWanConnected: $isWanConnected, isFirstPolling: $isFirstPolling, isHorizontalLayout: $isHorizontalLayout, isHealthCheckSupported: $isHealthCheckSupported, masterIcon: $masterIcon, isAnyNodesOffline: $isAnyNodesOffline, uploadResult: $uploadResult, downloadResult: $downloadResult, speedCheckTimestamp: $speedCheckTimestamp, uptime: $uptime, wanPortConnection: $wanPortConnection, lanPortConnections: $lanPortConnections, wifis: $wifis, wanType: $wanType, detectedWANType: $detectedWANType)';
+    return 'DashboardHomeState(isFirstPolling: $isFirstPolling, isHorizontalLayout: $isHorizontalLayout, isHealthCheckSupported: $isHealthCheckSupported, masterIcon: $masterIcon, isAnyNodesOffline: $isAnyNodesOffline, uploadResult: $uploadResult, downloadResult: $downloadResult, speedCheckTimestamp: $speedCheckTimestamp, uptime: $uptime, wanPortConnection: $wanPortConnection, lanPortConnections: $lanPortConnections, wifis: $wifis, wanType: $wanType, detectedWANType: $detectedWANType)';
   }
 }
 

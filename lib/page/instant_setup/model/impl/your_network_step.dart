@@ -18,12 +18,12 @@ class YourNetworkStep extends PnpStep {
 
   YourNetworkStep({
     super.saveChanges,
-  }):super(index: id) {
+  }) : super(index: id) {
     canBack(false);
   }
 
   @override
-  String nextLable(BuildContext context) => getAppLocalizations(context).done;
+  String nextLable(BuildContext context) => loc(context).done;
 
   @override
   Future<void> onInit(WidgetRef ref) async {

@@ -6,42 +6,42 @@ ConnectionTypeData toConnectionTypeData(BuildContext context, String type) {
     case 'DHCP':
       return ConnectionTypeData(
         type: type,
-        title: getAppLocalizations(context).connectionTypeDhcp,
+        title: loc(context).connectionTypeDhcp,
       );
     case 'Static':
       return ConnectionTypeData(
         type: type,
-        title: getAppLocalizations(context).connectionTypeStatic,
+        title: loc(context).connectionTypeStatic,
       );
     case 'PPPoE':
       return ConnectionTypeData(
         type: type,
-        title: getAppLocalizations(context).connectionTypePppoe,
+        title: loc(context).connectionTypePppoe,
       );
     case 'PPTP':
       return ConnectionTypeData(
         type: type,
-        title: getAppLocalizations(context).connectionTypePptp,
+        title: loc(context).connectionTypePptp,
       );
     case 'L2TP':
       return ConnectionTypeData(
         type: type,
-        title: getAppLocalizations(context).connectionTypeL2tp,
+        title: loc(context).connectionTypeL2tp,
       );
     case 'Bridge':
       return ConnectionTypeData(
         type: type,
-        title: getAppLocalizations(context).connectionTypeBridge,
+        title: loc(context).connectionTypeBridge,
       );
     case 'Automatic':
       return ConnectionTypeData(
         type: type,
-        title: getAppLocalizations(context).connectionTypeAutomatic,
+        title: loc(context).connectionTypeAutomatic,
       );
     case 'Pass-through':
       return ConnectionTypeData(
         type: type,
-        title: getAppLocalizations(context).connectionTypePassThrough,
+        title: loc(context).connectionTypePassThrough,
       );
     default:
       return ConnectionTypeData(type: type, title: ' ');

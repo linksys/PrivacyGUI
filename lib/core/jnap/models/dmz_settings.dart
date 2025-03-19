@@ -115,7 +115,7 @@ class DMZSourceRestriction extends Equatable {
   factory DMZSourceRestriction.fromMap(Map<String, dynamic> map) {
     return DMZSourceRestriction(
       firstIPAddress: map['firstIPAddress'] as String,
-      lastIPAddress: map['lastIPAddress'] as String,
+      lastIPAddress: (map['lastIPAddress'] ?? map['firstIPAddress']) as String,
     );
   }
 

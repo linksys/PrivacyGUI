@@ -240,12 +240,11 @@ class RouterNotifier extends ChangeNotifier {
 
   FutureOr<String?> _goPnpPath(GoRouterState state) {
     if (_ref.read(pnpProvider).deviceInfo == null) {
-      _ref.read(pnpProvider.notifier).fetchDeviceInfo().then((_) {
-        return state.uri.toString();
-      });
+      return _goPnp(state.uri.query);
+    } else {
+      // bypass any pnp views
+      return state.uri.toString();
     }
-    // bypass any pnp views
-    return state.uri.toString();
   }
 
   Future<String?> _prepare(GoRouterState state, [String? goToPath]) async {

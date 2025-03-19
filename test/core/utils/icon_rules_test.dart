@@ -69,6 +69,8 @@ void main() {
       expect(result, 'routerLn12');
     });
 
+
+
     test('test iconTest - iPhone', () {
       const device = {
         "model": {
@@ -141,6 +143,15 @@ void main() {
     test('test routerIconTest - Elm', () {
       final result = routerIconTestByModel(modelNumber: 'LN11');
       expect(result, 'routerLn11');
+    });
+
+    test('test routerIconTest - Oak SP1', () {
+      final result = routerIconTestByModel(modelNumber: 'LN14');
+      expect(result, 'routerMx6200');
+    });
+    test('test routerIconTest - Oak SP1 variant', () {
+      final result = routerIconTestByModel(modelNumber: 'LN14PW');
+      expect(result, 'routerMx6200');
     });
   });
 

@@ -38,16 +38,6 @@ final advancedSettings = [
           args: state.extra as Map<String, dynamic>? ?? {},
         ),
       ),
-      LinksysRoute(
-        name: RouteNamed.dhcpServer,
-        path: RoutePath.dhcpServer,
-        config: LinksysRouteConfig(
-          column: ColumnGrid(column: 9),
-        ),
-        builder: (context, state) => DHCPServerView(
-          args: state.extra as Map<String, dynamic>? ?? {},
-        ),
-      ),
     ],
   ),
   LinksysRoute(
