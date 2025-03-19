@@ -38,7 +38,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     firmware = ref.read(firmwareUpdateProvider.notifier);
     // _pushNotificationCheck();
     _firmwareUpdateCheck();
-    ref.read(menuController).setTo(NaviType.home);    
+    ref.read(menuController).setTo(NaviType.home);
   }
 
   @override
@@ -49,7 +49,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     final hasLanPort =
         ref.read(dashboardHomeProvider).lanPortConnections.isNotEmpty;
     final isLoading = ref.watch(deviceManagerProvider).deviceList.isEmpty;
-    
+
     return StyledAppPageView(
       scrollable: true,
       appBarStyle: AppBarStyle.none,
@@ -200,6 +200,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
         DashboardQuickPanel(),
         AppGap.medium(),
         DashboardWiFiGrid(),
+        AppGap.medium(),
       ],
     );
   }

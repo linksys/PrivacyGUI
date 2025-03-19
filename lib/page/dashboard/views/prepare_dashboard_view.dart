@@ -41,7 +41,7 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
 
   @override
   Widget build(BuildContext context) =>
-      AppFullScreenSpinner(text: getAppLocalizations(context).processing);
+      AppFullScreenSpinner(text: loc(context).processing);
 
   _checkSelfNetworks() async {
     final router = GoRouter.of(context);

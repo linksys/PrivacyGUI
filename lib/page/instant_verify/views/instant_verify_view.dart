@@ -756,6 +756,8 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
     final guestWiFi =
         systemConnectivityState.guestRadioSettings.radios.firstOrNull;
     final isSupportHealthCheck = serviceHelper.isSupportHealthCheck();
+    final cpuLoad = dashboardState.cpuLoad;
+    final memoryLoad = dashboardState.memoryLoad;
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
@@ -772,12 +774,16 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
         pw.Text('${loc(context).macAddress}: ${master.getMacAddress()}'),
         pw.Text(
             '${loc(context).firmwareVersion}: ${master.unit.firmwareVersion ?? '--'}'),
-        // pw.Text('CPU Utilization: ####'),
-        // pw.Text('Memory Utilization: ####'),
+        if (cpuLoad != null)
+          pw.Text(
+              'CPU Utilization: ${(double.tryParse(cpuLoad.padLeft(2, '0')) ?? 0) * 100}%'),
+        if (memoryLoad != null)
+          pw.Text(
+              'Memory Utilization: ${(double.tryParse(memoryLoad.padLeft(2, '0')) ?? 0) * 100}%'),
         pw.Divider(height: Spacing.medium),
         //
         pw.Text(loc(context).connectivity),
-        pw.Text('${loc(context).selfTest}... Passed'),
+        // pw.Text('${loc(context).selfTest}... Passed'),
         pw.Text(
             '${loc(context).internet}... ${systemConnectivityState.wanConnection != null ? 'Passed' : 'Failed'}'),
         ...systemConnectivityState.radioInfo.radios.map(
@@ -812,11 +818,11 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
             .toList()
             .join('\n')),
         pw.Divider(height: Spacing.medium),
-        if (deviceManagerState.wanStatus != null) ...[
-          pw.Text('WAN status'),
-          pw.Text(deviceManagerState.wanStatus?.toJson() ?? '--'),
-        ],
-        pw.Divider(height: Spacing.medium),
+        // if (deviceManagerState.wanStatus != null) ...[
+        //   pw.Text('WAN status'),
+        //   pw.Text(deviceManagerState.wanStatus?.toJson() ?? '--'),
+        // ],
+        // pw.Divider(height: Spacing.medium),
       ],
     );
   }

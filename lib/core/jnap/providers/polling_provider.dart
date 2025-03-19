@@ -183,6 +183,11 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
       const MapEntry(JNAPAction.getLocalTime, {}),
       const MapEntry(JNAPAction.getDeviceInfo, {}),
     ];
+    if (serviceHelper.isSupportSetup()) {
+      commands.add(
+        const MapEntry(JNAPAction.getInternetConnectionStatus, {}),
+      );
+    }
     if (serviceHelper.isSupportHealthCheck()) {
       commands.add(const MapEntry(JNAPAction.getHealthCheckResults, {
         'includeModuleResults': true,

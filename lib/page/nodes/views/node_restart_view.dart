@@ -53,7 +53,7 @@ class _NodeRestartViewState extends ConsumerState<NodeRestartView> {
         ),
         const AppGap.medium(),
         AppTextButton(
-          getAppLocalizations(context).cancel,
+          loc(context).cancel,
           onTap: () => context.pop(),
         ),
       ],

@@ -89,9 +89,9 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
         header: AppText.titleLarge(
           state.selectedMethod?.method ==
                   CommunicationMethodType.sms.name.toUpperCase()
-              ? getAppLocalizations(context)
+              ? loc(context)
                   .otpEnterCodeSmsTitle(state.selectedMethod?.target ?? '')
-              : getAppLocalizations(context)
+              : loc(context)
                   .otpEnterCodeEmailTitle(state.selectedMethod?.target ?? ''),
         ),
         content: Column(
@@ -121,8 +121,7 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
                 },
               ),
             const AppGap.medium(),
-            AppTextButton.noPadding(getAppLocalizations(context).resendCode,
-                onTap: () {
+            AppTextButton.noPadding(loc(context).resendCode, onTap: () {
               _setLoading(true);
               _onSend(state.selectedMethod!, state.token)
                   .then((_) => _showCodeResentHint())
@@ -177,7 +176,7 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
           LinksysIcons.check,
           color: Theme.of(context).primaryColor,
         ),
-        Text(getAppLocalizations(context).otpCodeResent)
+        Text(loc(context).otpCodeResent)
       ]),
       duration: const Duration(seconds: 5),
     ));

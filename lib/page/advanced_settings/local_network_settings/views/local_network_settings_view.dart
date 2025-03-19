@@ -54,6 +54,7 @@ class _LocalNetworkSettingsViewState
   final ipAddressController = TextEditingController();
   final subnetMaskController = TextEditingController();
   int _selectedTabIndex = 0;
+  final _https = 'https://';
 
   @override
   void initState() {
@@ -90,21 +91,18 @@ class _LocalNetworkSettingsViewState
   @override
   Widget build(BuildContext context) {
     ref.listen(redirectionProvider, (previous, next) {
-      if (kIsWeb && next != null && originalSettings.ipAddress != next) {
+      if (kIsWeb &&
+          next != null &&
+          '$_https${originalSettings.ipAddress}' != next) {
         logger.d('Redirect to $next');
         assignWebLocation(next);
-      }
-    });
-    ref.listen(localNetworkSettingNeedToSaveProvider, (previous, next) {
-      if (previous == false && next == true) {
-        _saveSettings();
       }
     });
     final state = ref.watch(localNetworkSettingProvider);
     final tabContents = [
       _hostNameView(state),
       _ipAddressView(state),
-      _dhcpServerView(originalSettings),
+      _dhcpServerView(state),
     ];
     return StyledAppPageView(
       appBarStyle: AppBarStyle.none,
@@ -227,9 +225,14 @@ class _LocalNetworkSettingsViewState
     );
   }
 
-  Widget _dhcpServerView(LocalNetworkSettingsState? originalSettings) {
+  Widget _dhcpServerView(LocalNetworkSettingsState state) {
     return _viewLayout(
-      child: DHCPServerView(originalState: originalSettings),
+      child: DHCPServerView(
+        isEdited: () => _isEdited(state),
+        onSaveSettings: () async {
+          _saveSettings();
+        },
+      ),
     );
   }
 
@@ -329,7 +332,6 @@ class _LocalNetworkSettingsViewState
   }
 
   void _finishSaveSettings(LocalNetworkSettingsState state) {
-    ref.read(localNetworkSettingNeedToSaveProvider.notifier).state = false;
     setState(() {
       originalSettings = state;
     });
@@ -351,6 +353,6 @@ class _LocalNetworkSettingsViewState
   }
 
   void _doRedirect(String ip) {
-    ref.read(redirectionProvider.notifier).state = 'https://$ip';
+    ref.read(redirectionProvider.notifier).state = '$_https$ip';
   }
 }

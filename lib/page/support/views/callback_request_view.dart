@@ -90,7 +90,7 @@ class _CallbackRequestViewState extends ConsumerState<CallbackRequestView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 AppTextField.outline(
-                  headerText: getAppLocalizations(context).email,
+                  headerText: loc(context).email,
                   controller: emailController,
                   errorText: isValidEmail
                       ? null
@@ -115,7 +115,7 @@ class _CallbackRequestViewState extends ConsumerState<CallbackRequestView> {
                   children: [
                     Expanded(
                       child: AppTextField.outline(
-                        headerText: getAppLocalizations(context).firstName,
+                        headerText: loc(context).firstName,
                         controller: firstNameController,
                         onChanged: (text) {
                           _onInputChanged();
@@ -125,7 +125,7 @@ class _CallbackRequestViewState extends ConsumerState<CallbackRequestView> {
                     const AppGap.medium(),
                     Expanded(
                       child: AppTextField.outline(
-                        headerText: getAppLocalizations(context).lastName,
+                        headerText: loc(context).lastName,
                         controller: lastNameController,
                         onChanged: (text) {
                           _onInputChanged();
