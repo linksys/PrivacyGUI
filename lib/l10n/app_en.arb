@@ -999,5 +999,9 @@
   "wins": "WINS",
   "wired": "Wired",
   "wireless": "Wireless",
-  "yesCancel": "Yes, Cancel"
+  "yesCancel": "Yes, Cancel",
+  "speedTestExternalTileLabel": "Start Speed Test with:",
+  "speedTestExternalTileCloudFlare": "CloudFlare",
+  "speedTestExternalTileFast": "Fast.com",
+  "speedTextTileStart": "Start Speed Test"
 }
