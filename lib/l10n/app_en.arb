@@ -999,5 +999,15 @@
   "wins": "WINS",
   "wired": "Wired",
   "wireless": "Wireless",
-  "yesCancel": "Yes, Cancel"
+  "yesCancel": "Yes, Cancel",
+  "wifiListDescription": "Easily customize your WiFi settings, including SSID, security mode, and channel options for {bands}, and guest networks. Save changes to apply them.",
+  "@wifiListDescription": {
+    "description": "bands",
+    "placeholders": {
+      "bands": {
+        "type": "String",
+        "example": "2.4GHz, 5GHz"
+      }
+    }
+  }
 }
