@@ -15,6 +15,9 @@ import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
+import 'package:privacy_gui/util/url_helper/url_helper.dart'
+    if (dart.library.io) 'package:privacy_gui/util/url_helper/url_helper_mobile.dart'
+    if (dart.library.html) 'package:privacy_gui/util/url_helper/url_helper_web.dart';
 
 class DashboardHomePortAndSpeed extends ConsumerWidget {
   const DashboardHomePortAndSpeed({super.key});
@@ -84,7 +87,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                 ),
               ),
               // const AppGap.large2(),
-              _speedCheckWidget(context, ref, state),
+              _createSpeedTestTile(context, ref, state),
             ],
           )),
     );
@@ -140,8 +143,8 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
               ),
               SizedBox(
                   width: double.infinity,
-                  height: 304,
-                  child: _speedCheckWidget(context, ref, state)),
+                  // height: state.isHealthCheckSupported ? 304 : 154,
+                  child: _createSpeedTestTile(context, ref, state)),
             ],
           )),
     );
@@ -195,7 +198,8 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                 ),
               ),
               SizedBox(
-                  height: 112, child: _speedCheckWidget(context, ref, state)),
+                  height: 112,
+                  child: _createSpeedTestTile(context, ref, state)),
             ],
           )),
     );
@@ -249,10 +253,18 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                 ),
               ),
               SizedBox(
-                  height: 132, child: _speedCheckWidget(context, ref, state)),
+                  height: 132,
+                  child: _createSpeedTestTile(context, ref, state)),
             ],
           )),
     );
+  }
+
+  Widget _createSpeedTestTile(
+      BuildContext context, WidgetRef ref, DashboardHomeState state) {
+    return state.isHealthCheckSupported
+        ? _speedCheckWidget(context, ref, state)
+        : _externalSpeedTest(context, state);
   }
 
   Widget _speedCheckWidget(
@@ -282,35 +294,35 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                 ? Padding(
                     padding:
                         const EdgeInsets.symmetric(vertical: Spacing.large1),
-                    child: Row(
+                    child: Column(
                       children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (dateTimeStr.isNotEmpty) ...[
-                                AppText.bodySmall(dateTimeStr),
-                                const AppGap.small2(),
-                              ],
-                              Opacity(
-                                opacity: isLegacy ? 0.6 : 1,
-                                child: _downloadSpeedResult(
-                                    context,
-                                    state.downloadResult?.value ?? '--',
-                                    state.downloadResult?.unit,
-                                    isLegacy),
-                              ),
-                              Opacity(
-                                opacity: isLegacy ? 0.6 : 1,
-                                child: _uploadSpeedResult(
-                                    context,
-                                    state.uploadResult?.value ?? '--',
-                                    state.uploadResult?.unit,
-                                    isLegacy),
-                              )
-                            ],
-                          ),
+                        if (dateTimeStr.isNotEmpty) ...[
+                          AppText.bodySmall(dateTimeStr),
+                          const AppGap.small2(),
+                        ],
+                        Row(
+                          spacing: Spacing.medium,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Opacity(
+                              opacity: isLegacy ? 0.6 : 1,
+                              child: _downloadSpeedResult(
+                                  context,
+                                  state.downloadResult?.value ?? '--',
+                                  state.downloadResult?.unit,
+                                  isLegacy),
+                            ),
+                            Opacity(
+                              opacity: isLegacy ? 0.6 : 1,
+                              child: _uploadSpeedResult(
+                                  context,
+                                  state.uploadResult?.value ?? '--',
+                                  state.uploadResult?.unit,
+                                  isLegacy),
+                            )
+                          ],
                         ),
+                        AppGap.medium(),
                         _speedTestButton(context, state)
                       ],
                     ),
@@ -436,20 +448,96 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
     );
   }
 
-  Widget _speedTestButton(BuildContext context, DashboardHomeState state) {
-    return InkResponse(
-      onTap: () {
-        if (state.isHealthCheckSupported) {
-          context.pushNamed(RouteNamed.dashboardSpeedTest);
-        } else {
-          context.pushNamed(RouteNamed.speedTestExternal);
-        }
-      },
-      child: SvgPicture(
-        CustomTheme.of(context).images.btnCheckSpeeds,
-        width: 64,
-        height: 64,
+  Widget _externalSpeedTest(BuildContext context, DashboardHomeState state) {
+    final horizontalLayout = state.isHorizontalLayout;
+    final hasLanPort = state.lanPortConnections.isNotEmpty;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorSchemeExt.surfaceContainerLow,
+        border: Border.all(color: Colors.transparent),
+        borderRadius:
+            CustomTheme.of(context).radius.asBorderRadius().medium.copyWith(
+                  topLeft: Radius.circular(0),
+                  topRight: Radius.circular(0),
+                ),
       ),
+      padding: const EdgeInsets.symmetric(
+          horizontal: Spacing.large1, vertical: Spacing.medium),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                LinksysIcons.infoCircle,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              AppGap.large2(),
+              Expanded(
+                  child: AppText.labelSmall(
+                      loc(context).speedTestExternalTileLabel))
+            ],
+          ),
+          AppGap.small2(),
+          hasLanPort &&
+                  !horizontalLayout &&
+                  !ResponsiveLayout.isMobileLayout(context)
+              ? SizedBox(
+                  width: 144,
+                  child: Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      spacing: Spacing.small2,
+                      children: [
+                        AppFilledButton.fillWidth(
+                          loc(context).speedTestExternalTileCloudFlare,
+                          onTap: () {
+                            openUrl('https://speed.cloudflare.com/');
+                          },
+                        ),
+                        AppFilledButton.fillWidth(
+                          loc(context).speedTestExternalTileFast,
+                          onTap: () {
+                            openUrl('https://www.fast.com');
+                          },
+                        ),
+                      ]),
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  spacing: Spacing.medium,
+                  children: [
+                      Expanded(
+                        child: AppFilledButton(
+                          loc(context).speedTestExternalTileCloudFlare,
+                          onTap: () {
+                            openUrl('https://speed.cloudflare.com/');
+                          },
+                        ),
+                      ),
+                      Expanded(
+                        child: AppFilledButton(
+                          loc(context).speedTestExternalTileFast,
+                          onTap: () {
+                            openUrl('https://www.fast.com');
+                          },
+                        ),
+                      ),
+                    ]),
+          AppGap.small2(),
+          AppText.bodyExtraSmall(loc(context).speedTestExternalOthers),
+        ],
+      ),
+    );
+  }
+
+  Widget _speedTestButton(BuildContext context, DashboardHomeState state) {
+    return AppFilledButton(
+      loc(context).speedTextTileStart,
+      radius: BorderRadius.circular(40),
+      onTap: () {
+        context.pushNamed(RouteNamed.dashboardSpeedTest);
+      },
     );
   }
 
