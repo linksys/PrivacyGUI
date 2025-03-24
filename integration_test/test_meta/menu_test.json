@@ -1,0 +1,7 @@
+{
+    "name": "Test behaviors on Menu",
+    "target": "integration_test/menu_test.dart",
+    "description": "Click all the cards in the menu page and see the result",
+    "setUp":  ["skip_pnp"],
+    "tearDown": ["factory_reset"]
+}
