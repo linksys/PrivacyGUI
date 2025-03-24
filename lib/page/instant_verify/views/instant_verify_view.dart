@@ -3,10 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
+import 'package:privacy_gui/core/jnap/models/back_haul_info.dart';
 import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
 import 'package:privacy_gui/core/jnap/models/radio_info.dart';
+import 'package:privacy_gui/core/jnap/models/wan_status.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/wan_external_provider.dart';
@@ -735,6 +738,9 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
           _createPage(_buildNodes(context, list.key, list.value)),
         );
       }
+      // Create external device list pages
+      doc.addPage(_createPage(_createDeviceList(context, ref)));
+
       await Printing.layoutPdf(
         onLayout: (PdfPageFormat format) => doc.save(),
       );
@@ -743,8 +749,9 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
     }
   }
 
-  pw.Widget _buildInfo(BuildContext context, WidgetRef ref) {
+  List<pw.Widget> _buildInfo(BuildContext context, WidgetRef ref) {
     final dashboardState = ref.read(dashboardManagerProvider);
+    final dashboardHomeState = ref.read(dashboardHomeProvider);
     final deviceManagerState = ref.read(deviceManagerProvider);
     final devicesState = ref.read(deviceManagerProvider);
     final healthCheckState = ref.read(healthCheckProvider);
@@ -755,139 +762,325 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
     final master = devicesState.masterDevice;
     final guestWiFi =
         systemConnectivityState.guestRadioSettings.radios.firstOrNull;
-    final isSupportHealthCheck = serviceHelper.isSupportHealthCheck();
+    final isSupportHealthCheck = dashboardHomeState.isHealthCheckSupported;
     final cpuLoad = dashboardState.cpuLoad;
     final memoryLoad = dashboardState.memoryLoad;
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        //
-        pw.Text(loc(context).deviceInfo),
+    return [
+      //
+      pw.Text(loc(context).deviceInfo),
+      pw.Text(
+          '${loc(context).systemTestDateFormat(DateTime.now())} ${loc(context).systemTestDateTime(DateTime.now())}'),
+      pw.Text('${loc(context).uptime}: $uptime'),
+      pw.Text('${loc(context).model}: ${master.modelNumber ?? '--'}'),
+      pw.Text('${loc(context).sku}: ${dashboardState.skuModelNumber ?? '--'}'),
+      pw.Text(
+          '${loc(context).serialNumber}: ${master.unit.serialNumber ?? '--'}'),
+      pw.Text('${loc(context).macAddress}: ${master.getMacAddress()}'),
+      pw.Text(
+          '${loc(context).firmwareVersion}: ${master.unit.firmwareVersion ?? '--'}'),
+      if (cpuLoad != null)
         pw.Text(
-            '${loc(context).systemTestDateFormat(DateTime.now())} ${loc(context).systemTestDateTime(DateTime.now())}'),
-        pw.Text('${loc(context).uptime}: $uptime'),
-        pw.Text('${loc(context).model}: ${master.modelNumber ?? '--'}'),
+            'CPU Utilization: ${(double.tryParse(cpuLoad.padLeft(2, '0')) ?? 0) * 100}%'),
+      if (memoryLoad != null)
         pw.Text(
-            '${loc(context).sku}: ${dashboardState.skuModelNumber ?? '--'}'),
+            'Memory Utilization: ${(double.tryParse(memoryLoad.padLeft(2, '0')) ?? 0) * 100}%'),
+      pw.Divider(height: Spacing.medium),
+      //
+      pw.Text(loc(context).connectivity),
+      // pw.Text('${loc(context).selfTest}... Passed'),
+      pw.Text(
+          '${loc(context).internet}... ${systemConnectivityState.wanConnection != null ? 'Passed' : 'Failed'}'),
+      ...systemConnectivityState.radioInfo.radios.map(
+        (e) => pw.Text(
+            '${e.band} | ${e.settings.ssid}... ${e.settings.isEnabled ? 'Enabled' : 'Disabled'}'),
+      ),
+      if (guestWiFi != null)
         pw.Text(
-            '${loc(context).serialNumber}: ${master.unit.serialNumber ?? '--'}'),
-        pw.Text('${loc(context).macAddress}: ${master.getMacAddress()}'),
-        pw.Text(
-            '${loc(context).firmwareVersion}: ${master.unit.firmwareVersion ?? '--'}'),
-        if (cpuLoad != null)
-          pw.Text(
-              'CPU Utilization: ${(double.tryParse(cpuLoad.padLeft(2, '0')) ?? 0) * 100}%'),
-        if (memoryLoad != null)
-          pw.Text(
-              'Memory Utilization: ${(double.tryParse(memoryLoad.padLeft(2, '0')) ?? 0) * 100}%'),
+            'Guest | ${guestWiFi.guestSSID}... ${systemConnectivityState.guestRadioSettings.isGuestNetworkEnabled ? 'Enabled' : 'Disabled'}'),
+      pw.Text(
+          '${loc(context).wanIPAddress}: ${systemConnectivityState.wanConnection?.ipAddress ?? '--'}'),
+      pw.Text(
+          '${loc(context).gateway}: ${systemConnectivityState.wanConnection?.gateway ?? '--'}'),
+      pw.Text(
+          '${loc(context).connectionType}: ${systemConnectivityState.wanConnection?.wanType ?? '--'}'),
+      pw.Text(
+          '${loc(context).dns} 1: ${systemConnectivityState.wanConnection?.dnsServer1 ?? '--'}'),
+      pw.Text(
+          '${loc(context).dns} 2: ${systemConnectivityState.wanConnection?.dnsServer2 ?? '--'}'),
+      pw.Text(
+          '${loc(context).dns} 3: ${systemConnectivityState.wanConnection?.dnsServer3 ?? '--'}'),
+      pw.Divider(height: Spacing.medium),
+      if (isSupportHealthCheck) ...[
+        pw.Text(loc(context).speedTest),
+        pw.Text(healthCheckState.result.firstOrNull?.toString() ?? ''),
         pw.Divider(height: Spacing.medium),
-        //
-        pw.Text(loc(context).connectivity),
-        // pw.Text('${loc(context).selfTest}... Passed'),
-        pw.Text(
-            '${loc(context).internet}... ${systemConnectivityState.wanConnection != null ? 'Passed' : 'Failed'}'),
-        ...systemConnectivityState.radioInfo.radios.map(
-          (e) => pw.Text(
-              '${e.band} | ${e.settings.ssid}... ${e.settings.isEnabled ? 'Enabled' : 'Disabled'}'),
-        ),
-        if (guestWiFi != null)
-          pw.Text(
-              'Guest | ${guestWiFi.guestSSID}... ${systemConnectivityState.guestRadioSettings.isGuestNetworkEnabled ? 'Enabled' : 'Disabled'}'),
-        pw.Text(
-            '${loc(context).wanIPAddress}: ${systemConnectivityState.wanConnection?.ipAddress ?? '--'}'),
-        pw.Text(
-            '${loc(context).gateway}: ${systemConnectivityState.wanConnection?.gateway ?? '--'}'),
-        pw.Text(
-            '${loc(context).connectionType}: ${systemConnectivityState.wanConnection?.wanType ?? '--'}'),
-        pw.Text(
-            '${loc(context).dns} 1: ${systemConnectivityState.wanConnection?.dnsServer1 ?? '--'}'),
-        pw.Text(
-            '${loc(context).dns} 2: ${systemConnectivityState.wanConnection?.dnsServer2 ?? '--'}'),
-        pw.Text(
-            '${loc(context).dns} 3: ${systemConnectivityState.wanConnection?.dnsServer3 ?? '--'}'),
-        pw.Divider(height: Spacing.medium),
-        if (isSupportHealthCheck) ...[
-          pw.Text(loc(context).speedTest),
-          pw.Text(healthCheckState.result.firstOrNull?.toString() ?? ''),
-          pw.Divider(height: Spacing.medium),
-        ],
-        pw.Text('Backhaul info'),
-
-        pw.Text(deviceManagerState.backhaulInfoData
-            .map((e) => e.toJson())
-            .toList()
-            .join('\n')),
-        pw.Divider(height: Spacing.medium),
-        // if (deviceManagerState.wanStatus != null) ...[
-        //   pw.Text('WAN status'),
-        //   pw.Text(deviceManagerState.wanStatus?.toJson() ?? '--'),
-        // ],
-        // pw.Divider(height: Spacing.medium),
       ],
-    );
+      ..._createBackhaulInfoData(devicesState.backhaulInfoData),
+
+      ..._createWANStatus(deviceManagerState.wanStatus),
+    ];
   }
 
-  pw.Widget _buildNodes(BuildContext context, int index,
-      List<AppTreeNode<TopologyModel>> nodeList) {
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        pw.Text('${loc(context).instantTopology}... $index'),
-        ...nodeList.map((node) {
-          return pw.Row(children: [
-            pw.SizedBox(width: 16.0 * node.level()),
-            pw.Container(
-              constraints: const pw.BoxConstraints(
-                minWidth: 180,
-                maxWidth: 400,
-                // minHeight: 264,
-              ),
-              decoration: pw.BoxDecoration(
-                // color: PdfColor.fromInt(Colors.amber.value),
-                border: pw.Border.all(),
-              ),
-              child: pw.Column(
-                children: [
-                  pw.Padding(
-                    padding: const pw.EdgeInsets.all(Spacing.medium),
-                    child: pw.Row(
-                      mainAxisSize: pw.MainAxisSize.min,
+  List<pw.Widget> _createDeviceList(BuildContext context, WidgetRef ref) {
+    final deviceManagerState = ref.watch(deviceManagerProvider);
+    final externalDeviceList = deviceManagerState.externalDevices;
+    return externalDeviceList.isEmpty
+        ? []
+        : [
+            pw.Text('Device list'),
+            pw.Text('Online'),
+            ...externalDeviceList.where((e) => e.isOnline()).map(
+                  (e) => pw.Container(
+                    padding: pw.EdgeInsets.all(Spacing.small2),
+                    decoration: pw.BoxDecoration(border: pw.Border.all()),
+                    child: pw.Column(
                       crossAxisAlignment: pw.CrossAxisAlignment.start,
                       children: [
-                        pw.Expanded(
-                          child: pw.Column(
-                            mainAxisAlignment: pw.MainAxisAlignment.start,
-                            crossAxisAlignment: pw.CrossAxisAlignment.start,
-                            children: [
-                              pw.Text(
-                                node.data.location,
-                                maxLines: 1,
-                              ),
-                              // const AppGap.medium(),
-                              pw.SizedBox(height: Spacing.small2),
-                              pw.Column(
-                                mainAxisSize: pw.MainAxisSize.min,
+                        pw.Text(e.getDeviceLocation()),
+                        pw.Text(
+                            'Connection Type: ${e.getConnectionType().name}'),
+                        pw.Text('Signal Decibels: ${e.signalDecibels ?? '--'}'),
+                        pw.Text('Connections'),
+                        ...e.connections.map((conn) {
+                          return pw.Column(
+                              crossAxisAlignment: pw.CrossAxisAlignment.start,
+                              children: [
+                                pw.Text('['),
+                                pw.Text(
+                                    'IP Address: ${conn.ipAddress ?? '--'}'),
+                                pw.Text(
+                                    'IPv6 Address: ${conn.ipv6Address ?? '--'}'),
+                                pw.Text('MAC Address: ${conn.macAddress}'),
+                                pw.Text(
+                                    'Parent Device ID: ${conn.parentDeviceID ?? '--'}'),
+                                pw.Text('Is Guest: ${conn.isGuest ?? '--'}'),
+                                pw.Text(']'),
+                              ]);
+                        }),
+                        if (e.knownInterfaces != null) ...[
+                          pw.Text('Known Interfaces'),
+                          ...e.knownInterfaces!.map((interface) {
+                            return pw.Column(
                                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                                 children: [
-                                  _buildNodeContent(
-                                    context,
-                                    node,
-                                  )
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
+                                  pw.Text('['),
+                                  pw.Text('Band: ${interface.band ?? '--'}'),
+                                  pw.Text(
+                                      'Interface Type: ${interface.interfaceType}'),
+                                  pw.Text(
+                                      'MAC Address: ${interface.macAddress}'),
+                                  pw.Text(']'),
+                                ]);
+                          }),
+                        ],
                       ],
                     ),
                   ),
+                ),
+            pw.SizedBox(height: Spacing.small2),
+            pw.Text('Offline'),
+            ...externalDeviceList.where((e) => !e.isOnline()).map(
+                  (e) => pw.Container(
+                    padding: pw.EdgeInsets.all(Spacing.small2),
+                    decoration: pw.BoxDecoration(border: pw.Border.all()),
+                    child: pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text(e.getDeviceLocation()),
+                        pw.Text(
+                            'Connection Type: ${e.getConnectionType().name}'),
+                        pw.Text('Signal Decibels: ${e.signalDecibels ?? '--'}'),
+                        pw.Text('Connections'),
+                        ...e.connections.map((conn) {
+                          return pw.Column(
+                              crossAxisAlignment: pw.CrossAxisAlignment.start,
+                              children: [
+                                pw.Text('['),
+                                pw.Text(
+                                    'IP Address: ${conn.ipAddress ?? '--'}'),
+                                pw.Text(
+                                    'IPv6 Address: ${conn.ipv6Address ?? '--'}'),
+                                pw.Text('MAC Address: ${conn.macAddress}'),
+                                pw.Text(
+                                    'Parent Device ID: ${conn.parentDeviceID ?? '--'}'),
+                                pw.Text('Is Guest: ${conn.isGuest ?? '--'}'),
+                                pw.Text(']'),
+                              ]);
+                        }),
+                        if (e.knownInterfaces != null) ...[
+                          pw.Text('Known Interfaces'),
+                          ...e.knownInterfaces!.map((interface) {
+                            return pw.Column(
+                                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                                children: [
+                                  pw.Text('['),
+                                  pw.Text('Band: ${interface.band ?? '--'}'),
+                                  pw.Text(
+                                      'Interface Type: ${interface.interfaceType}'),
+                                  pw.Text(
+                                      'MAC Address: ${interface.macAddress}'),
+                                  pw.Text(']'),
+                                ]);
+                          }),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+          ];
+  }
+
+  List<pw.Widget> _createBackhaulInfoData(List<BackHaulInfoData> data) {
+    return data.isEmpty
+        ? []
+        : [
+            pw.Text('Backhaul info'),
+            ...data.map((b) {
+              return pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text('Device UUID: ${b.deviceUUID}'),
+                  pw.Text('IP Address: ${b.ipAddress}'),
+                  pw.Text('Connection Type: ${b.connectionType}'),
+                  pw.Text('Parent IP Address: ${b.parentIPAddress}'),
+                  pw.Text('Speed Mbps: ${b.speedMbps}'),
+                  if (b.wirelessConnectionInfo != null)
+                    pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        children: [
+                          pw.Text('Wireless Connection Info'),
+                          pw.Text(
+                              'Radio ID: ${b.wirelessConnectionInfo?.radioID}'),
+                          pw.Text(
+                              'Channel: ${b.wirelessConnectionInfo?.channel}'),
+                          pw.Text(
+                              'Ap BSSID: ${b.wirelessConnectionInfo?.apBSSID}'),
+                          pw.Text(
+                              'Ap RSSI: ${b.wirelessConnectionInfo?.apRSSI}'),
+                          pw.Text(
+                              'Station BSSID: ${b.wirelessConnectionInfo?.stationBSSID}'),
+                          pw.Text(
+                              'Station RSSI: ${b.wirelessConnectionInfo?.stationRSSI}'),
+                          pw.Text(
+                              'tx rate: ${b.wirelessConnectionInfo?.txRate}'),
+                          pw.Text(
+                              'rx rate: ${b.wirelessConnectionInfo?.rxRate}'),
+                          if (b.wirelessConnectionInfo?.isMultiLinkOperation !=
+                              null)
+                            pw.Text(
+                                'Is Multi Link Operation: ${b.wirelessConnectionInfo?.isMultiLinkOperation}'),
+                          pw.Divider(height: Spacing.small1),
+                        ]),
                 ],
-              ),
-            ),
-          ]);
-        }),
-      ],
-    );
+              );
+            }),
+          ];
+  }
+
+  List<pw.Widget> _createWANStatus(RouterWANStatus? wanStatus) {
+    return wanStatus == null
+        ? []
+        : [
+            pw.Text('WAN status'),
+            pw.Text('MAC Address: ${wanStatus.macAddress}'),
+            pw.Text('Detected WAN type: ${wanStatus.detectedWANType}'),
+            pw.Text('IPv4'),
+            pw.Text('\tWAN Status: ${wanStatus.wanStatus}'),
+            pw.Text('\tWAN Type: ${wanStatus.wanConnection?.wanType ?? '--'}'),
+            pw.Text('\tAddress: ${wanStatus.wanConnection?.ipAddress ?? '--'}'),
+            pw.Text('\tGateway: ${wanStatus.wanConnection?.gateway ?? '--'}'),
+            pw.Text(
+                '\tSubmasks: ${wanStatus.wanConnection?.networkPrefixLength != null ? NetworkUtils.prefixLengthToSubnetMask(wanStatus.wanConnection!.networkPrefixLength) : '--'}'),
+            pw.Text(
+                '\tDNS server1: ${wanStatus.wanConnection?.dnsServer1 ?? '--'}'),
+            pw.Text(
+                '\tDNS server2: ${wanStatus.wanConnection?.dnsServer2 ?? '--'}'),
+            pw.Text(
+                '\tDNS server3: ${wanStatus.wanConnection?.dnsServer3 ?? '--'}'),
+            pw.Text('\tmtu: ${wanStatus.wanConnection?.mtu ?? '--'}'),
+            pw.Text(
+                '\tDHCP Lease Minutes: ${wanStatus.wanConnection?.dhcpLeaseMinutes ?? '--'}'),
+            pw.Text('IPv6'),
+            pw.Text('\tWAN Status: ${wanStatus.wanIPv6Status}'),
+            pw.Text(
+                '\tWAN Type: ${wanStatus.wanIPv6Connection?.wanType ?? '--'}'),
+            pw.Text(
+                '\tIP Address: ${wanStatus.wanIPv6Connection?.networkInfo?.ipAddress ?? '--'}'),
+            pw.Text(
+                '\tGateway: ${wanStatus.wanIPv6Connection?.networkInfo?.gateway ?? '--'}'),
+            pw.Text(
+                '\tDNS server1: ${wanStatus.wanIPv6Connection?.networkInfo?.dnsServer1 ?? '--'}'),
+            pw.Text(
+                '\tDNS server2: ${wanStatus.wanIPv6Connection?.networkInfo?.dnsServer2 ?? '--'}'),
+            pw.Text(
+                '\tDNS server3: ${wanStatus.wanIPv6Connection?.networkInfo?.dnsServer3 ?? '--'}'),
+            pw.Text(
+                '\tDHCP Lease Minutes: ${wanStatus.wanIPv6Connection?.networkInfo?.dhcpLeaseMinutes ?? '--'}'),
+            pw.Divider(height: Spacing.medium),
+          ];
+  }
+
+  List<pw.Widget> _buildNodes(BuildContext context, int index,
+      List<AppTreeNode<TopologyModel>> nodeList) {
+    return nodeList.isEmpty
+        ? []
+        : [
+            pw.Text('${loc(context).instantTopology}... $index'),
+            ...nodeList.map((node) {
+              return pw.Row(children: [
+                pw.SizedBox(width: 16.0 * node.level()),
+                pw.Container(
+                  constraints: const pw.BoxConstraints(
+                    minWidth: 180,
+                    maxWidth: 400,
+                    // minHeight: 264,
+                  ),
+                  decoration: pw.BoxDecoration(
+                    // color: PdfColor.fromInt(Colors.amber.value),
+                    border: pw.Border.all(),
+                  ),
+                  child: pw.Column(
+                    children: [
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(Spacing.medium),
+                        child: pw.Row(
+                          mainAxisSize: pw.MainAxisSize.min,
+                          crossAxisAlignment: pw.CrossAxisAlignment.start,
+                          children: [
+                            pw.Expanded(
+                              child: pw.Column(
+                                mainAxisAlignment: pw.MainAxisAlignment.start,
+                                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                                children: [
+                                  pw.Text(
+                                    node.data.location,
+                                    maxLines: 1,
+                                  ),
+                                  // const AppGap.medium(),
+                                  pw.SizedBox(height: Spacing.small2),
+                                  pw.Column(
+                                    mainAxisSize: pw.MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        pw.CrossAxisAlignment.start,
+                                    children: [
+                                      _buildNodeContent(
+                                        context,
+                                        node,
+                                      )
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ]);
+            }),
+          ];
   }
 
   pw.Widget _buildNodeContent(
@@ -947,23 +1140,19 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
     );
   }
 
-  pw.Page _createPage(pw.Widget child) {
-    return pw.Page(
+  pw.Page _createPage(List<pw.Widget> children) {
+    return pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+        header: (pw.Context pwContext) {
+          return pw.Text(loc(context).appTitle,
+              style: pw.TextStyle(
+                fontWeight: pw.FontWeight.bold,
+              ),
+              textScaleFactor: 2.0);
+        },
         build: (pw.Context pwContext) {
-          return pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Text(loc(context).appTitle,
-                  style: pw.TextStyle(
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                  textScaleFactor: 2.0),
-              pw.SizedBox(height: 8.0),
-              child
-            ],
-          );
+          return children;
         });
   }
 }
