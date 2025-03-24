@@ -1009,5 +1009,9 @@
         "example": "2.4GHz, 5GHz"
       }
     }
-  }
+  },
+  "speedTestExternalTileLabel": "Start Speed Test with:",
+  "speedTestExternalTileCloudFlare": "CloudFlare",
+  "speedTestExternalTileFast": "Fast.com",
+  "speedTextTileStart": "Start Speed Test"
 }

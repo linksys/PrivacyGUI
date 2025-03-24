@@ -28,6 +28,7 @@ import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dar
 import 'package:privacy_gui/page/health_check/_health_check.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_provider.dart';
 import 'package:privacy_gui/page/instant_verify/views/components/ping_network_modal.dart';
+import 'package:privacy_gui/page/instant_verify/views/components/speed_test_external_widget.dart';
 import 'package:privacy_gui/page/instant_verify/views/components/speed_test_widget.dart';
 import 'package:privacy_gui/page/instant_verify/views/components/traceroute_modal.dart';
 import 'package:privacy_gui/page/instant_topology/_instant_topology.dart';
@@ -83,6 +84,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
   }
 
   Widget _instantInfo(BuildContext context, WidgetRef ref) {
+    final dashboardHomeState = ref.watch(dashboardHomeProvider);
     final desktopCol = 4.col;
     return SingleChildScrollView(
       child: ResponsiveLayout.isMobileLayout(context)
@@ -99,27 +101,57 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
             )
           : Column(
               children: [
-                IntrinsicHeight(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      SizedBox(
-                        width: desktopCol,
-                        child: _deviceInfoCard(context, ref),
+                dashboardHomeState.isHealthCheckSupported
+                    ? IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            SizedBox(
+                              width: desktopCol,
+                              child: _deviceInfoCard(context, ref),
+                            ),
+                            const AppGap.gutter(),
+                            SizedBox(
+                              width: desktopCol,
+                              child: _connectivityContentWidget(context, ref),
+                            ),
+                            const AppGap.gutter(),
+                            SizedBox(
+                              width: desktopCol,
+                              child: _speedTestContent(context),
+                            ),
+                          ],
+                        ),
+                      )
+                    : Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          IntrinsicHeight(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                SizedBox(
+                                  width: desktopCol,
+                                  child: _deviceInfoCard(context, ref),
+                                ),
+                                const AppGap.gutter(),
+                                SizedBox(
+                                  width: desktopCol,
+                                  child:
+                                      _connectivityContentWidget(context, ref),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const AppGap.gutter(),
+                          IntrinsicHeight(
+                            child: SizedBox(
+                              width: desktopCol,
+                              child: _speedTestContent(context),
+                            ),
+                          ),
+                        ],
                       ),
-                      const AppGap.gutter(),
-                      SizedBox(
-                        width: desktopCol,
-                        child: _connectivityContentWidget(context, ref),
-                      ),
-                      const AppGap.gutter(),
-                      SizedBox(
-                        width: desktopCol,
-                        child: _speedTestContent(context),
-                      ),
-                    ],
-                  ),
-                ),
                 const AppGap.medium(),
                 _portsCard(context, ref),
               ],
@@ -651,6 +683,8 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
   }
 
   Widget _speedTestContent(BuildContext context) {
+    final dashboardState = ref.watch(dashboardHomeProvider);
+
     return AppCard(
       key: const ValueKey('speedTestCard'),
       padding: const EdgeInsets.all(Spacing.large2),
@@ -658,7 +692,9 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
         children: [
           _headerWidget(loc(context).speedTest),
           const AppGap.large2(),
-          const SpeedTestWidget()
+          dashboardState.isHealthCheckSupported
+              ? const SpeedTestWidget()
+              : AppCard(child: const SpeedTestExternalWidget()),
         ],
       ),
     );
