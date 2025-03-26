@@ -1,0 +1,7 @@
+{
+    "name": "Test behaviors on Dashboard",
+    "target": "integration_test/dashboard_home_test.dart",
+    "description": "Check all functions on Dashboard page",
+    "setUp":  ["skip_pnp"],
+    "tearDown": ["factory_reset"]
+}

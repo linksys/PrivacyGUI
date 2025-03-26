@@ -3,6 +3,7 @@ force="local"
 cloud="qa"
 picker=false
 
+start_time=$(date +%s)
 GREEN='\033[0;32m'
 NC='\033[0m'
 LINE_BREAK="${GREEN} ------------ ${NC}"
@@ -98,7 +99,10 @@ for case in "${cases[@]}"; do
         bash "$actionPath"
     done
 done
+end_time=$(date +%s)
+elapsed_time=$((end_time - start_time))
 echo "*******************************"
+echo "Time spent: $elapsed_time seconds"
 echo "Passed: $successed"
 echo "Failed: $failed"
 echo "Total: $count"
