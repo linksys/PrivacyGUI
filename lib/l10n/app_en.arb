@@ -418,6 +418,7 @@
   "maximumNumberOfUsers": "Maximum number of users",
   "memoryUtilization": "Memory Utilization",
   "menu": "Menu",
+  "menuRestartNetworkChildMessage": "If you have more than one node, all will restart. Restarting mesh WiFi system temporarily disconnects it from the Internet. All nodes and connected devices will also be temporarily disconnected, but they will reconnect when mesh system is ready again.",
   "menuRestartNetworkMessage": "Reboot Parent and All Child Nodes Restarting the mesh WiFi system will temporarily disconnect it from the Internet. If you have multiple nodes, all will restart. Connected devices will also experience a temporary disconnection but will automatically reconnect once the system is back online.",
   "menuSetupANewProduct": "Setup a New Product",
   "meshHealth": "Mesh Health",
@@ -622,7 +623,7 @@
   "pnpErrorForPppoe": "Account name or password incorrect. Please try again.",
   "pnpErrorForStaticIpAndDhcp": "Couldn't establish a connection. Please check your info and try again.",
   "pnpFactoryResetTitle": "This router has been factory reset",
-  "pnpFwUpdateDesc": "Please wait as we download the update and reboot your device. The LED will turn bright white when the process is complete.",
+  "pnpFwUpdateDesc": "Please wait as we download and reboot your device. The LED will turn bright white when the process is complete. Your Router’s WiFi might briefly turn off and then on again. If you lose connection, reconnect to your Router’s WiFi to access Internet.",
   "pnpFwUpdateTitle": "Saving your configuration and checking for software updates...",
   "pnpGuestWiFiDesc": "Turn on guest network to create separate WiFi network for guests and maintain the privacy of your main network.",
   "pnpIspSettingsAuthTitle": "Enter your router's password to proceed",
@@ -832,10 +833,14 @@
   "speedTestExternalStep1": "Make sure you're connected to your WiFi network and not using cellular data",
   "speedTestExternalStep2": "Remember you're testing the speed of this device, not your network to internet speed",
   "speedTestExternalStep3": "Use a mobile device to test the WiFi in different areas of your home",
+  "speedTestExternalTileCloudFlare": "CloudFlare",
+  "speedTestExternalTileFast": "Fast.com",
+  "speedTestExternalTileLabel": "Start Speed Test with:",
   "speedTestInternetToDevice": "Internet to device",
   "speedTestInternetToDeviceDesc": "Measure the speed from this device to your router. Useful for checking different areas of your home",
   "speedTestInternetToRouter": "Internet to router",
   "speedTestInternetToRouterDesc": "Measure the speeds you signed up for with your ISP",
+  "speedTextTileStart": "Start Speed Test",
   "speedUltra": "Speed: Ultra",
   "speedUltraDescription": "At this speed, you can stream multiple Ultra HD movies and hold video conferences with multiple users, simultaneously, on different devices.",
   "ssid": "SSID",
@@ -983,6 +988,16 @@
       "band": {
         "type": "String",
         "example": "2.4GHz"
+      }
+    }
+  },
+  "wifiListDescription": "Easily customize your WiFi settings, including SSID, security mode, and channel options for {bands}, and guest networks. Save changes to apply them.",
+  "@wifiListDescription": {
+    "description": "bands",
+    "placeholders": {
+      "bands": {
+        "type": "String",
+        "example": "2.4GHz, 5GHz"
       }
     }
   },

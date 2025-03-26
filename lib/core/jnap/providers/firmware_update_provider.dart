@@ -134,8 +134,8 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
       yield [];
     } else {
       final action = serviceHelper.isSupportNodeFirmwareUpdate()
-          ? JNAPAction.updateFirmwareNow
-          : JNAPAction.nodesUpdateFirmwareNow;
+          ? JNAPAction.nodesUpdateFirmwareNow
+          : JNAPAction.updateFirmwareNow;
       await ref
           .read(routerRepositoryProvider)
           .send(
@@ -161,8 +161,8 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     ref.read(firmwareUpdateCandidateProvider.notifier).state =
         state.nodesStatus;
     final action = serviceHelper.isSupportNodeFirmwareUpdate()
-        ? JNAPAction.updateFirmwareNow
-        : JNAPAction.nodesUpdateFirmwareNow;
+        ? JNAPAction.nodesUpdateFirmwareNow
+        : JNAPAction.updateFirmwareNow;
     await ref.read(routerRepositoryProvider).send(
           action,
           data: {'onlyCheck': false},

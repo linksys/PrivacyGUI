@@ -161,6 +161,12 @@ void _updateBetterActions(JNAPService service) {
           _JNAPActionValue.getBackhaulInfo2.value;
       break;
     case JNAPService.nodesNetworkConnections:
+      _betterActionMap[JNAPAction.getNodesWirelessNetworkConnections] =
+          _JNAPActionValue.getNodesWirelessNetworkConnections.value;
+      break;
+    case JNAPService.nodesNetworkConnections2:
+      _betterActionMap[JNAPAction.getNodesWirelessNetworkConnections] =
+          _JNAPActionValue.getNodesWirelessNetworkConnections2.value;
       break;
     case JNAPService.ownedNetwork:
       break;
@@ -707,7 +713,8 @@ void buildBetterActions(List<String> routerServices) {
           .firstWhere((supportedService) => supportedService.value == service))
       .toList();
   final serviceMap = groupAndSortJNAPServices(supportedServices);
-  final sortedServiceList = serviceMap.values.reduce((all, value) => all..addAll(value));
+  final sortedServiceList =
+      serviceMap.values.reduce((all, value) => all..addAll(value));
   for (final service in sortedServiceList) {
     _updateBetterActions(service);
   }
@@ -718,8 +725,8 @@ Map<String, List<JNAPService>> groupAndSortJNAPServices(
   final groupedServices = groupBy<JNAPService, String>(services, (service) {
     final name = service.name;
     final match = RegExp(r'(\d+)').firstMatch(name);
-      if (match != null) {
-    return name.substring(0, name.indexOf(match.group(0)!));
+    if (match != null) {
+      return name.substring(0, name.indexOf(match.group(0)!));
     }
     return name;
   });
