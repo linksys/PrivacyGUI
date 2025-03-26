@@ -188,6 +188,9 @@ enum _JNAPActionValue {
   getNodesWirelessNetworkConnections(
       value:
           'http://linksys.com/jnap/nodes/networkconnections/GetNodesWirelessNetworkConnections'),
+  getNodesWirelessNetworkConnections2(
+      value:
+          'http://linksys.com/jnap/nodes/networkconnections/GetNodesWirelessNetworkConnections2'),        
   // nodes optimization
   setTopologyOptimizationSettings(
       value:

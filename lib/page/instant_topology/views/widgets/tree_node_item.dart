@@ -246,7 +246,13 @@ class SimpleTreeNodeItem extends StatelessWidget {
             minWidth: 180,
             maxWidth: 300,
             maxHeight: actions.isEmpty ? 92 : 144),
-        padding: const EdgeInsets.all(Spacing.medium),
+        padding: node.data.isOnline && actions.isNotEmpty
+            ? EdgeInsets.only(
+                top: Spacing.medium,
+                bottom: 0,
+                left: Spacing.medium,
+                right: Spacing.medium)
+            : EdgeInsets.all(Spacing.medium),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -284,53 +290,55 @@ class SimpleTreeNodeItem extends StatelessWidget {
                       ],
                     ),
                   ),
-                  SharedWidgets.resolveSignalStrengthIcon(
-                    context,
-                    node.data.signalStrength,
-                    isOnline: node.data.isOnline,
-                    isWired: node.data.isWiredConnection,
+                  Padding(
+                    padding: const EdgeInsets.only(right: Spacing.small2),
+                    child: SharedWidgets.resolveSignalStrengthIcon(
+                      context,
+                      node.data.signalStrength,
+                      isOnline: node.data.isOnline,
+                      isWired: node.data.isWiredConnection,
+                    ),
                   ),
                 ],
               ),
             ),
-            // if (node.data.isOnline && actions.isNotEmpty) ...[
-            //   const AppGap.medium(),
-            //   const Divider(
-            //     height: 0,
-            //   ),
-            //   Container(
-            //     padding: const EdgeInsets.symmetric(
-            //         vertical: 0, horizontal: Spacing.medium),
-            //     child: Row(
-            //       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            //       crossAxisAlignment: CrossAxisAlignment.center,
-            //       children: [
-            //         AppText.labelLarge(loc(context).instantAction),
-            //         PopupMenuButton(
-            //           color: Theme.of(context).colorScheme.surface,
-            //           elevation: 10,
-            //           surfaceTintColor: Theme.of(context).colorScheme.surface,
-            //           itemBuilder: (context) {
-            //             return actions
-            //                 .mapIndexed(
-            //                     (index, e) => PopupMenuItem<NodeInstantActions>(
-            //                         value: e,
-            //                         child: AppText.labelLarge(
-            //                           e.resolveLabel(context),
-            //                           color: e == NodeInstantActions.reset
-            //                               ? Theme.of(context).colorScheme.error
-            //                               : Theme.of(context)
-            //                                   .colorScheme
-            //                                   .onSurface,
-            //                         )))
-            //                 .toList();
-            //           },
-            //           onSelected: onActionTap,
-            //         )
-            //       ],
-            //     ),
-            //   ),
-            // ]
+            if (node.data.isOnline && actions.isNotEmpty) ...[
+              const AppGap.medium(),
+              const Divider(
+                height: 0,
+              ),
+              Container(
+                padding: const EdgeInsets.only(left: Spacing.medium),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    AppText.labelLarge(loc(context).instantAction),
+                    PopupMenuButton(
+                      color: Theme.of(context).colorScheme.surface,
+                      elevation: 10,
+                      surfaceTintColor: Theme.of(context).colorScheme.surface,
+                      itemBuilder: (context) {
+                        return actions
+                            .mapIndexed(
+                                (index, e) => PopupMenuItem<NodeInstantActions>(
+                                    value: e,
+                                    child: AppText.labelLarge(
+                                      e.resolveLabel(context),
+                                      color: e == NodeInstantActions.reset
+                                          ? Theme.of(context).colorScheme.error
+                                          : Theme.of(context)
+                                              .colorScheme
+                                              .onSurface,
+                                    )))
+                            .toList();
+                      },
+                      onSelected: onActionTap,
+                    )
+                  ],
+                ),
+              ),
+            ]
           ],
         ),
       ),
