@@ -84,6 +84,8 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
                 .equals(_preservedMainWiFiState?.mainWiFi, state.mainWiFi) ||
             _preservedMainWiFiState?.guestWiFi != state.guestWiFi) &&
         _dataVerify(state);
+    final wifiBands =
+        state.mainWiFi.map((e) => e.radioID.bandName).toList().join(', ');
 
     return StyledAppPageView(
       appBarStyle: AppBarStyle.none,
@@ -97,29 +99,58 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
             _showSaveConfirmModal();
           }),
       useMainPadding: true,
-      child: (context, constraints) => _wifiContentView(),
+      child: (context, constraints) => ResponsiveLayout(
+          desktop: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 8.col,
+                child: _wifiContentView(),
+              ),
+              const AppGap.gutter(),
+              SizedBox(
+                width: 4.col,
+                child: _wifiDescription(wifiBands),
+              )
+            ],
+          ),
+          mobile: Column(
+            children: [
+              _wifiDescription(wifiBands),
+              const AppGap.medium(),
+              Expanded(child: _wifiContentView()),
+            ],
+          )),
     );
   }
-
+Widget _wifiDescription(String wifiBands) {
+    return AppCard(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            LinksysIcons.infoCircle,
+            semanticLabel: 'info icon',
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const AppGap.medium(),
+          AppText.bodySmall(
+            loc(context).wifiListDescription(wifiBands),
+            maxLines: 30,
+          ),
+        ],
+      ),
+    );
+  }
+  
   Widget _wifiContentView() {
     final state = ref.watch(wifiListProvider);
 
-    final columnCount = ResponsiveLayout.isOverExtraLargeLayout(context)
-        ? 4
-        : ResponsiveLayout.isOverLargeLayout(context)
-            ? 3
-            : ResponsiveLayout.isOverMedimumLayout(context)
-                ? 3
-                : 2;
-    final fixedWidth = ResponsiveLayout.isOverExtraLargeLayout(context)
-        ? 3.col
-        : ResponsiveLayout.isOverLargeLayout(context)
-            ? 4.col
-            : ResponsiveLayout.isOverMedimumLayout(context)
-                ? 4.col
-                : ResponsiveLayout.isOverSmallLayout(context)
-                    ? 4.col
-                    : 2.col;
+    const columnCount = 2;
+    final fixedWidth =
+        ResponsiveLayout.isOverSmallLayout(context) ? 4.col : 2.col;
+
     final columnWidths = Map.fromEntries(
         List.generate(columnCount, (index) => index).map((e) => e ==
                 columnCount - 1
@@ -173,6 +204,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
                 _guestWiFiCard(state.guestWiFi, true),
               ])
     ];
+
     return AppBasicLayout(
         crossAxisAlignment: CrossAxisAlignment.start,
         content: Table(

@@ -26,6 +26,7 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/bullet_list/bullet_list.dart';
 import 'package:privacygui_widgets/widgets/bullet_list/bullet_style.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
+import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class InstantTopologyView extends ArgumentsConsumerStatefulView {
@@ -184,147 +185,102 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
     final hasBlinkFunction = serviceHelper.isSupportLedBlinking();
     final supportChildReboot = serviceHelper.isSupportChildReboot();
     final supportChildFactoryReset = serviceHelper.isSupportChildFactoryReset();
-    return TreeNodeItem(
-      node: node,
-      actions: node.data.isMaster
-          ? [
-              if (hasBlinkFunction &&
-                  isCognitiveMeshRouter(
-                      modelNumber: node.data.model,
-                      hardwareVersion: node.data.hardwareVersion))
-                NodeInstantActions.blink,
-              NodeInstantActions.reboot,
-              if (autoOnboarding) NodeInstantActions.pair,
-              NodeInstantActions.reset,
-            ]
-          : [
-              if (hasBlinkFunction &&
-                  isCognitiveMeshRouter(
-                      modelNumber: node.data.model,
-                      hardwareVersion: node.data.hardwareVersion))
-                NodeInstantActions.blink,
-              if (supportChildReboot) NodeInstantActions.reboot,
-              if (supportChildFactoryReset) NodeInstantActions.reset,
-            ],
-      onTap: () {
-        onNodeTap(context, ref, node);
-      },
-      onActionTap: (action) {
-        switch (action) {
-          case NodeInstantActions.reboot:
-            _doReboot(supportChildReboot && !node.data.isMaster ? node : null,
-                node.isLeaf());
-            break;
-          case NodeInstantActions.pair:
-            _doInstantPair();
-            break;
-          case NodeInstantActions.blink:
-            _doBlinkNodeLed(ref, node.data.deviceId);
-            break;
-          case NodeInstantActions.reset:
-            // If the target is a master, send null value to factory reset all nodes
-            _doFactoryReset(
-                supportChildReboot && !node.data.isMaster ? node : null,
-                node.isLeaf());
-            break;
-        }
-      },
-    );
-    // return ResponsiveLayout.isMobileLayout(context)
-    //     ? SimpleTreeNodeItem(
-    //         node: node,
-    //         actions: node.data.isMaster
-    //             ? [
-    //                 if (hasBlinkFunction &&
-    //                     isCognitiveMeshRouter(
-    //                         modelNumber: node.data.model,
-    //                         hardwareVersion: node.data.hardwareVersion))
-    //                   NodeInstantActions.blink,
-    //                 NodeInstantActions.reboot,
-    //                 if (autoOnboarding) NodeInstantActions.pair,
-    //                 NodeInstantActions.reset,
-    //               ]
-    //             : [
-    //                 if (hasBlinkFunction &&
-    //                     isCognitiveMeshRouter(
-    //                         modelNumber: node.data.model,
-    //                         hardwareVersion: node.data.hardwareVersion))
-    //                   NodeInstantActions.blink,
-    //                 if (supportChildReboot) NodeInstantActions.reboot,
-    //                 if (supportChildFactoryReset) NodeInstantActions.reset,
-    //               ],
-    //         onTap: () {
-    //           onNodeTap(context, ref, node);
-    //         },
-    //         onActionTap: (action) {
-    //           switch (action) {
-    //             case NodeInstantActions.reboot:
-    //               _doReboot(
-    //                   supportChildReboot && !node.data.isMaster ? node : null,
-    //                   node.isLeaf());
-    //               break;
-    //             case NodeInstantActions.pair:
-    //               _doInstantPair();
-    //               break;
-    //             case NodeInstantActions.blink:
-    //               _doBlinkNodeLed(ref, node.data.deviceId);
-    //               break;
-    //             case NodeInstantActions.reset:
-    //               // If the target is a master, send null value to factory reset all nodes
-    //               _doFactoryReset(
-    //                   supportChildReboot && !node.data.isMaster ? node : null,
-    //                   node.isLeaf());
-    //               break;
-    //           }
-    //         },
-    //       )
-    //     : TreeNodeItem(
-    //         node: node,
-    //         actions: node.data.isMaster
-    //             ? [
-    //                 if (hasBlinkFunction &&
-    //                     isCognitiveMeshRouter(
-    //                         modelNumber: node.data.model,
-    //                         hardwareVersion: node.data.hardwareVersion))
-    //                   NodeInstantActions.blink,
-    //                 NodeInstantActions.reboot,
-    //                 if (autoOnboarding) NodeInstantActions.pair,
-    //                 NodeInstantActions.reset,
-    //               ]
-    //             : [
-    //                 if (hasBlinkFunction &&
-    //                     isCognitiveMeshRouter(
-    //                         modelNumber: node.data.model,
-    //                         hardwareVersion: node.data.hardwareVersion))
-    //                   NodeInstantActions.blink,
-    //                 if (supportChildReboot) NodeInstantActions.reboot,
-    //                 if (supportChildFactoryReset) NodeInstantActions.reset,
-    //               ],
-    //         onTap: () {
-    //           onNodeTap(context, ref, node);
-    //         },
-    //         onActionTap: (action) {
-    //           switch (action) {
-    //             case NodeInstantActions.reboot:
-    //               _doReboot(
-    //                   supportChildReboot && !node.data.isMaster ? node : null,
-    //                   node.isLeaf());
-    //               break;
-    //             case NodeInstantActions.pair:
-    //               _doInstantPair();
-    //               break;
-    //             case NodeInstantActions.blink:
-    //               _doBlinkNodeLed(ref, node.data.deviceId);
-    //               break;
-    //             case NodeInstantActions.reset:
-    //               // If the target is a master, send null value to factory reset all nodes
-    //               _doFactoryReset(
-    //                   supportChildReboot && !node.data.isMaster ? node : null,
-    //                   node.isLeaf());
-    //               break;
-    //           }
-    //         },
-    //       );
+    
+    return ResponsiveLayout.isMobileLayout(context)
+        ? SimpleTreeNodeItem(
+            node: node,
+            actions: node.data.isMaster
+                ? [
+                    if (hasBlinkFunction &&
+                        isCognitiveMeshRouter(
+                            modelNumber: node.data.model,
+                            hardwareVersion: node.data.hardwareVersion))
+                      NodeInstantActions.blink,
+                    NodeInstantActions.reboot,
+                    if (autoOnboarding) NodeInstantActions.pair,
+                    NodeInstantActions.reset,
+                  ]
+                : [
+                    if (hasBlinkFunction &&
+                        isCognitiveMeshRouter(
+                            modelNumber: node.data.model,
+                            hardwareVersion: node.data.hardwareVersion))
+                      NodeInstantActions.blink,
+                    if (supportChildReboot) NodeInstantActions.reboot,
+                    if (supportChildFactoryReset) NodeInstantActions.reset,
+                  ],
+            onTap: () {
+              onNodeTap(context, ref, node);
+            },
+            onActionTap: (action) {
+              switch (action) {
+                case NodeInstantActions.reboot:
+                  _doReboot(
+                      supportChildReboot && !node.data.isMaster ? node : null,
+                      node.isLeaf());
+                  break;
+                case NodeInstantActions.pair:
+                  _doInstantPair();
+                  break;
+                case NodeInstantActions.blink:
+                  _doBlinkNodeLed(ref, node.data.deviceId);
+                  break;
+                case NodeInstantActions.reset:
+                  // If the target is a master, send null value to factory reset all nodes
+                  _doFactoryReset(
+                      supportChildReboot && !node.data.isMaster ? node : null,
+                      node.isLeaf());
+                  break;
+              }
+            },
+          )
+        : TreeNodeItem(
+            node: node,
+            actions: node.data.isMaster
+                ? [
+                    if (hasBlinkFunction &&
+                        isCognitiveMeshRouter(
+                            modelNumber: node.data.model,
+                            hardwareVersion: node.data.hardwareVersion))
+                      NodeInstantActions.blink,
+                    NodeInstantActions.reboot,
+                    if (autoOnboarding) NodeInstantActions.pair,
+                    NodeInstantActions.reset,
+                  ]
+                : [
+                    if (hasBlinkFunction &&
+                        isCognitiveMeshRouter(
+                            modelNumber: node.data.model,
+                            hardwareVersion: node.data.hardwareVersion))
+                      NodeInstantActions.blink,
+                    if (supportChildReboot) NodeInstantActions.reboot,
+                    if (supportChildFactoryReset) NodeInstantActions.reset,
+                  ],
+            onTap: () {
+              onNodeTap(context, ref, node);
+            },
+            onActionTap: (action) {
+              switch (action) {
+                case NodeInstantActions.reboot:
+                  _doReboot(
+                      supportChildReboot && !node.data.isMaster ? node : null,
+                      node.isLeaf());
+                  break;
+                case NodeInstantActions.pair:
+                  _doInstantPair();
+                  break;
+                case NodeInstantActions.blink:
+                  _doBlinkNodeLed(ref, node.data.deviceId);
+                  break;
+                case NodeInstantActions.reset:
+                  // If the target is a master, send null value to factory reset all nodes
+                  _doFactoryReset(
+                      supportChildReboot && !node.data.isMaster ? node : null,
+                      node.isLeaf());
+                  break;
+              }
+            },
+          );
   }
 
   _doReboot(RouterTreeNode? node, bool isLastNode) {
