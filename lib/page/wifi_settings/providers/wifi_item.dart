@@ -212,6 +212,8 @@ enum WifiRadioBand {
   static WifiRadioBand getByValue(String value) {
     return WifiRadioBand.values.firstWhere((item) => item.value == value);
   }
+
+  String get bandName => value.replaceFirst('RADIO_', '');
 }
 
 enum WifiSecurityType {

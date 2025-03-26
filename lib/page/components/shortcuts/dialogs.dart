@@ -202,7 +202,7 @@ Future<T?> showSimpleAppDialog<T>(
 Future<T?> showSimpleAppOkDialog<T>(
   BuildContext context, {
   bool dismissible = true,
-    bool scrollable = false,
+  bool scrollable = false,
   bool useRootNavigator = true,
   Widget? icon,
   String? title,
@@ -233,7 +233,7 @@ Future<T?> showSimpleAppOkDialog<T>(
 Future<T?> showMessageAppDialog<T>(
   BuildContext context, {
   bool dismissible = true,
-    bool scrollable = false,
+  bool scrollable = false,
   bool useRootNavigator = true,
   Widget? icon,
   String? title,
@@ -257,7 +257,7 @@ Future<T?> showMessageAppDialog<T>(
 Future<T?> showMessageAppOkDialog<T>(
   BuildContext context, {
   bool dismissible = true,
-    bool scrollable = false,
+  bool scrollable = false,
   bool useRootNavigator = true,
   Widget? icon,
   String? title,
@@ -378,7 +378,8 @@ Future<T?> showRedirectNewIpAlert<T>(
       ]);
 }
 
-Future<bool?> showFactoryResetModal(BuildContext context, bool isParent, isLast) {
+Future<bool?> showFactoryResetModal(
+    BuildContext context, bool isParent, isLast) {
   return showMessageAppDialog<bool>(context,
       icon: Icon(
         LinksysIcons.resetWrench,
@@ -397,7 +398,9 @@ Future<bool?> showFactoryResetModal(BuildContext context, bool isParent, isLast)
           },
         ),
         AppTextButton(
-          isLast ? loc(context).factoryResetOkSingle : loc(context).factoryResetOk,
+          isLast
+              ? loc(context).factoryResetOkSingle
+              : loc(context).factoryResetOk,
           color: Theme.of(context).colorScheme.error,
           onTap: () {
             context.pop(true);
@@ -406,14 +409,17 @@ Future<bool?> showFactoryResetModal(BuildContext context, bool isParent, isLast)
       ]);
 }
 
-Future<bool?> showRebootModal(BuildContext context, bool isParent, bool isLast) {
+Future<bool?> showRebootModal(
+    BuildContext context, bool isParent, bool isLast) {
   return showMessageAppDialog<bool>(context,
       icon: Icon(
         LinksysIcons.restartAlt,
         color: Theme.of(context).colorScheme.error,
         size: 42,
       ),
-      message: loc(context).menuRestartNetworkMessage,
+      message: !isParent && isLast
+          ? loc(context).menuRestartNetworkChildMessage
+          : loc(context).menuRestartNetworkMessage,
       title:
           isParent ? loc(context).rebootParentTitle : loc(context).rebootUnit,
       actions: [
