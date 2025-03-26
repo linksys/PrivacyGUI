@@ -86,6 +86,9 @@ enum JNAPService {
   nodesNetworkConnections(
       value:
           'http://linksys.com/jnap/nodes/networkconnections/NodesNetworkConnections'),
+  nodesNetworkConnections2(
+      value:
+          'http://linksys.com/jnap/nodes/networkconnections/NodesNetworkConnections2'),
   nodesFirmwareUpdate(
       value: 'http://linksys.com/jnap/nodes/firmwareupdate/FirmwareUpdate'),
   nodesTopologyOptimization(
