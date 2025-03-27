@@ -1,0 +1,7 @@
+{
+    "name": "Recovery with New Password and Login",
+    "target": "integration_test/recovery_and_login_test.dart",
+    "description": "Recovery with New Password and Login",
+    "setUp":  ["skip_pnp"],
+    "tearDown": ["factory_reset"]
+}

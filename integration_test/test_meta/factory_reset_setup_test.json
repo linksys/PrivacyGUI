@@ -1,0 +1,7 @@
+{
+    "name": "Un-configured Instant-Setup",
+    "target": "integration_test/factory_reset_setup_test.dart",
+    "description": "Un-configured Instant-Setup test",
+    "setUp":  ["factory_reset"],
+    "tearDown": ["factory_reset"]
+}
