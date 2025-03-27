@@ -476,7 +476,6 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
 
     // Build transaction commands
     final transaction = JNAPTransactionBuilder(commands: [
-      MapEntry(closeCommand, closeData),
       if (isWiFiChanged)
         MapEntry(JNAPAction.setSimpleWiFiSettings, {
           'simpleWiFiSettings':
@@ -489,7 +488,8 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
         MapEntry(JNAPAction.setLedNightModeSetting, nightModeSettings.toMap()),
       MapEntry(JNAPAction.setFirmwareUpdateSettings, firmwareUpdateSettings),
       if (state.isRouterUnConfigured)
-        const MapEntry(JNAPAction.setDeviceMode, {'mode': 'Master'})
+        const MapEntry(JNAPAction.setDeviceMode, {'mode': 'Master'}),
+      MapEntry(closeCommand, closeData),
     ], auth: true);
 
     return ref
