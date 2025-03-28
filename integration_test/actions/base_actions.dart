@@ -13,6 +13,8 @@ import 'package:privacy_gui/page/instant_topology/views/widgets/tree_node_item.d
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:privacygui_widgets/widgets/card/list_card.dart';
+import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:super_tooltip/super_tooltip.dart';
 
