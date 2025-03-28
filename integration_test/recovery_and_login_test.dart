@@ -21,7 +21,7 @@ void main() {
   integrationDriver();
   final widgetsBinding =
       IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-  const String password = IntegrationTestConfig.password;
+  const String newPassword = IntegrationTestConfig.newPassword;
   const String recoveryCode = IntegrationTestConfig.recoveryCode;
   const String passwordHint = IntegrationTestConfig.passwordHint;
 
@@ -58,13 +58,13 @@ void main() {
 
     // Reset password page
     final reset = TestLocalResetPasswordActions(tester);
-    await reset.inputNewPassword(password);
-    await reset.inputConfirmPassword(password);
+    await reset.inputNewPassword(newPassword);
+    await reset.inputConfirmPassword(newPassword);
     await reset.showNewPassword();
     await reset.showConfirmPassword();
     await reset.inputPasswordHint(passwordHint);
-    expect(password, tester.getText(find.byType(AppPasswordField).first));
-    expect(password, tester.getText(find.byType(AppPasswordField).last));
+    expect(newPassword, tester.getText(find.byType(AppPasswordField).first));
+    expect(newPassword, tester.getText(find.byType(AppPasswordField).last));
     expect(passwordHint, tester.getText(find.byType(TextField).last));
     await tester.scrollUntilVisible(
       reset.saveButtonFinder(),
@@ -78,8 +78,8 @@ void main() {
     expect(find.byType(AppPasswordField), findsOneWidget);
 
     // Login page
-    await login.inputPassword(password);
-    expect(password, tester.getText(find.byType(AppPasswordField)));
+    await login.inputPassword(newPassword);
+    expect(newPassword, tester.getText(find.byType(AppPasswordField)));
     await login.showPassword();
     await login.hidePassword();
     await login.tapLoginButton();
