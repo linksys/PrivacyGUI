@@ -1048,6 +1048,7 @@ Widget _wifiDescription(String wifiBands) {
     List<Widget> advanced = state.mainWiFi
         .map(
           (e) => Column(
+            key: ValueKey(e.radioID.value),
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               AppText.bodyMedium(e.radioID.value),
@@ -1074,6 +1075,7 @@ Widget _wifiDescription(String wifiBands) {
         .toList();
     advanced.add(
       Column(
+        key: ValueKey('guest'),
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppText.bodyMedium(loc(context).guest),

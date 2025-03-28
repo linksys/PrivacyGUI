@@ -24,18 +24,18 @@ class TestTopbarActions extends CommonBaseActions {
   Future<void> tapHomeButton() async {
     final finder = homeBtnFinder();
     await tester.tap(finder);
-    await tester.pumpFrames(app(), Duration(seconds: 3));
+    await tester.pumpFrames(app(), Duration(seconds: 2));
   }
 
   Future<void> tapMenuButton() async {
     final finder = menuBtnFinder();
     await tester.tap(finder);
-    await tester.pumpFrames(app(), Duration(seconds: 5));
+    await tester.pumpFrames(app(), Duration(seconds: 2));
   }
 
   Future<void> tapSupportButton() async {
     final finder = supportBtnFinder();
     await tester.tap(finder);
-    await tester.pumpFrames(app(), Duration(seconds: 3));
+    await tester.pumpFrames(app(), Duration(seconds: 2));
   }
 }
