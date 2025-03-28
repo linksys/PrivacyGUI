@@ -100,22 +100,49 @@ class TestInstantAdminActions extends CommonBaseActions {
     return switchFinder;
   }
 
-  Finder taiwanTimeZoneCardFinder() {
-    final taiwan = find.text('Singapore, Taiwan, Russia');
-    final card = find
+  Finder australiaTimeZoneCardFinder() {
+    final textFinder = find.text('Australia');
+    final cardFinder = find
         .ancestor(
-          of: taiwan,
+          of: textFinder,
           matching: find.byType(AppCard),
         )
         .first;
-    expect(card, findsOneWidget);
-    return card;
+    expect(cardFinder, findsOneWidget);
+    return cardFinder;
+  }
+
+  Finder australiaTimezoneCheckIconFinder() {
+    final textFinder = find.text('Australia');
+    final card = find
+        .ancestor(
+          of: textFinder,
+          matching: find.byType(AppCard),
+        )
+        .first;
+    expect(textFinder, findsOneWidget);
+    final checkIconFinder = find.descendant(of: card, matching: find.byType(Icon));
+    return checkIconFinder;
   }
 
   Finder saveButtonFinder() {
-    final saveButton = find.byType(AppFilledButton);
-    expect(saveButton, findsOneWidget);
-    return saveButton;
+    final saveButtonFinder = find.byType(AppFilledButton);
+    expect(saveButtonFinder, findsOneWidget);
+    return saveButtonFinder;
+  }
+
+  bool isAutoUpdateEnabled() {
+    // Find auto upfate switch
+    final switchFinder = autoUpdateSwitchFinder();
+    final autoUpdateSwitch = tester.widget<AppSwitch>(switchFinder);
+    return autoUpdateSwitch.value;
+  }
+
+  bool isAutoDaylightSavingEnabled() {
+    // Find auto daylight saving switch
+    final switchFinder = daylightSavingSwitchFinder();
+    final autoUpdateSwitch = tester.widget<AppSwitch>(switchFinder);
+    return autoUpdateSwitch.value;
   }
 
   Future<void> toggleAutoFirmwareUpdateSwitch() async {
@@ -199,9 +226,9 @@ class TestInstantAdminActions extends CommonBaseActions {
     await tester.pumpAndSettle();
   }
 
-  Future<void> selectTaiwanTimeZone() async {
-    // Find taiwan time zone
-    final cardFinder = taiwanTimeZoneCardFinder();
+  Future<void> selectAustraliaTimeZone() async {
+    // Find Australia time zone
+    final cardFinder = australiaTimeZoneCardFinder();
     // Scroll the screen
     await scrollUntil(cardFinder);
     // Tap the time zone

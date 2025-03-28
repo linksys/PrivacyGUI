@@ -61,9 +61,10 @@ void main() {
     await safetyActions.tapCancelOnInstantSafetyDialog();
     await safetyActions.tapSaveButton();
     await safetyActions.tapRestartOnInstantSafetyDialog();
-    // Re-enter this screen
+    // Re-enter Instant Safety screen
     await safetyActions.tapBackButton();
     await menuActions.enterSafetyPage();
+    // Verify updated values
     final currentValue = safetyActions.isFeatureEnabled();
     expect(previousValue, isNot(currentValue));
   });

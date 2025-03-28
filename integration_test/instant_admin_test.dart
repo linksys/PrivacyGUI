@@ -53,6 +53,8 @@ void main() {
     await menuActions.enterAdminPage();
     final adminActions = TestInstantAdminActions(tester);
     await adminActions.checkTitle(adminActions.title);
+    // Record the current status of auto firmware update
+    final previousAutoUpdateValue = adminActions.isAutoUpdateEnabled();
     // Switch auto firmware update
     await adminActions.toggleAutoFirmwareUpdateSwitch();
     // Check manual firmware update screen
@@ -74,9 +76,33 @@ void main() {
     await adminActions.inputPasswordHint(IntegrationTestConfig.passwordHint);
     // Save the new password
     await adminActions.tapEditPasswordSaveButton();
-    // Change time zone
+    // Enter time zone selection screen
     await adminActions.tapTimezoneTappableArea();
-    await adminActions.selectTaiwanTimeZone();
+    // Record the current status of auto daylight saving
+    final previousAutoDaylightSavingValue =
+        adminActions.isAutoDaylightSavingEnabled();
+    // Toggle the auto daylight saving
+    await adminActions.toggleDaylightSavingSwitch();
+    // Select the specific time zone value - Australia GMT+10:00 (support daylight savings time)
+    await adminActions.selectAustraliaTimeZone();
+    // Save time zone settings
     await adminActions.tapSaveButton();
+    // Re-enter Instant Admin screen
+    await adminActions.tapBackButton();
+    await menuActions.enterAdminPage();
+    // Verify updated values
+    // Auto firmware update
+    final currentAutoUpdateValue = adminActions.isAutoUpdateEnabled();
+    expect(previousAutoUpdateValue, isNot(currentAutoUpdateValue));
+    // Enter time zone selection screen
+    await adminActions.tapTimezoneTappableArea();
+    // Time zone and auto daylight savings time
+    final currentAutoDaylightSavingValue =
+        adminActions.isAutoDaylightSavingEnabled();
+    expect(
+        previousAutoDaylightSavingValue, isNot(currentAutoDaylightSavingValue));
+    final currentCheckIconFinder =
+        adminActions.australiaTimezoneCheckIconFinder();
+    expect(currentCheckIconFinder, findsOneWidget);
   });
 }
