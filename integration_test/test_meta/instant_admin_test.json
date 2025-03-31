@@ -1,0 +1,7 @@
+{
+    "name": "Test behaviors on Instant Admin",
+    "target": "integration_test/instant_admin_test.dart",
+    "description": "Execute all the functions on the page and verify that the new data has been synced",
+    "setUp":  ["skip_pnp"],
+    "tearDown": ["factory_reset"]
+}
