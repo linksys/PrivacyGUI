@@ -303,7 +303,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
                   children: [
                     AppText.bodySmall(loc(context).cpuUtilization),
                     AppText.labelMedium(
-                        '${(double.tryParse(cpuLoad.padLeft(2, '0')) ?? 0) * 100}%'),
+                        '${((double.tryParse(cpuLoad.padLeft(2, '0')) ?? 0) * 100).toStringAsFixed(2)}%'),
                   ],
                 ),
               ),
@@ -314,7 +314,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
                   children: [
                     AppText.bodySmall(loc(context).memoryUtilization),
                     AppText.labelMedium(
-                        '${(double.tryParse(memoryLoad.padRight(2, '0')) ?? 0) * 100}%'),
+                        '${((double.tryParse(memoryLoad.padRight(2, '0')) ?? 0) * 100).toStringAsFixed(2)}%'),
                   ],
                 ),
               ),
@@ -816,10 +816,10 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
           '${loc(context).firmwareVersion}: ${master.unit.firmwareVersion ?? '--'}'),
       if (cpuLoad != null)
         pw.Text(
-            'CPU Utilization: ${(double.tryParse(cpuLoad.padLeft(2, '0')) ?? 0) * 100}%'),
+            'CPU Utilization: ${((double.tryParse(cpuLoad.padLeft(2, '0')) ?? 0) * 100).toStringAsFixed(2)}%'),
       if (memoryLoad != null)
         pw.Text(
-            'Memory Utilization: ${(double.tryParse(memoryLoad.padLeft(2, '0')) ?? 0) * 100}%'),
+            'Memory Utilization: ${((double.tryParse(memoryLoad.padLeft(2, '0')) ?? 0) * 100).toStringAsFixed(2)}%'),
       pw.Divider(height: Spacing.medium),
       //
       pw.Text(loc(context).connectivity),
