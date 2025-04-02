@@ -130,44 +130,46 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
   }
 
   Widget _avatarCard(ExternalDeviceDetailState state) {
-    return AppCard(
-      padding: const EdgeInsets.all(Spacing.small2),
-      color: Theme.of(context).colorScheme.background,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: double.infinity,
-            height: 120,
-            child: Icon(
-              IconDeviceCategoryExt.resolveByName(state.item.icon),
-              semanticLabel: state.item.icon,
-              size: 40,
+    return SelectionArea(
+      child: AppCard(
+        padding: const EdgeInsets.all(Spacing.small2),
+        color: Theme.of(context).colorScheme.background,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: double.infinity,
+              height: 120,
+              child: Icon(
+                IconDeviceCategoryExt.resolveByName(state.item.icon),
+                semanticLabel: state.item.icon,
+                size: 40,
+              ),
             ),
-          ),
-          AppSettingCard.noBorder(
-            padding: const EdgeInsets.all(Spacing.medium),
-            color: Theme.of(context).colorScheme.background,
-            title: state.item.name,
-            trailing: AppIconButton(
-              icon: LinksysIcons.edit,
-              semanticLabel: 'edit',
-              onTap: _showEdidDeviceModal,
+            AppSettingCard.noBorder(
+              padding: const EdgeInsets.all(Spacing.medium),
+              color: Theme.of(context).colorScheme.background,
+              title: state.item.name,
+              trailing: AppIconButton(
+                icon: LinksysIcons.edit,
+                semanticLabel: 'edit',
+                onTap: _showEdidDeviceModal,
+              ),
             ),
-          ),
-          AppSettingCard.noBorder(
-            padding: const EdgeInsets.all(Spacing.medium),
-            color: Theme.of(context).colorScheme.background,
-            title: loc(context).manufacturer,
-            description: _formatEmptyValue(state.item.manufacturer),
-          ),
-          AppSettingCard.noBorder(
-            padding: const EdgeInsets.all(Spacing.medium),
-            color: Theme.of(context).colorScheme.background,
-            title: loc(context).device,
-            description: _formatEmptyValue(state.item.model),
-          ),
-        ],
+            AppSettingCard.noBorder(
+              padding: const EdgeInsets.all(Spacing.medium),
+              color: Theme.of(context).colorScheme.background,
+              title: loc(context).manufacturer,
+              description: _formatEmptyValue(state.item.manufacturer),
+            ),
+            AppSettingCard.noBorder(
+              padding: const EdgeInsets.all(Spacing.medium),
+              color: Theme.of(context).colorScheme.background,
+              title: loc(context).device,
+              description: _formatEmptyValue(state.item.model),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -175,116 +177,118 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
   Widget _detailSection(ExternalDeviceDetailState state) {
     final isBridge = ref.watch(dashboardHomeProvider).isBridgeMode;
 
-    return Column(
-      children: [
-        AppSettingCard(
-          padding: const EdgeInsets.symmetric(
-            horizontal: Spacing.large2,
-            vertical: Spacing.medium,
-          ),
-          title: loc(context).connectTo,
-          description: state.item.upstreamDevice.isEmpty
-              ? loc(context).unknown
-              : state.item.upstreamDevice,
-        ),
-        if (state.item.isOnline && !state.item.isWired) ...[
-          const AppGap.small2(),
-          AppListCard(
+    return SelectionArea(
+      child: Column(
+        children: [
+          AppSettingCard(
             padding: const EdgeInsets.symmetric(
               horizontal: Spacing.large2,
               vertical: Spacing.medium,
             ),
-            title: AppText.bodyMedium(loc(context).ssid),
-            description: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AppText.labelLarge(_formatEmptyValue(
-                    '${state.item.ssid} • ${state.item.isMLO ? '6GHz, 5GHz' : state.item.band}')),
-                if (state.item.isMLO) ...[
-                  const AppGap.small2(),
-                  AppTextButton.noPadding(
-                    loc(context).mloCapable,
-                    onTap: () {
-                      showMLOCapableModal(context);
-                    },
-                  ),
+            title: loc(context).connectTo,
+            description: state.item.upstreamDevice.isEmpty
+                ? loc(context).unknown
+                : state.item.upstreamDevice,
+          ),
+          if (state.item.isOnline && !state.item.isWired) ...[
+            const AppGap.small2(),
+            AppListCard(
+              padding: const EdgeInsets.symmetric(
+                horizontal: Spacing.large2,
+                vertical: Spacing.medium,
+              ),
+              title: AppText.bodyMedium(loc(context).ssid),
+              description: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppText.labelLarge(_formatEmptyValue(
+                      '${state.item.ssid} • ${state.item.isMLO ? '6GHz, 5GHz' : state.item.band}')),
+                  if (state.item.isMLO) ...[
+                    const AppGap.small2(),
+                    AppTextButton.noPadding(
+                      loc(context).mloCapable,
+                      onTap: () {
+                        showMLOCapableModal(context);
+                      },
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
+            const AppGap.small2(),
+            AppListCard(
+              padding: const EdgeInsets.symmetric(
+                horizontal: Spacing.large2,
+                vertical: Spacing.medium,
+              ),
+              title: AppText.bodyMedium(loc(context).signalStrength),
+              description: Row(children: [
+                AppText.labelLarge(
+                  getWifiSignalLevel(state.item.signalStrength)
+                      .resolveLabel(context),
+                  color: getWifiSignalLevel(state.item.signalStrength)
+                      .resolveColor(context),
+                ),
+                const AppText.labelLarge(' • '),
+                AppText.labelLarge(
+                  state.item.isWired
+                      ? ''
+                      : _formatEmptyValue('${state.item.signalStrength} dBM'),
+                ),
+              ]),
+              trailing: SharedWidgets.resolveSignalStrengthIcon(
+                  context, state.item.signalStrength),
+            ),
+          ],
+          const AppGap.small2(),
+          AppSettingCard(
+            padding: const EdgeInsets.symmetric(
+                horizontal: Spacing.large2, vertical: Spacing.medium),
+            title: loc(context).ipAddress,
+            description: _formatEmptyValue(state.item.ipv4Address),
+            trailing: !isBridge &&
+                    state.item.isOnline &&
+                    state.item.ipv4Address.isNotEmpty &&
+                    state.item.type != WifiConnectionType.guest &&
+                    isReservedIp != null
+                ? AppLoadableWidget.textButton(
+                    spinnerSize: Size(36, 36),
+                    title: isReservedIp == true
+                        ? loc(context).releaseReservedIp
+                        : loc(context).reserveIp,
+                    semanticsLabel: isReservedIp == true
+                        ? 'release reserved ip'
+                        : 'reserved ip',
+                    padding: const EdgeInsets.only(),
+                    showSpinnerWhenTap: false,
+                    onTap: (AppLoadableWidgetController controller) async {
+                      await handleReserveDhcp(
+                          state.item, isReservedIp!, controller);
+                    },
+                  )
+                : null,
           ),
           const AppGap.small2(),
-          AppListCard(
+          AppSettingCard(
             padding: const EdgeInsets.symmetric(
               horizontal: Spacing.large2,
               vertical: Spacing.medium,
             ),
-            title: AppText.bodyMedium(loc(context).signalStrength),
-            description: Row(children: [
-              AppText.labelLarge(
-                getWifiSignalLevel(state.item.signalStrength)
-                    .resolveLabel(context),
-                color: getWifiSignalLevel(state.item.signalStrength)
-                    .resolveColor(context),
-              ),
-              const AppText.labelLarge(' • '),
-              AppText.labelLarge(
-                state.item.isWired
-                    ? ''
-                    : _formatEmptyValue('${state.item.signalStrength} dBM'),
-              ),
-            ]),
-            trailing: SharedWidgets.resolveSignalStrengthIcon(
-                context, state.item.signalStrength),
+            title: loc(context).macAddress,
+            description: _formatEmptyValue(state.item.macAddress),
+          ),
+          const AppGap.small2(),
+          AppSettingCard(
+            padding: const EdgeInsets.symmetric(
+              horizontal: Spacing.large2,
+              vertical: Spacing.medium,
+            ),
+            title: loc(context).ipv6Address,
+            description: _formatEmptyValue(state.item.ipv6Address),
           ),
         ],
-        const AppGap.small2(),
-        AppSettingCard(
-          padding: const EdgeInsets.symmetric(
-              horizontal: Spacing.large2, vertical: Spacing.medium),
-          title: loc(context).ipAddress,
-          description: _formatEmptyValue(state.item.ipv4Address),
-          trailing: !isBridge &&
-                  state.item.isOnline &&
-                  state.item.ipv4Address.isNotEmpty &&
-                  state.item.type != WifiConnectionType.guest &&
-                  isReservedIp != null
-              ? AppLoadableWidget.textButton(
-                  spinnerSize: Size(36, 36),
-                  title: isReservedIp == true
-                      ? loc(context).releaseReservedIp
-                      : loc(context).reserveIp,
-                  semanticsLabel: isReservedIp == true
-                      ? 'release reserved ip'
-                      : 'reserved ip',
-                  padding: const EdgeInsets.only(),
-                  showSpinnerWhenTap: false,
-                  onTap: (AppLoadableWidgetController controller) async {
-                    await handleReserveDhcp(
-                        state.item, isReservedIp!, controller);
-                  },
-                )
-              : null,
-        ),
-        const AppGap.small2(),
-        AppSettingCard(
-          padding: const EdgeInsets.symmetric(
-            horizontal: Spacing.large2,
-            vertical: Spacing.medium,
-          ),
-          title: loc(context).macAddress,
-          description: _formatEmptyValue(state.item.macAddress),
-        ),
-        const AppGap.small2(),
-        AppSettingCard(
-          padding: const EdgeInsets.symmetric(
-            horizontal: Spacing.large2,
-            vertical: Spacing.medium,
-          ),
-          title: loc(context).ipv6Address,
-          description: _formatEmptyValue(state.item.ipv6Address),
-        ),
-      ],
+      ),
     );
   }
 
