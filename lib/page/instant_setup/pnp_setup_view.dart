@@ -118,13 +118,10 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
         _goWiFiReady();
       }
     });
-    return StyledAppPageView(
-        appBarStyle: AppBarStyle.none,
-        backState: StyledBackState.none,
+    return StyledAppPageView.innerPage(
         scrollable: true,
         padding: EdgeInsets.zero,
-        useMainPadding: false,
-        enableSafeArea: (bottom: true, top: false, left: true, right: false),
+        useMainPadding: true,
         child: (context, constraints) => AppCard(
               showBorder: false,
               color: Theme.of(context).colorScheme.background,
