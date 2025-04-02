@@ -3,6 +3,7 @@
 # imports
 root="$(dirname "$0")"
 source "$root/jnap.sh"
+source "$root/config_loader.sh"
 
 # function to wait for x seconds 
 wait_for_seconds() {
@@ -172,7 +173,7 @@ is_default_admin_password_or_get_password() {
   if [ $(is_default_admin_password) == "true" ]; then
     echo "admin"
   else
-    password=$(jq -r '.password' "$root"/../test_config.json)
+    password=$(get_config_value '.password')
     echo $password
   fi
 }

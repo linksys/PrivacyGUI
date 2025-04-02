@@ -1,3 +1,6 @@
+# imports
+root="$(dirname "$0")"
+source "$root/integration_test/shell_scripts/config_loader.sh"
 
 force="local"
 cloud="qa"
@@ -23,10 +26,6 @@ fi
 if [ -z "$data" ]; then
     echo "Empty data file."
 fi
-password="?p=$p"
-if [ -z "$p" ]; then
-    password=""
-fi
 
 count=0
 successed=0
@@ -35,9 +34,15 @@ cases=($(jq -r '.files[]' $testcase))
 flutter pub get
 
 for case in "${cases[@]}"; do
-
+    #init config file
+    init_config $data
     metaPath="./integration_test/test_meta/$case.json"
     metaJson=$(cat $metaPath)
+
+    # get additional config from meta and merge to main config
+    caseAdditionalConfig=$(jq -n -r --arg m "$metaJson" '$m' | jq -r '.config')
+    set_config "$caseAdditionalConfig"
+
     caseName=$(jq -n -r --arg m "$metaJson" '$m' | jq -r '.name')
     caseDescription=$(jq -n -r --arg m "$metaJson" '$m' | jq -r '.description')
     casePath=$(jq -n -r --arg m "$metaJson" '$m' | jq -r '.target')
@@ -54,27 +59,29 @@ for case in "${cases[@]}"; do
     echo "Case Path: $casePath"
     echo "$LINE_BREAK"  
 
+    # setActions
     echo "Case Setup: $caseSetup"
     for action in "${caseSetup[@]}"; do
         actionPath="$shActionPath$action.sh"
-        echo "Case Setup Action Path: $actionPath"
+        echo "Case Setup Action: $action"
         bash "$actionPath"
     done
     
     # Run the WiFi detection script on the background
     sh ./integration_test/shell_scripts/wifi_detection.sh &
     pid=$!
-
+    
+    echo "Initiate Flutter Integration Test..."
     result=$(flutter drive --driver=test_driver/integration_test.dart \
     --target=$casePath \
     --dart-define=force="${force}" \
     --dart-define=cloud_env="${cloud}" \
     --dart-define=enable_env_picker="${picker}" \
-    --dart-define-from-file=$data \
+    --dart-define-from-file=$config_temp_path \
     --no-pub \
     --browser-name chrome \
     --web-port 61672 \
-    --web-launch-url "https://localhost/$password" \
+    --web-launch-url "https://localhost/" \
     --no-headless \
     --keep-app-running \
     -d web-server)
@@ -86,17 +93,20 @@ for case in "${cases[@]}"; do
         # Failed
         failed=$(( $failed + 1 ))
         echo "...failed."
+        echo "-------------------"
+        echo "Result: $result"
+        echo "-------------------"
         # Extract the failure details
         message=$(dart run ./test_scripts/extract_failure_messages.dart "$result")
         echo "$message"
     fi
-    # Kill the WiFi detection process
+    Kill the WiFi detection process
     kill -9 $pid
     echo "Case TearDown: $caseTearDown"
     for action in "${caseTearDown[@]}"; do
         actionPath="$shActionPath$action.sh"
         echo "Case TearDown Action Path: $actionPath"
-        bash "$actionPath"
+        bash "$actionPath" true
     done
 done
 end_time=$(date +%s)

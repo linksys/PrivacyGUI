@@ -2,6 +2,7 @@
 root="$(dirname "$0")"
 source "$root/utils.sh"
 source "$root/jnap.sh"
+source "$root/config_loader.sh"
 
 # record time spend
 start_time=$(date +%s)
@@ -21,10 +22,13 @@ echo "Record current connected WiFi ssid $current_wifi"
 password=$(is_default_admin_password_or_get_password)
 
 # get default WiFi SSID and Password
-default_wifi_ssid=$(jq -r '.defaultWiFi.ssid' "$root"/../test_config.json)
-default_wifi_password=$(jq -r '.defaultWiFi.password' "$root"/../test_config.json)
+default_wifi_ssid=$(get_config_value '.defaultWiFi.ssid')
+default_wifi_password=$(get_config_value '.defaultWiFi.password')
 
-# reset to factory default
+echo "$default_wifi_ssid"
+echo "$default_wifi_password"
+
+# # reset to factory default
 echo "Resetting to factory default..."
 factory_reset $password
 wait_for_seconds 60

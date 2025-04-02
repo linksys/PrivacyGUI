@@ -20,6 +20,8 @@ abstract class PnpStep {
   late final BasePnpNotifier pnp;
   bool _canGoNext = true;
   bool _canBack = true;
+  bool _init = false;
+  bool get isInit => _init;
 
   PnpStep({required this.index, this.saveChanges});
 
@@ -52,6 +54,7 @@ abstract class PnpStep {
   Future<void> onInit(WidgetRef ref) async {
     logger.d('$runtimeType: onInit');
     pnp = ref.read(pnpProvider.notifier);
+    _init = true;
   }
 
   /// Post-process data after clicked next button.
@@ -133,7 +136,7 @@ abstract class PnpStep {
                 ?.status ??
             StepViewStatus.data;
 
-        bool isLoading = status == StepViewStatus.loading;
+        bool isLoading = status == StepViewStatus.loading || !_init;
         return isLoading
             ? loadingView()
             : Column(

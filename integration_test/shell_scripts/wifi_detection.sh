@@ -4,10 +4,11 @@
 root="$(dirname "$0")"
 source "$root/utils.sh"
 source "$root/jnap.sh"
+source "$root/config_loader.sh"
 
 # get default WiFi SSID and Password
-default_wifi_ssid=$(jq -r '.defaultWiFi.ssid' "$root"/../test_config.json)
-default_wifi_password=$(jq -r '.defaultWiFi.password' "$root"/../test_config.json)
+default_wifi_ssid=$(get_config_value '.defaultWiFi.ssid')
+default_wifi_password=$(get_config_value '.defaultWiFi.password')
 
 echo "Start WiFi detection, Target WiFi SSID $default_wifi_ssid"
 

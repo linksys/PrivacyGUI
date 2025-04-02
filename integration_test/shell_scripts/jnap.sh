@@ -1,5 +1,10 @@
 #!/uer/bin/bash
 
+# imports
+root="$(dirname "$0")"
+source "$root/config_loader.sh"
+
+
  #base64 encode
   base64Encode(){
     local password=$1
@@ -104,7 +109,7 @@ set_device_mode_to_master() {
 # set admin password to default WiFi password
 set_admin_password_to_wifi_password() {
   password=$1
-  wifi_password=$(jq -r '.defaultWiFi.password' "$root"/../test_config.json)
+  wifi_password=$(get_config_value '.defaultWiFi.password')
   local result=$(jnap "http://linksys.com/jnap/core/SetAdminPassword3" "$password" "{\"adminPassword\":\"$wifi_password\"}")
   echo "$result"
 }

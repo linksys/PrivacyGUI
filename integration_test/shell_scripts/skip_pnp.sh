@@ -2,6 +2,7 @@
 root="$(dirname "$0")"
 source "$root/utils.sh"
 source "$root/jnap.sh"
+source "$root/config_loader.sh"
 
 echo "Start skipping PnP flow"
 # record time spend
@@ -9,7 +10,7 @@ start_time=$(date +%s)
 trap 'end_time=$(date +%s); elapsed_time=$((end_time - start_time)); echo "Time spent: $elapsed_time seconds"' EXIT
 
 # make sure it is the target
-serial_number=$(jq -r '.serialNumber' "$root"/../test_config.json)
+serial_number=$(get_config_value '.serialNumber')
 echo "Target: $serial_number"
 wait_for_device_info 10 "$serial_number"
 status=$?
@@ -43,19 +44,22 @@ current_wifi=$(get_current_wifi_ssid)
 echo "Record current connected WiFi ssid $current_wifi"
 
 # get default WiFi SSID and Password
-default_wifi_ssid=$(jq -r '.defaultWiFi.ssid' "$root"/../test_config.json)
-default_wifi_password=$(jq -r '.defaultWiFi.password' "$root"/../test_config.json)
+default_wifi_ssid=$(get_config_value '.defaultWiFi.ssid')
+default_wifi_password=$(get_config_value '.defaultWiFi.password')
 
 # get password
 password=$(is_default_admin_password_or_get_password)
 echo $password
 if [[ "$password" == "admin" ]]; then
+  echo "Set admin password to default WiFi Password"
   set_admin_password_to_wifi_password "$password"
   password=$default_wifi_password
+  echo "Update password: $password"
 else
+  echo "Set user auto acknowledgement"
   set_user_auto_acknowledgement "$password"
 fi
-
+wait_for_seconds 3
 set_device_mode_to_master "$password"
 wait_for_seconds 30
 wait_for_wifi_ssid $default_wifi_ssid 100

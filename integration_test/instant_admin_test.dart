@@ -71,8 +71,8 @@ void main() {
     // Again, open the edit password dialog
     await adminActions.tapEditPasswordTappableArea();
     // Input new passwords
-    await adminActions.inputNewPassword(IntegrationTestConfig.password);
-    await adminActions.inputConfirmPassword(IntegrationTestConfig.password);
+    await adminActions.inputNewPassword(IntegrationTestConfig.newPassword);
+    await adminActions.inputConfirmPassword(IntegrationTestConfig.newPassword);
     await adminActions.inputPasswordHint(IntegrationTestConfig.passwordHint);
     // Save the new password
     await adminActions.tapEditPasswordSaveButton();
