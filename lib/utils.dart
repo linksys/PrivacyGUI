@@ -9,6 +9,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:privacy_gui/constants/build_config.dart';
+import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
@@ -134,6 +137,17 @@ class Utils {
     final utf8Back = utf8.decode(b64Back.codeUnits);
     logger.d('i: $uriBack, b: $b64Back, u: $utf8Back');
     return utf8Back;
+  }
+
+  static Future<String> getAppVersion() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    return "${packageInfo.version}.${packageInfo.buildNumber}";
+  }
+
+  static Future<bool> isUIVersionChanged() async {
+    final uiVersion = await getAppVersion();
+    final fileUIVersion = '${await getVersion()}.100001';
+    return uiVersion.compareToVersion(fileUIVersion) < 0;
   }
 }
 

@@ -15,10 +15,14 @@ import 'package:privacy_gui/page/dashboard/views/components/networks.dart';
 import 'package:privacy_gui/page/dashboard/views/components/port_and_speed.dart';
 import 'package:privacy_gui/page/dashboard/views/components/quick_panel.dart';
 import 'package:privacy_gui/page/dashboard/views/components/wifi_grid.dart';
+import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
+import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
+import 'package:privacy_gui/core/jnap/providers/assign_ip/base_assign_ip.dart'
+    if (dart.library.html) 'package:privacy_gui/core/jnap/providers/assign_ip/web_assign_ip.dart';
 
 import 'components/shimmer.dart';
 
@@ -62,24 +66,58 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
         gradient: shimmerGradient,
         child: ShimmerContainer(
           isLoading: false,
-          child: ResponsiveLayout(
-            desktop: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const DashboardHomeTitle(),
-                const AppGap.large1(),
-                !hasLanPort
-                    ? _desktopNoLanPortsLayout()
-                    : horizontalLayout
-                        ? _desktopHorizontalLayout()
-                        : _desktopVerticalLayout(),
-              ],
-            ),
-            mobile: _mobileLayout(),
+          child: Stack(
+            children: [
+              ResponsiveLayout(
+                desktop: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const DashboardHomeTitle(),
+                    const AppGap.large1(),
+                    !hasLanPort
+                        ? _desktopNoLanPortsLayout()
+                        : horizontalLayout
+                            ? _desktopHorizontalLayout()
+                            : _desktopVerticalLayout(),
+                  ],
+                ),
+                mobile: _mobileLayout(),
+              ),
+              Align(
+                alignment: Alignment.topCenter,
+                child: Padding(
+                  padding: const EdgeInsets.all(Spacing.medium),
+                  child: FutureBuilder(
+                      future: Utils.isUIVersionChanged(),
+                      builder: (context, snapshot) {
+                        return snapshot.data == true
+                            ? _showRefreshPrompt()
+                            : SizedBox.shrink();
+                      }),
+                ),
+              ),
+            ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _showRefreshPrompt() {
+    return AppCard(
+      child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+        Expanded(
+          child: AppText.titleSmall(
+              "You've been updated the latest version! Please trying to refresh the page."),
+        ),
+        AppTextButton(
+          'Refresh',
+          onTap: () {
+            reload();
+          },
+        )
+      ]),
     );
   }
 
