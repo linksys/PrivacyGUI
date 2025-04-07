@@ -105,7 +105,7 @@ class _InternetConnectionWidgetState
             child: Row(
               children: [
                 Container(
-                  color: Colors.blueAccent,
+                  color: Colors.pinkAccent,
                   height: 158,
                   width: ResponsiveLayout.isDesktopLayout(context) ? 176 : 104,
                   // height: 176,
