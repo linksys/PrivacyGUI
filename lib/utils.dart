@@ -139,13 +139,9 @@ class Utils {
     return utf8Back;
   }
 
-  static Future<String> getAppVersion() async {
-    final packageInfo = await PackageInfo.fromPlatform();
-    return "${packageInfo.version}.${packageInfo.buildNumber}";
-  }
-
   static Future<bool> isUIVersionChanged() async {
-    final uiVersion = await getAppVersion();
+    final packageInfo = await PackageInfo.fromPlatform();
+    final uiVersion = packageInfo.version;
     final fileUIVersion = await getVersion();
     return uiVersion.compareToVersion(fileUIVersion) < 0;
   }
