@@ -146,7 +146,7 @@ class Utils {
 
   static Future<bool> isUIVersionChanged() async {
     final uiVersion = await getAppVersion();
-    final fileUIVersion = '${await getVersion()}.100001';
+    final fileUIVersion = await getVersion();
     return uiVersion.compareToVersion(fileUIVersion) < 0;
   }
 }
