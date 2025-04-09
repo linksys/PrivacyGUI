@@ -190,7 +190,7 @@ enum _JNAPActionValue {
           'http://linksys.com/jnap/nodes/networkconnections/GetNodesWirelessNetworkConnections'),
   getNodesWirelessNetworkConnections2(
       value:
-          'http://linksys.com/jnap/nodes/networkconnections/GetNodesWirelessNetworkConnections2'),        
+          'http://linksys.com/jnap/nodes/networkconnections/GetNodesWirelessNetworkConnections2'),
   // nodes optimization
   setTopologyOptimizationSettings(
       value:
@@ -250,6 +250,7 @@ enum _JNAPActionValue {
   setWANSettings2(value: 'http://linksys.com/jnap/router/SetWANSettings2'),
   setWANSettings3(value: 'http://linksys.com/jnap/router/SetWANSettings3'),
   setWANSettings4(value: 'http://linksys.com/jnap/router/SetWANSettings4'),
+  setWANSettings5(value: 'http://linksys.com/jnap/router/SetWANSettings5'),
   setLANSettings(value: 'http://linksys.com/jnap/router/SetLANSettings'),
   setRoutingSettings(
       value: 'http://linksys.com/jnap/router/SetRoutingSettings'),
