@@ -863,5 +863,106 @@ void main() {
 
     //   expect(() => NetworkUtils.getIpPrefix(ipAddress, subnetMask), throwsArgumentError);
     // });
+
+    // Tests for getMinMtu
+    test('getMinMtu: returns correct minimum MTU for known WAN types', () {
+      expect(NetworkUtils.getMinMtu('dhcp'), 576);
+      expect(NetworkUtils.getMinMtu('DHCP'), 576); // Test case-insensitivity
+      expect(NetworkUtils.getMinMtu('pppoe'), 576);
+      expect(NetworkUtils.getMinMtu('static'), 576);
+      expect(NetworkUtils.getMinMtu('pptp'), 576);
+      expect(NetworkUtils.getMinMtu('l2tp'), 576);
+    });
+
+    test('getMinMtu: returns 0 for unknown WAN type', () {
+      expect(NetworkUtils.getMinMtu('unknown'), 0);
+      expect(NetworkUtils.getMinMtu(''), 0);
+    });
+
+    // Tests for getMaxMtu
+    test('getMaxMtu: returns correct maximum MTU for known WAN types', () {
+      expect(NetworkUtils.getMaxMtu('dhcp'), 1500);
+      expect(NetworkUtils.getMaxMtu('DHCP'), 1500); // Test case-insensitivity
+      expect(NetworkUtils.getMaxMtu('pppoe'), 1492);
+      expect(NetworkUtils.getMaxMtu('static'), 1500);
+      expect(NetworkUtils.getMaxMtu('pptp'), 1460);
+      expect(NetworkUtils.getMaxMtu('l2tp'), 1460);
+    });
+
+    test('getMaxMtu: returns 0 for unknown WAN type', () {
+      expect(NetworkUtils.getMaxMtu('unknown'), 0);
+      expect(NetworkUtils.getMaxMtu(''), 0);
+    });
+
+    // Tests for isMtuValid
+    test('isMtuValid: returns true for MTU 0 regardless of WAN type', () {
+      expect(NetworkUtils.isMtuValid('dhcp', 0), true);
+      expect(NetworkUtils.isMtuValid('pppoe', 0), true);
+      expect(NetworkUtils.isMtuValid('static', 0), true);
+      expect(NetworkUtils.isMtuValid('pptp', 0), true);
+      expect(NetworkUtils.isMtuValid('l2tp', 0), true);
+      expect(NetworkUtils.isMtuValid('unknown', 0), true); // Also true for unknown
+    });
+
+    test('isMtuValid: returns true for valid MTU within range for DHCP', () {
+      expect(NetworkUtils.isMtuValid('dhcp', 576), true); // Min
+      expect(NetworkUtils.isMtuValid('dhcp', 1000), true); // Mid
+      expect(NetworkUtils.isMtuValid('dhcp', 1500), true); // Max
+    });
+
+    test('isMtuValid: returns false for invalid MTU outside range for DHCP', () {
+      expect(NetworkUtils.isMtuValid('dhcp', 575), false); // Below min
+      expect(NetworkUtils.isMtuValid('dhcp', 1501), false); // Above max
+    });
+
+    test('isMtuValid: returns true for valid MTU within range for PPPoE', () {
+      expect(NetworkUtils.isMtuValid('pppoe', 576), true); // Min
+      expect(NetworkUtils.isMtuValid('pppoe', 1000), true); // Mid
+      expect(NetworkUtils.isMtuValid('pppoe', 1492), true); // Max
+    });
+
+    test('isMtuValid: returns false for invalid MTU outside range for PPPoE', () {
+      expect(NetworkUtils.isMtuValid('pppoe', 575), false); // Below min
+      expect(NetworkUtils.isMtuValid('pppoe', 1500), false); // Above max
+    });
+
+    test('isMtuValid: returns true for valid MTU within range for Static', () {
+      expect(NetworkUtils.isMtuValid('static', 576), true); // Min
+      expect(NetworkUtils.isMtuValid('static', 1000), true); // Mid
+      expect(NetworkUtils.isMtuValid('static', 1500), true); // Max
+    });
+
+    test('isMtuValid: returns false for invalid MTU outside range for Static', () {
+      expect(NetworkUtils.isMtuValid('static', 575), false); // Below min
+      expect(NetworkUtils.isMtuValid('static', 1501), false); // Above max
+    });
+
+     test('isMtuValid: returns true for valid MTU within range for PPTP', () {
+      expect(NetworkUtils.isMtuValid('pptp', 576), true); // Min
+      expect(NetworkUtils.isMtuValid('pptp', 1000), true); // Mid
+      expect(NetworkUtils.isMtuValid('pptp', 1460), true); // Max
+    });
+
+    test('isMtuValid: returns false for invalid MTU outside range for PPTP', () {
+      expect(NetworkUtils.isMtuValid('pptp', 575), false); // Below min
+      expect(NetworkUtils.isMtuValid('pptp', 1461), false); // Above max
+    });
+
+     test('isMtuValid: returns true for valid MTU within range for L2TP', () {
+      expect(NetworkUtils.isMtuValid('l2tp', 576), true); // Min
+      expect(NetworkUtils.isMtuValid('l2tp', 1000), true); // Mid
+      expect(NetworkUtils.isMtuValid('l2tp', 1460), true); // Max
+    });
+
+    test('isMtuValid: returns false for invalid MTU outside range for L2TP', () {
+      expect(NetworkUtils.isMtuValid('l2tp', 575), false); // Below min
+      expect(NetworkUtils.isMtuValid('l2tp', 1461), false); // Above max
+    });
+
+    test('isMtuValid: returns false for any non-zero MTU for unknown WAN type', () {
+      expect(NetworkUtils.isMtuValid('unknown', 1), false);
+      expect(NetworkUtils.isMtuValid('unknown', 1000), false);
+      expect(NetworkUtils.isMtuValid('', 576), false); // Empty string as unknown
+    });
   });
 }
