@@ -4,6 +4,7 @@
     "description": "Recovery with New Password and Login",
     "setUp":  ["skip_pnp"],
     "tearDown": ["reset_password", "factory_reset"],
+    "tags": ["login", "recovery"],
     "config": {
         "newAdminPassword": "Linksys123!",
         "passwordHint": "Linksys"
