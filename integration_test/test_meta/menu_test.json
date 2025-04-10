@@ -3,5 +3,6 @@
     "target": "integration_test/menu_test.dart",
     "description": "Click all the cards in the menu page and see the result",
     "setUp":  ["skip_pnp"],
+    "tags": ["dashboard"],
     "tearDown": ["factory_reset"]
 }

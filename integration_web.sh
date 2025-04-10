@@ -11,28 +11,83 @@ GREEN='\033[0;32m'
 NC='\033[0m'
 LINE_BREAK="${GREEN} ------------ ${NC}"
 
-while getopts t:d:p: flag
+while getopts t:d:g: flag
 do
     case "${flag}" in
         t) testcase=${OPTARG};;
         d) data=${OPTARG};;
-        p) p=${OPTARG};;
+        g) tags=${OPTARG};;
     esac
 done
-if [ -z "$testcase" ]; then
-    echo "ERROR: Empty testcase file."
+
+if [[ -z "$testcase" && -z "$tags" ]]; then
+    echo "ERROR: Empty testcase file or tags."
     exit 1
 fi
-if [ -z "$data" ]; then
-    echo "Empty data file."
+# if [ -z "$data" ]; then
+#     echo "Empty data file."
+#     exit 1
+# fi
+
+# check tags which include tag string from json files in test_meta folder
+if [ ! -z "$tags" ]; then
+    testcaseArray=()
+    echo "Running with tags: $tags"
+    # for loop for tag variable split with , or a single tag
+    for tag in $(echo "$tags" | tr ',' ' '); do
+        # for loop for .json file in test_meta filder
+        for file in ./integration_test/test_meta/*.json; do
+            # check if tag is in the json file
+            if jq -e ".tags | contains([\"$tag\"])" "$file" > /dev/null 2>&1; then
+                # add file name into testcaseArray
+                file=$(basename "$file" .json)
+                testcaseArray+=("$file")
+            fi
+        done
+    done
+    # remove duplicate testcase from testcaseArray
+    IFS=
+    declare -a uniqueTestcaseArray
+    for item in "${testcaseArray[@]}"; do
+        found=false
+        for uniqueItem in "${uniqueTestcaseArray[@]}"; do
+            if [[ "$item" == "$uniqueItem" ]]; then
+                found=true
+                break
+            fi
+        done
+        if [[ "$found" == false ]]; then
+            uniqueTestcaseArray+=("$item")
+        fi
+    done
+    testcaseArray=("${uniqueTestcaseArray[@]}")
+    
+    if [ ${#testcaseArray[@]} -eq 0 ]; then
+        echo "No testcase found with tag: $tag."
+    fi
 fi
 
 count=0
 successed=0
 failed=0
-cases=($(jq -r '.files[]' $testcase))
-flutter pub get
 
+# if testcase is empty then assign from testcaseArray
+if [ -z "$testcase" ]; then
+    # add testcaseArray into cases
+    for case in "${testcaseArray[@]}"; do
+        cases+=("$case")
+    done
+else
+    cases=($(jq -r '.files[]' $testcase))
+fi
+
+echo "Cases ${cases[@]}"
+if [ ${#cases[@]} -eq 0 ]; then
+    echo "No testcase found."
+    exit 1
+fi
+
+flutter pub get
 for case in "${cases[@]}"; do
     #init config file
     init_config $data
@@ -100,7 +155,7 @@ for case in "${cases[@]}"; do
         message=$(dart run ./test_scripts/extract_failure_messages.dart "$result")
         echo "$message"
     fi
-    Kill the WiFi detection process
+    echo kill the WiFi detection process
     kill -9 $pid
     echo "Case TearDown: $caseTearDown"
     for action in "${caseTearDown[@]}"; do

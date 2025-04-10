@@ -10,7 +10,7 @@ start_time=$(date +%s)
 trap 'end_time=$(date +%s); elapsed_time=$((end_time - start_time)); echo "Time spent: $elapsed_time seconds"' EXIT
 
 # make sure it is the target
-serial_number=$(get_config_value -r '.serialNumber')
+serial_number=$(get_config_value '.serialNumber')
 echo "Target: $serial_number"
 wait_for_device_info 10 "$serial_number"
 status=$?
