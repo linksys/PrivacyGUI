@@ -73,6 +73,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(wifiListProvider);
+
     ref.listen(wifiListProvider, (previous, next) {
       if (_preservedMainWiFiState != null) {
         ref
@@ -99,18 +100,12 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
           }),
       useMainPadding: false,
       child: ResponsiveLayout(
-          desktop: Row(
+          desktop: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(
-                width: 8.col,
-                child: _wifiContentView(),
-              ),
-              const AppGap.gutter(),
-              SizedBox(
-                width: 4.col,
-                child: _wifiDescription(wifiBands),
-              )
+              _wifiDescription(wifiBands),
+              const AppGap.medium(),
+              Expanded(child: _wifiContentView()),
             ],
           ),
           mobile: Column(
@@ -147,10 +142,22 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
   Widget _wifiContentView() {
     final state = ref.watch(wifiListProvider);
 
-    const columnCount = 2;
-    final fixedWidth =
-        ResponsiveLayout.isOverSmallLayout(context) ? 4.col : 2.col;
-
+    final columnCount = ResponsiveLayout.isOverExtraLargeLayout(context)
+        ? 4
+        : ResponsiveLayout.isOverLargeLayout(context)
+            ? 3
+            : ResponsiveLayout.isOverMedimumLayout(context)
+                ? 3
+                : 2;
+    final fixedWidth = ResponsiveLayout.isOverExtraLargeLayout(context)
+        ? 3.col
+        : ResponsiveLayout.isOverLargeLayout(context)
+            ? 4.col
+            : ResponsiveLayout.isOverMedimumLayout(context)
+                ? 4.col
+                : ResponsiveLayout.isOverSmallLayout(context)
+                    ? 4.col
+                    : 2.col;
     final columnWidths = Map.fromEntries(
         List.generate(columnCount, (index) => index).map((e) => e ==
                 columnCount - 1
