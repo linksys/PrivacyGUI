@@ -491,11 +491,13 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                       children: [
                         AppFilledButton.fillWidth(
                           loc(context).speedTestExternalTileCloudFlare,
+                          fitText: true,
                           onTap: () {
                             openUrl('https://speed.cloudflare.com/');
                           },
                         ),
                         AppFilledButton.fillWidth(
+                          fitText: true,
                           loc(context).speedTestExternalTileFast,
                           onTap: () {
                             openUrl('https://www.fast.com');
@@ -510,6 +512,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                       Expanded(
                         child: AppFilledButton(
                           loc(context).speedTestExternalTileCloudFlare,
+                          fitText: true,
                           onTap: () {
                             openUrl('https://speed.cloudflare.com/');
                           },
@@ -518,6 +521,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                       Expanded(
                         child: AppFilledButton(
                           loc(context).speedTestExternalTileFast,
+                          fitText: true,
                           onTap: () {
                             openUrl('https://www.fast.com');
                           },
@@ -533,6 +537,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
 
   Widget _speedTestButton(BuildContext context, DashboardHomeState state) {
     return AppFilledButton(
+      fitText: true,
       loc(context).speedTextTileStart,
       radius: BorderRadius.circular(40),
       onTap: () {

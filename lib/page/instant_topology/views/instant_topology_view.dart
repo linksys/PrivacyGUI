@@ -190,7 +190,7 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
     final supportChildFactoryReset = serviceHelper.isSupportChildFactoryReset();
     
     return ResponsiveLayout.isMobileLayout(context)
-        ? SimpleTreeNodeItem(
+        ? TopologyNodeItem.simple(
             node: node,
             actions: node.data.isMaster
                 ? [
@@ -237,7 +237,7 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
               }
             },
           )
-        : TreeNodeItem(
+        : TopologyNodeItem(
             node: node,
             actions: node.data.isMaster
                 ? [
