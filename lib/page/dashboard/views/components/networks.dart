@@ -108,8 +108,9 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
                         strokeJoin: StrokeJoin.miter),
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(0, 16, 0, 0),
-                      child: SimpleTreeNodeItem(
+                      child: TopologyNodeItem.simple(
                         node: entry.node,
+                        actions: const [],
                         extra: entry.node.data.isMaster
                             ? '${loc(context).uptime}: $uptime'
                             : null,

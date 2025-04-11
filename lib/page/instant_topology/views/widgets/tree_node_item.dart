@@ -1,6 +1,12 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/theme/_theme.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
+
 import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/views/single_port_forwarding_rule_view.dart';
@@ -9,11 +15,6 @@ import 'package:privacy_gui/page/instant_topology/views/model/topology_model.dar
 import 'package:privacy_gui/page/instant_topology/views/model/tree_view_node.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/utils.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 
 enum NodeInstantActions {
   reboot,
@@ -28,6 +29,60 @@ enum NodeInstantActions {
         blink => loc(context).blinkDeviceLight,
         reset => loc(context).resetToFactoryDefault,
       };
+}
+
+class TopologyNodeItem extends StatelessWidget {
+  final RouterTreeNode node;
+  final String? extra;
+  final VoidCallback? onTap;
+  final List<NodeInstantActions> actions;
+  final void Function(NodeInstantActions)? onActionTap;
+  final int mode;
+
+  const TopologyNodeItem({
+    Key? key,
+    required this.node,
+    this.extra,
+    this.onTap,
+    required this.actions,
+    this.onActionTap,
+    this.mode = 0,
+  }) : super(key: key);
+
+  factory TopologyNodeItem.simple({
+    Key? key,
+    required RouterTreeNode node,
+    VoidCallback? onTap,
+    String? extra,
+    required List<NodeInstantActions> actions,
+    void Function(NodeInstantActions)? onActionTap,
+  }) =>
+      TopologyNodeItem(
+        node: node,
+        actions: actions,
+        onActionTap: onActionTap,
+        onTap: onTap,
+        extra: extra,
+        mode: 1,
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    return mode == 0
+        ? TreeNodeItem(
+            node: node,
+            actions: actions,
+            onActionTap: onActionTap,
+            onTap: onTap,
+          )
+        : SimpleTreeNodeItem(
+            node: node,
+            actions: actions,
+            onActionTap: onActionTap,
+            onTap: onTap,
+            extra: extra,
+          );
+  }
 }
 
 class TreeNodeItem extends StatelessWidget {

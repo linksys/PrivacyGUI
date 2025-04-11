@@ -144,6 +144,16 @@ class MockStaticRoutingRuleNotifier extends _i2.Notifier<
       );
 
   @override
+  bool isNameValid(String name) => (super.noSuchMethod(
+        Invocation.method(
+          #isRuleValid,
+          [],
+        ),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
   bool isRuleValid() => (super.noSuchMethod(
         Invocation.method(
           #isRuleValid,
