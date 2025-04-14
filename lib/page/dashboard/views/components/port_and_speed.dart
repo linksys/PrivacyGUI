@@ -218,7 +218,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               SizedBox(
-                height: 124,
+                height: 120,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: Spacing.small2,
@@ -253,7 +253,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                 ),
               ),
               SizedBox(
-                  height: 132,
+                  height: 136,
                   child: _createSpeedTestTile(context, ref, state)),
             ],
           )),
@@ -293,7 +293,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
             desktop: !hasLanPort
                 ? Padding(
                     padding:
-                        const EdgeInsets.symmetric(vertical: Spacing.large1),
+                        const EdgeInsets.symmetric(vertical: Spacing.small3),
                     child: Column(
                       children: [
                         if (dateTimeStr.isNotEmpty) ...[
@@ -396,7 +396,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                                   state.uploadResult?.value ?? '--',
                                   state.uploadResult?.unit,
                                   isLegacy),
-                              const AppGap.large2(),
+                              const AppGap.medium(),
                               _speedTestButton(context, state),
                             ]),
                       ),
@@ -463,7 +463,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                 ),
       ),
       padding: const EdgeInsets.symmetric(
-          horizontal: Spacing.large1, vertical: Spacing.medium),
+          horizontal: Spacing.large1, vertical: Spacing.small2),
       child: Column(
         children: [
           Row(
@@ -536,13 +536,16 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
   }
 
   Widget _speedTestButton(BuildContext context, DashboardHomeState state) {
-    return AppFilledButton(
-      fitText: true,
-      loc(context).speedTextTileStart,
-      radius: BorderRadius.circular(40),
-      onTap: () {
-        context.pushNamed(RouteNamed.dashboardSpeedTest);
-      },
+    return SizedBox(
+      height: 40,
+      child: AppFilledButton(
+        fitText: true,
+        loc(context).speedTextTileStart,
+        radius: BorderRadius.circular(40),
+        onTap: () {
+          context.pushNamed(RouteNamed.dashboardSpeedTest);
+        },
+      ),
     );
   }
 
