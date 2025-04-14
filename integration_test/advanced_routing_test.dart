@@ -90,6 +90,11 @@ void main() {
       await advancedRoutingActions.tapCheckIconButton();
       // Save
       await advancedRoutingActions.tapSaveButton();
+      // Re-enter Advanced Routing screen
+      await advancedRoutingActions.tapBackButton();
+      await advancedSettingsActions.enterAdvancedRoutingPage();
+      // Verify updated values
+      await advancedRoutingActions.checkSavedRoutingName();
     });
 
     testWidgets('Advanced routing - Incorrect input operations',
@@ -111,9 +116,12 @@ void main() {
       await advancedRoutingActions.tapAddRoutingButton();
       // Tap the name field
       await advancedRoutingActions.tapRoutingNameField();
+      await advancedRoutingActions.tapRoutingNameField();
       // Tap the destination IP field
       await advancedRoutingActions.tapLastDestinationIpField();
+      await advancedRoutingActions.tapLastDestinationIpField();
       // Tap the gateway IP field
+      await advancedRoutingActions.tapLastGatewayIpField();
       await advancedRoutingActions.tapLastGatewayIpField();
     });
   });
