@@ -200,28 +200,38 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
               ],
             ),
             const AppGap.small2(),
-            AppText.titleMedium(
-              widget.item.ssid,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            FittedBox(
+              child: AppText.titleMedium(
+                widget.item.ssid,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
             const AppGap.small2(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            Stack(
+              alignment: Alignment.center,
+              // mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    const Icon(
-                      LinksysIcons.devices,
-                      semanticLabel: 'devices',
-                    ),
-                    const AppGap.medium(),
-                    AppText.labelLarge(
-                      loc(context).nDevices(widget.item.numOfConnectedDevices),
-                    ),
-                  ],
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Row(
+                    children: [
+                      const Icon(
+                        LinksysIcons.devices,
+                        semanticLabel: 'devices',
+                      ),
+                      const AppGap.small2(),
+                      AppText.labelLarge(
+                        loc(context)
+                            .nDevices(widget.item.numOfConnectedDevices),
+                        maxLines: 2,
+                      ),
+                    ],
+                  ),
                 ),
-                _buildTooltip(context),
+                Align(
+                    alignment: Alignment.centerRight,
+                    child: _buildTooltip(context)),
               ],
             )
           ],

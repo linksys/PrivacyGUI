@@ -348,64 +348,67 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
     void Function(void Function()) setState,
     void Function() onSubmit,
   ) {
-    return SizedBox(
-      width: 400,
-      child: Semantics(
-        explicitChildNodes: true,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const AppGap.large2(),
-            AppTextField.outline(
-              controller: _deviceNameController,
-              headerText: loc(context).deviceName,
-              errorText: _errorMessage,
-              onChanged: (text) {
-                setState(() {
-                  final overMaxSize = utf8.encoder.convert(text).length >= 256;
-                  _errorMessage = text.isEmpty
-                      ? loc(context).theNameMustNotBeEmpty
-                      : overMaxSize
-                          ? loc(context).deviceNameExceedMaxSize
-                          : null;
-                });
-              },
-              onSubmitted: (_) {
-                if (_errorMessage != null) {
-                  onSubmit();
-                }
-              },
-            ),
-            const AppGap.large3(),
-            AppText.labelLarge(loc(context).selectIcon.capitalizeWords()),
-            const AppGap.large3(),
-            GridView.builder(
-              shrinkWrap: true,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 6,
+    return SingleChildScrollView(
+      child: SizedBox(
+        width: 400,
+        child: Semantics(
+          explicitChildNodes: true,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const AppGap.large2(),
+              AppTextField.outline(
+                controller: _deviceNameController,
+                headerText: loc(context).deviceName,
+                errorText: _errorMessage,
+                onChanged: (text) {
+                  setState(() {
+                    final overMaxSize =
+                        utf8.encoder.convert(text).length >= 256;
+                    _errorMessage = text.isEmpty
+                        ? loc(context).theNameMustNotBeEmpty
+                        : overMaxSize
+                            ? loc(context).deviceNameExceedMaxSize
+                            : null;
+                  });
+                },
+                onSubmitted: (_) {
+                  if (_errorMessage != null) {
+                    onSubmit();
+                  }
+                },
               ),
-              itemCount: IconDeviceCategory.values.length,
-              itemBuilder: ((context, index) {
-                return InkWell(
-                  onTap: () {
-                    setState(() {
-                      _iconIndex = index;
-                    });
-                  },
-                  child: Icon(
-                    IconDeviceCategoryExt.resolveByName(
-                      IconDeviceCategory.values[index].name,
+              const AppGap.large3(),
+              AppText.labelLarge(loc(context).selectIcon.capitalizeWords()),
+              const AppGap.large3(),
+              GridView.builder(
+                shrinkWrap: true,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 6,
+                ),
+                itemCount: IconDeviceCategory.values.length,
+                itemBuilder: ((context, index) {
+                  return InkWell(
+                    onTap: () {
+                      setState(() {
+                        _iconIndex = index;
+                      });
+                    },
+                    child: Icon(
+                      IconDeviceCategoryExt.resolveByName(
+                        IconDeviceCategory.values[index].name,
+                      ),
+                      semanticLabel: IconDeviceCategory.values[index].name,
+                      color: index == _iconIndex
+                          ? Theme.of(context).colorScheme.primary
+                          : null,
                     ),
-                    semanticLabel: IconDeviceCategory.values[index].name,
-                    color: index == _iconIndex
-                        ? Theme.of(context).colorScheme.primary
-                        : null,
-                  ),
-                );
-              }),
-            ),
-          ],
+                  );
+                }),
+              ),
+            ],
+          ),
         ),
       ),
     );

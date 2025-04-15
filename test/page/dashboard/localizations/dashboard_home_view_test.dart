@@ -160,6 +160,42 @@ void main() async {
       ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1280)).toList()
     ]);
 
+    testLocalizations('Dashboard Home View - no LAN ports - child node offline',
+        (tester, locale) async {
+      when(mockInstantTopologyNotifier.build())
+          .thenReturn(topologyTestData.testTopology3OfflineState);
+      await tester.pumpWidget(
+        testableRouteShellWidget(
+          child: const DashboardHomeView(),
+          locale: locale,
+          overrides: [
+            dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
+            dashboardManagerProvider
+                .overrideWith(() => mockDashboardManagerNotifier),
+            firmwareUpdateProvider
+                .overrideWith(() => mockFirmwareUpdateNotifier),
+            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
+            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
+            instantPrivacyProvider
+                .overrideWith(() => mockInstantPrivacyNotifier),
+            instantTopologyProvider
+                .overrideWith(() => mockInstantTopologyNotifier),
+            geolocationProvider.overrideWith(() => mockGeolocationNotifer),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.runAsync(() async {
+        final context = tester.element(find.byType(DashboardHomeView));
+        await precacheImage(
+            CustomTheme.of(context).images.devices.routerLn12, context);
+        await tester.pumpAndSettle();
+      });
+    }, screens: [
+      ...responsiveMobileScreens.map((e) => e.copyWith(height: 2480)).toList(),
+      ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1280)).toList()
+    ]);
+
     testLocalizations('Dashboard Home View - no LAN ports with speed check',
         (tester, locale) async {
       when(mockDashboardHomeNotifier.build()).thenReturn(
