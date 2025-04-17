@@ -1,5 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -42,8 +43,9 @@ class _TopNavigationMenuState extends State<TopNavigationMenu> {
   }
 
   Widget _createChip(NaviType type) {
+    final theme = getIt.get<ThemeData>(instanceName: 'darkThemeData');
     return Theme(
-      data: linksysDarkThemeData.copyWith(),
+      data: theme.copyWith(),
       child: ChoiceChip(
         avatar: Icon(type.resolveIcon(), color: Color(neutralTonal.get(100))),
         label: AppText.labelMedium(

@@ -17,6 +17,7 @@ import 'package:privacygui_widgets/widgets/card/expansion_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../common/config.dart';
+import '../../../common/di.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
 import '../../../mocks/_index.dart';
@@ -25,8 +26,8 @@ import '../../../mocks/jnap_service_supported_mocks.dart';
 import '../../../test_data/_index.dart';
 
 void main() async {
-  ServiceHelper mockServiceHelper = MockServiceHelper();
-  getIt.registerSingleton<ServiceHelper>(mockServiceHelper);
+  mockDependencyRegister();
+  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
 
   Widget testableWidget(Locale locale) => testableRouteShellWidget(
         child: const FaqListView(),

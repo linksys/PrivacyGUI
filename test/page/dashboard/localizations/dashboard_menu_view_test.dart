@@ -14,6 +14,7 @@ import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../common/config.dart';
+import '../../../common/di.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
 import '../../../mocks/_index.dart';
@@ -27,8 +28,8 @@ void main() async {
   late ConnectivityNotifier mockConnectivityNotifier;
   late DashboardHomeNotifier mockDashboardHomeNotifier;
 
-  ServiceHelper mockServiceHelper = MockServiceHelper();
-  getIt.registerSingleton<ServiceHelper>(mockServiceHelper);
+  mockDependencyRegister();
+  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
 
   Widget testableWidget(Locale locale) => testableRouteShellWidget(
         child: const DashboardMenuView(),
@@ -56,8 +57,8 @@ void main() async {
         hasInternet: true,
         connectivityInfo:
             ConnectivityInfo(routerType: RouterType.behindManaged)));
-    when(mockDashboardHomeNotifier.build()).thenReturn(
-        DashboardHomeState.fromMap(dashboardHomeCherry7TestState));
+    when(mockDashboardHomeNotifier.build())
+        .thenReturn(DashboardHomeState.fromMap(dashboardHomeCherry7TestState));
     initBetterActions();
   });
   testLocalizations('Dashboard Menu View - default', (tester, locale) async {

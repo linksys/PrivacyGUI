@@ -10,6 +10,7 @@ import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:mockito/mockito.dart';
 
 import '../../../common/_index.dart';
+import '../../../common/di.dart';
 import '../../../mocks/firmware_update_notifier_mocks.dart';
 import '../../../mocks/jnap_service_supported_mocks.dart';
 import '../../../test_data/node_details_data.dart';
@@ -18,8 +19,9 @@ import '../../../mocks/node_detail_notifier_mocks.dart';
 void main() {
   late NodeDetailNotifier mockNodeDetailNotifier;
   late FirmwareUpdateNotifier mockFirmwareUpdateNotifier;
-  ServiceHelper mockServiceHelper = MockServiceHelper();
-  getIt.registerSingleton<ServiceHelper>(mockServiceHelper);
+  mockDependencyRegister();
+  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
+
   setUp(() {
     mockNodeDetailNotifier = MockNodeDetailNotifier();
     mockFirmwareUpdateNotifier = MockFirmwareUpdateNotifier();

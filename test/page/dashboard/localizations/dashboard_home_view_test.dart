@@ -28,6 +28,7 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../common/config.dart';
+import '../../../common/di.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
 import '../../../mocks/_index.dart';
@@ -49,8 +50,8 @@ void main() async {
 
   late TopologyTestData topologyTestData;
 
-  ServiceHelper mockServiceHelper = MockServiceHelper();
-  getIt.registerSingleton<ServiceHelper>(mockServiceHelper);
+  mockDependencyRegister();
+  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
