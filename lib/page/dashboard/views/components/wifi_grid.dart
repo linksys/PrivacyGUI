@@ -213,7 +213,7 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
               // mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Align(
-                  alignment: Alignment.centerLeft,
+                  alignment: AlignmentDirectional.centerStart,
                   child: Row(
                     children: [
                       const Icon(
@@ -230,7 +230,7 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
                   ),
                 ),
                 Align(
-                    alignment: Alignment.centerRight,
+                  alignment: AlignmentDirectional.centerEnd,
                     child: _buildTooltip(context)),
               ],
             )
