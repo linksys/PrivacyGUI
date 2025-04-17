@@ -219,6 +219,36 @@ const List<Map<String, dynamic>> iconRules = [
     'iconClass': 'routerSpnm60',
   },
   {
+    'description': 'Linksys M61 (M61/Pinnacle 2.1)',
+    'test': {
+      'model': {
+        'manufacturer': 'Linksys',
+        'modelNumber': '^m61',
+      },
+    },
+    'iconClass': 'routerM61',
+  },
+  {
+    'description': 'Linksys M62 (M62/Pinnacle 2.2)',
+    'test': {
+      'model': {
+        'manufacturer': 'Linksys',
+        'modelNumber': '^m62',
+      },
+    },
+    'iconClass': 'routerM62',
+  },
+  {
+    'description': 'Linksys M60 (M60/Pinnacle 2.0)',
+    'test': {
+      'model': {
+        'manufacturer': 'Linksys',
+        'modelNumber': '^m60',
+      },
+    },
+    'iconClass': 'routerM60',
+  },
+  {
     'description': 'Linksys Router (modelNumber passthrough)',
     'test': {
       'model': {
@@ -703,6 +733,9 @@ String _iconMapping(String iconClass, {String? fallback}) {
     case 'routerSpnm60':
     case 'routerSpnm61':
     case 'routerSpnm62':
+    case 'routerM60':
+    case 'routerM61':
+    case 'routerM62':
       return 'routerMx6200';
     //
 
@@ -756,7 +789,8 @@ String routerIconTestByModel(
       'hardwareVersion': hardwareVersion ?? '1',
     }
   };
-  return iconTest(data);
+  final result = iconTest(data);
+  return result == 'genericDevice' ? 'routerLn12' : result;
 }
 
 String routerIconTest(Map<String, dynamic> target) {
@@ -765,14 +799,18 @@ String routerIconTest(Map<String, dynamic> target) {
 
 String deviceIconTest(Map<String, dynamic> target) {
   const regex =
-      r'^.*((phone)|(android)|(iphone)|(mobile)|(desktop)|(laptop)|(windows)|(mac)|(pc)|(tv)|(vacauum)|(plug)|(gameConsole)|(generic)).*$';
+      r'^.*((digitalMediaPlayer)|(phone)|(android)|(iphone)|(mobile)|(desktop)|(laptop)|(windows)|(mac)|(pc)|(tv)|(vacauum)|(plug)|(gameConsole)|(generic)).*$';
   final test = iconTest(target);
-  final check = RegExp(regex).firstMatch(test)?.group(1);
+  final check = RegExp(regex, caseSensitive: false)
+      .firstMatch(test)
+      ?.group(1)
+      ?.toLowerCase();
   return switch (check) {
     'tv' => IconDeviceCategory.tv,
+    'digitalmediaplayer' => IconDeviceCategory.speaker,
     'plug' => IconDeviceCategory.plug,
     'vacauum' => IconDeviceCategory.vacuum,
-    'gameConsole' => IconDeviceCategory.gameConsole,
+    'gameconsole' => IconDeviceCategory.gameConsole,
     'phone' || 'android' || 'iphone' || 'mobile' => IconDeviceCategory.phone,
     'desktop' ||
     'laptop' ||

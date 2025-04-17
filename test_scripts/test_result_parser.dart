@@ -9,7 +9,6 @@ import 'package:collection/collection.dart';
 void main(List<String> args) {
   print(args);
   var testResultJsonPath = './reports/tests.json';
-  var testResultHtmlOutputPath = './reports/reports.html';
   var fileSuffix = '';
   // use default path if no args input
   if (args.isNotEmpty) {
@@ -17,10 +16,7 @@ void main(List<String> args) {
   }
   if (args.length > 1) {
     final locs = args[1];
-    final screenSizes = args[2];
-    fileSuffix = '-$locs-$screenSizes';
-    testResultHtmlOutputPath =
-        'snapshots/localizations-test-reports$fileSuffix.html';
+    fileSuffix = '-$locs';
   }
   File file = File(testResultJsonPath);
 
