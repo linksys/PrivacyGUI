@@ -128,7 +128,6 @@ class TestAdvancedRoutingActions extends CommonBaseActions {
   Future<void> tapRoutingNameField() async {
     final textFieldFinder = nameTextFieldFinder();
     await tester.tap(textFieldFinder);
-    // await tester.pumpFrames(app(), Duration(seconds: 2));
     await tester.pumpAndSettle();
   }
 
@@ -148,7 +147,6 @@ class TestAdvancedRoutingActions extends CommonBaseActions {
   Future<void> tapLastDestinationIpField() async {
     final textFieldFinder = destinationIpFinder();
     await tester.tap(textFieldFinder.last);
-    // await tester.pumpFrames(app(), Duration(seconds: 2));
     await tester.pumpAndSettle();
   }
 
@@ -175,7 +173,6 @@ class TestAdvancedRoutingActions extends CommonBaseActions {
   Future<void> tapLastGatewayIpField() async {
     final textFieldFinder = gatewayIpFinder();
     await tester.tap(textFieldFinder.last);
-    // await tester.pumpFrames(app(), Duration(seconds: 2));
     await tester.pumpAndSettle();
   }
 
