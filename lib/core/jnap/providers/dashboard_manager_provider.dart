@@ -116,8 +116,6 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
       newState = newState.copyWith(skuModelNumber: settings.modelNumber);
     }
 
-    logger.d('[State]:[dashboardManager]: ${newState.toJson()}');
-
     return newState;
   }
 
