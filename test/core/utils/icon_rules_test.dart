@@ -47,7 +47,13 @@ void main() {
       final result = iconTest(jsonDecode(deviceJson));
       expect(result, 'routerLn11');
     });
-
+    test('test iconTest - Cherry7', () {
+      const deviceJson = '''
+    {"model": {"deviceType": "Infrastructure", "manufacturer": "Linksys", "modelNumber": "LN16", "hardwareVersion": "1"}}
+    ''';
+      final result = iconTest(jsonDecode(deviceJson));
+      expect(result, 'routerLn12');
+    });
     test('test iconTest - Pinnacle 2.0', () {
       const deviceJson = '''
     {"model": {"deviceType": "Infrastructure", "manufacturer": "Linksys", "modelNumber": "SPNM60", "hardwareVersion": "1"}}

@@ -114,7 +114,6 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
       detectedWANType: () => detectedWANType,
     );
 
-    logger.d('[State]:[dashboardHome]: ${newState.toJson()}');
     final json = newState.toJson();
     DashboardHomeState.fromJson(json);
     return newState;
