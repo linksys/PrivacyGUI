@@ -46,7 +46,7 @@ if [ ! -z "$tags" ]; then
         done
     done
     # remove duplicate testcase from testcaseArray
-    IFS=
+    # IFS=
     declare -a uniqueTestcaseArray
     for item in "${testcaseArray[@]}"; do
         found=false
