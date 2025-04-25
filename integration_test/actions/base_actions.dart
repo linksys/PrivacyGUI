@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
+import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/main.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_state.dart';
@@ -11,10 +12,13 @@ import 'package:privacy_gui/page/dashboard/views/components/networks.dart';
 import 'package:privacy_gui/page/dashboard/views/components/quick_panel.dart';
 import 'package:privacy_gui/page/dashboard/views/components/wifi_grid.dart';
 import 'package:privacy_gui/page/instant_topology/views/widgets/tree_node_item.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_item.dart';
+import 'package:privacy_gui/page/wifi_settings/views/wifi_term_titles.dart';
 import 'package:privacy_gui/validator_rules/_validator_rules.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:privacygui_widgets/widgets/card/info_card.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
@@ -79,5 +83,7 @@ sealed class CommonBaseActions extends BaseActions with CommonActionsMixin {
       TestTopbarActions() => throw UnimplementedError(),
     };
   }
+
+  
 }
 
