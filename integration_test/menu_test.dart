@@ -18,21 +18,28 @@ void main() {
   final widgetsBinding =
       IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
+  setUpAll(() async {
+    // GetIt
+    dependencySetup();
+  });
+
   setUp(() async {
+    FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+
     // init better actions
     initBetterActions();
+
+    BuildConfig.load();
+
     // clear all cache data to make sure every test case is independent
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
     const storage = FlutterSecureStorage();
     await storage.deleteAll();
+  });
 
-    FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
-
-    BuildConfig.load();
-
-    // GetIt
-    dependencySetup();
+  tearDown(() async {
+    // Add any cleanup logic here if needed after each test
   });
 
   testWidgets('Menu operations', (tester) async {

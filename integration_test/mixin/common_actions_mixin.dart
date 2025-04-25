@@ -28,6 +28,12 @@ mixin CommonActionsMixin on BaseActions {
     await tester.pumpAndSettle();
   }
 
+  Future<void> scrollAndTap(Finder finder) async {
+    await scrollUntil(finder);
+    await tester.tap(finder);
+    await tester.pumpAndSettle();
+  }
+
   Future<void> checkTitle(String title) async {
     final titleFinder = find.text(title);
     expect(titleFinder, findsWidgets);

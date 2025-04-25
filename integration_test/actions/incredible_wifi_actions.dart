@@ -33,7 +33,7 @@ class TestIncredibleWifiActions extends CommonBaseActions {
     return wifiBandCardFinder;
   }
 
-  Finder switchFider() {
+  Finder bandSwitchFider() {
     final switchFider = find.descendant(
       of: wifiBandCardFinder(),
       matching: find.byType(AppSwitch),
@@ -42,24 +42,22 @@ class TestIncredibleWifiActions extends CommonBaseActions {
     return switchFider;
   }
 
-  Future tapSwitch() async {
-    final finder = switchFider();
-    await scrollUntil(finder);
-    await tester.tap(finder);
-    await tester.pumpAndSettle();
+  Future tapBandSwitch() async {
+    final finder = bandSwitchFider();
+    await scrollAndTap(finder);
   }
 
   // Wifi name card
 
   Finder wifiNameCardFinder() {
     final context = getContext();
-    final titleFider = find.descendant(
+    final titleFinder = find.descendant(
       of: _wifiCardFinder(),
       matching: find.text(loc(context).wifiName),
     );
-    expect(titleFider, findsOneWidget);
+    expect(titleFinder, findsOneWidget);
     final cardFinder = find.ancestor(
-      of: titleFider,
+      of: titleFinder,
       matching: find.byType(AppSettingCard),
     );
     expect(cardFinder, findsOneWidget);
@@ -77,18 +75,16 @@ class TestIncredibleWifiActions extends CommonBaseActions {
   }
 
   void checkWifiName(String wifiName) {
-    final wifiNameFider = find.descendant(
+    final wifiNameFinder = find.descendant(
       of: wifiNameCardFinder(),
       matching: find.text(wifiName),
     );
-    expect(wifiNameFider, findsOneWidget);
+    expect(wifiNameFinder, findsOneWidget);
   }
 
   Future tapWifiNameCard() async {
     final finder = wifiNameCardFinder();
-    await scrollUntil(finder);
-    await tester.tap(finder);
-    await tester.pumpAndSettle();
+    await scrollAndTap(finder);
   }
 
   Future<void> inputWifiName(String wifiName) async {
@@ -100,13 +96,13 @@ class TestIncredibleWifiActions extends CommonBaseActions {
 
   Finder guestWifiNameCardFinder() {
     final context = getContext();
-    final titleFider = find.descendant(
+    final titleFinder = find.descendant(
       of: _wifiCardFinder(),
       matching: find.text(loc(context).guestWiFiName),
     );
-    expect(titleFider, findsOneWidget);
+    expect(titleFinder, findsOneWidget);
     final cardFinder = find.ancestor(
-      of: titleFider,
+      of: titleFinder,
       matching: find.byType(AppSettingCard),
     );
     expect(cardFinder, findsOneWidget);
@@ -124,22 +120,21 @@ class TestIncredibleWifiActions extends CommonBaseActions {
   }
 
   void checkGuestWifiName(String wifiName) {
-    final wifiNameFider = find.descendant(
+    final wifiNameFinder = find.descendant(
       of: guestWifiNameCardFinder(),
       matching: find.text(wifiName),
     );
-    expect(wifiNameFider, findsOneWidget);
+    expect(wifiNameFinder, findsOneWidget);
   }
 
   Future tapGuestWifiNameCard() async {
     final finder = guestWifiNameCardFinder();
-    await scrollUntil(finder);
-    await tester.tap(finder);
-    await tester.pumpAndSettle();
+    await scrollAndTap(finder);
   }
 
   Future<void> inputGuestWifiName(String guestWifiName) async {
     final finder = guestWifiNameFieldFinder();
+    await scrollUntil(finder);
     await tester.tap(finder);
     await tester.enterText(finder, guestWifiName);
     await tester.pumpAndSettle();
@@ -149,13 +144,13 @@ class TestIncredibleWifiActions extends CommonBaseActions {
 
   Finder wifiPasswordCardFinder() {
     final context = getContext();
-    final titleFider = find.descendant(
+    final titleFinder = find.descendant(
       of: _wifiCardFinder(),
       matching: find.text(loc(context).wifiPassword),
     );
-    expect(titleFider, findsOneWidget);
+    expect(titleFinder, findsOneWidget);
     final cardFinder = find.ancestor(
-      of: titleFider,
+      of: titleFinder,
       matching: find.byType(AppListCard),
     );
     expect(cardFinder, findsOneWidget);
@@ -173,20 +168,21 @@ class TestIncredibleWifiActions extends CommonBaseActions {
   }
 
   void checkWifiPassword(String password) {
-    final wifiNameFider = find.descendant(
+    final wifiNameFinder = find.descendant(
       of: wifiPasswordCardFinder(),
       matching: find.text(password),
     );
-    expect(wifiNameFider, findsOneWidget);
+    expect(wifiNameFinder, findsOneWidget);
   }
 
   Future tapWifiPasswordCard() async {
-    await tester.tap(wifiPasswordCardFinder());
-    await tester.pumpAndSettle();
+    final finder = wifiPasswordCardFinder();
+    await scrollAndTap(finder);
   }
 
   Future<void> inputWifiPassword(String wifiPassword) async {
     final finder = wifiPasswordFieldFinder();
+    await scrollUntil(finder);
     await tester.tap(finder);
     await tester.enterText(finder, wifiPassword);
     await tester.pumpAndSettle();
@@ -194,13 +190,13 @@ class TestIncredibleWifiActions extends CommonBaseActions {
 
   Finder guestWifiPasswordCardFinder() {
     final context = getContext();
-    final titleFider = find.descendant(
+    final titleFinder = find.descendant(
       of: _wifiCardFinder(),
       matching: find.text(loc(context).guestWiFiPassword),
     );
-    expect(titleFider, findsOneWidget);
+    expect(titleFinder, findsOneWidget);
     final cardFinder = find.ancestor(
-      of: titleFider,
+      of: titleFinder,
       matching: find.byType(AppListCard),
     );
     expect(cardFinder, findsOneWidget);
@@ -218,26 +214,27 @@ class TestIncredibleWifiActions extends CommonBaseActions {
   }
 
   void checkGuestWifiPassword(String password) {
-    final wifiNameFider = find.descendant(
+    final wifiNameFinder = find.descendant(
       of: guestWifiPasswordCardFinder(),
       matching: find.text(password),
     );
-    expect(wifiNameFider, findsOneWidget);
+    expect(wifiNameFinder, findsOneWidget);
   }
 
   Future tapGuestWifiPasswordCard() async {
-    await tester.tap(guestWifiPasswordCardFinder());
-    await tester.pumpAndSettle();
+    final finder = guestWifiPasswordCardFinder();
+    await scrollAndTap(finder);
   }
 
   Future<void> inputGuestWifiPassword(String wifiPassword) async {
     final finder = guestWifiPasswordFieldFinder();
+    await scrollUntil(finder);
     await tester.tap(finder);
     await tester.enterText(finder, wifiPassword);
     await tester.pumpAndSettle();
   }
 
-  Finder infoIconFinder() {
+  Finder passwordValidatorInfoIconFinder() {
     final finder = find.descendant(
       of: alertDialogFinder(),
       matching: find.byIcon(LinksysIcons.infoCircle),
@@ -246,7 +243,7 @@ class TestIncredibleWifiActions extends CommonBaseActions {
     return finder;
   }
 
-  Finder closeIconFinder() {
+  Finder passwordValidatorCloseIconFinder() {
     final finder = find.descendant(
       of: alertDialogFinder(),
       matching: find.byIcon(LinksysIcons.close),
@@ -257,30 +254,22 @@ class TestIncredibleWifiActions extends CommonBaseActions {
 
   Future tapPasswordVisibility() async {
     final finder = visibilityFinder(wifiPasswordCardFinder());
-    await scrollUntil(finder);
-    await tester.tap(finder);
-    await tester.pumpAndSettle();
+    await scrollAndTap(finder);
   }
 
   Future tapPasswordVisibilityOff() async {
     final finder = visibilityOffFinder(wifiPasswordCardFinder());
-    await scrollUntil(finder);
-    await tester.tap(finder);
-    await tester.pumpAndSettle();
+    await scrollAndTap(finder);
   }
 
   Future tapGuestPasswordVisibility() async {
     final finder = visibilityFinder(guestWifiPasswordCardFinder());
-    await scrollUntil(finder);
-    await tester.tap(finder);
-    await tester.pumpAndSettle();
+    await scrollAndTap(finder);
   }
 
   Future tapGuestPasswordVisibilityOff() async {
     final finder = visibilityOffFinder(guestWifiPasswordCardFinder());
-    await scrollUntil(finder);
-    await tester.tap(finder);
-    await tester.pumpAndSettle();
+    await scrollAndTap(finder);
   }
 
   Future tapPasswordVisibilityOnAlert() async {
@@ -297,13 +286,13 @@ class TestIncredibleWifiActions extends CommonBaseActions {
 
   Finder securityModeCardFinder() {
     final context = getContext();
-    final titleFider = find.descendant(
+    final titleFinder = find.descendant(
       of: _wifiCardFinder(),
       matching: find.text(loc(context).securityMode),
     );
-    expect(titleFider, findsOneWidget);
+    expect(titleFinder, findsOneWidget);
     final cardFinder = find.ancestor(
-      of: titleFider,
+      of: titleFinder,
       matching: find.byType(AppListCard),
     );
     expect(cardFinder, findsOneWidget);
@@ -311,22 +300,45 @@ class TestIncredibleWifiActions extends CommonBaseActions {
     return cardFinder;
   }
 
+  Finder enhancedOpenOnlyFinder() {
+    final finder = find.descendant(
+      of: alertDialogFinder(),
+      matching: find.text(getWifiSecurityTypeTitle(
+          getContext(), WifiSecurityType.enhancedOpenOnly)),
+    );
+    expect(finder, findsOneWidget);
+    return finder;
+  }
+
   Future tapSecurityModeCard() async {
-    await tester.tap(securityModeCardFinder());
-    await tester.pumpAndSettle();
+    final finder = securityModeCardFinder();
+    await scrollAndTap(finder);
+  }
+
+  Future tapEnhancedOpenOnlyOption() async {
+    final finder = enhancedOpenOnlyFinder();
+    await scrollAndTap(finder);
+  }
+
+  void checkSecurityMode(String mode) {
+    final finder = find.descendant(
+      of: securityModeCardFinder(),
+      matching: find.text(mode),
+    );
+    expect(finder, findsOneWidget);
   }
 
   // Wifi mode
 
   Finder wifiModeCardFinder() {
     final context = getContext();
-    final titleFider = find.descendant(
+    final titleFinder = find.descendant(
       of: _wifiCardFinder(),
       matching: find.text(loc(context).wifiMode),
     );
-    expect(titleFider, findsOneWidget);
+    expect(titleFinder, findsOneWidget);
     final cardFinder = find.ancestor(
-      of: titleFider,
+      of: titleFinder,
       matching: find.byType(AppSettingCard),
     );
     expect(cardFinder, findsOneWidget);
@@ -334,22 +346,84 @@ class TestIncredibleWifiActions extends CommonBaseActions {
     return cardFinder;
   }
 
+  Finder mode80211bgnOnlyFinder() {
+    final finder = find.descendant(
+      of: alertDialogFinder(),
+      matching: find.text(getWifiWirelessModeTitle(
+        getContext(),
+        WifiWirelessMode.bgn,
+        null,
+      )),
+    );
+    expect(finder, findsOneWidget);
+    return finder;
+  }
+
+  Finder mode80211anacOnlyFinder() {
+    final finder = find.descendant(
+      of: alertDialogFinder(),
+      matching: find.text(getWifiWirelessModeTitle(
+        getContext(),
+        WifiWirelessMode.anac,
+        null,
+      )),
+    );
+    expect(finder, findsOneWidget);
+    return finder;
+  }
+
+  Finder mode80211axOnlyFinder() {
+    final finder = find.descendant(
+      of: alertDialogFinder(),
+      matching: find.text(getWifiWirelessModeTitle(
+        getContext(),
+        WifiWirelessMode.ax,
+        null,
+      )),
+    );
+    expect(finder, findsOneWidget);
+    return finder;
+  }
+
   Future tapWifiModeCard() async {
-    await tester.tap(wifiModeCardFinder());
-    await tester.pumpAndSettle();
+    final finder = wifiModeCardFinder();
+    await scrollAndTap(finder);
+  }
+
+  Future tap80211bgnOnlyOption() async {
+    final finder = mode80211bgnOnlyFinder();
+    await scrollAndTap(finder);
+  }
+
+  Future tap80211anacOnlyOption() async {
+    final finder = mode80211anacOnlyFinder();
+    await scrollAndTap(finder);
+  }
+
+  Future tap80211axOnlyOption() async {
+    final finder = mode80211axOnlyFinder();
+    await scrollAndTap(finder);
+  }
+
+  void checkWifiMode(String mode) {
+    final finder = find.descendant(
+      of: wifiModeCardFinder(),
+      matching: find.text(mode),
+    );
+    expect(finder, findsOneWidget);
   }
 
   // Broadcast SSID
 
   Finder broadcastSSIDCardFinder() {
     final context = getContext();
-    final titleFider = find.descendant(
+    final titleFinder = find.descendant(
       of: _wifiCardFinder(),
       matching: find.text(loc(context).broadcastSSID),
     );
-    expect(titleFider, findsOneWidget);
+    expect(titleFinder, findsOneWidget);
     final cardFinder = find.ancestor(
-      of: titleFider,
+      of: titleFinder,
       matching: find.byType(AppListCard),
     );
     expect(cardFinder, findsOneWidget);
@@ -362,40 +436,75 @@ class TestIncredibleWifiActions extends CommonBaseActions {
     await tester.pumpAndSettle();
   }
 
+  void checkBroadcastSSIDDisable() {
+    final finder = checkboxFinder(broadcastSSIDCardFinder());
+    final checkbox = tester.widget<AppCheckbox>(finder);
+    expect(false, checkbox.value);
+  }
+
+  void checkBroadcastSSIDEnable() {
+    final finder = checkboxFinder(broadcastSSIDCardFinder());
+    final checkbox = tester.widget<AppCheckbox>(finder);
+    expect(true, checkbox.value);
+  }
+
   // Channel width
 
   Finder channelWidthCardFinder() {
     final context = getContext();
-    final titleFider = find.descendant(
+    final titleFinder = find.descendant(
       of: _wifiCardFinder(),
       matching: find.text(loc(context).channelWidth),
     );
-    expect(titleFider, findsOneWidget);
+    expect(titleFinder, findsOneWidget);
     final cardFinder = find.ancestor(
-      of: titleFider,
+      of: titleFinder,
       matching: find.byType(AppSettingCard),
     );
     expect(cardFinder, findsOneWidget);
     editIconFinder(cardFinder); // Check the edit icon exist
     return cardFinder;
+  }
+
+  Finder channelWidth20MHzOnlyFinder() {
+    final finder = find.descendant(
+      of: alertDialogFinder(),
+      matching: find.text(
+          getWifiChannelWidthTitle(getContext(), WifiChannelWidth.wide20)),
+    );
+    expect(finder, findsOneWidget);
+    return finder;
   }
 
   Future tapChannelWidthCard() async {
-    await tester.tap(channelWidthCardFinder());
-    await tester.pumpAndSettle();
+    final finder = channelWidthCardFinder();
+    await scrollAndTap(finder);
   }
 
-  // Channel width
+  Future tap20MHzOnlyOption() async {
+    final finder = channelWidth20MHzOnlyFinder();
+    await scrollAndTap(finder);
+  }
+
+  void checkChannelWidth(String channelWidth) {
+    final finder = find.descendant(
+      of: channelWidthCardFinder(),
+      matching: find.text(channelWidth),
+    );
+    expect(finder, findsOneWidget);
+  }
+
+  // Channel
 
   Finder channelCardFinder() {
     final context = getContext();
-    final titleFider = find.descendant(
+    final titleFinder = find.descendant(
       of: _wifiCardFinder(),
       matching: find.text(loc(context).channel),
     );
-    expect(titleFider, findsOneWidget);
+    expect(titleFinder, findsOneWidget);
     final cardFinder = find.ancestor(
-      of: titleFider,
+      of: titleFinder,
       matching: find.byType(AppSettingCard),
     );
     expect(cardFinder, findsOneWidget);
@@ -403,9 +512,358 @@ class TestIncredibleWifiActions extends CommonBaseActions {
     return cardFinder;
   }
 
+  Finder channel6Finder() {
+    final finder = find.descendant(
+      of: alertDialogFinder(),
+      matching: find.text(getWifiChannelTitle(getContext(), 6, _getRadio())),
+    );
+    expect(finder, findsOneWidget);
+    return finder;
+  }
+
+  Finder channel40Finder() {
+    final finder = find.descendant(
+      of: alertDialogFinder(),
+      matching: find.text(getWifiChannelTitle(getContext(), 40, _getRadio())),
+    );
+    expect(finder, findsOneWidget);
+    return finder;
+  }
+
+  Finder channel29Finder() {
+    final finder = find.descendant(
+      of: alertDialogFinder(),
+      matching: find.text(getWifiChannelTitle(getContext(), 29, _getRadio())),
+    );
+    expect(finder, findsOneWidget);
+    return finder;
+  }
+
   Future tapChannelCard() async {
-    await tester.tap(channelCardFinder());
+    final finder = channelCardFinder();
+    await scrollAndTap(finder);
+  }
+
+  Future tap6ChannelOption() async {
+    final finder = channel6Finder();
+    await scrollAndTap(finder);
+  }
+
+  Future tap40ChannelOption() async {
+    final finder = channel40Finder();
+    await scrollAndTap(finder);
+  }
+
+  Future tap29ChannelOption() async {
+    final finder = channel29Finder();
+    await scrollAndTap(finder);
+  }
+
+  void checkChannel(String channel) {
+    final finder = find.descendant(
+      of: channelCardFinder(),
+      matching: find.text(channel),
+    );
+    expect(finder, findsOneWidget);
+  }
+
+  // Advanced
+
+  Finder clientSteeringCardFinder() {
+    final finder = find.byKey(Key('clientSteering'));
+    expect(finder, findsOneWidget);
+    return finder;
+  }
+
+  Finder nodeSteeringCardFinder() {
+    final finder = find.byKey(Key('nodeSteering'));
+    expect(finder, findsOneWidget);
+    return finder;
+  }
+
+  Finder dfsCardFinder() {
+    final finder = find.byKey(Key('dfs'));
+    expect(finder, findsOneWidget);
+    return finder;
+  }
+
+  Finder iptvCardFinder() {
+    final finder = find.byKey(Key('iptv'));
+    expect(finder, findsOneWidget);
+    return finder;
+  }
+
+  Finder mloCardFinder() {
+    final finder = find.byKey(Key('mlo'));
+    expect(finder, findsOneWidget);
+    return finder;
+  }
+
+  Finder clientSteeringSwitchFinder() {
+    final finder = find.descendant(
+      of: clientSteeringCardFinder(),
+      matching: find.byType(AppSwitch),
+    );
+    expect(finder, findsOneWidget);
+    return finder;
+  }
+
+  Finder nodeSteeringSwitchFinder() {
+    final finder = find.descendant(
+      of: nodeSteeringCardFinder(),
+      matching: find.byType(AppSwitch),
+    );
+    expect(finder, findsOneWidget);
+    return finder;
+  }
+
+  Finder dfsSwitchFinder() {
+    final finder = find.descendant(
+      of: dfsCardFinder(),
+      matching: find.byType(AppSwitch),
+    );
+    expect(finder, findsOneWidget);
+    return finder;
+  }
+
+  Finder iptvSwitchFinder() {
+    final finder = find.descendant(
+      of: iptvCardFinder(),
+      matching: find.byType(AppSwitch),
+    );
+    expect(finder, findsOneWidget);
+    return finder;
+  }
+
+  Finder mloSwitchFinder() {
+    final finder = find.descendant(
+      of: mloCardFinder(),
+      matching: find.byType(AppSwitch),
+    );
+    expect(finder, findsOneWidget);
+    return finder;
+  }
+
+  Future tapClientSteeringSwitch() async {
+    final finder = clientSteeringSwitchFinder();
+    await scrollAndTap(finder);
+  }
+
+  Future tapNodeSteeringSwitch() async {
+    final finder = nodeSteeringSwitchFinder();
+    await scrollAndTap(finder);
+  }
+
+  Future tapDFSSwitch() async {
+    final finder = dfsSwitchFinder();
+    await scrollAndTap(finder);
+  }
+
+  Future tapIptvSwitch() async {
+    final finder = iptvSwitchFinder();
+    await scrollAndTap(finder);
+  }
+
+  Future tapMloSwitch() async {
+    final finder = mloSwitchFinder();
+    await scrollAndTap(finder);
+  }
+
+  void checkDFSAlert() {
+    final context = getContext();
+    final finder = find.text(loc(context).modalDFSDesc);
+    expect(finder, findsOneWidget);
+  }
+
+  void checkMLOAlert() {
+    final context = getContext();
+    final finder = find.text(loc(context).mloWarning);
+    expect(finder, findsOneWidget);
+  }
+
+  // Mac Filtering
+
+  Finder macFilteringSwitchFinder() {
+    final finder = find.byType(AppSwitch);
+    expect(finder, findsOneWidget);
+    return finder;
+  }
+
+  Finder selectDeviceFinder() {
+    final context = getContext();
+    final finder = find.text(loc(context).selectFromMyDeviceList);
+    expect(finder, findsOneWidget);
+    return finder;
+  }
+
+  Finder manuallyAddDeviceFinder() {
+    final context = getContext();
+    final finder = find.text(loc(context).manuallyAddDevice);
+    expect(finder, findsOneWidget);
+    return finder;
+  }
+
+  Finder macAddressInputFinder() {
+    final finder = find.byType(AppTextField);
+    expect(finder, findsOneWidget);
+    return finder;
+  }
+
+  Finder filteredDeviceFinder(String macAddress) {
+    final finder = find.text(macAddress);
+    expect(finder, findsOneWidget);
+    return finder;
+  }
+
+  Finder doneButtonFinder() {
+    final context = getContext();
+    final finder = find.text(loc(context).done);
+    expect(finder, findsOneWidget);
+    return finder;
+  }
+
+  Finder editButtonFinder() {
+    final finder = find.byIcon(LinksysIcons.edit);
+    expect(finder, findsOneWidget);
+    return finder;
+  }
+
+  Finder removeButtonFinder() {
+    final context = getContext();
+    final finder = find.text(loc(context).remove);
+    expect(finder, findsOneWidget);
+    return finder;
+  }
+
+  Finder turnOnButtonFinder() {
+    final context = getContext();
+    final finder = find.text(loc(context).turnOn);
+    expect(finder, findsOneWidget);
+    return finder;
+  }
+
+  Future tapMacFilteringSwitch() async {
+    final finder = macFilteringSwitchFinder();
+    await scrollAndTap(finder);
+  }
+
+  Future goToFilteredDevices() async {
+    final finder = find.byType(AppInfoCard);
+    expect(finder, findsOneWidget);
+    await scrollAndTap(finder);
+    final context = getContext();
+    final titleFinder = find.text(loc(context).filteredDevices);
+    expect(titleFinder, findsWidgets);
+  }
+
+  Future tapSelectDevice() async {
+    final finder = selectDeviceFinder();
+    await scrollAndTap(finder);
+  }
+
+  Future tapManuallyAddDevice() async {
+    final finder = manuallyAddDeviceFinder();
+    await scrollAndTap(finder);
+  }
+
+  Future tapFilteredDevice(String macAddress) async {
+    final finder = filteredDeviceFinder(macAddress);
+    await scrollAndTap(finder);
+  }
+
+  Future tapDoneButton() async {
+    final finder = doneButtonFinder();
+    await scrollAndTap(finder);
+  }
+
+  Future tapEditButton() async {
+    final finder = editButtonFinder();
+    await scrollAndTap(finder);
+  }
+
+  Future tapRemoveButton() async {
+    final finder = removeButtonFinder();
+    await scrollAndTap(finder);
+  }
+
+  Future tapTurnOnButton() async {
+    final finder = turnOnButtonFinder();
+    await scrollAndTap(finder);
+  }
+
+  Future inputMacAddress(String macAddress) async {
+    final finder = macAddressInputFinder();
+    await scrollUntil(finder);
+    await tester.tap(finder);
+    await tester.enterText(finder, macAddress);
     await tester.pumpAndSettle();
+  }
+
+  void checkSelectDevicesTitle() {
+    final context = getContext();
+    final finder = find.text(loc(context).selectDevices);
+    expect(finder, findsOneWidget);
+  }
+
+  void checkDeviceCount(int count) {
+    final context = getContext();
+    final finder = find.text(loc(context).nDevices(count).capitalizeWords());
+    expect(finder, findsOneWidget);
+  }
+
+  void checkNoFilteredDevice() {
+    final context = getContext();
+    final finder = find.text(loc(context).noFilteredDevices);
+    expect(finder, findsOneWidget);
+  }
+
+  void checkFilteredDevice(String macAddress) {
+    final finder = find.text(macAddress);
+    expect(finder, findsOneWidget);
+  }
+
+  void checkInstantPrivacyWarning() {
+    final context = getContext();
+    final finder = find.text(loc(context).instantPrivacyDisableWarning);
+    expect(finder, findsOneWidget);
+  }
+
+  // Tabs
+
+  Finder wifiTabFinder() {
+    final context = getContext();
+    final finder = find.text(loc(context).wifi);
+    expect(finder, findsOneWidget);
+    return finder;
+  }
+
+  Finder advancedTabFinder() {
+    final context = getContext();
+    final finder = find.text(loc(context).advanced);
+    expect(finder, findsOneWidget);
+    return finder;
+  }
+
+  Finder macFilteringTabFinder() {
+    final context = getContext();
+    final finder = find.text(loc(context).macFiltering);
+    expect(finder, findsOneWidget);
+    return finder;
+  }
+
+  Future tapWifiTab() async {
+    final finder = wifiTabFinder();
+    await scrollAndTap(finder);
+  }
+
+  Future tapAdvancedTab() async {
+    final finder = advancedTabFinder();
+    await scrollAndTap(finder);
+  }
+
+  Future tapMacFilteringTab() async {
+    final finder = macFilteringTabFinder();
+    await scrollAndTap(finder);
   }
 
   // Additional widgets
@@ -437,14 +895,32 @@ class TestIncredibleWifiActions extends CommonBaseActions {
     return finder;
   }
 
-  Finder textSaveBtnFinder() {
-    final finder = find.byType(AppTextButton).last;
+  Finder alertSaveBtnFinder() {
+    final context = getContext();
+    final finder = find.descendant(
+      of: alertDialogFinder(),
+      matching: find.text(loc(context).save),
+    );
     expect(finder, findsOneWidget);
     return finder;
   }
 
-  Finder textCancelBtnFinder() {
-    final finder = find.byType(AppTextButton).first;
+  Finder alertCancelBtnFinder() {
+    final context = getContext();
+    final finder = find.descendant(
+      of: alertDialogFinder(),
+      matching: find.text(loc(context).cancel),
+    );
+    expect(finder, findsOneWidget);
+    return finder;
+  }
+
+  Finder alertOkBtnFinder() {
+    final context = getContext();
+    final finder = find.descendant(
+      of: alertDialogFinder(),
+      matching: find.text(loc(context).ok),
+    );
     expect(finder, findsOneWidget);
     return finder;
   }
@@ -509,6 +985,27 @@ class TestIncredibleWifiActions extends CommonBaseActions {
     return finder;
   }
 
+  Finder checkNewSettingSecurityMode(String mode) {
+    final context = getContext();
+    final finder = find.descendant(
+      of: newSettingColumnFinder(),
+      matching: find.text('${loc(context).securityMode}: $mode'),
+    );
+    expect(finder, findsOneWidget);
+    return finder;
+  }
+
+  Finder checkNewSettingGuestWarning(WifiRadioBand radio) {
+    final context = getContext();
+    final finder = find.descendant(
+      of: alertDialogFinder(),
+      matching: find.text(loc(context)
+          .disableBandWarning(getWifiRadioBandTitle(context, radio))),
+    );
+    expect(finder, findsOneWidget);
+    return finder;
+  }
+
   Finder okButtonFinder() {
     final context = getContext();
     final finder = find.text(loc(context).ok);
@@ -526,13 +1023,18 @@ class TestIncredibleWifiActions extends CommonBaseActions {
     await tester.pumpAndSettle();
   }
 
-  Future tapTextCancelBtn() async {
-    await tester.tap(textCancelBtnFinder());
+  Future tapAlertCancelBtn() async {
+    await tester.tap(alertCancelBtnFinder());
     await tester.pumpAndSettle();
   }
 
-  Future tapTextSaveBtn() async {
-    await tester.tap(textSaveBtnFinder());
+  Future tapAlertSaveBtn() async {
+    await tester.tap(alertSaveBtnFinder());
+    await tester.pumpAndSettle();
+  }
+
+  Future tapAlertOkBtn() async {
+    await tester.tap(alertOkBtnFinder());
     await tester.pumpAndSettle();
   }
 
@@ -540,4 +1042,15 @@ class TestIncredibleWifiActions extends CommonBaseActions {
     await tester.tap(okButtonFinder());
     await tester.pumpAndSettle();
   }
+
+  _getRadio() {
+    return switch (wifiBand) {
+      '2.4' => WifiRadioBand.radio_24,
+      '5' => WifiRadioBand.radio_5_1,
+      '6' => WifiRadioBand.radio_6,
+      'guest' => WifiRadioBand.radio_24,
+      _ => WifiRadioBand.radio_24,
+    };
+  }
+
 }

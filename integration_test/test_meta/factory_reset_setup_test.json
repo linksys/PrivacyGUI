@@ -4,5 +4,5 @@
     "description": "Un-configured Instant-Setup test",
     "setUp":  ["factory_reset"],
     "tags": ["pnp"],
-    "tearDown": ["factory_reset"]
+    "tearDown": []
 }
