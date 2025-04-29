@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
+import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/nodes/providers/add_nodes_provider.dart';
 import 'package:privacy_gui/page/nodes/providers/add_nodes_state.dart';
 import 'package:privacy_gui/page/nodes/views/add_nodes_view.dart';
@@ -9,6 +11,7 @@ import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
+import '../../../../common/di.dart';
 import '../../../../common/test_responsive_widget.dart';
 import '../../../../common/testable_router.dart';
 import '../../../../common/utils.dart';
@@ -17,7 +20,9 @@ import '../../../../mocks/add_nodes_notifier_mocks.dart';
 
 void main() async {
   late MockAddNodesNotifier mockAddNodesNotifier;
-
+  mockDependencyRegister();
+  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
+  
   setUp(() {
     mockAddNodesNotifier = MockAddNodesNotifier();
     when(mockAddNodesNotifier.build()).thenReturn(const AddNodesState());

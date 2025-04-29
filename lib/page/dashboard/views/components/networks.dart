@@ -108,8 +108,9 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
                         strokeJoin: StrokeJoin.miter),
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(0, 16, 0, 0),
-                      child: SimpleTreeNodeItem(
+                      child: TopologyNodeItem.simple(
                         node: entry.node,
+                        actions: const [],
                         extra: entry.node.data.isMaster
                             ? '${loc(context).uptime}: $uptime'
                             : null,
@@ -259,8 +260,9 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
       onTap: newFirmware
           ? () => context.pushNamed(RouteNamed.firmwareUpdateDetail)
           : null,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           newFirmware
               ? AppText.labelMedium(
@@ -344,25 +346,25 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
       constraints: const BoxConstraints(minWidth: 112),
       child: AppCard(
         onTap: onTap,
-        child: Wrap(
-          alignment: WrapAlignment.spaceBetween,
-          crossAxisAlignment: WrapCrossAlignment.start,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Column(
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 AppText.titleSmall('$count'),
-                const AppGap.medium(),
-                AppText.titleSmall(text),
+                Icon(
+                  iconData,
+                  semanticLabel: 'info icon',
+                  size: 20,
+                  color: iconColor,
+                ),
+                if (sub != null) sub,
               ],
             ),
-            Icon(
-              iconData,
-              semanticLabel: 'info icon',
-              size: 20,
-              color: iconColor,
-            ),
-            if (sub != null) sub,
+            const AppGap.medium(),
+            AppText.titleSmall(text),
           ],
         ),
       ),

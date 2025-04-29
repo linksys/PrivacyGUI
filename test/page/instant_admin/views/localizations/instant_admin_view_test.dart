@@ -9,6 +9,7 @@ import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 
 import '../../../../common/config.dart';
+import '../../../../common/di.dart';
 import '../../../../common/test_responsive_widget.dart';
 import '../../../../common/testable_router.dart';
 import '../../../../mocks/jnap_service_supported_mocks.dart';
@@ -27,8 +28,8 @@ void main() {
   late FirmwareUpdateNotifier mockFirmwareUpdateNotifier;
   late PowerTableNotifier mockPowerTableNotifier;
 
-  ServiceHelper mockServiceHelper = MockServiceHelper();
-  getIt.registerSingleton<ServiceHelper>(mockServiceHelper);
+  mockDependencyRegister();
+  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
 
   setUp(() {
     mockRouterPasswordNotifier = MockRouterPasswordNotifier();
@@ -153,7 +154,6 @@ void main() {
 
     await tester.tap(find.byType(AppCard).last);
     await tester.pumpAndSettle();
-
   }, screens: [
     ...responsiveMobileScreens.map((e) => e.copyWith(height: 2040)),
     ...responsiveDesktopScreens.map((e) => e.copyWith(height: 2040)),

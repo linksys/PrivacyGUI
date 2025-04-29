@@ -43,6 +43,7 @@ class _SpeedTestExternalWidgetState
                     Expanded(
                       child: AppFilledButton(
                         loc(context).speedTestExternalTileCloudFlare,
+                        fitText: true,
                         onTap: () {
                           openUrl('https://speed.cloudflare.com/');
                         },
@@ -51,6 +52,7 @@ class _SpeedTestExternalWidgetState
                     Expanded(
                       child: AppFilledButton(
                         loc(context).speedTestExternalTileFast,
+                        fitText: true,
                         onTap: () {
                           openUrl('https://www.fast.com');
                         },
@@ -65,12 +67,14 @@ class _SpeedTestExternalWidgetState
                     children: [
                       AppFilledButton.fillWidth(
                         loc(context).speedTestExternalTileCloudFlare,
+                        fitText: true,
                         onTap: () {
                           openUrl('https://speed.cloudflare.com/');
                         },
                       ),
                       AppFilledButton.fillWidth(
                         loc(context).speedTestExternalTileFast,
+                        fitText: true,
                         onTap: () {
                           openUrl('https://www.fast.com');
                         },

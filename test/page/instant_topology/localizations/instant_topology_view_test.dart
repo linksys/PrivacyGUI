@@ -5,21 +5,19 @@ import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/instant_topology/_instant_topology.dart';
 import 'package:mockito/mockito.dart';
-import 'package:privacy_gui/page/instant_topology/views/instant_topology_view.dart';
 import 'package:privacy_gui/page/instant_topology/views/widgets/tree_node_item.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
 
 import '../../../common/config.dart';
+import '../../../common/di.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
-import '../../../mocks/jnap_service_supported_mocks.dart';
 import '../../../test_data/topology_data.dart';
 import '../../../mocks/instant_topology_notifier_mocks.dart';
 
 void main() async {
   late InstantTopologyNotifier mockTopologyNotifier;
-  ServiceHelper mockServiceHelper = MockServiceHelper();
-  getIt.registerSingleton<ServiceHelper>(mockServiceHelper);
+  mockDependencyRegister();
+  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
 
   setUp(() {
     mockTopologyNotifier = MockInstantTopologyNotifier();
@@ -60,7 +58,7 @@ void main() async {
       );
 
       await tester.pumpWidget(widget);
-      final treeNodeItemFinder = find.byType(TreeNodeItem);
+      final treeNodeItemFinder = find.byType(TopologyNodeItem);
       await tester.scrollUntilVisible(treeNodeItemFinder.last, 10,
           scrollable: find.byType(Scrollable).last);
       await tester.pumpAndSettle();
@@ -80,7 +78,7 @@ void main() async {
       );
 
       await tester.pumpWidget(widget);
-      final treeNodeItemFinder = find.byType(TreeNodeItem);
+      final treeNodeItemFinder = find.byType(TopologyNodeItem);
       await tester.scrollUntilVisible(treeNodeItemFinder.last, 10,
           scrollable: find.byType(Scrollable).last);
       await tester.pumpAndSettle();
@@ -100,7 +98,7 @@ void main() async {
       );
 
       await tester.pumpWidget(widget);
-      final treeNodeItemFinder = find.byType(TreeNodeItem);
+      final treeNodeItemFinder = find.byType(TopologyNodeItem);
       await tester.scrollUntilVisible(treeNodeItemFinder.last, 10,
           scrollable: find.byType(Scrollable).last);
       await tester.pumpAndSettle();
@@ -120,7 +118,8 @@ void main() async {
       );
       await tester.pumpWidget(widget);
       await tester.pumpAndSettle();
-      final treeNodeItemFinder = find.byType(TreeNodeItem, skipOffstage: false);
+      final treeNodeItemFinder =
+          find.byType(TopologyNodeItem, skipOffstage: false);
       final instantActionFinder = find.descendant(
         of: treeNodeItemFinder.first,
         matching: find.byType(PopupMenuButton<NodeInstantActions>),
@@ -144,7 +143,8 @@ void main() async {
       );
       await tester.pumpWidget(widget);
       await tester.pumpAndSettle();
-      final treeNodeItemFinder = find.byType(TreeNodeItem, skipOffstage: false);
+      final treeNodeItemFinder =
+          find.byType(TopologyNodeItem, skipOffstage: false);
       await tester.scrollUntilVisible(treeNodeItemFinder.last, 10,
           scrollable: find.byType(Scrollable).last);
       final instantActionFinder = find.descendant(
@@ -170,7 +170,7 @@ void main() async {
       );
       await tester.pumpWidget(widget);
       await tester.pumpAndSettle();
-      final treeNodeItemFinder = find.byType(TreeNodeItem);
+      final treeNodeItemFinder = find.byType(TopologyNodeItem);
       final instantActionFinder = find.descendant(
         of: treeNodeItemFinder.first,
         matching: find.byType(PopupMenuButton<NodeInstantActions>),
@@ -199,7 +199,7 @@ void main() async {
       );
       await tester.pumpWidget(widget);
       await tester.pumpAndSettle();
-      final treeNodeItemFinder = find.byType(TreeNodeItem);
+      final treeNodeItemFinder = find.byType(TopologyNodeItem);
       await tester.scrollUntilVisible(treeNodeItemFinder.last, 10,
           scrollable: find.byType(Scrollable).last);
       final instantActionFinder = find.descendant(
@@ -214,7 +214,7 @@ void main() async {
           find.byType(PopupMenuItem<NodeInstantActions>);
       await tester.tap(popupMenuItemFinder.at(1));
       await tester.pumpAndSettle();
-    },screens: [
+    }, screens: [
       ...responsiveMobileScreens.map((e) => e.copyWith(height: 1280)).toList(),
       ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1280)).toList()
     ]);
@@ -233,7 +233,7 @@ void main() async {
       );
       await tester.pumpWidget(widget);
       await tester.pumpAndSettle();
-      final treeNodeItemFinder = find.byType(TreeNodeItem);
+      final treeNodeItemFinder = find.byType(TopologyNodeItem);
       final instantActionFinder = find.descendant(
         of: treeNodeItemFinder.first,
         matching: find.byType(PopupMenuButton<NodeInstantActions>),
@@ -262,7 +262,7 @@ void main() async {
       );
       await tester.pumpWidget(widget);
       await tester.pumpAndSettle();
-      final treeNodeItemFinder = find.byType(TreeNodeItem);
+      final treeNodeItemFinder = find.byType(TopologyNodeItem);
       await tester.scrollUntilVisible(treeNodeItemFinder.last, 10,
           scrollable: find.byType(Scrollable).last);
       final instantActionFinder = find.descendant(
@@ -277,7 +277,7 @@ void main() async {
           find.byType(PopupMenuItem<NodeInstantActions>);
       await tester.tap(popupMenuItemFinder.at(2));
       await tester.pumpAndSettle();
-    },screens: [
+    }, screens: [
       ...responsiveMobileScreens.map((e) => e.copyWith(height: 1280)).toList(),
       ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1280)).toList()
     ]);
@@ -295,7 +295,8 @@ void main() async {
       );
       await tester.pumpWidget(widget);
       await tester.pumpAndSettle();
-      final treeNodeItemFinder = find.byType(TreeNodeItem, skipOffstage: false);
+      final treeNodeItemFinder =
+          find.byType(TopologyNodeItem, skipOffstage: false);
       await tester.scrollUntilVisible(treeNodeItemFinder.last, 10,
           scrollable: find.byType(Scrollable).last);
     });
@@ -313,7 +314,8 @@ void main() async {
       );
       await tester.pumpWidget(widget);
       await tester.pumpAndSettle();
-      final treeNodeItemFinder = find.byType(TreeNodeItem, skipOffstage: false);
+      final treeNodeItemFinder =
+          find.byType(TopologyNodeItem, skipOffstage: false);
       await tester.scrollUntilVisible(treeNodeItemFinder.last, 10,
           scrollable: find.byType(Scrollable).last);
     });

@@ -22,6 +22,7 @@ import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
 import 'package:privacy_gui/providers/redirection/redirection_provider.dart';
+import 'package:privacy_gui/utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final internetSettingsProvider =
@@ -341,7 +342,7 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
 
   RouterWANSettings _createIpv4WanSettings(
       Ipv4Setting ipv4Setting, WanType wanType) {
-    final mtu = ipv4Setting.mtu;
+    final mtu = NetworkUtils.isMtuValid(wanType.type, ipv4Setting.mtu) ? ipv4Setting.mtu : 0;
     final behavior = ipv4Setting.behavior ?? PPPConnectionBehavior.keepAlive;
     final vlanId = ipv4Setting.vlanId;
     bool wanTaggingSettingsEnabled = false;

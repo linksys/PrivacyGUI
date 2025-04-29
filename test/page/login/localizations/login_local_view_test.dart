@@ -9,6 +9,7 @@ import 'package:privacy_gui/page/login/views/login_local_view.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
+import '../../../common/di.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
 import '../../../mocks/_index.dart';
@@ -19,8 +20,8 @@ void main() async {
   late MockDashboardManagerNotifier mockDashboardManagerNotifier;
   late MockAuthNotifier mockAuthNotifier;
 
-  ServiceHelper mockServiceHelper = MockServiceHelper();
-  getIt.registerSingleton<ServiceHelper>(mockServiceHelper);
+  mockDependencyRegister();
+  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
 
   setUp(() {
     mockDashboardManagerNotifier = MockDashboardManagerNotifier();

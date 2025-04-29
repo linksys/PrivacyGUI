@@ -133,8 +133,6 @@ ${_getWebLogByTag(tag: routeLogTag)}
 ${keys.map((e) => '[$e]\n${_getWebLogByTag(tag: e)}').join('\n\n')}
 ============================== State Management ==============================
 ${_stateLogCache.entries.map((e) => '[${e.key}]\n${e.value}').join('\n\n')}
-=============================== Linksys Manager ================================
-${await _getLinksysCacheData()}\n
 ================================== Full Logs ===================================
 ${_getWebLogByTag()}\n
 ''';

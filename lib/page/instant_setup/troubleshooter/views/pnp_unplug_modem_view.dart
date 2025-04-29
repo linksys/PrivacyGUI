@@ -64,6 +64,7 @@ class _PnpUnplugModemViewState extends ConsumerState<PnpUnplugModemView> {
                 onTap: () {
                   showSimpleAppOkDialog(
                     context,
+                    scrollable: true,
                     content: _bottomSheetContent(),
                   );
                 },

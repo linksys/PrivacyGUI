@@ -1,5 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/page/dashboard/views/dashboard_shell.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -43,8 +44,9 @@ class _BottomNavigationMenuState extends State<BottomNavigationMenu> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = getIt.get<ThemeData>(instanceName: 'darkThemeData');
     return Theme(
-      data: linksysDarkThemeData,
+      data: theme.copyWith(),
       child: NavigationBar(
         selectedIndex: widget.items.indexOf(widget.selected ?? NaviType.home),
         destinations: widget.items.map((e) => menuItemsMap[e]).nonNulls.map((e) => _bottomSheetIconView(e)).toList(),

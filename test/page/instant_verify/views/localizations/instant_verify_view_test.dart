@@ -24,6 +24,7 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../common/_index.dart';
+import '../../../../common/di.dart';
 import '../../../../mocks/_index.dart';
 import '../../../../mocks/instant_verify_notifier_mocks.dart';
 import '../../../../mocks/jnap_service_supported_mocks.dart';
@@ -39,8 +40,8 @@ void main() {
   late InstantVerifyNotifier mockInstantVerifyNotifier;
   late DashboardManagerNotifier mockDashboardManagerNotifier;
 
-  ServiceHelper mockServiceHelper = MockServiceHelper();
-  getIt.registerSingleton<ServiceHelper>(mockServiceHelper);
+  mockDependencyRegister();
+  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
@@ -251,7 +252,8 @@ void main() {
                   .overrideWith(() => mockFirmwareUpdateNotifier),
               deviceManagerProvider
                   .overrideWith(() => mockDeviceManagerNotifier),
-              internetStatusProvider.overrideWith((ref) => InternetStatus.online),
+              internetStatusProvider
+                  .overrideWith((ref) => InternetStatus.online),
               instantPrivacyProvider
                   .overrideWith(() => mockInstantPrivacyNotifier),
               instantTopologyProvider
@@ -301,7 +303,8 @@ void main() {
                   .overrideWith(() => mockFirmwareUpdateNotifier),
               deviceManagerProvider
                   .overrideWith(() => mockDeviceManagerNotifier),
-              internetStatusProvider.overrideWith((ref) => InternetStatus.online),
+              internetStatusProvider
+                  .overrideWith((ref) => InternetStatus.online),
               instantPrivacyProvider
                   .overrideWith(() => mockInstantPrivacyNotifier),
               instantTopologyProvider
@@ -336,7 +339,7 @@ void main() {
       final testState =
           InstantVerifyState.fromMap(instantVerifyMultiDNSTestState);
       when(mockInstantVerifyNotifier.build()).thenReturn(testState);
-      
+
       await tester.runAsync(() async {
         await tester.pumpWidget(
           testableRouteShellWidget(
@@ -349,7 +352,8 @@ void main() {
                   .overrideWith(() => mockFirmwareUpdateNotifier),
               deviceManagerProvider
                   .overrideWith(() => mockDeviceManagerNotifier),
-              internetStatusProvider.overrideWith((ref) => InternetStatus.online),
+              internetStatusProvider
+                  .overrideWith((ref) => InternetStatus.online),
               instantPrivacyProvider
                   .overrideWith(() => mockInstantPrivacyNotifier),
               instantTopologyProvider

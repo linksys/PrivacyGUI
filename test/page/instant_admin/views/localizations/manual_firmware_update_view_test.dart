@@ -10,6 +10,7 @@ import 'package:privacy_gui/page/instant_admin/providers/manual_firmware_update_
 import 'package:privacy_gui/route/route_model.dart';
 import 'dart:typed_data';
 
+import '../../../../common/di.dart';
 import '../../../../common/test_responsive_widget.dart';
 import '../../../../common/testable_router.dart';
 import '../../../../mocks/jnap_service_supported_mocks.dart';
@@ -21,8 +22,8 @@ void main() {
   late MockFirmwareUpdateNotifier mockFirmwareUpdateNotifier;
   late ManualFirmwareUpdateNotifier mockManualFirmwareUpdateNotifier;
 
-  ServiceHelper mockServiceHelper = MockServiceHelper();
-  getIt.registerSingleton<ServiceHelper>(mockServiceHelper);
+  mockDependencyRegister();
+  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
 
   setUp(() {
     mockFirmwareUpdateNotifier = MockFirmwareUpdateNotifier();
