@@ -7,13 +7,11 @@ import 'package:collection/collection.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/util/uuid.dart';
-import 'package:privacygui_widgets/hook/icon_hooks.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:share_plus/share_plus.dart';
@@ -543,6 +541,32 @@ extension NetworkUtils on Utils {
     }
 
     return maxUserLimit - startingIPAddress - 1;
+  }
+
+  static bool isMtuValid(String wanType, int mtu) {
+    return mtu == 0 || (getMinMtu(wanType) <= mtu && mtu <= getMaxMtu(wanType));
+  }
+
+  static int getMinMtu(String wanType) {
+    return switch (wanType.toLowerCase()) {
+      'dhcp' => 576,
+      'pppoe' => 576,
+      'static' => 576,
+      'pptp' => 576,
+      'l2tp' => 576,
+      _ => 0,
+    };
+  }
+
+  static int getMaxMtu(String wanType) {
+    return switch (wanType.toLowerCase()) {
+      'dhcp' => 1500,
+      'pppoe' => 1492,
+      'static' => 1500,
+      'pptp' => 1460,
+      'l2tp' => 1460,
+      _ => 0,
+    };
   }
 }
 

@@ -13,7 +13,7 @@ enum InternetStatus {
 final internetStatusProvider = StateProvider<InternetStatus>((ref) {
   final pollingState = ref.watch(pollingProvider);
   if (pollingState.hasError) {
-    logger.e('[Internet]: Failed to get the Internet status');
+    logger.e('[State]:[Internet]: Failed to get the Internet status');
     return InternetStatus.offline;
   }
 
@@ -35,6 +35,6 @@ final internetStatusProvider = StateProvider<InternetStatus>((ref) {
       isConnected = wanStatus.wanStatus == 'Connected';
     }
   }
-  logger.i('[Internet]: Is Internet connected = $isConnected');
+  logger.i('[State]:[Internet]: Is Internet connected = $isConnected');
   return isConnected ? InternetStatus.online : InternetStatus.offline;
 });

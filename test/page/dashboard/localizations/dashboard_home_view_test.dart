@@ -28,6 +28,7 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../common/config.dart';
+import '../../../common/di.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
 import '../../../mocks/_index.dart';
@@ -49,8 +50,8 @@ void main() async {
 
   late TopologyTestData topologyTestData;
 
-  ServiceHelper mockServiceHelper = MockServiceHelper();
-  getIt.registerSingleton<ServiceHelper>(mockServiceHelper);
+  mockDependencyRegister();
+  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
@@ -128,6 +129,42 @@ void main() async {
         (tester, locale) async {
       when(mockInstantTopologyNotifier.build())
           .thenReturn(topologyTestData.testTopologySingalsSlaveState);
+      await tester.pumpWidget(
+        testableRouteShellWidget(
+          child: const DashboardHomeView(),
+          locale: locale,
+          overrides: [
+            dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
+            dashboardManagerProvider
+                .overrideWith(() => mockDashboardManagerNotifier),
+            firmwareUpdateProvider
+                .overrideWith(() => mockFirmwareUpdateNotifier),
+            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
+            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
+            instantPrivacyProvider
+                .overrideWith(() => mockInstantPrivacyNotifier),
+            instantTopologyProvider
+                .overrideWith(() => mockInstantTopologyNotifier),
+            geolocationProvider.overrideWith(() => mockGeolocationNotifer),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.runAsync(() async {
+        final context = tester.element(find.byType(DashboardHomeView));
+        await precacheImage(
+            CustomTheme.of(context).images.devices.routerLn12, context);
+        await tester.pumpAndSettle();
+      });
+    }, screens: [
+      ...responsiveMobileScreens.map((e) => e.copyWith(height: 2480)).toList(),
+      ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1280)).toList()
+    ]);
+
+    testLocalizations('Dashboard Home View - no LAN ports - child node offline',
+        (tester, locale) async {
+      when(mockInstantTopologyNotifier.build())
+          .thenReturn(topologyTestData.testTopology3OfflineState);
       await tester.pumpWidget(
         testableRouteShellWidget(
           child: const DashboardHomeView(),
@@ -587,77 +624,6 @@ void main() async {
         addTearDown(gesture.removePointer);
         await gesture
             .moveTo(tester.getCenter(find.byIcon(LinksysIcons.qrCode).first));
-        await tester.pumpAndSettle();
-      });
-    }, screens: [
-      ...responsiveMobileScreens.map((e) => e.copyWith(height: 2480)).toList(),
-      ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1280)).toList()
-    ]);
-  });
-
-  group('Dashboard Home View (Pinnacle)', () {
-    setUp(() {
-      mockDashboardHomeNotifier = MockDashboardHomeNotifier();
-      mockDashboardManagerNotifier = MockDashboardManagerNotifier();
-      mockFirmwareUpdateNotifier = MockFirmwareUpdateNotifier();
-      mockDeviceManagerNotifier = MockDeviceManagerNotifier();
-      mockInstantPrivacyNotifier = MockInstantPrivacyNotifier();
-      mockInstantTopologyNotifier = MockInstantTopologyNotifier();
-      mockGeolocationNotifer = MockGeolocationNotifier();
-      mockNodeLightSettingsNotifier = MockNodeLightSettingsNotifier();
-
-      when(mockDashboardHomeNotifier.build()).thenReturn(
-          DashboardHomeState.fromMap(dashboardHomePinnacleTestState));
-      when(mockDashboardManagerNotifier.build()).thenReturn(
-          DashboardManagerState.fromMap(dashboardManagerPinnacleTestState));
-      when(mockFirmwareUpdateNotifier.build())
-          .thenReturn(FirmwareUpdateState.fromMap(firmwareUpdateTestData));
-      when(mockDeviceManagerNotifier.build()).thenReturn(
-          DeviceManagerState.fromMap(deviceManagerCherry7TestState));
-      when(mockInstantPrivacyNotifier.build())
-          .thenReturn(InstantPrivacyState.fromMap(instantPrivacyTestState));
-      when(mockInstantTopologyNotifier.build())
-          .thenReturn(topologyTestData.testTopologyPinnacleSlavesDaisyState);
-      when(mockGeolocationNotifer.build()).thenAnswer(
-          (_) async => GeolocationState.fromMap(geolocationTestState));
-      when(mockNodeLightSettingsNotifier.build())
-          .thenReturn(NodeLightSettings(isNightModeEnable: false));
-      when(mockServiceHelper.isSupportLedMode()).thenReturn(true);
-    });
-
-    tearDown(() {
-      topologyTestData.cleanup();
-    });
-
-    testLocalizations('Dashboard Home View - no Guest WiFi, no Night mode',
-        (tester, locale) async {
-      when(mockServiceHelper.isSupportGuestNetwork()).thenReturn(false);
-      when(mockServiceHelper.isSupportLedMode()).thenReturn(false);
-      await tester.pumpWidget(
-        testableRouteShellWidget(
-          child: const DashboardHomeView(),
-          locale: locale,
-          overrides: [
-            dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
-            dashboardManagerProvider
-                .overrideWith(() => mockDashboardManagerNotifier),
-            firmwareUpdateProvider
-                .overrideWith(() => mockFirmwareUpdateNotifier),
-            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
-            instantPrivacyProvider
-                .overrideWith(() => mockInstantPrivacyNotifier),
-            instantTopologyProvider
-                .overrideWith(() => mockInstantTopologyNotifier),
-            geolocationProvider.overrideWith(() => mockGeolocationNotifer),
-          ],
-        ),
-      );
-      await tester.pumpAndSettle();
-      await tester.runAsync(() async {
-        final context = tester.element(find.byType(DashboardHomeView));
-        await precacheImage(
-            CustomTheme.of(context).images.devices.routerLn12, context);
         await tester.pumpAndSettle();
       });
     }, screens: [

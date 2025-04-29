@@ -15,6 +15,7 @@ import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 import '../../../../common/_index.dart';
+import '../../../../common/di.dart';
 import '../../../../mocks/_index.dart';
 import '../../../../mocks/jnap_service_supported_mocks.dart';
 import '../../../../mocks/wifi_view_notifier_mocks.dart';
@@ -26,8 +27,8 @@ void main() {
   late MockWifiAdvancedSettingsNotifier mockWiFiAdvancedSettingsNotifier;
   late MockInstantPrivacyNotifier mockInstantPrivacyNotifier;
 
-  ServiceHelper mockServiceHelper = MockServiceHelper();
-  getIt.registerSingleton<ServiceHelper>(mockServiceHelper);
+  mockDependencyRegister();
+  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
 
   setUp(() {
     mockWiFiViewNotifier = MockWiFiViewNotifier();
@@ -765,7 +766,8 @@ void main() {
     await tester.pumpAndSettle();
   }, screens: [...responsiveMobileScreens, ...responsiveDesktopScreens]);
 
-  testLocalizations('Incredible-WiFi - Wifi list view - No Guest WiFi', (tester, locale) async {
+  testLocalizations('Incredible-WiFi - Wifi list view - No Guest WiFi',
+      (tester, locale) async {
     when(mockServiceHelper.isSupportGuestNetwork()).thenReturn(false);
     when(mockServiceHelper.isSupportLedMode()).thenReturn(false);
     when(mockWiFiListNotifier.build()).thenReturn(

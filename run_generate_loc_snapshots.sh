@@ -1,4 +1,4 @@
-while getopts l:s:f:c:o: flag
+while getopts l:s:f:c:v: flag
 do
     case "${flag}" in
         l) locales=${OPTARG};;

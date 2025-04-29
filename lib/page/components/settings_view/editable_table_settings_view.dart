@@ -190,16 +190,15 @@ class _AppEditableTableSettingsViewState<T>
   }
 
   void _focusChangedHandler(bool focus, int index) {
-    // Everytime the focus changes, rebuild the widget
     if (index == widget.pivotalIndex) {
-      // Recheck all other cell items
+      // Everytime the focus state changes, recheck all other cell items
       setState(() {
         for (int i = 0; i < widget.headers.length; i++) {
           final error = widget.onValidate?.call(i);
           errorMap[i] = error;
         }
       });
-      // Immediately show or hide tooltips
+      // Immediately show or hide tooltips for each cell item
       for (int i = 0; i < widget.headers.length; i++) {
         Future.delayed(Duration(milliseconds: 100), () {
           final controller = tipControllerMap[i];
@@ -211,13 +210,13 @@ class _AppEditableTableSettingsViewState<T>
         });
       }
     } else {
-      // Check the current focused cell item
-      setState(() {
-        final error = widget.onValidate?.call(index);
-        errorMap[index] = error;
-      });
-      // The decision to display the error will be made only when the state is unfocused
+      // Only when the state is unfocused, the tooltips will be shown or hidden
       if (!focus) {
+        // Check the current focused cell item
+        setState(() {
+          final error = widget.onValidate?.call(index);
+          errorMap[index] = error;
+        });
         Future.delayed(Duration(milliseconds: 100), () {
           final controller = tipControllerMap[index];
           if (errorMap[index] != null) {

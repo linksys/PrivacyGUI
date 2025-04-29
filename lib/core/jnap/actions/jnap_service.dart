@@ -122,6 +122,8 @@ enum JNAPService {
   router11(value: 'http://linksys.com/jnap/router/Router11'),
   router12(value: 'http://linksys.com/jnap/router/Router12'),
   router13(value: 'http://linksys.com/jnap/router/Router13'),
+  router14(value: 'http://linksys.com/jnap/router/Router14'),
+
   routerManagement(
       value: 'http://linksys.com/jnap/routermanagement/RouterManagement'),
   routerManagement2(

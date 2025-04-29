@@ -1653,14 +1653,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
   }
 
   int _getMaxMtu(String wanType) {
-    return switch (WanType.resolve(wanType)) {
-      WanType.dhcp => 1500,
-      WanType.pppoe => 1492,
-      WanType.static => 1500,
-      WanType.pptp => 1460,
-      WanType.l2tp => 1460,
-      _ => 0,
-    };
+    return NetworkUtils.getMaxMtu(wanType);
   }
 
   String _getWanConnectedTypeText(String type) {

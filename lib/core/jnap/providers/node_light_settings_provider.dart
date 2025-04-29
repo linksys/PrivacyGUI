@@ -22,7 +22,7 @@ class NodeLightSettingsNotifier extends Notifier<NodeLightSettings> {
       fetchRemote: forceRemote,
     );
     state = NodeLightSettings.fromMap(result.output);
-    logger.d('[State][NodeLightSettings]: ${state.toJson()}');
+    logger.d('[State]:[NodeLightSettings]: ${state.toJson()}');
     return state;
   }
 

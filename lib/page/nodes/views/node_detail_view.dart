@@ -352,48 +352,51 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
     return _nodeDetailBackgroundCard(
       child: SizedBox(
         // height: 160,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: Spacing.large4),
-              child: Center(
-                child: Image(
-                  semanticLabel: 'device image',
-                  height: 120,
-                  image: CustomTheme.of(context).images.devices.getByName(
-                        routerIconTestByModel(modelNumber: state.modelNumber),
-                      ),
+        child: SelectionArea(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: Spacing.large4),
+                child: Center(
+                  child: Image(
+                    semanticLabel: 'device image',
+                    height: 120,
+                    image: CustomTheme.of(context).images.devices.getByName(
+                          routerIconTestByModel(modelNumber: state.modelNumber),
+                        ),
+                  ),
                 ),
               ),
-            ),
-            _avatarInfoCard(
-              title: state.location,
-              trailing: AppIconButton(
-                icon: LinksysIcons.edit,
-                semanticLabel: 'edit',
-                onTap: () {
-                  _showEditNodeNameDialog(state);
-                },
-              ),
-            ),
-            _avatarInfoCard(
-              title: loc(context).connectTo,
-              description: _checkEmptyValue(state.upstreamDevice),
-            ),
-            if (state.isMLO)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: Spacing.medium),
-                child: AppTextButton.noPadding(
-                  loc(context).connectedWithMLO,
+              _avatarInfoCard(
+                title: state.location,
+                trailing: AppIconButton(
+                  icon: LinksysIcons.edit,
+                  semanticLabel: 'edit',
                   onTap: () {
-                    showMLOCapableModal(context);
+                    _showEditNodeNameDialog(state);
                   },
                 ),
               ),
-            const AppGap.medium(),
-          ],
+              _avatarInfoCard(
+                title: loc(context).connectTo,
+                description: _checkEmptyValue(state.upstreamDevice),
+              ),
+              if (state.isMLO)
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: Spacing.medium),
+                  child: AppTextButton.noPadding(
+                    loc(context).connectedWithMLO,
+                    onTap: () {
+                      showMLOCapableModal(context);
+                    },
+                  ),
+                ),
+              const AppGap.medium(),
+            ],
+          ),
         ),
       ),
     );
@@ -476,36 +479,38 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
             .select((value) => value.nodesStatus?.firstOrNull));
     final isFwUpToDate = updateInfo?.availableUpdate == null;
     return _nodeDetailBackgroundCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (!state.isWiredConnection) _signalStrengthCard(state),
-          if (state.isMaster)
-            _detailIndoCard(
-              title: loc(context).wanIPAddress,
-              description: state.wanIpAddress,
+      child: SelectionArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (!state.isWiredConnection) _signalStrengthCard(state),
+            if (state.isMaster)
+              _detailInfoCard(
+                title: loc(context).wanIPAddress,
+                description: state.wanIpAddress,
+              ),
+            _detailInfoCard(
+              title: loc(context).lanIPAddress,
+              description: state.lanIpAddress,
             ),
-          _detailIndoCard(
-            title: loc(context).lanIPAddress,
-            description: state.lanIpAddress,
-          ),
-          _detailIndoCard(
-            title: loc(context).firmwareVersion,
-            description: _checkEmptyValue(state.firmwareVersion),
-            trailing: SharedWidgets.nodeFirmwareStatusWidget(
-                context, !isFwUpToDate, () {
-              context.pushNamed(RouteNamed.firmwareUpdateDetail);
-            }),
-          ),
-          _detailIndoCard(
-            title: loc(context).modelNumber,
-            description: _checkEmptyValue(state.modelNumber),
-          ),
-          _detailIndoCard(
-            title: loc(context).serialNumber,
-            description: _checkEmptyValue(state.serialNumber),
-          ),
-        ],
+            _detailInfoCard(
+              title: loc(context).firmwareVersion,
+              description: _checkEmptyValue(state.firmwareVersion),
+              trailing: SharedWidgets.nodeFirmwareStatusWidget(
+                  context, !isFwUpToDate, () {
+                context.pushNamed(RouteNamed.firmwareUpdateDetail);
+              }),
+            ),
+            _detailInfoCard(
+              title: loc(context).modelNumber,
+              description: _checkEmptyValue(state.modelNumber),
+            ),
+            _detailInfoCard(
+              title: loc(context).serialNumber,
+              description: _checkEmptyValue(state.serialNumber),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -550,7 +555,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
     );
   }
 
-  Widget _detailIndoCard(
+  Widget _detailInfoCard(
       {String? title, String? description, Widget? trailing}) {
     return _nodeDetailInfoCard(
       child: Row(
@@ -565,7 +570,10 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-              if (description != null) AppText.labelLarge(description),
+              if (description != null)
+                AppText.labelLarge(
+                  description,
+                ),
             ],
           )),
           if (trailing != null) trailing,

@@ -148,15 +148,21 @@ class StyledAppTabPageView extends ConsumerWidget {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        AppText.titleLarge(
-                          title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                        Expanded(
+                          child: Wrap(
+                            children: [
+                              AppText.titleLarge(
+                                title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              if (markLabel != null) ...[
+                                const AppGap.small2(),
+                                StatusLabel(label: markLabel!),
+                              ],
+                            ],
+                          ),
                         ),
-                        if (markLabel != null) ...[
-                          const AppGap.small2(),
-                          StatusLabel(label: markLabel!),
-                        ],
                       ],
                     ),
                   ),

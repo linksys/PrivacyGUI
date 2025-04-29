@@ -14,6 +14,7 @@ import 'package:privacy_gui/page/instant_setup/pnp_setup_view.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
+import '../../../common/di.dart';
 import '../../../mocks/firmware_update_notifier_mocks.dart';
 import '../../../mocks/jnap_service_supported_mocks.dart';
 import '../../../mocks/pnp_notifier_mocks.dart' as Mock;
@@ -24,15 +25,14 @@ import '../../../test_data/device_info_test_data.dart';
 
 void main() async {
   late Mock.MockPnpNotifier mockPnpNotifier;
-  ServiceHelper mockServiceHelper = MockServiceHelper();
-  getIt.registerSingleton<ServiceHelper>(mockServiceHelper);
+  mockDependencyRegister();
+  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
 
   setUp(() {
     mockPnpNotifier = Mock.MockPnpNotifier();
 
     when(mockServiceHelper.isSupportGuestNetwork(any)).thenReturn(true);
     when(mockServiceHelper.isSupportLedMode(any)).thenReturn(true);
-
 
     when(mockPnpNotifier.build()).thenReturn(PnpState(
         deviceInfo:
@@ -358,8 +358,7 @@ void main() async {
     await tester.pump(const Duration(seconds: 3));
   });
 
-  testLocalizations('Instant Setup - PnP: Wifi ready',
-      (tester, locale) async {
+  testLocalizations('Instant Setup - PnP: Wifi ready', (tester, locale) async {
     when(mockPnpNotifier.build()).thenReturn(PnpState(
       deviceInfo: NodeDeviceInfo.fromJson(jsonDecode(testDeviceInfo)['output']),
       isUnconfigured: false,

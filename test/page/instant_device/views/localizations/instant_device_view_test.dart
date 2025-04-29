@@ -20,6 +20,7 @@ import 'package:privacygui_widgets/widgets/card/device_list_card.dart';
 import 'package:privacygui_widgets/widgets/check_box/check_box.dart';
 
 import '../../../../common/config.dart';
+import '../../../../common/di.dart';
 import '../../../../common/test_responsive_widget.dart';
 import '../../../../common/testable_router.dart';
 import '../../../../mocks/dashboard_manager_notifier_mocks.dart';
@@ -35,8 +36,8 @@ void main() {
   late WifiListNotifier mockWifiListNotifier;
   late DashboardManagerNotifier mockDashboardManagerNotifier;
 
-  ServiceHelper mockServiceHelper = MockServiceHelper();
-  getIt.registerSingleton<ServiceHelper>(mockServiceHelper);
+  mockDependencyRegister();
+  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
 
   setUp(() {
     mockDeviceFilterConfigNotifier = MockDeviceFilterConfigNotifier();
@@ -187,8 +188,7 @@ void main() {
     await tester.pumpAndSettle();
   });
 
-  testLocalizations(
-      'Instant device view - deauth confirm modal',
+  testLocalizations('Instant device view - deauth confirm modal',
       (tester, locale) async {
     when(mockDeviceFilterConfigNotifier.build()).thenReturn(
         DeviceFilterConfigState.fromMap(deviceFilterConfigTestState));
@@ -197,7 +197,8 @@ void main() {
     await tester.pumpAndSettle();
 
     final deviceCheckboxFinder = find.descendant(
-        of: find.byType(AppDeviceListCard), matching: find.byIcon(LinksysIcons.bidirectional));
+        of: find.byType(AppDeviceListCard),
+        matching: find.byIcon(LinksysIcons.bidirectional));
     await tester.tap(deviceCheckboxFinder.first);
     await tester.pumpAndSettle();
   });
