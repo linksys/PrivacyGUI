@@ -1,18 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
+import 'package:privacy_gui/page/dashboard/_dashboard.dart';
+import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/health_check/_health_check.dart';
+import 'package:privacygui_widgets/theme/custom_theme.dart';
 
+import '../../../../common/di.dart';
 import '../../../../common/test_responsive_widget.dart';
 import '../../../../common/testable_router.dart';
+import '../../../../mocks/dashboard_home_notifier_mocks.dart';
+import '../../../../test_data/dashboard_home_test_state.dart';
 import '../../../../test_data/health_check_state_data.dart';
 import '../../../../mocks/health_check_provider_mocks.dart';
 
 Future<void> main() async {
   late HealthCheckProvider mockHealthCheckProvider;
+  late DashboardHomeNotifier mockDashboardHomeNotifier;
 
+  mockDependencyRegister();
   setUp(() {
     mockHealthCheckProvider = MockHealthCheckProvider();
+    mockDashboardHomeNotifier = MockDashboardHomeNotifier();
   });
 
   testLocalizations('Speedtest - init', (tester, locale) async {
@@ -27,6 +36,31 @@ Future<void> main() async {
       child: const SpeedTestView(),
     );
     await tester.pumpWidget(widget);
+  });
+
+  testLocalizations('Speedtest - init with Ookla logo', (tester, locale) async {
+    when(mockHealthCheckProvider.build())
+        .thenReturn(HealthCheckState.fromJson(healthCheckInitState));
+    when(mockDashboardHomeNotifier.build()).thenReturn(
+        DashboardHomeState.fromMap(dashboardHomeCherry7TestState)
+            .copyWith(healthCheckModule: () => 'Ookla'));
+    
+    final widget = testableSingleRoute(
+      overrides: [
+        healthCheckProvider.overrideWith(() => mockHealthCheckProvider),
+        dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
+      ],
+      locale: locale,
+      child: const SpeedTestView(),
+    );
+    await tester.pumpWidget(widget);
+
+    await tester.runAsync(() async {
+      final context = tester.element(find.byType(SpeedTestView));
+      await precacheImage(
+          CustomTheme.of(context).images.speedtestPowered, context);
+      await tester.pumpAndSettle();
+    });
   });
 
   testLocalizations('Speedtest - ping init', (tester, locale) async {

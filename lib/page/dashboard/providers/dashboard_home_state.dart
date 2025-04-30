@@ -42,7 +42,8 @@ class DashboardSpeedItem extends Equatable {
 
   String toJson() => json.encode(toMap());
 
-  factory DashboardSpeedItem.fromJson(String source) => DashboardSpeedItem.fromMap(json.decode(source));
+  factory DashboardSpeedItem.fromJson(String source) =>
+      DashboardSpeedItem.fromMap(json.decode(source));
 
   @override
   String toString() => 'DasboardSpeedItem(unit: $unit, value: $value)';
@@ -171,6 +172,7 @@ class DashboardHomeState extends Equatable {
   final List<DashboardWiFiItem> wifis;
   final String? wanType;
   final String? detectedWANType;
+  final String? healthCheckModule;
 
   const DashboardHomeState({
     this.isFirstPolling = false,
@@ -187,6 +189,7 @@ class DashboardHomeState extends Equatable {
     this.wifis = const [],
     this.wanType,
     this.detectedWANType,
+    this.healthCheckModule,
   });
 
   Map<String, dynamic> toMap() {
@@ -205,6 +208,7 @@ class DashboardHomeState extends Equatable {
       'wifis': wifis.map((x) => x.toMap()).toList(),
       'wanType': wanType,
       'detectedWANType': detectedWANType,
+      'healthCheckModule': healthCheckModule,
     };
   }
 
@@ -224,12 +228,14 @@ class DashboardHomeState extends Equatable {
       wifis: List<DashboardWiFiItem>.from(map['wifis']?.map((x) => DashboardWiFiItem.fromMap(x))),
       wanType: map['wanType'],
       detectedWANType: map['detectedWANType'],
+      healthCheckModule: map['healthCheckModule'],
     );
   }
 
   String toJson() => json.encode(toMap());
 
-  factory DashboardHomeState.fromJson(String source) => DashboardHomeState.fromMap(json.decode(source));
+  factory DashboardHomeState.fromJson(String source) =>
+      DashboardHomeState.fromMap(json.decode(source));
 
   @override
   bool get stringify => true;
@@ -251,6 +257,7 @@ class DashboardHomeState extends Equatable {
       wifis,
       wanType,
       detectedWANType,
+      healthCheckModule,
     ];
   }
 
@@ -269,6 +276,7 @@ class DashboardHomeState extends Equatable {
     List<DashboardWiFiItem>? wifis,
     ValueGetter<String?>? wanType,
     ValueGetter<String?>? detectedWANType,
+    ValueGetter<String?>? healthCheckModule,
   }) {
     return DashboardHomeState(
       isFirstPolling: isFirstPolling ?? this.isFirstPolling,
@@ -285,12 +293,13 @@ class DashboardHomeState extends Equatable {
       wifis: wifis ?? this.wifis,
       wanType: wanType != null ? wanType() : this.wanType,
       detectedWANType: detectedWANType != null ? detectedWANType() : this.detectedWANType,
+      healthCheckModule: healthCheckModule != null ? healthCheckModule() : this.healthCheckModule,
     );
   }
 
   @override
   String toString() {
-    return 'DashboardHomeState(isFirstPolling: $isFirstPolling, isHorizontalLayout: $isHorizontalLayout, isHealthCheckSupported: $isHealthCheckSupported, masterIcon: $masterIcon, isAnyNodesOffline: $isAnyNodesOffline, uploadResult: $uploadResult, downloadResult: $downloadResult, speedCheckTimestamp: $speedCheckTimestamp, uptime: $uptime, wanPortConnection: $wanPortConnection, lanPortConnections: $lanPortConnections, wifis: $wifis, wanType: $wanType, detectedWANType: $detectedWANType)';
+    return 'DashboardHomeState(isFirstPolling: $isFirstPolling, isHorizontalLayout: $isHorizontalLayout, isHealthCheckSupported: $isHealthCheckSupported, masterIcon: $masterIcon, isAnyNodesOffline: $isAnyNodesOffline, uploadResult: $uploadResult, downloadResult: $downloadResult, speedCheckTimestamp: $speedCheckTimestamp, uptime: $uptime, wanPortConnection: $wanPortConnection, lanPortConnections: $lanPortConnections, wifis: $wifis, wanType: $wanType, detectedWANType: $detectedWANType, healthCheckModule: $healthCheckModule)';
   }
 }
 

@@ -9,6 +9,7 @@ import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
@@ -46,6 +47,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(healthCheckProvider);
+    final supportedBy = ref.watch(dashboardHomeProvider).healthCheckModule;
     ref.listen(healthCheckProvider.select((value) => value.step),
         (previous, next) {
       if (next == previous) {
@@ -122,7 +124,9 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
             desktop: Container(
               margin: const EdgeInsets.fromLTRB(0, 0, 0, 40),
               child: Container(
-                alignment: state.step != 'error' ? Alignment.topCenter : Alignment.topLeft,
+                alignment: state.step != 'error'
+                    ? Alignment.topCenter
+                    : Alignment.topLeft,
                 child: _finishView(
                   state.step,
                   state.result.firstOrNull?.speedTestResult,
@@ -144,9 +148,9 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
               margin: const EdgeInsets.fromLTRB(0, 0, 0, 40),
               padding: EdgeInsets.zero,
               clipBehavior: Clip.antiAlias,
-              child: _initView(),
+              child: _initView(supportedBy),
             ),
-            mobile: _initView(),
+            mobile: _initView(supportedBy),
           ),
       },
     );
@@ -184,7 +188,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
     );
   }
 
-  Widget _initView() {
+  Widget _initView(String? supportedBy) {
     final background = ResponsiveLayout.isMobileLayout(context)
         ? OverflowBox(
             maxWidth: MediaQuery.of(context).size.width,
@@ -194,14 +198,6 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
     return Stack(
       children: [
         background,
-        Container(
-          alignment: Alignment.bottomCenter,
-          padding: const EdgeInsets.only(bottom: 40),
-          child: Image(
-            image: CustomTheme.of(context).images.speedtestPowered,
-            fit: BoxFit.fitWidth,
-          ),
-        ),
         Container(
           alignment: Alignment.center,
           child: InkWell(
@@ -231,6 +227,15 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
             ),
           ),
         ),
+        if (supportedBy == 'Ookla')
+          Container(
+            alignment: Alignment.bottomCenter,
+            padding: const EdgeInsets.only(bottom: 40),
+            child: Image(
+              image: CustomTheme.of(context).images.speedtestPowered,
+              fit: BoxFit.fitWidth,
+            ),
+          ),
       ],
     );
   }
