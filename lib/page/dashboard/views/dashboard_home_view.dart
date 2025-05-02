@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
@@ -15,10 +16,15 @@ import 'package:privacy_gui/page/dashboard/views/components/networks.dart';
 import 'package:privacy_gui/page/dashboard/views/components/port_and_speed.dart';
 import 'package:privacy_gui/page/dashboard/views/components/quick_panel.dart';
 import 'package:privacy_gui/page/dashboard/views/components/wifi_grid.dart';
+import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
+import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
+import 'package:privacy_gui/core/jnap/providers/assign_ip/base_assign_ip.dart'
+    if (dart.library.html) 'package:privacy_gui/core/jnap/providers/assign_ip/web_assign_ip.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'components/shimmer.dart';
 
@@ -63,21 +69,21 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
         child: ShimmerContainer(
           isLoading: false,
           child: ResponsiveLayout(
-            desktop: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const DashboardHomeTitle(),
-                const AppGap.large1(),
-                !hasLanPort
-                    ? _desktopNoLanPortsLayout()
-                    : horizontalLayout
-                        ? _desktopHorizontalLayout()
-                        : _desktopVerticalLayout(),
-              ],
-            ),
-            mobile: _mobileLayout(),
-          ),
+                desktop: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const DashboardHomeTitle(),
+                    const AppGap.large1(),
+                    !hasLanPort
+                        ? _desktopNoLanPortsLayout()
+                        : horizontalLayout
+                            ? _desktopHorizontalLayout()
+                            : _desktopVerticalLayout(),
+                  ],
+                ),
+                mobile: _mobileLayout(),
+              ),
         ),
       ),
     );
@@ -207,7 +213,15 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
 
   void _firmwareUpdateCheck() {
     Future.doWhile(() => !mounted).then((_) {
-      firmware.fetchAvailableFirmwareUpdates();
+      SharedPreferences.getInstance().then((pref) {
+        final fwUpdated = pref.getBool(pFWUpdated) ?? false;
+        if (!fwUpdated) {
+          firmware.fetchAvailableFirmwareUpdates();
+        } else {
+          pref.setBool(pFWUpdated, false);
+          reload();
+        }
+      });
     });
   }
 
