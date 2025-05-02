@@ -122,9 +122,11 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
         addedDevices = result
             .where(
               (element) =>
-                  element.knownInterfaces?.any((knownInterface) =>
-                      onboardedMACList.contains(knownInterface.macAddress)) ??
-                  false,
+                  element.nodeType == 'Slave' &&
+                  (element.knownInterfaces?.any((knownInterface) =>
+                          onboardedMACList
+                              .contains(knownInterface.macAddress)) ??
+                      false),
             )
             .toList();
         logger
@@ -178,18 +180,20 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
                 // check all mac address in the list can be found on the device list
                 bool allFound = onboardedMACList.every((mac) => deviceList.any(
                     (device) =>
-                        device.knownInterfaces?.any((knownInterface) =>
-                            knownInterface.macAddress == mac) ??
-                        false));
+                        device.nodeType == 'Slave' &&
+                        (device.knownInterfaces?.any((knownInterface) =>
+                                knownInterface.macAddress == mac) ??
+                            false)));
                 logger.d(
                     '[AddNodes]: [pollForNodesOnline] are All MACs in device list? $allFound');
                 // see any additional nodes || nodes in the mac list all has connections.
                 bool ret = deviceList
                     .where((device) =>
-                        device.knownInterfaces?.any((knownInterface) =>
-                            onboardedMACList
-                                .contains(knownInterface.macAddress)) ??
-                        false)
+                        device.nodeType == 'Slave' &&
+                        (device.knownInterfaces?.any((knownInterface) =>
+                                onboardedMACList
+                                    .contains(knownInterface.macAddress)) ??
+                            false))
                     .every((device) {
                   final hasConnections = device.isOnline();
                   logger.d(
@@ -243,7 +247,7 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
                 // check all mac address in the list can be found on the device list
                 bool allFound = backhaulList.isNotEmpty &&
                     childNodes.every((n) => backhaulList
-                    .any((backhaul) => backhaul.deviceUUID == n.deviceID));
+                        .any((backhaul) => backhaul.deviceUUID == n.deviceID));
                 logger.d(
                     '[AddNodes]: [pollNodesBackhaulInfo] are All child deviceUUID in backhaul info data? $allFound');
 
