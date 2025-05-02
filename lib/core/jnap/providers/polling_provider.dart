@@ -84,9 +84,11 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
               data: Map.fromEntries(data),
             ))
         .onError((error, stackTrace) {
-      logger.e('Polling error: $error, $stackTrace');
-      logger.f('[Auth]: Force to log out because of failed polling');
-      ref.read(authProvider.notifier).logout();
+      logger.e('[State]:[Polling error]: $error, $stackTrace');
+      if (!BuildConfig.debug) {
+        logger.f('[Auth]: Force to log out because of failed polling');
+        ref.read(authProvider.notifier).logout();
+      }
 
       throw error ?? '';
     });

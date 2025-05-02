@@ -17,7 +17,7 @@
             "request": "launch",
             "type": "dart",
             "args": ["--web-browser-flag", "--disable-web-security", "--web-port", "61672"],
-            "toolArgs": ["--dart-define","force=local"],
+            "toolArgs": ["--dart-define","force=local", "--dart-define","debug=true"],
             "program": "lib/main.dart"
         },
         {

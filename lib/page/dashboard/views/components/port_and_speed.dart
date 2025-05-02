@@ -527,14 +527,6 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                           },
                         ),
                       ),
-                      Expanded(
-                        child: AppFilledButton(
-                          loc(context).ok,
-                          onTap: () {
-                            openUrl('https://www.fast.com');
-                          },
-                        ),
-                      ),
                     ]),
           AppGap.small2(),
           AppText.bodyExtraSmall(loc(context).speedTestExternalOthers),

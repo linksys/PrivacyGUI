@@ -46,11 +46,12 @@ class BuildConfig {
   static bool showColumnOverlay =
       const bool.fromEnvironment('overlay', defaultValue: false);
   static const bool caLogin = bool.fromEnvironment('ca', defaultValue: false);
+  
+  static const bool debug = bool.fromEnvironment('debug', defaultValue: false);
 
   static const int refreshTimeInterval =
       int.fromEnvironment('refresh_time', defaultValue: 60);
-  static const factoryMode =
-      bool.fromEnvironment('factory', defaultValue: false);
+  
   static const copyRightYear = int.fromEnvironment('year', defaultValue: 2025);
 
   @pragma('vm:entry-point')

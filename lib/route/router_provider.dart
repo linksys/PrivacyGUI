@@ -123,9 +123,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
     redirect: (context, state) {
       if (state.matchedLocation == '/') {
-        return BuildConfig.factoryMode
-            ? Future.value('/factory')
-            : router._redirectPnpLogic(state);
+        return router._redirectPnpLogic(state);
       } else if (state.matchedLocation.startsWith('/pnp')) {
         return router._goPnpPath(state);
       }
