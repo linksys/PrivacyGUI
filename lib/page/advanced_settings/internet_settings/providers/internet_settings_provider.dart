@@ -628,7 +628,7 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
     final wanIpv6Type = WanIPv6Type.resolve(ipv6Setting.ipv6ConnectionType);
     newIpv6Setting = switch (wanIpv6Type) {
       WanIPv6Type.automatic => newIpv6Setting.copyWith(
-          ipv6rdTunnelMode: () => ipv6Setting.ipv6rdTunnelMode,
+          ipv6rdTunnelMode: () => ipv6Setting.ipv6rdTunnelMode ?? IPv6rdTunnelMode.disabled,
           ipv6Prefix: () => ipv6Setting.ipv6Prefix,
           ipv6PrefixLength: () => ipv6Setting.ipv6PrefixLength,
           ipv6BorderRelay: () => ipv6Setting.ipv6BorderRelay,
