@@ -83,6 +83,55 @@ class TopologyNodeItem extends StatelessWidget {
             extra: extra,
           );
   }
+
+  static Path buildPath(Path path, RouterTreeNode node, bool isOnline) {
+    // For master node
+    if (node.data.isMaster) {
+      if (!isOnline) {
+        return _createDottedPath(path);
+      }
+      return path;
+    }
+
+    // For slave nodes
+    if (!node.data.isOnline) {
+      return _createDottedPath(path);
+    }
+    return path;
+  }
+
+  static Path _createDottedPath(Path path) {
+    final dottedPath = Path();
+    const dashWidth = 4.0;
+    const dashSpace = 4.0;
+    final pathMetrics = path.computeMetrics();
+
+    for (final metric in pathMetrics) {
+      var distance = 0.0;
+      while (distance < metric.length) {
+        dottedPath.addPath(
+          metric.extractPath(distance, distance + dashWidth),
+          Offset.zero,
+        );
+        distance += dashWidth + dashSpace;
+      }
+
+      // Add cross (X) in the middle of the path
+      final midPoint =
+          metric.getTangentForOffset(metric.length / 2)?.position ??
+              Offset.zero;
+      const crossSize = 8.0;
+
+      // Draw first line of X (top-left to bottom-right)
+      dottedPath.moveTo(midPoint.dx - crossSize, midPoint.dy - crossSize);
+      dottedPath.lineTo(midPoint.dx + crossSize, midPoint.dy + crossSize);
+
+      // Draw second line of X (top-right to bottom-left)
+      dottedPath.moveTo(midPoint.dx + crossSize, midPoint.dy - crossSize);
+      dottedPath.lineTo(midPoint.dx - crossSize, midPoint.dy + crossSize);
+    }
+    return dottedPath;
+  }
 }
 
 class TreeNodeItem extends StatelessWidget {

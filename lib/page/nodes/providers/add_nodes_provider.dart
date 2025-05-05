@@ -129,8 +129,8 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
                       false),
             )
             .toList();
-        logger
-            .d('[AddNodes]: [pollForNodesOnline] added devices: $addedDevices');
+        logger.d(
+            '[AddNodes]: [pollForNodesOnline] added devices: ${addedDevices.map((d) => d.toJson()).join(', ')}');
       }
       await for (final result in pollNodesBackhaulInfo(childNodes)) {
         backhaulInfoList = result;

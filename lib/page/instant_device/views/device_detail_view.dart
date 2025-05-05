@@ -189,6 +189,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
             description: state.item.upstreamDevice.isEmpty
                 ? loc(context).unknown
                 : state.item.upstreamDevice,
+            selectableDescription: true,
           ),
           if (state.item.isOnline && !state.item.isWired) ...[
             const AppGap.small2(),
@@ -202,8 +203,11 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  AppText.labelLarge(_formatEmptyValue(
-                      '${state.item.ssid} • ${state.item.isMLO ? '6GHz, 5GHz' : state.item.band}')),
+                  AppText.labelLarge(
+                    _formatEmptyValue(
+                        '${state.item.ssid} • ${state.item.isMLO ? '6GHz, 5GHz' : state.item.band}'),
+                    selectable: true,
+                  ),
                   if (state.item.isMLO) ...[
                     const AppGap.small2(),
                     AppTextButton.noPadding(
@@ -235,6 +239,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
                   state.item.isWired
                       ? ''
                       : _formatEmptyValue('${state.item.signalStrength} dBM'),
+                  selectable: true,
                 ),
               ]),
               trailing: SharedWidgets.resolveSignalStrengthIcon(
@@ -268,6 +273,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
                     },
                   )
                 : null,
+            selectableDescription: true,
           ),
           const AppGap.small2(),
           AppSettingCard(
@@ -277,6 +283,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
             ),
             title: loc(context).macAddress,
             description: _formatEmptyValue(state.item.macAddress),
+            selectableDescription: true,
           ),
           const AppGap.small2(),
           AppSettingCard(
@@ -286,6 +293,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
             ),
             title: loc(context).ipv6Address,
             description: _formatEmptyValue(state.item.ipv6Address),
+            selectableDescription: true,
           ),
         ],
       ),

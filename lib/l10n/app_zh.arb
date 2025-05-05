@@ -663,7 +663,7 @@
   "routerPasswordHintOptional": "路由器密码提示（可选）",
   "routerPasswordNew": "新的路由器密码",
   "routerPasswordRuleConsecutiveChar": "不能连续出现两个相同字符",
-  "routerPasswordRuleHintContainPassword": "提示不能包含“password”",
+  "routerPasswordRuleHintContainPassword": "提示不能包含“密码”",
   "routerPasswordRuleLowerUpper": "大小写字母",
   "routerPasswordRuleOneNumber": "1 个数字",
   "routerPasswordRuleSpecialChar": "1 个特殊字符",
