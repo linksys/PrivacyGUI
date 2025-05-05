@@ -234,7 +234,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
                 AppText.labelLarge(
                   state.item.isWired
                       ? ''
-                      : _formatEmptyValue('${state.item.signalStrength} dBM'),
+                      : _formatEmptyValue('${state.item.signalStrength} dBm'),
                 ),
               ]),
               trailing: SharedWidgets.resolveSignalStrengthIcon(
