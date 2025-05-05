@@ -835,7 +835,7 @@
   "speedTestExternalStep3": "Use a mobile device to test the WiFi in different areas of your home",
   "speedTestExternalTileCloudFlare": "CloudFlare",
   "speedTestExternalTileFast": "Fast.com",
-  "speedTestExternalTileLabel": "Start Speed Test with:",
+  "speedTestExternalTileLabel": "Understand your speed test results",
   "speedTestInternetToDevice": "Internet to device",
   "speedTestInternetToDeviceDesc": "Measure the speed from this device to your router. Useful for checking different areas of your home",
   "speedTestInternetToRouter": "Internet to router",
