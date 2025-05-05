@@ -149,4 +149,18 @@ void main() async {
     ...responsiveMobileScreens.map((e) => e.copyWith(height: 1440)).toList(),
     ...responsiveDesktopScreens
   ]);
+
+  testLocalizations('Dashboard Menu View - Supports internal speedtest',
+      (tester, locale) async {
+    when(mockDashboardHomeNotifier.build()).thenReturn(
+        DashboardHomeState.fromMap(dashboardHomeCherry7TestState)
+            .copyWith(isHealthCheckSupported: true));
+    await tester.pumpWidget(
+      testableWidget(locale),
+    );
+    await tester.pumpAndSettle();
+  }, screens: [
+    ...responsiveMobileScreens.map((e) => e.copyWith(height: 1440)).toList(),
+    ...responsiveDesktopScreens
+  ]);
 }

@@ -92,6 +92,13 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
 
     final isSpeedCheckSupported =
         dashboardManagerState.healthCheckModules.contains('SpeedTest');
+    final healthCheckModule = isSpeedCheckSupported
+        ? (dashboardManagerState.healthCheckModules
+                .contains('SpeedTestSamKnows')
+            ? 'SamKnows'
+            : 'Ookla')
+        : null;
+
     final deviceInfo = dashboardManagerState.deviceInfo;
     final horizontalPortLayout = isHorizontalPorts(
         modelNumber: deviceInfo?.modelNumber ?? '',
@@ -112,6 +119,7 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
       isHealthCheckSupported: isSpeedCheckSupported,
       wanType: () => wanType,
       detectedWANType: () => detectedWANType,
+      healthCheckModule: () => healthCheckModule,
     );
 
     final json = newState.toJson();
