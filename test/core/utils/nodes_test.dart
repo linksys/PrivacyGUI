@@ -77,6 +77,10 @@ void main() {
     test('MR9600 (Bobcat)', () {
       expect(isNodeModel(modelNumber: 'MR9600', hardwareVersion: '1'), true);
     });
+
+    test('M60-EUCF (Pinnacle EU variant)', () {
+      expect(isNodeModel(modelNumber: 'M60-EUCF', hardwareVersion: '1'), true);
+    });
   });
 
   group("treatAsMode Tests", () {
@@ -103,6 +107,56 @@ void main() {
       String? result =
           treatAsModes(modelNumber: "EA9350", hardwareVersion: "3");
       expect(result, 'EA9350');
+    });
+  });
+
+  group('isNodeModel', () {
+    test('should return true for valid node models', () {
+      // Test Velop nodes
+      expect(isNodeModel(modelNumber: 'WHW03', hardwareVersion: '1'), true);
+      expect(isNodeModel(modelNumber: 'WHW03B', hardwareVersion: '1'), true);
+      expect(isNodeModel(modelNumber: 'WHW01', hardwareVersion: '1'), true);
+      expect(isNodeModel(modelNumber: 'WHW01B', hardwareVersion: '1'), true);
+      expect(isNodeModel(modelNumber: 'WHW01P', hardwareVersion: '1'), true);
+
+      // Test MX series nodes
+      expect(isNodeModel(modelNumber: 'MX5300', hardwareVersion: '1'), true);
+      expect(isNodeModel(modelNumber: 'MX5400', hardwareVersion: '1'), true);
+      expect(isNodeModel(modelNumber: 'MX4200', hardwareVersion: '1'), true);
+      expect(isNodeModel(modelNumber: 'MX8500', hardwareVersion: '1'), true);
+      expect(isNodeModel(modelNumber: 'MX5500', hardwareVersion: '1'), true);
+      expect(isNodeModel(modelNumber: 'MX2000', hardwareVersion: '1'), true);
+      expect(isNodeModel(modelNumber: 'MX5600', hardwareVersion: '1'), true);
+      expect(isNodeModel(modelNumber: 'MX5700', hardwareVersion: '1'), true);
+      expect(isNodeModel(modelNumber: 'MX6200', hardwareVersion: '1'), true);
+
+      // Test Cognitive Mesh nodes
+      expect(isNodeModel(modelNumber: 'MBE7000', hardwareVersion: '1'), true);
+      expect(isNodeModel(modelNumber: 'MBE7100', hardwareVersion: '1'), true);
+      expect(isNodeModel(modelNumber: 'LN11', hardwareVersion: '1'), true);
+      expect(isNodeModel(modelNumber: 'LN12', hardwareVersion: '1'), true);
+      expect(isNodeModel(modelNumber: 'LN14', hardwareVersion: '1'), true);
+      expect(isNodeModel(modelNumber: 'LN15', hardwareVersion: '1'), true);
+      expect(isNodeModel(modelNumber: 'LN16', hardwareVersion: '1'), true);
+
+      // Test Pinnacle nodes
+      expect(isNodeModel(modelNumber: 'SPNM60', hardwareVersion: '1'), true);
+      expect(isNodeModel(modelNumber: 'SPNM61', hardwareVersion: '1'), true);
+      expect(isNodeModel(modelNumber: 'SPNM62', hardwareVersion: '1'), true);
+      expect(isNodeModel(modelNumber: 'M60', hardwareVersion: '1'), true);
+      expect(isNodeModel(modelNumber: 'M61', hardwareVersion: '1'), true);
+      expect(isNodeModel(modelNumber: 'M62', hardwareVersion: '1'), true);
+    });
+
+    test('should handle case-insensitive model numbers', () {
+      expect(isNodeModel(modelNumber: 'whw03', hardwareVersion: '1'), true);
+      expect(isNodeModel(modelNumber: 'mx5300', hardwareVersion: '1'), true);
+      expect(isNodeModel(modelNumber: 'mbe7000', hardwareVersion: '1'), true);
+    });
+
+    test('should handle invalid model numbers', () {
+      expect(isNodeModel(modelNumber: 'INVALID', hardwareVersion: '1'), false);
+      expect(isNodeModel(modelNumber: 'XYZ123', hardwareVersion: '1'), false);
     });
   });
 }
