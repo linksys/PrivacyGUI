@@ -298,7 +298,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
     final tabContents = [
       _connectionTypeView(InternetSettingsViewType.ipv4, state),
       _connectionTypeView(InternetSettingsViewType.ipv6, state),
-      _releaseAndRenewView(),
+      _releaseAndRenewView(state),
     ];
     return StyledAppPageView(
       appBarStyle: AppBarStyle.none,
@@ -366,9 +366,11 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
     );
   }
 
-  Widget _releaseAndRenewView() {
+  Widget _releaseAndRenewView(InternetSettingsState state) {
     final wanStatus =
         ref.watch(deviceManagerProvider.select((state) => state.wanStatus));
+    final wanIpv6Type =
+        WanIPv6Type.resolve(state.ipv6Setting.ipv6ConnectionType);
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -401,7 +403,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
                   wanStatus?.wanIPv6Connection?.networkInfo?.ipAddress ?? '-'),
               trailing: AppTextButton.noPadding(
                 loc(context).releaseAndRenew,
-                onTap: isBridgeMode
+                onTap: isBridgeMode || wanIpv6Type == WanIPv6Type.passThrough
                     ? null
                     : () {
                         _showRenewIPAlert(InternetSettingsViewType.ipv6);
@@ -1484,6 +1486,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
                         duid: state.ipv6Setting.duid,
                         isIPv6AutomaticEnabled:
                             state.ipv6Setting.isIPv6AutomaticEnabled,
+                        ipv6rdTunnelMode: state.ipv6Setting.ipv6rdTunnelMode,
                       ));
             setState(() {
               initUI(ref.read(internetSettingsProvider));
