@@ -11,6 +11,7 @@ import 'package:privacy_gui/utils.dart';
 
 enum LocalNetworkErrorPrompt {
   hostName,
+  hostNameInvalid,
   startIpAddress,
   startIpAddressRange,
   ipAddress,
@@ -46,6 +47,7 @@ enum LocalNetworkErrorPrompt {
       LocalNetworkErrorPrompt.dns3 => loc(context).invalidIpAddress,
       LocalNetworkErrorPrompt.wins => loc(context).invalidIpAddress,
       LocalNetworkErrorPrompt.hostName => loc(context).hostNameCannotEmpty,
+      LocalNetworkErrorPrompt.hostNameInvalid => loc(context).invalidHostname,
       _ => null,
     };
   }
