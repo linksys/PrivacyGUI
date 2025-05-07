@@ -1563,7 +1563,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
                 IPv6rdTunnelMode.manual,
               ],
               label: (item) {
-                return item.value;
+                return getIpv6rdTunnelModeLoc(item);
               },
               onChanged: ipv6Setting.isIPv6AutomaticEnabled
                   ? null
