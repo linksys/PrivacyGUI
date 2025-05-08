@@ -40,7 +40,6 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
   }
 
   void _showDHCPAlert() {
-    //TODO: Not from UI spec
     showDialog(
       context: context,
       builder: (context) {
@@ -58,6 +57,7 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
             AppTextButton(
               loc(context).ok,
               onTap: () {
+                logger.i('[PnP]: Troubleshooter -  Save to DHCP');
                 context.pop();
                 _saveToDHCP();
               },
@@ -105,6 +105,7 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
                   description: loc(context).pnpIspTypeSelectionStaticDesc,
                   isCurrentlyApplying: wanType == WanType.static,
                   tapAction: () {
+                    logger.i('[PnP]: Troubleshooter -  Go to static IP page');
                     context.goNamed(RouteNamed.pnpStaticIp);
                   },
                 ),
@@ -114,6 +115,7 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
                   description: loc(context).pnpIspTypeSelectionPppoeDesc,
                   isCurrentlyApplying: (wanType == WanType.pppoe && !_hasVLan),
                   tapAction: () {
+                    logger.i('[PnP]: Troubleshooter -  Go to pppoe page');
                     context.goNamed(RouteNamed.pnpPPPOE,
                         extra: {'needVlanId': false});
                   },
@@ -124,6 +126,7 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
                   description: loc(context).pnpIspTypeSelectionPppoeVlanDesc,
                   isCurrentlyApplying: (wanType == WanType.pppoe && _hasVLan),
                   tapAction: () {
+                    logger.i('[PnP]: Troubleshooter -  Go to pppoe vlan page');
                     context.goNamed(RouteNamed.pnpPPPOE,
                         extra: {'needVlanId': true});
                   },

@@ -44,6 +44,16 @@ class CoreTransactionData extends Equatable {
 
 class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
   static Timer? _timer;
+  bool _paused = false;
+  set paused(bool value) {
+    _paused = value;
+    if (_paused) {
+      _timer?.cancel();
+    } else {
+      checkAndStartPolling();
+    }
+  }
+
   List<MapEntry<JNAPAction, Map<String, dynamic>>> _coreTransactions = [];
 
   @override
@@ -124,12 +134,16 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     if (!force && (_timer?.isActive ?? false)) {
       return;
     } else {
+      _paused = false;
       stopPolling();
       startPolling();
     }
   }
 
   startPolling() {
+    if (_paused) {
+      return;
+    }
     logger.d('prepare start polling data');
     final routerRepository = ref.read(routerRepositoryProvider);
     checkSmartMode().then((mode) {

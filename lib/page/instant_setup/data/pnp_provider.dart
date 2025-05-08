@@ -14,6 +14,7 @@ import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
 import 'package:privacy_gui/core/jnap/models/radio_info.dart';
 import 'package:privacy_gui/core/jnap/models/simple_wifi_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
+import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
@@ -201,13 +202,20 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
           JNAPAction.getDeviceInfo,
           type: CommandType.local,
           fetchRemote: true,
-          retries: 0,
+          retries: 10,
           timeoutMs: 3000,
         )
-        .then((result) => NodeDeviceInfo.fromJson(result.output));
+        .then((result) => NodeDeviceInfo.fromJson(result.output))
+        .catchError((e) {
+      logger.i('[PnP]: Failed to fetch device info');
+      throw ExceptionFetchDeviceInfo();
+    });
     // check current sn and clear it
     final prefs = await SharedPreferences.getInstance();
-    prefs.remove(pCurrentSN);
+    await prefs.remove(pCurrentSN);
+    await prefs.setString(pPnpConfiguredSN, deviceInfo.serialNumber);
+    // Pause polling
+    ref.read(pollingProvider.notifier).paused = true;
     // Build/Update better actions
     buildBetterActions(deviceInfo.services);
     ref.read(routerRepositoryProvider).send(JNAPAction.getDeviceMode,
@@ -245,8 +253,13 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
             '[PnP]: Check internet connections MAX retries <$retries>, i=$i');
         isConnected = await ref
             .read(routerRepositoryProvider)
-            .send(JNAPAction.getInternetConnectionStatus,
-                auth: true, retries: 0)
+            .send(
+              JNAPAction.getInternetConnectionStatus,
+              fetchRemote: true,
+              auth: true,
+              retries: 0,
+              cacheLevel: CacheLevel.noCache,
+            )
             .then((result) {
           return result.output['connectionStatus'] == 'InternetConnected';
         }).onError((error, stackTrece) {
@@ -261,7 +274,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
     }
 
     Future<bool> testPing() => ref.read(cloudRepositoryProvider).testPingPng();
-    final isOnline = isNode ? await isInternetConnected() : await testPing();
+    final isOnline = await isInternetConnected();
     // final isOnline = await testPing();
     if (!isOnline) {
       throw ExceptionNoInternetConnection();
