@@ -2,10 +2,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/_providers.dart';
+import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
@@ -113,8 +115,14 @@ class _PnpIspSaveSettingsViewState
     }).onError((error, stackTrace) {
       logger.e(
           '[PnP]: Troubleshooter - Failed to save the new settings - $error');
-      // Saving new settings failed
-      if (error is JNAPError) {
+      
+      if (error is JNAPSideEffectError) {
+        // Handle side effect error
+        showRouterNotFoundAlert(context, ref, onComplete: () async {
+          context.goNamed(RouteNamed.pnp);
+        });
+      } else if (error is JNAPError) {
+        // Saving new settings failed
         context.pop(
             errorCodeHelper(context, error.result, _getErrorMessage(wanType)) ??
                 _getErrorMessage(wanType));

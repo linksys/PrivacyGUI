@@ -160,7 +160,7 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
         maxRetry: overrides?.maxRetry ?? -1,
         timeDelayStartInSec: overrides?.timeDelayStartInSec ?? 10,
         retryDelayInSec: overrides?.retryDelayInSec ?? 10,
-        maxPollTimeInSec: overrides?.maxPollTimeInSec ?? 50,
+        maxPollTimeInSec: overrides?.maxPollTimeInSec ?? 120,
         condition: overrides?.condition,
       ).then((value) {
         ref.read(pollingProvider.notifier).startPolling();
