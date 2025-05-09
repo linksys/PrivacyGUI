@@ -244,7 +244,7 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
       final originalWanType =
           WanType.resolve(originalState?.ipv4Setting.ipv4ConnectionType ?? '');
       final redirectionMap = originalWanType == WanType.bridge
-          ? {'hostName': 'myrouter', 'domain': 'info'}
+          ? {'hostName': 'www.myrouter', 'domain': 'info'}
           : _getRedirectionMap(results);
       _handleWebRedirection(redirectionMap);
     }).catchError(
@@ -257,7 +257,7 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
           final originalWanType = WanType.resolve(
               originalState?.ipv4Setting.ipv4ConnectionType ?? '');
           final redirectionMap = originalWanType == WanType.bridge
-              ? {'hostName': 'myrouter', 'domain': 'info'}
+              ? {'hostName': 'www.myrouter', 'domain': 'info'}
               : _getRedirectionMap(result.data);
           _handleWebRedirection(redirectionMap);
         } else {
