@@ -172,25 +172,9 @@ class _ManualFirmwareUpdateViewState
                   child: Column(
                     children: [
                       LinearProgressIndicator(
-                          value: double.tryParse(status.value) ?? 0,
                           backgroundColor: Theme.of(context)
                               .colorSchemeExt
                               .surfaceContainerHighest),
-                      AppGap.small2(),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          AppText.bodyMedium(
-                              loc(context).manualFirmwareEstimatedTime),
-                          AppText.bodyMedium(DateFormatUtils.formatDuration(
-                              Duration(
-                                  seconds: (60 *
-                                          (1 -
-                                              (double.tryParse(status.value) ??
-                                                  1)))
-                                      .round()))),
-                        ],
-                      ),
                     ],
                   ),
                 ),
