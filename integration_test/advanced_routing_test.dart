@@ -116,12 +116,9 @@ void main() {
       await advancedRoutingActions.tapAddRoutingButton();
       // Tap the name field
       await advancedRoutingActions.tapRoutingNameField();
-      await advancedRoutingActions.tapRoutingNameField();
       // Tap the destination IP field
       await advancedRoutingActions.tapLastDestinationIpField();
-      await advancedRoutingActions.tapLastDestinationIpField();
       // Tap the gateway IP field
-      await advancedRoutingActions.tapLastGatewayIpField();
       await advancedRoutingActions.tapLastGatewayIpField();
     });
   });

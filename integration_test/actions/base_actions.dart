@@ -14,7 +14,6 @@ import 'package:privacy_gui/page/dashboard/views/components/wifi_grid.dart';
 import 'package:privacy_gui/page/instant_topology/views/widgets/tree_node_item.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_item.dart';
 import 'package:privacy_gui/page/wifi_settings/views/wifi_term_titles.dart';
-import 'package:privacy_gui/validator_rules/_validator_rules.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
@@ -23,6 +22,7 @@ import 'package:privacygui_widgets/widgets/card/list_card.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
+import 'package:privacygui_widgets/widgets/input_field/ipv6_form_field.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:super_tooltip/super_tooltip.dart';
 
@@ -47,6 +47,9 @@ part 'recovery_actions.dart';
 part 'reset_password_actions.dart';
 part 'topbar_actions.dart';
 part 'advanced_routing_actions.dart';
+part 'firewall_actions.dart';
+part 'apps_and_gaming_actions.dart';
+part 'administration_actions.dart';
 
 abstract class BaseActions {
   final WidgetTester tester;
@@ -63,7 +66,8 @@ sealed class CommonBaseActions extends BaseActions with CommonActionsMixin {
       TestLocalLoginActions() => loc(context).login,
       TestMenuActions() => loc(context).menu,
       TestLocalRecoveryActions() => loc(context).forgotPassword,
-      TestLocalResetPasswordActions() => loc(context).localResetRouterPasswordTitle,
+      TestLocalResetPasswordActions() =>
+        loc(context).localResetRouterPasswordTitle,
       TestIncredibleWifiActions() => loc(context).incredibleWiFi,
       TestInstantAdminActions() => loc(context).instantAdmin,
       TestInstantTopologyActions() => loc(context).instantTopology,
@@ -75,6 +79,9 @@ sealed class CommonBaseActions extends BaseActions with CommonActionsMixin {
       TestExternalSpeedTestActions() => loc(context).externalSpeedText,
       TestAddNodesActions() => loc(context).addNodes,
       TestAdvancedRoutingActions() => loc(context).advancedRouting,
+      TestFirewallActions() => loc(context).firewall,
+      TestAppsAndGamingActions() => loc(context).appsGaming,
+      TestAdministrationActions() => loc(context).administration,
       // TODO: Handle this case.
       TestPnpSetupActions() => throw UnimplementedError(),
       // TODO: Handle this case.
@@ -86,4 +93,3 @@ sealed class CommonBaseActions extends BaseActions with CommonActionsMixin {
 
   
 }
-

@@ -21,7 +21,7 @@ class TestAdvancedSettingsActions extends CommonBaseActions {
     expect(cardFinder, findsOneWidget);
     return cardFinder;
   }
-  /*
+  
   Finder firewallCardFinder() {
     final cardFinder = find.ancestor(
       of: find.text(TestFirewallActions(tester).title),
@@ -40,18 +40,19 @@ class TestAdvancedSettingsActions extends CommonBaseActions {
     return cardFinder;
   }
 
-  Finder localNetworkCardFinder() {
+  Finder administrationCardFinder() {
     final cardFinder = find.ancestor(
-      of: find.text(TestLocalNetworkActions(tester).title),
+      of: find.text(TestAdministrationActions(tester).title),
       matching: find.byType(AppCard),
     );
     expect(cardFinder, findsOneWidget);
     return cardFinder;
   }
 
-  Finder administrationCardFinder() {
+  /*
+  Finder localNetworkCardFinder() {
     final cardFinder = find.ancestor(
-      of: find.text(TestAdministrationActions(tester).title),
+      of: find.text(TestLocalNetworkActions(tester).title),
       matching: find.byType(AppCard),
     );
     expect(cardFinder, findsOneWidget);
@@ -70,6 +71,27 @@ class TestAdvancedSettingsActions extends CommonBaseActions {
 
   Future<void> enterAdvancedRoutingPage() async {
     final finder = advancedRoutingCardFinder();
+    // Tap the card
+    await tester.tap(finder);
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> enterFirewallPage() async {
+    final finder = firewallCardFinder();
+    // Tap the card
+    await tester.tap(finder);
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> enterAppsAndGamingPage() async {
+    final finder = appsAndGamingCardFinder();
+    // Tap the card
+    await tester.tap(finder);
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> enterAdministrationPage() async {
+    final finder = administrationCardFinder();
     // Tap the card
     await tester.tap(finder);
     await tester.pumpAndSettle();
