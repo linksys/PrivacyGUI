@@ -334,7 +334,7 @@ class AppMenuCard extends StatelessWidget {
           if (description != null)
             Padding(
               padding: const EdgeInsets.only(top: Spacing.small1),
-              child: AppText.bodyMedium(
+              child: AppText.bodySmall(
                 description ?? '',
                 overflow: TextOverflow.ellipsis,
                 maxLines: ResponsiveLayout.isOverMedimumLayout(context) ? 3 : 1,

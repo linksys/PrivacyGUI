@@ -1,16 +1,22 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
+import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/instant_safety/providers/_providers.dart';
 import 'package:privacy_gui/page/instant_safety/views/instant_safety_view.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 
+import '../../../../common/di.dart';
 import '../../../../common/test_responsive_widget.dart';
 import '../../../../common/testable_router.dart';
 import '../../../../test_data/safe_browsing_test_state.dart';
 import '../../../../mocks/instant_safety_notifier_mocks.dart';
 
 void main() {
+  mockDependencyRegister();
+  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
+
   late InstantSafetyNotifier mockInstantSafetyNotifier;
 
   setUp(() {
@@ -24,8 +30,8 @@ void main() {
   });
 
   testLocalizations('Instant safety view - on', (tester, locale) async {
-    when(mockInstantSafetyNotifier.build())
-        .thenReturn(InstantSafetyState.fromMap(instantSafetyTestStateNotSupported));
+    when(mockInstantSafetyNotifier.build()).thenReturn(
+        InstantSafetyState.fromMap(instantSafetyTestStateNotSupported));
     await tester.pumpWidget(
       testableSingleRoute(
         child: const InstantSafetyView(),
@@ -54,5 +60,4 @@ void main() {
     );
     await tester.pumpAndSettle();
   });
-
 }

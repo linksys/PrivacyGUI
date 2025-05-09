@@ -6,10 +6,14 @@ import 'package:privacy_gui/page/advanced_settings/local_network_settings/provid
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:get_it/get_it.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
+import 'package:privacy_gui/di.dart';
 
 import '../../../../common/config.dart';
 import '../../../../common/test_responsive_widget.dart';
 import '../../../../common/testable_router.dart';
+import '../../../../common/di.dart';
 import '../../../../mocks/_index.dart';
 import '../../../../test_data/device_details_test_state.dart';
 import '../../../../test_data/local_network_settings_state.dart';
@@ -17,6 +21,9 @@ import '../../../../test_data/local_network_settings_state.dart';
 void main() {
   late ExternalDeviceDetailNotifier mockExternalDeviceDetailNotifier;
   late MockLocalNetworkSettingsNotifier mockLocalNetworkSettingsNotifier;
+
+  mockDependencyRegister();
+  ServiceHelper mockServiceHelper = GetIt.I<ServiceHelper>();
 
   setUp(() {
     mockExternalDeviceDetailNotifier = MockExternalDeviceDetailNotifier();
