@@ -2,7 +2,7 @@
     "name": "Test behaviors on Instant Safety",
     "target": "integration_test/instant_safety_test.dart",
     "description": "Execute all the functions on the page and verify that the new data has been synced",
-    "setUp":  ["skip_pnp"],
-    "tags": ["safety", "menu"],
-    "tearDown": ["factory_reset"]
+    "setUp":  ["factory_reset", "skip_pnp"],
+    "tearDown": [],
+    "tags": ["safety", "menu"]
 }

@@ -2,7 +2,7 @@
     "name": "Test behaviors on Advanced Settings - Advanced Routing",
     "target": "integration_test/advanced_routing_test.dart",
     "description": "Execute all the functions on the page and verify that the new data has been synced",
-    "setUp":  ["skip_pnp"],
-    "tearDown": ["factory_reset"],
+    "setUp":  ["factory_reset", "skip_pnp"],
+    "tearDown": [],
     "tags": ["advanced_routing", "advanced_settings", "menu"]
 }

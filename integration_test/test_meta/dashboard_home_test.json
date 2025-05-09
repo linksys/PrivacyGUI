@@ -2,7 +2,7 @@
     "name": "Test behaviors on Dashboard",
     "target": "integration_test/dashboard_home_test.dart",
     "description": "Check all functions on Dashboard page",
-    "setUp":  ["skip_pnp"],
-    "tags": ["dashboard"],
-    "tearDown": ["factory_reset"]
+    "setUp":  ["factory_reset", "skip_pnp"],
+    "tearDown": [],
+    "tags": ["dashboard"]
 }

@@ -7,7 +7,6 @@ import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/main.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'actions/base_actions.dart';
 import 'config/integration_test_config.dart';
@@ -42,7 +41,7 @@ void main() {
     await login.inputPassword(IntegrationTestConfig.password);
     expect(
       IntegrationTestConfig.password,
-      tester.getText(find.byType(AppPasswordField)),
+      tester.getText(login.passwordFieldFinder()),
     );
     await login.tapLoginButton();
     // Enter the dashboard screen
