@@ -465,57 +465,60 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(
           horizontal: Spacing.large1, vertical: Spacing.small2),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           _speedTestHeader(context, state),
           AppGap.small2(),
-          hasLanPort &&
-                  !horizontalLayout &&
-                  !ResponsiveLayout.isMobileLayout(context)
-              ? SizedBox(
-                  width: 144,
-                  child: Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      spacing: Spacing.small2,
-                      children: [
-                        AppFilledButton.fillWidth(
-                          loc(context).speedTestExternalTileCloudFlare,
-                          fitText: true,
-                          onTap: () {
-                            openUrl('https://speed.cloudflare.com/');
-                          },
+          Expanded(
+            child: hasLanPort &&
+                    !horizontalLayout &&
+                    !ResponsiveLayout.isMobileLayout(context)
+                ? SizedBox(
+                    width: 144,
+                    child: Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        spacing: Spacing.small2,
+                        children: [
+                          AppFilledButton.fillWidth(
+                            loc(context).speedTestExternalTileCloudFlare,
+                            fitText: true,
+                            onTap: () {
+                              openUrl('https://speed.cloudflare.com/');
+                            },
+                          ),
+                          AppFilledButton.fillWidth(
+                            fitText: true,
+                            loc(context).speedTestExternalTileFast,
+                            onTap: () {
+                              openUrl('https://www.fast.com');
+                            },
+                          ),
+                        ]),
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    spacing: Spacing.medium,
+                    children: [
+                        Expanded(
+                          child: AppFilledButton(
+                            loc(context).speedTestExternalTileCloudFlare,
+                            fitText: true,
+                            onTap: () {
+                              openUrl('https://speed.cloudflare.com/');
+                            },
+                          ),
                         ),
-                        AppFilledButton.fillWidth(
-                          fitText: true,
-                          loc(context).speedTestExternalTileFast,
-                          onTap: () {
-                            openUrl('https://www.fast.com');
-                          },
+                        Expanded(
+                          child: AppFilledButton(
+                            loc(context).speedTestExternalTileFast,
+                            fitText: true,
+                            onTap: () {
+                              openUrl('https://www.fast.com');
+                            },
+                          ),
                         ),
                       ]),
-                )
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  spacing: Spacing.medium,
-                  children: [
-                      Expanded(
-                        child: AppFilledButton(
-                          loc(context).speedTestExternalTileCloudFlare,
-                          fitText: true,
-                          onTap: () {
-                            openUrl('https://speed.cloudflare.com/');
-                          },
-                        ),
-                      ),
-                      Expanded(
-                        child: AppFilledButton(
-                          loc(context).speedTestExternalTileFast,
-                          fitText: true,
-                          onTap: () {
-                            openUrl('https://www.fast.com');
-                          },
-                        ),
-                      ),
-                    ]),
+          ),
           AppGap.small2(),
           AppText.bodyExtraSmall(loc(context).speedTestExternalOthers),
         ],
@@ -554,7 +557,11 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
         Align(alignment: AlignmentDirectional.centerStart, child: speedTitle),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [infoIcon, AppGap.small2(), Expanded(child: speedDesc)],
+          children: [
+            infoIcon,
+            AppGap.small2(),
+            Expanded(child: FittedBox(child: speedDesc))
+          ],
         )
       ],
     );

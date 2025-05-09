@@ -2,7 +2,9 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
+import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/_internet_settings.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
@@ -11,6 +13,7 @@ import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings
 import 'package:privacy_gui/page/instant_setup/data/pnp_state.dart';
 import 'package:privacy_gui/route/route_model.dart';
 
+import '../../../../../../common/di.dart';
 import '../../../../../../common/test_responsive_widget.dart';
 import '../../../../../../common/testable_router.dart';
 import '../../../../../../test_data/device_info_test_data.dart';
@@ -19,6 +22,9 @@ import '../../../../../../mocks/pnp_notifier_mocks.dart' as Mock;
 import '../../../../../../mocks/internet_settings_notifier_mocks.dart';
 
 void main() async {
+  mockDependencyRegister();
+  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
+
   late Mock.MockPnpNotifier mockPnpNotifier;
   late MockInternetSettingsNotifier mockInternetSettingsNotifier;
 
@@ -50,8 +56,8 @@ void main() async {
       testableSingleRoute(
         child: const PnpIspTypeSelectionView(),
         locale: locale,
-        config:
-            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
+        config: LinksysRouteConfig(
+            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
         overrides: [
           pnpProvider.overrideWith(() => mockPnpNotifier),
           internetSettingsProvider
@@ -71,8 +77,8 @@ void main() async {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const PnpIspTypeSelectionView(),
-        config:
-            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
+        config: LinksysRouteConfig(
+            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
         locale: locale,
         overrides: [
           pnpProvider.overrideWith(() => mockPnpNotifier),

@@ -1,13 +1,20 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
+import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/instant_admin/_instant_admin.dart';
 import 'package:privacy_gui/page/login/views/local_router_recovery_view.dart';
+import 'package:privacy_gui/route/route_model.dart';
+import '../../../common/di.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
 import '../../../mocks/_index.dart';
 import '../../../test_data/_index.dart';
 
 void main() {
+  mockDependencyRegister();
+  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
+
   late MockRouterPasswordNotifier mockRouterPasswordNotifier;
 
   setUp(() {
@@ -23,6 +30,7 @@ void main() {
       testableSingleRoute(
         child: const LocalRouterRecoveryView(),
         locale: locale,
+        config: LinksysRouteConfig(noNaviRail: true),
         overrides: [
           routerPasswordProvider.overrideWith(() => mockRouterPasswordNotifier),
         ],
@@ -43,6 +51,7 @@ void main() {
       testableSingleRoute(
         child: const LocalRouterRecoveryView(),
         locale: locale,
+        config: LinksysRouteConfig(noNaviRail: true),
         overrides: [
           routerPasswordProvider.overrideWith(() => mockRouterPasswordNotifier),
         ],
@@ -63,6 +72,7 @@ void main() {
       testableSingleRoute(
         child: const LocalRouterRecoveryView(),
         locale: locale,
+        config: LinksysRouteConfig(noNaviRail: true),
         overrides: [
           routerPasswordProvider.overrideWith(() => mockRouterPasswordNotifier),
         ],
@@ -83,6 +93,7 @@ void main() {
       testableSingleRoute(
         child: const LocalRouterRecoveryView(),
         locale: locale,
+        config: LinksysRouteConfig(noNaviRail: true),
         overrides: [
           routerPasswordProvider.overrideWith(() => mockRouterPasswordNotifier),
         ],

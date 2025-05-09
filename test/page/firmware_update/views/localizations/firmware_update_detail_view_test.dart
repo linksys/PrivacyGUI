@@ -4,13 +4,20 @@ import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_state.dart';
 import 'package:privacy_gui/page/firmware_update/views/firmware_update_detail_view.dart';
 import 'package:privacy_gui/route/route_model.dart';
+import 'package:get_it/get_it.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
+import 'package:privacy_gui/di.dart';
 import '../../../../common/test_responsive_widget.dart';
 import '../../../../common/testable_router.dart';
+import '../../../../common/di.dart';
 import '../../../../test_data/firmware_update_test_state.dart';
 import '../../../../mocks/firmware_update_notifier_mocks.dart';
 
 void main() {
   late MockFirmwareUpdateNotifier mockFirmwareUpdateNotifier;
+
+  mockDependencyRegister();
+  ServiceHelper mockServiceHelper = GetIt.I<ServiceHelper>();
 
   setUp(() {
     mockFirmwareUpdateNotifier = MockFirmwareUpdateNotifier();

@@ -1,15 +1,22 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
+import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/instant_admin/_instant_admin.dart';
 import 'package:privacy_gui/page/login/views/local_reset_router_password_view.dart';
+import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
+import '../../../common/di.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
 import '../../../mocks/_index.dart';
 import '../../../test_data/_index.dart';
 
 void main() {
+  mockDependencyRegister();
+  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
+
   late MockRouterPasswordNotifier mockRouterPasswordNotifier;
 
   setUp(() {
@@ -23,6 +30,7 @@ void main() {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const LocalResetRouterPasswordView(),
+        config: LinksysRouteConfig(noNaviRail: true),
         locale: locale,
         overrides: [
           routerPasswordProvider.overrideWith(() => mockRouterPasswordNotifier),
@@ -38,6 +46,7 @@ void main() {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const LocalResetRouterPasswordView(),
+        config: LinksysRouteConfig(noNaviRail: true),
         locale: locale,
         overrides: [
           routerPasswordProvider.overrideWith(() => mockRouterPasswordNotifier),
@@ -56,6 +65,7 @@ void main() {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const LocalResetRouterPasswordView(),
+        config: LinksysRouteConfig(noNaviRail: true),
         locale: locale,
         overrides: [
           routerPasswordProvider.overrideWith(() => mockRouterPasswordNotifier),
@@ -79,6 +89,7 @@ void main() {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const LocalResetRouterPasswordView(),
+        config: LinksysRouteConfig(noNaviRail: true),
         locale: locale,
         overrides: [
           routerPasswordProvider.overrideWith(() => mockRouterPasswordNotifier),
@@ -111,6 +122,7 @@ void main() {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const LocalResetRouterPasswordView(),
+        config: LinksysRouteConfig(noNaviRail: true),
         locale: locale,
         overrides: [
           routerPasswordProvider.overrideWith(() => mockRouterPasswordNotifier),

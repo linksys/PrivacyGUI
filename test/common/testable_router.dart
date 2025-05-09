@@ -51,9 +51,10 @@ Widget testableSingleRoute({
   LinksysRouteConfig? config,
   Locale? locale,
   ProviderContainer? provider,
+  GlobalKey<NavigatorState>? navigatorKey,
 }) {
   final router = GoRouter(
-    navigatorKey: shellNavigatorKey,
+    navigatorKey: navigatorKey ?? shellNavigatorKey,
     initialLocation: '/',
     routes: [
       LinksysRoute(

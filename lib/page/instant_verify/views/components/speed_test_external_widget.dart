@@ -31,7 +31,7 @@ class _SpeedTestExternalWidgetState
               color: Theme.of(context).colorScheme.primary,
             ),
             AppGap.large2(),
-            AppText.labelSmall(loc(context).speedTestExternalTileLabel)
+            Expanded(child: AppText.labelSmall(loc(context).speedTestExternalTileLabel))
           ],
         ),
         AppGap.medium(),

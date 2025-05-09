@@ -2,10 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:get_it/get_it.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
+import 'package:privacy_gui/di.dart';
 import '../../../common/_index.dart';
+import '../../../common/di.dart';
 import 'snack_bar_sample_view.dart';
 
 void main() {
+  mockDependencyRegister();
+  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
+
   setUp(() {});
 
   testLocalizations('Snack bar - Success: Saved', (tester, locale) async {
