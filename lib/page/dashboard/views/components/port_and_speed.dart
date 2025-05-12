@@ -469,7 +469,8 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
         children: [
           _speedTestHeader(context, state),
           AppGap.small2(),
-          Expanded(
+          Flexible(
+            
             child: hasLanPort &&
                     !horizontalLayout &&
                     !ResponsiveLayout.isMobileLayout(context)

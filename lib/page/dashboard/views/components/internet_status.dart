@@ -122,7 +122,7 @@ class _InternetConnectionWidgetState
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         AppText.titleMedium(master?.data.location ?? '-----'),
-                        const AppGap.large1(),
+                        const AppGap.medium(),
                         Table(
                           border: const TableBorder(),
                           columnWidths: const {
