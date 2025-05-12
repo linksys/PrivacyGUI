@@ -1,9 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
+import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/dhcp_reservations_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/dhcp_reservations_state.dart';
@@ -13,6 +15,7 @@ import 'package:privacy_gui/page/wifi_settings/providers/wifi_list_provider.dart
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_state.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import '../../../../../common/config.dart';
+import '../../../../../common/di.dart';
 import '../../../../../common/test_responsive_widget.dart';
 import '../../../../../common/testable_router.dart';
 import '../../../../../mocks/dashboard_manager_notifier_mocks.dart';
@@ -29,6 +32,9 @@ import '../../../../../mocks/local_network_settings_notifier_mocks.dart';
 import '../../../../../test_data/wifi_list_test_state.dart';
 
 void main() {
+  mockDependencyRegister();
+  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
+
   late MockLocalNetworkSettingsNotifier mockLocalNetworkSettingsNotifier;
   late MockDHCPReservationsNotifier mockDHCPReservationsNotifier;
   late MockDeviceFilterConfigNotifier mockDeviceFilterConfigNotifier;

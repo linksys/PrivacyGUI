@@ -10,10 +10,13 @@ import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
+import 'package:get_it/get_it.dart';
 
 import '../../../../../common/_index.dart';
 import '../../../../../common/test_responsive_widget.dart';
 import '../../../../../common/testable_router.dart';
+import '../../../../../common/di.dart';
 import '../../../../../mocks/_index.dart';
 import '../../../../../test_data/firewall_settings_test_state.dart';
 import '../../../../../mocks/firewall_notifier_mocks.dart';
@@ -24,6 +27,8 @@ void main() {
   late MockIpv6PortServiceListNotifier mockIpv6PortServiceListNotifier;
   late MockIpv6PortServiceRuleNotifier mockIpv6PortServiceRuleNotifier;
 
+  mockDependencyRegister();
+  ServiceHelper mockServiceHelper = GetIt.I.get<ServiceHelper>();
   setUp(() {
     mockFirewallNotifier = MockFirewallNotifier();
     mockIpv6PortServiceListNotifier = MockIpv6PortServiceListNotifier();

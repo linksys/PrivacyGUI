@@ -4,6 +4,11 @@ sealed class PnpException {
   PnpException({required this.message});
 }
 
+class ExceptionFetchDeviceInfo extends PnpException {
+  ExceptionFetchDeviceInfo()
+      : super(message: 'Failed to fetch device info!');
+}
+
 class ExceptionInvalidAdminPassword extends PnpException {
   ExceptionInvalidAdminPassword()
       : super(message: 'Invalid admin password');

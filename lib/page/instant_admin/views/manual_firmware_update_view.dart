@@ -1,6 +1,7 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -19,6 +20,7 @@ import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ManualFirmwareUpdateView extends ArgumentsConsumerStatefulView {
   const ManualFirmwareUpdateView({
@@ -172,25 +174,9 @@ class _ManualFirmwareUpdateViewState
                   child: Column(
                     children: [
                       LinearProgressIndicator(
-                          value: double.tryParse(status.value) ?? 0,
                           backgroundColor: Theme.of(context)
                               .colorSchemeExt
                               .surfaceContainerHighest),
-                      AppGap.small2(),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          AppText.bodyMedium(
-                              loc(context).manualFirmwareEstimatedTime),
-                          AppText.bodyMedium(DateFormatUtils.formatDuration(
-                              Duration(
-                                  seconds: (60 *
-                                          (1 -
-                                              (double.tryParse(status.value) ??
-                                                  1)))
-                                      .round()))),
-                        ],
-                      ),
                     ],
                   ),
                 ),
@@ -202,6 +188,9 @@ class _ManualFirmwareUpdateViewState
 
   void handleSuccessUpdated() {
     ref.read(manualFirmwareUpdateProvider.notifier).reset();
+    SharedPreferences.getInstance().then((pref) {
+      pref.setBool(pFWUpdated, true);
+    });
     _showSuccessSnackbar();
   }
 

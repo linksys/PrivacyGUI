@@ -2,15 +2,20 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/route/route_model.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
+import 'package:get_it/get_it.dart';
 
 import '../../../../../common/test_responsive_widget.dart';
 import '../../../../../common/testable_router.dart';
+import '../../../../../common/di.dart';
 import '../../../../../test_data/administration_settings_test_state.dart';
 import '../../../../../mocks/administration_setting_notifier_mocks.dart';
 
 void main() {
   late AdministrationSettingsNotifier mockAdministrationSettingsNotifier;
 
+  mockDependencyRegister();
+  ServiceHelper mockServiceHelper = GetIt.I.get<ServiceHelper>();
   setUp(() {
     mockAdministrationSettingsNotifier = MockAdministrationSettingsNotifier();
     when(mockAdministrationSettingsNotifier.build()).thenReturn(

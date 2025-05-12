@@ -465,74 +465,115 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(
           horizontal: Spacing.large1, vertical: Spacing.small2),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                LinksysIcons.infoCircle,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              AppGap.large2(),
-              Expanded(
-                  child: AppText.labelSmall(
-                      loc(context).speedTestExternalTileLabel))
-            ],
-          ),
+          _speedTestHeader(context, state),
           AppGap.small2(),
-          hasLanPort &&
-                  !horizontalLayout &&
-                  !ResponsiveLayout.isMobileLayout(context)
-              ? SizedBox(
-                  width: 144,
-                  child: Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      spacing: Spacing.small2,
-                      children: [
-                        AppFilledButton.fillWidth(
-                          loc(context).speedTestExternalTileCloudFlare,
-                          fitText: true,
-                          onTap: () {
-                            openUrl('https://speed.cloudflare.com/');
-                          },
+          Flexible(
+            child: hasLanPort &&
+                    !horizontalLayout &&
+                    !ResponsiveLayout.isMobileLayout(context)
+                ? SizedBox(
+                    width: 144,
+                    child: Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        spacing: Spacing.small2,
+                        children: [
+                          AppFilledButton.fillWidth(
+                            loc(context).speedTestExternalTileCloudFlare,
+                            fitText: true,
+                            onTap: () {
+                              openUrl('https://speed.cloudflare.com/');
+                            },
+                          ),
+                          AppFilledButton.fillWidth(
+                            fitText: true,
+                            loc(context).speedTestExternalTileFast,
+                            onTap: () {
+                              openUrl('https://www.fast.com');
+                            },
+                          ),
+                        ]),
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    spacing: Spacing.medium,
+                    children: [
+                        Expanded(
+                          child: AppFilledButton(
+                            loc(context).speedTestExternalTileCloudFlare,
+                            fitText: true,
+                            onTap: () {
+                              openUrl('https://speed.cloudflare.com/');
+                            },
+                          ),
                         ),
-                        AppFilledButton.fillWidth(
-                          fitText: true,
-                          loc(context).speedTestExternalTileFast,
-                          onTap: () {
-                            openUrl('https://www.fast.com');
-                          },
+                        Expanded(
+                          child: AppFilledButton(
+                            loc(context).speedTestExternalTileFast,
+                            fitText: true,
+                            onTap: () {
+                              openUrl('https://www.fast.com');
+                            },
+                          ),
                         ),
                       ]),
-                )
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  spacing: Spacing.medium,
-                  children: [
-                      Expanded(
-                        child: AppFilledButton(
-                          loc(context).speedTestExternalTileCloudFlare,
-                          fitText: true,
-                          onTap: () {
-                            openUrl('https://speed.cloudflare.com/');
-                          },
-                        ),
-                      ),
-                      Expanded(
-                        child: AppFilledButton(
-                          loc(context).speedTestExternalTileFast,
-                          fitText: true,
-                          onTap: () {
-                            openUrl('https://www.fast.com');
-                          },
-                        ),
-                      ),
-                    ]),
+          ),
           AppGap.small2(),
           AppText.bodyExtraSmall(loc(context).speedTestExternalOthers),
         ],
       ),
     );
+  }
+
+  Widget _speedTestHeader(BuildContext context, DashboardHomeState state) {
+    final horizontalLayout = state.isHorizontalLayout;
+    final hasLanPort = state.lanPortConnections.isNotEmpty;
+    final speedTitle = AppText.titleMedium(loc(context).speedTextTileStart);
+    final infoIcon = InkWell(
+      child: Icon(
+        LinksysIcons.infoCircle,
+        color: Theme.of(context).colorScheme.primary,
+      ),
+      onTap: () {
+        openUrl('https://support.linksys.com/kb/article/79-en/');
+      },
+    );
+    final speedDesc =
+        AppText.labelSmall(loc(context).speedTestExternalTileLabel);
+    final rowHeader = Row(
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(child: speedTitle),
+        infoIcon,
+        speedDesc,
+      ],
+    );
+    final columnHeader = Column(
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Align(alignment: AlignmentDirectional.centerStart, child: speedTitle),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            infoIcon,
+            AppGap.small2(),
+            Expanded(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: AlignmentDirectional.centerStart,
+                child: speedDesc,
+              ),
+            )
+          ],
+        )
+      ],
+    );
+    return ResponsiveLayout(
+        desktop: hasLanPort && horizontalLayout ? rowHeader : columnHeader,
+        mobile: rowHeader);
   }
 
   Widget _speedTestButton(BuildContext context, DashboardHomeState state) {

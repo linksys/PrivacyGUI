@@ -355,6 +355,30 @@ const List<Map<String, dynamic>> _velopModelMap = [
     'pattern': '^spnm62',
   },
   {
+    'model': 'M60',
+    'baseModel': 'M60',
+    'seriesModel': 'M60',
+    'isMeshRouter': false,
+    'isCognitiveMesh': true,
+    'pattern': '^m60',
+  },
+  {
+    'model': 'M61',
+    'baseModel': 'M61',
+    'seriesModel': 'M61',
+    'isMeshRouter': false,
+    'isCognitiveMesh': true,
+    'pattern': '^m61',
+  },
+  {
+    'model': 'M62',
+    'baseModel': 'M62',
+    'seriesModel': 'M62',
+    'isMeshRouter': false,
+    'isCognitiveMesh': true,
+    'pattern': '^m62',
+  },
+  {
     'model': 'EA9350',
     'hardwareVersions': ['3'],
     'baseModel': 'EA9350',
@@ -387,7 +411,6 @@ dynamic doVelopModelTests({
             .hasMatch(modelNumber) &&
         ((hwVersions?.indexOf(hardwareVersion) ?? 0) > -1);
   })?[paramName];
-
   if (paramAlt != null && out == null) {
     out = paramAlt;
   }

@@ -15,9 +15,13 @@ import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:get_it/get_it.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
+import 'package:privacy_gui/di.dart';
 
 import '../../../../../../common/test_responsive_widget.dart';
 import '../../../../../../common/testable_router.dart';
+import '../../../../../../common/di.dart';
 import '../../../../../../test_data/device_info_test_data.dart';
 import '../../../../../../test_data/internet_settings_state_data.dart';
 import '../../../../../../mocks/pnp_notifier_mocks.dart' as Mock;
@@ -26,6 +30,9 @@ import '../../../../../../mocks/internet_settings_notifier_mocks.dart';
 void main() async {
   late Mock.MockPnpNotifier mockPnpNotifier;
   late MockInternetSettingsNotifier mockInternetSettingsNotifier;
+
+  mockDependencyRegister();
+  ServiceHelper mockServiceHelper = GetIt.I<ServiceHelper>();
 
   setUp(() {
     mockPnpNotifier = Mock.MockPnpNotifier();
@@ -53,8 +60,8 @@ void main() async {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const PnpPPPOEView(),
-        config:
-            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
+        config: LinksysRouteConfig(
+            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
         locale: locale,
         overrides: [
           pnpProvider.overrideWith(() => mockPnpNotifier),
@@ -71,8 +78,8 @@ void main() async {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const PnpPPPOEView(),
-        config:
-            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
+        config: LinksysRouteConfig(
+            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
         locale: locale,
         overrides: [
           pnpProvider.overrideWith(() => mockPnpNotifier),
@@ -107,15 +114,15 @@ void main() async {
       routes: [
         LinksysRoute(
           path: '/',
-          config:
-              LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
+          config: LinksysRouteConfig(
+              column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
           builder: (context, state) => const PnpPPPOEView(),
         ),
         LinksysRoute(
           path: '/$RoutePath.pnpIspSaveSettings',
           name: RouteNamed.pnpIspSaveSettings,
-          config:
-              LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
+          config: LinksysRouteConfig(
+              column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
           builder: (context, state) => PnpIspSaveSettingsView(
             args: state.extra as Map<String, dynamic>? ?? {},
           ),

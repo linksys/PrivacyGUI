@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
@@ -174,27 +175,7 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
                   onChanged: widget.item.isGuest ||
                           !widget.item.isEnabled ||
                           widget.canBeDisabled
-                      ? (value) async {
-                          if (widget.item.isGuest) {
-                            showSpinnerDialog(context);
-                            final wifiProvider =
-                                ref.read(wifiListProvider.notifier);
-                            await wifiProvider.fetch();
-                            wifiProvider.setWiFiEnabled(value);
-                            await wifiProvider
-                                .save()
-                                .then((value) => context.pop());
-                          } else {
-                            showSpinnerDialog(context);
-                            final wifiProvider =
-                                ref.read(wifiListProvider.notifier);
-                            await wifiProvider.fetch();
-                            await wifiProvider
-                                .saveToggleEnabled(
-                                    radios: widget.item.radios, enabled: value)
-                                .then((value) => context.pop());
-                          }
-                        }
+                      ? (value) => _handleWifiToggled(value)
                       : null,
                 ),
               ],
@@ -230,7 +211,7 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
                   ),
                 ),
                 Align(
-                  alignment: AlignmentDirectional.centerEnd,
+                    alignment: AlignmentDirectional.centerEnd,
                     child: _buildTooltip(context)),
               ],
             )
@@ -310,6 +291,36 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
         ),
       ),
     );
+  }
+
+  Future<void> _handleWifiToggled(bool value) async {
+    showSpinnerDialog(context);
+    final wifiProvider = ref.read(wifiListProvider.notifier);
+    await wifiProvider.fetch();
+    if (widget.item.isGuest) {
+      wifiProvider.setWiFiEnabled(value);
+      await wifiProvider.save().then((value) => context.pop()).catchError(
+          (error, stackTrace) {
+        // Show RouterNotFound alert for the JNAP side effect error
+        showRouterNotFoundAlert(context, ref, onComplete: () => context.pop());
+      }, test: (error) => error is JNAPSideEffectError).onError(
+          (error, statckTrace) {
+        // Just dismiss the spinner for other unexpected errors
+        context.pop();
+      });
+    } else {
+      await wifiProvider
+          .saveToggleEnabled(radios: widget.item.radios, enabled: value)
+          .then((value) => context.pop())
+          .catchError((error, stackTrace) {
+        // Show RouterNotFound alert for the JNAP side effect error
+        showRouterNotFoundAlert(context, ref, onComplete: () => context.pop());
+      }, test: (error) => error is JNAPSideEffectError).onError(
+              (error, statckTrace) {
+        // Just dismiss the spinner for other unexpected errors
+        context.pop();
+      });
+    }
   }
 
   void _showWiFiShareModal(BuildContext context) {

@@ -89,7 +89,6 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView>
                 });
               }
             : null,
-        scrollable: true,
         bottomBar: PageBottomBar(
             isPositiveEnabled: isStateChanged(state) &&
                 (_sourceError == null && _destinationError == null),
@@ -121,40 +120,42 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView>
                     }
                   }));
             }),
-        child: Column(
-          children: [
-            AppInfoCard(
-              title: loc(context).dmz,
-              description: loc(context).dmzDescription,
-              trailing: Padding(
-                padding: const EdgeInsets.only(left: Spacing.medium),
-                child: AppSwitch(
-                  semanticLabel: 'dmz',
-                  value: state.settings.isDMZEnabled,
-                  onChanged: (value) {
-                    ref.read(dmzSettingsProvider.notifier).setSettings(
-                        state.settings.copyWith(isDMZEnabled: value));
-                  },
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              AppInfoCard(
+                title: loc(context).dmz,
+                description: loc(context).dmzDescription,
+                trailing: Padding(
+                  padding: const EdgeInsets.only(left: Spacing.medium),
+                  child: AppSwitch(
+                    semanticLabel: 'dmz',
+                    value: state.settings.isDMZEnabled,
+                    onChanged: (value) {
+                      ref.read(dmzSettingsProvider.notifier).setSettings(
+                          state.settings.copyWith(isDMZEnabled: value));
+                    },
+                  ),
                 ),
               ),
-            ),
-            if (state.settings.isDMZEnabled) ...[
-              const AppGap.medium(),
-              AppCard(
-                child: Column(
-                  children: [
-                    _sourceIPWidget(state),
-                  ],
+              if (state.settings.isDMZEnabled) ...[
+                const AppGap.medium(),
+                AppCard(
+                  child: Column(
+                    children: [
+                      _sourceIPWidget(state),
+                    ],
+                  ),
                 ),
-              ),
-              const AppGap.medium(),
-              AppCard(
-                child: Column(
-                  children: [_destinationIPWidget(state)],
+                const AppGap.medium(),
+                AppCard(
+                  child: Column(
+                    children: [_destinationIPWidget(state)],
+                  ),
                 ),
-              ),
-            ]
-          ],
+              ]
+            ],
+          ),
         ));
   }
 

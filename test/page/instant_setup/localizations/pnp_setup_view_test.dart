@@ -66,8 +66,10 @@ void main() async {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const PnpSetupView(),
-        config:
-            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
+        config: LinksysRouteConfig(
+          column: ColumnGrid(column: 6, centered: true),
+          noNaviRail: true,
+        ),
         locale: locale,
         overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
       ),
@@ -80,8 +82,8 @@ void main() async {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const PnpSetupView(),
-        config:
-            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
+        config: LinksysRouteConfig(
+            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
         locale: locale,
         overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
       ),
@@ -94,8 +96,8 @@ void main() async {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const PnpSetupView(),
-        config:
-            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
+        config: LinksysRouteConfig(
+            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
         locale: locale,
         overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
       ),
@@ -111,8 +113,8 @@ void main() async {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const PnpSetupView(),
-        config:
-            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
+        config: LinksysRouteConfig(
+            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
         locale: locale,
         overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
       ),
@@ -134,8 +136,8 @@ void main() async {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const PnpSetupView(),
-        config:
-            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
+        config: LinksysRouteConfig(
+            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
         locale: locale,
         overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
       ),
@@ -160,8 +162,8 @@ void main() async {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const PnpSetupView(),
-        config:
-            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
+        config: LinksysRouteConfig(
+            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
         locale: locale,
         overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
       ),
@@ -185,8 +187,8 @@ void main() async {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const PnpSetupView(),
-        config:
-            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
+        config: LinksysRouteConfig(
+            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
         locale: locale,
         overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
       ),
@@ -218,8 +220,8 @@ void main() async {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const PnpSetupView(),
-        config:
-            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
+        config: LinksysRouteConfig(
+            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
         locale: locale,
         overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
       ),
@@ -260,8 +262,8 @@ void main() async {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const PnpSetupView(),
-        config:
-            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
+        config: LinksysRouteConfig(
+            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
         locale: locale,
         overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
       ),
@@ -292,8 +294,8 @@ void main() async {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const PnpSetupView(),
-        config:
-            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
+        config: LinksysRouteConfig(
+            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
         locale: locale,
         overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
       ),
@@ -330,8 +332,8 @@ void main() async {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const PnpSetupView(),
-        config:
-            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
+        config: LinksysRouteConfig(
+            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
         locale: locale,
         overrides: [
           pnpProvider.overrideWith(() => mockPnpNotifier),
@@ -379,8 +381,8 @@ void main() async {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const PnpSetupView(),
-        config:
-            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
+        config: LinksysRouteConfig(
+            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
         locale: locale,
         overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
       ),
@@ -425,8 +427,8 @@ void main() async {
     await tester.pumpWidget(
       testableSingleRoute(
         child: const PnpSetupView(),
-        config:
-            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
+        config: LinksysRouteConfig(
+            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
         locale: locale,
         overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
       ),

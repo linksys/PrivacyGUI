@@ -102,10 +102,13 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
                   return TreeIndentation(
                     entry: entry,
                     guide: IndentGuide.connectingLines(
-                        color: Theme.of(context).colorScheme.onBackground,
-                        indent: 24,
-                        thickness: 1,
-                        strokeJoin: StrokeJoin.miter),
+                      color: Theme.of(context).colorScheme.onBackground,
+                      indent: 24,
+                      thickness: 1,
+                      strokeJoin: StrokeJoin.miter,
+                      pathModifier: (path) => TopologyNodeItem.buildPath(
+                          path, entry.node, entry.node.data.isOnline),
+                    ),
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(0, 16, 0, 0),
                       child: TopologyNodeItem.simple(

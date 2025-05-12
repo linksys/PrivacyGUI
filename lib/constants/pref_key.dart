@@ -23,6 +23,8 @@ const pPnpSetup = "PnPSetup";
 const pAppSettings = "AppSettings";
 const pRAMode = 'AppRaMode';
 
+const pFWUpdated = 'FwUpdated';
+
 // secured
 const pSessionToken = 'SessionToken';
 const pSessionTokenTs = 'SessionTokenTimeStamp';
