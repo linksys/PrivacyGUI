@@ -3,15 +3,11 @@ import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
-import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
-import 'package:privacy_gui/core/utils/devices.dart';
+import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
-import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
-import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -119,9 +115,10 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
                 (BuildContext context, TreeEntry<RouterTreeNode> entry) {
               return TreeIndentation(
                 entry: entry,
-                guide: const IndentGuide.connectingLines(
+                guide: IndentGuide.connectingLines(
                   indent: 36,
                   thickness: 0.5,
+                  pathModifier: (path) => TopologyNodeItem.buildPath(path, entry.node, entry.node.data.isOnline),
                 ),
                 child: switch (entry.node.runtimeType) {
                   OnlineTopologyNode => Row(
@@ -151,9 +148,10 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
                     (BuildContext context, TreeEntry<RouterTreeNode> entry) {
                   return TreeIndentation(
                     entry: entry,
-                    guide: const IndentGuide.connectingLines(
+                    guide: IndentGuide.connectingLines(
                       indent: 72,
                       thickness: 0.5,
+                      pathModifier: (path) => TopologyNodeItem.buildPath(path, entry.node, entry.node.data.isOnline),
                     ),
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(0, 16, 8, 0),
@@ -188,7 +186,7 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
     final hasBlinkFunction = serviceHelper.isSupportLedBlinking();
     final supportChildReboot = serviceHelper.isSupportChildReboot();
     final supportChildFactoryReset = serviceHelper.isSupportChildFactoryReset();
-    
+
     return ResponsiveLayout.isMobileLayout(context)
         ? TopologyNodeItem.simple(
             node: node,

@@ -9,8 +9,10 @@ import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_light_settings_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -349,6 +351,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
   }
 
   Widget _avatarCard(NodeDetailState state) {
+    final isOnline = ref.watch(internetStatusProvider) == InternetStatus.online;
     return _nodeDetailBackgroundCard(
       child: SizedBox(
         // height: 160,
@@ -380,9 +383,12 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
                 ),
               ),
               _avatarInfoCard(
-                title: loc(context).connectTo,
-                description: _checkEmptyValue(state.upstreamDevice),
-              ),
+                  title: loc(context).connectTo,
+                  description: switch (state.isMaster) {
+                    true =>
+                      isOnline ? _checkEmptyValue(state.upstreamDevice) : '--',
+                    false => _checkEmptyValue(state.upstreamDevice),
+                  }),
               if (state.isMLO)
                 Padding(
                   padding:
@@ -487,11 +493,11 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
             if (state.isMaster)
               _detailInfoCard(
                 title: loc(context).wanIPAddress,
-                description: state.wanIpAddress,
+                description: _checkEmptyValue(state.wanIpAddress),
               ),
             _detailInfoCard(
               title: loc(context).lanIPAddress,
-              description: state.lanIpAddress,
+              description: _checkEmptyValue(state.lanIpAddress),
             ),
             _detailInfoCard(
               title: loc(context).firmwareVersion,
@@ -573,6 +579,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
               if (description != null)
                 AppText.labelLarge(
                   description,
+                  selectable: true,
                 ),
             ],
           )),

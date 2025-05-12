@@ -193,8 +193,7 @@ class _FirmwareUpdateDetailViewState
 
   Widget _buildProgressIndicator((LinksysDevice, FirmwareUpdateStatus) record) {
     final name = record.$1.getDeviceName();
-    final operationType =
-        record.$2.pendingOperation?.operation ?? 'In progress';
+    final operationType = _getOperationType(context, record.$2.pendingOperation?.operation);
     final progressPercent = record.$2.pendingOperation?.progressPercent ?? 0;
     return Stack(
       alignment: Alignment.center,
@@ -220,6 +219,16 @@ class _FirmwareUpdateDetailViewState
         )
       ],
     );
+  }
+
+    String _getOperationType(BuildContext context, String? operation) {
+    final lowerOperation = operation?.toLowerCase() ?? '';
+    return switch (lowerOperation) {
+      'downloading' || 'checking' => loc(context).firmwareDownloadingTitle,
+      'rebooting' => loc(context).firmwareRebootingTitle,
+      'installing' => loc(context).firmwareInstallingTitle,
+      _ => loc(context).firmwareDownloadingTitle,
+    };
   }
 }
 
