@@ -88,24 +88,25 @@ class TopologyNodeItem extends StatelessWidget {
     // For master node
     if (node.data.isMaster) {
       if (!isOnline) {
-        return _createDottedPath(path);
+        return _createDottedPath(path, showCross: true);
       }
       return path;
     }
 
     // For slave nodes
     if (!node.data.isOnline) {
-      return _createDottedPath(path);
+      return _createDottedPath(path, showCross: false);
     }
     return path;
   }
 
-  static Path _createDottedPath(Path path) {
+  static Path _createDottedPath(Path path, {bool showCross = false}) {
     final dottedPath = Path();
     const dashWidth = 4.0;
     const dashSpace = 4.0;
     final pathMetrics = path.computeMetrics();
 
+    bool hasCross = false;
     for (final metric in pathMetrics) {
       var distance = 0.0;
       while (distance < metric.length) {
@@ -116,19 +117,22 @@ class TopologyNodeItem extends StatelessWidget {
         distance += dashWidth + dashSpace;
       }
 
-      // Add cross (X) in the middle of the path
-      final midPoint =
-          metric.getTangentForOffset(metric.length / 2)?.position ??
-              Offset.zero;
-      const crossSize = 8.0;
+      if (showCross && !hasCross) {
+        // Add cross (X) in the middle of the path
+        final midPoint =
+            metric.getTangentForOffset(metric.length / 2)?.position ??
+                Offset.zero;
+        const crossSize = 8.0;
 
-      // Draw first line of X (top-left to bottom-right)
-      dottedPath.moveTo(midPoint.dx - crossSize, midPoint.dy - crossSize);
-      dottedPath.lineTo(midPoint.dx + crossSize, midPoint.dy + crossSize);
+        // Draw first line of X (top-left to bottom-right)
+        dottedPath.moveTo(midPoint.dx - crossSize, midPoint.dy - crossSize);
+        dottedPath.lineTo(midPoint.dx + crossSize, midPoint.dy + crossSize);
 
-      // Draw second line of X (top-right to bottom-left)
-      dottedPath.moveTo(midPoint.dx + crossSize, midPoint.dy - crossSize);
-      dottedPath.lineTo(midPoint.dx - crossSize, midPoint.dy + crossSize);
+        // Draw second line of X (top-right to bottom-left)
+        dottedPath.moveTo(midPoint.dx + crossSize, midPoint.dy - crossSize);
+        dottedPath.lineTo(midPoint.dx - crossSize, midPoint.dy + crossSize);
+        hasCross = true;
+      }
     }
     return dottedPath;
   }
