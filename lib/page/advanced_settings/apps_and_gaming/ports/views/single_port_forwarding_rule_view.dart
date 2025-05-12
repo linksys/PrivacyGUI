@@ -114,7 +114,7 @@ class _AddRuleContentViewState
         },
       ),
       scrollable: true,
-      child: AppCard(
+      child: (context, constraints) => AppCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -165,7 +165,10 @@ class _AddRuleContentViewState
         },
         onFocusChanged: (focus) {
           setState(() {
-          _descriptionError = _notifier.isNameValid(state.rule?.description ?? '') ? null : loc(context).theNameMustNotBeEmpty;
+            _descriptionError =
+                _notifier.isNameValid(state.rule?.description ?? '')
+                    ? null
+                    : loc(context).theNameMustNotBeEmpty;
           });
         },
         errorText: _descriptionError,

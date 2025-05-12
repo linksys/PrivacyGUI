@@ -64,7 +64,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
         top: Spacing.large3,
         bottom: Spacing.medium,
       ),
-      child: Shimmer(
+      child: (context, constraints) => Shimmer(
         gradient: shimmerGradient,
         child: ShimmerContainer(
           isLoading: false,

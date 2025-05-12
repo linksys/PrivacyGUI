@@ -104,7 +104,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
               },
             )
           : null,
-      child: switch (_status) {
+      child: (context, constraints) => switch (_status) {
         'RUNNING' => ResponsiveLayout(
             desktop: Container(
               margin: const EdgeInsets.fromLTRB(0, 0, 0, 40),

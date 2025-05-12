@@ -96,12 +96,6 @@ class RoutePath {
   static const ipv6PortServiceList = 'ipv6PortServiceList';
   static const ipv6PortServiceRule = 'ipv6PortServiceRule';
 
-  /// linkup
-  static const linkup = 'linkup';
-
-  /// Explanation
-  static const explanation = '/explanation';
-
   /// PnP
   static const pnp = '/pnp';
   static const pnpConfig = 'pnpConfig';
@@ -241,12 +235,6 @@ class RouteNamed {
   /// Ipv6 port service
   static const ipv6PortServiceList = 'ipv6PortServiceList';
   static const ipv6PortServiceRule = 'ipv6PortServiceRule';
-
-  /// linkup
-  static const linkup = 'linkup';
-
-  /// Explanation
-  static const explanation = 'explanation';
 
   /// PnP
   static const pnp = 'pnp';

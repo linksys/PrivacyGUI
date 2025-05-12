@@ -19,7 +19,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/customs/animated_refresh_container.dart';
 import 'package:privacy_gui/page/components/shared_widgets.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/styled/styled_tab_page_view.dart';
+import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
@@ -51,21 +51,33 @@ class InstantVerifyView extends ArgumentsConsumerStatefulView {
   ConsumerState<InstantVerifyView> createState() => _InstantVerifyViewState();
 }
 
-class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
+class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
+
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+
     ref.read(wanExternalProvider.notifier).fetch();
   }
 
   @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    MediaQuery.of(context);
     final tabs = [loc(context).instantInfo, loc(context).instantTopology];
     final tabContents = [
       _instantInfo(context, ref),
       _instantTopology(),
     ];
-    return StyledAppTabPageView(
+    return StyledAppPageView(
       title: loc(context).instantVerify,
       actions: [
         AppTextButton(
@@ -76,17 +88,17 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
           },
         )
       ],
+      tabController: _tabController,
       tabs: tabs.map((e) => Tab(text: e)).toList(),
       tabContentViews: tabContents,
-      expandedHeight: 120,
     );
   }
 
   Widget _instantInfo(BuildContext context, WidgetRef ref) {
     final dashboardHomeState = ref.watch(dashboardHomeProvider);
     final desktopCol = 4.col;
-    return SingleChildScrollView(
-      child: ResponsiveLayout.isMobileLayout(context)
+    return StyledAppPageView.innerPage(
+      child: (context, constraints) => ResponsiveLayout.isMobileLayout(context)
           ? Column(
               children: [
                 _deviceInfoCard(context, ref),
@@ -332,8 +344,8 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
         .watch(deviceManagerProvider.select((value) => value.deviceList))
         .isEmpty;
     return Container(
+      height: ResponsiveLayout.isMobileLayout(context) ? 224 : 208,
       width: double.infinity,
-      constraints: const BoxConstraints(minHeight: 110),
       child: AppCard(
           key: const ValueKey('portCard'),
           padding: EdgeInsets.zero,
@@ -343,7 +355,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: Spacing.small2,
-                  vertical: Spacing.large3,
+                  vertical: Spacing.large2,
                 ),
                 child: Row(
                   // mainAxisSize: MainAxisSize.min,

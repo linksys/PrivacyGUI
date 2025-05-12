@@ -81,7 +81,7 @@ class _FirmwareUpdateDetailViewState
         ? _updatingProgressView(ongoingList)
         : StyledAppPageView(
             title: loc(context).firmwareUpdate,
-            child: AppBasicLayout(
+            child: (context, constraints) => AppBasicLayout(
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -128,7 +128,7 @@ class _FirmwareUpdateDetailViewState
           String? newVersion;
           if (isWaitingChildren) {
             // we are using the cached status list that still contains available fw version and old currentVersion
-            // For updated nodes, we mock up the versions for a while to avoid a mismatch in displayed info, 
+            // For updated nodes, we mock up the versions for a while to avoid a mismatch in displayed info,
             // For nodes without updates, remain the original versions
             currentVersion = updateStatus.availableUpdate?.firmwareVersion ??
                 (nodeDevice.unit.firmwareVersion ?? loc(context).unknown);

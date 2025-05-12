@@ -14,11 +14,6 @@ final dashboardRoute = ShellRoute(
         path: RoutePath.dashboardMenu,
         builder: (context, state) => DashboardMenuView(),
         routes: [
-          LinksysRoute(
-            name: RouteNamed.linkup,
-            path: RoutePath.linkup,
-            builder: (context, state) => LinkupView(),
-          ),
           ...menus,
         ]),
     LinksysRoute(

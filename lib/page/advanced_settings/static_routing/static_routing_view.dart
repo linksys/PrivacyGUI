@@ -108,7 +108,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
                 }
               }
             : null,
-        child: Column(
+        child: (context, constraints) => Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             AppRadioList(

@@ -17,11 +17,13 @@ import 'package:privacygui_widgets/widgets/panel/general_section.dart';
 class DevicesFilterWidget extends ConsumerStatefulWidget {
   final List<String>? preselectedNodeId;
   final bool onlineOnly;
+  final bool scrollable;
 
   const DevicesFilterWidget({
     super.key,
     this.preselectedNodeId,
     this.onlineOnly = false,
+    this.scrollable = true,
   });
 
   @override
@@ -83,118 +85,165 @@ class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
     if (showOrphan) {
       connectedList.add(('', 'unknown'));
     }
-    return SingleChildScrollView(
-      physics: const ScrollPhysics(),
-      child: Container(
-        alignment: Alignment.bottomLeft,
-        // decoration: BoxDecoration(
-        //   color: Theme.of(context).colorScheme.background,
-        //   borderRadius: const BorderRadius.only(
-        //     topLeft: Radius.circular(30),
-        //     topRight: Radius.circular(30),
-        //   ),
-        // ),
-        child: Padding(
-          padding: const EdgeInsets.all(Spacing.medium),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const AppGap.small2(),
-              AppText.titleSmall(loc(context).filters),
-              const AppGap.medium(),
-              FilteredChipsWidget<(String, bool)>(
-                  title: loc(context).connectionStatus,
-                  dataList: [
-                    (loc(context).online, true),
-                    if (!widget.onlineOnly) (loc(context).offline, false)
-                  ],
-                  chipName: (data) => data?.$1 ?? '',
-                  checkIsSelected: (data) => selectConnection == (data?.$2),
-                  onSelected: (data, value) {
-                    if (data == null) {
-                      return;
-                    }
-                    if (value) {
-                      notifier.updateConnectionFilter(data.$2);
-                    }
-                  }),
-              FilteredChipsWidget<(String, String)>(
-                  title: loc(context).connectedVia,
-                  dataList: connectedList,
-                  chipName: (data) => data?.$2 == 'unknown'
-                      ? loc(context).unknown
-                      : data?.$2 ?? '',
-                  checkIsSelected: (data) => selectConnection
-                      ? selectedNodeId.contains(data?.$1)
-                      : false,
-                  onSelected: selectConnection
-                      ? (data, value) {
-                          final deviceId = data?.$1;
-                          if (deviceId == null) {
-                            return;
-                          }
-                          if (value) {
-                            notifier.updateNodeFilter(
-                                List.from(selectedNodeId..add(deviceId)));
-                          } else {
-                            notifier.updateNodeFilter(
-                                List.from(selectedNodeId..remove(deviceId)));
-                          }
+    return widget.scrollable
+        ? SingleChildScrollView(
+            physics: ScrollPhysics(),
+            child: _FiltersWidget(
+              widget: widget,
+              selectConnection: selectConnection,
+              notifier: notifier,
+              connectedList: connectedList,
+              selectedNodeId: selectedNodeId,
+              wifiNames: wifiNames,
+              selectedWifi: selectedWifi,
+              radios: radios,
+              selectedBand: selectedBand,
+            ),
+          )
+        : Expanded(
+            child: _FiltersWidget(
+              widget: widget,
+              selectConnection: selectConnection,
+              notifier: notifier,
+              connectedList: connectedList,
+              selectedNodeId: selectedNodeId,
+              wifiNames: wifiNames,
+              selectedWifi: selectedWifi,
+              radios: radios,
+              selectedBand: selectedBand,
+            ),
+          );
+  }
+}
+
+class _FiltersWidget extends StatelessWidget {
+  const _FiltersWidget({
+    super.key,
+    required this.widget,
+    required this.selectConnection,
+    required this.notifier,
+    required this.connectedList,
+    required this.selectedNodeId,
+    required this.wifiNames,
+    required this.selectedWifi,
+    required this.radios,
+    required this.selectedBand,
+  });
+
+  final DevicesFilterWidget widget;
+  final bool selectConnection;
+  final DeviceFilterConfigNotifier notifier;
+  final List<(String, String)> connectedList;
+  final List<String> selectedNodeId;
+  final List<String> wifiNames;
+  final List<String> selectedWifi;
+  final List<String> radios;
+  final List<String> selectedBand;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      alignment: Alignment.bottomLeft,
+      child: Padding(
+        padding: const EdgeInsets.all(Spacing.medium),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const AppGap.small2(),
+            AppText.titleSmall(loc(context).filters),
+            const AppGap.medium(),
+            FilteredChipsWidget<(String, bool)>(
+                title: loc(context).connectionStatus,
+                dataList: [
+                  (loc(context).online, true),
+                  if (!widget.onlineOnly) (loc(context).offline, false)
+                ],
+                chipName: (data) => data?.$1 ?? '',
+                checkIsSelected: (data) => selectConnection == (data?.$2),
+                onSelected: (data, value) {
+                  if (data == null) {
+                    return;
+                  }
+                  if (value) {
+                    notifier.updateConnectionFilter(data.$2);
+                  }
+                }),
+            FilteredChipsWidget<(String, String)>(
+                title: loc(context).connectedVia,
+                dataList: connectedList,
+                chipName: (data) => data?.$2 == 'unknown'
+                    ? loc(context).unknown
+                    : data?.$2 ?? '',
+                checkIsSelected: (data) => selectConnection
+                    ? selectedNodeId.contains(data?.$1)
+                    : false,
+                onSelected: selectConnection
+                    ? (data, value) {
+                        final deviceId = data?.$1;
+                        if (deviceId == null) {
+                          return;
                         }
-                      : null),
-              FilteredChipsWidget<String>(
-                  title: loc(context).byWifi,
-                  dataList: wifiNames,
-                  chipName: (data) => data ?? '',
-                  checkIsSelected: (data) =>
-                      selectConnection ? selectedWifi.contains(data) : false,
-                  onSelected: selectConnection
-                      ? (data, value) {
-                          if (data == null) {
-                            return;
-                          }
-                          if (value) {
-                            notifier.updateWifiFilter(
-                                List.from(selectedWifi..add(data)));
-                          } else {
-                            notifier.updateWifiFilter(
-                                List.from(selectedWifi..remove(data)));
-                          }
+                        if (value) {
+                          notifier.updateNodeFilter(
+                              List.from(selectedNodeId..add(deviceId)));
+                        } else {
+                          notifier.updateNodeFilter(
+                              List.from(selectedNodeId..remove(deviceId)));
                         }
-                      : null),
-              FilteredChipsWidget<String>(
-                  title: loc(context).byConnection.capitalizeWords(),
-                  dataList: radios,
-                  chipName: (data) =>
-                      data == 'Ethernet' ? loc(context).ethernet : (data ?? ''),
-                  checkIsSelected: (data) =>
-                      selectConnection ? selectedBand.contains(data) : false,
-                  onSelected: selectConnection
-                      ? (data, value) {
-                          final band = data;
-                          if (band == null) {
-                            return;
-                          }
-                          if (value) {
-                            notifier.updateBandFilter(
-                                List.from(selectedBand..add(band)));
-                          } else {
-                            notifier.updateBandFilter(
-                                List.from(selectedBand..remove(band)));
-                          }
+                      }
+                    : null),
+            FilteredChipsWidget<String>(
+                title: loc(context).byWifi,
+                dataList: wifiNames,
+                chipName: (data) => data ?? '',
+                checkIsSelected: (data) =>
+                    selectConnection ? selectedWifi.contains(data) : false,
+                onSelected: selectConnection
+                    ? (data, value) {
+                        if (data == null) {
+                          return;
                         }
-                      : null),
-              const AppGap.medium(),
-              AppTextButton.noPadding(
-                loc(context).resetFilters,
-                icon: LinksysIcons.restartAlt,
-                onTap: () {
-                  notifier.initFilter(
-                      preselectedNodeId: widget.preselectedNodeId);
-                },
-              )
-            ],
-          ),
+                        if (value) {
+                          notifier.updateWifiFilter(
+                              List.from(selectedWifi..add(data)));
+                        } else {
+                          notifier.updateWifiFilter(
+                              List.from(selectedWifi..remove(data)));
+                        }
+                      }
+                    : null),
+            FilteredChipsWidget<String>(
+                title: loc(context).byConnection.capitalizeWords(),
+                dataList: radios,
+                chipName: (data) =>
+                    data == 'Ethernet' ? loc(context).ethernet : (data ?? ''),
+                checkIsSelected: (data) =>
+                    selectConnection ? selectedBand.contains(data) : false,
+                onSelected: selectConnection
+                    ? (data, value) {
+                        final band = data;
+                        if (band == null) {
+                          return;
+                        }
+                        if (value) {
+                          notifier.updateBandFilter(
+                              List.from(selectedBand..add(band)));
+                        } else {
+                          notifier.updateBandFilter(
+                              List.from(selectedBand..remove(band)));
+                        }
+                      }
+                    : null),
+            const AppGap.medium(),
+            AppTextButton.noPadding(
+              loc(context).resetFilters,
+              icon: LinksysIcons.restartAlt,
+              onTap: () {
+                notifier.initFilter(
+                    preselectedNodeId: widget.preselectedNodeId);
+              },
+            )
+          ],
         ),
       ),
     );

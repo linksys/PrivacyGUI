@@ -109,7 +109,7 @@ class _AddRuleContentViewState
           context.pop(rule);
         },
       ),
-      child: AppCard(
+      child: (context, constraints) => AppCard(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,

@@ -36,7 +36,7 @@ class _FaqListViewState extends ConsumerState<FaqListView> {
     return StyledAppPageView(
       title: loc(context).faqs,
       backState: StyledBackState.none,
-      enableSafeArea: (left: true, top: false, right: true, bottom: true),
+      // enableSafeArea: (left: true, top: false, right: true, bottom: true),
       menuWidget: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -63,141 +63,147 @@ class _FaqListViewState extends ConsumerState<FaqListView> {
         ],
       ),
       menuOnRight: true,
-      child: SizedBox(
-        width: 9.col,
-        child: ListView(
-          shrinkWrap: true,
-          children: [
-            _buildExpansionCard(
-              title: loc(context).setup,
-              children: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AppTextButton(loc(context).faqListCannotAddChildNode,
-                      identifier:
-                          'now-faq-${'faqListCannotAddChildNode'.kebab()}',
-                      onTap: () {
-                    gotoOfficialWebUrl(linkSetupCannotAddChildNode,
-                        locale: ref.read(appSettingsProvider).locale);
-                  }),
-                  AppTextButton(loc(context).noInternetConnectionTitle,
-                      identifier:
-                          'now-faq-${'noInternetConnectionTitle'.kebab()}',
-                      onTap: () {
-                    gotoOfficialWebUrl(linkSetupNoInternetConnection,
-                        locale: ref.read(appSettingsProvider).locale);
-                  }),
-                ],
+      pageContentType: PageContentType.flexible,
+      child: (context, constraints) {
+        return SizedBox(
+          width: 9.col,
+          child: ListView(
+            primary: true,
+            shrinkWrap: true,
+            children: [
+              _buildExpansionCard(
+                title: loc(context).setup,
+                children: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppTextButton(loc(context).faqListCannotAddChildNode,
+                        identifier:
+                            'now-faq-${'faqListCannotAddChildNode'.kebab()}',
+                        onTap: () {
+                      gotoOfficialWebUrl(linkSetupCannotAddChildNode,
+                          locale: ref.read(appSettingsProvider).locale);
+                    }),
+                    AppTextButton(loc(context).noInternetConnectionTitle,
+                        identifier:
+                            'now-faq-${'noInternetConnectionTitle'.kebab()}',
+                        onTap: () {
+                      gotoOfficialWebUrl(linkSetupNoInternetConnection,
+                          locale: ref.read(appSettingsProvider).locale);
+                    }),
+                  ],
+                ),
               ),
-            ),
-            const AppGap.small2(),
-            _buildExpansionCard(
-              title: loc(context).connectivity,
-              children: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AppTextButton(loc(context).faqListLoseChildNode, onTap: () {
-                    gotoOfficialWebUrl(linkConnectivityLoseChildNode,
-                        locale: ref.read(appSettingsProvider).locale);
-                  }),
-                  AppTextButton(loc(context).faqListLoseDevices, onTap: () {
-                    gotoOfficialWebUrl(linkConnectivityLoseDevices,
-                        locale: ref.read(appSettingsProvider).locale);
-                  }),
-                  AppTextButton(loc(context).faqListDeviceNoWiFi, onTap: () {
-                    gotoOfficialWebUrl(linkConnectivityDeviceNoWiFi,
-                        locale: ref.read(appSettingsProvider).locale);
-                  }),
-                  AppTextButton(loc(context).faqListDeviceNoBestNode,
-                      onTap: () {
-                    gotoOfficialWebUrl(linkConnectivityDeviceNoBestNode,
-                        locale: ref.read(appSettingsProvider).locale);
-                  }),
-                ],
+              const AppGap.small2(),
+              _buildExpansionCard(
+                title: loc(context).connectivity,
+                children: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppTextButton(loc(context).faqListLoseChildNode, onTap: () {
+                      gotoOfficialWebUrl(linkConnectivityLoseChildNode,
+                          locale: ref.read(appSettingsProvider).locale);
+                    }),
+                    AppTextButton(loc(context).faqListLoseDevices, onTap: () {
+                      gotoOfficialWebUrl(linkConnectivityLoseDevices,
+                          locale: ref.read(appSettingsProvider).locale);
+                    }),
+                    AppTextButton(loc(context).faqListDeviceNoWiFi, onTap: () {
+                      gotoOfficialWebUrl(linkConnectivityDeviceNoWiFi,
+                          locale: ref.read(appSettingsProvider).locale);
+                    }),
+                    AppTextButton(loc(context).faqListDeviceNoBestNode,
+                        onTap: () {
+                      gotoOfficialWebUrl(linkConnectivityDeviceNoBestNode,
+                          locale: ref.read(appSettingsProvider).locale);
+                    }),
+                  ],
+                ),
               ),
-            ),
-            const AppGap.small2(),
-            _buildExpansionCard(
-              title: loc(context).speed,
-              children: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AppTextButton(loc(context).faqListMyInternetSlow, onTap: () {
-                    gotoOfficialWebUrl(linkSpeedMyInternetSlow,
-                        locale: ref.read(appSettingsProvider).locale);
-                  }),
-                  AppTextButton(loc(context).faqListSpecificDeviceSlow,
-                      onTap: () {
-                    gotoOfficialWebUrl(linkSpeedSpecificDeviceSlow,
-                        locale: ref.read(appSettingsProvider).locale);
-                  }),
-                ],
+              const AppGap.small2(),
+              _buildExpansionCard(
+                title: loc(context).speed,
+                children: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppTextButton(loc(context).faqListMyInternetSlow,
+                        onTap: () {
+                      gotoOfficialWebUrl(linkSpeedMyInternetSlow,
+                          locale: ref.read(appSettingsProvider).locale);
+                    }),
+                    AppTextButton(loc(context).faqListSpecificDeviceSlow,
+                        onTap: () {
+                      gotoOfficialWebUrl(linkSpeedSpecificDeviceSlow,
+                          locale: ref.read(appSettingsProvider).locale);
+                    }),
+                  ],
+                ),
               ),
-            ),
-            const AppGap.small2(),
-            _buildExpansionCard(
-              title: loc(context).passwordAndAccess,
-              children: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AppTextButton(loc(context).faqListLogInByRouterPassword,
-                      onTap: () {
-                    gotoOfficialWebUrl(linkPasswordLoginByRouterPassword,
-                        locale: ref.read(appSettingsProvider).locale);
-                  }),
-                  AppTextButton(loc(context).faqListForgotRouterPassword,
-                      onTap: () {
-                    gotoOfficialWebUrl(linkPasswordForgotRouterPassword,
-                        locale: ref.read(appSettingsProvider).locale);
-                  }),
-                  AppTextButton(loc(context).faqListChangeWiFiNamePassword,
-                      onTap: () {
-                    gotoOfficialWebUrl(linkPasswordChangeWiFiNamePassword,
-                        locale: ref.read(appSettingsProvider).locale);
-                  }),
-                ],
+              const AppGap.small2(),
+              _buildExpansionCard(
+                title: loc(context).passwordAndAccess,
+                children: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppTextButton(loc(context).faqListLogInByRouterPassword,
+                        onTap: () {
+                      gotoOfficialWebUrl(linkPasswordLoginByRouterPassword,
+                          locale: ref.read(appSettingsProvider).locale);
+                    }),
+                    AppTextButton(loc(context).faqListForgotRouterPassword,
+                        onTap: () {
+                      gotoOfficialWebUrl(linkPasswordForgotRouterPassword,
+                          locale: ref.read(appSettingsProvider).locale);
+                    }),
+                    AppTextButton(loc(context).faqListChangeWiFiNamePassword,
+                        onTap: () {
+                      gotoOfficialWebUrl(linkPasswordChangeWiFiNamePassword,
+                          locale: ref.read(appSettingsProvider).locale);
+                    }),
+                  ],
+                ),
               ),
-            ),
-            const AppGap.small2(),
-            _buildExpansionCard(
-              title: loc(context).hardware,
-              children: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AppTextButton(loc(context).faqListWhatLightsMean, onTap: () {
-                    gotoOfficialWebUrl(linkHardwareWhatLightMean,
-                        locale: ref.read(appSettingsProvider).locale);
-                  }),
-                  AppTextButton(loc(context).faqListHowToFactoryReset,
-                      onTap: () {
-                    gotoOfficialWebUrl(linkHardwareHowToFactoryReset,
-                        locale: ref.read(appSettingsProvider).locale);
-                  }),
-                  AppTextButton(loc(context).faqListLightsNotWorking,
-                      onTap: () {
-                    gotoOfficialWebUrl(linkHardwareLightsNotWorking,
-                        locale: ref.read(appSettingsProvider).locale);
-                  }),
-                  AppTextButton(loc(context).faqListNodeNotTurnOn, onTap: () {
-                    gotoOfficialWebUrl(linkHardwareNodeNotTureOn,
-                        locale: ref.read(appSettingsProvider).locale);
-                  }),
-                  AppTextButton(loc(context).faqListEthernetPortNotWorking,
-                      onTap: () {
-                    gotoOfficialWebUrl(linkHardwareEthernetPortNotWorking,
-                        locale: ref.read(appSettingsProvider).locale);
-                  }),
-                  AppTextButton(loc(context).faqListCheckIfFirmwareAutoUpdate,
-                      onTap: () {
-                    gotoOfficialWebUrl(linkCheckIfAutoFirmwareOn,
-                        locale: ref.read(appSettingsProvider).locale);
-                  }),
-                ],
+              const AppGap.small2(),
+              _buildExpansionCard(
+                title: loc(context).hardware,
+                children: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppTextButton(loc(context).faqListWhatLightsMean,
+                        onTap: () {
+                      gotoOfficialWebUrl(linkHardwareWhatLightMean,
+                          locale: ref.read(appSettingsProvider).locale);
+                    }),
+                    AppTextButton(loc(context).faqListHowToFactoryReset,
+                        onTap: () {
+                      gotoOfficialWebUrl(linkHardwareHowToFactoryReset,
+                          locale: ref.read(appSettingsProvider).locale);
+                    }),
+                    AppTextButton(loc(context).faqListLightsNotWorking,
+                        onTap: () {
+                      gotoOfficialWebUrl(linkHardwareLightsNotWorking,
+                          locale: ref.read(appSettingsProvider).locale);
+                    }),
+                    AppTextButton(loc(context).faqListNodeNotTurnOn, onTap: () {
+                      gotoOfficialWebUrl(linkHardwareNodeNotTureOn,
+                          locale: ref.read(appSettingsProvider).locale);
+                    }),
+                    AppTextButton(loc(context).faqListEthernetPortNotWorking,
+                        onTap: () {
+                      gotoOfficialWebUrl(linkHardwareEthernetPortNotWorking,
+                          locale: ref.read(appSettingsProvider).locale);
+                    }),
+                    AppTextButton(loc(context).faqListCheckIfFirmwareAutoUpdate,
+                        onTap: () {
+                      gotoOfficialWebUrl(linkCheckIfAutoFirmwareOn,
+                          locale: ref.read(appSettingsProvider).locale);
+                    }),
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
-      ),
+            ],
+          ),
+        );
+      },
     );
   }
 

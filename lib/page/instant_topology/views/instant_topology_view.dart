@@ -5,7 +5,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
-import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -85,20 +84,22 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
               text: loc(context).processing,
             )
           : StyledAppPageView(
-              useMainPadding: !_isWidget,
+              // scrollable: true,
+              hideTopbar: _isWidget,
+              useMainPadding: true,
               appBarStyle: _isWidget ? AppBarStyle.none : AppBarStyle.back,
               padding: EdgeInsets.zero,
               title: loc(context).instantTopology,
-              child: AppBasicLayout(
-                content: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Flexible(
-                      child: _buildTopology(context, ref, desiredTreeWidth),
-                    ),
-                  ],
-                ),
+              child: (context, constraints) => Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Flexible(
+                    child: _buildTopology(
+                        context, ref, desiredTreeWidth),
+                  ),
+                  const AppGap.large1(),
+                ],
               ),
             );
     });

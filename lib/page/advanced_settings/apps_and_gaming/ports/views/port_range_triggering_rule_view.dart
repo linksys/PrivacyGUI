@@ -106,7 +106,7 @@ class _AddRuleContentViewState
           context.pop(rule);
         },
       ),
-      child: AppBasicLayout(
+      child: (context, constraints) => AppBasicLayout(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -265,10 +265,9 @@ class _AddRuleContentViewState
       final firstPort = int.tryParse(_firstForwardedPortController.text) ?? 0;
       final lastPort = int.tryParse(_lastForwardedPortController.text) ?? 0;
       bool isValidPortRange = lastPort - firstPort >= 0;
-     
-      _forwardedPortError = !isValidPortRange
-          ? loc(context).portRangeError
-          : null;
+
+      _forwardedPortError =
+          !isValidPortRange ? loc(context).portRangeError : null;
       _onFocusChange(focus);
     }
   }

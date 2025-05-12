@@ -92,12 +92,17 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
 
     return StyledAppPageView(
       title: loc(context).instantAdmin,
-      child: MasonryGridView.count(
-        crossAxisCount: ResponsiveLayout.isMobileLayout(context) ? 1 : 2,
-        mainAxisSpacing: Spacing.small2,
-        crossAxisSpacing: ResponsiveLayout.columnPadding(context),
-        itemCount: widgets.length,
-        itemBuilder: (context, index) => widgets[index],
+      scrollable: true,
+      child: (context, constraints) => SizedBox(
+        height: constraints.maxHeight,
+        child: MasonryGridView.count(
+          controller: Scrollable.maybeOf(context)?.widget.controller,
+          crossAxisCount: ResponsiveLayout.isMobileLayout(context) ? 1 : 2,
+          mainAxisSpacing: Spacing.small2,
+          crossAxisSpacing: ResponsiveLayout.columnPadding(context),
+          itemCount: widgets.length,
+          itemBuilder: (context, index) => widgets[index],
+        ),
       ),
     );
   }
@@ -239,12 +244,12 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
       ),
       trailing: const Icon(LinksysIcons.chevronRight),
       onTap: () {
-        handleTransmitRefionTap(powerTableState);
+        handleTransmitRegionTap(powerTableState);
       },
     );
   }
 
-  void handleTransmitRefionTap(PowerTableState state) {
+  void handleTransmitRegionTap(PowerTableState state) {
     var selected = state.country;
     showSimpleAppDialog(context,
         content: StatefulBuilder(builder: (context, setState) {
@@ -331,8 +336,6 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
     TextEditingController confirmController = TextEditingController();
     TextEditingController hintController = TextEditingController()
       ..text = hint ?? '';
-    FocusNode hintFocusNode = FocusNode();
-    FocusNode confirmFocusNode = FocusNode();
 
     final hintNotContainPasswordValidator = Validation(
         description: loc(context).routerPasswordRuleHintContainPassword,
@@ -369,75 +372,79 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
       scrollable: true,
       useRootNavigator: false,
       title: loc(context).routerPassword,
-      contentBuilder: (context, setState, onSubmit) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AppPasswordField(
-            border: const OutlineInputBorder(),
-            controller: controller,
-            headerText: loc(context).routerPasswordNew,
-            validations: validations,
-            onValidationChanged: (isValid) {
-              setState(() {
-                isPasswordValid = isValid;
-              });
-            },
-            onChanged: (value) {
-              setState(() {
-                isHintNotContainPassword =
-                    hintNotContainPasswordValidator.validator(controller.text);
-              });
-            },
-            onSubmitted: (_) {
-              FocusScope.of(context).requestFocus(confirmFocusNode);
-            },
-          ),
-          const AppGap.medium(),
-          AppPasswordField(
-            border: const OutlineInputBorder(),
-            controller: confirmController,
-            headerText: loc(context).retypeRouterPassword,
-            focusNode: confirmFocusNode,
-            onChanged: (value) {
-              setState(() {
-                isPasswordValid =
-                    !validations.any((v) => !v.validator(controller.text));
-              });
-            },
-            onSubmitted: (_) {
-              FocusScope.of(context).requestFocus(hintFocusNode);
-            },
-          ),
-          const AppGap.large2(),
-          AppValidatorWidget(
-            validations: validations,
-            textToValidate: controller.text,
-          ),
-          const AppGap.large3(),
-          AppTextField(
-            border: const OutlineInputBorder(),
-            controller: hintController,
-            headerText: loc(context).routerPasswordHintOptional,
-            focusNode: hintFocusNode,
-            onChanged: (value) {
-              setState(() {
-                isHintNotContainPassword =
-                    hintNotContainPasswordValidator.validator(controller.text);
-              });
-            },
-            onSubmitted: (_) {
-              if (isPasswordValid && isHintNotContainPassword) {
-                onSubmit();
-              }
-            },
-          ),
-          const AppGap.large2(),
-          AppValidatorWidget(
-            validations: [hintNotContainPasswordValidator],
-            textToValidate: controller.text,
-          ),
-        ],
-      ),
+      contentBuilder: (context, setState, onSubmit) {
+        FocusNode hintFocusNode = FocusNode();
+        FocusNode confirmFocusNode = FocusNode();
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppPasswordField(
+              border: const OutlineInputBorder(),
+              controller: controller,
+              headerText: loc(context).routerPasswordNew,
+              validations: validations,
+              onValidationChanged: (isValid) {
+                setState(() {
+                  isPasswordValid = isValid;
+                });
+              },
+              onChanged: (value) {
+                setState(() {
+                  isHintNotContainPassword = hintNotContainPasswordValidator
+                      .validator(controller.text);
+                });
+              },
+              onSubmitted: (_) {
+                FocusScope.of(context).requestFocus(confirmFocusNode);
+              },
+            ),
+            const AppGap.medium(),
+            AppPasswordField(
+              border: const OutlineInputBorder(),
+              controller: confirmController,
+              headerText: loc(context).retypeRouterPassword,
+              focusNode: confirmFocusNode,
+              onChanged: (value) {
+                setState(() {
+                  isPasswordValid =
+                      !validations.any((v) => !v.validator(controller.text));
+                });
+              },
+              onSubmitted: (_) {
+                FocusScope.of(context).requestFocus(hintFocusNode);
+              },
+            ),
+            const AppGap.large2(),
+            AppValidatorWidget(
+              validations: validations,
+              textToValidate: controller.text,
+            ),
+            const AppGap.large3(),
+            AppTextField(
+              border: const OutlineInputBorder(),
+              controller: hintController,
+              headerText: loc(context).routerPasswordHintOptional,
+              focusNode: hintFocusNode,
+              onChanged: (value) {
+                setState(() {
+                  isHintNotContainPassword = hintNotContainPasswordValidator
+                      .validator(controller.text);
+                });
+              },
+              onSubmitted: (_) {
+                if (isPasswordValid && isHintNotContainPassword) {
+                  onSubmit();
+                }
+              },
+            ),
+            const AppGap.large2(),
+            AppValidatorWidget(
+              validations: [hintNotContainPasswordValidator],
+              textToValidate: controller.text,
+            ),
+          ],
+        );
+      },
       event: () async {
         await _save(newPassword: controller.text, hint: hintController.text);
       },

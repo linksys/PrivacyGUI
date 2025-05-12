@@ -90,17 +90,18 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
 
     return StyledAppPageView(
       appBarStyle: AppBarStyle.none,
+      hideTopbar: true,
       scrollable: true,
-      controller: _scrollController,
+      // controller: _scrollController,
       padding: EdgeInsets.zero,
       bottomBar: PageBottomBar(
           isPositiveEnabled: isPositiveEnabled,
           onPositiveTap: () {
             _showSaveConfirmModal();
           }),
-      useMainPadding: false,
-      child: ResponsiveLayout(
-          desktop: Column(
+      useMainPadding: true,
+      child: (context, constraints) => ResponsiveLayout(
+          desktop: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _wifiDescription(wifiBands),
@@ -117,8 +118,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
           )),
     );
   }
-
-  Widget _wifiDescription(String wifiBands) {
+Widget _wifiDescription(String wifiBands) {
     return AppCard(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -138,7 +138,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
       ),
     );
   }
-
+  
   Widget _wifiContentView() {
     final state = ref.watch(wifiListProvider);
 
@@ -1055,6 +1055,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
     List<Widget> advanced = state.mainWiFi
         .map(
           (e) => Column(
+            key: ValueKey(e.radioID.value),
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               AppText.bodyMedium(e.radioID.value),
@@ -1081,6 +1082,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
         .toList();
     advanced.add(
       Column(
+        key: ValueKey('guest'),
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppText.bodyMedium(loc(context).guest),
