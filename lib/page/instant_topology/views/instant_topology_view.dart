@@ -120,7 +120,12 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
                   indent: 36,
                   thickness: 0.5,
                   pathModifier: (path) => TopologyNodeItem.buildPath(
-                      path, entry.node, entry.node.data.isOnline),
+                      path,
+                      entry.node,
+                      entry.node.data.isMaster
+                          ? ref.watch(internetStatusProvider) ==
+                              InternetStatus.online
+                          : entry.node.data.isOnline),
                 ),
                 child: switch (entry.node.runtimeType) {
                   OnlineTopologyNode => Row(
