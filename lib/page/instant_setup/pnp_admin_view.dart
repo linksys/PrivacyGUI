@@ -180,7 +180,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
       backState: StyledBackState.none,
       padding: EdgeInsets.zero,
       enableSafeArea: (bottom: true, top: false, left: true, right: false),
-      child: AppBasicLayout(
+      child: (context, constraints) => AppBasicLayout(
         content: Center(
           child: AppCard(
             showBorder: false,

@@ -48,7 +48,7 @@ part 'reset_password_actions.dart';
 part 'topbar_actions.dart';
 part 'advanced_routing_actions.dart';
 part 'firewall_actions.dart';
-part 'apps_and_gaming_actions.dart';
+// part 'apps_and_gaming_actions.dart';
 part 'administration_actions.dart';
 
 abstract class BaseActions {
@@ -80,7 +80,7 @@ sealed class CommonBaseActions extends BaseActions with CommonActionsMixin {
       TestAddNodesActions() => loc(context).addNodes,
       TestAdvancedRoutingActions() => loc(context).advancedRouting,
       TestFirewallActions() => loc(context).firewall,
-      TestAppsAndGamingActions() => loc(context).appsGaming,
+      // TestAppsAndGamingActions() => loc(context).appsGaming,
       TestAdministrationActions() => loc(context).administration,
       // TODO: Handle this case.
       TestPnpSetupActions() => throw UnimplementedError(),
