@@ -586,7 +586,7 @@
   "pnpPersonalizeWiFiTitle": "個人化您的 WiFi 名稱和密碼",
   "pnpPppoeAddVlan": "新增 VLAN ID",
   "pnpPppoeDesc": "這些設定由您的網際網路服務提供者 (ISP) 提供。如果不確定您的設定詳細資料，建議您與 ISP 聯繫。",
-  "pnpPppoeRemoveVlan": "遠端 VLAN ID",
+  "pnpPppoeRemoveVlan": "移除VLAN ID",
   "pnpPppoeTitle": "輸入 ISP 設定",
   "pnpReconnectWiFi": "重新連接到路由器的WiFi以繼續設定",
   "pnpRouterLoginDesc": "輸入路由器的密碼以繼續",
