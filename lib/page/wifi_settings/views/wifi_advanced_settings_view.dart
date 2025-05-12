@@ -83,7 +83,11 @@ class _WifiAdvancedSettingsViewState
   Future save() {
     return doSomethingWithSpinner(
       context,
-      ref.read(wifiAdvancedProvider.notifier).save().then(
+      ref.read(wifiAdvancedProvider.notifier).save().then((state) async{
+        // Fetch wifi list to update the wifi list state
+        await ref.read(wifiListProvider.notifier).fetch(true);
+        return state;
+      }).then(
         (state) {
           success(state);
         },

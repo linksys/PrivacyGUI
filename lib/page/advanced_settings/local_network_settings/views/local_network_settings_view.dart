@@ -169,10 +169,6 @@ class _LocalNetworkSettingsViewState
           focusNode: FocusNode()..requestFocus(),
           onChanged: (value) {
             _notifier.updateHostName(value);
-            _notifier.updateErrorPrompts(
-              LocalNetworkErrorPrompt.hostName.name,
-              value.isEmpty ? LocalNetworkErrorPrompt.hostName.name : null,
-            );
           },
         ),
       ),

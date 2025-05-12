@@ -141,7 +141,8 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
     );
     nodeDeviceInfo = NodeDeviceInfo.fromJson(result.output);
     final prefs = await SharedPreferences.getInstance();
-    final currentSN = prefs.getString(pCurrentSN);
+    final currentSN =
+        prefs.getString(pCurrentSN) ?? prefs.getString(pPnpConfiguredSN);
     if (currentSN == nodeDeviceInfo.serialNumber) {
       return nodeDeviceInfo;
     } else {

@@ -608,7 +608,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
         AppText.labelLarge(
           state.isWiredConnection
               ? ''
-              : _checkEmptyValue('${state.signalStrength} dBM'),
+              : _checkEmptyValue('${state.signalStrength} dBm'),
         ),
       ]),
       trailing: SharedWidgets.resolveSignalStrengthIcon(

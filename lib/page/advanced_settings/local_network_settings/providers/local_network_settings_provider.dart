@@ -10,6 +10,7 @@ import 'package:privacy_gui/page/advanced_settings/local_network_settings/provid
 import 'package:privacy_gui/page/instant_safety/providers/instant_safety_provider.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacy_gui/validator_rules/input_validators.dart';
+import 'package:privacy_gui/validator_rules/rules.dart';
 
 final localNetworkSettingProvider =
     NotifierProvider<LocalNetworkSettingsNotifier, LocalNetworkSettingsState>(
@@ -123,6 +124,18 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
 
   void updateHostName(String hostName) {
     state = state.copyWith(hostName: hostName);
+    String? error;
+    if (hostName.isEmpty) {
+      error = LocalNetworkErrorPrompt.hostName.name;
+    } else if (!LengthRule(min:1, max: 15).validate(hostName)) {
+      error = LocalNetworkErrorPrompt.hostNameInvalid.name;
+    } else if (HostNameRule().validate(hostName)) {
+      error = LocalNetworkErrorPrompt.hostNameInvalid.name;
+    }
+    updateErrorPrompts(
+      LocalNetworkErrorPrompt.hostName.name,
+      error,
+    );
   }
 
   void updateErrorPrompts(String key, String? value) {
@@ -264,7 +277,9 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     );
     updateErrorPrompts(
       LocalNetworkErrorPrompt.maxUserAllowed.name,
-      maxUserAllowedResult.$1 ? null : LocalNetworkErrorPrompt.maxUserAllowed.name,
+      maxUserAllowedResult.$1
+          ? null
+          : LocalNetworkErrorPrompt.maxUserAllowed.name,
     );
   }
 
@@ -296,7 +311,9 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
       );
       updateErrorPrompts(
         LocalNetworkErrorPrompt.maxUserAllowed.name,
-        maxUserAllowedResult.$1 ? null : LocalNetworkErrorPrompt.maxUserAllowed.name,
+        maxUserAllowedResult.$1
+            ? null
+            : LocalNetworkErrorPrompt.maxUserAllowed.name,
       );
     }
     // Update error
@@ -329,7 +346,9 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     );
     updateErrorPrompts(
       LocalNetworkErrorPrompt.maxUserAllowed.name,
-      maxUserAllowedResult.$1 ? null : LocalNetworkErrorPrompt.maxUserAllowed.name,
+      maxUserAllowedResult.$1
+          ? null
+          : LocalNetworkErrorPrompt.maxUserAllowed.name,
     );
   }
 
@@ -345,7 +364,9 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     // Update error
     updateErrorPrompts(
       LocalNetworkErrorPrompt.maxUserAllowed.name,
-      maxUserAllowedResult.$1 ? null : LocalNetworkErrorPrompt.maxUserAllowed.name,
+      maxUserAllowedResult.$1
+          ? null
+          : LocalNetworkErrorPrompt.maxUserAllowed.name,
     );
   }
 

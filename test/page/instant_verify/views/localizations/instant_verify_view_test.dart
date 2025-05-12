@@ -153,6 +153,50 @@ void main() {
     ...responsiveMobileScreens.map((e) => e.copyWith(height: 2880)).toList(),
   ]);
 
+  testLocalizations('Instant-Verify view - Internal speed test tile',
+      (tester, locale) async {
+    when(mockDashboardHomeNotifier.build()).thenReturn(
+        DashboardHomeState.fromMap(dashboardHomeCherry7TestState).copyWith(
+            isHealthCheckSupported: true, healthCheckModule: () => 'Ookla'));
+    await tester.runAsync(() async {
+      await tester.pumpWidget(
+        testableRouteShellWidget(
+          child: const InstantVerifyView(),
+          locale: locale,
+          overrides: [
+            dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
+            firmwareUpdateProvider
+                .overrideWith(() => mockFirmwareUpdateNotifier),
+            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
+            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
+            instantPrivacyProvider
+                .overrideWith(() => mockInstantPrivacyNotifier),
+            instantTopologyProvider
+                .overrideWith(() => mockInstantTopologyNotifier),
+            instantVerifyProvider.overrideWith(() => mockInstantVerifyNotifier),
+            dashboardManagerProvider
+                .overrideWith(() => mockDashboardManagerNotifier),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      final context = tester.element(find.byType(InstantVerifyView));
+      await precacheImage(
+          CustomTheme.of(context).images.devices.routerMx6200, context);
+      await precacheImage(
+          CustomTheme.of(context).images.devices.routerWhw03, context);
+      await precacheImage(
+          CustomTheme.of(context).images.devices.routerMr7500, context);
+      await precacheImage(
+          CustomTheme.of(context).images.speedtestPowered, context);
+
+      await tester.pumpAndSettle();
+    });
+  }, screens: [
+    ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1280)).toList(),
+    ...responsiveMobileScreens.map((e) => e.copyWith(height: 2880)).toList(),
+  ]);
+
   testLocalizations('Instant-Verify view - Instant-Info view - Internet off',
       (tester, locale) async {
     final testState =
