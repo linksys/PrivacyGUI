@@ -128,6 +128,8 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
         .select((value) => value.connectivityInfo.routerType));
     final isBehindRouter = routerType == RouterType.behindManaged ||
         BuildConfig.forceCommandType == ForceCommand.local;
+    final isSupportHealthCheck =
+        ref.watch(dashboardHomeProvider).isHealthCheckSupported;
     return [
       AppSectionItemData(
           title: loc(context).incredibleWiFi,
@@ -189,13 +191,21 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
           onTap: () {
             _navigateTo(RouteNamed.menuInstantVerify);
           }),
-      if (isBehindRouter)
+      if (!isSupportHealthCheck && isBehindRouter)
         AppSectionItemData(
             title: loc(context).externalSpeedText,
             description: loc(context).speedTestInternetToDeviceDesc,
             iconData: LinksysIcons.networkCheck,
             onTap: () {
               _navigateTo(RouteNamed.speedTestExternal);
+            }),
+      if (isSupportHealthCheck)
+        AppSectionItemData(
+            title: loc(context).speedTest,
+            description: loc(context).speedTestInternetToRouterDesc,
+            iconData: LinksysIcons.networkCheck,
+            onTap: () {
+              _navigateTo(RouteNamed.dashboardSpeedTest);
             }),
     ];
   }
@@ -324,7 +334,7 @@ class AppMenuCard extends StatelessWidget {
           if (description != null)
             Padding(
               padding: const EdgeInsets.only(top: Spacing.small1),
-              child: AppText.bodyMedium(
+              child: AppText.bodySmall(
                 description ?? '',
                 overflow: TextOverflow.ellipsis,
                 maxLines: ResponsiveLayout.isOverMedimumLayout(context) ? 3 : 1,

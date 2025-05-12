@@ -7,33 +7,22 @@ import 'package:privacy_gui/core/jnap/models/tzo_settings.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/providers/ddns_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/providers/ddns_state.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/views/dyn_ddns_form.dart';
-import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/providers/port_range_forwarding_list_provider.dart';
-import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/providers/port_range_forwarding_list_state.dart';
-import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/providers/port_range_forwarding_rule_provider.dart';
-import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/providers/port_range_forwarding_rule_state.dart';
-import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/providers/port_range_triggering_list_provider.dart';
-import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/providers/port_range_triggering_list_state.dart';
-import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/providers/port_range_triggering_rule_provider.dart';
-import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/providers/port_range_triggering_rule_state.dart';
-import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/providers/single_port_forwarding_list_provider.dart';
-import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/providers/single_port_forwarding_list_state.dart';
-import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/providers/single_port_forwarding_rule_provider.dart';
-import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/providers/single_port_forwarding_rule_state.dart';
-import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/views/port_range_forwarding_rule_view.dart';
-import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/views/port_range_triggering_rule_view.dart';
-import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/views/single_port_forwarding_rule_view.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/providers/apps_and_gaming_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/providers/apps_and_gaming_state.dart';
-import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/views/apps_and_gaming_view.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
 import 'package:privacygui_widgets/widgets/input_field/app_text_field.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 import 'package:privacygui_widgets/widgets/tab_bar/linksys_tab_bar.dart';
+import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
+import 'package:privacy_gui/route/route_model.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
+import 'package:get_it/get_it.dart';
 
 import '../../../../../common/config.dart';
 import '../../../../../common/test_responsive_widget.dart';
 import '../../../../../common/testable_router.dart';
+import '../../../../../common/di.dart';
 import '../../../../../mocks/apps_and_gaming_view_notifier_spec_mocks.dart';
 import '../../../../../mocks/ddns_notifier_spec_mocks.dart';
 import '../../../../../mocks/port_range_forwarding_list_notifier_mocks.dart';
@@ -59,6 +48,8 @@ void main() {
   late MockPortRangeTriggeringListNotifier mockPortRangeTriggeringListNotifier;
   late MockPortRangeTriggeringRuleNotifier mockPortRangeTriggeringRuleNotifier;
 
+  mockDependencyRegister();
+  ServiceHelper mockServiceHelper = GetIt.I.get<ServiceHelper>();
   setUp(() {
     mockAppsAndGamingViewNotifier = MockAppsAndGamingViewNotifier();
     mockDDNSNotifier = MockDDNSNotifier();
@@ -747,6 +738,9 @@ void main() {
 
         final widget = testableSingleRoute(
           overrides: [
+            appsAndGamingProvider
+                .overrideWith(() => mockAppsAndGamingViewNotifier),
+            ddnsProvider.overrideWith(() => mockDDNSNotifier),
             singlePortForwardingListProvider
                 .overrideWith(() => mockSinglePortForwardingListNotifier),
             singlePortForwardingRuleProvider
@@ -1241,6 +1235,11 @@ void main() {
 
         final widget = testableSingleRoute(
           overrides: [
+            appsAndGamingProvider
+                .overrideWith(() => mockAppsAndGamingViewNotifier),
+            ddnsProvider.overrideWith(() => mockDDNSNotifier),
+            singlePortForwardingListProvider
+                .overrideWith(() => mockSinglePortForwardingListNotifier),
             portRangeForwardingListProvider
                 .overrideWith(() => mockPortRangeForwardingListNotifier),
             portRangeForwardingRuleProvider

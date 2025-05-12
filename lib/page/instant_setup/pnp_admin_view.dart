@@ -21,6 +21,7 @@ import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
 
 class PnpAdminView extends ArgumentsBaseConsumerStatefulView {
@@ -47,7 +48,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
   String? _inputError;
   Object? _error;
   String? _password;
-
+  bool _isFetchingDeviceInfo = false;
   @override
   void initState() {
     super.initState();
@@ -87,6 +88,13 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
           logger.i('[PnP]: Auto-login successfully, go to Setup page');
           context.goNamed(RouteNamed.pnpConfig);
         })
+        .catchError((error, stackTrace) {
+          logger.e('[PnP]: Failed to fetch device info');
+          // reload the page
+          setState(() {
+            _isFetchingDeviceInfo = true;
+          });
+        }, test: (error) => error is ExceptionFetchDeviceInfo)
         .catchError((error, stackTrace) {
           logger.e('[PnP]: The given admin password is invalid');
           setState(() {
@@ -149,9 +157,11 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
 
   @override
   Widget build(BuildContext context) {
-    // In order to let users see internet connected screen, 
+    // In order to let users see internet connected screen,
     // this has a higher priority when both showInternetConnected and isCheckingInternet are true
-    if (_showInternetConnected) {
+    if (_isFetchingDeviceInfo) {
+      return _checkDeviceInfoView();
+    } else if (_showInternetConnected) {
       return _internetConnectedView();
     } else {
       if (_isCheckingInternet) {
@@ -162,6 +172,52 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
             : _mainView();
       }
     }
+  }
+
+  Widget _checkDeviceInfoView() {
+    return StyledAppPageView(
+      appBarStyle: AppBarStyle.none,
+      backState: StyledBackState.none,
+      padding: EdgeInsets.zero,
+      enableSafeArea: (bottom: true, top: false, left: true, right: false),
+      child: AppBasicLayout(
+        content: Center(
+          child: AppCard(
+            showBorder: false,
+            color: Theme.of(context).colorScheme.background,
+            padding: EdgeInsets.zero,
+            child: _errorView(),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _errorView() {
+    return Container(
+      color: Theme.of(context).colorScheme.background,
+      child: Center(
+        child: AppCard(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AppText.headlineSmall(loc(context).generalError),
+              const AppGap.large5(),
+              AppFilledButton(
+                loc(context).tryAgain,
+                onTap: () {
+                  logger.d(
+                      '[PnP]: Fetch device info error. Tap try again, go home.');
+                  context.goNamed(RouteNamed.home);
+                },
+              )
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _internetConnectedView() {

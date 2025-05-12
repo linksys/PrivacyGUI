@@ -7,6 +7,7 @@ import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart'
 import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/login/views/login_local_view.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
+import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import '../../../common/di.dart';
@@ -48,6 +49,7 @@ void main() async {
         testableSingleRoute(
           child: const LoginLocalView(),
           locale: locale,
+          config: LinksysRouteConfig(noNaviRail: true),
           overrides: [
             dashboardManagerProvider
                 .overrideWith(() => mockDashboardManagerNotifier),
@@ -67,6 +69,7 @@ void main() async {
         testableSingleRoute(
           child: const LoginLocalView(),
           locale: locale,
+          config: LinksysRouteConfig(noNaviRail: true),
           overrides: [
             dashboardManagerProvider
                 .overrideWith(() => mockDashboardManagerNotifier),
@@ -89,6 +92,7 @@ void main() async {
         testableSingleRoute(
           child: const LoginLocalView(),
           locale: locale,
+          config: LinksysRouteConfig(noNaviRail: true),
           overrides: [
             dashboardManagerProvider
                 .overrideWith(() => mockDashboardManagerNotifier),
@@ -122,6 +126,7 @@ void main() async {
         testableSingleRoute(
           child: const LoginLocalView(),
           locale: locale,
+          config: LinksysRouteConfig(noNaviRail: true),
           overrides: [
             dashboardManagerProvider
                 .overrideWith(() => mockDashboardManagerNotifier),
@@ -147,6 +152,7 @@ void main() async {
         testableSingleRoute(
           child: const LoginLocalView(),
           locale: locale,
+          config: LinksysRouteConfig(noNaviRail: true),
           overrides: [
             dashboardManagerProvider
                 .overrideWith(() => mockDashboardManagerNotifier),
@@ -173,6 +179,7 @@ void main() async {
         testableSingleRoute(
           child: const LoginLocalView(),
           locale: locale,
+          config: LinksysRouteConfig(noNaviRail: true),
           overrides: [
             dashboardManagerProvider
                 .overrideWith(() => mockDashboardManagerNotifier),

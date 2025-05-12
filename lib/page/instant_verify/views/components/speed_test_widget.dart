@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/models/health_check_result.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/health_check/_health_check.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
@@ -31,6 +32,8 @@ class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
     final state = ref.watch(healthCheckProvider);
     final latestSpeedTest = ref.watch(
         dashboardManagerProvider.select((state) => state.latestSpeedTest));
+    final supportedBy = ref.watch(dashboardHomeProvider).healthCheckModule;
+
     ref.listen(healthCheckProvider.select((value) => value.step),
         (previous, next) {
       if (next == previous) {
@@ -89,68 +92,86 @@ class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
     final defaultMarkers = <double>[0, 1, 5, 10, 20, 30, 50, 75, 100];
 
     return Column(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (_status == 'IDLE') _startButton(),
-        if (_status != 'IDLE')
-          Center(
-            child: AnimatedMeter(
-              size: 3.col,
-              value: meterValue,
-              markers: defaultMarkers,
-              centerBuilder: (context, value) {
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    AppText.titleSmall(switch (state.step) {
-                      'latency' => '',
-                      'downloadBandwidth' => loc(context).download,
-                      'uploadBandwidth' => loc(context).upload,
-                      _ => '',
-                    }),
-                    AppText.displayLarge(state.step == 'latency'
-                        ? '—'
-                        : (value).toStringAsFixed(1)),
-                    const AppText.bodyMedium('Mbps'),
-                  ],
-                );
-              },
-              bottomBuilder: (context, value) {
-                return const Center();
-              },
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (_status == 'IDLE') _startButton(),
+            if (_status != 'IDLE')
+              Center(
+                child: AnimatedMeter(
+                  size: 3.col,
+                  value: meterValue,
+                  markers: defaultMarkers,
+                  centerBuilder: (context, value) {
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AppText.titleSmall(switch (state.step) {
+                          'latency' => '',
+                          'downloadBandwidth' => loc(context).download,
+                          'uploadBandwidth' => loc(context).upload,
+                          _ => '',
+                        }),
+                        AppText.displayLarge(state.step == 'latency'
+                            ? '—'
+                            : (value).toStringAsFixed(1)),
+                        const AppText.bodyMedium('Mbps'),
+                      ],
+                    );
+                  },
+                  bottomBuilder: (context, value) {
+                    return const Center();
+                  },
+                ),
+              ),
+            const AppGap.large5(),
+            _resultCard(downloadBandWidth, uploadBandWidth),
+            const Divider(
+              thickness: 1,
+              height: Spacing.large5,
+            ),
+            Wrap(
+              direction: Axis.vertical,
+              children: [
+                AppText.bodySmall(loc(context).dateAndTime),
+                AppText.labelMedium(result?.timestamp == null
+                    ? '--'
+                    : '${loc(context).systemTestDateFormat(DateTime.now())} ${loc(context).systemTestDateTime(DateTime.now())}'),
+              ],
+            ),
+            const AppGap.large2(),
+            Wrap(
+              direction: Axis.vertical,
+              children: [
+                AppText.bodySmall(loc(context).serverId),
+                AppText.labelMedium('${result?.resultID ?? '--'}'),
+              ],
+            ),
+            const AppGap.large2(),
+            Wrap(
+              direction: Axis.vertical,
+              children: [
+                AppText.bodySmall(loc(context).latency),
+                AppText.labelMedium('$latency ms'),
+              ],
+            ),
+          ],
+        ),
+        if (supportedBy == 'Ookla') ...[
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Padding(
+              padding: const EdgeInsets.only(top: Spacing.medium),
+              child: Image(
+                image: CustomTheme.of(context).images.speedtestPowered,
+                fit: BoxFit.fitWidth,
+              ),
             ),
           ),
-        const AppGap.large5(),
-        _resultCard(downloadBandWidth, uploadBandWidth),
-        const Divider(
-          thickness: 1,
-          height: Spacing.large5,
-        ),
-        Wrap(
-          direction: Axis.vertical,
-          children: [
-            AppText.bodySmall(loc(context).dateAndTime),
-            AppText.labelMedium(result?.timestamp == null
-                ? '--'
-                : '${loc(context).systemTestDateFormat(DateTime.now())} ${loc(context).systemTestDateTime(DateTime.now())}'),
-          ],
-        ),
-        const AppGap.large2(),
-        Wrap(
-          direction: Axis.vertical,
-          children: [
-            AppText.bodySmall(loc(context).serverId),
-            AppText.labelMedium('${result?.resultID ?? '--'}'),
-          ],
-        ),
-        const AppGap.large2(),
-        Wrap(
-          direction: Axis.vertical,
-          children: [
-            AppText.bodySmall(loc(context).latency),
-            AppText.labelMedium('$latency ms'),
-          ],
-        ),
+        ],
       ],
     );
   }

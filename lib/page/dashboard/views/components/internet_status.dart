@@ -104,7 +104,7 @@ class _InternetConnectionWidgetState
             ),
             child: Row(
               children: [
-                Container(
+                SizedBox(
                   height: 158,
                   width: ResponsiveLayout.isDesktopLayout(context) ? 176 : 104,
                   // height: 176,
@@ -122,7 +122,7 @@ class _InternetConnectionWidgetState
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         AppText.titleMedium(master?.data.location ?? '-----'),
-                        const AppGap.large1(),
+                        const AppGap.medium(),
                         Table(
                           border: const TableBorder(),
                           columnWidths: const {

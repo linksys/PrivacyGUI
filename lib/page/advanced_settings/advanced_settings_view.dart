@@ -30,9 +30,7 @@ class _AdvancedSettingsViewState extends ConsumerState<AdvancedSettingsView> {
 
   @override
   Widget build(BuildContext context) {
-    if (advancedSettings.isEmpty) {
-      advancedSettings = _initAdvancedSettingsItems();
-    }
+    advancedSettings = _initAdvancedSettingsItems();
     return StyledAppPageView(
       title: loc(context).advancedSettings,
       child: ResponsiveLayout(

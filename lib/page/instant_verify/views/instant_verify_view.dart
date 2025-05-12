@@ -9,7 +9,6 @@ import 'package:privacy_gui/core/jnap/models/radio_info.dart';
 import 'package:privacy_gui/core/jnap/models/wan_status.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
-import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/wan_external_provider.dart';
@@ -144,11 +143,9 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView> {
                             ),
                           ),
                           const AppGap.gutter(),
-                          IntrinsicHeight(
-                            child: SizedBox(
-                              width: desktopCol,
-                              child: _speedTestContent(context),
-                            ),
+                          SizedBox(
+                            width: desktopCol,
+                            child: _speedTestContent(context),
                           ),
                         ],
                       ),

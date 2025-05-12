@@ -244,7 +244,7 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
       final originalWanType =
           WanType.resolve(originalState?.ipv4Setting.ipv4ConnectionType ?? '');
       final redirectionMap = originalWanType == WanType.bridge
-          ? {'hostName': 'myrouter', 'domain': 'info'}
+          ? {'hostName': 'www.myrouter', 'domain': 'info'}
           : _getRedirectionMap(results);
       _handleWebRedirection(redirectionMap);
     }).catchError(
@@ -257,7 +257,7 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
           final originalWanType = WanType.resolve(
               originalState?.ipv4Setting.ipv4ConnectionType ?? '');
           final redirectionMap = originalWanType == WanType.bridge
-              ? {'hostName': 'myrouter', 'domain': 'info'}
+              ? {'hostName': 'www.myrouter', 'domain': 'info'}
               : _getRedirectionMap(result.data);
           _handleWebRedirection(redirectionMap);
         } else {
@@ -306,8 +306,9 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
           cacheLevel: CacheLevel.noCache,
         )
         .then((successWrap) => successWrap.data)
-        .whenComplete(() async {
+        .then((results) async {
       await fetch(fetchRemote: true);
+      return results;
     });
   }
 
@@ -342,7 +343,9 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
 
   RouterWANSettings _createIpv4WanSettings(
       Ipv4Setting ipv4Setting, WanType wanType) {
-    final mtu = NetworkUtils.isMtuValid(wanType.type, ipv4Setting.mtu) ? ipv4Setting.mtu : 0;
+    final mtu = NetworkUtils.isMtuValid(wanType.type, ipv4Setting.mtu)
+        ? ipv4Setting.mtu
+        : 0;
     final behavior = ipv4Setting.behavior ?? PPPConnectionBehavior.keepAlive;
     final vlanId = ipv4Setting.vlanId;
     bool wanTaggingSettingsEnabled = false;
@@ -628,7 +631,8 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
     final wanIpv6Type = WanIPv6Type.resolve(ipv6Setting.ipv6ConnectionType);
     newIpv6Setting = switch (wanIpv6Type) {
       WanIPv6Type.automatic => newIpv6Setting.copyWith(
-          ipv6rdTunnelMode: () => ipv6Setting.ipv6rdTunnelMode,
+          ipv6rdTunnelMode: () =>
+              ipv6Setting.ipv6rdTunnelMode ?? IPv6rdTunnelMode.disabled,
           ipv6Prefix: () => ipv6Setting.ipv6Prefix,
           ipv6PrefixLength: () => ipv6Setting.ipv6PrefixLength,
           ipv6BorderRelay: () => ipv6Setting.ipv6BorderRelay,

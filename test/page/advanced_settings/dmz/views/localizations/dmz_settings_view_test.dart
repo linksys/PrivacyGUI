@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/models/dmz_settings.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
+import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/advanced_settings/dmz/providers/dmz_settings_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/dmz/providers/dmz_settings_state.dart';
 import 'package:privacy_gui/page/advanced_settings/dmz/views/dmz_settings_view.dart';
@@ -13,10 +14,14 @@ import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
+import 'package:get_it/get_it.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
+import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 
 import '../../../../../common/config.dart';
 import '../../../../../common/test_responsive_widget.dart';
 import '../../../../../common/testable_router.dart';
+import '../../../../../common/di.dart';
 import '../../../../../test_data/device_list_test_state.dart';
 import '../../../../../test_data/dmz_settings_test_state.dart';
 import '../../../../../mocks/device_list_notifier_mock.dart';
@@ -25,6 +30,8 @@ import '../../../../../mocks/dmz_setting_notifier_mocks.dart';
 void main() {
   late MockDMZSettingNotifier mockDMZSettingNotifier;
 
+  mockDependencyRegister();
+  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
   setUp(() {
     mockDMZSettingNotifier = MockDMZSettingNotifier();
     when(mockDMZSettingNotifier.build())
