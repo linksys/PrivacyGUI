@@ -118,7 +118,8 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
                 guide: IndentGuide.connectingLines(
                   indent: 36,
                   thickness: 0.5,
-                  pathModifier: (path) => TopologyNodeItem.buildPath(path, entry.node, entry.node.data.isOnline),
+                  pathModifier: (path) => TopologyNodeItem.buildPath(
+                      path, entry.node, entry.node.data.isOnline),
                 ),
                 child: switch (entry.node.runtimeType) {
                   OnlineTopologyNode => Row(
@@ -151,7 +152,13 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
                     guide: IndentGuide.connectingLines(
                       indent: 72,
                       thickness: 0.5,
-                      pathModifier: (path) => TopologyNodeItem.buildPath(path, entry.node, entry.node.data.isOnline),
+                      pathModifier: (path) => TopologyNodeItem.buildPath(
+                          path,
+                          entry.node,
+                          entry.node.data.isMaster
+                              ? ref.watch(internetStatusProvider) ==
+                                  InternetStatus.online
+                              : entry.node.data.isOnline),
                     ),
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(0, 16, 8, 0),
