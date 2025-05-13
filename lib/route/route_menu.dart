@@ -73,6 +73,7 @@ final menus = [
           path: RoutePath.manualFirmwareUpdate,
           config: LinksysRouteConfig(
             column: ColumnGrid(column: 9),
+            noNaviRail: true,
           ),
           builder: (context, state) => ManualFirmwareUpdateView(),
         ),
