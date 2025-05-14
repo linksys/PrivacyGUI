@@ -900,5 +900,7 @@
   "wired": "Por cable",
   "wireless": "Inalámbrica",
   "yesCancel": "Sí, Cancelar",
-  "youHaveNoDHCPReservations": "No tiene reservas DHCP"
+  "youHaveNoDHCPReservations": "No tiene reservas DHCP",
+  "vpn": "VPN",
+  "vpnDesc": "Configura los ajustes de tu VPN para acceso remoto seguro."
 }

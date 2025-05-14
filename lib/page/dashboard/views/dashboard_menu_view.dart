@@ -203,6 +203,13 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
           onTap: () {
             _navigateTo(RouteNamed.menuInstantVerify);
           }),
+      AppSectionItemData(
+          title: loc(context).vpn,
+          description: loc(context).vpnDesc,
+          iconData: LinksysIcons.smartLock,
+          onTap: () {
+            _navigateTo(RouteNamed.settingsVPN);
+          }),
       if (!isSupportHealthCheck && isBehindRouter)
         AppSectionItemData(
             title: loc(context).externalSpeedText,

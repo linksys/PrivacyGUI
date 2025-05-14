@@ -900,5 +900,7 @@
   "wired": "Câblé",
   "wireless": "Sans fil",
   "yesCancel": "Oui, Annuler",
-  "youHaveNoDHCPReservations": "Vous n'avez pas de réservations DHCP"
+  "youHaveNoDHCPReservations": "Vous n'avez pas de réservations DHCP",
+  "vpn": "VPN",
+  "vpnDesc": "Configurez vos paramètres VPN pour un accès à distance sécurisé."
 }

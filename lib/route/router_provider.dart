@@ -64,6 +64,7 @@ import 'package:privacy_gui/providers/auth/ra_session_provider.dart';
 import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_logger.dart';
+import 'package:privacy_gui/vpn/pages/vpn_settings_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'constants.dart';
 import 'package:privacy_gui/core/jnap/providers/ip_getter/get_local_ip.dart'

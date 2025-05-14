@@ -187,6 +187,16 @@ enum JNAPAction {
   // vlanTagging
   getVLANTaggingSettings,
   setVLANTaggingSettings,
+  // vpn
+  setVPNUser,
+  getVPNUser,
+  setVPNGateway,
+  getVPNGateway,
+  setVPNService,
+  getVPNService,
+  testVPNConnection,
+  getTunneledUser,
+  setTunneledUser,
   // wirelessScheduler
   getWirelessSchedulerSettings,
   //led

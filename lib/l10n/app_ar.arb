@@ -901,5 +901,7 @@
   "wired": "سلكي",
   "wireless": "لاسلكي",
   "yesCancel": "نعم، إلغاء",
-  "youHaveNoDHCPReservations": "ليس لديك أي حجوزات DHCP"
+  "youHaveNoDHCPReservations": "ليس لديك أي حجوزات DHCP",
+  "vpn": "VPN",
+  "vpnDesc": "قم بتكوين إعدادات VPN الخاصة بك للوصول عن بُعد الآمن."
 }

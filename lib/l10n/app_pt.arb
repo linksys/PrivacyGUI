@@ -900,5 +900,7 @@
   "wired": "Com fio",
   "wireless": "Sem fio",
   "yesCancel": "Sim, Cancelar",
-  "youHaveNoDHCPReservations": "Você não tem reservas de DHCP"
+  "youHaveNoDHCPReservations": "Você não tem reservas de DHCP",
+  "vpn": "VPN",
+  "vpnDesc": "Configure suas configurações de VPN para acesso remoto seguro."
 }
