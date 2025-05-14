@@ -147,7 +147,7 @@ class _StaticRoutingDetailViewState
                 final text = _destinationIpController.text;
                 if (!focused) {
                   setState(() {
-                    _destinationIpError = _notifier.isValidIpAddress(text)
+                    _destinationIpError = _notifier.isValidDestinationIpAddress(text)
                         ? null
                         : loc(context).invalidIpAddress;
                   });

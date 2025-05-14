@@ -366,7 +366,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
               : loc(context).theNameMustNotBeEmpty,
           1 => ref
                   .read(staticRoutingRuleProvider.notifier)
-                  .isValidIpAddress(destinationIPTextController.text)
+                  .isValidDestinationIpAddress(destinationIPTextController.text)
               ? null
               : loc(context).invalidIpAddress,
           2 => ref.read(staticRoutingRuleProvider.notifier).isValidSubnetMask(
