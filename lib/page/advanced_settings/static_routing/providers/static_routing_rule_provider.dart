@@ -40,7 +40,7 @@ class StaticRoutingRuleNotifier extends Notifier<StaticRoutingRuleState> {
     }
     return isNameValid(rule.name) &&
         isValidSubnetMask(rule.settings.networkPrefixLength) &&
-        IpAddressValidator().validate(rule.settings.destinationLAN) &&
+        isValidDestinationIpAddress(rule.settings.destinationLAN) &&
         isValidIpAddress(
             rule.settings.gateway ?? '', rule.settings.interface == 'LAN');
   }
@@ -52,6 +52,10 @@ class StaticRoutingRuleNotifier extends Notifier<StaticRoutingRuleState> {
   bool isValidSubnetMask(int perfixLength) {
     return NetworkUtils.isValidSubnetMask(
         NetworkUtils.prefixLengthToSubnetMask(perfixLength));
+  }
+
+  bool isValidDestinationIpAddress(String ipAddress) {
+    return IpAddressValidator().validate(ipAddress);
   }
 
   bool isValidIpAddress(String ipAddress, [bool localIPOnly = false]) {

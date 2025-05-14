@@ -49,8 +49,8 @@ class _FakeStaticRoutingRuleState_1 extends _i1.SmartFake
 /// A class which mocks [StaticRoutingRuleNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockStaticRoutingRuleNotifier extends _i2.Notifier<
-    _i3.StaticRoutingRuleState>
+class MockStaticRoutingRuleNotifier
+    extends _i2.Notifier<_i3.StaticRoutingRuleState>
     with _i1.Mock
     implements _i4.StaticRoutingRuleNotifier {
   @override
@@ -168,6 +168,18 @@ class MockStaticRoutingRuleNotifier extends _i2.Notifier<
         Invocation.method(
           #isValidSubnetMask,
           [perfixLength],
+        ),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  bool isValidDestinationIpAddress(String? ipAddress) => (super.noSuchMethod(
+        Invocation.method(
+          #isValidIpAddress,
+          [
+            ipAddress,
+          ],
         ),
         returnValue: false,
         returnValueForMissingStub: false,
