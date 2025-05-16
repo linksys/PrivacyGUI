@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:privacy_gui/vpn/providers/vpn_state.dart';
+import 'package:privacy_gui/page/vpn/providers/vpn_state.dart';
 
 import '../models/vpn_models.dart';
 import '../data/mock_vpn_data.dart';

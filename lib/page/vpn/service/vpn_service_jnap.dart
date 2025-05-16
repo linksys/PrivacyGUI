@@ -1,9 +1,9 @@
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
-import 'package:privacy_gui/vpn/models/vpn_models.dart';
-import 'package:privacy_gui/vpn/providers/vpn_state.dart';
-import 'package:privacy_gui/vpn/service/vpn_service.dart';
+import 'package:privacy_gui/page/vpn/models/vpn_models.dart';
+import 'package:privacy_gui/page/vpn/providers/vpn_state.dart';
+import 'package:privacy_gui/page/vpn/service/vpn_service.dart';
 
 class VPNServiceJNAP implements VPNService {
   final RouterRepository routerRepository;
@@ -25,16 +25,14 @@ class VPNServiceJNAP implements VPNService {
 
   @override
   Future<VPNServiceSettings> getVPNService() {
-    return routerRepository
-        .send(JNAPAction.getVPNService, auth: true)
-        .then((result) => VPNServiceSettings.fromMap(result.output));
+    return routerRepository.send(JNAPAction.getVPNService, auth: true).then(
+        (result) => VPNServiceSettings.fromMap(result.output['settings']));
   }
 
   @override
   Future<VPNUserCredentials> getVPNUser() {
-    return routerRepository
-        .send(JNAPAction.getVPNUser, auth: true)
-        .then((result) => VPNUserCredentials.fromMap(result.output));
+    return routerRepository.send(JNAPAction.getVPNUser, auth: true).then(
+        (result) => VPNUserCredentials.fromMap(result.output['credentials']));
   }
 
   @override
@@ -72,7 +70,7 @@ class VPNServiceJNAP implements VPNService {
   Future<void> fetch([bool force = false]) async {
     final commands = JNAPTransactionBuilder(auth: true, commands: [
       const MapEntry(JNAPAction.getVPNUser, {}),
-      const MapEntry(JNAPAction.getVPNGateway, {}),
+      // const MapEntry(JNAPAction.getVPNGateway, {}),
       const MapEntry(JNAPAction.getVPNService, {}),
       const MapEntry(JNAPAction.getTunneledUser, {}),
     ]);
@@ -87,8 +85,9 @@ class VPNServiceJNAP implements VPNService {
           JNAPAction.setVPNGateway, settings.gatewaySettings?.toMap() ?? {}),
       MapEntry(
           JNAPAction.setVPNService, settings.serviceSettings?.toMap() ?? {}),
-      MapEntry(JNAPAction.setTunneledUser,
-          {'ipAddress': settings.tunneledUserIP ?? ''}),
+      if (settings.tunneledUserIP != null)
+        MapEntry(JNAPAction.setTunneledUser,
+            {'ipAddress': settings.tunneledUserIP}),
     ]);
     await routerRepository.transaction(commands);
   }

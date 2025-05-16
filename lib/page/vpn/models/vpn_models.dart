@@ -46,15 +46,15 @@ enum IPsecStatus {
   String toValue() {
     switch (this) {
       case IPsecStatus.disconnected:
-        return 'disconnected';
+        return 'Disconnected';
       case IPsecStatus.connecting:
-        return 'connecting';
+        return 'Connecting';
       case IPsecStatus.connected:
-        return 'connected';
+        return 'Connected';
       case IPsecStatus.failed:
-        return 'failed';
+        return 'Failed';
       case IPsecStatus.unknown:
-        return 'unknown';
+        return 'Unknown';
     }
   }
 
@@ -178,12 +178,12 @@ class VPNUserCredentials extends Equatable {
 
   factory VPNUserCredentials.fromMap(Map<String, dynamic> json) {
     return VPNUserCredentials(
-      username: json['username'] as String,
+      username: json['username'] as String? ?? '',
       authMode: AuthMode.values.firstWhere(
-        (e) => e.toString().split('.').last == json['authMode'],
+        (e) => e.toValue() == json['authMode'],
         orElse: () => AuthMode.psk,
       ),
-      secret: json['secret'] as String?,
+      secret: json['secret'] as String? ?? '',
     );
   }
 
@@ -247,7 +247,7 @@ class VPNGatewaySettings extends Equatable {
       espProposal: json['espProposal'] as String,
     );
   }
-    Map<String, dynamic> toJson() => toMap();
+  Map<String, dynamic> toJson() => toMap();
 
   factory VPNGatewaySettings.fromJson(String json) =>
       VPNGatewaySettings.fromMap(jsonDecode(json));
@@ -416,8 +416,9 @@ class VPNServiceSettings extends Equatable {
       VPNServiceSettings(
         enabled: map['enabled'] as bool,
         autoConnect: map['autoConnect'] as bool,
-        statistics:
-            VPNStatistics.fromMap(map['statistics'] as Map<String, dynamic>),
+        statistics: map['statistics'] != null
+            ? VPNStatistics.fromMap(map['statistics'] as Map<String, dynamic>)
+            : null,
         tunnelStatus: IPsecStatus.fromJson(map['tunnelStatus'] as String),
       );
 

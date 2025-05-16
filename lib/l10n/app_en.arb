@@ -1044,5 +1044,8 @@
   "vpnBytesReceived": "Bytes Received",
   "vpnCurrentBandwidth": "Current Bandwidth",
   "vpnActiveSAs": "Active SAs",
-  "vpnRekeyCount": "Rekey Count"
+  "vpnRekeyCount": "Rekey Count",
+  "vpnErrorVPNNotConnected": "VPN not connected",
+  "vpnErrorVPNUserAlreadyExists": "VPN user already exists",
+  "vpnErrorVPNUserNotFound": "VPN user not found"
 }

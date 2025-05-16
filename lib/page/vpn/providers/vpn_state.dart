@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
-import 'package:privacy_gui/vpn/models/vpn_models.dart';
+import 'package:privacy_gui/page/vpn/models/vpn_models.dart';
 
 class VPNSettings extends Equatable {
   final VPNUserCredentials? userCredentials;

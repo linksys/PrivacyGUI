@@ -5,8 +5,10 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
-import 'package:privacy_gui/vpn/providers/vpn_notifier.dart';
-import 'package:privacy_gui/vpn/providers/vpn_state.dart';
+import 'package:privacy_gui/page/vpn/providers/vpn_notifier.dart';
+import 'package:privacy_gui/page/vpn/providers/vpn_state.dart';
+import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/validator_rules/_validator_rules.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
@@ -14,12 +16,13 @@ import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
-import 'package:privacy_gui/vpn/models/vpn_models.dart';
+import 'package:privacy_gui/page/vpn/models/vpn_models.dart';
 import 'package:privacy_gui/page/components/mixin/preserved_state_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
+import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 
 class VPNSettingsPage extends ArgumentsConsumerStatefulView {
-  const VPNSettingsPage({super.key});
+  const VPNSettingsPage({super.key, super.args});
 
   @override
   ConsumerState<VPNSettingsPage> createState() => _VPNSettingsPageState();
@@ -28,7 +31,6 @@ class VPNSettingsPage extends ArgumentsConsumerStatefulView {
 class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
     with PageSnackbarMixin, PreservedStateMixin<VPNSettings, VPNSettingsPage> {
   final _formKey = GlobalKey<FormState>();
-  bool _hasChanges = false;
 
   // Text controllers
   final _usernameController = TextEditingController();
@@ -39,9 +41,24 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
   final _espProposalController = TextEditingController();
   final _tunneledUserController = TextEditingController();
 
+  final _usernameValidator = InputValidator([
+    RequiredRule(),
+    NoSurroundWhitespaceRule(),
+    LengthRule(min: 1),
+    AsciiRule(),
+  ]);
+  final _passwordValidator = InputValidator([
+    RequiredRule(),
+    NoSurroundWhitespaceRule(),
+    LengthRule(min: 1),
+    AsciiRule(),
+  ]);
+  final _tunneledUserValidator = IpAddressValidator();
+
   @override
   void initState() {
     super.initState();
+
     doSomethingWithSpinner(
         context,
         ref.read(vpnProvider.notifier).fetch().then((state) {
@@ -52,7 +69,13 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
 
   void _initializeControllers(VPNState state) {
     _usernameController.text = state.settings.userCredentials?.username ?? '';
+    if (_usernameController.text.isNotEmpty) {
+      _usernameValidator.validate(_usernameController.text);
+    }
     _passwordController.text = state.settings.userCredentials?.secret ?? '';
+    // if (_passwordController.text.isNotEmpty) {
+    //   _passwordValidator.validate(_passwordController.text);
+    // }
     _gatewayController.text =
         state.settings.gatewaySettings?.gatewayAddress ?? '';
     _dnsController.text = state.settings.gatewaySettings?.dnsName ?? '';
@@ -61,6 +84,9 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
     _espProposalController.text =
         state.settings.gatewaySettings?.espProposal ?? '';
     _tunneledUserController.text = state.settings.tunneledUserIP ?? '';
+    // if (_tunneledUserController.text.isNotEmpty) {
+    //   _tunneledUserValidator.validate(_tunneledUserController.text);
+    // }
   }
 
   @override
@@ -75,41 +101,31 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
     super.dispose();
   }
 
+  bool _hasErrors() {
+    return false;
+    // return _usernameValidator.isValid != true ||
+    //     _passwordValidator.isValid != true ||
+    //     _tunneledUserValidator.isValid != true;
+  }
+
   Future<void> _saveChanges() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (_hasErrors()) return;
     final notifier = ref.read(vpnProvider.notifier);
-    final state = ref.read(vpnProvider);
-    try {
-      if (state.settings.userCredentials != null) {
-        await notifier.setVPNUser(
-          VPNUserCredentials(
-            username: state.settings.userCredentials!.username,
-            authMode: state.settings.userCredentials!.authMode,
-            secret: null,
-          ),
-        );
+    doSomethingWithSpinner(context, notifier.save()).then((state) {
+      if (state == null) {
+        return;
       }
-      if (state.settings.gatewaySettings != null) {
-        await notifier.setVPNGateway(state.settings.gatewaySettings!);
-      }
-      if (state.settings.serviceSettings != null) {
-        await notifier.setVPNService(state.settings.serviceSettings!);
-      }
-      if (state.settings.tunneledUserIP != null) {
-        await notifier.setTunneledUser(state.settings.tunneledUserIP!);
-      }
+      preservedState = state.settings;
+      // _hasChanges = false;
+      _initializeControllers(state);
       if (mounted) {
         showChangesSavedSnackBar();
-        setState(() {
-          preservedState = state.settings;
-          _hasChanges = false;
-        });
       }
-    } catch (e) {
+    }).onError((error, stack) {
       if (mounted) {
-        showErrorMessageSnackBar(e.toString());
+        showErrorMessageSnackBar(error);
       }
-    }
+    });
   }
 
   void _onBackTap() {
@@ -129,19 +145,19 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
     final state = ref.watch(vpnProvider);
     final notifier = ref.read(vpnProvider.notifier);
 
-    final changed = isStateChanged(state.settings);
-    if (_hasChanges != changed) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) setState(() => _hasChanges = changed);
-      });
-    }
+    // final changed = isStateChanged(state.settings);
+    // if (_hasChanges != changed) {
+    //   WidgetsBinding.instance.addPostFrameCallback((_) {
+    //     if (mounted) setState(() => _hasChanges = changed);
+    //   });
+    // }
 
     return StyledAppPageView(
       title: loc(context).vpnSettingsTitle,
       onBackTap: _onBackTap,
       scrollable: true,
       bottomBar: PageBottomBar(
-        isPositiveEnabled: isStateChanged(state.settings),
+        isPositiveEnabled: !_hasErrors() && isStateChanged(state.settings),
         positiveLabel: loc(context).save,
         onPositiveTap: _saveChanges,
       ),
@@ -297,6 +313,9 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
           hintText: loc(context).username,
           headerText: loc(context).username,
           controller: _usernameController,
+          errorText: _usernameValidator.isValid ?? true
+              ? null
+              : loc(context).invalidUsername,
           onChanged: (value) {
             if (state.settings.userCredentials != null) {
               notifier.setVPNUser(
@@ -306,6 +325,12 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
                   secret: null,
                 ),
               );
+              setState(() {});
+            }
+          },
+          onFocusChanged: (focus) {
+            if (!focus) {
+              _usernameValidator.validate(_usernameController.text);
               setState(() {});
             }
           },
@@ -334,6 +359,9 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
           hintText: loc(context).password,
           headerText: loc(context).password,
           controller: _passwordController,
+          // errorText: _passwordValidator.isValid ?? true
+          //     ? null
+          //     : loc(context).invalidPassword,
           onChanged: (value) {
             if (state.settings.userCredentials != null) {
               notifier.setVPNUser(
@@ -341,6 +369,12 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
               );
               setState(() {});
             }
+          },
+          onFocusChanged: (focus) {
+            // if (!focus) {
+            //   _passwordValidator.validate(_passwordController.text);
+            //   setState(() {});
+            // }
           },
         ),
       ],
@@ -433,13 +467,24 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
         child: _buildSection(
           title: loc(context).vpnTunneledUserSection,
           children: [
-            AppTextField.outline(
-              hintText: loc(context).ipAddress,
-              headerText: loc(context).ipAddress,
+            AppIPFormField(
+              header: AppText.labelLarge(loc(context).ipAddress),
               controller: _tunneledUserController,
+              border: OutlineInputBorder(),
+              errorText: _tunneledUserValidator.isValid ?? true
+                  ? null
+                  : loc(context).invalidIpAddress,
               onChanged: (value) {
                 notifier.setTunneledUser(value);
                 setState(() {});
+              },
+              onFocusChanged: (focus) {
+                if (!focus && _tunneledUserController.text.isNotEmpty) {
+                  _tunneledUserValidator.validate(
+                    _tunneledUserController.text,
+                  );
+                  setState(() {});
+                }
               },
             ),
           ],
