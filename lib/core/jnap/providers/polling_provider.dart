@@ -11,6 +11,7 @@ import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/bench_mark.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/page/vpn/providers/vpn_notifier.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 
 const int pollFirstDelayInSec = 1;
@@ -116,6 +117,9 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
   Future _additionalPolling() async {
     if (serviceHelper.isSupportLedMode()) {
       await ref.read(nodeLightSettingsProvider.notifier).fetch();
+    }
+    if (serviceHelper.isSupportVPN()) {
+      await ref.read(vpnProvider.notifier).fetch();
     }
   }
 

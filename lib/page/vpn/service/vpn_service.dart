@@ -1,105 +1,84 @@
-import 'dart:async';
+import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
+import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/page/vpn/models/vpn_models.dart';
 import 'package:privacy_gui/page/vpn/providers/vpn_state.dart';
 
-import '../models/vpn_models.dart';
-import '../data/mock_vpn_data.dart';
-
 class VPNService {
-  // Mock data
-  VPNUserCredentials? _userCredentials;
-  VPNGatewaySettings? _gatewaySettings;
-  VPNServiceSettings? _serviceSettings;
-  String? _tunneledUserIP;
+  final RouterRepository routerRepository;
+  VPNService(this.routerRepository);
 
-  // Mock initial data
-  VPNService() {
-    fetch();
+  Future<String?> getTunneledUser() {
+    return routerRepository
+        .send(JNAPAction.getTunneledUser, auth: true)
+        .then((result) => result.output['ipAddress']);
   }
 
-  // Fetch
+  Future<VPNGatewaySettings> getVPNGateway() {
+    return routerRepository.send(JNAPAction.getVPNGateway, auth: true).then(
+        (result) => VPNGatewaySettings.fromMap(result.output['settings']));
+  }
+
+  Future<VPNServiceSettings> getVPNService() {
+    return routerRepository.send(JNAPAction.getVPNService, auth: true).then(
+        (result) => VPNServiceSettings.fromMap(result.output['settings']));
+  }
+
+  Future<VPNUserCredentials> getVPNUser() {
+    return routerRepository.send(JNAPAction.getVPNUser, auth: true).then(
+        (result) => VPNUserCredentials.fromMap(result.output['credentials']));
+  }
+
+  Future<void> setTunneledUser(String ipAddress) {
+    return routerRepository.send(JNAPAction.setTunneledUser,
+        auth: true, data: {'ipAddress': ipAddress});
+  }
+
+  Future<void> setVPNGateway(VPNGatewaySettings settings) {
+    return routerRepository.send(JNAPAction.setVPNGateway,
+        auth: true, data: settings.toMap());
+  }
+
+  Future<void> setVPNService(VPNServiceSetSettings settings) {
+    return routerRepository.send(JNAPAction.setVPNService,
+        auth: true, data: settings.toMap());
+  }
+
+  Future<void> setVPNUser(VPNUserCredentials credentials) {
+    return routerRepository.send(JNAPAction.setVPNUser,
+        auth: true, data: credentials.toMap());
+  }
+
+  Future<VPNTestResult> testVPNConnection() {
+    return routerRepository
+        .send(JNAPAction.testVPNConnection, auth: true)
+        .then((result) => VPNTestResult.fromMap(result.output));
+  }
+
   Future<void> fetch([bool force = false]) async {
-    await Future.delayed(const Duration(milliseconds: 1000));
-    _userCredentials = VPNUserCredentials.fromMap(
-        mockVPNData['userCredentials'] as Map<String, dynamic>);
-    _gatewaySettings = VPNGatewaySettings.fromMap(
-        mockVPNData['gatewaySettings'] as Map<String, dynamic>);
-    _serviceSettings = VPNServiceSettings.fromMap(
-        mockVPNData['serviceSettings'] as Map<String, dynamic>);
-    _tunneledUserIP = mockVPNData['tunneledUserIP'] as String;
+    final commands = JNAPTransactionBuilder(auth: true, commands: [
+      const MapEntry(JNAPAction.getVPNUser, {}),
+      const MapEntry(JNAPAction.getVPNGateway, {}),
+      const MapEntry(JNAPAction.getVPNService, {}),
+      const MapEntry(JNAPAction.getTunneledUser, {}),
+    ]);
+    await routerRepository.transaction(commands, fetchRemote: force);
   }
 
-  // Save
   Future<void> save(VPNSettings settings) async {
-    await Future.delayed(const Duration(milliseconds: 1000));
-    mockVPNData['userCredentials'] = _userCredentials?.toMap();
-    mockVPNData['gatewaySettings'] = _gatewaySettings?.toMap();
-    mockVPNData['serviceSettings'] = _serviceSettings?.toMap();
-    mockVPNData['tunneledUserIP'] = _tunneledUserIP;
-  }
-
-  // User Management
-  Future<void> setVPNUser(VPNUserCredentials credentials) async {
-    await Future.delayed(
-        const Duration(milliseconds: 500)); // Simulate network delay
-    _userCredentials = credentials;
-  }
-
-  Future<VPNUserCredentials> getVPNUser() async {
-    if (_userCredentials == null) {
-      throw Exception('No VPN user credentials found');
-    }
-    return VPNUserCredentials(
-      username: _userCredentials!.username,
-      authMode: _userCredentials!.authMode,
-    );
-  }
-
-  // Gateway Settings
-  Future<void> setVPNGateway(VPNGatewaySettings settings) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    _gatewaySettings = settings;
-  }
-
-  Future<VPNGatewaySettings> getVPNGateway() async {
-    if (_gatewaySettings == null) {
-      throw Exception('No VPN gateway settings found');
-    }
-    return _gatewaySettings!;
-  }
-
-  // Service Settings
-  Future<void> setVPNService(VPNServiceSetSettings settings) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    _serviceSettings = _serviceSettings?.copyWith(
-      enabled: settings.enabled,
-      autoConnect: settings.autoConnect,
-    );
-  }
-
-  Future<VPNServiceSettings> getVPNService() async {
-    if (_serviceSettings == null) {
-      throw Exception('No VPN service settings found');
-    }
-    return _serviceSettings!;
-  }
-
-  // Connection Testing
-  Future<VPNTestResult> testVPNConnection() async {
-    await Future.delayed(const Duration(milliseconds: 1000));
-    return VPNTestResult(
-      success: true,
-      statusMessage: 'IPsec SA established',
-      latency: 42,
-    );
-  }
-
-  // Tunneled User Management
-  Future<String?> getTunneledUser() async {
-    return _tunneledUserIP;
-  }
-
-  Future<void> setTunneledUser(String ipAddress) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    _tunneledUserIP = ipAddress;
+    final commands = JNAPTransactionBuilder(auth: true, commands: [
+      if (settings.isEditingCredentials)
+        MapEntry(
+            JNAPAction.setVPNUser, settings.userCredentials?.toMap() ?? {}),
+      if (settings.gatewaySettings?.gatewayAddress != null)
+      MapEntry(
+          JNAPAction.setVPNGateway, settings.gatewaySettings?.toMap() ?? {}),
+      MapEntry(
+          JNAPAction.setVPNService, settings.serviceSettings?.toMap() ?? {}),
+      if (settings.tunneledUserIP != null)
+        MapEntry(
+            JNAPAction.setTunneledUser, {'ipAddress': settings.tunneledUserIP}),
+    ]);
+    await routerRepository.transaction(commands);
   }
 }

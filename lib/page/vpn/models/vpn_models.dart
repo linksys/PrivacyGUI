@@ -58,6 +58,14 @@ enum IPsecStatus {
     }
   }
 
+  Color get color => switch (this) {
+        IPsecStatus.connected => Colors.green,
+        IPsecStatus.connecting => Colors.orange,
+        IPsecStatus.disconnected => Colors.grey,
+        IPsecStatus.failed => Colors.red,
+        IPsecStatus.unknown => Colors.grey,
+      };
+
   static IPsecStatus fromJson(String json) => IPsecStatus.values.firstWhere(
         (e) => e.toValue() == json,
         orElse: () => IPsecStatus.unknown,
@@ -431,16 +439,16 @@ class VPNServiceSettings extends Equatable {
 class VPNTestResult extends Equatable {
   final bool success;
   final String statusMessage;
-  final int latency;
+  final int? latency;
 
   const VPNTestResult({
     required this.success,
     required this.statusMessage,
-    required this.latency,
+    this.latency,
   });
 
   @override
-  List<Object> get props => [success, statusMessage, latency];
+  List<Object?> get props => [success, statusMessage, latency];
 
   VPNTestResult copyWith({
     bool? success,
@@ -463,7 +471,7 @@ class VPNTestResult extends Equatable {
   factory VPNTestResult.fromMap(Map<String, dynamic> map) => VPNTestResult(
         success: map['success'] as bool,
         statusMessage: map['statusMessage'] as String,
-        latency: map['latency'] as int,
+        latency: map['latency'] as int?,
       );
 
   Map<String, dynamic> toJson() => toMap();

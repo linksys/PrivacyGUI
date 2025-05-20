@@ -1,10 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
-import 'package:privacy_gui/di.dart';
-import 'package:privacy_gui/page/vpn/service/vpn_service_jnap.dart';
+import 'package:privacy_gui/page/vpn/service/vpn_service.dart';
 import '../models/vpn_models.dart';
-import '../service/vpn_service.dart';
 import 'vpn_state.dart';
 
 class VPNNotifier extends Notifier<VPNState> {
@@ -19,14 +16,14 @@ class VPNNotifier extends Notifier<VPNState> {
       await service.fetch(force);
       // Load all VPN data
       final userCredentials = await service.getVPNUser();
-      // final gatewaySettings = await service.getVPNGateway();
+      final gatewaySettings = await service.getVPNGateway();
       final serviceSettings = await service.getVPNService();
       final tunneledUserIP = await service.getTunneledUser();
 
       state = state.copyWith(
         settings: state.settings.copyWith(
           userCredentials: userCredentials,
-          // gatewaySettings: gatewaySettings,
+          gatewaySettings: gatewaySettings,
           serviceSettings: VPNServiceSetSettings(
               enabled: serviceSettings.enabled,
               autoConnect: serviceSettings.autoConnect),
@@ -50,6 +47,16 @@ class VPNNotifier extends Notifier<VPNState> {
   }
 
   // State updates
+
+  // Credentials Management
+  Future<void> setEditingCredentials(bool isEditing) async {
+    state = state.copyWith(
+      settings: state.settings.copyWith(
+        isEditingCredentials: isEditing,
+      ),
+    );
+  }
+
   // User Management
   Future<void> setVPNUser(VPNUserCredentials credentials) async {
     state = state.copyWith(
@@ -97,7 +104,7 @@ class VPNNotifier extends Notifier<VPNState> {
           testResult: result,
         ),
       );
-      return state;
+      return fetch(true);
     } catch (e) {
       rethrow;
     }
@@ -105,9 +112,7 @@ class VPNNotifier extends Notifier<VPNState> {
 }
 
 final vpnServiceProvider = Provider<VPNService>((ref) {
-  return getIt.get<ServiceHelper>().isSupportVPN()
-      ? VPNServiceJNAP(ref.read(routerRepositoryProvider))
-      : VPNService();
+  return VPNService(ref.read(routerRepositoryProvider));
 });
 
 final vpnProvider = NotifierProvider<VPNNotifier, VPNState>(VPNNotifier.new);

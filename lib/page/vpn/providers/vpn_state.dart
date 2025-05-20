@@ -4,12 +4,14 @@ import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/page/vpn/models/vpn_models.dart';
 
 class VPNSettings extends Equatable {
+  final bool isEditingCredentials;
   final VPNUserCredentials? userCredentials;
   final VPNGatewaySettings? gatewaySettings;
   final VPNServiceSetSettings? serviceSettings;
   final String? tunneledUserIP;
 
   const VPNSettings({
+    this.isEditingCredentials = false,
     this.userCredentials,
     this.gatewaySettings,
     this.serviceSettings,
@@ -18,6 +20,7 @@ class VPNSettings extends Equatable {
 
   @override
   List<Object?> get props => [
+        isEditingCredentials,
         userCredentials,
         gatewaySettings,
         serviceSettings,
@@ -25,12 +28,14 @@ class VPNSettings extends Equatable {
       ];
 
   VPNSettings copyWith({
+    bool? isEditingCredentials,
     VPNUserCredentials? userCredentials,
     VPNGatewaySettings? gatewaySettings,
     VPNServiceSetSettings? serviceSettings,
     String? tunneledUserIP,
   }) {
     return VPNSettings(
+      isEditingCredentials: isEditingCredentials ?? this.isEditingCredentials,
       userCredentials: userCredentials ?? this.userCredentials,
       gatewaySettings: gatewaySettings ?? this.gatewaySettings,
       serviceSettings: serviceSettings ?? this.serviceSettings,
@@ -39,6 +44,7 @@ class VPNSettings extends Equatable {
   }
 
   Map<String, dynamic> toMap() => {
+        'isEditingCredentials': isEditingCredentials,
         if (userCredentials != null)
           'userCredentials': userCredentials!.toJson(),
         if (gatewaySettings != null)
@@ -49,6 +55,7 @@ class VPNSettings extends Equatable {
       };
 
   factory VPNSettings.fromMap(Map<String, dynamic> map) => VPNSettings(
+        isEditingCredentials: map['isEditingCredentials'] ?? false,
         userCredentials: map['userCredentials'] != null
             ? VPNUserCredentials.fromMap(
                 map['userCredentials'] as Map<String, dynamic>)
@@ -168,6 +175,5 @@ class VPNState extends Equatable {
 
   Map<String, dynamic> toJson() => toMap();
 
-  factory VPNState.fromJson(String json) =>
-      VPNState.fromMap(jsonDecode(json));
+  factory VPNState.fromJson(String json) => VPNState.fromMap(jsonDecode(json));
 }
