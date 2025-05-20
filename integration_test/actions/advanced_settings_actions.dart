@@ -31,14 +31,14 @@ class TestAdvancedSettingsActions extends CommonBaseActions {
     return cardFinder;
   }
 
-  // Finder appsAndGamingCardFinder() {
-  //   final cardFinder = find.ancestor(
-  //     of: find.text(TestAppsAndGamingActions(tester).title),
-  //     matching: find.byType(AppCard),
-  //   );
-  //   expect(cardFinder, findsOneWidget);
-  //   return cardFinder;
-  // }
+  Finder appsAndGamingCardFinder() {
+    final cardFinder = find.ancestor(
+      of: find.text(TestAppsAndGamingActions(tester).title),
+      matching: find.byType(AppCard),
+    );
+    expect(cardFinder, findsOneWidget);
+    return cardFinder;
+  }
 
   Finder administrationCardFinder() {
     final cardFinder = find.ancestor(
@@ -83,12 +83,12 @@ class TestAdvancedSettingsActions extends CommonBaseActions {
     await tester.pumpAndSettle();
   }
 
-  // Future<void> enterAppsAndGamingPage() async {
-  //   final finder = appsAndGamingCardFinder();
-  //   // Tap the card
-  //   await tester.tap(finder);
-  //   await tester.pumpAndSettle();
-  // }
+  Future<void> enterAppsAndGamingPage() async {
+    final finder = appsAndGamingCardFinder();
+    // Tap the card
+    await tester.tap(finder);
+    await tester.pumpAndSettle();
+  }
 
   Future<void> enterAdministrationPage() async {
     final finder = administrationCardFinder();
