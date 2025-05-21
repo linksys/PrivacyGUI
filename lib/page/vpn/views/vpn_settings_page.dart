@@ -116,9 +116,7 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
         (_tunneledUserController.text.isNotEmpty
             ? isTunneledUserValid != true
             : false) ||
-        (_gatewayController.text.isNotEmpty
-            ? isGatewayValid != true
-            : false);
+        (_gatewayController.text.isNotEmpty ? isGatewayValid != true : false);
   }
 
   Future<void> _saveChanges() async {
@@ -202,6 +200,7 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
         children: [
           vpnStatus(context, status),
           AppTextButton(
+            key: ValueKey('testAgain'),
             loc(context).testAgain,
             onTap: () async {
               bool isChanged = isStateChanged(state.settings);
@@ -215,11 +214,11 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
                           message:
                               'Your changes is undaved, do you want to save and test it?',
                           actions: [
-                              AppTextButton(loc(context).save, onTap: () {
-                                context.pop(true);
-                              }),
                               AppTextButton(loc(context).cancel, onTap: () {
                                 context.pop(false);
+                              }),
+                              AppTextButton(loc(context).save, onTap: () {
+                                context.pop(true);
                               }),
                             ])
                       : await showMessageAppOkDialog(context,
@@ -348,6 +347,7 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
       ),
       children: [
         AppTextField.outline(
+          key: ValueKey('username'),
           hintText: loc(context).username,
           headerText: loc(context).username,
           controller: _usernameController,
@@ -395,6 +395,7 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
         if (state.settings.isEditingCredentials) ...[
           const AppGap.medium(),
           AppTextField.outline(
+            key: ValueKey('password'),
             hintText: loc(context).password,
             headerText: loc(context).password,
             controller: _passwordController,
@@ -426,9 +427,13 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
       title: loc(context).gateway,
       children: [
         AppTextField.outline(
+          key: ValueKey('gateway'),
           hintText: loc(context).gateway,
           headerText: loc(context).gateway,
           controller: _gatewayController,
+          errorText: _gatewayValidator.isValid ?? true
+              ? null
+              : loc(context).invalidGatewayIpAddress,
           onChanged: (value) {
             if (state.settings.gatewaySettings != null) {
               notifier.setVPNGateway(
@@ -440,6 +445,7 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
         ),
         const AppGap.medium(),
         AppTextField.outline(
+          key: ValueKey('dns'),
           hintText: loc(context).dns,
           headerText: loc(context).dns,
           controller: _dnsController,
@@ -469,6 +475,7 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
         ),
         const AppGap.medium(),
         AppTextField.outline(
+          key: ValueKey('ikeProposal'),
           hintText: loc(context).vpnIkeProposal,
           headerText: loc(context).vpnIkeProposal,
           controller: _ikeProposalController,
@@ -483,6 +490,7 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
         ),
         const AppGap.medium(),
         AppTextField.outline(
+          key: ValueKey('espProposal'),
           hintText: loc(context).vpnEspProposal,
           headerText: loc(context).vpnEspProposal,
           controller: _espProposalController,
@@ -505,6 +513,7 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
       isEnabled: state.settings.serviceSettings?.enabled ?? false,
       children: [
         AppIPFormField(
+          key: ValueKey('tunneledUser'),
           header: AppText.labelLarge(loc(context).ipAddress),
           controller: _tunneledUserController,
           border: OutlineInputBorder(),
@@ -559,7 +568,6 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
       ),
     );
   }
-
 
   Widget _buildEnabledCard(VPNState state, VPNNotifier notifier) {
     return AppSettingCard(

@@ -226,6 +226,8 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
           VPNStatusTile(),
         ],
         AppGap.medium(),
+        DashboardQuickPanel(),
+        AppGap.medium(),
         DashboardWiFiGrid(),
         AppGap.medium(),
       ],

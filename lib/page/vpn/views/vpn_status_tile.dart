@@ -10,6 +10,7 @@ import 'package:privacy_gui/page/vpn/providers/vpn_notifier.dart';
 import 'package:privacy_gui/page/vpn/views/shared_widgets.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/utils.dart';
+import 'package:privacy_gui/page/dashboard/views/components/loading_tile.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
@@ -35,16 +36,21 @@ class _VPNStatusTile extends ConsumerState<VPNStatusTile> {
         : '--';
     final isLoading = ref.watch(deviceManagerProvider).deviceList.isEmpty;
 
-    return AppCard(
-      padding: EdgeInsets.all(Spacing.large2),
-      onTap: isBridge
-          ? null
-          : () {
-              context.pushNamed(RouteNamed.settingsVPN);
-            },
-      child: isLoading
-          ? AppSpinner()
-          : Column(
+    return isLoading
+        ? AppCard(
+            padding: EdgeInsets.zero,
+            child: SizedBox(
+                width: double.infinity,
+                height: 150,
+                child: const LoadingTile()))
+        : AppCard(
+            padding: EdgeInsets.all(Spacing.large2),
+            onTap: isBridge
+                ? null
+                : () {
+                    context.pushNamed(RouteNamed.settingsVPN);
+                  },
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -106,6 +112,6 @@ class _VPNStatusTile extends ConsumerState<VPNStatusTile> {
                 ],
               ],
             ),
-    );
+          );
   }
 }
