@@ -127,6 +127,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
           padding: inputPadding,
           child: AppIPFormField(
             semanticLabel: 'start Ip Address',
+            key: Key('startIpAddressTextField'),
             header: AppText.bodySmall(loc(context).startIpAddress),
             controller: _startIpAddressController,
             border: const OutlineInputBorder(),
@@ -148,6 +149,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
         Padding(
           padding: inputPadding,
           child: AppTextField.minMaxNumber(
+            key: Key('maxUsersTextField'),
             headerText: loc(context).maximumNumberOfUsers,
             descriptionText: '1 ${loc(context).to} ${state.maxUserLimit}',
             min: 1,
@@ -169,6 +171,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
         Padding(
           padding: inputPadding,
           child: AppTextField.minMaxNumber(
+            key: Key('clientLeaseTimeTextField'),
             headerText: loc(context).clientLeaseTime,
             min: state.minAllowDHCPLeaseMinutes,
             max: state.maxAllowDHCPLeaseMinutes,
@@ -251,6 +254,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
         Padding(
           padding: inputPadding,
           child: AppIPFormField(
+            key: Key('dns1TextField'),
             semanticLabel: 'static Dns 1',
             header: AppText.bodySmall(
               loc(context).staticDns1,
@@ -276,6 +280,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
         Padding(
           padding: inputPadding,
           child: AppIPFormField(
+            key: Key('dns2TextField'),
             semanticLabel: 'static Dns 2',
             header: AppText.bodySmall(
               loc(context).staticDns2,
@@ -301,6 +306,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
         Padding(
           padding: inputPadding,
           child: AppIPFormField(
+            key: Key('dns3TextField'),
             semanticLabel: 'static Dns 3',
             header: AppText.bodySmall(
               loc(context).staticDns3,
@@ -326,6 +332,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
         Padding(
           padding: inputPadding,
           child: AppIPFormField(
+            key: Key('winsTextField'),
             semanticLabel: 'wins',
             header: AppText.bodySmall(
               loc(context).wins,

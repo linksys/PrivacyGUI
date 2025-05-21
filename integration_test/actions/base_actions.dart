@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -50,6 +51,7 @@ part 'advanced_routing_actions.dart';
 part 'firewall_actions.dart';
 // part 'apps_and_gaming_actions.dart';
 part 'administration_actions.dart';
+part 'local_network_settings_actions.dart';
 
 abstract class BaseActions {
   final WidgetTester tester;
@@ -82,6 +84,7 @@ sealed class CommonBaseActions extends BaseActions with CommonActionsMixin {
       TestFirewallActions() => loc(context).firewall,
       // TestAppsAndGamingActions() => loc(context).appsGaming,
       TestAdministrationActions() => loc(context).administration,
+      TestLocalNetworkSettingsActions() => loc(context).localNetwork,
       // TODO: Handle this case.
       TestPnpSetupActions() => throw UnimplementedError(),
       // TODO: Handle this case.
