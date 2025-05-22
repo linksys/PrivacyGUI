@@ -108,7 +108,10 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
           await _additionalPolling();
           return result;
         },
-      ),
+      ).onError((e, stackTrace) {
+        logger.e('Polling error: $e, $stackTrace');
+        throw e ?? '';
+      }),
     );
 
     benchMark.end();

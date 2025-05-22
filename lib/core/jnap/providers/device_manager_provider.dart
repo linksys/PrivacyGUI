@@ -181,9 +181,21 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     externalDevices = externalDevices.map((device) {
       final wirelessData = wirelessConnections[device.getMacAddress()];
       final isGuestDevice = wirelessData?.isGuest ?? false;
+      // Get the list of MLO capable radio IDs
+      final mloList = device.knownInterfaces?.map((e) {
+        final wirelessData = wirelessConnections[e.macAddress];
+        if (wirelessData != null) {
+          return wirelessData.isMLOCapable == true
+              ? wirelessData.radioID ?? ''
+              : '';
+        }
+        return '';
+      }).toList()
+        ?..removeWhere((e) => e.isEmpty);
       return device.copyWith(
         connectedWifiType:
             isGuestDevice ? WifiConnectionType.guest : WifiConnectionType.main,
+        mloList: mloList,
       );
     }).toList();
 
