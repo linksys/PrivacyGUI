@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -96,7 +98,7 @@ class _ManualFirmwareUpdateViewState
                       status.start(setState);
                       ref
                           .read(firmwareUpdateProvider.notifier)
-                          .manualFirmwareUpdate(file!.name, file!.bytes ?? [])
+                          .manualFirmwareUpdate(file.name, file.bytes)
                           .then((value) {
                         status?.stop();
                         status = ManualUpdateRebooting();
@@ -119,7 +121,18 @@ class _ManualFirmwareUpdateViewState
                               onComplete: () async {
                             handleSuccessUpdated();
                           });
-                        }, test: (error) => error is JNAPSideEffectError);
+                        }, test: (error) => error is JNAPSideEffectError).catchError((error) {
+                          setState(() {
+                            status?.stop();
+                            ref
+                                .read(manualFirmwareUpdateProvider.notifier)
+                                .setStatus(null);
+                          });
+                          showRouterNotFoundAlert(context, ref,
+                              onComplete: () async {
+                            handleSuccessUpdated();
+                          });
+                        }, test: (error) => error is TimeoutException);
                       }, onError: (error, stackTrace) {
                         setState(() {
                           status?.stop();
