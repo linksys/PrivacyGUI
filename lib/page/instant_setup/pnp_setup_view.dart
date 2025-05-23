@@ -9,7 +9,6 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
-import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
 import 'package:privacy_gui/page/instant_setup/model/impl/guest_wifi_step.dart';
@@ -428,11 +427,11 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
               const AppGap.medium(),
               AppText.headlineSmall(loc(context).pnpReconnectWiFi),
               const AppGap.large5(),
-              AppFilledButton(
+              AppFilledButtonWithLoading(
                 loc(context).next,
-                onTap: () {
+                onTap: () async {
                   logger.d('[PnP]: Tap Next to check the WiFi reconnection');
-                  testConnection(success: () async {
+                  await testConnection(success: () async {
                     final isUnconfigured =
                         ref.read(pnpProvider).isRouterUnConfigured;
                     logger.i(
@@ -573,10 +572,13 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
     });
   }
 
-  void testConnection(
+  Future<void> testConnection(
       {required void Function() success, void Function()? failed}) {
     // Check router connected propor, then go to dashboard
-    ref.read(pnpProvider.notifier).testConnectionReconnected().then((value) {
+    return ref
+        .read(pnpProvider.notifier)
+        .testConnectionReconnected()
+        .then((value) {
       success.call();
     }).onError((error, stackTrace) {
       logger.e('[PnP]: Cannot detect the expected WiFi connected!');
