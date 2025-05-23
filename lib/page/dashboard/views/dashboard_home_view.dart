@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
+import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dart';
@@ -16,9 +18,8 @@ import 'package:privacy_gui/page/dashboard/views/components/networks.dart';
 import 'package:privacy_gui/page/dashboard/views/components/port_and_speed.dart';
 import 'package:privacy_gui/page/dashboard/views/components/quick_panel.dart';
 import 'package:privacy_gui/page/dashboard/views/components/wifi_grid.dart';
-import 'package:privacy_gui/utils.dart';
+import 'package:privacy_gui/page/vpn/views/vpn_status_tile.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
@@ -69,21 +70,21 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
         child: ShimmerContainer(
           isLoading: false,
           child: ResponsiveLayout(
-                desktop: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const DashboardHomeTitle(),
-                    const AppGap.large1(),
-                    !hasLanPort
-                        ? _desktopNoLanPortsLayout()
-                        : horizontalLayout
-                            ? _desktopHorizontalLayout()
-                            : _desktopVerticalLayout(),
-                  ],
-                ),
-                mobile: _mobileLayout(),
-              ),
+            desktop: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const DashboardHomeTitle(),
+                const AppGap.large1(),
+                !hasLanPort
+                    ? _desktopNoLanPortsLayout()
+                    : horizontalLayout
+                        ? _desktopHorizontalLayout()
+                        : _desktopVerticalLayout(),
+              ],
+            ),
+            mobile: _mobileLayout(),
+          ),
         ),
       ),
     );
@@ -109,8 +110,8 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
           children: [
             SizedBox(
               width: 4.col,
-              child: const Column(
-                children: [
+              child: Column(
+                children: const [
                   DashboardNetworks(),
                   AppGap.medium(),
                   DashboardQuickPanel(),
@@ -119,7 +120,17 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
               ),
             ),
             AppGap.gutter(),
-            SizedBox(width: 8.col, child: DashboardWiFiGrid()),
+            SizedBox(
+                width: 8.col,
+                child: Column(
+                  children: [
+                    if (getIt.get<ServiceHelper>().isSupportVPN()) ...[
+                      VPNStatusTile(),
+                      AppGap.medium(),
+                    ],
+                    DashboardWiFiGrid(),
+                  ],
+                )),
           ],
         ),
       ],
@@ -145,10 +156,14 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
           const AppGap.gutter(),
           SizedBox(
               width: 4.col,
-              child: const Column(
+              child: Column(
                 children: [
                   DashboardNetworks(),
                   AppGap.medium(),
+                  if (getIt.get<ServiceHelper>().isSupportVPN()) ...[
+                    VPNStatusTile(),
+                    AppGap.medium(),
+                  ],
                   DashboardQuickPanel(),
                   // _networkInfoTiles(state, isLoading),
                 ],
@@ -174,13 +189,17 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
             ),
           ),
           const AppGap.gutter(),
-          const Expanded(
+          Expanded(
             child: Column(
               children: [
                 InternetConnectionWidget(),
                 AppGap.medium(),
                 DashboardNetworks(),
                 AppGap.medium(),
+                if (getIt.get<ServiceHelper>().isSupportVPN()) ...[
+                  VPNStatusTile(),
+                  AppGap.medium(),
+                ],
                 DashboardWiFiGrid(),
               ],
             ),
@@ -194,7 +213,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: const [
+      children: [
         DashboardHomeTitle(),
         AppGap.large1(),
         InternetConnectionWidget(),
@@ -202,6 +221,10 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
         DashboardHomePortAndSpeed(),
         AppGap.medium(),
         DashboardNetworks(),
+        if (getIt.get<ServiceHelper>().isSupportVPN()) ...[
+          AppGap.medium(),
+          VPNStatusTile(),
+        ],
         AppGap.medium(),
         DashboardQuickPanel(),
         AppGap.medium(),

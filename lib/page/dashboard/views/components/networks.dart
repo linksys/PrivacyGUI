@@ -16,11 +16,13 @@ import 'package:privacy_gui/page/instant_topology/views/model/topology_model.dar
 import 'package:privacy_gui/page/instant_topology/views/widgets/tree_node_item.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/utils.dart';
+import 'package:privacy_gui/page/dashboard/views/components/loading_tile.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
+import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
 
 class DashboardNetworks extends ConsumerStatefulWidget {
   const DashboardNetworks({super.key});
@@ -76,65 +78,76 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
         ResponsiveLayout.isMobileLayout(context) || routerLength <= 3;
     final isLoading = ref.watch(deviceManagerProvider).deviceList.isEmpty;
 
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const AppGap.medium(),
-          ResponsiveLayout(
-            desktop: !hasLanPort
-                ? _mobile(context, ref)
-                : state.isHorizontalLayout
-                    ? _desktopHorizontal(context, ref)
-                    : _desktopVertical(context, ref),
-            mobile: _mobile(context, ref),
-          ),
-          SizedBox(
-              height: isLoading ? 188 : nodeTopologyHeight + treeViewBaseHeight,
-              child: TreeView<RouterTreeNode>(
-                treeController: treeController,
-                physics: showAllTopology
-                    ? NeverScrollableScrollPhysics()
-                    : ScrollPhysics(),
-                shrinkWrap: true,
-                nodeBuilder:
-                    (BuildContext context, TreeEntry<RouterTreeNode> entry) {
-                  return TreeIndentation(
-                    entry: entry,
-                    guide: IndentGuide.connectingLines(
-                      color: Theme.of(context).colorScheme.onBackground,
-                      indent: 24,
-                      thickness: 1,
-                      strokeJoin: StrokeJoin.miter,
-                      pathModifier: (path) => TopologyNodeItem.buildPath(
-                          path, entry.node, entry.node.data.isOnline),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(0, 16, 0, 0),
-                      child: TopologyNodeItem.simple(
-                        node: entry.node,
-                        actions: const [],
-                        extra: entry.node.data.isMaster
-                            ? '${loc(context).uptime}: $uptime'
-                            : null,
-                        onTap: entry.node.data.isOnline
-                            ? () {
-                                ref.read(nodeDetailIdProvider.notifier).state =
-                                    entry.node.data.deviceId;
-                                if (entry.node.data.isOnline) {
-                                  // Update the current target Id for node state
-                                  context.pushNamed(RouteNamed.nodeDetails);
-                                }
-                              }
-                            : null,
-                      ),
-                    ),
-                  );
-                },
-              ))
-        ],
-      ),
-    );
+    return isLoading
+        ? AppCard(
+            padding: EdgeInsets.zero,
+            child: SizedBox(
+                width: double.infinity,
+                height: 256,
+                child: const LoadingTile()))
+        : AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const AppGap.medium(),
+                ResponsiveLayout(
+                  desktop: !hasLanPort
+                      ? _mobile(context, ref)
+                      : state.isHorizontalLayout
+                          ? _desktopHorizontal(context, ref)
+                          : _desktopVertical(context, ref),
+                  mobile: _mobile(context, ref),
+                ),
+                SizedBox(
+                    height: isLoading
+                        ? 188
+                        : nodeTopologyHeight + treeViewBaseHeight,
+                    child: TreeView<RouterTreeNode>(
+                      treeController: treeController,
+                      physics: showAllTopology
+                          ? NeverScrollableScrollPhysics()
+                          : ScrollPhysics(),
+                      shrinkWrap: true,
+                      nodeBuilder: (BuildContext context,
+                          TreeEntry<RouterTreeNode> entry) {
+                        return TreeIndentation(
+                          entry: entry,
+                          guide: IndentGuide.connectingLines(
+                            color: Theme.of(context).colorScheme.onBackground,
+                            indent: 24,
+                            thickness: 1,
+                            strokeJoin: StrokeJoin.miter,
+                            pathModifier: (path) => TopologyNodeItem.buildPath(
+                                path, entry.node, entry.node.data.isOnline),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(0, 16, 0, 0),
+                            child: TopologyNodeItem.simple(
+                              node: entry.node,
+                              actions: const [],
+                              extra: entry.node.data.isMaster
+                                  ? '${loc(context).uptime}: $uptime'
+                                  : null,
+                              onTap: entry.node.data.isOnline
+                                  ? () {
+                                      ref
+                                          .read(nodeDetailIdProvider.notifier)
+                                          .state = entry.node.data.deviceId;
+                                      if (entry.node.data.isOnline) {
+                                        // Update the current target Id for node state
+                                        context
+                                            .pushNamed(RouteNamed.nodeDetails);
+                                      }
+                                    }
+                                  : null,
+                            ),
+                          ),
+                        );
+                      },
+                    ))
+              ],
+            ),
+          );
   }
 
   Widget _desktopHorizontal(BuildContext context, WidgetRef ref) {

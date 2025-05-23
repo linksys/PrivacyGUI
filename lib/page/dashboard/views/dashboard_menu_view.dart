@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/build_config.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
+import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
@@ -142,6 +144,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
         BuildConfig.forceCommandType == ForceCommand.local;
     final isSupportHealthCheck =
         ref.watch(dashboardHomeProvider).isHealthCheckSupported;
+    final isSupportVPN = getIt.get<ServiceHelper>().isSupportVPN();
     return [
       AppSectionItemData(
           title: loc(context).incredibleWiFi,
@@ -203,6 +206,14 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
           onTap: () {
             _navigateTo(RouteNamed.menuInstantVerify);
           }),
+      if (isSupportVPN)
+        AppSectionItemData(
+            title: loc(context).vpn,
+            description: loc(context).vpnDesc,
+            iconData: LinksysIcons.smartLock,
+            onTap: () {
+              _navigateTo(RouteNamed.settingsVPN);
+            }),
       if (!isSupportHealthCheck && isBehindRouter)
         AppSectionItemData(
             title: loc(context).externalSpeedText,

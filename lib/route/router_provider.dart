@@ -58,6 +58,7 @@ import 'package:privacy_gui/page/support/views/callback_view.dart';
 import 'package:privacy_gui/page/support/faq_list_view.dart';
 import 'package:privacy_gui/page/instant_topology/views/instant_topology_view.dart';
 import 'package:privacy_gui/page/troubleshooting/_troubleshooting.dart';
+import 'package:privacy_gui/page/vpn/views/vpn_settings_page.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/auth/ra_session_provider.dart';

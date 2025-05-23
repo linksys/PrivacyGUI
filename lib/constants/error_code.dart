@@ -36,6 +36,10 @@ const errorInvalidDestinationIpAddress = "ErrorInvalidDestinationIPAddress";
 const errorMissingDestination = "ErrorMissingDestination";
 const errorRuleOverlap = "ErrorRulesOverlap";
 const errorGuestSSIDConflict = "ErrorGuestSSIDConflict";
+// VPN
+const errorVPNNotConnected = "ErrorVPNNotConnected";
+const errorVPNUserAlreadyExists = "ErrorVPNUserAlreadyExists";
+const errorVPNUserNotFound = "ErrorVPNUserNotFound";
 
 // JNAP retry list
 const errorJNAPRetryList = [errorUnexpected];

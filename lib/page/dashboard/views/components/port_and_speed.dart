@@ -9,6 +9,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/page/dashboard/views/components/loading_tile.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
@@ -33,13 +34,22 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
     final isOnline = wanStatus == InternetStatus.online;
     final hasLanPort = state.lanPortConnections.isNotEmpty;
 
-    return ResponsiveLayout(
-        desktop: !hasLanPort
-            ? _desktopNoLanPorts(context, ref, state, isOnline, isLoading)
-            : horizontalLayout
-                ? _desktopHorizontal(context, ref, state, isOnline, isLoading)
-                : _desktopVertical(context, ref, state, isOnline, isLoading),
-        mobile: _mobile(context, ref, state, isOnline, isLoading));
+    return isLoading
+        ? AppCard(
+            padding: EdgeInsets.zero,
+            child: SizedBox(
+                width: double.infinity,
+                height: 150,
+                child: const LoadingTile()))
+        : ResponsiveLayout(
+            desktop: !hasLanPort
+                ? _desktopNoLanPorts(context, ref, state, isOnline, isLoading)
+                : horizontalLayout
+                    ? _desktopHorizontal(
+                        context, ref, state, isOnline, isLoading)
+                    : _desktopVertical(
+                        context, ref, state, isOnline, isLoading),
+            mobile: _mobile(context, ref, state, isOnline, isLoading));
   }
 
   Widget _mobile(BuildContext context, WidgetRef ref, DashboardHomeState state,

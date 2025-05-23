@@ -397,6 +397,16 @@ enum _JNAPActionValue {
   setUserAcknowledgedAutoConfiguration(
       value:
           'http://linksys.com/jnap/nodes/setup/SetUserAcknowledgedAutoConfiguration'),
+  // vpn
+  getVPNUser(value: 'http://linksys.com/jnap/vpn/GetVPNUser'),
+  setVPNUser(value: 'http://linksys.com/jnap/vpn/SetVPNUser'),
+  getVPNGateway(value: 'http://linksys.com/jnap/vpn/GetVPNGateway'),
+  setVPNGateway(value: 'http://linksys.com/jnap/vpn/SetVPNGateway'),
+  getVPNService(value: 'http://linksys.com/jnap/vpn/GetVPNService'),
+  setVPNService(value: 'http://linksys.com/jnap/vpn/SetVPNService'),
+  testVPNConnection(value: 'http://linksys.com/jnap/vpn/TestVPNConnection'),
+  getTunneledUser(value: 'http://linksys.com/jnap/vpn/GetTunneledUser'),
+  setTunneledUser(value: 'http://linksys.com/jnap/vpn/SetTunneledUser'),
   ;
 
   const _JNAPActionValue({required this.value});

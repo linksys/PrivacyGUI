@@ -6,6 +6,9 @@ final serviceHelper = getIt<ServiceHelper>();
 
 class ServiceHelper {
 
+  bool isSupportVPN([List<String>? services]) =>
+      isServiceSupport(JNAPService.vpn, services);
+
   bool isSupportSetup([List<String>? services]) =>
       isServiceSupport(JNAPService.setup, services);
 
