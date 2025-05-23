@@ -2,7 +2,7 @@ part of 'base_actions.dart';
 
 class TestAdvancedSettingsActions extends CommonBaseActions {
   TestAdvancedSettingsActions(super.tester);
-  /*
+  
   Finder internetSettingsCardFinder() {
     final cardFinder = find.ancestor(
       of: find.text(TestInternetSettingsActions(tester).title),
@@ -11,7 +11,6 @@ class TestAdvancedSettingsActions extends CommonBaseActions {
     expect(cardFinder, findsOneWidget);
     return cardFinder;
   }
-  */
 
   Finder advancedRoutingCardFinder() {
     final cardFinder = find.ancestor(
@@ -68,6 +67,13 @@ class TestAdvancedSettingsActions extends CommonBaseActions {
     return cardFinder;
   }
   */
+
+  Future<void> enterInternetSettingsPage() async {
+    final finder = internetSettingsCardFinder();
+    // Tap the card
+    await tester.tap(finder);
+    await tester.pumpAndSettle();
+  }
 
   Future<void> enterAdvancedRoutingPage() async {
     final finder = advancedRoutingCardFinder();
