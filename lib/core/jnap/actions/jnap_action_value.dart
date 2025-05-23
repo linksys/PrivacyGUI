@@ -407,6 +407,7 @@ enum _JNAPActionValue {
   testVPNConnection(value: 'http://linksys.com/jnap/vpn/TestVPNConnection'),
   getTunneledUser(value: 'http://linksys.com/jnap/vpn/GetTunneledUser'),
   setTunneledUser(value: 'http://linksys.com/jnap/vpn/SetTunneledUser'),
+  setVPNApply(value: 'http://linksys.com/jnap/vpn/SetVPNApply'),
   ;
 
   const _JNAPActionValue({required this.value});

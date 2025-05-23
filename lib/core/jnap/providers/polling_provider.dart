@@ -122,7 +122,7 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
       await ref.read(nodeLightSettingsProvider.notifier).fetch();
     }
     if (serviceHelper.isSupportVPN()) {
-      await ref.read(vpnProvider.notifier).fetch();
+      await ref.read(vpnProvider.notifier).fetch(false, true);
     }
   }
 

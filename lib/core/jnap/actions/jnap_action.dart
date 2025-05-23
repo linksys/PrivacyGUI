@@ -197,6 +197,7 @@ enum JNAPAction {
   testVPNConnection,
   getTunneledUser,
   setTunneledUser,
+  setVPNApply,
   // wirelessScheduler
   getWirelessSchedulerSettings,
   //led

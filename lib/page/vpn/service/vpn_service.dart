@@ -55,12 +55,17 @@ class VPNService {
         .then((result) => VPNTestResult.fromMap(result.output));
   }
 
+  Future<void> applyVPNSettings() {
+    return routerRepository.send(JNAPAction.setVPNApply,
+        auth: true, fetchRemote: true);
+  }
+
   Future<void> fetch([bool force = false]) async {
     final commands = JNAPTransactionBuilder(auth: true, commands: [
       const MapEntry(JNAPAction.getVPNUser, {}),
       const MapEntry(JNAPAction.getVPNGateway, {}),
       const MapEntry(JNAPAction.getVPNService, {}),
-      const MapEntry(JNAPAction.getTunneledUser, {}),
+      // const MapEntry(JNAPAction.getTunneledUser, {}),
     ]);
     await routerRepository.transaction(commands, fetchRemote: force);
   }
@@ -71,8 +76,8 @@ class VPNService {
         MapEntry(
             JNAPAction.setVPNUser, settings.userCredentials?.toMap() ?? {}),
       if (settings.gatewaySettings?.gatewayAddress != null)
-      MapEntry(
-          JNAPAction.setVPNGateway, settings.gatewaySettings?.toMap() ?? {}),
+        MapEntry(
+            JNAPAction.setVPNGateway, settings.gatewaySettings?.toMap() ?? {}),
       MapEntry(
           JNAPAction.setVPNService, settings.serviceSettings?.toMap() ?? {}),
       if (settings.tunneledUserIP != null)

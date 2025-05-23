@@ -108,16 +108,16 @@ class MockVPNNotifier extends _i2.Notifier<_i3.VPNState> with _i1.Mock implement
       ) as _i3.VPNState);
 
   @override
-  _i5.Future<_i3.VPNState> fetch([bool? force = false]) => (super.noSuchMethod(
+  _i5.Future<_i3.VPNState> fetch([bool? force = false, bool? statusOnly = false]) => (super.noSuchMethod(
         Invocation.method(
           #fetch,
-          [force],
+          [force, statusOnly],
         ),
         returnValue: _i5.Future<_i3.VPNState>.value(_FakeVPNState_1(
           this,
           Invocation.method(
             #fetch,
-            [force],
+            [force, statusOnly],
           ),
         )),
         returnValueForMissingStub:
@@ -125,7 +125,7 @@ class MockVPNNotifier extends _i2.Notifier<_i3.VPNState> with _i1.Mock implement
           this,
           Invocation.method(
             #fetch,
-            [force],
+            [force, statusOnly],
           ),
         )),
       ) as _i5.Future<_i3.VPNState>);

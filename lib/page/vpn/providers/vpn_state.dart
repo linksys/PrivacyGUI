@@ -7,14 +7,14 @@ class VPNSettings extends Equatable {
   final bool isEditingCredentials;
   final VPNUserCredentials? userCredentials;
   final VPNGatewaySettings? gatewaySettings;
-  final VPNServiceSetSettings? serviceSettings;
+  final VPNServiceSetSettings serviceSettings;
   final String? tunneledUserIP;
 
   const VPNSettings({
     this.isEditingCredentials = false,
     this.userCredentials,
     this.gatewaySettings,
-    this.serviceSettings,
+    required this.serviceSettings,
     this.tunneledUserIP,
   });
 
@@ -67,7 +67,7 @@ class VPNSettings extends Equatable {
         serviceSettings: map['serviceSettings'] != null
             ? VPNServiceSetSettings.fromMap(
                 map['serviceSettings'] as Map<String, dynamic>)
-            : null,
+            : VPNServiceSetSettings(enabled: false, autoConnect: false),
         tunneledUserIP: map['tunneledUserIP'] as String?,
       );
 
@@ -146,7 +146,7 @@ class VPNState extends Equatable {
         settings = const VPNSettings(
           userCredentials: null,
           gatewaySettings: null,
-          serviceSettings: null,
+          serviceSettings: VPNServiceSetSettings(enabled: false, autoConnect: false),
           tunneledUserIP: null,
         );
 

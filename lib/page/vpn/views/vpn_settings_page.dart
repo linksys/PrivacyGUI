@@ -119,8 +119,25 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
         (_gatewayController.text.isNotEmpty ? isGatewayValid != true : false);
   }
 
+  Future<bool> _confirmSaveDialog() async {
+    return await showMessageAppDialog(context,
+        title: loc(context).alertExclamation,
+        message:
+            'We are applying your changes, please wait for a moment. It will restart the VPN service. Do you want to proceed?',
+        actions: [
+          AppTextButton(loc(context).cancel, onTap: () {
+            context.pop(false);
+          }),
+          AppTextButton(loc(context).save, onTap: () {
+            context.pop(true);
+          }),
+        ]);
+  }
+
   Future<void> _saveChanges() async {
     if (_hasErrors()) return;
+    final shouldSave = await _confirmSaveDialog();
+    if (!shouldSave) return;
     final notifier = ref.read(vpnProvider.notifier);
     doSomethingWithSpinner(context, notifier.save()).then((state) {
       if (state == null) {

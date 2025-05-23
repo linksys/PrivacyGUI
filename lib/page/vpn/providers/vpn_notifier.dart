@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/vpn/service/vpn_service.dart';
 import '../models/vpn_models.dart';
 import 'vpn_state.dart';
@@ -10,7 +11,7 @@ class VPNNotifier extends Notifier<VPNState> {
     return const VPNState.init();
   }
 
-  Future<VPNState> fetch([bool force = false]) async {
+  Future<VPNState> fetch([bool force = false, bool statusOnly = false]) async {
     final service = ref.read(vpnServiceProvider);
     try {
       await service.fetch(force);
@@ -18,16 +19,19 @@ class VPNNotifier extends Notifier<VPNState> {
       final userCredentials = await service.getVPNUser();
       final gatewaySettings = await service.getVPNGateway();
       final serviceSettings = await service.getVPNService();
-      final tunneledUserIP = await service.getTunneledUser();
 
+      // final tunneledUserIP =
+      //     serviceSettings.enabled ? await service.getTunneledUser() : null;
+
+      
       state = state.copyWith(
-        settings: state.settings.copyWith(
+        settings: statusOnly ? state.settings : state.settings.copyWith(
           userCredentials: userCredentials,
           gatewaySettings: gatewaySettings,
           serviceSettings: VPNServiceSetSettings(
               enabled: serviceSettings.enabled,
               autoConnect: serviceSettings.autoConnect),
-          tunneledUserIP: tunneledUserIP,
+          // tunneledUserIP: tunneledUserIP,
         ),
         status: state.status.copyWith(
           statistics: serviceSettings.statistics,
@@ -43,6 +47,7 @@ class VPNNotifier extends Notifier<VPNState> {
   Future<VPNState> save() async {
     final service = ref.read(vpnServiceProvider);
     await service.save(state.settings);
+    await service.applyVPNSettings();
     return fetch(true);
   }
 
