@@ -821,6 +821,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
               vertical: Spacing.small3,
             ),
             child: AppDropdownButton<String>(
+              key: const ValueKey('mtuDropdown'),
               title: loc(context).mtu,
               selected: ipv4Setting.mtu == 0
                   ? loc(context).auto
@@ -857,6 +858,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
               vertical: Spacing.small3,
             ),
             child: AppTextField.minMaxNumber(
+              key: const ValueKey('mtuManualSizeText'),
               controller: _mtuSizeController,
               enable: !isMtuAuto,
               border: const OutlineInputBorder(),
@@ -1016,6 +1018,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
           vertical: Spacing.small3,
         ),
         child: AppDropdownButton<String>(
+          key: const ValueKey('ipv4ConnectionDropdown'),
           selected: ipv4Setting.ipv4ConnectionType,
           items: ipv4Setting.supportedIPv4ConnectionType,
           label: (item) {
@@ -1259,6 +1262,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
           vertical: Spacing.small3,
         ),
         child: AppIPFormField(
+          key: const ValueKey('ipv4ServerAddressField'),
           header: AppText.bodySmall(
             loc(context).serverIpv4Address,
           ),
@@ -1344,6 +1348,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
                         headerText:
                             '${loc(context).maxIdleTime} (${loc(context).minutes})',
                         semanticLabel: 'max idle time',
+                        key: const ValueKey('maxIdleTimeText'),
                         max: 9999,
                         min: 1,
                         controller: _idleTimeController,
@@ -1372,6 +1377,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
                         headerText:
                             '${loc(context).redialPeriod} (${loc(context).seconds})',
                         semanticLabel: 'redial period',
+                        key: const ValueKey('redialPeriodText'),
                         max: 180,
                         min: 20,
                         controller: _redialPeriodController,
@@ -1472,6 +1478,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
           vertical: Spacing.small3,
         ),
         child: AppDropdownButton<String>(
+          key: const ValueKey('ipv6ConnectionDropdown'),
           selected: state.ipv6Setting.ipv6ConnectionType,
           items: allowedTypeList,
           label: (item) {
@@ -1559,6 +1566,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
           Padding(
             padding: inputPadding,
             child: AppDropdownButton<IPv6rdTunnelMode>(
+              key: const ValueKey('ipv6TunnelDropdown'),
               title: loc(context).sixrdTunnel,
               selected:
                   ipv6Setting.ipv6rdTunnelMode ?? IPv6rdTunnelMode.disabled,

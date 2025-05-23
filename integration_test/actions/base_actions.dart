@@ -53,6 +53,7 @@ part 'firewall_actions.dart';
 part 'apps_and_gaming_actions.dart';
 part 'administration_actions.dart';
 part 'local_network_settings_actions.dart';
+part 'internet_settings_actions.dart';
 
 abstract class BaseActions {
   final WidgetTester tester;
@@ -86,6 +87,7 @@ sealed class CommonBaseActions extends BaseActions with CommonActionsMixin {
       TestAppsAndGamingActions() => loc(context).appsGaming,
       TestAdministrationActions() => loc(context).administration,
       TestLocalNetworkSettingsActions() => loc(context).localNetwork,
+      TestInternetSettingsActions() => loc(context).internetSettings.capitalizeWords(),
       // TODO: Handle this case.
       TestPnpSetupActions() => throw UnimplementedError(),
       // TODO: Handle this case.
