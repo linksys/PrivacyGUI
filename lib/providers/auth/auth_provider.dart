@@ -218,6 +218,40 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     });
   }
 
+  Future cloudLoginAuth(
+      {required String token, required String sn}) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+
+      // Get networks from cloud via token
+      final cloud = ref.read(cloudRepositoryProvider);
+      final networks =
+          await cloud.getNetworks(token).onError((error, stackTrace) {
+        logger.e('[Auth]: Get Cloud Networks failed: $error');
+        throw CloudAuthInvalidException();
+      });
+      if (networks.isEmpty) {
+        throw CloudNetworkNotFoundException();
+      }
+      // Get the network that has the same sn as the current sn
+      final network = networks.firstWhere(
+          (network) => network.network.routerSerialNumber == sn,
+          orElse: () => throw CloudNetworkNotFoundException());
+      // Save nid and sn to prefs
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(pCurrentSN, sn);
+      await prefs.setString(pSelectedNetworkId, network.network.networkId);
+      // Save the new cloud credentials
+      return await updateCloudCredientials(
+          sessionToken: SessionToken(
+              accessToken: token,
+              tokenType: 'Bearer',
+              expiresIn: DateTime.now()
+                  .add(const Duration(hours: 1))
+                  .millisecondsSinceEpoch));
+    });
+  }
+
   Future cloudLogin({
     required String username,
     required String password,
@@ -243,6 +277,8 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     String? username,
     String? password,
   }) async {
+    logger.d(
+        '[Auth]: Update cloud credientials: $sessionToken, $username, $password');
     const storage = FlutterSecureStorage();
     if (sessionToken != null) {
       await storage.write(

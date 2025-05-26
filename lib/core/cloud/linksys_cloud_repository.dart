@@ -64,8 +64,8 @@ class LinksysCloudRepository {
         .then((response) => SessionToken.fromJson(jsonDecode(response.body)));
   }
 
-  Future<List<NetworkAccountAssociation>> getNetworks() async {
-    return loadSessionToken().then((token) => _httpClient
+  Future<List<NetworkAccountAssociation>> getNetworks([String? token]) async {
+    return loadSessionToken(token).then((token) => _httpClient
         .getNetworks(token: token)
         .then((response) =>
             List.from(jsonDecode(response.body)['networkAccountAssociations'])
@@ -159,7 +159,10 @@ class LinksysCloudRepository {
         ));
   }
 
-  Future<String> loadSessionToken() async {
+  Future<String> loadSessionToken([String? token]) async {
+    if (token != null) {
+      return token;
+    }
     return const FlutterSecureStorage()
         .read(key: pSessionToken)
         .then((value) =>

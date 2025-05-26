@@ -31,6 +31,7 @@ import 'package:privacy_gui/page/landing/_landing.dart';
 
 import 'package:privacy_gui/page/login/views/_views.dart';
 import 'package:privacy_gui/page/login/views/local_reset_router_password_view.dart';
+import 'package:privacy_gui/page/login/views/login_cloud_auth_view.dart';
 import 'package:privacy_gui/page/login/views/login_cloud_ra_pin_view.dart';
 import 'package:privacy_gui/page/login/views/login_cloud_ra_view.dart';
 import 'package:privacy_gui/page/instant_admin/_instant_admin.dart';
@@ -91,6 +92,8 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/',
     routes: [
       localLoginRoute,
+      cloudLoginAuthRoute,
+      cloudLoginRoute,
       homeRoute,
       // ref.read(otpRouteProvider),
       LinksysRoute(
@@ -225,15 +228,15 @@ class RouterNotifier extends ChangeNotifier {
             .then((path) => path ?? RoutePath.dashboardHome),
         LoginType.local => await _prepare(state, RoutePath.dashboardHome)
             .then((path) => path ?? RoutePath.dashboardHome),
-        _ => _home(),
+        _ => _home(state.uri.query),
       };
     });
   }
 
-  String _home() {
+  String _home([String? query]) {
     return BuildConfig.forceCommandType == ForceCommand.local
         ? RoutePath.localLoginPassword
-        : RoutePath.home;
+        : '${RoutePath.cloudLoginAuth}?$query';
   }
 
   FutureOr<String?> _goPnpPath(GoRouterState state) {
