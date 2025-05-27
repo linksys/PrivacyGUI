@@ -1022,8 +1022,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
             AppGap.small2(),
             ...disabledWiFiBands
                 .map((e) => AppText.labelMedium(
-                      loc(context).disableBandWarning(
-                          getWifiRadioBandTitle(context, e.radioID)),
+                      loc(context).disableBandWarning(e.radioID.bandName),
                       color: Theme.of(context).colorScheme.error,
                     ))
                 .toList()

@@ -301,33 +301,79 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
   }
 
   Future<void> _handleWifiToggled(bool value) async {
-    showSpinnerDialog(context);
-    final wifiProvider = ref.read(wifiListProvider.notifier);
-    await wifiProvider.fetch();
-    if (widget.item.isGuest) {
-      wifiProvider.setWiFiEnabled(value);
-      await wifiProvider.save().then((value) => context.pop()).catchError(
-          (error, stackTrace) {
-        // Show RouterNotFound alert for the JNAP side effect error
-        showRouterNotFoundAlert(context, ref, onComplete: () => context.pop());
-      }, test: (error) => error is JNAPSideEffectError).onError(
-          (error, statckTrace) {
-        // Just dismiss the spinner for other unexpected errors
-        context.pop();
-      });
-    } else {
-      await wifiProvider
-          .saveToggleEnabled(radios: widget.item.radios, enabled: value)
-          .then((value) => context.pop())
-          .catchError((error, stackTrace) {
-        // Show RouterNotFound alert for the JNAP side effect error
-        showRouterNotFoundAlert(context, ref, onComplete: () => context.pop());
-      }, test: (error) => error is JNAPSideEffectError).onError(
-              (error, statckTrace) {
-        // Just dismiss the spinner for other unexpected errors
-        context.pop();
-      });
+    final result = await showSwitchWifiDialog();
+    if (result) {
+      showSpinnerDialog(context);
+      final wifiProvider = ref.read(wifiListProvider.notifier);
+      await wifiProvider.fetch();
+      if (widget.item.isGuest) {
+        wifiProvider.setWiFiEnabled(value);
+        await wifiProvider.save().then((value) => context.pop()).catchError(
+            (error, stackTrace) {
+          // Show RouterNotFound alert for the JNAP side effect error
+          showRouterNotFoundAlert(context, ref,
+              onComplete: () => context.pop());
+        }, test: (error) => error is JNAPSideEffectError).onError(
+            (error, statckTrace) {
+          // Just dismiss the spinner for other unexpected errors
+          context.pop();
+        });
+      } else {
+        await wifiProvider
+            .saveToggleEnabled(radios: widget.item.radios, enabled: value)
+            .then((value) => context.pop())
+            .catchError((error, stackTrace) {
+          // Show RouterNotFound alert for the JNAP side effect error
+          showRouterNotFoundAlert(context, ref,
+              onComplete: () => context.pop());
+        }, test: (error) => error is JNAPSideEffectError).onError(
+                (error, statckTrace) {
+          // Just dismiss the spinner for other unexpected errors
+          context.pop();
+        });
+      }
     }
+  }
+
+  Future<bool> showSwitchWifiDialog() async {
+    return await showSimpleAppDialog(
+      context,
+      title: loc(context).wifiListSaveModalTitle,
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppText.bodyMedium(loc(context).wifiListSaveModalDesc),
+            if (!widget.item.isGuest && widget.item.isEnabled)
+              ..._disableGuestBandWarning(),
+            const AppGap.medium(),
+            AppText.bodyMedium(loc(context).doYouWantToContinue),
+          ],
+        ),
+      ),
+      actions: [
+        AppTextButton(loc(context).cancel, onTap: () => context.pop()),
+        AppTextButton(loc(context).ok, onTap: () => context.pop(true)),
+      ],
+    );
+  }
+
+  List<Widget> _disableGuestBandWarning() {
+    final guestWifiItem =
+        ref.read(dashboardHomeProvider).wifis.firstWhere((e) => e.isGuest);
+    // There will be only one radio item for each wifi card
+    final currentRadio = widget.item.radios.first;
+    return guestWifiItem.isEnabled
+        ? [
+            AppGap.small2(),
+            AppText.labelMedium(
+              loc(context).disableBandWarning(
+                  WifiRadioBand.getByValue(currentRadio).bandName),
+              color: Theme.of(context).colorScheme.error,
+            )
+          ]
+        : [];
   }
 
   void _showWiFiShareModal(BuildContext context) {
