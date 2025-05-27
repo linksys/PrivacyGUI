@@ -4,6 +4,7 @@ import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:privacy_gui/core/cloud/model/guidan_remote_assistance.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/providers/auth/ra_session_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -219,37 +220,30 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   }
 
   Future cloudLoginAuth(
-      {required String token, required String sn}) async {
+      {required String token,
+      required String sn,
+      required GRASessionInfo sessionInfo}) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-
-      // Get networks from cloud via token
-      final cloud = ref.read(cloudRepositoryProvider);
-      final networks =
-          await cloud.getNetworks(token).onError((error, stackTrace) {
-        logger.e('[Auth]: Get Cloud Networks failed: $error');
-        throw CloudAuthInvalidException();
-      });
-      if (networks.isEmpty) {
-        throw CloudNetworkNotFoundException();
-      }
-      // Get the network that has the same sn as the current sn
-      final network = networks.firstWhere(
-          (network) => network.network.routerSerialNumber == sn,
-          orElse: () => throw CloudNetworkNotFoundException());
       // Save nid and sn to prefs
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(pCurrentSN, sn);
-      await prefs.setString(pSelectedNetworkId, network.network.networkId);
+      await prefs.setString(pGRASessionId, sessionInfo.id);
       // Save the new cloud credentials
       return await updateCloudCredientials(
           sessionToken: SessionToken(
               accessToken: token,
               tokenType: 'Bearer',
               expiresIn: DateTime.now()
-                  .add(const Duration(hours: 1))
+                  .add(Duration(seconds: sessionInfo.expiredIn * -1))
                   .millisecondsSinceEpoch));
     });
+  }
+
+  Future<GRASessionInfo?> testSessionAuthentication(
+      {required String token, required String session}) async {
+    final cloud = ref.read(cloudRepositoryProvider);
+    return cloud.getSessionInfo(token: token, sessionId: session);
   }
 
   Future cloudLogin({

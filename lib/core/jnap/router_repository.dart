@@ -26,6 +26,7 @@ import 'package:privacy_gui/core/jnap/spec/jnap_spec.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/utils.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'providers/ip_getter/get_local_ip.dart'
     if (dart.library.io) 'providers/ip_getter/mobile_get_local_ip.dart'
     if (dart.library.html) 'providers/ip_getter/web_get_local_ip.dart';
@@ -167,7 +168,7 @@ class RouterRepository {
     //     (loginType == LoginType.local ? CommandType.local : CommandType.remote);
     final communicateType = type;
     logger.d('create transaction');
-    String url = _buildCommandUrl(
+    final url = await _buildCommandUrl(
       routerType: routerType,
       type: communicateType,
     );
@@ -284,10 +285,10 @@ class RouterRepository {
     onCompleted?.call(exceedMaxRetry);
   }
 
-  String _buildCommandUrl({
+  Future<String> _buildCommandUrl({
     required RouterType routerType,
     required CommandType? type,
-  }) {
+  }) async {
     String url;
     var localIP = getLocalIP();
     localIP = localIP.startsWith('http') ? localIP : 'https://$localIP/';
@@ -306,8 +307,11 @@ class RouterRepository {
     }();
     switch (newRouterType) {
       case RouterType.others:
+        final sessionId = await SharedPreferences.getInstance()
+            .then((value) => value.getString(pGRASessionId));
         url = isCloudLogin()
-            ? cloudEnvironmentConfig[kCloudJNAP]
+            ? (cloudEnvironmentConfig[kCloudRemoteJNAP] as String)
+                .replaceFirst(kVarRASessionId, sessionId ?? '')
             : '${localIP}JNAP/';
         break;
       case RouterType.behind:
@@ -426,7 +430,7 @@ class RouterRepository {
     // final communicateType =
     //     type ?? (!isCloudLogin() ? CommandType.local : CommandType.remote);
     final communicateType = type;
-    String url = _buildCommandUrl(
+    final url = await _buildCommandUrl(
       routerType: routerType,
       type: communicateType,
     );

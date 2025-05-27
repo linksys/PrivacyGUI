@@ -260,7 +260,8 @@ class RouterNotifier extends ChangeNotifier {
 
     if (loginType == LoginType.remote) {
       final networkId = prefs.getString(pSelectedNetworkId);
-      naviPath = await _prepareRemote(networkId, serialNumber);
+      final sessionId = prefs.getString(pGRASessionId);
+      naviPath = await _prepareRemote(networkId, serialNumber, sessionId);
     } else if (loginType == LoginType.local) {
       naviPath = await _prepareLocal(serialNumber);
     }
@@ -303,14 +304,18 @@ class RouterNotifier extends ChangeNotifier {
     } else {
       // TODO #LINKSYS Error handling for unable to get deviceinfo
       logger.i('[Prepare]: Error handling for unable to get deviceinfo');
-      return _home();
+      return _home('error=noDeviceInfo');
     }
   }
 
   Future<String?> _prepareRemote(
-      String? networkId, String? serialNumber) async {
-    logger.i('[Prepare]: remote - $networkId, $serialNumber');
-    if (_ref.read(selectedNetworkIdProvider) == null) {
+      String? networkId, String? serialNumber, String? sessionId) async {
+    logger.i('[Prepare]: remote - $networkId, $serialNumber, $sessionId');
+    if (serialNumber != null && sessionId != null) {
+      await _ref
+          .read(dashboardManagerProvider.notifier)
+          .saveSelectedNetwork(serialNumber, '');
+    } else if (_ref.read(selectedNetworkIdProvider) == null) {
       _ref.read(selectNetworkProvider.notifier).refreshCloudNetworks();
       if (networkId == null || serialNumber == null) {
         return RoutePath.selectNetwork;

@@ -6,6 +6,7 @@ import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/asset_service.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/cloud2_service.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/event_service.dart';
+import 'package:privacy_gui/core/cloud/linksys_requests/guidans_remote_assistance_service.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/ping_service.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/remote_assistance_service.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/smart_device_service.dart';
@@ -14,6 +15,7 @@ import 'package:privacy_gui/core/cloud/model/cloud_event_subscription.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_linkup.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_remote_assistance_info.dart';
 import 'package:privacy_gui/core/cloud/model/create_ticket.dart';
+import 'package:privacy_gui/core/cloud/model/guidan_remote_assistance.dart';
 import 'package:privacy_gui/core/http/linksys_http_client.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/authorization_service.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/device_service.dart';
@@ -400,6 +402,16 @@ class LinksysCloudRepository {
         }));
   }
 
+  Future<GRASessionInfo> getSessionInfo(
+      {String? token, required String sessionId}) {
+    return loadSessionToken(token).then((token) => _httpClient
+            .getSessionInfo(token: token, sessionId: sessionId)
+            .then((response) {
+          final json = jsonDecode(response.body);
+          return GRASessionInfo.fromMap(json);
+        }));
+  }
+
   ///
   ///{
   ///"remoteAssistanceSession": {
@@ -482,7 +494,10 @@ class LinksysCloudRepository {
   }
 
   // Geolocation
-  Future getGeolocation({required String linksysToken, required String serialNumber,}) {
+  Future getGeolocation({
+    required String linksysToken,
+    required String serialNumber,
+  }) {
     return _httpClient.geolocation(
         linksysToken: linksysToken, serialNumber: serialNumber);
   }

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
+import 'package:privacy_gui/core/cloud/model/guidan_remote_assistance.dart';
+import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
@@ -9,6 +11,7 @@ import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacygui_widgets/hook/icon_hooks.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
@@ -31,7 +34,11 @@ class LoginCloudAuthView extends ArgumentsConsumerStatefulView {
 class _LoginCloudAuthViewState extends ConsumerState<LoginCloudAuthView> {
   bool _isLoading = false;
   String? _token;
-  String? _sn;
+  String? _session;
+  String? _error;
+
+  //
+  GRASessionInfo? _sessionInfo;
 
   @override
   void initState() {
@@ -39,7 +46,10 @@ class _LoginCloudAuthViewState extends ConsumerState<LoginCloudAuthView> {
     // Read query parameters - token, nid, sn, etc
     final queryParameters = widget.args;
     _token = queryParameters['token'];
-    _sn = queryParameters['sn'];
+    _session = queryParameters['session'];
+    _error = queryParameters['error'];
+    _isLoading = false;
+    init();
   }
 
   @override
@@ -47,9 +57,33 @@ class _LoginCloudAuthViewState extends ConsumerState<LoginCloudAuthView> {
     super.dispose();
   }
 
+  Future init() async {
+    final token = _token;
+    final session = _session;
+    if (token == null || session == null) {
+      return;
+    }
+    setState(() {
+      _isLoading = true;
+    });
+    await Future.doWhile(() => !mounted);
+    final sessionInfo = _error == null
+        ? await ref
+            .read(authProvider.notifier)
+            .testSessionAuthentication(token: token, session: session)
+            .onError((error, stackTrace) {
+            _error = error.toString();
+            return null;
+          })
+        : null;
+    _sessionInfo = sessionInfo;
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    bool canProceed = _token != null && _sn != null;
     return StyledAppPageView(
       appBarStyle: AppBarStyle.none,
       padding: EdgeInsets.zero,
@@ -61,46 +95,72 @@ class _LoginCloudAuthViewState extends ConsumerState<LoginCloudAuthView> {
                     ? const AppSpinner()
                     : SizedBox(
                         width: 4.col,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            AppText.titleLarge(loc(context).login),
-                            const AppGap.medium(),
-                            canProceed
-                                ? AppText.labelLarge(
-                                    'You are log in with access token to manage $_sn, do you want to proceed?')
-                                : AppText.labelLarge(
-                                    'Not enough information to login'),
-                            AppGap.medium(),
-                            const AppGap.large3(),
-                            if (BuildConfig.isEnableEnvPicker &&
-                                BuildConfig.forceCommandType !=
-                                    ForceCommand.local &&
-                                canProceed)
-                              Align(
-                                  alignment: Alignment.bottomRight,
-                                  child: AppTextButton.noPadding('Select Env',
-                                      onTap: () async {
-                                    final _ = await showModalBottomSheet(
-                                        enableDrag: false,
-                                        context: context,
-                                        builder: (context) =>
-                                            _createEnvPicker());
-                                    setState(() {});
-                                  })),
-                            AppFilledButton(
-                              'Proceed',
-                              onTap: canProceed
-                                  ? () {
-                                      _cloudLogin(_token!, _sn!);
-                                    }
-                                  : null,
-                            ),
-                          ],
-                        ),
+                        child: _error != null ? _errorView() : _mainView(),
                       ))),
       ),
+    );
+  }
+
+  Widget _errorView() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AppText.labelLarge(_error!),
+        AppGap.large1(),
+      ],
+    );
+  }
+
+  Widget _mainView() {
+    bool canProceed = _token != null && _sessionInfo != null;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Image(
+          image: CustomTheme.of(context).images.devices.getByName(
+                routerIconTestByModel(
+                  modelNumber: _sessionInfo?.modelNumber ?? 'LN12',
+                ),
+              ),
+          height: 120,
+          width: 120,
+          fit: BoxFit.contain,
+        ),
+        const AppGap.medium(),
+        AppText.titleLarge(loc(context).login),
+        const AppGap.medium(),
+        canProceed
+            ? AppText.labelLarge(
+                'You are log in with access token to manage ${_sessionInfo?.serialNumber}, do you want to proceed?')
+            : AppText.labelLarge('Not enough information to login'),
+        AppGap.medium(),
+        if (_sessionInfo != null)
+          AppText.bodyMedium(
+              'Status: ${_sessionInfo?.status.toValue()}, Expired in: ${_sessionInfo?.expiredIn}'),
+        const AppGap.large3(),
+        if (BuildConfig.isEnableEnvPicker &&
+            BuildConfig.forceCommandType != ForceCommand.local &&
+            canProceed)
+          Align(
+              alignment: Alignment.bottomRight,
+              child: AppTextButton.noPadding('Select Env', onTap: () async {
+                final _ = await showModalBottomSheet(
+                    enableDrag: false,
+                    context: context,
+                    builder: (context) => _createEnvPicker());
+                setState(() {});
+              })),
+        AppFilledButton(
+          'Proceed',
+          onTap: _sessionInfo?.status == GRASessionStatus.active && canProceed
+              ? () {
+                  _cloudLogin(_token!, _session!);
+                }
+              : null,
+        ),
+      ],
     );
   }
 
@@ -158,8 +218,12 @@ class _LoginCloudAuthViewState extends ConsumerState<LoginCloudAuthView> {
     });
   }
 
-  Future<void> _cloudLogin(String token, String sn) {
-    logger.d('LoginCloudView _cloudLogin: $token, $sn');
+  Future<void> _cloudLogin(String token, String session) {
+    if (_sessionInfo == null) {
+      logger.e('LoginCloudView _cloudLogin: sessionInfo is null');
+      return Future.value();
+    }
+    logger.d('LoginCloudView _cloudLogin: $token, $session');
     setState(() {
       _isLoading = true;
     });
@@ -168,7 +232,8 @@ class _LoginCloudAuthViewState extends ConsumerState<LoginCloudAuthView> {
         .read(authProvider.notifier)
         .cloudLoginAuth(
           token: token,
-          sn: sn,
+          sn: _sessionInfo?.serialNumber ?? '',
+          sessionInfo: _sessionInfo!,
         )
         .onError((error, stackTrace) {
       logger.e('LoginCloudView _cloudLogin error: $error');
