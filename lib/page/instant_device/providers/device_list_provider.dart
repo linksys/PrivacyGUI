@@ -55,6 +55,7 @@ class DeviceListNotifier extends Notifier<DeviceListState> {
     var isOnline = false;
     var isWired = false;
     var type = WifiConnectionType.main;
+    var isMLO = false;
 
     name = device.getDeviceLocation();
     icon = _readIcon(device);
@@ -73,6 +74,8 @@ class DeviceListNotifier extends Notifier<DeviceListState> {
     band = ref.read(deviceManagerProvider.notifier).getBandConnectedBy(device);
     signalStrength = device.signalDecibels;
     type = device.connectedWifiType;
+    isMLO = device.mloList.isNotEmpty;
+
     final ssid =
         ref.read(deviceManagerProvider.notifier).getSsidConnectedBy(device);
     return newState.copyWith(
@@ -94,6 +97,7 @@ class DeviceListNotifier extends Notifier<DeviceListState> {
       isWired: isWired,
       type: type,
       ssid: ssid,
+      isMLO: isMLO,
     );
   }
 

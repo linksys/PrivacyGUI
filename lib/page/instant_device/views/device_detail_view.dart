@@ -205,7 +205,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
                 children: [
                   AppText.labelLarge(
                     _formatEmptyValue(
-                        '${state.item.ssid} • ${state.item.isMLO ? '6GHz, 5GHz' : state.item.band}'),
+                        '${state.item.ssid} • ${state.item.band}'),
                     selectable: true,
                   ),
                   if (state.item.isMLO) ...[

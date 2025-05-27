@@ -40,13 +40,9 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
 
   final Map<String, TextEditingController> _advancedPasswordController = {};
 
-  late final ScrollController _scrollController;
-
   @override
   void initState() {
     super.initState();
-    final index = widget.args['wifiIndex'] as int? ?? 0;
-    _scrollController = ScrollController(initialScrollOffset: 760.0 * index);
 
     doSomethingWithSpinner(
       context,
@@ -101,7 +97,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
           }),
       useMainPadding: true,
       child: (context, constraints) => ResponsiveLayout(
-          desktop: Row(
+          desktop: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _wifiDescription(wifiBands),
@@ -118,7 +114,8 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
           )),
     );
   }
-Widget _wifiDescription(String wifiBands) {
+
+  Widget _wifiDescription(String wifiBands) {
     return AppCard(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -138,7 +135,7 @@ Widget _wifiDescription(String wifiBands) {
       ),
     );
   }
-  
+
   Widget _wifiContentView() {
     final state = ref.watch(wifiListProvider);
 
