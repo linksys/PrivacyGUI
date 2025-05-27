@@ -54,6 +54,7 @@ part 'apps_and_gaming_actions.dart';
 part 'administration_actions.dart';
 part 'local_network_settings_actions.dart';
 part 'dhcp_reservation_actions.dart';
+part 'internet_settings_actions.dart';
 
 abstract class BaseActions {
   final WidgetTester tester;
@@ -88,6 +89,7 @@ sealed class CommonBaseActions extends BaseActions with CommonActionsMixin {
       TestAdministrationActions() => loc(context).administration,
       TestLocalNetworkSettingsActions() => loc(context).localNetwork,
       TestDHCPReservationActions() => loc(context).dhcpReservations.capitalizeWords(),
+      TestInternetSettingsActions() => loc(context).internetSettings.capitalizeWords(),
       // TODO: Handle this case.
       TestPnpSetupActions() => throw UnimplementedError(),
       // TODO: Handle this case.
