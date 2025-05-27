@@ -19,7 +19,6 @@ import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
 import '../../../mocks/_index.dart';
 import '../../../mocks/connectivity_notifier_mocks.dart';
-import '../../../mocks/jnap_service_supported_mocks.dart';
 import '../../../test_data/_index.dart';
 
 void main() async {
@@ -162,5 +161,20 @@ void main() async {
   }, screens: [
     ...responsiveMobileScreens.map((e) => e.copyWith(height: 1440)).toList(),
     ...responsiveDesktopScreens
+  ]);
+
+  testLocalizations('Dashboard Menu View - Supports VPN',
+      (tester, locale) async {
+    when(mockServiceHelper.isSupportVPN()).thenReturn(true);
+    when(mockDashboardHomeNotifier.build()).thenReturn(
+        DashboardHomeState.fromMap(dashboardHomePinnacleTestState)
+            .copyWith(isHealthCheckSupported: true));
+    await tester.pumpWidget(
+      testableWidget(locale),
+    );
+    await tester.pumpAndSettle();
+  }, screens: [
+    ...responsiveMobileScreens.map((e) => e.copyWith(height: 1440)).toList(),
+    ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1080)).toList()
   ]);
 }

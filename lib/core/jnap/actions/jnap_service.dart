@@ -153,6 +153,7 @@ enum JNAPService {
   vlanTagging(value: 'http://linksys.com/jnap/vlantagging/VLANTagging'),
   // TODO - Checking for the reference
   vlanTagging2(value: 'http://linksys.com/jnap/vlantagging/VLANTagging2'),
+  vpn(value: 'http://linksys.com/jnap/vpn/VPN'),
   wirelessAP(value: 'http://linksys.com/jnap/wirelessap/WirelessAP'),
   wirelessAP2(value: 'http://linksys.com/jnap/wirelessap/WirelessAP2'),
   // 2016-04-19	Consolidated WirelessAP2 and WirelessAP3 into WirelessAP4.

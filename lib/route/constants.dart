@@ -45,6 +45,7 @@ class RoutePath {
   static const settingsAdministration = "administration";
   static const settingsStaticRouting = "staticRouting";
   static const settingsStaticRoutingRule = "staticRoutingRule";
+  static const settingsVPN = "vpnSettings";
 
   /// otp
   static const otpStart = 'otp';
@@ -185,6 +186,7 @@ class RouteNamed {
   static const settingsAdministration = "administration";
   static const settingsStaticRouting = "staticRouting";
   static const settingsStaticRoutingRule = "staticRoutingRule";
+  static const settingsVPN = "vpnSettings";
 
   /// otp
   static const otpStart = 'otp';

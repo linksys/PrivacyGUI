@@ -3,26 +3,33 @@ import 'package:privacy_gui/validator_rules/_validator_rules.dart';
 import 'rules.dart';
 
 class InputValidator {
+  bool? _isValid;
+  bool? get isValid => _isValid;
+  Map<String, bool> _results = {};
+  Map<String, bool> get results => _results;
   final List<ValidationRule> rules;
 
   InputValidator(this.rules);
 
   bool validate(String input) {
-    return !rules.any((rule) => !rule.validate(input));
+    _isValid = !rules.any((rule) => !rule.validate(input));
+    return _isValid ?? false;
   }
 
   Map<String, bool> validateDetail(String input, {bool onlyFailed = false}) {
     final results = rules
         .map((rule) => {rule.name: rule.validate(input)})
         .where((pair) => onlyFailed ? !pair.values.first : true);
-    return results.isEmpty
+    _results = results.isEmpty
         ? {}
         : results.reduce((value, element) => value..addAll(element));
+    return _results;
   }
 
   ValidationRule? getRule(String name) {
     return rules.firstWhereOrNull((element) => element.name == name);
   }
+
   ValidationRule? getRuleByIndex(int index) {
     return index >= rules.length || index < 0 ? null : rules[index];
   }

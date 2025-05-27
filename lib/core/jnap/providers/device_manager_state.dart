@@ -17,6 +17,7 @@ class LinksysDevice extends RawDevice {
   final String connectionType;
   final WirelessConnectionInfo? wirelessConnectionInfo;
   final String speedMbps;
+  final List<String> mloList;
 
   const LinksysDevice({
     required super.connections,
@@ -38,6 +39,7 @@ class LinksysDevice extends RawDevice {
     this.connectionType = 'wireless',
     this.wirelessConnectionInfo,
     this.speedMbps = '--',
+    this.mloList = const [],
   });
 
   @override
@@ -61,6 +63,7 @@ class LinksysDevice extends RawDevice {
     String? connectionType,
     WirelessConnectionInfo? wirelessConnectionInfo,
     String? speedMbps,
+    List<String>? mloList,
   }) {
     return LinksysDevice(
       connections: connections ?? this.connections,
@@ -83,6 +86,7 @@ class LinksysDevice extends RawDevice {
       wirelessConnectionInfo:
           wirelessConnectionInfo ?? this.wirelessConnectionInfo,
       speedMbps: speedMbps ?? this.speedMbps,
+      mloList: mloList ?? this.mloList,
     );
   }
 
@@ -97,6 +101,7 @@ class LinksysDevice extends RawDevice {
       'connectionType': connectionType,
       'wirelessConnectionInfo': wirelessConnectionInfo?.toMap(),
       'speedMbps': speedMbps,
+      'mloList': mloList,
     }..removeWhere((key, value) => value == null);
   }
 
@@ -151,6 +156,7 @@ class LinksysDevice extends RawDevice {
           ? WirelessConnectionInfo.fromMap(map['wirelessConnectionInfo'])
           : null,
       speedMbps: map['speedMbps'] ?? '--',
+      mloList: map['mloList'] ?? [],
     );
   }
 
@@ -205,7 +211,10 @@ class DeviceManagerState extends Equatable {
   }
 
   List<LinksysDevice> get slaveDevices {
-    return nodeDevices.where((device) => device.isAuthority == false && device.nodeType == 'Slave').toList();
+    return nodeDevices
+        .where((device) =>
+            device.isAuthority == false && device.nodeType == 'Slave')
+        .toList();
   }
 
   const DeviceManagerState({

@@ -156,6 +156,7 @@ class _LocalNetworkSettingsViewState
         padding: const EdgeInsets.symmetric(
             vertical: Spacing.large3, horizontal: Spacing.large2),
         child: AppTextField(
+          key: Key('hostNameTextField'),
           headerText: loc(context).hostName.capitalizeWords(),
           controller: hostNameController,
           errorText: LocalNetworkErrorPrompt.getErrorText(
@@ -183,6 +184,7 @@ class _LocalNetworkSettingsViewState
           mainAxisSize: MainAxisSize.min,
           children: [
             AppIPFormField(
+              key: Key('lanIpAddressTextField'),
               header: AppText.bodySmall(loc(context).ipAddress),
               semanticLabel: 'ip address',
               controller: ipAddressController,
@@ -198,6 +200,7 @@ class _LocalNetworkSettingsViewState
             ),
             const AppGap.large2(),
             AppIPFormField(
+              key: Key('lanSubnetMaskTextField'),
               header: AppText.bodySmall(loc(context).subnetMask),
               semanticLabel: 'subnet mask',
               octet1ReadOnly: true,

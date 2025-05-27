@@ -1,0 +1,8 @@
+{
+    "name": "Local Network Settings test",
+    "target": "integration_test/local_network_settings_test.dart",
+    "description": "Test the local network settings",
+    "setUp":  ["factory_reset", "skip_pnp"],
+    "tearDown": [],
+    "tags": ["local_network", "advanced_settings", "menu"]
+}
