@@ -141,8 +141,7 @@ class _LoginCloudAuthViewState extends ConsumerState<LoginCloudAuthView> {
               'Status: ${_sessionInfo?.status.toValue()}, Expired in: ${_sessionInfo?.expiredIn}'),
         const AppGap.large3(),
         if (BuildConfig.isEnableEnvPicker &&
-            BuildConfig.forceCommandType != ForceCommand.local &&
-            canProceed)
+            BuildConfig.forceCommandType != ForceCommand.local)
           Align(
               alignment: Alignment.bottomRight,
               child: AppTextButton.noPadding('Select Env', onTap: () async {
