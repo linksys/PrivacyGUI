@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:privacy_gui/core/jnap/models/health_check_result.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -54,7 +55,7 @@ class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
                       ?.speedTestResult
                       ?.downloadBandwidth ??
                   0) /
-              1000.0);
+              1024.0);
           _meterValue = downloadBandwidth;
           _randomValue = 0;
         });
@@ -139,7 +140,7 @@ class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
                 AppText.bodySmall(loc(context).dateAndTime),
                 AppText.labelMedium(result?.timestamp == null
                     ? '--'
-                    : '${loc(context).systemTestDateFormat(DateTime.now())} ${loc(context).systemTestDateTime(DateTime.now())}'),
+                    : _getDateTimeText(result?.timestamp)),
               ],
             ),
             const AppGap.large2(),
@@ -179,10 +180,22 @@ class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
   (String, String, String) _getDataText(SpeedTestResult? result) {
     var latency = result?.latency?.toStringAsFixed(0) ?? '-';
     var downloadBandWidth =
-        ((result?.downloadBandwidth ?? 0) / 1000.0).toStringAsFixed(1);
+        ((result?.downloadBandwidth ?? 0) / 1024.0).toStringAsFixed(1);
     var uploadBandWidth =
-        ((result?.uploadBandwidth ?? 0) / 1000.0).toStringAsFixed(1);
+        ((result?.uploadBandwidth ?? 0) / 1024.0).toStringAsFixed(1);
     return (latency, downloadBandWidth, uploadBandWidth);
+  }
+
+  String _getDateTimeText(String? timestamp) {
+    final speedTestTimeStamp = DateFormat("yyyy-MM-ddThh:mm:ssZ")
+        .tryParse(timestamp ?? '', true)
+        ?.millisecondsSinceEpoch;
+    final dateTime = speedTestTimeStamp == null
+        ? null
+        : DateTime.fromMillisecondsSinceEpoch(speedTestTimeStamp);
+    return dateTime == null
+        ? ''
+        : '${loc(context).systemTestDateFormat(dateTime)} ${loc(context).systemTestDateTime(dateTime)}';
   }
 
   double _getRandomMeterValue(double value) {
