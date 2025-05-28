@@ -88,14 +88,7 @@ final dashboardRoute = ShellRoute(
           ),
           builder: (context, state) => const FaqListView(),
         ),
-        LinksysRoute(
-          name: RouteNamed.callbackDescription,
-          path: RoutePath.callbackDescription,
-          config: LinksysRouteConfig(
-            column: ColumnGrid(column: 9),
-          ),
-          builder: (context, state) => const CallbackView(),
-        ),
+        
       ],
     ),
   ],

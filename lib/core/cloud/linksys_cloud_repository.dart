@@ -14,7 +14,6 @@ import 'package:privacy_gui/core/cloud/model/cloud_event_action.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_event_subscription.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_linkup.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_remote_assistance_info.dart';
-import 'package:privacy_gui/core/cloud/model/create_ticket.dart';
 import 'package:privacy_gui/core/cloud/model/guidan_remote_assistance.dart';
 import 'package:privacy_gui/core/http/linksys_http_client.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/authorization_service.dart';
@@ -265,56 +264,6 @@ class LinksysCloudRepository {
         .then((response) => CloudLinkUpModel.fromJson(response.body));
   }
 
-  Future<String> deviceRegistrations(
-      {required String serialNumber,
-      required String modelNumber,
-      required String macAddress}) async {
-    return _httpClient
-        .registrations(
-          serialNumber: serialNumber,
-          modelNumber: modelNumber,
-          macAddress: macAddress,
-        )
-        .then(
-          (response) =>
-              jsonDecode(response.body)['clientDevice']['linksysToken'],
-        );
-  }
-
-  Future<String> createTicket(
-      {required CreateTicketInput createTicketInput,
-      required String linksysToken,
-      required String serialNumber}) async {
-    return _httpClient
-        .createTicket(
-            createTicketInput: createTicketInput,
-            linksysToken: linksysToken,
-            serialNumber: serialNumber)
-        .then(
-          (response) => jsonDecode(response.body)['ticketId'],
-        );
-  }
-
-  Future uploadToTicket(
-      {required String ticketId,
-      required String linksysToken,
-      required String serialNumber,
-      required String data}) async {
-    return _httpClient.uploadToTicket(
-        ticketId: ticketId,
-        linksysToken: linksysToken,
-        serialNumber: serialNumber,
-        data: data);
-  }
-
-  Future<List<Map<String, dynamic>>> getTickets({
-    required String linksysToken,
-    required String serialNumber,
-  }) {
-    return _httpClient
-        .getTickets(linksysToken: linksysToken, serialNumber: serialNumber)
-        .then((response) => List.from(jsonDecode(response.body)['data']));
-  }
 
   Future<void> associateSmartDevice({
     required String linksysToken,
