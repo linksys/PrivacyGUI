@@ -182,7 +182,6 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
           iconData: LinksysIcons.smartLock,
           status: privacyState.mode != MacFilterMode.allow,
           isBeta: true,
-          disabledOnBridge: true,
           onTap: () {
             _navigateTo(RouteNamed.menuInstantPrivacy);
           }),

@@ -45,7 +45,6 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
     bool isCognitive = isCognitiveMeshRouter(
         modelNumber: master?.data.model ?? '',
         hardwareVersion: master?.data.hardwareVersion ?? '1');
-    final isBridge = ref.watch(dashboardHomeProvider).isBridgeMode;
 
     return isLoading
         ? AppCard(
@@ -63,32 +62,28 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
                     title: loc(context).instantPrivacy,
                     value: privacyState.mode == MacFilterMode.allow,
                     leading: betaLabel(),
-                    onTap: isBridge
-                        ? null
-                        : () {
-                            context.pushNamed(RouteNamed.menuInstantPrivacy);
-                          },
-                    onChanged: isBridge
-                        ? null
-                        : (value) {
-                            showInstantPrivacyConfirmDialog(context, value)
-                                .then((isOk) {
-                              if (isOk != true) {
-                                return;
-                              }
-                              final notifier =
-                                  ref.read(instantPrivacyProvider.notifier);
-                              if (value) {
-                                final macAddressList = ref
-                                    .read(instantPrivacyDeviceListProvider)
-                                    .map((e) => e.macAddress.toUpperCase())
-                                    .toList();
-                                notifier.setMacAddressList(macAddressList);
-                              }
-                              notifier.setEnable(value);
-                              doSomethingWithSpinner(context, notifier.save());
-                            });
-                          },
+                    onTap: () {
+                      context.pushNamed(RouteNamed.menuInstantPrivacy);
+                    },
+                    onChanged: (value) {
+                      showInstantPrivacyConfirmDialog(context, value)
+                          .then((isOk) {
+                        if (isOk != true) {
+                          return;
+                        }
+                        final notifier =
+                            ref.read(instantPrivacyProvider.notifier);
+                        if (value) {
+                          final macAddressList = ref
+                              .read(instantPrivacyDeviceListProvider)
+                              .map((e) => e.macAddress.toUpperCase())
+                              .toList();
+                          notifier.setMacAddressList(macAddressList);
+                        }
+                        notifier.setEnable(value);
+                        doSomethingWithSpinner(context, notifier.save());
+                      });
+                    },
                     tips: loc(context).instantPrivacyInfo,
                     semantics: 'quick instant privacy switch'),
                 if (isCognitive && isSupportNodeLight) ...[
