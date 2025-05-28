@@ -161,7 +161,7 @@ class _AddRuleContentViewState
                 ? null
                 : _notifier.isRuleNameValidate(_ruleNameController.text)
                     ? null
-                    : 'The name must not be empty and must be less than 33 characters.';
+                    : loc(context).notBeEmptyAndLessThanThirtyThree;
           });
         },
         onChanged: (value) {

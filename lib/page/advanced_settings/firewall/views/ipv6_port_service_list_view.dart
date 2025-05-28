@@ -329,7 +329,7 @@ class _Ipv6PortServiceListViewState
         return switch (index) {
           0 => notifier.isRuleNameValidate(applicationTextController.text)
               ? null
-              : 'The name must not be empty and must be less than 33 characters.',
+              : loc(context).notBeEmptyAndLessThanThirtyThree,
           2 => notifier.isDeviceIpValidate(ipAddressTextController.text)
               ? null
               : loc(context).invalidIpAddress,
