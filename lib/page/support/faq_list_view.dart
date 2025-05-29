@@ -23,6 +23,14 @@ class FaqListView extends ArgumentsConsumerStatefulView {
 }
 
 class _FaqListViewState extends ConsumerState<FaqListView> {
+  List<FaqCategory> categories = [
+    FaqSetupCategory(),
+    FaqConnectivityCategory(),
+    FaqSpeedCategory(),
+    FaqPasswordCategory(),
+    FaqHardwareCategory(),
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -53,13 +61,6 @@ class _FaqListViewState extends ConsumerState<FaqListView> {
       menuOnRight: true,
       pageContentType: PageContentType.flexible,
       child: (context, constraints) {
-        List<FaqCategory> categories = [
-          FaqSetupCategory(),
-          FaqConnectivityCategory(),
-          FaqSpeedCategory(),
-          FaqPasswordCategory(),
-          FaqHardwareCategory(),
-        ];
         return SizedBox(
           width: 9.col,
           child: ListView(
