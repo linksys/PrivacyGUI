@@ -209,7 +209,7 @@ class _AddRuleContentViewState
         errorText: _ipError,
       ),
       const AppGap.large2(),
-      AppTextButton(
+      AppTextButton.noPadding(
         loc(context).selectDevices,
         onTap: () async {
           final result = await context.pushNamed<List<DeviceListItem>?>(
