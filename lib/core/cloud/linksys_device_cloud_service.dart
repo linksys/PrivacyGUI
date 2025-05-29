@@ -5,7 +5,6 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/cloud2_service.dart';
-import 'package:privacy_gui/core/cloud/linksys_requests/device_service.dart';
 import 'package:privacy_gui/core/http/linksys_http_client.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
@@ -48,10 +47,10 @@ class DeviceCloudService {
       logger.d('Get $kGeoLocation from cache: $cacheData');
       return cacheData;
     }
-    final linksysToken = await registerDevice(
+    final linksysToken = await fetchDeviceToken(
         serialNumber: master.unit.serialNumber ?? '',
-        modelNumber: master.modelNumber ?? '',
-        macAddress: master.getMacAddress());
+        macAddress: master.getMacAddress(),
+        deviceUUID: master.deviceID);
     return _httpClient
         .geolocation(
             linksysToken: linksysToken,
@@ -63,17 +62,16 @@ class DeviceCloudService {
     });
   }
 
-  // device registation
-
-  Future<String> registerDevice({
+  // Fetch device token from cloud via UUID
+  Future<String> fetchDeviceToken({
     required String serialNumber,
-    required String modelNumber,
     required String macAddress,
+    required String deviceUUID,
   }) async {
     String linksysToken = await _loadToken() ??
         await _fetchToken(
           serialNumber: serialNumber,
-          modelNumber: modelNumber,
+          deviceUUID: deviceUUID,
           macAddress: macAddress,
         ).then((value) async {
           const storage = FlutterSecureStorage();
@@ -107,18 +105,17 @@ class DeviceCloudService {
 
   Future<String> _fetchToken({
     required String serialNumber,
-    required String modelNumber,
     required String macAddress,
+    required String deviceUUID,
   }) async {
     final linksysToken = await _httpClient
-        .registrations(
+        .getDeviceToken(
           serialNumber: serialNumber,
-          modelNumber: modelNumber,
           macAddress: macAddress,
+          deviceUUID: deviceUUID,
         )
         .then(
-          (response) =>
-              jsonDecode(response.body)['clientDevice']['linksysToken'],
+          (response) => jsonDecode(response.body)['linksysToken'],
         )
         .onError((error, stackTrace) {
       throw error!;

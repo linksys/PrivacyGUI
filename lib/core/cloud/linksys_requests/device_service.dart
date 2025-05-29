@@ -40,22 +40,4 @@ extension DeviceService on LinksysHttpClient {
     return this
         .put(Uri.parse(endpoint), headers: header, body: jsonEncode(body));
   }
-
-  Future<Response> registrations({
-    required String serialNumber,
-    required String modelNumber,
-    required String macAddress,
-  }) {
-    final endpoint = combineUrl(kDeviceRegistrationsEndpoint);
-    final header = defaultHeader;
-    final body = {
-      'clientDevice': {
-        'serialNumber': serialNumber,
-        'modelNumber': modelNumber,
-        'macAddress': macAddress,
-      }
-    };
-    return this
-        .post(Uri.parse(endpoint), body: jsonEncode(body), headers: header);
-  }
 }

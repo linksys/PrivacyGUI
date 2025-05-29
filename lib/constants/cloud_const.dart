@@ -95,8 +95,10 @@ const kTestPingPng = '/cloud/ping.png';
 // Device service
 const kDeviceNetworksEndpoint = '$kDeviceService/rest/networks/$kVarNetworkId';
 const kAccountNetworksEndpoint = '$kDeviceService/rest/accounts/self/networks';
-const kDeviceRegistrationsEndpoint =
-    '$kDeviceService/rest/devices/registrations';
+
+// const kDeviceRegistrationsEndpoint =
+//     '$kDeviceService/rest/devices/registrations';
+
 // Smart device service
 const kSmartDeviceRegisterEndpoint = '$kSmartDeviceService/rest/smartdevices';
 const kSmartDeviceVerificationEndpoint =
@@ -132,6 +134,7 @@ const kSmartDeviceAssociate = '/cloud/v1/smart-devices/associate';
 
 // Geo location
 const kGeoLocation = '/cloud/v1/guardians/devices/geolocation';
+const kDeviceToken = '/cloud/v1/guardians/devices/tokens';
 
 // Client type id/secret
 final kClientTypeId = clientTypeID;
