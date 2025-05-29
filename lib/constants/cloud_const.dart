@@ -149,6 +149,7 @@ const kDeviceToken = '/cloud/v1/guardians/devices/tokens';
 const kSessions = '/cloud/v1/guardians/remote-assistances/sessions';
 const kSessionInfo =
     '/cloud/v1/guardians/remote-assistances/sessions/$kVarRASessionId';
+const kCreatePin = '/cloud/v1/guardians/remote-assistances/sessions/pin';
 
 // Client type id/secret
 final kClientTypeId = clientTypeID;

@@ -5,6 +5,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/cloud2_service.dart';
+import 'package:privacy_gui/core/cloud/linksys_requests/guidans_remote_assistance_service.dart';
+import 'package:privacy_gui/core/cloud/model/guidan_remote_assistance.dart';
 import 'package:privacy_gui/core/http/linksys_http_client.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
@@ -60,6 +62,55 @@ class DeviceCloudService {
       handleDataCache(kGeoLocation, result, master.unit.serialNumber);
       return result;
     });
+  }
+
+  // Remote assistance
+  Future<String> createPin({
+    required LinksysDevice master,
+    required String sessionId,
+  }) async {
+    final linksysToken = await fetchDeviceToken(
+        serialNumber: master.unit.serialNumber ?? '',
+        macAddress: master.getMacAddress(),
+        deviceUUID: master.deviceID);
+    return _httpClient
+        .createPin(
+            token: linksysToken, serialNumber: master.unit.serialNumber ?? '')
+        .then((response) => jsonDecode(response.body)['pin']);
+  }
+
+  // Get SessionInfo
+  Future<GRASessionInfo> getSessionInfo({
+    required LinksysDevice master,
+    required String sessionId,
+    String? serialNumber,
+  }) async {
+    final linksysToken = await fetchDeviceToken(
+        serialNumber: master.unit.serialNumber ?? '',
+        macAddress: master.getMacAddress(),
+        deviceUUID: master.deviceID);
+    return _httpClient
+        .getSessionInfo(
+            token: linksysToken,
+            sessionId: sessionId,
+            serialNumber: master.unit.serialNumber ?? '')
+        .then((response) => GRASessionInfo.fromMap(jsonDecode(response.body)));
+  }
+
+  // Get Sessions
+  Future<List<GRASessionInfo>> getSessions({
+    required LinksysDevice master,
+  }) async {
+    final linksysToken = await fetchDeviceToken(
+        serialNumber: master.unit.serialNumber ?? '',
+        macAddress: master.getMacAddress(),
+        deviceUUID: master.deviceID);
+    return _httpClient
+        .getSessions(
+            token: linksysToken, serialNumber: master.unit.serialNumber ?? '')
+        .then((response) => List.from((jsonDecode(response.body)['content']))
+            .map((e) => GRASessionInfo.fromMap(e))
+            .toList());
   }
 
   // Fetch device token from cloud via UUID

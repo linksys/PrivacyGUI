@@ -19,16 +19,7 @@ class GeolocationNotifier extends AsyncNotifier<GeolocationState> {
         .watch(deviceManagerProvider)
         .nodeDevices
         .firstWhereOrNull((element) => element.nodeType == 'Master');
-    // return fetch(master);
-    return Future.value(const GeolocationState(
-      name: '',
-      city: '',
-      region: '',
-      country: '',
-      regionCode: '',
-      countryCode: '',
-      continentCode: '',
-    ));
+    return fetch(master);
   }
 
   Future<GeolocationState> fetch(LinksysDevice? master) async {
