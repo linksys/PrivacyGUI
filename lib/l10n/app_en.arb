@@ -896,6 +896,7 @@
   "textMessage": "Text message",
   "theDevicesAllowedToConnect": "These are the only devices allowed to connect.",
   "theNameMustNotBeEmpty": "The name must not be empty",
+  "notBeEmptyAndLessThanThirtyThree": "The name must not be empty and must be less than 33 characters.",
   "thirdPartyLicenses": "Third Party Licenses",
   "thisActionCannotBeUndone": "This action cannot be undone.",
   "timezone": "Time zone",

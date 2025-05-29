@@ -161,7 +161,7 @@ class _AddRuleContentViewState
                 ? null
                 : _notifier.isRuleNameValidate(_ruleNameController.text)
                     ? null
-                    : loc(context).theNameMustNotBeEmpty;
+                    : loc(context).notBeEmptyAndLessThanThirtyThree;
           });
         },
         onChanged: (value) {

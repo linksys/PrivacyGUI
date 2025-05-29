@@ -48,7 +48,7 @@ class Ipv6PortServiceRuleNotifier extends Notifier<Ipv6PortServiceRuleState>
   }
 
   bool isRuleNameValidate(String ruleName) {
-    return ruleName.isNotEmpty;
+    return ruleName.isNotEmpty && ruleName.length <= 32;
   }
 
 

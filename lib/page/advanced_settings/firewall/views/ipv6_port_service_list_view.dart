@@ -5,7 +5,6 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/components/settings_view/editable_card_list_settings_view.dart';
 import 'package:privacy_gui/page/components/settings_view/editable_table_settings_view.dart';
-import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -78,7 +77,6 @@ class _Ipv6PortServiceListViewState
   }
 
   Widget _mobildSettingsView(Ipv6PortServiceListState state) {
-    // return Center();
     return EditableCardListsettingsView<IPv6FirewallRule>(
         title: loc(context).ipv6PortServices,
         emptyMessage: loc(context).noIPv6PortService,
@@ -331,7 +329,7 @@ class _Ipv6PortServiceListViewState
         return switch (index) {
           0 => notifier.isRuleNameValidate(applicationTextController.text)
               ? null
-              : loc(context).theNameMustNotBeEmpty,
+              : loc(context).notBeEmptyAndLessThanThirtyThree,
           2 => notifier.isDeviceIpValidate(ipAddressTextController.text)
               ? null
               : loc(context).invalidIpAddress,
