@@ -263,6 +263,16 @@
   "firmwareUpdateDesc1": "Get the latest feature and fixed.",
   "firmwareUpdateDesc2": "Your router will restart once the update is complete. Devices will briefly go offline before reconnecting.",
   "firmwareVersion": "Firmware version",
+  "firmwareUpdateCountdownMessage": "Firmware just updated, the page will be refreshed in {seconds} seconds",
+  "@firmwareUpdateCountdownMessage": {
+    "description": "Message shown in a dialog after firmware update, with a countdown before page refresh.",
+    "placeholders": {
+      "seconds": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
   "firstName": "First name",
   "forgotPassword": "Forgot password",
   "formalDateTime": "{time} {date}",
