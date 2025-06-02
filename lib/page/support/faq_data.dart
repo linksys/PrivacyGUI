@@ -10,8 +10,7 @@ enum FaqItem {
   faqListLoseDevices,
   faqListDeviceNoWiFi,
   faqListDeviceNoBestNode,
-  faqListMyInternetSlow,
-  faqListSpecificDeviceSlow,
+  faqListMyInternetSlowOrSpecificDeviceSlow,
   faqListLogInByRouterPassword,
   faqListForgotRouterPassword,
   faqListChangeWiFiNamePassword,
@@ -30,8 +29,7 @@ enum FaqItem {
     faqListLoseDevices => loc(context).faqListLoseDevices,
     faqListDeviceNoWiFi => loc(context).faqListDeviceNoWiFi,
     faqListDeviceNoBestNode => loc(context).faqListDeviceNoBestNode,
-    faqListMyInternetSlow => loc(context).faqListMyInternetSlow,
-    faqListSpecificDeviceSlow => loc(context).faqListSpecificDeviceSlow,
+    faqListMyInternetSlowOrSpecificDeviceSlow => loc(context).faqListMyInternetSlowOrSpecificDeviceSlow,
     faqListLogInByRouterPassword => loc(context).faqListLogInByRouterPassword,
     faqListForgotRouterPassword => loc(context).faqListForgotRouterPassword,
     faqListChangeWiFiNamePassword => loc(context).faqListChangeWiFiNamePassword,
@@ -51,8 +49,7 @@ enum FaqItem {
     faqListLoseDevices => linkConnectivityLoseDevices,
     faqListDeviceNoWiFi => linkConnectivityDeviceNoWiFi,
     faqListDeviceNoBestNode => linkConnectivityDeviceNoBestNode,
-    faqListMyInternetSlow => linkSpeedMyInternetSlow,
-    faqListSpecificDeviceSlow => linkSpeedSpecificDeviceSlow,
+    faqListMyInternetSlowOrSpecificDeviceSlow => linkSpeedMyInternetSlow,
     faqListLogInByRouterPassword => linkPasswordLoginByRouterPassword,
     faqListForgotRouterPassword => linkPasswordForgotRouterPassword,
     faqListChangeWiFiNamePassword => linkPasswordChangeWiFiNamePassword,
@@ -105,8 +102,7 @@ class FaqSpeedCategory extends FaqCategory {
   final String titleKey = 'speed';
   @override
   final List<FaqItem> items = [
-    FaqItem.faqListMyInternetSlow,
-    FaqItem.faqListSpecificDeviceSlow,
+    FaqItem.faqListMyInternetSlowOrSpecificDeviceSlow,
   ];
 }
 
