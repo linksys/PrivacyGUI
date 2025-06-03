@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:http/http.dart';
 import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/http/linksys_http_client.dart';
@@ -24,7 +26,10 @@ extension GuidansRemoteAssistanceService on LinksysHttpClient {
   }) {
     final endPoint =
         combineUrl(kSessionInfo, args: {kVarRASessionId: sessionId});
-    var header = defaultHeader..[kHeaderLinksysToken] = token;
+    var header = defaultHeader
+      ..[kHeaderLinksysToken] = token
+      ..[HttpHeaders.authorizationHeader] = wrapSessionToken(token);
+
     if (serialNumber != null) {
       header[kHeaderSerialNumber] = serialNumber;
     }
