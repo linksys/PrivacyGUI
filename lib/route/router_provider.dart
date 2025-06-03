@@ -14,7 +14,6 @@ import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart'
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/factory.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_rule_view.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_view.dart';
@@ -103,7 +102,6 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       localLoginRoute,
       autoParentFirstLoginRoute,
-      cloudLoginRoute,
       homeRoute,
       // ref.read(otpRouteProvider),
       LinksysRoute(
@@ -122,11 +120,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
         builder: (context, state) => const SelectNetworkView(),
       ),
-      LinksysRoute(
-        name: 'factory',
-        path: '/factory',
-        builder: (context, state) => const FactoryView(),
-      ),
       dashboardRoute,
       pnpRoute,
       pnpTroubleshootingRoute,
@@ -135,8 +128,14 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       if (state.matchedLocation == '/') {
         return router._autoConfigurationLogic(state);
+      } else if (state.matchedLocation == RoutePath.localLoginPassword) {
+        router._autoConfigurationLogic(state);
+        return router._redirectLogic(state);
       } else if (state.matchedLocation.startsWith('/pnp')) {
         return router._goPnpPath(state);
+      } else if (state.matchedLocation.startsWith('/autoParentFirstLogin')) {
+        // bypass auto parent first login page
+        return state.uri.toString();
       }
       return router._redirectLogic(state);
     },
@@ -184,8 +183,13 @@ class RouterNotifier extends ChangeNotifier {
         }
         // If isAutoConfigurationSupported is not true, then go to Login
         if (config.isAutoConfigurationSupported != true) {
-          return LocalWhereToGo.login;
+          // Retail factory reset case - Check admin password
+          final isAdminPasswordSet = await pnp.isRouterPasswordSet();
+          return isAdminPasswordSet == false
+              ? LocalWhereToGo.pnp
+              : LocalWhereToGo.login;
         }
+        // AutoConfigurationSupported is true case -
 
         // AutoParent case -
         if (config.autoConfigurationMethod ==
@@ -197,13 +201,12 @@ class RouterNotifier extends ChangeNotifier {
               ? LocalWhereToGo.firstTimeLogin
               : LocalWhereToGo.login;
         }
+
         // Prepair case - Check isAutoConfigurationSupported and userAcknowledgedAutoConfiguration
-        final isAutoConfigurationSupported =
-            config.isAutoConfigurationSupported;
+
         final userAcknowledgedAutoConfiguration =
             config.userAcknowledgedAutoConfiguration;
-        if (isAutoConfigurationSupported == true &&
-            userAcknowledgedAutoConfiguration == false) {
+        if (userAcknowledgedAutoConfiguration == false) {
           // PnP case -
           // Go PnP -> AutoConfigurationSupported is true and userAcknowledgedAutoConfiguration is false
           // Login -> else
@@ -231,6 +234,9 @@ class RouterNotifier extends ChangeNotifier {
       return _goPnp(state.uri.query);
     } else if (whereToGo == LocalWhereToGo.firstTimeLogin) {
       // First Time Login case -
+      if (!_ref.read(autoParentFirstLoginStateProvider)) {
+        await _ref.read(authProvider.notifier).logout();
+      }
       return _goFirstTimeLogin(state);
     } else {
       // Login case -
@@ -392,7 +398,7 @@ class RouterNotifier extends ChangeNotifier {
       _ref.read(autoParentFirstLoginStateProvider.notifier).state = false;
       return RoutePath.autoParentFirstLogin;
     }
-    if (isSearialNumberChanged(serialNumber)) {
+    if (isSerialNumberChanged(serialNumber)) {
       return null;
     }
 
@@ -417,7 +423,7 @@ class RouterNotifier extends ChangeNotifier {
     return null;
   }
 
-  bool isSearialNumberChanged(String? serialNumber) =>
+  bool isSerialNumberChanged(String? serialNumber) =>
       serialNumber != null &&
       serialNumber == _getStateDeviceInfo()?.serialNumber;
   NodeDeviceInfo? _getStateDeviceInfo() =>

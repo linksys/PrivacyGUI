@@ -36,7 +36,7 @@ class LinksysCacheManager {
     defaultCacheExpiration = (BuildConfig.refreshTimeInterval * 1000) - 10000;
     cacheManager = FlutterCacheManager();
     _cache = await cacheManager.get() ?? "";
-    logger.d('[CacheManager] init cache data: $_cache');
+    logger.d('[CacheManager] init cache data: ${_cache.isNotEmpty}');
   }
 
   void clearCache(String action) {

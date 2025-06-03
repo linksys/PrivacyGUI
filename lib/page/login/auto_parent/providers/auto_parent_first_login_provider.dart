@@ -51,7 +51,11 @@ class AutoParentFirstLoginNotifier
     final repo = ref.read(routerRepositoryProvider);
     // Get current firmware update settings
     final firmwareUpdateSettings = await repo
-        .send(JNAPAction.getFirmwareUpdateSettings)
+        .send(
+          JNAPAction.getFirmwareUpdateSettings,
+          fetchRemote: true,
+          auth: true,
+        )
         .then((value) => value.output)
         .then(
           (output) => FirmwareUpdateSettings.fromMap(output).copyWith(
@@ -76,8 +80,28 @@ class AutoParentFirstLoginNotifier
     );
   }
 
+  // Check internet connection via JNAP
+  Future<bool> checkInternetConnection() async {
+    final repo = ref.read(routerRepositoryProvider);
+    final result = await repo.send(
+      JNAPAction.getInternetConnectionStatus,
+      fetchRemote: true,
+      auth: true,
+    );
+    logger.i('[FirstTime]: Internet connection status: ${result.output}');
+    final connectionStatus = result.output['connectionStatus'];
+    final isConnected = connectionStatus == 'InternetConnected';
+    return isConnected;
+  }
+
   Future<void> finishFirstTimeLogin() async {
-    await setUserAcknowledgedAutoConfiguration();
+    // Keep userAcknowledgedAutoConfiguration to false if no internet connection
+    final isConnected = await checkInternetConnection();
+    logger.i('[FirstTime]: Internet connection status: $isConnected');
+    if (isConnected) {
+      await setUserAcknowledgedAutoConfiguration();
+    }
+    // Set firmware update policy
     await setFirmwareUpdatePolicy();
   }
 }
