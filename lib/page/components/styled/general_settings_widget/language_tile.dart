@@ -5,7 +5,7 @@ import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/util/extensions.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 
 class LanguageTile extends ConsumerStatefulWidget {
   final void Function(Locale locale)? onSelected;

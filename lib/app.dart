@@ -16,7 +16,7 @@ import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacy_gui/util/debug_mixin.dart';
 import 'package:privacy_gui/util/languages.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 

@@ -6,7 +6,7 @@ import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/theme/custom_responsive.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 
 import 'testable_widget.dart';
 import 'theme.dart';

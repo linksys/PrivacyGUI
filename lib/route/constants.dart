@@ -13,6 +13,7 @@ class RoutePath {
   static const localPasswordReset = 'localPasswordReset';
   static const cloudRALogin = 'cloudRALogin';
   static const cloudRAPin = 'cloudRAPin';
+  static const autoParentFirstLogin = '/autoParentFirstLogin';
 
   /// dashboard
   static const dashboardHome = '/dashboardHome';
@@ -154,6 +155,7 @@ class RouteNamed {
   static const localPasswordReset = 'localPasswordReset';
   static const cloudRALogin = 'cloudRALogin';
   static const cloudRAPin = 'cloudRAPin';
+  static const autoParentFirstLogin = 'autoParentFirstLogin';
 
   /// dashboard
   static const dashboardMenu = 'dashboardMenu';
