@@ -8,12 +8,12 @@ import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/models/auto_configuration_settings.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/factory.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_rule_view.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_view.dart';
@@ -30,6 +30,7 @@ import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings
 import 'package:privacy_gui/page/landing/_landing.dart';
 
 import 'package:privacy_gui/page/login/views/_views.dart';
+import 'package:privacy_gui/page/login/auto_parent/views/auto_parent_first_login_view.dart';
 import 'package:privacy_gui/page/login/views/local_reset_router_password_view.dart';
 import 'package:privacy_gui/page/login/views/login_cloud_auth_view.dart';
 import 'package:privacy_gui/page/login/views/login_cloud_ra_pin_view.dart';
@@ -82,6 +83,14 @@ part 'route_pnp.dart';
 part 'route_add_nodes.dart';
 part 'route_menu.dart';
 
+// init path enum
+enum LocalWhereToGo {
+  pnp,
+  login,
+  firstTimeLogin,
+  ;
+}
+
 final routerKey = GlobalKey<NavigatorState>();
 final routerProvider = Provider<GoRouter>((ref) {
   final router = RouterNotifier(ref);
@@ -92,6 +101,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/',
     routes: [
       localLoginRoute,
+      autoParentFirstLoginRoute,
       cloudLoginAuthRoute,
       cloudLoginRoute,
       homeRoute,
@@ -112,11 +122,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
         builder: (context, state) => const SelectNetworkView(),
       ),
-      LinksysRoute(
-        name: 'factory',
-        path: '/factory',
-        builder: (context, state) => const FactoryView(),
-      ),
       dashboardRoute,
       pnpRoute,
       pnpTroubleshootingRoute,
@@ -124,11 +129,15 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
     redirect: (context, state) {
       if (state.matchedLocation == '/') {
-        return BuildConfig.factoryMode
-            ? Future.value('/factory')
-            : router._redirectPnpLogic(state);
+        return router._autoConfigurationLogic(state);
+      } else if (state.matchedLocation == RoutePath.localLoginPassword) {
+        router._autoConfigurationLogic(state);
+        return router._redirectLogic(state);
       } else if (state.matchedLocation.startsWith('/pnp')) {
         return router._goPnpPath(state);
+      } else if (state.matchedLocation.startsWith('/autoParentFirstLogin')) {
+        // bypass auto parent first login page
+        return state.uri.toString();
       }
       return router._redirectLogic(state);
     },
@@ -156,29 +165,83 @@ class RouterNotifier extends ChangeNotifier {
     super.dispose();
   }
 
-  Future<String?> _redirectPnpLogic(GoRouterState state) async {
+  Future<String?> _autoConfigurationLogic(GoRouterState state) async {
     await _ref.read(connectivityProvider.notifier).forceUpdate();
     final loginType = _ref.read(authProvider
         .select((value) => value.value?.loginType ?? LoginType.none));
     final pnp = _ref.read(pnpProvider.notifier);
-    bool shouldGoPnp = false;
+    LocalWhereToGo whereToGo = LocalWhereToGo.login;
     final routerType =
         _ref.read(connectivityProvider).connectivityInfo.routerType;
     if (BuildConfig.forceCommandType == ForceCommand.local ||
         (routerType != RouterType.others && loginType != LoginType.remote)) {
-      shouldGoPnp = await pnp
+      whereToGo = await pnp
           .fetchDeviceInfo()
-          .then((_) async =>
-              await pnp.pnpCheck() || !(await pnp.isRouterPasswordSet()))
-          .onError((_, __) => false);
-    } else {
-      shouldGoPnp = false;
-    }
+          .then((_) async => await pnp.autoConfigurationCheck())
+          .then((config) async {
+        // Un supported PnP or Unable to get AutoConfigurationSettings case -
+        if (config == null) {
+          return LocalWhereToGo.login;
+        }
+        // If isAutoConfigurationSupported is not true, then go to Login
+        if (config.isAutoConfigurationSupported != true) {
+          // Retail factory reset case - Check admin password
+          final isAdminPasswordSet = await pnp.isRouterPasswordSet();
+          return isAdminPasswordSet == false
+              ? LocalWhereToGo.pnp
+              : LocalWhereToGo.login;
+        }
+        // AutoConfigurationSupported is true case -
 
-    if (shouldGoPnp) {
+        // AutoParent case -
+        if (config.autoConfigurationMethod ==
+            AutoConfigurationMethod.autoParent) {
+          // AutoParent case -
+          // First Time Login -> AutoConfigurationSupported is true and userAcknowledgedAutoConfiguration is false
+          // Login -> else
+          return config.userAcknowledgedAutoConfiguration == false
+              ? LocalWhereToGo.firstTimeLogin
+              : LocalWhereToGo.login;
+        }
+
+        // Prepair case - Check isAutoConfigurationSupported and userAcknowledgedAutoConfiguration
+
+        final userAcknowledgedAutoConfiguration =
+            config.userAcknowledgedAutoConfiguration;
+        if (userAcknowledgedAutoConfiguration == false) {
+          // PnP case -
+          // Go PnP -> AutoConfigurationSupported is true and userAcknowledgedAutoConfiguration is false
+          // Login -> else
+          return LocalWhereToGo.pnp;
+        }
+        // Factory Reset (UnConfigured) case -
+        // Go PnP -> isAdminPasswordDefault is true and isAdminPasswordSetByUser is false
+        // Login -> else
+        //
+        final isRouterPasswordSet = await pnp.isRouterPasswordSet();
+        return isRouterPasswordSet == false
+            ? LocalWhereToGo.pnp
+            : LocalWhereToGo.login;
+      }).onError((error, __) {
+        logger.e('[Route]: [AutoConfigurationLogic]: Error - $error');
+        return LocalWhereToGo.login;
+      });
+    } else {
+      whereToGo = LocalWhereToGo.login;
+    }
+    logger.i('[Route]: [AutoConfigurationLogic]: whereToGo - $whereToGo');
+    if (whereToGo == LocalWhereToGo.pnp) {
+      // PnP case -
       await _ref.read(authProvider.notifier).logout();
       return _goPnp(state.uri.query);
+    } else if (whereToGo == LocalWhereToGo.firstTimeLogin) {
+      // First Time Login case -
+      if (!_ref.read(autoParentFirstLoginStateProvider)) {
+        await _ref.read(authProvider.notifier).logout();
+      }
+      return _goFirstTimeLogin(state);
     } else {
+      // Login case -
       return _authCheck(state);
     }
   }
@@ -216,6 +279,12 @@ class RouterNotifier extends ChangeNotifier {
     final path = '${RoutePath.pnp}?$queryParams';
     logger.i('[Route]: Go to PnP, URI=$path');
     return path;
+  }
+
+  FutureOr<String?> _goFirstTimeLogin(GoRouterState state) {
+    logger.i('[Route]: Mark First Time Login');
+    _ref.read(autoParentFirstLoginStateProvider.notifier).state = true;
+    return _authCheck(state);
   }
 
   Future<String?> _authCheck(GoRouterState state) {
@@ -266,6 +335,7 @@ class RouterNotifier extends ChangeNotifier {
     }
     //
     if (naviPath != null) {
+      logger.i('[Prepare]: naviPath - $naviPath');
       return naviPath;
     }
     logger.d('[Prepare]: cache check');
@@ -328,7 +398,14 @@ class RouterNotifier extends ChangeNotifier {
 
   Future<String?> _prepareLocal(String? serialNumber) async {
     logger.i('[Prepare]: local - $serialNumber');
-    if (isSearialNumberChanged(serialNumber)) {
+    // If auto parent first login, then go to auto parent first login page
+    final autoParentFirstLogin = _ref.read(autoParentFirstLoginStateProvider);
+    if (autoParentFirstLogin) {
+      logger.i('[Prepare]: autoParentFirstLogin');
+      _ref.read(autoParentFirstLoginStateProvider.notifier).state = false;
+      return RoutePath.autoParentFirstLogin;
+    }
+    if (isSerialNumberChanged(serialNumber)) {
       return null;
     }
 
@@ -353,9 +430,13 @@ class RouterNotifier extends ChangeNotifier {
     return null;
   }
 
-  bool isSearialNumberChanged(String? serialNumber) =>
+  bool isSerialNumberChanged(String? serialNumber) =>
       serialNumber != null &&
       serialNumber == _getStateDeviceInfo()?.serialNumber;
   NodeDeviceInfo? _getStateDeviceInfo() =>
       _ref.read(dashboardManagerProvider).deviceInfo;
 }
+
+final autoParentFirstLoginStateProvider = StateProvider<bool>((ref) {
+  return false;
+});

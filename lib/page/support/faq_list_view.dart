@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/url_links.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
@@ -8,14 +7,13 @@ import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dar
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
-import 'package:privacy_gui/page/components/customs/remote_assistance_widget.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/expansion_card.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
+import 'package:privacy_gui/page/support/faq_data.dart';
 
 class FaqListView extends ArgumentsConsumerStatefulView {
   const FaqListView({super.key});
@@ -25,6 +23,14 @@ class FaqListView extends ArgumentsConsumerStatefulView {
 }
 
 class _FaqListViewState extends ConsumerState<FaqListView> {
+  List<FaqCategory> categories = [
+    FaqSetupCategory(),
+    FaqConnectivityCategory(),
+    FaqSpeedCategory(),
+    FaqPasswordCategory(),
+    FaqHardwareCategory(),
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -36,7 +42,6 @@ class _FaqListViewState extends ConsumerState<FaqListView> {
     return StyledAppPageView(
       title: loc(context).faqs,
       backState: StyledBackState.none,
-      // enableSafeArea: (left: true, top: false, right: true, bottom: true),
       menuWidget: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -44,22 +49,13 @@ class _FaqListViewState extends ConsumerState<FaqListView> {
           const AppGap.medium(),
           AppTextButton.noPadding(
             loc(context).faqVisitLinksysSupport,
-            identifier: 'now-faq-link-${'faqVisitLinksysSupport'.kebab()}',
+            identifier:
+                'now-faq-link-${FaqItem.faqVisitLinksysSupport.displayString(context).kebab()}',
             onTap: () {
-              gotoOfficialWebUrl(linkSupport,
+              gotoOfficialWebUrl(FaqItem.faqVisitLinksysSupport.url,
                   locale: ref.read(appSettingsProvider).locale);
             },
           ),
-          // const AppGap.large2(),
-          // RemoteAssistanceWidget(
-          //   child: Padding(
-          //     padding: const EdgeInsets.all(8.0),
-          //     child: AppText.labelMedium(
-          //       'Remote Assistance (PoC)',
-          //       color: Theme.of(context).colorScheme.primary,
-          //     ),
-          //   ),
-          // )
         ],
       ),
       menuOnRight: true,
@@ -71,135 +67,30 @@ class _FaqListViewState extends ConsumerState<FaqListView> {
             primary: true,
             shrinkWrap: true,
             children: [
-              _buildExpansionCard(
-                title: loc(context).setup,
-                children: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    AppTextButton(loc(context).faqListCannotAddChildNode,
-                        identifier:
-                            'now-faq-${'faqListCannotAddChildNode'.kebab()}',
-                        onTap: () {
-                      gotoOfficialWebUrl(linkSetupCannotAddChildNode,
-                          locale: ref.read(appSettingsProvider).locale);
-                    }),
-                    AppTextButton(loc(context).noInternetConnectionTitle,
-                        identifier:
-                            'now-faq-${'noInternetConnectionTitle'.kebab()}',
-                        onTap: () {
-                      gotoOfficialWebUrl(linkSetupNoInternetConnection,
-                          locale: ref.read(appSettingsProvider).locale);
-                    }),
-                  ],
-                ),
-              ),
-              const AppGap.small2(),
-              _buildExpansionCard(
-                title: loc(context).connectivity,
-                children: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    AppTextButton(loc(context).faqListLoseChildNode, onTap: () {
-                      gotoOfficialWebUrl(linkConnectivityLoseChildNode,
-                          locale: ref.read(appSettingsProvider).locale);
-                    }),
-                    AppTextButton(loc(context).faqListLoseDevices, onTap: () {
-                      gotoOfficialWebUrl(linkConnectivityLoseDevices,
-                          locale: ref.read(appSettingsProvider).locale);
-                    }),
-                    AppTextButton(loc(context).faqListDeviceNoWiFi, onTap: () {
-                      gotoOfficialWebUrl(linkConnectivityDeviceNoWiFi,
-                          locale: ref.read(appSettingsProvider).locale);
-                    }),
-                    AppTextButton(loc(context).faqListDeviceNoBestNode,
-                        onTap: () {
-                      gotoOfficialWebUrl(linkConnectivityDeviceNoBestNode,
-                          locale: ref.read(appSettingsProvider).locale);
-                    }),
-                  ],
-                ),
-              ),
-              const AppGap.small2(),
-              _buildExpansionCard(
-                title: loc(context).speed,
-                children: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    AppTextButton(loc(context).faqListMyInternetSlow,
-                        onTap: () {
-                      gotoOfficialWebUrl(linkSpeedMyInternetSlow,
-                          locale: ref.read(appSettingsProvider).locale);
-                    }),
-                    AppTextButton(loc(context).faqListSpecificDeviceSlow,
-                        onTap: () {
-                      gotoOfficialWebUrl(linkSpeedSpecificDeviceSlow,
-                          locale: ref.read(appSettingsProvider).locale);
-                    }),
-                  ],
-                ),
-              ),
-              const AppGap.small2(),
-              _buildExpansionCard(
-                title: loc(context).passwordAndAccess,
-                children: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    AppTextButton(loc(context).faqListLogInByRouterPassword,
-                        onTap: () {
-                      gotoOfficialWebUrl(linkPasswordLoginByRouterPassword,
-                          locale: ref.read(appSettingsProvider).locale);
-                    }),
-                    AppTextButton(loc(context).faqListForgotRouterPassword,
-                        onTap: () {
-                      gotoOfficialWebUrl(linkPasswordForgotRouterPassword,
-                          locale: ref.read(appSettingsProvider).locale);
-                    }),
-                    AppTextButton(loc(context).faqListChangeWiFiNamePassword,
-                        onTap: () {
-                      gotoOfficialWebUrl(linkPasswordChangeWiFiNamePassword,
-                          locale: ref.read(appSettingsProvider).locale);
-                    }),
-                  ],
-                ),
-              ),
-              const AppGap.small2(),
-              _buildExpansionCard(
-                title: loc(context).hardware,
-                children: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    AppTextButton(loc(context).faqListWhatLightsMean,
-                        onTap: () {
-                      gotoOfficialWebUrl(linkHardwareWhatLightMean,
-                          locale: ref.read(appSettingsProvider).locale);
-                    }),
-                    AppTextButton(loc(context).faqListHowToFactoryReset,
-                        onTap: () {
-                      gotoOfficialWebUrl(linkHardwareHowToFactoryReset,
-                          locale: ref.read(appSettingsProvider).locale);
-                    }),
-                    AppTextButton(loc(context).faqListLightsNotWorking,
-                        onTap: () {
-                      gotoOfficialWebUrl(linkHardwareLightsNotWorking,
-                          locale: ref.read(appSettingsProvider).locale);
-                    }),
-                    AppTextButton(loc(context).faqListNodeNotTurnOn, onTap: () {
-                      gotoOfficialWebUrl(linkHardwareNodeNotTureOn,
-                          locale: ref.read(appSettingsProvider).locale);
-                    }),
-                    AppTextButton(loc(context).faqListEthernetPortNotWorking,
-                        onTap: () {
-                      gotoOfficialWebUrl(linkHardwareEthernetPortNotWorking,
-                          locale: ref.read(appSettingsProvider).locale);
-                    }),
-                    AppTextButton(loc(context).faqListCheckIfFirmwareAutoUpdate,
-                        onTap: () {
-                      gotoOfficialWebUrl(linkCheckIfAutoFirmwareOn,
-                          locale: ref.read(appSettingsProvider).locale);
-                    }),
-                  ],
-                ),
-              ),
+              ...categories.map((category) => Column(
+                    children: [
+                      _buildExpansionCard(
+                        title: category.displayString(context),
+                        children: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: category.items
+                              .map((item) => AppTextButton(
+                                    item.displayString(context),
+                                    identifier:
+                                        'now-faq-${item.displayString(context).kebab()}',
+                                    onTap: () {
+                                      gotoOfficialWebUrl(item.url,
+                                          locale: ref
+                                              .read(appSettingsProvider)
+                                              .locale);
+                                    },
+                                  ))
+                              .toList(),
+                        ),
+                      ),
+                      const AppGap.small2(),
+                    ],
+                  )),
             ],
           ),
         );
@@ -224,12 +115,5 @@ class _FaqListViewState extends ConsumerState<FaqListView> {
         ),
       ],
     );
-  }
-
-  Future<void> _launchUrl(String urlString) async {
-    final Uri url = Uri.parse(urlString);
-    if (!await launchUrl(url)) {
-      logger.e('[Support]: Could not launch url: $url');
-    }
   }
 }

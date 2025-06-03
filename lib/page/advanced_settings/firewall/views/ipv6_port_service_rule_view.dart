@@ -161,7 +161,7 @@ class _AddRuleContentViewState
                 ? null
                 : _notifier.isRuleNameValidate(_ruleNameController.text)
                     ? null
-                    : loc(context).theNameMustNotBeEmpty;
+                    : loc(context).notBeEmptyAndLessThanThirtyThree;
           });
         },
         onChanged: (value) {
@@ -209,7 +209,7 @@ class _AddRuleContentViewState
         errorText: _ipError,
       ),
       const AppGap.large2(),
-      AppTextButton(
+      AppTextButton.noPadding(
         loc(context).selectDevices,
         onTap: () async {
           final result = await context.pushNamed<List<DeviceListItem>?>(

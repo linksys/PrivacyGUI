@@ -236,9 +236,8 @@
   "faqListLogInByRouterPassword": "Log in to router using router password",
   "faqListLoseChildNode": "Child node keeps losing connection",
   "faqListLoseDevices": "Devices losing connection",
-  "faqListMyInternetSlow": "My internet speed is slow",
+  "faqListMyInternetSlowOrSpecificDeviceSlow": "My internet speed is slow or specific device's speed are slow",
   "faqListNodeNotTurnOn": "Node not turning on",
-  "faqListSpecificDeviceSlow": "Specific device's speed is slow",
   "faqListWhatLightsMean": "What do the lights on my node mean?",
   "faqLookingFor": "Can't find what you're looking for?",
   "faqVisitLinksysSupport": "Visit Linksys Support",
@@ -263,6 +262,16 @@
   "firmwareUpdateDesc1": "Get the latest feature and fixed.",
   "firmwareUpdateDesc2": "Your router will restart once the update is complete. Devices will briefly go offline before reconnecting.",
   "firmwareVersion": "Firmware version",
+  "firmwareUpdateCountdownMessage": "Firmware just updated, the page will be refreshed in {seconds} seconds",
+  "@firmwareUpdateCountdownMessage": {
+    "description": "Message shown in a dialog after firmware update, with a countdown before page refresh.",
+    "placeholders": {
+      "seconds": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
   "firstName": "First name",
   "forgotPassword": "Forgot password",
   "formalDateTime": "{time} {date}",
@@ -896,6 +905,7 @@
   "textMessage": "Text message",
   "theDevicesAllowedToConnect": "These are the only devices allowed to connect.",
   "theNameMustNotBeEmpty": "The name must not be empty",
+  "notBeEmptyAndLessThanThirtyThree": "The name must not be empty and must be less than 33 characters.",
   "thirdPartyLicenses": "Third Party Licenses",
   "thisActionCannotBeUndone": "This action cannot be undone.",
   "timezone": "Time zone",

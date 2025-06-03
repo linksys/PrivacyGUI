@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
@@ -7,6 +8,7 @@ import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/di.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dart';
@@ -26,6 +28,7 @@ import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacy_gui/core/jnap/providers/assign_ip/base_assign_ip.dart'
     if (dart.library.html) 'package:privacy_gui/core/jnap/providers/assign_ip/web_assign_ip.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
 
 import 'components/shimmer.dart';
 
@@ -234,6 +237,16 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     );
   }
 
+  void _showFirmwareUpdateCountdownDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return _FirmwareUpdateCountdownDialog(onFinish: reload);
+      },
+    );
+  }
+
   void _firmwareUpdateCheck() {
     Future.doWhile(() => !mounted).then((_) {
       SharedPreferences.getInstance().then((pref) {
@@ -242,7 +255,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
           firmware.fetchAvailableFirmwareUpdates();
         } else {
           pref.setBool(pFWUpdated, false);
-          reload();
+          _showFirmwareUpdateCountdownDialog();
         }
       });
     });
@@ -295,4 +308,60 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
   //     }
   //   });
   // }
+}
+
+class _FirmwareUpdateCountdownDialog extends StatefulWidget {
+  final VoidCallback onFinish;
+  const _FirmwareUpdateCountdownDialog({required this.onFinish});
+
+  @override
+  State<_FirmwareUpdateCountdownDialog> createState() =>
+      _FirmwareUpdateCountdownDialogState();
+}
+
+class _FirmwareUpdateCountdownDialogState
+    extends State<_FirmwareUpdateCountdownDialog> {
+  int _seconds = 5;
+  late final Timer _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_seconds == 1) {
+        _timer.cancel();
+        Navigator.of(context).pop();
+        widget.onFinish();
+      } else {
+        setState(() {
+          _seconds--;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = loc(context);
+    return AlertDialog(
+      title: AppText.titleLarge(l10n.firmwareUpdate),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const AppSpinner(),
+          AppGap.medium(),
+          AppText.labelLarge(
+            l10n.firmwareUpdateCountdownMessage(_seconds),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
 }

@@ -68,7 +68,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
                       ?.speedTestResult
                       ?.downloadBandwidth ??
                   0) /
-              1000.0);
+              1024.0);
           _meterValue = downloadBandwidth;
           _randomValue = 0;
         });
@@ -554,14 +554,14 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
   (String, String, String) _getDataText(SpeedTestResult? result) {
     var latency = result?.latency?.toStringAsFixed(0) ?? '—';
     var downloadBandWidth =
-        ((result?.downloadBandwidth ?? 0) / 1000.0).toStringAsFixed(1);
+        ((result?.downloadBandwidth ?? 0) / 1024.0).toStringAsFixed(1);
     var uploadBandWidth =
-        ((result?.uploadBandwidth ?? 0) / 1000.0).toStringAsFixed(1);
+        ((result?.uploadBandwidth ?? 0) / 1024.0).toStringAsFixed(1);
     return (latency, downloadBandWidth, uploadBandWidth);
   }
 
   (String, String) _getTestResultDesc(SpeedTestResult? result) {
-    var downloadBandWidth = (result?.downloadBandwidth ?? 0) / 1000.0;
+    var downloadBandWidth = (result?.downloadBandwidth ?? 0) / 1024.0;
     var resultTitle = switch (downloadBandWidth) {
       < 50 => loc(context).speedOkay,
       < 100 => loc(context).speedGood,
