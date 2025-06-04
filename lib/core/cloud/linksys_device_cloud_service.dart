@@ -113,6 +113,21 @@ class DeviceCloudService {
             .toList());
   }
 
+  Future<void> deleteSession({
+    required LinksysDevice master,
+    required String sessionId,
+    String? serialNumber,
+  }) async {
+    final linksysToken = await fetchDeviceToken(
+        serialNumber: master.unit.serialNumber ?? '',
+        macAddress: master.getMacAddress(),
+        deviceUUID: master.deviceID);
+    _httpClient.deleteSession(
+        token: linksysToken,
+        sessionId: sessionId,
+        serialNumber: serialNumber ?? master.unit.serialNumber ?? '');
+  }
+
   // Fetch device token from cloud via UUID
   Future<String> fetchDeviceToken({
     required String serialNumber,

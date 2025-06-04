@@ -8,6 +8,7 @@ import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dart';
 import 'package:privacy_gui/page/components/styled/menus/widgets/top_navigation_menu.dart';
+import 'package:privacy_gui/page/dashboard/views/components/remote_assistance_animation.dart';
 import 'package:privacygui_widgets/theme/material/color_tonal_palettes.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
@@ -139,7 +140,7 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
                   ref
                       .read(remoteClientProvider.notifier)
                       .initiateRemoteAssistance()
-                      .then((pin) {
+                      .then((_) {
                     setState(() {
                       isLoading = false;
                     });
@@ -173,27 +174,27 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
 
   Widget _buildRemoteAssistanceDialog(WidgetRef ref) {
     final state = ref.watch(remoteClientProvider);
-    final pin = state.pin;
-    // Error or no sessions, show a message to the user to contact a support agent
-    if (pin == null) {
-      return Center(
-        child: AppStyledText.link(
-            'To take advantage of Remote Assistance, you must first contact a phone support agent. Go to <a href="http://www.linksys.com/support" target="_blank">linksys.com/support</a> and click on Phone Call to get started.',
-            color: Theme.of(context).colorScheme.primary,
-            defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
-            tags: const [
-              'a'
-            ],
-            callbackTags: {
-              'a': (tag, data) {
-                final url = data['href'];
-                if (url != null) {
-                  launchUrl(Uri.parse(url));
-                }
-              }
-            }),
-      );
-    }
+    // final pin = state.pin;
+    // // Error or no sessions, show a message to the user to contact a support agent
+    // if (pin == null) {
+    //   return Center(
+    //     child: AppStyledText.link(
+    //         'To take advantage of Remote Assistance, you must first contact a phone support agent. Go to <a href="http://www.linksys.com/support" target="_blank">linksys.com/support</a> and click on Phone Call to get started.',
+    //         color: Theme.of(context).colorScheme.primary,
+    //         defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
+    //         tags: const [
+    //           'a'
+    //         ],
+    //         callbackTags: {
+    //           'a': (tag, data) {
+    //             final url = data['href'];
+    //             if (url != null) {
+    //               launchUrl(Uri.parse(url));
+    //             }
+    //           }
+    //         }),
+    //   );
+    // }
     final sessionInfo = state.sessionInfo;
     // if status is PENDING, show pin code and status
     // if status is ACTIVE, show timer
@@ -203,24 +204,33 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
       GRASessionStatus.pending => _buildPendingWidget(state),
       GRASessionStatus.active => _buildCountingWidget(state),
       GRASessionStatus.invalid => _buildInvalidWidget(),
-      GRASessionStatus.initiate =>
-        const Center(child: CircularProgressIndicator()),
+      GRASessionStatus.initiate => _buildInitiateWidget(),
     };
   }
 
   Widget _buildInitiateWidget() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        AppText.labelLarge(
-            'A Linksys support agent has remote access to your Linksys Smart Wi-Fi account and your home network.'),
-      ],
+    return Center(
+      child: AppStyledText.link(
+          'To take advantage of Remote Assistance, you must first contact a phone support agent. Go to <a href="http://www.linksys.com/support" target="_blank">linksys.com/support</a> and click on Phone Call to get started.',
+          color: Theme.of(context).colorScheme.primary,
+          defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
+          tags: const [
+            'a'
+          ],
+          callbackTags: {
+            'a': (tag, data) {
+              final url = data['href'];
+              if (url != null) {
+                launchUrl(Uri.parse(url));
+              }
+            }
+          }),
     );
   }
 
   Widget _buildPendingWidget(RemoteClientState state) {
-    // PENDING TTL is 900 seconds, but expiredIn is 1800 seconds, need to count down from 900 seconds
-    final initialSeconds = (900 + (state.sessionInfo?.expiredIn ?? 0)) * -1;
+    // PENDING TTL is 900 seconds only, but expiredIn is 3600 seconds, need to count down from 900 seconds
+    final initialSeconds = (2700 + (state.sessionInfo?.expiredIn ?? 0)) * -1;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -251,9 +261,12 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
 
     return Column(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const RemoteAssistanceAnimation(),
         AppText.labelLarge(
             'A Linksys support agent has remote access to your Linksys Smart Wi-Fi account and your home network.'),
+        AppGap.large2(),
         TimerCountdownWidget(
           initialSeconds: initialSeconds,
           title: 'Session',

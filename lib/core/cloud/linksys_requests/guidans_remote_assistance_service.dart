@@ -39,6 +39,24 @@ extension GuidansRemoteAssistanceService on LinksysHttpClient {
     );
   }
 
+  Future<Response> deleteSession({
+    required String token,
+    required String sessionId,
+    String? serialNumber,
+  }) {
+    final endPoint = combineUrl(kSessionInfo, args: {kVarRASessionId: sessionId});
+    var header = defaultHeader
+      ..[kHeaderLinksysToken] = token
+      ..[HttpHeaders.authorizationHeader] = wrapSessionToken(token);
+
+    if (serialNumber != null) {
+      header[kHeaderSerialNumber] = serialNumber;
+    }
+    return this.delete(
+      Uri.parse(endPoint),
+      headers: header,
+    );
+  }
   Future<Response> createPin({
     required String token,
     required String serialNumber,

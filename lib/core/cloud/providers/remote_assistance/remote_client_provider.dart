@@ -36,18 +36,18 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
     return sessions;
   }
 
-  Future<String?> initiateRemoteAssistance() async {
+  Future<void> initiateRemoteAssistance() async {
     final sessions = await fetchSessions();
     if (sessions.isEmpty) {
-      return null;
+      return;
     }
     final sessionInfo = await fetchSessionInfo(sessions.first.id);
     if (sessionInfo == null) {
-      return null;
+      return;
     }
-    final pin = await createPin(sessionInfo.id);
-    if (pin == null) {
-      return null;
+
+    if (sessionInfo.status == GRASessionStatus.pending) {
+      await createPin(sessionInfo.id);
     }
     // start a stream to fetch session info
     _sessionInfoStreamSubscription?.cancel();
@@ -55,12 +55,21 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
         _fetchSessionInfoStream(sessionInfo.id).listen((sessionInfo) {
       state = state.copyWith(sessionInfo: () => sessionInfo);
     });
-    return pin;
   }
 
   Future<void> endRemoteAssistance() async {
     _sessionInfoStreamSubscription?.cancel();
     _sessionInfoStreamSubscription = null;
+    final sessionId = state.sessionInfo?.id;
+    if (sessionId == null) {
+      return;
+    }
+    final serialNumber = state.sessionInfo?.serialNumber;
+    final master = ref.read(deviceManagerProvider).masterDevice;
+    await ref.read(deviceCloudServiceProvider).deleteSession(
+        master: master,
+        sessionId: sessionId,
+        serialNumber: serialNumber ?? master.unit.serialNumber);
     state = RemoteClientState();
   }
 
