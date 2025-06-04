@@ -19,8 +19,8 @@ class AutoParentFirstLoginNotifier
     return AutoParentFirstLoginState();
   }
 
-  // check and auto install the latest firmware
-  Future<void> checkAndAutoInstallFirmware() async {
+  // check and auto install the latest firmware, return true if new firmware is available
+  Future<bool> checkAndAutoInstallFirmware() async {
     // Pause polling
     ref.read(pollingProvider.notifier).paused = true;
     final fwUpdate = ref.read(firmwareUpdateProvider.notifier);
@@ -29,8 +29,10 @@ class AutoParentFirstLoginNotifier
     if (fwUpdate.getAvailableUpdateNumber() > 0) {
       logger.i('[FirstTime]: New Firmware available!');
       await fwUpdate.updateFirmware();
+      return true;
     } else {
       logger.i('[FirstTime]: No available FW, ready to go');
+      return false;
     }
   }
 
