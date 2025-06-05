@@ -45,7 +45,8 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
       builder: (context) {
         return AlertDialog(
           title: AppText.titleLarge(loc(context).settingsSaved),
-          content: AppText.bodyMedium(loc(context).pnpIspTypeSelectionDhcpConfirm),
+          content:
+              AppText.bodyMedium(loc(context).pnpIspTypeSelectionDhcpConfirm),
           actions: [
             AppTextButton(
               loc(context).cancel,
@@ -90,7 +91,7 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
         ? const AppFullScreenSpinner()
         : StyledAppPageView(
             title: loc(context).pnpIspTypeSelectionTitle,
-            child: ListView(
+            child: (context, constraints) => ListView(
               shrinkWrap: true,
               children: [
                 ISPTypeCard(

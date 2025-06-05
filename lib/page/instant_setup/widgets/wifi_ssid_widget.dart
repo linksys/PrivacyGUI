@@ -30,7 +30,7 @@ class _WiFiSSIDFieldState extends ConsumerState<WiFiSSIDField> {
     RequiredRule(),
     NoSurroundWhitespaceRule(),
     LengthRule(min: 1, max: 32),
-    WiFiSsidRule(),
+    // WiFiSsidRule(),
   ]);
 
   @override

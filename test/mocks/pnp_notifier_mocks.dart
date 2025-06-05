@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i10;
 import 'package:privacy_gui/core/jnap/actions/better_action.dart' as _i12;
+import 'package:privacy_gui/core/jnap/models/auto_configuration_settings.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart' as _i7;
 import 'package:privacy_gui/page/instant_setup/data/pnp_state.dart' as _i3;
 import 'package:privacy_gui/page/instant_setup/data/pnp_step_state.dart' as _i4;
@@ -216,14 +217,14 @@ class MockPnpNotifier extends _i2.Notifier<_i3.PnpState>
       ) as _i8.Future<dynamic>);
 
   @override
-  _i8.Future<bool> pnpCheck() => (super.noSuchMethod(
+  _i8.Future<AutoConfigurationSettings?> autoConfigurationCheck() => (super.noSuchMethod(
         Invocation.method(
           #pnpCheck,
           [],
         ),
-        returnValue: _i8.Future<bool>.value(false),
-        returnValueForMissingStub: _i8.Future<bool>.value(false),
-      ) as _i8.Future<bool>);
+        returnValue: _i8.Future<AutoConfigurationSettings?>.value(null),
+        returnValueForMissingStub: _i8.Future<AutoConfigurationSettings?>.value(null),
+      ) as _i8.Future<AutoConfigurationSettings?>);
 
   @override
   _i8.Future<bool> isRouterPasswordSet() => (super.noSuchMethod(

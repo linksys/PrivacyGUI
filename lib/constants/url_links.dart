@@ -18,14 +18,14 @@ const linkSupport = '$officialWebHost/linksys-support';
 const linkSetupCannotAddChildNode = '$officialSupportHost/kb/article/6793-en';
 const linkSetupNoInternetConnection = '$officialSupportHost/kb/article/6794-en';
 // FAQ Connectivity
-const linkConnectivityLoseChildNode = '$officialSupportHost/kb/article/6873-en';
+const linkConnectivityLoseChildNode = '$officialSupportHost/kb/article/8184-en';
 const linkConnectivityLoseDevices = '$officialSupportHost/kb/article/6796-en';
 const linkConnectivityDeviceNoWiFi = '$officialSupportHost/kb/article/6797-en';
 const linkConnectivityDeviceNoBestNode =
     '$officialSupportHost/kb/article/6798-en';
 // FAQ Speed
-const linkSpeedMyInternetSlow = '$officialSupportHost/kb/article/6873-en';
-const linkSpeedSpecificDeviceSlow = '$officialSupportHost/kb/article/6873-en';
+const linkSpeedMyInternetSlow = '$officialSupportHost/kb/article/79-en';
+const linkSpeedSpecificDeviceSlow = '$officialSupportHost/kb/article/79-en';
 // FAQ Password And Access
 const linkPasswordLoginByRouterPassword =
     '$officialSupportHost/kb/article/6802-en';
@@ -39,7 +39,7 @@ const linkHardwareHowToFactoryReset = '$officialSupportHost/kb/article/201-en';
 const linkHardwareLightsNotWorking = '$officialSupportHost/kb/article/6807-en';
 const linkHardwareNodeNotTureOn = '$officialSupportHost/kb/article/6807-en';
 const linkHardwareEthernetPortNotWorking =
-    '$officialSupportHost/kb/article/6873-en';
+    '$officialSupportHost/kb/article/8185-en';
 const linkCheckIfAutoFirmwareOn = '$officialSupportHost/kb/article/6810-en';
 // Explanation
 const linksysCertExplanation =

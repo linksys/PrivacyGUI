@@ -40,13 +40,9 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
 
   final Map<String, TextEditingController> _advancedPasswordController = {};
 
-  late final ScrollController _scrollController;
-
   @override
   void initState() {
     super.initState();
-    final index = widget.args['wifiIndex'] as int? ?? 0;
-    _scrollController = ScrollController(initialScrollOffset: 760.0 * index);
 
     doSomethingWithSpinner(
       context,
@@ -90,16 +86,17 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
 
     return StyledAppPageView(
       appBarStyle: AppBarStyle.none,
+      hideTopbar: true,
       scrollable: true,
-      controller: _scrollController,
+      // controller: _scrollController,
       padding: EdgeInsets.zero,
       bottomBar: PageBottomBar(
           isPositiveEnabled: isPositiveEnabled,
           onPositiveTap: () {
             _showSaveConfirmModal();
           }),
-      useMainPadding: false,
-      child: ResponsiveLayout(
+      useMainPadding: true,
+      child: (context, constraints) => ResponsiveLayout(
           desktop: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1025,8 +1022,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
             AppGap.small2(),
             ...disabledWiFiBands
                 .map((e) => AppText.labelMedium(
-                      loc(context).disableBandWarning(
-                          getWifiRadioBandTitle(context, e.radioID)),
+                      loc(context).disableBandWarning(e.radioID.bandName),
                       color: Theme.of(context).colorScheme.error,
                     ))
                 .toList()
@@ -1055,6 +1051,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
     List<Widget> advanced = state.mainWiFi
         .map(
           (e) => Column(
+            key: ValueKey(e.radioID.value),
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               AppText.bodyMedium(e.radioID.value),
@@ -1081,6 +1078,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
         .toList();
     advanced.add(
       Column(
+        key: ValueKey('guest'),
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppText.bodyMedium(loc(context).guest),

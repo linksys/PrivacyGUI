@@ -55,7 +55,7 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
     return StyledAppPageView(
       scrollable: true,
       title: loc(context).staticIPAddress,
-      child: Column(
+      child: (context, constraints) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppText.bodyLarge(

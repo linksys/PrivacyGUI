@@ -1,0 +1,8 @@
+{
+    "name": "Instant privacy test",
+    "target": "integration_test/instant_privacy_test.dart",
+    "description": "Test instant privacy",
+    "setUp":  ["factory_reset", "skip_pnp"],
+    "tearDown": [],
+    "tags": ["menu", "instant_privacy"]
+}

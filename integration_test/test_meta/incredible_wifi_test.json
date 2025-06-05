@@ -1,0 +1,14 @@
+{
+    "name": "Incredible wifi test",
+    "target": "integration_test/incredible_wifi_test.dart",
+    "description": "Test the wifi settings",
+    "setUp":  ["factory_reset", "skip_pnp"],
+    "tearDown": [],
+    "tags": ["wifi", "menu"],
+    "config": {
+        "newWifiName": "Linksys00019",
+        "newWifiPassword": "3rEzbu27c@-",
+        "newGuestWifiName": "Linksys00019-guest",
+        "newGuestWifiPassword": "BeMyGuest!@"
+    }
+}

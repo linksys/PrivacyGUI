@@ -5,7 +5,6 @@ import 'package:privacy_gui/constants/url_links.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/general_settings_widget/language_tile.dart';
-import 'package:privacy_gui/page/components/styled/general_settings_widget/theme_color_tile.dart';
 import 'package:privacy_gui/page/components/styled/general_settings_widget/theme_mode_tile.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
@@ -33,6 +32,7 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
 
     return AppPopupButton(
       parent: shellNavigatorKey.currentContext,
+      maxWidth: 240,
       button: Semantics(
         identifier: 'now-topbar-icon-general-settings',
         label: 'general settings',

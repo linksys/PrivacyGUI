@@ -7,6 +7,7 @@ import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
+import 'package:privacy_gui/core/jnap/models/auto_configuration_settings.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/models/firmware_update_settings.dart';
 import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
@@ -88,7 +89,7 @@ abstract class BasePnpNotifier extends Notifier<PnpState> {
   Future checkAdminPassword(String? password);
   Future checkInternetConnection([int retries = 1]);
   Future checkRouterConfigured();
-  Future<bool> pnpCheck();
+  Future<AutoConfigurationSettings?> autoConfigurationCheck();
   Future<bool> isRouterPasswordSet();
   Future fetchData();
   Future save();
@@ -104,94 +105,99 @@ abstract class BasePnpNotifier extends Notifier<PnpState> {
   ({String name, String password}) getDefaultGuestWiFiNameAndPassPhrase();
 }
 
-// class MockPnpNotifier extends BasePnpNotifier {
-//   @override
-//   Future checkAdminPassword(String? password) {
-//     if (password == 'Linksys123!') {
-//       return Future.delayed(const Duration(seconds: 1));
-//     }
-//     return Future.delayed(const Duration(seconds: 3))
-//         .then((value) => throw ExceptionInvalidAdminPassword());
-//   }
+class MockPnpNotifier extends BasePnpNotifier {
+  @override
+  Future checkAdminPassword(String? password) {
+    if (password == 'Linksys123!') {
+      return Future.delayed(const Duration(seconds: 1));
+    }
+    return Future.delayed(const Duration(seconds: 3))
+        .then((value) => throw ExceptionInvalidAdminPassword());
+  }
 
-//   @override
-//   Future checkInternetConnection([int retries = 1]) {
-//     return Future.delayed(const Duration(seconds: 1))
-//         .then((value) => throw ExceptionNoInternetConnection());
-//   }
+  @override
+  Future checkInternetConnection([int retries = 1]) {
+    return Future.delayed(const Duration(seconds: 1))
+        .then((value) => throw ExceptionNoInternetConnection());
+  }
 
-//   @override
-//   Future fetchDeviceInfo() {
-//     return Future.delayed(const Duration(seconds: 1));
-//   }
+  @override
+  Future fetchDeviceInfo() {
+    return Future.delayed(const Duration(seconds: 1));
+  }
 
-//   @override
-//   Future<bool> pnpCheck() {
-//     return Future.delayed(const Duration(seconds: 1)).then((value) => true);
-//   }
+  @override
+  Future<AutoConfigurationSettings?> autoConfigurationCheck() {
+    return Future.delayed(const Duration(seconds: 1))
+        .then((value) => AutoConfigurationSettings(
+              isAutoConfigurationSupported: true,
+              userAcknowledgedAutoConfiguration: false,
+              autoConfigurationMethod: AutoConfigurationMethod.autoParent,
+            ));
+  }
 
-//   @override
-//   Future<bool> isRouterPasswordSet() {
-//     return Future.delayed(const Duration(seconds: 1)).then((value) => true);
-//   }
+  @override
+  Future<bool> isRouterPasswordSet() {
+    return Future.delayed(const Duration(seconds: 1)).then((value) => true);
+  }
 
-//   @override
-//   Future fetchData() {
-//     return Future.delayed(const Duration(seconds: 1));
-//   }
+  @override
+  Future fetchData() {
+    return Future.delayed(const Duration(seconds: 1));
+  }
 
-//   @override
-//   ({String name, String password, String security})
-//       getDefaultWiFiNameAndPassphrase() {
-//     return (
-//       name: 'Linksys1234567',
-//       password: 'Linksys123456@',
-//       security: 'WPA2/WPA3-Mixed-Personal'
-//     );
-//   }
+  @override
+  ({String name, String password, String security})
+      getDefaultWiFiNameAndPassphrase() {
+    return (
+      name: 'Linksys1234567',
+      password: 'Linksys123456@',
+      security: 'WPA2/WPA3-Mixed-Personal'
+    );
+  }
 
-//   @override
-//   ({String name, String password}) getDefaultGuestWiFiNameAndPassPhrase() {
-//     return (
-//       name: 'Guest-Linksys1234567',
-//       password: 'GuestLinksys123456@',
-//     );
-//   }
+  @override
+  ({String name, String password}) getDefaultGuestWiFiNameAndPassPhrase() {
+    return (
+      name: 'Guest-Linksys1234567',
+      password: 'GuestLinksys123456@',
+    );
+  }
 
-//   @override
-//   Future save() {
-//     return Future.delayed(const Duration(seconds: 5));
-//     // .then((value) => throw ErrorNeedToReconnect());
-//   }
+  @override
+  Future save() {
+    return Future.delayed(const Duration(seconds: 5));
+    // .then((value) => throw ErrorNeedToReconnect());
+  }
 
-//   @override
-//   Future checkRouterConfigured() {
-//     state = state.copyWith(isUnconfigured: true);
+  @override
+  Future checkRouterConfigured() {
+    state = state.copyWith(isUnconfigured: true);
 
-//     return Future.delayed(const Duration(seconds: 1))
-//         .then((value) => throw ExceptionRouterUnconfigured());
-//   }
+    return Future.delayed(const Duration(seconds: 1))
+        .then((value) => throw ExceptionRouterUnconfigured());
+  }
 
-//   @override
-//   Future testConnectionReconnected() {
-//     return Future.delayed(const Duration(seconds: 1)).then((value) => true);
-//   }
+  @override
+  Future testConnectionReconnected() {
+    return Future.delayed(const Duration(seconds: 1)).then((value) => true);
+  }
 
-//   @override
-//   Future fetchDevices() {
-//     return Future.delayed(const Duration(seconds: 1)).then((_) {});
-//   }
+  @override
+  Future fetchDevices() {
+    return Future.delayed(const Duration(seconds: 1)).then((_) {});
+  }
 
-//   @override
-//   void setAttachedPassword(String? password) {
-//     state = state.copyWith(attachedPassword: password);
-//   }
+  @override
+  void setAttachedPassword(String? password) {
+    state = state.copyWith(attachedPassword: password);
+  }
 
-//   @override
-//   void setForceLogin(bool force) {
-//     state = state.copyWith(forceLogin: force);
-//   }
-// }
+  @override
+  void setForceLogin(bool force) {
+    state = state.copyWith(forceLogin: force);
+  }
+}
 
 class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
   @override
@@ -242,7 +248,6 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
   /// check internet connection within 30 seconds
   @override
   Future checkInternetConnection([int retries = 1]) async {
-
     Future<bool> isInternetConnected() async {
       bool isConnected = false;
       for (int i = 0; i < retries; i++) {
@@ -280,10 +285,10 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
   }
 
   @override
-  Future<bool> pnpCheck() async {
+  Future<AutoConfigurationSettings?> autoConfigurationCheck() async {
     if (!serviceHelper.isSupportPnP(state.deviceInfo?.services)) {
       logger.i('[PnP]: The router does NOT support PNP!');
-      return false;
+      return null;
     }
     final repo = ref.read(routerRepositoryProvider);
     final result = await repo
@@ -292,12 +297,10 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
           fetchRemote: true,
           cacheLevel: CacheLevel.noCache,
         )
-        .then((data) =>
-            data.output['isAutoConfigurationSupported'] &&
-            !data.output['userAcknowledgedAutoConfiguration'])
-        .onError((error, stackTrace) =>
-            false); // error handling - set false to prevent go into pnp
-    logger.d('[PnP]: PnP check result: $result');
+        .then<AutoConfigurationSettings?>(
+            (data) => AutoConfigurationSettings.fromMap(data.output))
+        .onError((error, stackTrace) => null);
+    logger.d('[PnP]: Auto Configuration Check result: $result');
     return result;
   }
 

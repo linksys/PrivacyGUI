@@ -41,6 +41,9 @@ String? errorCodeHelper(BuildContext context, String? code,
     errorMissingDestination => loc(context).invalidDestinationIpAddress,
     errorRuleOverlap => loc(context).rulesOverlapError,
     errorGuestSSIDConflict => loc(context).errorGuestSSIDConflict,
+    errorVPNNotConnected => loc(context).vpnErrorVPNNotConnected,
+    errorVPNUserAlreadyExists => loc(context).vpnErrorVPNUserAlreadyExists,
+    errorVPNUserNotFound => loc(context).vpnErrorVPNUserNotFound,
     _ => unknownHandle(code),
   };
 }

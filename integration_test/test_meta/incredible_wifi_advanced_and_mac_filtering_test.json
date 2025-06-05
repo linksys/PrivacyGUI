@@ -1,0 +1,8 @@
+{
+    "name": "Incredible wifi advanced and mac filtering test",
+    "target": "integration_test/incredible_wifi_advanced_and_mac_filtering_test.dart",
+    "description": "Test the wifi advanced and mac filtering",
+    "setUp":  ["factory_reset", "skip_pnp"],
+    "tearDown": [],
+    "tags": ["wifi", "menu"]
+}

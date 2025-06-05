@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
+import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_state.dart';
@@ -69,6 +70,7 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
                 // Set state
                 if (result is JNAPSuccess) {
                   state = state.copyWith(step: 'success');
+                  ref.read(pollingProvider.notifier).forcePolling();
                 } else if (result is JNAPError) {
                   state = state.copyWith(step: 'error');
                 }

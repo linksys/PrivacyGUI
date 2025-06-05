@@ -56,7 +56,7 @@ class _SimpleItemPickerViewState extends ConsumerState<SimpleItemPickerView> {
   Widget build(BuildContext context) {
     return StyledAppPageView(
       title: loc(context).connectionType,
-      child: AppBasicLayout(
+      child: (context, constraints) => AppBasicLayout(
         content: Column(
           children: [
             const AppGap.large2(),

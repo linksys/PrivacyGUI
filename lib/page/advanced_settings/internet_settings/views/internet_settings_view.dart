@@ -59,7 +59,8 @@ class InternetSettingsView extends ArgumentsConsumerStatefulView {
       _InternetSettingsViewState();
 }
 
-class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
+class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
+    with SingleTickerProviderStateMixin {
   final TextEditingController _mtuSizeController = TextEditingController();
   final TextEditingController _macAddressCloneController =
       TextEditingController();
@@ -106,9 +107,12 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
   static const inputPadding = EdgeInsets.symmetric(vertical: Spacing.small2);
   final InputValidator _macValidator = InputValidator([MACAddressRule()]);
 
+  late final TabController _tabController;
+
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 3, vsync: this);
 
     _notifier = ref.read(internetSettingsProvider.notifier);
     originalState = ref.read(internetSettingsProvider).copyWith();
@@ -152,6 +156,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
     _ipv6PrefixLengthController.dispose();
     _ipv6BorderRelayController.dispose();
     _ipv6BorderRelayPrefixLengthController.dispose();
+    _tabController.dispose();
   }
 
   void initUI(InternetSettingsState state) {
@@ -300,36 +305,33 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
       _connectionTypeView(InternetSettingsViewType.ipv6, state),
       _releaseAndRenewView(state),
     ];
-    return StyledAppPageView(
-      appBarStyle: AppBarStyle.none,
-      bottomBar: isEditing
-          ? PageBottomBar(
-              isPositiveEnabled: _isEdited(state),
-              onPositiveTap: _showRestartAlert,
-            )
-          : null,
-      child: AppBasicLayout(
-        content: StyledAppTabPageView(
-          padding: EdgeInsets.zero,
-          useMainPadding: false,
-          title: loc(context).internetSettings.capitalizeWords(),
-          onBackTap: _isEdited(state)
-              ? () async {
-                  final goBack = await showUnsavedAlert(context);
-                  if (goBack == true) {
-                    _notifier.fetch();
-                    context.pop();
-                  }
+    return AppBasicLayout(
+      content: StyledAppPageView(
+        padding: EdgeInsets.zero,
+        useMainPadding: false,
+        title: loc(context).internetSettings.capitalizeWords(),
+        bottomBar: isEditing
+            ? PageBottomBar(
+                isPositiveEnabled: _isEdited(state),
+                onPositiveTap: _showRestartAlert,
+              )
+            : null,
+        onBackTap: _isEdited(state)
+            ? () async {
+                final goBack = await showUnsavedAlert(context);
+                if (goBack == true) {
+                  _notifier.fetch();
+                  context.pop();
                 }
-              : null,
-          tabs: tabs
-              .map((e) => Tab(
-                    text: e,
-                  ))
-              .toList(),
-          tabContentViews: tabContents,
-          expandedHeight: 120,
-        ),
+              }
+            : null,
+        tabs: tabs
+            .map((e) => Tab(
+                  text: e,
+                ))
+            .toList(),
+        tabContentViews: tabContents,
+        tabController: _tabController,
       ),
     );
   }
@@ -338,8 +340,8 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
     InternetSettingsViewType viewType,
     InternetSettingsState state,
   ) {
-    return SingleChildScrollView(
-      child: ResponsiveLayout(
+    return StyledAppPageView.innerPage(
+      child: (context, constraints) => ResponsiveLayout(
         desktop: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -371,8 +373,8 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
         ref.watch(deviceManagerProvider.select((state) => state.wanStatus));
     final wanIpv6Type =
         WanIPv6Type.resolve(state.ipv6Setting.ipv6ConnectionType);
-    return SingleChildScrollView(
-      child: Column(
+    return StyledAppPageView.innerPage(
+      child: (context, constraints) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -819,6 +821,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
               vertical: Spacing.small3,
             ),
             child: AppDropdownButton<String>(
+              key: const ValueKey('mtuDropdown'),
               title: loc(context).mtu,
               selected: ipv4Setting.mtu == 0
                   ? loc(context).auto
@@ -855,6 +858,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
               vertical: Spacing.small3,
             ),
             child: AppTextField.minMaxNumber(
+              key: const ValueKey('mtuManualSizeText'),
               controller: _mtuSizeController,
               enable: !isMtuAuto,
               border: const OutlineInputBorder(),
@@ -1014,6 +1018,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
           vertical: Spacing.small3,
         ),
         child: AppDropdownButton<String>(
+          key: const ValueKey('ipv4ConnectionDropdown'),
           selected: ipv4Setting.ipv4ConnectionType,
           items: ipv4Setting.supportedIPv4ConnectionType,
           label: (item) {
@@ -1257,6 +1262,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
           vertical: Spacing.small3,
         ),
         child: AppIPFormField(
+          key: const ValueKey('ipv4ServerAddressField'),
           header: AppText.bodySmall(
             loc(context).serverIpv4Address,
           ),
@@ -1342,6 +1348,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
                         headerText:
                             '${loc(context).maxIdleTime} (${loc(context).minutes})',
                         semanticLabel: 'max idle time',
+                        key: const ValueKey('maxIdleTimeText'),
                         max: 9999,
                         min: 1,
                         controller: _idleTimeController,
@@ -1370,6 +1377,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
                         headerText:
                             '${loc(context).redialPeriod} (${loc(context).seconds})',
                         semanticLabel: 'redial period',
+                        key: const ValueKey('redialPeriodText'),
                         max: 180,
                         min: 20,
                         controller: _redialPeriodController,
@@ -1470,6 +1478,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
           vertical: Spacing.small3,
         ),
         child: AppDropdownButton<String>(
+          key: const ValueKey('ipv6ConnectionDropdown'),
           selected: state.ipv6Setting.ipv6ConnectionType,
           items: allowedTypeList,
           label: (item) {
@@ -1557,6 +1566,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView> {
           Padding(
             padding: inputPadding,
             child: AppDropdownButton<IPv6rdTunnelMode>(
+              key: const ValueKey('ipv6TunnelDropdown'),
               title: loc(context).sixrdTunnel,
               selected:
                   ipv6Setting.ipv6rdTunnelMode ?? IPv6rdTunnelMode.disabled,

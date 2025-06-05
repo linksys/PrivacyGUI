@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/build_config.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
+import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
@@ -49,7 +51,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
   @override
   Widget build(BuildContext context) {
     return StyledAppPageView(
-      // scrollable: true,
+      scrollable: true,
       backState: StyledBackState.none,
       title: loc(context).menu,
       menu: PageMenu(title: loc(context).myNetwork, items: [
@@ -66,7 +68,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
               context.pushNamed(RouteNamed.addNodes);
             })
       ]),
-      child: Column(
+      child: (context, constraints) => Column(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -80,22 +82,34 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
   }
 
   Widget _buildMenuGridView(List<AppSectionItemData> items) {
-    return GridView.builder(
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: ResponsiveLayout.isOverMedimumLayout(context) ? 3 : 1,
-        mainAxisSpacing: ResponsiveLayout.isOverMedimumLayout(context)
-            ? Spacing.medium
-            : Spacing.small2,
-        crossAxisSpacing: ResponsiveLayout.columnPadding(context),
-        childAspectRatio: (205 / 152),
-        mainAxisExtent:
-            ResponsiveLayout.isOverMedimumLayout(context) ? 152 : 112,
+    return Scrollbar(
+      thickness: 0,
+      child: SizedBox(
+        height: (items.length /
+                    (ResponsiveLayout.isOverMedimumLayout(context) ? 3 : 1)) *
+                (ResponsiveLayout.isOverMedimumLayout(context) ? 152 : 112) +
+            kDefaultToolbarHeight,
+        child: GridView.builder(
+          controller: Scrollable.maybeOf(context)?.widget.controller,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount:
+                ResponsiveLayout.isOverMedimumLayout(context) ? 3 : 1,
+            mainAxisSpacing: ResponsiveLayout.isOverMedimumLayout(context)
+                ? Spacing.medium
+                : Spacing.small2,
+            crossAxisSpacing: ResponsiveLayout.columnPadding(context),
+            childAspectRatio: (205 / 152),
+            mainAxisExtent:
+                ResponsiveLayout.isOverMedimumLayout(context) ? 152 : 112,
+          ),
+          physics: const NeverScrollableScrollPhysics(),
+          shrinkWrap: true,
+          itemCount: items.length,
+          itemBuilder: (context, index) {
+            return _buildDeviceGridCell(items[index]);
+          },
+        ),
       ),
-      physics: const ScrollPhysics(),
-      itemCount: items.length,
-      itemBuilder: (context, index) {
-        return _buildDeviceGridCell(items[index]);
-      },
     );
   }
 
@@ -130,6 +144,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
         BuildConfig.forceCommandType == ForceCommand.local;
     final isSupportHealthCheck =
         ref.watch(dashboardHomeProvider).isHealthCheckSupported;
+    final isSupportVPN = getIt.get<ServiceHelper>().isSupportVPN();
     return [
       AppSectionItemData(
           title: loc(context).incredibleWiFi,
@@ -167,7 +182,6 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
           iconData: LinksysIcons.smartLock,
           status: privacyState.mode != MacFilterMode.allow,
           isBeta: true,
-          disabledOnBridge: true,
           onTap: () {
             _navigateTo(RouteNamed.menuInstantPrivacy);
           }),
@@ -191,6 +205,14 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
           onTap: () {
             _navigateTo(RouteNamed.menuInstantVerify);
           }),
+      if (isSupportVPN)
+        AppSectionItemData(
+            title: loc(context).vpn,
+            description: loc(context).vpnDesc,
+            iconData: LinksysIcons.smartLock,
+            onTap: () {
+              _navigateTo(RouteNamed.settingsVPN);
+            }),
       if (!isSupportHealthCheck && isBehindRouter)
         AppSectionItemData(
             title: loc(context).externalSpeedText,

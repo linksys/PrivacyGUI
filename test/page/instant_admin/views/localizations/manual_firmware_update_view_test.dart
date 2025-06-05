@@ -35,7 +35,7 @@ void main() {
         .thenReturn(ManualFirmwareUpdateState());
   });
 
-  testLocalizations('Mnaual firmware update - default', (tester, locale) async {
+  testLocalizations('Manual firmware update - default', (tester, locale) async {
     final widget = testableSingleRoute(
       overrides: [
         firmwareUpdateProvider.overrideWith(() => mockFirmwareUpdateNotifier),
@@ -49,7 +49,7 @@ void main() {
 
     await tester.pumpAndSettle();
   });
-  testLocalizations('Mnaual firmware update - file selected',
+  testLocalizations('Manual firmware update - file selected',
       (tester, locale) async {
     when(mockManualFirmwareUpdateNotifier.build()).thenReturn(
         ManualFirmwareUpdateState(
@@ -70,7 +70,7 @@ void main() {
     await tester.pumpAndSettle();
   });
 
-  testLocalizations('Mnaual firmware update - installing status',
+  testLocalizations('Manual firmware update - installing status',
       (tester, locale) async {
     when(mockManualFirmwareUpdateNotifier.build()).thenReturn(
         ManualFirmwareUpdateState(
@@ -89,10 +89,10 @@ void main() {
     );
     await tester.pumpWidget(widget);
 
-    await tester.pumpAndSettle();
+    await tester.pump(Duration(seconds: 2));
   });
 
-  testLocalizations('Mnaual firmware update - rebooting status',
+  testLocalizations('Manual firmware update - rebooting status',
       (tester, locale) async {
     when(mockManualFirmwareUpdateNotifier.build()).thenReturn(
         ManualFirmwareUpdateState(

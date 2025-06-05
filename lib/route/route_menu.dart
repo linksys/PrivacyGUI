@@ -37,6 +37,14 @@ final menus = [
     routes: advancedSettings,
   ),
   LinksysRoute(
+    name: RouteNamed.settingsVPN,
+    path: RoutePath.settingsVPN,
+    config: LinksysRouteConfig(
+      column: ColumnGrid(column: 12),
+    ),
+    builder: (context, state) => const VPNSettingsPage(),
+  ),
+  LinksysRoute(
       name: RouteNamed.menuInstantTopology,
       path: RoutePath.menuInstantTopology,
       builder: (context, state) => InstantTopologyView(
@@ -73,6 +81,7 @@ final menus = [
           path: RoutePath.manualFirmwareUpdate,
           config: LinksysRouteConfig(
             column: ColumnGrid(column: 9),
+            noNaviRail: true,
           ),
           builder: (context, state) => ManualFirmwareUpdateView(),
         ),

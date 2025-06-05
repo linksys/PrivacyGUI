@@ -4,7 +4,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:meta/meta.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 
 import 'config.dart';
 import 'screen.dart';
@@ -91,7 +91,8 @@ void testLocalizations(
       .toList();
   final supportedDevices = (screens ?? responsiveAllScreens)
       .toSet()
-      .where((element) => envScreens.toSet().any((e) => e.width == element.width))
+      .where(
+          (element) => envScreens.toSet().any((e) => e.width == element.width))
       .toList();
   final isScreenIncluded = supportedDevices.isNotEmpty;
   final set = supportedLocales

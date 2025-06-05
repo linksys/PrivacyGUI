@@ -1,0 +1,8 @@
+{
+    "name": "Test behaviors on Administration",
+    "target": "integration_test/administration_test.dart",
+    "description": "Execute all the functions on the page and verify that the new data has been synced",
+    "setUp":  ["factory_reset", "skip_pnp"],
+    "tearDown": [],
+    "tags": ["administration", "advanced_settings", "menu"]
+}
