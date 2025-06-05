@@ -13,6 +13,7 @@ class RoutePath {
   static const localPasswordReset = 'localPasswordReset';
   static const cloudRALogin = 'cloudRALogin';
   static const cloudRAPin = 'cloudRAPin';
+  static const autoParentFirstLogin = '/autoParentFirstLogin';
 
   /// dashboard
   static const dashboardHome = '/dashboardHome';
@@ -44,6 +45,7 @@ class RoutePath {
   static const settingsAdministration = "administration";
   static const settingsStaticRouting = "staticRouting";
   static const settingsStaticRoutingRule = "staticRoutingRule";
+  static const settingsVPN = "vpnSettings";
 
   /// otp
   static const otpStart = 'otp';
@@ -95,12 +97,6 @@ class RoutePath {
   /// Ipv6 port service
   static const ipv6PortServiceList = 'ipv6PortServiceList';
   static const ipv6PortServiceRule = 'ipv6PortServiceRule';
-
-  /// linkup
-  static const linkup = 'linkup';
-
-  /// Explanation
-  static const explanation = '/explanation';
 
   /// PnP
   static const pnp = '/pnp';
@@ -159,6 +155,7 @@ class RouteNamed {
   static const localPasswordReset = 'localPasswordReset';
   static const cloudRALogin = 'cloudRALogin';
   static const cloudRAPin = 'cloudRAPin';
+  static const autoParentFirstLogin = 'autoParentFirstLogin';
 
   /// dashboard
   static const dashboardMenu = 'dashboardMenu';
@@ -189,6 +186,7 @@ class RouteNamed {
   static const settingsAdministration = "administration";
   static const settingsStaticRouting = "staticRouting";
   static const settingsStaticRoutingRule = "staticRoutingRule";
+  static const settingsVPN = "vpnSettings";
 
   /// otp
   static const otpStart = 'otp';
@@ -241,12 +239,6 @@ class RouteNamed {
   /// Ipv6 port service
   static const ipv6PortServiceList = 'ipv6PortServiceList';
   static const ipv6PortServiceRule = 'ipv6PortServiceRule';
-
-  /// linkup
-  static const linkup = 'linkup';
-
-  /// Explanation
-  static const explanation = 'explanation';
 
   /// PnP
   static const pnp = 'pnp';

@@ -1,0 +1,8 @@
+{
+    "name": "Prepaired Instant-Setup",
+    "target": "integration_test/prepaired_reset_setup_test.dart",
+    "description": "Prepaired set up test",
+    "setUp":  ["factory_reset", "pre_paired"],
+    "tags": ["pnp"],
+    "tearDown": []
+}

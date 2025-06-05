@@ -56,14 +56,27 @@ class GeolocationState extends Equatable {
   }
 
   factory GeolocationState.fromMap(Map<String, dynamic> map) {
+    const localeTag = 'en';
+    final name = map['org'] ?? '';
+    final city =
+        map['city']?['names']?[localeTag] ?? map['city']?['defaultName'] ?? '';
+    final region = map['region']?['names']?[localeTag] ??
+        map['region']?['defaultName'] ??
+        '';
+    final regionCode = map['regionCode'] ?? '';
+    final country = map['country']?['names']?[localeTag] ??
+        map['country']?['defaultName'] ??
+        '';
+    final countryCode = map['countryCode'] ?? '';
+    final continentCode = map['continentCode'] ?? '';
     return GeolocationState(
-      name: map['name'] as String,
-      city: map['city'] as String,
-      region: map['region'] as String,
-      country: map['country'] as String,
-      regionCode: map['regionCode'] as String,
-      countryCode: map['countryCode'] as String,
-      continentCode: map['continentCode'] as String,
+      name: name,
+      city: city,
+      region: region,
+      country: country,
+      regionCode: regionCode,
+      countryCode: countryCode,
+      continentCode: continentCode,
     );
   }
 

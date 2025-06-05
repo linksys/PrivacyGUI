@@ -1,10 +1,16 @@
 part of 'router_provider.dart';
 
+final autoParentFirstLoginRoute = LinksysRoute(
+  name: RouteNamed.autoParentFirstLogin,
+  path: RoutePath.autoParentFirstLogin,
+  config: const LinksysRouteConfig(noNaviRail: true),
+  builder: (context, state) => const AutoParentFirstLoginView(),
+);
+
 final localLoginRoute = LinksysRoute(
   name: RouteNamed.localLoginPassword,
   path: RoutePath.localLoginPassword,
-  config: LinksysRouteConfig(column: ColumnGrid(column: 12)
-  , noNaviRail: true),
+  config: LinksysRouteConfig(column: ColumnGrid(column: 12), noNaviRail: true),
   builder: (context, state) => LoginLocalView(
     args: state.extra as Map<String, dynamic>? ?? {},
   ),
@@ -25,5 +31,6 @@ final localLoginRoute = LinksysRoute(
         ),
       ],
     ),
+    
   ],
 );

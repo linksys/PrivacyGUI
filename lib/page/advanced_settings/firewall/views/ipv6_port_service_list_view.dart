@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/models/ipv6_firewall_rule.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/components/settings_view/editable_card_list_settings_view.dart';
 import 'package:privacy_gui/page/components/settings_view/editable_table_settings_view.dart';
-import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
@@ -62,21 +63,8 @@ class _Ipv6PortServiceListViewState
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(ipv6PortServiceListProvider);
-    return StyledAppPageView(
-      appBarStyle: AppBarStyle.none,
-      scrollable: true,
-      useMainPadding: false,
-      title: loc(context).ipv6PortServices,
-      // bottomBar: PageBottomBar(
-      //     isPositiveEnabled: state != preservedState,
-      //     onPositiveTap: () {
-      //       doSomethingWithSpinner(context, _notifier.save()).then((state) {
-      //         setState(() {
-      //           preservedState = state;
-      //         });
-      //       });
-      //     }),
-      child: AppBasicLayout(
+    return StyledAppPageView.innerPage(
+      child: (context, constraints) => AppBasicLayout(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -91,7 +79,6 @@ class _Ipv6PortServiceListViewState
   }
 
   Widget _mobildSettingsView(Ipv6PortServiceListState state) {
-    // return Center();
     return EditableCardListsettingsView<IPv6FirewallRule>(
         title: loc(context).ipv6PortServices,
         emptyMessage: loc(context).noIPv6PortService,
@@ -245,20 +232,40 @@ class _Ipv6PortServiceListViewState
                 });
               },
             ),
-          2 => AppIPv6FormField(
-              displayType: AppIpFormFieldDisplayType.tight,
-              controller: ipAddressTextController,
-              border: const OutlineInputBorder(),
-              onChanged: (value) {
-                ref
-                    .read(ipv6PortServiceRuleProvider.notifier)
-                    .updateRule(stateRule?.copyWith(ipv6Address: value));
-                setState(() {
-                  _isEditRuleValid = ref
-                      .read(ipv6PortServiceRuleProvider.notifier)
-                      .isRuleValid();
-                });
-              },
+          2 => Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppIPv6FormField(
+                  displayType: AppIpFormFieldDisplayType.tight,
+                  controller: ipAddressTextController,
+                  border: const OutlineInputBorder(),
+                  onChanged: (value) {
+                    ref
+                        .read(ipv6PortServiceRuleProvider.notifier)
+                        .updateRule(stateRule?.copyWith(ipv6Address: value));
+                    setState(() {
+                      _isEditRuleValid = ref
+                          .read(ipv6PortServiceRuleProvider.notifier)
+                          .isRuleValid();
+                    });
+                  },
+                ),
+                const AppGap.small3(),
+                AppTextButton.noPadding(
+                  loc(context).selectDevices,
+                  onTap: () async {
+                    final result =
+                        await context.pushNamed<List<DeviceListItem>?>(
+                      RouteNamed.devicePicker,
+                      extra: {'type': 'ipv6', 'selectMode': 'single'},
+                    );
+                    if (result != null) {
+                      final device = result.first;
+                      ipAddressTextController.text = device.ipv6Address;
+                    }
+                  },
+                )
+              ],
             ),
           3 => Column(
               mainAxisSize: MainAxisSize.min,
@@ -344,7 +351,7 @@ class _Ipv6PortServiceListViewState
         return switch (index) {
           0 => notifier.isRuleNameValidate(applicationTextController.text)
               ? null
-              : loc(context).theNameMustNotBeEmpty,
+              : loc(context).notBeEmptyAndLessThanThirtyThree,
           2 => notifier.isDeviceIpValidate(ipAddressTextController.text)
               ? null
               : loc(context).invalidIpAddress,

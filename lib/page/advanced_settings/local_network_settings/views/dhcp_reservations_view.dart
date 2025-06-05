@@ -116,13 +116,14 @@ class _DHCPReservationsContentViewState
       actions: [
         AppTextButton.noPadding(
           loc(context).add,
+          key: Key('addReservationButton'),
           icon: LinksysIcons.add,
           onTap: () {
             _showManualAddReservationModal();
           },
         )
       ],
-      child: AppBasicLayout(
+      child: (context, constraints) => AppBasicLayout(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -133,11 +134,13 @@ class _DHCPReservationsContentViewState
               children: [
                 if (ResponsiveLayout.isDesktopLayout(context))
                   SizedBox(
-                      width: 4.col,
-                      child: AppCard(
-                          child: DevicesFilterWidget(
+                    width: 4.col,
+                    child: AppCard(
+                      child: DevicesFilterWidget(
                         onlineOnly: true,
-                      ))),
+                      ),
+                    ),
+                  ),
                 const AppGap.gutter(),
                 Expanded(
                   child: Column(
@@ -323,6 +326,7 @@ class _DHCPReservationsContentViewState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               AppTextField(
+                key: Key('deviceNameTextField'),
                 headerText: loc(context).deviceName,
                 controller: deviceNameController,
                 border: const OutlineInputBorder(),
@@ -337,6 +341,7 @@ class _DHCPReservationsContentViewState
               ),
               const AppGap.large3(),
               AppIPFormField(
+                key: Key('ipAddressTextField'),
                 header: AppText.bodySmall(loc(context).assignIpAddress),
                 semanticLabel: 'assign ip address',
                 controller: ipController,
@@ -356,6 +361,7 @@ class _DHCPReservationsContentViewState
               ),
               const AppGap.large3(),
               AppTextField.macAddress(
+                key: Key('macAddressTextField'),
                 headerText: loc(context).macAddress,
                 semanticLabel: 'mac address',
                 controller: macController,

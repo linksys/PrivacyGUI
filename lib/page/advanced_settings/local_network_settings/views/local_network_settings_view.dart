@@ -48,6 +48,8 @@ class LocalNetworkSettingsView extends ArgumentsConsumerStatefulView {
 class _LocalNetworkSettingsViewState
     extends ConsumerState<LocalNetworkSettingsView>
     with PageSnackbarMixin, SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
   late LocalNetworkSettingsState originalSettings;
   late LocalNetworkSettingsNotifier _notifier;
   final hostNameController = TextEditingController();
@@ -59,7 +61,7 @@ class _LocalNetworkSettingsViewState
   @override
   void initState() {
     super.initState();
-
+    _tabController = TabController(length: 3, vsync: this);
     _notifier = ref.read(localNetworkSettingProvider.notifier);
     originalSettings = ref.read(localNetworkSettingProvider);
     doSomethingWithSpinner(
@@ -82,7 +84,7 @@ class _LocalNetworkSettingsViewState
   @override
   void dispose() {
     super.dispose();
-
+    _tabController.dispose();
     hostNameController.dispose();
     ipAddressController.dispose();
     subnetMaskController.dispose();
@@ -105,51 +107,46 @@ class _LocalNetworkSettingsViewState
       _dhcpServerView(state),
     ];
     return StyledAppPageView(
-      appBarStyle: AppBarStyle.none,
+      padding: EdgeInsets.zero,
+      useMainPadding: false,
+      tabController: _tabController,
       bottomBar: PageBottomBar(
         isPositiveEnabled: _isEdited(state) && !_hasError(state),
         onPositiveTap: _saveSettings,
       ),
-      child: AppBasicLayout(
-        content: StyledAppTabPageView(
-          padding: EdgeInsets.zero,
-          useMainPadding: false,
-          title: loc(context).localNetwork,
-          onBackTap: _isEdited(state)
-              ? () async {
-                  final goBack = await showUnsavedAlert(context);
-                  if (goBack == true) {
-                    _notifier.fetch();
-                    context.pop();
-                  }
-                }
-              : null,
-          tabs: [
-            tab(
-              loc(context).hostName,
-              selected: _selectedTabIndex == 0,
-              hasError: state.hasErrorOnHostNameTab,
-            ),
-            tab(
-              loc(context).lanIPAddress,
-              selected: _selectedTabIndex == 1,
-              hasError: state.hasErrorOnIPAddressTab,
-            ),
-            tab(
-              loc(context).dhcpServer,
-              selected: _selectedTabIndex == 2,
-              hasError: state.hasErrorOnDhcpServerTab,
-            ),
-          ],
-          tabContentViews: tabContents,
-          expandedHeight: 120,
-          onTap: (index) {
-            setState(() {
-              _selectedTabIndex = index;
-            });
-          },
+      title: loc(context).localNetwork,
+      onBackTap: _isEdited(state)
+          ? () async {
+              final goBack = await showUnsavedAlert(context);
+              if (goBack == true) {
+                _notifier.fetch();
+                context.pop();
+              }
+            }
+          : null,
+      tabs: [
+        tab(
+          loc(context).hostName,
+          selected: _selectedTabIndex == 0,
+          hasError: state.hasErrorOnHostNameTab,
         ),
-      ),
+        tab(
+          loc(context).lanIPAddress,
+          selected: _selectedTabIndex == 1,
+          hasError: state.hasErrorOnIPAddressTab,
+        ),
+        tab(
+          loc(context).dhcpServer,
+          selected: _selectedTabIndex == 2,
+          hasError: state.hasErrorOnDhcpServerTab,
+        ),
+      ],
+      tabContentViews: tabContents,
+      onTabTap: (index) {
+        setState(() {
+          _selectedTabIndex = index;
+        });
+      },
     );
   }
 
@@ -159,6 +156,7 @@ class _LocalNetworkSettingsViewState
         padding: const EdgeInsets.symmetric(
             vertical: Spacing.large3, horizontal: Spacing.large2),
         child: AppTextField(
+          key: Key('hostNameTextField'),
           headerText: loc(context).hostName.capitalizeWords(),
           controller: hostNameController,
           errorText: LocalNetworkErrorPrompt.getErrorText(
@@ -186,6 +184,7 @@ class _LocalNetworkSettingsViewState
           mainAxisSize: MainAxisSize.min,
           children: [
             AppIPFormField(
+              key: Key('lanIpAddressTextField'),
               header: AppText.bodySmall(loc(context).ipAddress),
               semanticLabel: 'ip address',
               controller: ipAddressController,
@@ -201,6 +200,7 @@ class _LocalNetworkSettingsViewState
             ),
             const AppGap.large2(),
             AppIPFormField(
+              key: Key('lanSubnetMaskTextField'),
               header: AppText.bodySmall(loc(context).subnetMask),
               semanticLabel: 'subnet mask',
               octet1ReadOnly: true,
@@ -234,8 +234,8 @@ class _LocalNetworkSettingsViewState
 
   Widget _viewLayout({double? col, required Widget child}) {
     col = col ?? 9.col;
-    return SingleChildScrollView(
-      child: ResponsiveLayout.isMobileLayout(context)
+    return StyledAppPageView.innerPage(
+      child: (context, constraints) => ResponsiveLayout.isMobileLayout(context)
           ? child
           : Row(
               crossAxisAlignment: CrossAxisAlignment.start,

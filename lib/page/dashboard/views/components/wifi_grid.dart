@@ -13,6 +13,7 @@ import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/qr_code.dart';
 import 'package:privacy_gui/util/wifi_credential.dart';
+import 'package:privacy_gui/page/dashboard/views/components/loading_tile.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
@@ -21,6 +22,7 @@ import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacy_gui/util/export_selector/export_base.dart'
     if (dart.library.io) 'package:privacy_gui/util/export_selector/export_mobile.dart'
     if (dart.library.html) 'package:privacy_gui/util/export_selector/export_web.dart';
+import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:super_tooltip/super_tooltip.dart';
 
@@ -65,46 +67,51 @@ class _DashboardWiFiGridState extends ConsumerState<DashboardWiFiGrid> {
           : mainAxisCount * itemHeight +
               ((mainAxisCount == 0 ? 1 : mainAxisCount) - 1) * mainSpacing +
               100,
-      child: GridView.builder(
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: crossAxisCount,
-          mainAxisSpacing: Spacing.medium,
-          crossAxisSpacing: mainSpacing,
-          // childAspectRatio: (3 / 2),
-          mainAxisExtent: itemHeight,
-        ),
-        physics: const NeverScrollableScrollPhysics(),
-        shrinkWrap: true,
-        itemCount: items.length,
-        itemBuilder: (context, index) {
-          final item = items[index];
-          final controllerKey =
-              '${item.ssid}${item.radios.join()}${item.isGuest}';
+      child: isLoading
+          ? AppCard(padding: EdgeInsets.zero, child: LoadingTile())
+          : GridView.builder(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                mainAxisSpacing: Spacing.medium,
+                crossAxisSpacing: mainSpacing,
+                // childAspectRatio: (3 / 2),
+                mainAxisExtent: itemHeight,
+              ),
+              physics: const NeverScrollableScrollPhysics(),
+              shrinkWrap: true,
+              itemCount: isLoading ? 4 : items.length,
+              itemBuilder: (context, index) {
+                createWiFiCard() {
+                  final item = items[index];
+                  final controllerKey =
+                      '${item.ssid}${item.radios.join()}${item.isGuest}';
 
-          SuperTooltipController? controller;
-          controller =
-              toolTipControllers[controllerKey] ?? SuperTooltipController();
-          toolTipControllers[controllerKey] = controller;
-
-          return SizedBox(
-              height: itemHeight,
-              child: isLoading
-                  ? AppCard(child: SizedBox.shrink())
-                  : WiFiCard(
-                      toolTipController: controller,
-                      item: item,
-                      index: index,
-                      canBeDisabled: canBeDisabled,
-                      beforeShowWiFiTip: () async {
-                        for (var ctrl in toolTipControllers.values) {
-                          if (ctrl.isVisible) {
-                            await ctrl.hideTooltip();
-                          }
+                  SuperTooltipController? controller;
+                  controller = toolTipControllers[controllerKey] ??
+                      SuperTooltipController();
+                  toolTipControllers[controllerKey] = controller;
+                  return WiFiCard(
+                    toolTipController: controller,
+                    item: item,
+                    index: index,
+                    canBeDisabled: canBeDisabled,
+                    beforeShowWiFiTip: () async {
+                      for (var ctrl in toolTipControllers.values) {
+                        if (ctrl.isVisible) {
+                          await ctrl.hideTooltip();
                         }
-                      },
-                    ));
-        },
-      ),
+                      }
+                    },
+                  );
+                }
+
+                return SizedBox(
+                    height: itemHeight,
+                    child: isLoading
+                        ? AppCard(child: LoadingTile())
+                        : createWiFiCard());
+              },
+            ),
     );
   }
 }
@@ -294,33 +301,79 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
   }
 
   Future<void> _handleWifiToggled(bool value) async {
-    showSpinnerDialog(context);
-    final wifiProvider = ref.read(wifiListProvider.notifier);
-    await wifiProvider.fetch();
-    if (widget.item.isGuest) {
-      wifiProvider.setWiFiEnabled(value);
-      await wifiProvider.save().then((value) => context.pop()).catchError(
-          (error, stackTrace) {
-        // Show RouterNotFound alert for the JNAP side effect error
-        showRouterNotFoundAlert(context, ref, onComplete: () => context.pop());
-      }, test: (error) => error is JNAPSideEffectError).onError(
-          (error, statckTrace) {
-        // Just dismiss the spinner for other unexpected errors
-        context.pop();
-      });
-    } else {
-      await wifiProvider
-          .saveToggleEnabled(radios: widget.item.radios, enabled: value)
-          .then((value) => context.pop())
-          .catchError((error, stackTrace) {
-        // Show RouterNotFound alert for the JNAP side effect error
-        showRouterNotFoundAlert(context, ref, onComplete: () => context.pop());
-      }, test: (error) => error is JNAPSideEffectError).onError(
-              (error, statckTrace) {
-        // Just dismiss the spinner for other unexpected errors
-        context.pop();
-      });
+    final result = await showSwitchWifiDialog();
+    if (result) {
+      showSpinnerDialog(context);
+      final wifiProvider = ref.read(wifiListProvider.notifier);
+      await wifiProvider.fetch();
+      if (widget.item.isGuest) {
+        wifiProvider.setWiFiEnabled(value);
+        await wifiProvider.save().then((value) => context.pop()).catchError(
+            (error, stackTrace) {
+          // Show RouterNotFound alert for the JNAP side effect error
+          showRouterNotFoundAlert(context, ref,
+              onComplete: () => context.pop());
+        }, test: (error) => error is JNAPSideEffectError).onError(
+            (error, statckTrace) {
+          // Just dismiss the spinner for other unexpected errors
+          context.pop();
+        });
+      } else {
+        await wifiProvider
+            .saveToggleEnabled(radios: widget.item.radios, enabled: value)
+            .then((value) => context.pop())
+            .catchError((error, stackTrace) {
+          // Show RouterNotFound alert for the JNAP side effect error
+          showRouterNotFoundAlert(context, ref,
+              onComplete: () => context.pop());
+        }, test: (error) => error is JNAPSideEffectError).onError(
+                (error, statckTrace) {
+          // Just dismiss the spinner for other unexpected errors
+          context.pop();
+        });
+      }
     }
+  }
+
+  Future<bool> showSwitchWifiDialog() async {
+    return await showSimpleAppDialog(
+      context,
+      title: loc(context).wifiListSaveModalTitle,
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppText.bodyMedium(loc(context).wifiListSaveModalDesc),
+            if (!widget.item.isGuest && widget.item.isEnabled)
+              ..._disableGuestBandWarning(),
+            const AppGap.medium(),
+            AppText.bodyMedium(loc(context).doYouWantToContinue),
+          ],
+        ),
+      ),
+      actions: [
+        AppTextButton(loc(context).cancel, onTap: () => context.pop()),
+        AppTextButton(loc(context).ok, onTap: () => context.pop(true)),
+      ],
+    );
+  }
+
+  List<Widget> _disableGuestBandWarning() {
+    final guestWifiItem =
+        ref.read(dashboardHomeProvider).wifis.firstWhere((e) => e.isGuest);
+    // There will be only one radio item for each wifi card
+    final currentRadio = widget.item.radios.first;
+    return guestWifiItem.isEnabled
+        ? [
+            AppGap.small2(),
+            AppText.labelMedium(
+              loc(context).disableBandWarning(
+                  WifiRadioBand.getByValue(currentRadio).bandName),
+              color: Theme.of(context).colorScheme.error,
+            )
+          ]
+        : [];
   }
 
   void _showWiFiShareModal(BuildContext context) {

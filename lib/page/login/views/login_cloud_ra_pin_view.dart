@@ -65,7 +65,7 @@ class _CloudRAPinViewState extends ConsumerState<CloudRAPinView> {
     return StyledAppPageView(
       padding: EdgeInsets.zero,
       scrollable: true,
-      child: AppBasicLayout(
+      child: (context, constraints) => AppBasicLayout(
         content: Center(
           child: SizedBox(
             width: ResponsiveLayout.isMobileLayout(context) ? 4.col : 6.col,

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 
 import 'theme.dart';
 
@@ -22,8 +22,8 @@ Widget testableWidget({
       parent: parent,
       child: MaterialApp(
         navigatorKey: globalKey,
-        theme: theme ?? mockLightThemeData,
-        darkTheme: darkTheme ?? mockDarkThemeData,
+        theme: theme ?? linksysLightThemeData,
+        darkTheme: darkTheme ?? linksysDarkThemeData,
         locale: locale,
         themeMode: themeMode,
         localizationsDelegates: AppLocalizations.localizationsDelegates,

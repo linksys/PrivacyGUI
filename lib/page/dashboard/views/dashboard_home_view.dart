@@ -1,10 +1,14 @@
+import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
+import 'package:privacy_gui/di.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dart';
@@ -16,15 +20,15 @@ import 'package:privacy_gui/page/dashboard/views/components/networks.dart';
 import 'package:privacy_gui/page/dashboard/views/components/port_and_speed.dart';
 import 'package:privacy_gui/page/dashboard/views/components/quick_panel.dart';
 import 'package:privacy_gui/page/dashboard/views/components/wifi_grid.dart';
-import 'package:privacy_gui/utils.dart';
+import 'package:privacy_gui/page/vpn/views/vpn_status_tile.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacy_gui/core/jnap/providers/assign_ip/base_assign_ip.dart'
     if (dart.library.html) 'package:privacy_gui/core/jnap/providers/assign_ip/web_assign_ip.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
 
 import 'components/shimmer.dart';
 
@@ -64,26 +68,26 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
         top: Spacing.large3,
         bottom: Spacing.medium,
       ),
-      child: Shimmer(
+      child: (context, constraints) => Shimmer(
         gradient: shimmerGradient,
         child: ShimmerContainer(
           isLoading: false,
           child: ResponsiveLayout(
-                desktop: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const DashboardHomeTitle(),
-                    const AppGap.large1(),
-                    !hasLanPort
-                        ? _desktopNoLanPortsLayout()
-                        : horizontalLayout
-                            ? _desktopHorizontalLayout()
-                            : _desktopVerticalLayout(),
-                  ],
-                ),
-                mobile: _mobileLayout(),
-              ),
+            desktop: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const DashboardHomeTitle(),
+                const AppGap.large1(),
+                !hasLanPort
+                    ? _desktopNoLanPortsLayout()
+                    : horizontalLayout
+                        ? _desktopHorizontalLayout()
+                        : _desktopVerticalLayout(),
+              ],
+            ),
+            mobile: _mobileLayout(),
+          ),
         ),
       ),
     );
@@ -109,8 +113,8 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
           children: [
             SizedBox(
               width: 4.col,
-              child: const Column(
-                children: [
+              child: Column(
+                children: const [
                   DashboardNetworks(),
                   AppGap.medium(),
                   DashboardQuickPanel(),
@@ -119,7 +123,17 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
               ),
             ),
             AppGap.gutter(),
-            SizedBox(width: 8.col, child: DashboardWiFiGrid()),
+            SizedBox(
+                width: 8.col,
+                child: Column(
+                  children: [
+                    if (getIt.get<ServiceHelper>().isSupportVPN()) ...[
+                      VPNStatusTile(),
+                      AppGap.medium(),
+                    ],
+                    DashboardWiFiGrid(),
+                  ],
+                )),
           ],
         ),
       ],
@@ -145,10 +159,14 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
           const AppGap.gutter(),
           SizedBox(
               width: 4.col,
-              child: const Column(
+              child: Column(
                 children: [
                   DashboardNetworks(),
                   AppGap.medium(),
+                  if (getIt.get<ServiceHelper>().isSupportVPN()) ...[
+                    VPNStatusTile(),
+                    AppGap.medium(),
+                  ],
                   DashboardQuickPanel(),
                   // _networkInfoTiles(state, isLoading),
                 ],
@@ -174,13 +192,17 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
             ),
           ),
           const AppGap.gutter(),
-          const Expanded(
+          Expanded(
             child: Column(
               children: [
                 InternetConnectionWidget(),
                 AppGap.medium(),
                 DashboardNetworks(),
                 AppGap.medium(),
+                if (getIt.get<ServiceHelper>().isSupportVPN()) ...[
+                  VPNStatusTile(),
+                  AppGap.medium(),
+                ],
                 DashboardWiFiGrid(),
               ],
             ),
@@ -194,7 +216,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: const [
+      children: [
         DashboardHomeTitle(),
         AppGap.large1(),
         InternetConnectionWidget(),
@@ -202,12 +224,26 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
         DashboardHomePortAndSpeed(),
         AppGap.medium(),
         DashboardNetworks(),
+        if (getIt.get<ServiceHelper>().isSupportVPN()) ...[
+          AppGap.medium(),
+          VPNStatusTile(),
+        ],
         AppGap.medium(),
         DashboardQuickPanel(),
         AppGap.medium(),
         DashboardWiFiGrid(),
         AppGap.medium(),
       ],
+    );
+  }
+
+  void _showFirmwareUpdateCountdownDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return _FirmwareUpdateCountdownDialog(onFinish: reload);
+      },
     );
   }
 
@@ -219,7 +255,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
           firmware.fetchAvailableFirmwareUpdates();
         } else {
           pref.setBool(pFWUpdated, false);
-          reload();
+          _showFirmwareUpdateCountdownDialog();
         }
       });
     });
@@ -272,4 +308,60 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
   //     }
   //   });
   // }
+}
+
+class _FirmwareUpdateCountdownDialog extends StatefulWidget {
+  final VoidCallback onFinish;
+  const _FirmwareUpdateCountdownDialog({required this.onFinish});
+
+  @override
+  State<_FirmwareUpdateCountdownDialog> createState() =>
+      _FirmwareUpdateCountdownDialogState();
+}
+
+class _FirmwareUpdateCountdownDialogState
+    extends State<_FirmwareUpdateCountdownDialog> {
+  int _seconds = 5;
+  late final Timer _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_seconds == 1) {
+        _timer.cancel();
+        Navigator.of(context).pop();
+        widget.onFinish();
+      } else {
+        setState(() {
+          _seconds--;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = loc(context);
+    return AlertDialog(
+      title: AppText.titleLarge(l10n.firmwareUpdate),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const AppSpinner(),
+          AppGap.medium(),
+          AppText.labelLarge(
+            l10n.firmwareUpdateCountdownMessage(_seconds),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
 }

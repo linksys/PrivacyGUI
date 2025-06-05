@@ -59,10 +59,10 @@ class _WifiAdvancedSettingsViewState
     final isPositiveEnabled =
         _preservedState != ref.watch(wifiAdvancedProvider);
 
+    // return LayoutBuilder(builder: (context, constraints) {
     return StyledAppPageView(
       appBarStyle: AppBarStyle.none,
-      padding: EdgeInsets.zero,
-      useMainPadding: false,
+      hideTopbar: true,
       bottomBar: PageBottomBar(
           isPositiveEnabled: isPositiveEnabled,
           onPositiveTap: () {
@@ -76,8 +76,10 @@ class _WifiAdvancedSettingsViewState
               save();
             }
           }),
-      child: _buildGrid(),
+      useMainPadding: false,
+      child: (context, constraints) => _buildGrid(),
     );
+    // });
   }
 
   Future save() {
@@ -130,6 +132,8 @@ class _WifiAdvancedSettingsViewState
       if (state.isIptvEnabled != null) _buildIptv(state.isIptvEnabled!),
     ];
     return MasonryGridView.count(
+      padding: EdgeInsets.symmetric(
+          horizontal: ResponsiveLayout.pageHorizontalPadding(context)),
       crossAxisCount: ResponsiveLayout.isMobileLayout(context) ? 1 : 2,
       mainAxisSpacing: Spacing.small2,
       crossAxisSpacing: ResponsiveLayout.columnPadding(context),
@@ -140,6 +144,7 @@ class _WifiAdvancedSettingsViewState
 
   Widget _buildClientSteering(bool isEnabled) {
     return AppCard(
+      key: const Key('clientSteering'),
       padding: const EdgeInsets.all(Spacing.large2),
       child: AppSwitchTriggerTile(
         title: AppText.labelLarge(loc(context).clientSteering),
@@ -158,6 +163,7 @@ class _WifiAdvancedSettingsViewState
 
   Widget _buildNodeSteering(bool isEnabled) {
     return AppCard(
+      key: const Key('nodeSteering'),
       padding: const EdgeInsets.all(Spacing.large2),
       child: AppSwitchTriggerTile(
         title: AppText.labelLarge(loc(context).nodeSteering),
@@ -176,6 +182,7 @@ class _WifiAdvancedSettingsViewState
 
   Widget _buildIptv(bool isEnabled) {
     return AppCard(
+      key: const Key('iptv'),
       padding: const EdgeInsets.all(Spacing.large2),
       child: AppSwitchTriggerTile(
         title: const AppText.labelLarge('IPTV'),
@@ -195,6 +202,7 @@ class _WifiAdvancedSettingsViewState
 
   Widget _buildDFS(bool isEnabled) {
     return AppCard(
+      key: const Key('dfs'),
       padding: const EdgeInsets.all(Spacing.large2),
       child: AppSwitchTriggerTile(
         title: AppText.labelLarge(loc(context).dfs),
@@ -226,6 +234,7 @@ class _WifiAdvancedSettingsViewState
         .checkingMLOSettingsConflicts(
             Map.fromIterables(wifiList.map((e) => e.radioID), wifiList));
     return AppCard(
+      key: const Key('mlo'),
       padding: const EdgeInsets.all(Spacing.large2),
       child: AppSwitchTriggerTile(
         title: AppText.labelLarge(loc(context).mlo),

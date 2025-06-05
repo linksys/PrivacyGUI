@@ -381,6 +381,8 @@ void _updateBetterActions(JNAPService service) {
       break;
     case JNAPService.settings3:
       break;
+    case JNAPService.vpn:
+      break;
   }
 }
 
@@ -706,6 +708,24 @@ void initBetterActions() {
       _JNAPActionValue.getUPnPSettings.value;
   _betterActionMap[JNAPAction.setUPnPSettings] =
       _JNAPActionValue.setUPnPSettings.value;
+  // vpn
+  _betterActionMap[JNAPAction.getVPNUser] = _JNAPActionValue.getVPNUser.value;
+  _betterActionMap[JNAPAction.setVPNUser] = _JNAPActionValue.setVPNUser.value;
+  _betterActionMap[JNAPAction.getVPNGateway] =
+      _JNAPActionValue.getVPNGateway.value;
+  _betterActionMap[JNAPAction.setVPNGateway] =
+      _JNAPActionValue.setVPNGateway.value;
+  _betterActionMap[JNAPAction.getVPNService] =
+      _JNAPActionValue.getVPNService.value;
+  _betterActionMap[JNAPAction.setVPNService] =
+      _JNAPActionValue.setVPNService.value;
+  _betterActionMap[JNAPAction.testVPNConnection] =
+      _JNAPActionValue.testVPNConnection.value;
+  _betterActionMap[JNAPAction.getTunneledUser] =
+      _JNAPActionValue.getTunneledUser.value;
+  _betterActionMap[JNAPAction.setTunneledUser] =
+      _JNAPActionValue.setTunneledUser.value;
+  _betterActionMap[JNAPAction.setVPNApply] = _JNAPActionValue.setVPNApply.value;
 }
 
 void buildBetterActions(List<String> routerServices) {

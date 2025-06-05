@@ -33,7 +33,8 @@ class NodeLightGuideView extends ConsumerWidget {
       title: 'Light guide',
       appBarStyle: AppBarStyle.close,
       scrollable: true,
-      child: _buildContent(context, isCognitive, isMixedNetwork),
+      child: (context, constraints) =>
+          _buildContent(context, isCognitive, isMixedNetwork),
     );
   }
 
