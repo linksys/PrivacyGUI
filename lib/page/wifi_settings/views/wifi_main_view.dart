@@ -31,26 +31,20 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView>
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(() async {
-      final isBridge = ref.read(dashboardHomeProvider).isBridgeMode;
       if (_tabController.indexIsChanging &&
           _tabController.previousIndex != _tabController.index &&
           _tabIsChanging == false) {
         final nextIndex = _tabController.index;
-        if (isBridge && (nextIndex == _tabController.length - 1)) {
-          _tabIsChanging = false;
+        final isStateChange =
+            hasChangedWithTabIndex(_tabController.previousIndex);
+        if (isStateChange) {
+          _tabIsChanging = true;
           _tabController.animateTo(_tabController.previousIndex);
-        } else {
-          final isStateChange =
-              hasChangedWithTabIndex(_tabController.previousIndex);
-          if (isStateChange) {
-            _tabIsChanging = true;
-            _tabController.animateTo(_tabController.previousIndex);
-            if (await showUnsavedAlert(context) != true) {
-              _tabIsChanging = false;
-            } else {
-              _tabController.animateTo(nextIndex);
-              _tabIsChanging = false;
-            }
+          if (await showUnsavedAlert(context) != true) {
+            _tabIsChanging = false;
+          } else {
+            _tabController.animateTo(nextIndex);
+            _tabIsChanging = false;
           }
         }
       }
@@ -66,8 +60,6 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView>
 
   @override
   Widget build(BuildContext context) {
-    final isBridge = ref.watch(dashboardHomeProvider).isBridgeMode;
-
     final tabs = [
       loc(context).wifi,
       loc(context).advanced,
@@ -122,9 +114,6 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView>
           .mapIndexed((index, e) => Tab(
                 child: AppText.titleSmall(
                   e,
-                  color: index == _tabController.length - 1 && isBridge
-                      ? Theme.of(context).colorScheme.outline
-                      : null,
                 ),
               ))
           .toList(),
