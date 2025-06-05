@@ -94,11 +94,15 @@ class _AutoParentFirstLoginViewState
 
   void _doFirmwareUpdateCheck() async {
     logger.i('[FirstTime]: Do Firmware Update Check');
-    await ref
+    final isNewFwAvailable = await ref
         .read(autoParentFirstLoginProvider.notifier)
         .checkAndAutoInstallFirmware();
-    logger.i('[FirstTime]: Firmware Update Check Done');
-    _finishFirstTimeLogin();
+    if (isNewFwAvailable) {
+      logger.i('[FirstTime]: Firmware Updateing...');
+    } else {
+      logger.i('[FirstTime]: No available FW, ready to go');
+      _finishFirstTimeLogin();
+    }
   }
 
   void _finishFirstTimeLogin() async {

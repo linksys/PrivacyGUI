@@ -57,16 +57,14 @@ class TestAdvancedSettingsActions extends CommonBaseActions {
     return cardFinder;
   }
 
-  /*
   Finder dmzCardFinder() {
-    final cardFinder = find.ancestor(
+    final tappableFinder = find.ancestor(
       of: find.text(TestDmzActions(tester).title),
-      matching: find.byType(AppCard),
+      matching: find.byType(InkWell),
     );
-    expect(cardFinder, findsOneWidget);
-    return cardFinder;
+    expect(tappableFinder, findsOneWidget);
+    return tappableFinder;
   }
-  */
 
   Future<void> enterInternetSettingsPage() async {
     final finder = internetSettingsCardFinder();
@@ -105,6 +103,13 @@ class TestAdvancedSettingsActions extends CommonBaseActions {
 
   Future<void> enterLocalNetworkSettingsPage() async {
     final finder = localNetworkCardFinder();
+    // Tap the card
+    await tester.tap(finder);
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> enterDmzPage() async {
+    final finder = dmzCardFinder();
     // Tap the card
     await tester.tap(finder);
     await tester.pumpAndSettle();

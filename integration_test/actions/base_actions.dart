@@ -1,6 +1,4 @@
-import 'dart:math';
 import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
@@ -55,6 +53,7 @@ part 'administration_actions.dart';
 part 'local_network_settings_actions.dart';
 part 'dhcp_reservation_actions.dart';
 part 'internet_settings_actions.dart';
+part 'dmz_actions.dart';
 
 abstract class BaseActions {
   final WidgetTester tester;
@@ -86,10 +85,13 @@ sealed class CommonBaseActions extends BaseActions with CommonActionsMixin {
       TestAdvancedRoutingActions() => loc(context).advancedRouting,
       TestFirewallActions() => loc(context).firewall,
       TestAppsAndGamingActions() => loc(context).appsGaming,
-      TestAdministrationActions() => loc(context).administration,
       TestLocalNetworkSettingsActions() => loc(context).localNetwork,
-      TestDHCPReservationActions() => loc(context).dhcpReservations.capitalizeWords(),
-      TestInternetSettingsActions() => loc(context).internetSettings.capitalizeWords(),
+      TestAdministrationActions() => loc(context).administration,
+      TestDmzActions() => loc(context).dmz,
+      TestDHCPReservationActions() =>
+        loc(context).dhcpReservations.capitalizeWords(),
+      TestInternetSettingsActions() =>
+        loc(context).internetSettings.capitalizeWords(),
       // TODO: Handle this case.
       TestPnpSetupActions() => throw UnimplementedError(),
       // TODO: Handle this case.
@@ -98,6 +100,4 @@ sealed class CommonBaseActions extends BaseActions with CommonActionsMixin {
       TestTopbarActions() => throw UnimplementedError(),
     };
   }
-
-  
 }

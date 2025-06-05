@@ -76,7 +76,7 @@ class _WifiAdvancedSettingsViewState
               save();
             }
           }),
-      useMainPadding: false,
+      useMainPadding: true,
       child: (context, constraints) => _buildGrid(),
     );
     // });
@@ -85,7 +85,7 @@ class _WifiAdvancedSettingsViewState
   Future save() {
     return doSomethingWithSpinner(
       context,
-      ref.read(wifiAdvancedProvider.notifier).save().then((state) async{
+      ref.read(wifiAdvancedProvider.notifier).save().then((state) async {
         // Fetch wifi list to update the wifi list state
         await ref.read(wifiListProvider.notifier).fetch(true);
         return state;
@@ -132,8 +132,6 @@ class _WifiAdvancedSettingsViewState
       if (state.isIptvEnabled != null) _buildIptv(state.isIptvEnabled!),
     ];
     return MasonryGridView.count(
-      padding: EdgeInsets.symmetric(
-          horizontal: ResponsiveLayout.pageHorizontalPadding(context)),
       crossAxisCount: ResponsiveLayout.isMobileLayout(context) ? 1 : 2,
       mainAxisSpacing: Spacing.small2,
       crossAxisSpacing: ResponsiveLayout.columnPadding(context),
