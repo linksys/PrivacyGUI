@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/cloud/linksys_device_cloud_service.dart';
 import 'package:privacy_gui/core/cloud/model/guidan_remote_assistance.dart';
 import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client_state.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 
 final remoteClientProvider =
     NotifierProvider<RemoteClientNotifier, RemoteClientState>(
@@ -37,16 +38,23 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
   }
 
   Future<void> initiateRemoteAssistance() async {
+    logger.i('[RemoteAssistance]: initiateRemoteAssistance');
     final sessions = await fetchSessions();
     if (sessions.isEmpty) {
+      state = RemoteClientState();
       return;
     }
+    logger.i('[RemoteAssistance]: sessions: ${sessions.first.id}');
     final sessionInfo = await fetchSessionInfo(sessions.first.id);
     if (sessionInfo == null) {
+      state = RemoteClientState();
       return;
     }
 
-    if (sessionInfo.status == GRASessionStatus.pending) {
+    if (sessionInfo.status == GRASessionStatus.initiate ||
+        (sessionInfo.status == GRASessionStatus.pending && state.pin == null)) {
+      logger.i(
+          '[RemoteAssistance]: createPin - ${sessionInfo.id}, ${sessionInfo.status}');
       await createPin(sessionInfo.id);
     }
     // start a stream to fetch session info
@@ -64,6 +72,11 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
     if (sessionId == null) {
       return;
     }
+    // end the session if it is active
+    if (state.sessionInfo?.status != GRASessionStatus.active) {
+      return;
+    }
+
     final serialNumber = state.sessionInfo?.serialNumber;
     final master = ref.read(deviceManagerProvider).masterDevice;
     await ref.read(deviceCloudServiceProvider).deleteSession(
