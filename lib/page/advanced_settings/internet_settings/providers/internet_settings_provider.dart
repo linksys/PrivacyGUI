@@ -480,7 +480,9 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
           wanType: wanType.type,
           ipv6AutomaticSettings: IPv6AutomaticSettings(
             isIPv6AutomaticEnabled: ipv6Setting.isIPv6AutomaticEnabled,
-            ipv6rdTunnelMode: ipv6Setting.ipv6rdTunnelMode?.value,
+            ipv6rdTunnelMode: ipv6Setting.isIPv6AutomaticEnabled
+                ? null
+                : ipv6Setting.ipv6rdTunnelMode?.value,
             ipv6rdTunnelSettings: hasIPv6rdTunnelSettings
                 ? IPv6rdTunnelSettings(
                     prefix: ipv6Setting.ipv6Prefix ?? '',
