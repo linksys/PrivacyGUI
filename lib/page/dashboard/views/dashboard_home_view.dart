@@ -350,7 +350,7 @@ class _FirmwareUpdateCountdownDialogState
   Widget build(BuildContext context) {
     final l10n = loc(context);
     return AlertDialog(
-      title: AppText.titleLarge(l10n.firmwareUpdate),
+      title: AppText.titleLarge(l10n.firmwareUpdated),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
