@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
+import 'package:privacy_gui/core/cloud/model/error_response.dart';
 import 'package:privacy_gui/core/cloud/model/guidan_remote_assistance.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -35,7 +36,7 @@ class _LoginCloudAuthViewState extends ConsumerState<LoginCloudAuthView> {
   bool _isLoading = false;
   String? _token;
   String? _session;
-  String? _error;
+  Object? _error;
 
   //
   GRASessionInfo? _sessionInfo;
@@ -72,7 +73,7 @@ class _LoginCloudAuthViewState extends ConsumerState<LoginCloudAuthView> {
             .read(authProvider.notifier)
             .testSessionAuthentication(token: token, session: session)
             .onError((error, stackTrace) {
-            _error = error.toString();
+            _error = error;
             return null;
           })
         : null;
@@ -106,10 +107,21 @@ class _LoginCloudAuthViewState extends ConsumerState<LoginCloudAuthView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        AppText.labelLarge(_error!),
+        AppText.labelLarge(_handleError()),
         AppGap.large1(),
       ],
     );
+  }
+
+  String _handleError() {
+    final error = _error;
+    if (error == null) {
+      return '';
+    }
+    if (error is ErrorResponse) {
+      return error.errorMessage ?? '';
+    }
+    return error.toString();
   }
 
   Widget _mainView() {

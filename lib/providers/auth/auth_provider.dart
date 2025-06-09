@@ -391,6 +391,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       await prefs.remove(pSelectedNetworkId);
       await prefs.remove(pCurrentSN);
       await prefs.remove(pDeviceToken);
+      await prefs.remove(pGRASessionId);
       const storage = FlutterSecureStorage();
       await storage.delete(key: pSessionToken);
       await storage.delete(key: pSessionTokenTs);

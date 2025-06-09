@@ -260,6 +260,24 @@ class RouterNotifier extends ChangeNotifier {
       return _prepare(state);
     }
 
+    // check query parameter in remote login
+    // if session is not null and different with current session which stores in pref,
+    // then logout
+    final queryParameters = state.uri.queryParameters;
+    final prefs = await SharedPreferences.getInstance();
+    final currentSession = prefs.getString(pGRASessionId);
+    if (loginType == LoginType.remote &&
+        (currentSession == null ||
+            (queryParameters['token'] != null &&
+                queryParameters['session'] != null &&
+                queryParameters['session'] != currentSession))) {
+      FlutterNativeSplash.remove();
+      logger
+          .d('[Route]: session is not null and different with current session');
+      await _ref.read(authProvider.notifier).logout();
+      return _prepare(state);
+    }
+
     // if have no login type and navigate into dashboard, then back to home
     if ((loginType == null || loginType == LoginType.none) &&
         state.matchedLocation.startsWith('/dashboard')) {
