@@ -95,8 +95,8 @@ class _TimezoneContentViewState extends ConsumerState<TimezoneView>
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: state.supportedTimezones.length,
-                  itemBuilder: (context, index) => SizedBox(
-                    height: 70.0,
+                  itemBuilder: (context, index) => ConstrainedBox(
+                    constraints: const BoxConstraints(minHeight: 70.0),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8.0),
                       child: AppListCard(
