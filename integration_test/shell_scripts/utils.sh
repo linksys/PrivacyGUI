@@ -170,7 +170,7 @@ connect_to_wifi_ssid_and_check() {
 
 # check is default admin password, if not, get password from config
 is_default_admin_password_or_get_password() {
-  if [ $(is_default_admin_password) == "true" ]; then
+  if [ $(is_default_admin_password) == "true" ] && [ $(is_admin_password_set_by_user) == "false" ]; then
     echo "admin"
   else
     password=$(get_config_value '.password')

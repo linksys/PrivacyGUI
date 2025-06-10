@@ -2,7 +2,7 @@
     "name": "Test behaviors on Advanced Settings - Firewall",
     "target": "integration_test/firewall_test.dart",
     "description": "Execute all the functions on the page and verify that the new data has been synced",
-    "setUp":  ["factory_reset", "skip_pnp"],
+    "setUp":  ["factory_reset", "skip_pnp", "check_auto_parent"],
     "tearDown": [],
     "tags": ["firewall", "advanced_settings", "menu"]
 }

@@ -2,7 +2,7 @@
     "name": "Test behaviors on Instant Admin",
     "target": "integration_test/instant_admin_test.dart",
     "description": "Execute all the functions on the page and verify that the new data has been synced",
-    "setUp":  ["factory_reset", "skip_pnp"],
+    "setUp":  ["factory_reset", "skip_pnp", "check_auto_parent"],
     "tearDown": ["reset_password"],
     "tags": ["admin", "menu"],
     "config": {
