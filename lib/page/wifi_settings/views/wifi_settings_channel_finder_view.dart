@@ -79,10 +79,7 @@ class _WifiSettingsChannelFinderViewState
     return Row(
       children: [
         Image(
-          image: CustomTheme.of(context)
-              .images
-              .devices
-              .getByName(channel.deviceIcon!),
+          image: CustomTheme.of(context).getRouterImage(channel.deviceIcon!),
           semanticLabel: 'device image',
         ),
         const AppGap.medium(),

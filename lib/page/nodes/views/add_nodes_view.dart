@@ -117,9 +117,7 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
                       final node = LinksysDevice.fromMap(e.toMap());
                       return AppNodeListCard(
                           leading: CustomTheme.of(context)
-                              .images
-                              .devices
-                              .getByName(routerIconTest(e.toMap())),
+                              .getRouterImage(node.modelNumber ?? ''),
                           title: e.getDeviceLocation(),
                           trailing: SharedWidgets.resolveSignalStrengthIcon(
                             context,
