@@ -30,8 +30,7 @@ abstract class SharedWidgets {
   static Image resolveRouterImage(BuildContext context, String iconName,
       {double size = 40}) {
     return Image(
-      image: CustomTheme.of(context).images.devices.getByName(iconName) ??
-          CustomTheme.of(context).images.devices.routerMx6200,
+      image: CustomTheme.of(context).getRouterImage(iconName),
       semanticLabel: 'router image',
       width: size,
       height: size,
