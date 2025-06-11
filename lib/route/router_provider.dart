@@ -309,6 +309,24 @@ class RouterNotifier extends ChangeNotifier {
     return _ref.read(authProvider.notifier).init().then((authState) async {
       logger.i(
           '[Route]: Check credentials done: Login type = ${authState?.loginType}, ${authState?.localPassword}');
+
+      // check query parameter in remote login
+      // if session is not null and different with current session which stores in pref,
+      // then logout
+      final queryParameters = state.uri.queryParameters;
+      final prefs = await SharedPreferences.getInstance();
+      final currentSession = prefs.getString(pGRASessionId);
+      if (authState?.loginType == LoginType.remote &&
+          (currentSession == null ||
+              (queryParameters['token'] != null &&
+                  queryParameters['session'] != null &&
+                  queryParameters['session'] != currentSession))) {
+        FlutterNativeSplash.remove();
+        logger.d(
+            '[Route]: session is not null and different with current session');
+        await _ref.read(authProvider.notifier).logout();
+        return _home(state.uri.query);
+      }
       FlutterNativeSplash.remove();
       return switch (authState?.loginType ?? LoginType.none) {
         LoginType.remote => await _prepare(state, RoutePath.dashboardHome)
