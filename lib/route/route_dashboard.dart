@@ -88,8 +88,15 @@ final dashboardRoute = ShellRoute(
           ),
           builder: (context, state) => const FaqListView(),
         ),
-        
       ],
+    ),
+    LinksysRoute(
+      name: RouteNamed.dashboardModularApps,
+      path: RoutePath.dashboardModularApps,
+      config: LinksysRouteConfig(
+        column: ColumnGrid(column: 12),
+      ),
+      builder: (context, state) => const ModularAppListView(),
     ),
   ],
 );

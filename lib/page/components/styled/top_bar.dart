@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dart';
 import 'package:privacy_gui/page/components/styled/menus/widgets/top_navigation_menu.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/material/color_tonal_palettes.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
@@ -58,7 +59,7 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
             children: [
               AppText.titleLarge(loc(context).appTitle,
                   color: Color(neutralTonal.get(100))),
-                MenuHolder(type: MenuDisplay.top),
+              MenuHolder(type: MenuDisplay.top),
               Wrap(
                 children: [
                   if (loginType == LoginType.remote) _networkSelect(),
@@ -67,6 +68,13 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
                   //     padding: EdgeInsets.all(4.0),
                   //     child: NotificationPopupWidget(),
                   //   ),
+                  if (loginType == LoginType.local)
+                    AppIconButton(
+                      icon: LinksysIcons.autoAwesomeMosaic,
+                      onTap: () {
+                        context.pushNamed(RouteNamed.dashboardModularApps);
+                      },
+                    ),
                   const Padding(
                     padding: EdgeInsets.all(4.0),
                     child: GeneralSettingsWidget(),
