@@ -417,6 +417,9 @@ class RouterNotifier extends ChangeNotifier {
       String? networkId, String? serialNumber, String? sessionId) async {
     logger.i('[Prepare]: remote - $networkId, $serialNumber, $sessionId');
     if (serialNumber != null && sessionId != null) {
+      if (isSerialNumberChanged(serialNumber)) {
+        return null;
+      }
       await _ref
           .read(dashboardManagerProvider.notifier)
           .saveSelectedNetwork(serialNumber, '');
