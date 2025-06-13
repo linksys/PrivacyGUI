@@ -35,6 +35,7 @@ import 'package:privacy_gui/page/login/views/local_reset_router_password_view.da
 import 'package:privacy_gui/page/login/views/login_cloud_ra_pin_view.dart';
 import 'package:privacy_gui/page/login/views/login_cloud_ra_view.dart';
 import 'package:privacy_gui/page/instant_admin/_instant_admin.dart';
+import 'package:privacy_gui/page/modular_apps/modular_app_list_view.dart';
 import 'package:privacy_gui/page/nodes/_nodes.dart';
 import 'package:privacy_gui/page/nodes/views/add_nodes_view.dart';
 import 'package:privacy_gui/page/otp_flow/providers/_providers.dart';

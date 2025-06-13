@@ -37,7 +37,7 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
         identifier: 'now-topbar-icon-general-settings',
         label: 'general settings',
         child: Icon(LinksysIcons.person,
-            size: 20,
+            size: 24,
             color: Color(
               neutralTonal.get(100),
             )),

@@ -19,6 +19,7 @@ class RoutePath {
   static const dashboardHome = '/dashboardHome';
   static const dashboardMenu = '/dashboardMenu';
   static const dashboardSupport = '/dashboardSupport';
+  static const dashboardModularApps = '/dashboardModularApps';
 
   /// menu
   static const menuInstantVerify = 'menuInstantVerify';
@@ -161,6 +162,7 @@ class RouteNamed {
   static const dashboardMenu = 'dashboardMenu';
   static const dashboardHome = 'dashboardHome';
   static const dashboardSupport = 'dashboardSupport';
+  static const dashboardModularApps = 'dashboardModularApps';
 
   static const menuInstantVerify = 'menuInstantVerify';
   static const menuInstantDevices = 'menuInstantDevices';
