@@ -2,7 +2,7 @@
     "name": "Incredible wifi test",
     "target": "integration_test/incredible_wifi_test.dart",
     "description": "Test the wifi settings",
-    "setUp":  ["factory_reset", "skip_pnp"],
+    "setUp":  ["factory_reset", "skip_pnp", "check_auto_parent"],
     "tearDown": [],
     "tags": ["wifi", "menu"],
     "config": {
