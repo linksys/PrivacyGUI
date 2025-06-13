@@ -450,9 +450,13 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
               ),
               SizedBox(
                 width: 70,
-                child: AppText.bodySmall(
-                  loc(context).connectedSpeed,
-                  textAlign: TextAlign.center,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: AppText.bodySmall(
+                    loc(context).connectedSpeed,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                  ),
                 ),
               )
             ],

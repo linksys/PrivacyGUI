@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
@@ -135,8 +136,12 @@ void main() {
     await tester.enterText(passwordFinder.first, 'Linksys123!');
     await tester.enterText(passwordFinder.last, 'Linksys123!');
     await tester.pumpAndSettle();
-    // Tap save
+    // scroll until button visible
     final saveFinder = find.byType(AppFilledButton);
+    await tester.scrollUntilVisible(saveFinder, 100,
+        scrollable: find.byType(Scrollable).last);
+    await tester.pumpAndSettle();
+    // Tap save
     await tester.tap(saveFinder);
     await tester.pumpAndSettle();
   });
