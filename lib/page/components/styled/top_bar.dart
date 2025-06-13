@@ -68,15 +68,16 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
                   //     padding: EdgeInsets.all(4.0),
                   //     child: NotificationPopupWidget(),
                   //   ),
-                  if (loginType == LoginType.local)
+                  if (loginType == LoginType.local) ...[
                     AppIconButton(
                       icon: LinksysIcons.autoAwesomeMosaic,
                       onTap: () {
                         context.pushNamed(RouteNamed.dashboardModularApps);
                       },
                     ),
+                  ],
                   const Padding(
-                    padding: EdgeInsets.all(4.0),
+                    padding: EdgeInsets.all(8.0),
                     child: GeneralSettingsWidget(),
                   ),
                 ],

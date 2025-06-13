@@ -47,8 +47,8 @@ class SSEConnectionNotifier extends Notifier<SSEConnectionState> {
     final localPwd = ref.read(authProvider).value?.localPassword ??
         await const FlutterSecureStorage().read(key: pLocalPassword) ??
         '';
-    logger.d('SSE Connection URL: $sseUrl');
-    logger.d('SSE Connection Local Password: $localPwd');
+    logger.d('[SSE]: Connection URL: $sseUrl');
+    logger.d('[SSE]: Connection Local Password: $localPwd');
     try {
       final request = http.Request('GET', Uri.parse(sseUrl));
       request.headers['Accept'] = 'text/event-stream';
@@ -63,7 +63,7 @@ class SSEConnectionNotifier extends Notifier<SSEConnectionState> {
       final response = await _httpClient!.send(request);
 
       if (response.statusCode == 200) {
-        logger.d('HTTP Stream connected.');
+        logger.d('[SSE]: HTTP Stream connected.');
         // state = state.copyWith(isConnected: true);
         _reconnectDelayMs = 1000; // Reset delay on successful connection
 
@@ -75,20 +75,20 @@ class SSEConnectionNotifier extends Notifier<SSEConnectionState> {
             _processBuffer(); // Process the buffer to find events
           },
           onError: (dynamic error) {
-            logger.e('Stream Error: $error');
+            logger.e('[SSE]: Stream Error: $error');
             _scheduleReconnect();
           },
           onDone: () {
-            logger.d('Stream disconnected.');
+            logger.d('[SSE]: Stream disconnected.');
             _scheduleReconnect();
           },
         );
       } else {
-        logger.e('Failed to connect HTTP Stream: ${response.statusCode}');
+        logger.e('[SSE]: Failed to connect HTTP Stream: ${response.statusCode}');
         _scheduleReconnect();
       }
     } catch (e) {
-      logger.e('HTTP Stream Connection Failed: $e');
+      logger.e('[SSE]: HTTP Stream Connection Failed: $e');
       _scheduleReconnect();
     }
   }
@@ -133,7 +133,7 @@ class SSEConnectionNotifier extends Notifier<SSEConnectionState> {
         timestamp: timestamp,
         message: message,
       );
-      logger.d('Receive Packet: $packet');
+      logger.d('[SSE]: Receive Packet: $packet');
       // set connected when receive initial event
       if (eventType == 'initial') {
         state = state.copyWith(isConnected: true);
@@ -162,7 +162,7 @@ class SSEConnectionNotifier extends Notifier<SSEConnectionState> {
 
     _reconnectTimer = Timer(Duration(milliseconds: _reconnectDelayMs), () {
       logger.d(
-          'Attempting to reconnect in ${_reconnectDelayMs / 1000} seconds...');
+          '[SSE]: Attempting to reconnect in ${_reconnectDelayMs / 1000} seconds...');
       _reconnectDelayMs = (_reconnectDelayMs * 2)
           .clamp(1000, 30000)
           .toInt(); // Exponential backoff, max 30s
