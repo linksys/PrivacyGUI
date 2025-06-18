@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:privacy_gui/utils.dart';
 
@@ -141,6 +142,101 @@ class MACAddressRule extends RegExValidationRule {
   RegExp get _rule => RegExp(r"^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$");
 }
 
+class IPv6WithReservedRule extends ValidationRule {
+  @override
+  String get name => 'IPv6WithReservedRule';
+
+  @override
+  bool validate(String input) {
+    try {
+      final InternetAddress ipv6;
+      try {
+        // Attempt to parse the string as an IPv6 address.
+        // InternetAddress will throw an ArgumentError if the format is invalid.
+        ipv6 = InternetAddress(input, type: InternetAddressType.IPv6);
+      } on ArgumentError {
+        return false;
+      }
+
+      // Ensure the parsed address is indeed an IPv6 type, not IPv4 or invalid.
+      if (ipv6.type != InternetAddressType.IPv6) {
+        return false;
+      }
+
+      // --- Rule Checks based on IPv6 Address Properties/Bytes ---
+
+      // Rule: Must not be from reserved/special ranges
+
+      // 1. Loopback (::1)
+      if (ipv6.isLoopback) {
+        return false;
+      }
+
+      // 2. Link-local (fe80::/10)
+      // dart:io provides this property directly.
+      if (ipv6.isLinkLocal) {
+        return false;
+      }
+
+      // 3. Multicast (ff00::/8)
+      // dart:io provides this property directly.
+      if (ipv6.isMulticast) {
+        return false;
+      }
+
+      // Get the raw bytes for manual prefix checks
+      final rawAddress = ipv6.rawAddress; // Uint8List of 16 bytes
+
+      // 4. ULA (Unique Local Address) fc00::/7
+      // ULA addresses start with binary 1111 110 (FCxx or FDxx).
+      // This means the first byte will be 0xFC or 0xFD.
+      if (rawAddress[0] == 0xFC || rawAddress[0] == 0xFD) {
+        return false;
+      }
+
+      // Rule: Must not be :: or all-zeros prefix ::/0 (Unspecified address)
+      // InternetAddress doesn't have a direct `isUnspecified` property.
+      // We check if all 16 bytes are zero.
+      if (rawAddress.every((byte) => byte == 0)) {
+        return false;
+      }
+
+      // Rule: Should not come from unallocated or deprecated address space
+      // Check for ffff::/16 (unallocated)
+      if (rawAddress[0] == 0xFF && rawAddress[1] == 0xFF) {
+        return false;
+      }
+
+      // Check for 3ffe::/16 (6bone - deprecated IPv6 testing network)
+      if (rawAddress[0] == 0x3F && rawAddress[1] == 0xFE) {
+        return false;
+      }
+
+      // Check for other reserved ranges within 2000::/3
+      // 5F00::/12 - 5FFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF
+      if (rawAddress[0] == 0x5F ||
+          (rawAddress[0] >= 0x60 && rawAddress[0] <= 0x7F)) {
+        return false;
+      }
+
+      // Rule: Must be a Global Unicast
+      // After excluding all the specific reserved/special addresses,
+      // a common characteristic of Global Unicast addresses is they fall within 2000::/3.
+      // This means the first byte (most significant 8 bits) starts with binary '001'.
+      // So, the first byte's value should be between 0x20 and 0x3F (inclusive).
+      if (rawAddress[0] < 0x20 || rawAddress[0] > 0x3F) {
+        return false;
+      }
+
+      // If all checks pass, the address is considered a valid global unicast.
+      return true;
+    } catch (e) {
+      // Catch any other unexpected errors during the process
+      return false;
+    }
+  }
+}
+
 class MACAddressWithReservedRule extends ValidationRule {
   @override
   String get name => 'MACAddressWithReservedRule';
@@ -251,14 +347,83 @@ class RequiredRule extends ValidationRule {
   }
 }
 
+/// Validates an IPv4 address string against specified rules:
+/// 1. Must be a correct IPv4 format.
+/// 2. Cannot be from reserved or special-use ranges:
+///    - 0.0.0.0/8 (Current Network / Unspecified)
+///    - 127.0.0.0/8 (Loopback)
+///    - 224.0.0.0/4 (Multicast)
+///    - 255.255.255.255 (Broadcast)
 class IpAddressNoReservedRule extends ValidationRule {
   @override
   String get name => 'IpAddressNoReservedRule';
   @override
   bool validate(String input) {
-    return input != '0.0.0.0' &&
-        input != '127.0.0.1' &&
-        input != '255.255.255.255';
+    try {
+      final InternetAddress ipv4;
+      try {
+        // Attempt to parse the string as an IPv4 address.
+        // InternetAddress will throw an ArgumentError if the format is invalid.
+        ipv4 = InternetAddress(input, type: InternetAddressType.IPv4);
+      } on ArgumentError {
+        print(
+            'Reject: Invalid IPv4 format (ArgumentError caught during parsing).');
+        return false;
+      }
+
+      // Ensure the parsed address is indeed an IPv4 type.
+      if (ipv4.type != InternetAddressType.IPv4) {
+        print(
+            'Reject: Input is not an IPv4 address after parsing (unexpected type).');
+        return false;
+      }
+
+      // Get the raw bytes of the IPv4 address for prefix and specific value checks.
+      final rawAddress = ipv4.rawAddress; // Uint8List of 4 bytes
+
+      // --- Rule Checks based on IPv4 Address Properties/Bytes ---
+
+      // 1. Check for 0.0.0.0/8 (Current Network / Unspecified / This Host)
+      // This range includes any address where the first octet is 0.
+      if (rawAddress[0] == 0x00) {
+        print(
+            'Reject: Falls within 0.0.0.0/8 range (Unspecified/Current Network).');
+        return false;
+      }
+
+      // 2. Check for 127.0.0.0/8 (Loopback)
+      // dart:io provides this property directly.
+      if (ipv4.isLoopback) {
+        print('Reject: Loopback address (127.0.0.0/8).');
+        return false;
+      }
+
+      // 3. Check for 224.0.0.0/4 (Multicast)
+      // dart:io provides this property directly.
+      if (ipv4.isMulticast) {
+        print('Reject: Multicast address (224.0.0.0/4).');
+        return false;
+      }
+
+      // 4. Check for 255.255.255.255 (Limited Broadcast)
+      // Manually check if all four bytes are 255 (0xFF).
+      if (rawAddress[0] == 0xFF &&
+          rawAddress[1] == 0xFF &&
+          rawAddress[2] == 0xFF &&
+          rawAddress[3] == 0xFF) {
+        print('Reject: Limited Broadcast address (255.255.255.255).');
+        return false;
+      }
+
+      // If all checks pass, the address is considered valid.
+      print(
+          'Accept: IPv4 address is valid and not from specified reserved/special ranges.');
+      return true;
+    } catch (e) {
+      // Catch any other unexpected errors during the process (e.g., if rawAddress access fails unexpectedly)
+      print('An unexpected error occurred during IPv4 validation: $e');
+      return false;
+    }
   }
 }
 
