@@ -26,6 +26,7 @@ import '../../../util/export_selector/export_base.dart'
 import '../../../util/get_log_selector/get_log_base.dart'
     if (dart.library.io) '../../../util/get_log_selector/get_log_mobile.dart'
     if (dart.library.html) '../../../util/get_log_selector/get_log_web.dart';
+import 'package:encrypt/encrypt.dart' as encrypt;
 
 class Utils {
   static Future exportLogFile(BuildContext context) async {
@@ -143,7 +144,25 @@ class Utils {
     final fileUIVersion = await getVersion();
     return uiVersion.compareToVersion(fileUIVersion) < 0;
   }
+
+  /// Encrypts a string using AES CBC and returns a Base64 encoded string.
+static String encryptAES(String plainText, String keyString, String ivString) {
+  // The key and IV must be the exact same as the ones used for encryption.
+  // The key must be 32 bytes for AES-256.
+  final key = encrypt.Key.fromUtf8(keyString);
+  // The IV must be 16 bytes for AES-CBC.
+  final iv = encrypt.IV.fromUtf8(ivString);
+
+  // Create the encrypter
+  final encrypter = encrypt.Encrypter(encrypt.AES(key, mode: encrypt.AESMode.cbc));
+
+  // Encrypt the data
+  final encrypted = encrypter.encrypt(plainText, iv: iv);
+
+  return encrypted.base64;
 }
+}
+
 
 extension DateFormatUtils on Utils {
   static String formatDuration(Duration d,

@@ -307,6 +307,13 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         // Save the new local credentials
         const storage = FlutterSecureStorage();
         await storage.write(key: pLocalPassword, value: password);
+        // store encrypt local password to shared preferences
+        final key = 'adminPassword'.padRight(32, '-'); // 32
+        final iv = 'admin'.padRight(16, '-'); // 16
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(
+            'encryptLocalPassword', Utils.encryptAES(password, key, iv));
+
         return previousState.copyWith(
           localPassword: password,
           loginType: LoginType.local,
@@ -361,6 +368,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       await prefs.remove(pSelectedNetworkId);
       await prefs.remove(pCurrentSN);
       await prefs.remove(pDeviceToken);
+      await prefs.remove('encryptLocalPassword');
       const storage = FlutterSecureStorage();
       await storage.delete(key: pSessionToken);
       await storage.delete(key: pSessionTokenTs);
