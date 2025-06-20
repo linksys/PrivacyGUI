@@ -10,7 +10,6 @@ import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_state.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/di.dart';
-import 'package:privacy_gui/page/components/styled/styled_tab_page_view.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
@@ -20,14 +19,12 @@ import 'package:privacy_gui/page/instant_verify/providers/instant_verify_provide
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_state.dart';
 import 'package:privacy_gui/page/instant_verify/views/instant_verify_view.dart';
 import 'package:privacygui_widgets/theme/custom_theme.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../common/_index.dart';
 import '../../../../common/di.dart';
 import '../../../../mocks/_index.dart';
 import '../../../../mocks/instant_verify_notifier_mocks.dart';
-import '../../../../mocks/jnap_service_supported_mocks.dart';
 import '../../../../test_data/_index.dart';
 import '../../../../test_data/instant_verify_test_state.dart';
 
