@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/sse/modular_apps_sse/modular_apps_sse_provider.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/modular_apps/widgets/modular_app_category_layout.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
@@ -17,16 +18,17 @@ class ModularAppListView extends ArgumentsConsumerStatefulView {
 }
 
 class _ModularAppListViewState extends ConsumerState<ModularAppListView> {
+  late final SSEConnectionNotifier sseConnectionNotifier;
   @override
   void initState() {
     super.initState();
-    doSomethingWithSpinner(
-        context, ref.read(sseConnectionProvider.notifier).connect());
+    sseConnectionNotifier = ref.read(sseConnectionProvider.notifier);
+    doSomethingWithSpinner(context, sseConnectionNotifier.connect());
   }
 
   @override
   void dispose() {
-    ref.read(sseConnectionProvider.notifier).disconnect();
+    sseConnectionNotifier.disconnect();
     super.dispose();
   }
 
@@ -35,6 +37,7 @@ class _ModularAppListViewState extends ConsumerState<ModularAppListView> {
     final modularAppListState = ref.watch(modularAppListProvider);
     return StyledAppPageView(
       scrollable: true,
+      backState: StyledBackState.none,
       title: 'Modular App List',
       child: (context, constraints) => AppBasicLayout(
         content: Column(

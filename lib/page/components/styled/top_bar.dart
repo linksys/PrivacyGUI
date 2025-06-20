@@ -72,7 +72,7 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
                     AppIconButton(
                       icon: LinksysIcons.autoAwesomeMosaic,
                       onTap: () {
-                        context.pushNamed(RouteNamed.dashboardModularApps);
+                        context.goNamed(RouteNamed.dashboardModularApps);
                       },
                     ),
                   ],

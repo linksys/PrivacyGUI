@@ -33,7 +33,16 @@ enum ModularAppColor {
   const ModularAppColor(this.value, this.colorValue);
 
   /// Returns the Color object for this color
-  Color get color => Color(colorValue);
+  /// should check has alpha or not.
+  /// It could be 0xFF12345678 or 0x12345678
+  Color get color {
+    if (colorValue > 0xffffff) {
+      return Color.fromARGB(
+          colorValue >> 24, colorValue >> 16, colorValue >> 8, colorValue);
+    } else {
+      return Color.fromARGB(255, colorValue >> 16, colorValue >> 8, colorValue);
+    }
+  }
 
   /// Converts a string value to the corresponding ModularAppColor enum.
   /// Returns null if no match is found.
