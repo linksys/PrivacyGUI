@@ -2,7 +2,7 @@
     "name": "DHCP Reservations test",
     "target": "integration_test/dhcp_reservation_test.dart",
     "description": "Test the DHCP reservations",
-    "setUp":  ["factory_reset", "skip_pnp"],
+    "setUp":  ["factory_reset", "skip_pnp", "check_auto_parent"],
     "tearDown": [],
     "tags": ["local_network", "dhcp_reservation", "advanced_settings", "menu"]
 }

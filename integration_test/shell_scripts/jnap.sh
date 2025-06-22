@@ -106,6 +106,14 @@ set_device_mode_to_master() {
   echo "$result"
 }
 
+# Get device mode
+get_device_mode() {
+  password=$1
+  local result=$(jnap "http://linksys.com/jnap/nodes/smartmode/GetDeviceMode" "$password")
+  local deviceMode=$(echo $result | jq -r '.output.mode')
+  echo "$deviceMode"
+}
+
 # set admin password to default WiFi password
 set_admin_password_to_wifi_password() {
   password=$1
