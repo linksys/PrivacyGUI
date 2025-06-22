@@ -446,6 +446,13 @@ class RequiredRule extends ValidationRule {
   }
 }
 
+/// Validates an IPv4 address string against specified rules:
+/// 1. Must be a correct IPv4 format.
+/// 2. Cannot be from reserved or special-use ranges:
+///    - 0.0.0.0/8 (Current Network / Unspecified)
+///    - 127.0.0.0/8 (Loopback)
+///    - 224.0.0.0/4 (Multicast)
+///    - 255.255.255.255 (Broadcast)
 class IpAddressNoReservedRule extends ValidationRule {
   @override
   String get name => 'IpAddressNoReservedRule';

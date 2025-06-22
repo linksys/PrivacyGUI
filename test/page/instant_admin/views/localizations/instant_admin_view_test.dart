@@ -105,8 +105,8 @@ void main() {
 
     await tester.pumpAndSettle();
   }, screens: [
-    ...responsiveMobileScreens.map((e) => e.copyWith(height: 3180)),
-    ...responsiveDesktopScreens.map((e) => e.copyWith(height: 3180)),
+    ...responsiveMobileScreens.map((e) => e.copyWith(height: 3780)),
+    ...responsiveDesktopScreens.map((e) => e.copyWith(height: 3780)),
   ]);
 
   testLocalizations('Instant-Admin view - region transmit enabled',
