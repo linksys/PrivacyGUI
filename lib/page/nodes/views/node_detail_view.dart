@@ -371,8 +371,8 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
                     semanticLabel: 'device image',
                     height: 120,
                     image: CustomTheme.of(context).getRouterImage(
-                          state.modelNumber,
-                        ),
+                      routerIconTestByModel(modelNumber: state.modelNumber),
+                    ),
                   ),
                 ),
               ),
