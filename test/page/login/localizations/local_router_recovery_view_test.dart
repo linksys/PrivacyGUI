@@ -5,6 +5,7 @@ import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/instant_admin/_instant_admin.dart';
 import 'package:privacy_gui/page/login/views/local_router_recovery_view.dart';
 import 'package:privacy_gui/route/route_model.dart';
+import 'package:privacygui_widgets/widgets/input_field/pin_code_input.dart';
 import '../../../common/di.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
@@ -38,6 +39,28 @@ void main() {
     );
 
     await tester.pump(Duration(seconds: 1));
+  });
+
+  testLocalizations('local router recovery view - input code',
+      (tester, locale) async {
+    when(mockRouterPasswordNotifier.build())
+        .thenReturn(RouterPasswordState.fromMap(routerPasswordTestState1));
+
+    await tester.pumpWidget(
+      testableSingleRoute(
+        child: const LocalRouterRecoveryView(),
+        locale: locale,
+        config: LinksysRouteConfig(noNaviRail: true),
+        overrides: [
+          routerPasswordProvider.overrideWith(() => mockRouterPasswordNotifier),
+        ],
+      ),
+    );
+
+    await tester.pump(Duration(seconds: 1));
+
+    await tester.enterText(find.byType(AppPinCodeInput), '12345');
+    await tester.pumpAndSettle();
   });
 
   testLocalizations('local router recovery view - wrong input code',

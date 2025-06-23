@@ -271,7 +271,6 @@ class AppGlobalActionDispatcher extends ActionDispatcher {
     covariant Intent intent, [
     BuildContext? context,
   ]) {
-    logger.d('Action invoked: $action($intent) from $context');
     super.invokeAction(action, intent, context);
 
     return null;
@@ -283,7 +282,6 @@ class AppGlobalActionDispatcher extends ActionDispatcher {
     covariant Intent intent, [
     BuildContext? context,
   ]) {
-    logger.d('Action invoked: $action($intent) from $context');
     return super.invokeActionIfEnabled(action, intent, context);
   }
 }

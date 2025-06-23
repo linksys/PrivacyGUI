@@ -4,7 +4,6 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:integration_test/integration_test_driver.dart';
-import 'package:pin_code_fields/pin_code_fields.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/di.dart';
@@ -53,7 +52,7 @@ void main() {
     // Recovery page
     final recovery = TestLocalRecoveryActions(tester);
     await recovery.inputRecoveryCode(recoveryCode);
-    expect(recoveryCode, tester.getText(find.byType(PinCodeTextField)));
+    expect(recoveryCode, tester.getText(find.byType(AppPinCodeInput)));
     await recovery.tapContinueButton();
 
     // Reset password page

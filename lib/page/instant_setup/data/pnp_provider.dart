@@ -132,7 +132,7 @@ class MockPnpNotifier extends BasePnpNotifier {
         .then((value) => AutoConfigurationSettings(
               isAutoConfigurationSupported: true,
               userAcknowledgedAutoConfiguration: false,
-              autoConfigurationMethod: AutoConfigurationMethod.autoParent,
+              autoConfigurationMethod: AutoConfigurationMethod.preConfigured,
             ));
   }
 

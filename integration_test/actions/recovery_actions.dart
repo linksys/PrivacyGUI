@@ -4,7 +4,7 @@ class TestLocalRecoveryActions extends CommonBaseActions {
   TestLocalRecoveryActions(super.tester);
 
   Finder recoveryFieldFinder() {
-    final recoveryFinder = find.byType(PinCodeTextField);
+    final recoveryFinder = find.byType(AppPinCodeInput);
     expect(recoveryFinder, findsOneWidget);
     return recoveryFinder;
   }

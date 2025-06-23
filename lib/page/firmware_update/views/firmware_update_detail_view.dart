@@ -141,7 +141,8 @@ class _FirmwareUpdateDetailViewState
           final modelNumber = nodeDevice.modelNumber ?? '';
           final routerImage = Image(
             height: 40,
-            image: CustomTheme.of(context).getRouterImage(modelNumber),
+            image: CustomTheme.of(context).getRouterImage(
+                routerIconTestByModel(modelNumber: modelNumber), false),
           );
 
           return FirmwareUpdateNodeCard(
