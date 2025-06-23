@@ -36,6 +36,7 @@ import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
+import 'package:privacygui_widgets/widgets/input_field/ipv6_form_field.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/radios/radio_list.dart';
 import 'package:privacy_gui/core/jnap/providers/assign_ip/base_assign_ip.dart'
@@ -102,11 +103,16 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
   bool isMtuAuto = true;
   bool isBridgeMode = false;
   String? macAddressCloneErrorText;
+  String? ipv6PrefixErrorText;
   String? subnetMaskErrorText;
+  String? borderRelayErrorText;
   String loadingTitle = '';
   static const inputPadding = EdgeInsets.symmetric(vertical: Spacing.small2);
   final InputValidator _macValidator = InputValidator([MACAddressRule()]);
-
+  final InputValidator _ipv6PrefixValidator =
+      InputValidator([IPv6WithReservedRule()]);
+  final InputValidator _borderRelayValidator =
+      InputValidator([IpAddressNoReservedRule()]);
   late final TabController _tabController;
 
   @override
@@ -312,7 +318,11 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
         title: loc(context).internetSettings.capitalizeWords(),
         bottomBar: isEditing
             ? PageBottomBar(
-                isPositiveEnabled: _isEdited(state),
+                isPositiveEnabled: _isEdited(state) &&
+                    (state.ipv6Setting.ipv6rdTunnelMode !=
+                            IPv6rdTunnelMode.manual ||
+                        ipv6PrefixErrorText == null &&
+                            borderRelayErrorText == null),
                 onPositiveTap: _showRestartAlert,
               )
             : null,
@@ -1600,19 +1610,26 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
       mainAxisSize: MainAxisSize.min,
       children: [
         Padding(
-          padding: inputPadding,
-          child: AppTextField(
-            headerText: loc(context).prefix,
-            hintText: '',
-            controller: _ipv6PrefixController,
-            enable: isEnable,
-            border: const OutlineInputBorder(),
-            onChanged: (value) {
-              _notifier.updateIpv6Settings(
-                  ipv6Setting.copyWith(ipv6Prefix: () => value));
-            },
-          ),
-        ),
+            padding: inputPadding,
+            child: AppTextField(
+              headerText: loc(context).prefix,
+              hintText: '',
+              controller: _ipv6PrefixController,
+              enable: isEnable,
+              errorText: ipv6PrefixErrorText,
+              border: const OutlineInputBorder(),
+              onChanged: (value) {
+                setState(() {
+                  if (_ipv6PrefixValidator.validate(value)) {
+                    ipv6PrefixErrorText = null;
+                    _notifier.updateIpv6Settings(
+                        ipv6Setting.copyWith(ipv6Prefix: () => value));
+                  } else {
+                    ipv6PrefixErrorText = loc(context).invalidIpAddress;
+                  }
+                });
+              },
+            )),
         Padding(
           padding: inputPadding,
           child: AppTextField.minMaxNumber(
@@ -1638,10 +1655,18 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
             ),
             controller: _ipv6BorderRelayController,
             enable: isEnable,
+            errorText: borderRelayErrorText,
             border: const OutlineInputBorder(),
             onChanged: (value) {
-              _notifier.updateIpv6Settings(
-                  ipv6Setting.copyWith(ipv6BorderRelay: () => value));
+              setState(() {
+                if (_borderRelayValidator.validate(value)) {
+                  borderRelayErrorText = null;
+                  _notifier.updateIpv6Settings(
+                      ipv6Setting.copyWith(ipv6BorderRelay: () => value));
+                } else {
+                  borderRelayErrorText = loc(context).invalidIpAddress;
+                }
+              });
             },
           ),
         ),
