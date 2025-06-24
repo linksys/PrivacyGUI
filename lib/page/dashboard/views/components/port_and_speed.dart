@@ -8,6 +8,7 @@ import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
+import 'package:privacy_gui/page/instant_verify/views/components/speed_test_widget.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/dashboard/views/components/loading_tile.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
@@ -273,7 +274,13 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
   Widget _createSpeedTestTile(
       BuildContext context, WidgetRef ref, DashboardHomeState state) {
     return state.isHealthCheckSupported
-        ? _speedCheckWidget(context, ref, state)
+        ? Column(
+            children: const [
+              Divider(),
+              SpeedTestWidget(showDetails: false),
+              AppGap.large2(),
+            ],
+          )
         : _externalSpeedTest(context, state);
   }
 

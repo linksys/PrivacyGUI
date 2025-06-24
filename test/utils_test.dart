@@ -487,8 +487,8 @@ void main() {
     });
   });
 
-  group('Test Network Utils', () {
-    test('formatBytes: formats zero bytes correctly', () {
+  group('Test Network Utils - formatBytes', () {
+test('formatBytes: formats zero bytes correctly', () {
       const bytes = 0;
       const expected = '0 B';
 
@@ -549,7 +549,80 @@ void main() {
           NetworkUtils.formatBytes(bytes.toInt(), decimals: 2);
       expect(formattedBytes, expected);
     });
+  });
 
+  group('Test Network Utils - formatBytesWithUnit', () {
+    test('returns 0 B for zero bytes', () {
+      const bytes = 0;
+      final result = NetworkUtils.formatBytesWithUnit(bytes);
+      expect(result.value, '0');
+      expect(result.unit, 'B');
+    });
+
+    test('returns 0 B for negative input', () {
+      const bytes = -100;
+      final result = NetworkUtils.formatBytesWithUnit(bytes);
+      expect(result.value, '0');
+      expect(result.unit, 'B');
+    });
+
+    test('formats bytes (less than 1Kb)', () {
+      const bytes = 500;
+      final result = NetworkUtils.formatBytesWithUnit(bytes);
+      expect(result.value, '500');
+      expect(result.unit, 'B');
+    });
+
+    test('formats kilobytes with 0 decimal places', () {
+      const bytes = 2048; // 2 Kb
+      final result = NetworkUtils.formatBytesWithUnit(bytes);
+      expect(result.value, '2');
+      expect(result.unit, 'Kb');
+    });
+
+    test('formats megabytes with 2 decimal places', () {
+      const bytes = 1.5 * 1024 * 1024; // 1.5 Mb
+      final result = NetworkUtils.formatBytesWithUnit(bytes.toInt(), decimals: 2);
+      expect(result.value, '1.50');
+      expect(result.unit, 'Mb');
+    });
+
+    test('formats gigabytes with 1 decimal place', () {
+      const bytes = 2.5 * 1024 * 1024 * 1024; // 2.5 Gb
+      final result = NetworkUtils.formatBytesWithUnit(bytes.toInt(), decimals: 1);
+      expect(result.value, '2.5');
+      expect(result.unit, 'Gb');
+    });
+
+    test('formats terabytes with 3 decimal places', () {
+      const bytes = 3.14159 * 1024 * 1024 * 1024 * 1024; // ~3.14159 Tb
+      final result = NetworkUtils.formatBytesWithUnit(bytes.toInt(), decimals: 3);
+      expect(result.value, '3.142');
+      expect(result.unit, 'Tb');
+    });
+
+    test('formats petabytes with 0 decimal places', () {
+      const bytes = 1024 * 1024 * 1024 * 1024 * 1024; // 1 Pb
+      final result = NetworkUtils.formatBytesWithUnit(bytes, decimals: 0);
+      expect(result.value, '1');
+      expect(result.unit, 'Pb');
+    });
+
+    test('handles exact power of 1024 values without decimal places', () {
+      const bytes = 1024 * 1024; // Exactly 1 Mb
+      final result = NetworkUtils.formatBytesWithUnit(bytes);
+      expect(result.value, '1');
+      expect(result.unit, 'Mb');
+    });
+
+    test('handles exactly 1 petabyte', () {
+      final onePb = BigInt.from(1024).pow(5).toInt(); // Exactly 1 PiB
+      final result = NetworkUtils.formatBytesWithUnit(onePb);
+      expect(result.value, '1');
+      expect(result.unit, 'Pb');
+    });
+  });
+  group('Test Network Utils', () {
     test('isValidIpAddress: identifies valid IPv4 addresses', () {
       const validIps = [
         '192.168.1.1',
@@ -901,7 +974,8 @@ void main() {
       expect(NetworkUtils.isMtuValid('static', 0), true);
       expect(NetworkUtils.isMtuValid('pptp', 0), true);
       expect(NetworkUtils.isMtuValid('l2tp', 0), true);
-      expect(NetworkUtils.isMtuValid('unknown', 0), true); // Also true for unknown
+      expect(
+          NetworkUtils.isMtuValid('unknown', 0), true); // Also true for unknown
     });
 
     test('isMtuValid: returns true for valid MTU within range for DHCP', () {
@@ -910,7 +984,8 @@ void main() {
       expect(NetworkUtils.isMtuValid('dhcp', 1500), true); // Max
     });
 
-    test('isMtuValid: returns false for invalid MTU outside range for DHCP', () {
+    test('isMtuValid: returns false for invalid MTU outside range for DHCP',
+        () {
       expect(NetworkUtils.isMtuValid('dhcp', 575), false); // Below min
       expect(NetworkUtils.isMtuValid('dhcp', 1501), false); // Above max
     });
@@ -921,7 +996,8 @@ void main() {
       expect(NetworkUtils.isMtuValid('pppoe', 1492), true); // Max
     });
 
-    test('isMtuValid: returns false for invalid MTU outside range for PPPoE', () {
+    test('isMtuValid: returns false for invalid MTU outside range for PPPoE',
+        () {
       expect(NetworkUtils.isMtuValid('pppoe', 575), false); // Below min
       expect(NetworkUtils.isMtuValid('pppoe', 1500), false); // Above max
     });
@@ -932,37 +1008,42 @@ void main() {
       expect(NetworkUtils.isMtuValid('static', 1500), true); // Max
     });
 
-    test('isMtuValid: returns false for invalid MTU outside range for Static', () {
+    test('isMtuValid: returns false for invalid MTU outside range for Static',
+        () {
       expect(NetworkUtils.isMtuValid('static', 575), false); // Below min
       expect(NetworkUtils.isMtuValid('static', 1501), false); // Above max
     });
 
-     test('isMtuValid: returns true for valid MTU within range for PPTP', () {
+    test('isMtuValid: returns true for valid MTU within range for PPTP', () {
       expect(NetworkUtils.isMtuValid('pptp', 576), true); // Min
       expect(NetworkUtils.isMtuValid('pptp', 1000), true); // Mid
       expect(NetworkUtils.isMtuValid('pptp', 1460), true); // Max
     });
 
-    test('isMtuValid: returns false for invalid MTU outside range for PPTP', () {
+    test('isMtuValid: returns false for invalid MTU outside range for PPTP',
+        () {
       expect(NetworkUtils.isMtuValid('pptp', 575), false); // Below min
       expect(NetworkUtils.isMtuValid('pptp', 1461), false); // Above max
     });
 
-     test('isMtuValid: returns true for valid MTU within range for L2TP', () {
+    test('isMtuValid: returns true for valid MTU within range for L2TP', () {
       expect(NetworkUtils.isMtuValid('l2tp', 576), true); // Min
       expect(NetworkUtils.isMtuValid('l2tp', 1000), true); // Mid
       expect(NetworkUtils.isMtuValid('l2tp', 1460), true); // Max
     });
 
-    test('isMtuValid: returns false for invalid MTU outside range for L2TP', () {
+    test('isMtuValid: returns false for invalid MTU outside range for L2TP',
+        () {
       expect(NetworkUtils.isMtuValid('l2tp', 575), false); // Below min
       expect(NetworkUtils.isMtuValid('l2tp', 1461), false); // Above max
     });
 
-    test('isMtuValid: returns false for any non-zero MTU for unknown WAN type', () {
+    test('isMtuValid: returns false for any non-zero MTU for unknown WAN type',
+        () {
       expect(NetworkUtils.isMtuValid('unknown', 1), false);
       expect(NetworkUtils.isMtuValid('unknown', 1000), false);
-      expect(NetworkUtils.isMtuValid('', 576), false); // Empty string as unknown
+      expect(
+          NetworkUtils.isMtuValid('', 576), false); // Empty string as unknown
     });
   });
 }
