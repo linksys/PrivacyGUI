@@ -758,7 +758,7 @@ void main() {
         args: {
           'type': 'mac',
           'selected': InstantPrivacyState.fromMap(instantPrivacyDenyTestState)
-              .denyMacAddresses,
+              .settings.denyMacAddresses,
         },
       ),
     );

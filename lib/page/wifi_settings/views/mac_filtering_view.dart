@@ -80,11 +80,11 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView>
       appBarStyle: AppBarStyle.none,
       useMainPadding: true,
       bottomBar: PageBottomBar(
-          isPositiveEnabled: state.mode == MacFilterMode.deny
+          isPositiveEnabled: state.settings.mode == MacFilterMode.deny
               ? isStateChanged(state)
-              : state.mode != preservedState?.mode,
+              : state.settings.mode != preservedState?.settings.mode,
           onPositiveTap: () {
-            _showEnableDialog(state.mode != MacFilterMode.disabled);
+            _showEnableDialog(state.settings.mode != MacFilterMode.disabled);
           }),
       child: (context, constraints) => ResponsiveLayout(
         desktop: _desktopLayout(state, displayDevices),
@@ -102,7 +102,7 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView>
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (preservedState?.mode == MacFilterMode.allow) ...[
+            if (preservedState?.settings.mode == MacFilterMode.allow) ...[
               _warningCard(),
               const AppGap.small2(),
             ],
@@ -116,7 +116,7 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView>
                       _enableTile(state),
                       const AppGap.small2(),
                       _infoCard(
-                          state.mode == MacFilterMode.deny, deviceList.length),
+                          state.settings.mode == MacFilterMode.deny, deviceList.length),
                     ],
                   ),
                 ),
@@ -135,13 +135,13 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView>
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (preservedState?.mode == MacFilterMode.allow) ...[
+          if (preservedState?.settings.mode == MacFilterMode.allow) ...[
             _warningCard(),
             const AppGap.small2(),
           ],
           _enableTile(state),
           const AppGap.small2(),
-          _infoCard(state.mode == MacFilterMode.deny, deviceList.length),
+          _infoCard(state.settings.mode == MacFilterMode.deny, deviceList.length),
           const AppGap.large2(),
         ],
       ),
@@ -183,13 +183,13 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView>
         Expanded(child: AppText.labelLarge(loc(context).wifiMacFiltering)),
         AppSwitch(
           semanticLabel: 'wifi mac filtering',
-          value: state.mode == MacFilterMode.deny,
+          value: state.settings.mode == MacFilterMode.deny,
           onChanged: (value) {
             _notifier.setAccess(value
                 ? MacFilterMode.deny
-                : preservedState?.mode == MacFilterMode.deny
+                : preservedState?.settings.mode == MacFilterMode.deny
                     ? MacFilterMode.disabled
-                    : preservedState?.mode ?? MacFilterMode.disabled);
+                    : preservedState?.settings.mode ?? MacFilterMode.disabled);
           },
         )
       ],

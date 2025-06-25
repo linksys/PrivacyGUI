@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_light_settings_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
@@ -36,8 +37,8 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
     final privacyState = ref.watch(instantPrivacyProvider);
     final nodeLightState = ref.watch(nodeLightSettingsProvider);
 
-    final isLoading = ref.watch(deviceManagerProvider).deviceList.isEmpty;
-
+    final isLoading =
+        (ref.watch(pollingProvider).value?.isReady ?? false) == false;
     final master = isLoading
         ? null
         : ref.watch(instantTopologyProvider).root.children.first;
@@ -60,7 +61,7 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
               children: [
                 toggleTileWidget(
                     title: loc(context).instantPrivacy,
-                    value: privacyState.mode == MacFilterMode.allow,
+                    value: privacyState.status.mode == MacFilterMode.allow,
                     leading: betaLabel(),
                     onTap: () {
                       context.pushNamed(RouteNamed.menuInstantPrivacy);

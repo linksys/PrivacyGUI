@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_provide
 import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_state.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shared_widgets.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
@@ -34,9 +35,8 @@ class _InternetConnectionWidgetState
     final wanStatus = ref.watch(internetStatusProvider);
     final isOnline = wanStatus == InternetStatus.online;
 
-    final isLoading = ref
-        .watch(deviceManagerProvider.select((value) => value.deviceList))
-        .isEmpty;
+    final isLoading =
+        (ref.watch(pollingProvider).value?.isReady ?? false) == false;
     final geolocationState = ref.watch(geolocationProvider);
     final master = isLoading
         ? null

@@ -4,13 +4,16 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/page/dashboard/views/components/loading_tile.dart';
 import 'package:privacy_gui/page/instant_admin/_instant_admin.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_troubleshooter_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 
@@ -22,53 +25,59 @@ class DashboardHomeTitle extends ConsumerWidget {
     final wanStatus = ref.watch(internetStatusProvider);
     final state = ref.watch(dashboardManagerProvider);
     final isOnline = wanStatus == InternetStatus.online;
-    final isLoading = ref
-        .watch(deviceManagerProvider.select((value) => value.deviceList))
-        .isEmpty;
+    final isLoading =
+        (ref.watch(pollingProvider).value?.isReady ?? false) == false;
     final localTime = DateTime.fromMillisecondsSinceEpoch(state.localTime);
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              child: AppText.titleLarge(
-                helloString(context, localTime),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            InkWell(
-              onTap: () {
-                doSomethingWithSpinner(
-                        context, ref.read(timezoneProvider.notifier).fetch())
-                    .then((_) {
-                  context.pushNamed(RouteNamed.settingsTimeZone);
-                });
-              },
-              child: Wrap(
-                crossAxisAlignment: WrapCrossAlignment.center,
+    return isLoading
+        ? AppCard(
+            padding: EdgeInsets.zero,
+            child: SizedBox(
+                width: double.infinity,
+                height: 150,
+                child: const LoadingTile()))
+        : Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Icon(LinksysIcons.calendar,
-                      color: Theme.of(context).colorScheme.onSurface),
-                  Padding(
-                    padding: const EdgeInsets.only(left: Spacing.small2),
-                    child: AppText.bodyMedium(
-                      loc(context).formalDateTime(localTime, localTime),
-                      color: Theme.of(context).colorScheme.onSurface,
-                      maxLines: 1,
+                  Expanded(
+                    child: AppText.titleLarge(
+                      helloString(context, localTime),
                       overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  InkWell(
+                    onTap: () {
+                      doSomethingWithSpinner(context,
+                              ref.read(timezoneProvider.notifier).fetch())
+                          .then((_) {
+                        context.pushNamed(RouteNamed.settingsTimeZone);
+                      });
+                    },
+                    child: Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Icon(LinksysIcons.calendar,
+                            color: Theme.of(context).colorScheme.onSurface),
+                        Padding(
+                          padding: const EdgeInsets.only(left: Spacing.small2),
+                          child: AppText.bodyMedium(
+                            loc(context).formalDateTime(localTime, localTime),
+                            color: Theme.of(context).colorScheme.onSurface,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
-            ),
-          ],
-        ),
-        if (!isLoading && !isOnline) _troubleshooting(context, ref),
-      ],
-    );
+              if (!isLoading && !isOnline) _troubleshooting(context, ref),
+            ],
+          );
   }
 
   Widget _troubleshooting(BuildContext context, WidgetRef ref) {

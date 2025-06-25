@@ -171,7 +171,7 @@ class RouterNotifier extends ChangeNotifier {
     if (BuildConfig.forceCommandType == ForceCommand.local ||
         (routerType != RouterType.others && loginType != LoginType.remote)) {
       whereToGo = await pnp
-          .fetchDeviceInfo()
+          .fetchDeviceInfo(false)
           .then((_) async => await pnp.autoConfigurationCheck())
           .then((config) async {
         // Un supported PnP or Unable to get AutoConfigurationSettings case -
