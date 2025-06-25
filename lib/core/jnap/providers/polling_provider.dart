@@ -13,6 +13,7 @@ import 'package:privacy_gui/core/utils/bench_mark.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/vpn/providers/vpn_notifier.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
+import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
 
 const int pollFirstDelayInSec = 1;
 
@@ -22,22 +23,26 @@ final pollingProvider =
 
 class CoreTransactionData extends Equatable {
   final int lastUpdate;
+  final bool isReady;
   final Map<JNAPAction, JNAPResult> data;
 
   const CoreTransactionData({
     required this.lastUpdate,
+    required this.isReady,
     required this.data,
   });
 
   @override
-  List<Object> get props => [lastUpdate, data];
+  List<Object> get props => [lastUpdate, isReady, data];
 
   CoreTransactionData copyWith({
     int? lastUpdate,
+    bool? isReady,
     Map<JNAPAction, JNAPResult>? data,
   }) {
     return CoreTransactionData(
       lastUpdate: lastUpdate ?? this.lastUpdate,
+      isReady: isReady ?? this.isReady,
       data: data ?? this.data,
     );
   }
@@ -59,7 +64,7 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
 
   @override
   FutureOr<CoreTransactionData> build() {
-    return const CoreTransactionData(lastUpdate: 0, data: {});
+    return const CoreTransactionData(lastUpdate: 0, isReady: false, data: {});
   }
 
   fetchFirstLaunchedCacheData() {
@@ -77,12 +82,13 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
         .toList();
 
     state = AsyncValue.data(CoreTransactionData(
-        lastUpdate: 0, data: Map.fromEntries(cacheDataList)));
+        lastUpdate: 0, isReady: false, data: Map.fromEntries(cacheDataList)));
   }
 
   Future _polling(RouterRepository repository, {bool force = false}) async {
     final benchMark = BenchMarkLogger(name: 'Polling provider');
     benchMark.start();
+    final previousSnapshot = state.value;
     state = const AsyncValue.loading();
     final fetchFuture = repository
         .transaction(
@@ -92,6 +98,7 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
         .then((successWrap) => successWrap.data)
         .then((data) => CoreTransactionData(
               lastUpdate: DateTime.now().millisecondsSinceEpoch,
+              isReady: previousSnapshot?.isReady ?? false,
               data: Map.fromEntries(data),
             ))
         .onError((error, stackTrace) {
@@ -106,7 +113,7 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
       () => fetchFuture.then(
         (result) async {
           await _additionalPolling();
-          return result;
+          return result.copyWith(isReady: true);
         },
       ).onError((e, stackTrace) {
         logger.e('Polling error: $e, $stackTrace');
@@ -124,6 +131,8 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     if (serviceHelper.isSupportVPN()) {
       await ref.read(vpnProvider.notifier).fetch(false, true);
     }
+
+    await ref.read(instantPrivacyProvider.notifier).fetch(statusOnly: true);
   }
 
   Future forcePolling() {
@@ -152,6 +161,8 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
       return;
     }
     logger.d('prepare start polling data');
+    state = const AsyncValue.data(
+        CoreTransactionData(lastUpdate: 0, isReady: false, data: {}));
     final routerRepository = ref.read(routerRepositoryProvider);
     checkSmartMode().then((mode) {
       _coreTransactions = _buildCoreTransaction(mode: mode);
@@ -229,6 +240,13 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     if (serviceHelper.isSupportProduct()) {
       commands.add(const MapEntry(JNAPAction.getSoftSKUSettings, {}));
     }
+
+    // For additional features
+    if (serviceHelper.isSupportLedMode()) {
+      commands.add(const MapEntry(JNAPAction.getLedNightModeSetting, {}));
+    }
+    commands.add(const MapEntry(JNAPAction.getMACFilterSettings, {}));
+
     return commands;
   }
 

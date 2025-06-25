@@ -5,6 +5,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
@@ -26,9 +27,8 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(dashboardHomeProvider);
-    final isLoading = ref
-        .watch(deviceManagerProvider.select((value) => value.deviceList))
-        .isEmpty;
+    final isLoading =
+        (ref.watch(pollingProvider).value?.isReady ?? false) == false;
     final horizontalLayout = state.isHorizontalLayout;
     final wanStatus = ref.watch(internetStatusProvider);
     final isOnline = wanStatus == InternetStatus.online;

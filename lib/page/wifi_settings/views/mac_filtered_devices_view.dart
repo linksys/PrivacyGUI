@@ -52,7 +52,7 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
         AppTextButton(
           loc(context).edit,
           icon: LinksysIcons.edit,
-          onTap: state.denyMacAddresses.isNotEmpty
+          onTap: state.settings.denyMacAddresses.isNotEmpty
               ? () {
                   _toggleEdit();
                 }
@@ -127,9 +127,9 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
     final results = await context
         .pushNamed<List<DeviceListItem>?>(RouteNamed.devicePicker, extra: {
       'type': 'mac',
-      'selected': ref.read(instantPrivacyProvider).denyMacAddresses
+      'selected': ref.read(instantPrivacyProvider).settings.denyMacAddresses
     });
-    final temp = ref.read(instantPrivacyProvider).denyMacAddresses;
+    final temp = ref.read(instantPrivacyProvider).settings.denyMacAddresses;
     if (results != null) {
       final newMacs = results.map((e) => e.macAddress).toList();
       // temp and newMacs do XOR

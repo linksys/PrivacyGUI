@@ -7,7 +7,7 @@ final macFilteringDeviceListProvider = Provider((ref) {
   final deviceListState = ref.watch(deviceListProvider);
   final macFilteringState = ref.watch(instantPrivacyProvider);
   final deviceList = deviceListState.devices;
-  final macAddresses = macFilteringState.denyMacAddresses;
+  final macAddresses = macFilteringState.settings.denyMacAddresses;
   return macAddresses
       .map((e) =>
           deviceList.firstWhereOrNull((device) => device.macAddress == e) ??

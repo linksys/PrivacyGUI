@@ -15,6 +15,7 @@ import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_state.dart';
 import 'package:privacy_gui/core/jnap/providers/node_light_settings_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/dashboard/views/components/quick_panel.dart';
@@ -35,6 +36,7 @@ import '../../../common/testable_router.dart';
 import '../../../mocks/_index.dart';
 import '../../../mocks/gelocation_notifier_mocks.dart';
 import '../../../mocks/node_light_settings_notifier_mocks.dart';
+import '../../../mocks/polling_notifier_mocks.dart';
 import '../../../mocks/vpn_notifier_mocks.dart';
 import '../../../test_data/_index.dart';
 import '../../../test_data/geolocation_test_state.dart';
@@ -49,6 +51,7 @@ void main() async {
   late InstantTopologyNotifier mockInstantTopologyNotifier;
   late GeolocationNotifier mockGeolocationNotifer;
   late NodeLightSettingsNotifier mockNodeLightSettingsNotifier;
+  late PollingNotifier mockPollingNotifier;
   late VPNNotifier mockVPNNotifier;
 
   late TopologyTestData topologyTestData;
@@ -646,6 +649,7 @@ void main() async {
       mockGeolocationNotifer = MockGeolocationNotifier();
       mockNodeLightSettingsNotifier = MockNodeLightSettingsNotifier();
       mockVPNNotifier = MockVPNNotifier();
+      mockPollingNotifier = MockPollingNotifier();
 
       when(mockDashboardHomeNotifier.build()).thenReturn(
           DashboardHomeState.fromMap(dashboardHomePinnacleTestState));
@@ -666,6 +670,8 @@ void main() async {
       when(mockServiceHelper.isSupportLedMode()).thenReturn(true);
       when(mockServiceHelper.isSupportVPN()).thenReturn(true);
       when(mockVPNNotifier.build()).thenReturn(VPNTestState.defaultState);
+      when(mockPollingNotifier.build()).thenReturn(
+          CoreTransactionData(lastUpdate: 0, isReady: true, data: const {}));
     });
 
     tearDown(() {
@@ -691,6 +697,7 @@ void main() async {
             instantTopologyProvider
                 .overrideWith(() => mockInstantTopologyNotifier),
             geolocationProvider.overrideWith(() => mockGeolocationNotifer),
+            pollingProvider.overrideWith(() => mockPollingNotifier),
           ],
         ),
       );
@@ -727,6 +734,7 @@ void main() async {
             instantTopologyProvider
                 .overrideWith(() => mockInstantTopologyNotifier),
             geolocationProvider.overrideWith(() => mockGeolocationNotifer),
+            pollingProvider.overrideWith(() => mockPollingNotifier),
           ],
         ),
       );
@@ -764,6 +772,7 @@ void main() async {
             instantTopologyProvider
                 .overrideWith(() => mockInstantTopologyNotifier),
             geolocationProvider.overrideWith(() => mockGeolocationNotifer),
+            pollingProvider.overrideWith(() => mockPollingNotifier),
           ],
         ),
       );
@@ -805,6 +814,7 @@ void main() async {
             instantTopologyProvider
                 .overrideWith(() => mockInstantTopologyNotifier),
             geolocationProvider.overrideWith(() => mockGeolocationNotifer),
+            pollingProvider.overrideWith(() => mockPollingNotifier),
           ],
         ),
       );
@@ -845,6 +855,7 @@ void main() async {
             instantTopologyProvider
                 .overrideWith(() => mockInstantTopologyNotifier),
             geolocationProvider.overrideWith(() => mockGeolocationNotifer),
+            pollingProvider.overrideWith(() => mockPollingNotifier),
           ],
         ),
       );
@@ -884,6 +895,7 @@ void main() async {
             nodeLightSettingsProvider
                 .overrideWith(() => mockNodeLightSettingsNotifier),
             geolocationProvider.overrideWith(() => mockGeolocationNotifer),
+            pollingProvider.overrideWith(() => mockPollingNotifier),
           ],
         ),
       );
@@ -923,6 +935,7 @@ void main() async {
             nodeLightSettingsProvider
                 .overrideWith(() => mockNodeLightSettingsNotifier),
             geolocationProvider.overrideWith(() => mockGeolocationNotifer),
+            pollingProvider.overrideWith(() => mockPollingNotifier),
           ],
         ),
       );
@@ -960,6 +973,7 @@ void main() async {
             nodeLightSettingsProvider
                 .overrideWith(() => mockNodeLightSettingsNotifier),
             geolocationProvider.overrideWith(() => mockGeolocationNotifer),
+            pollingProvider.overrideWith(() => mockPollingNotifier),
           ],
         ),
       );
@@ -1007,6 +1021,7 @@ void main() async {
             nodeLightSettingsProvider
                 .overrideWith(() => mockNodeLightSettingsNotifier),
             geolocationProvider.overrideWith(() => mockGeolocationNotifer),
+            pollingProvider.overrideWith(() => mockPollingNotifier),
           ],
         ),
       );
@@ -1055,6 +1070,7 @@ void main() async {
               nodeLightSettingsProvider
                   .overrideWith(() => mockNodeLightSettingsNotifier),
               geolocationProvider.overrideWith(() => mockGeolocationNotifer),
+              pollingProvider.overrideWith(() => mockPollingNotifier),
             ],
           ),
         );
@@ -1112,6 +1128,7 @@ void main() async {
             nodeLightSettingsProvider
                 .overrideWith(() => mockNodeLightSettingsNotifier),
             geolocationProvider.overrideWith(() => mockGeolocationNotifer),
+            pollingProvider.overrideWith(() => mockPollingNotifier),
           ],
         ),
       );
@@ -1151,6 +1168,7 @@ void main() async {
             nodeLightSettingsProvider
                 .overrideWith(() => mockNodeLightSettingsNotifier),
             geolocationProvider.overrideWith(() => mockGeolocationNotifer),
+            pollingProvider.overrideWith(() => mockPollingNotifier),
           ],
         ),
       );
@@ -1190,6 +1208,7 @@ void main() async {
             instantTopologyProvider
                 .overrideWith(() => mockInstantTopologyNotifier),
             geolocationProvider.overrideWith(() => mockGeolocationNotifer),
+            pollingProvider.overrideWith(() => mockPollingNotifier),
           ],
         ),
       );
@@ -1237,6 +1256,7 @@ void main() async {
                 .overrideWith(() => mockInstantTopologyNotifier),
             geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             vpnProvider.overrideWith(() => mockVPNNotifier),
+            pollingProvider.overrideWith(() => mockPollingNotifier),
           ],
         ),
       );
@@ -1274,6 +1294,7 @@ void main() async {
                 .overrideWith(() => mockInstantTopologyNotifier),
             geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             vpnProvider.overrideWith(() => mockVPNNotifier),
+            pollingProvider.overrideWith(() => mockPollingNotifier),
           ],
         ),
       );

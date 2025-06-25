@@ -185,10 +185,10 @@ class MockPnpNotifier extends _i2.Notifier<_i3.PnpState>
       );
 
   @override
-  _i8.Future<dynamic> fetchDeviceInfo() => (super.noSuchMethod(
+  _i8.Future<dynamic> fetchDeviceInfo([bool clearCurrentSN = true]) => (super.noSuchMethod(
         Invocation.method(
           #fetchDeviceInfo,
-          [],
+          [clearCurrentSN],
         ),
         returnValue: _i8.Future<dynamic>.value(),
         returnValueForMissingStub: _i8.Future<dynamic>.value(),
