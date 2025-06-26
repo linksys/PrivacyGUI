@@ -114,6 +114,9 @@ get_wifi_site_survey() {
 # get current WiFi connection SSID
 get_current_wifi_ssid() {
   local current_ssid=$(/System/Library/PrivateFrameworks/Apple80211.framework/Resources/airport -I | awk -F': ' '/ SSID/ {print $2}')
+  if [ -z "$current_ssid" ]; then
+    current_ssid=$(system_profiler SPAirPortDataType | grep -A 2 "Current Network Information:" | awk 'NR==2 {gsub(/^[[:space:]]+/, ""); sub(/:$/, ""); print}')
+  fi
   echo "$current_ssid"
 }
 
