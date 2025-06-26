@@ -38,7 +38,7 @@ class TestDashboardHomeActions extends CommonBaseActions {
     final iconFinder = find
         .descendant(
           of: find.byType(DashboardQuickPanel),
-          matching: find.byType(Icon),
+          matching: find.byIcon(Icons.info_outline),
         )
         .last;
     expect(iconFinder, findsOneWidget);
@@ -66,7 +66,7 @@ class TestDashboardHomeActions extends CommonBaseActions {
     final iconFinder = find
         .descendant(
           of: find.byType(DashboardQuickPanel),
-          matching: find.byType(Icon),
+          matching: find.byIcon(Icons.info_outline),
         )
         .first;
     expect(iconFinder, findsOneWidget);
@@ -306,7 +306,25 @@ class TestDashboardHomeActions extends CommonBaseActions {
     // Tap the switch
     await tester.tap(switchFinder);
     await tester.pumpAndSettle();
+    // Tap alert ok
+    await tapAlertOkButton();
   }
+
+  Future<void> tapAlertOkButton() async {
+    // Tap alert ok
+    final alertFinder = find.byType(AlertDialog);
+    expect(alertFinder, findsOneWidget);
+    // Find the Ok button
+    final dialogButtonFinder = find.descendant(
+      of: alertFinder,
+      matching: find.byType(AppTextButton),
+    );
+    expect(dialogButtonFinder, findsNWidgets(2));
+    // Tap the Ok button
+    await tester.tap(dialogButtonFinder.last);
+    await tester.pumpAndSettle();
+  }
+
 
   Future<void> checkWifi5gPage() async {
     // Find 5G Wifi card
@@ -334,6 +352,8 @@ class TestDashboardHomeActions extends CommonBaseActions {
     // Tap the switch
     await tester.tap(switchFinder);
     await tester.pumpAndSettle();
+    // Tap alert ok
+    await tapAlertOkButton();
   }
 
   Future<void> checkGuestWifiPage() async {
