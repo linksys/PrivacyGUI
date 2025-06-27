@@ -233,6 +233,7 @@
   "filterMulticast": "Suodata monilähetys",
   "filteredDevices": "Suodatetut laitteet",
   "filters": "Suodattimet",
+  "featureUnavailableInRemoteMode": "Tämä ominaisuus ei ole käytettävissä etätilassa",
   "firewall": "Palomuuri",
   "firmwareDownloadingMessage1": "Voit käyttää WiFi-yhteyttä päivityksen aikana.",
   "firmwareDownloadingMessage2": "Yhteys saattaa olla tavallista hitaampi järjestelmän ylläpidon aikana.",

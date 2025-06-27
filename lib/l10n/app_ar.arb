@@ -251,6 +251,7 @@
   "filterMulticast": "تصفية البث المتعدد",
   "filteredDevices": "الأجهزة المصفاة",
   "filters": "المرشحات",
+  "featureUnavailableInRemoteMode": "هذه الميزة غير متوفرة في وضع التحكم عن بُعد",
   "firewall": "جدار الحماية",
   "firmware": "البرنامج الثابت",
   "firmwareDownloadingMessage1": "يمكنك استخدام شبكة WiFi الخاصة بك أثناء هذا التحديث.",

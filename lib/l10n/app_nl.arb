@@ -251,6 +251,7 @@
   "filterMulticast": "Multicast filteren",
   "filteredDevices": "Gefilterde apparaten",
   "filters": "Filters",
+  "featureUnavailableInRemoteMode": "Deze functie is niet beschikbaar in de externe modus",
   "firewall": "Firewall",
   "firmware": "Firmware",
   "firmwareDownloadingMessage1": "Tijdens deze update kunt u uw WiFi gebruiken.",

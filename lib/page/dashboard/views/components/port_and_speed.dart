@@ -277,7 +277,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
     return state.isHealthCheckSupported
         ? _speedCheckWidget(context, ref, state)
         : Tooltip(
-            message: 'This feature is unavailable in remote mode',
+            message: loc(context).featureUnavailableInRemoteMode,
             child: Opacity(
               opacity: isRemote ? 0.5 : 1,
               child: AbsorbPointer(
