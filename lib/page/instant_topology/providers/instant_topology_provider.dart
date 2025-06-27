@@ -154,6 +154,7 @@ class InstantTopologyNotifier extends Notifier<InstantTopologyState> {
     String ipAddress = device.connections.firstOrNull?.ipAddress ?? '';
     String hardwareVersion = device.model.hardwareVersion ?? '1';
     int? signalStrength = device.signalDecibels;
+    String macAddress = device.getMacAddress();
 
     final updateInfo = (ref.read(firmwareUpdateProvider).nodesStatus?.length ??
                 0) >
@@ -184,6 +185,7 @@ class InstantTopologyNotifier extends Notifier<InstantTopologyState> {
       ipAddress: ipAddress,
       hardwareVersion: hardwareVersion,
       fwUpToDate: isFwUpToDate,
+      macAddress: macAddress,
     );
     return RouterTopologyNode(
       data: data,
