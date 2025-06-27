@@ -251,6 +251,7 @@
   "filterMulticast": "マルチキャストをフィルター処理します",
   "filteredDevices": "フィルターされたデバイス",
   "filters": "フィルター",
+  "featureUnavailableInRemoteMode": "この機能はリモートモードでは利用できません",
   "firewall": "ファイアウォール",
   "firmware": "ファームウェア",
   "firmwareDownloadingMessage1": "WiFiは更新中にもご利用いただけます。",

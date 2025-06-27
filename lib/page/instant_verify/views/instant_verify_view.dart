@@ -706,7 +706,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
               ? const SpeedTestWidget()
               : AppCard(
                   child: Tooltip(
-                    message: 'This feature is unavailable in remote mode',
+                    message: loc(context).featureUnavailableInRemoteMode,
                     child: Opacity(
                       opacity: BuildConfig.isRemote() ? 0.5 : 1,
                       child: AbsorbPointer(

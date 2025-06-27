@@ -233,6 +233,7 @@
   "filterMulticast": "Filtruj komunikaty typu multicast",
   "filteredDevices": "Filtrowane urządzenia",
   "filters": "Filtry",
+  "featureUnavailableInRemoteMode": "Ta funkcja nie jest dostępna w trybie zdalnym",
   "firewall": "Zapora",
   "firmwareDownloadingMessage1": "Podczas tej aktualizacji możesz korzystać z WiFi.",
   "firmwareDownloadingMessage2": "W trakcie usprawniania systemu sieć może jednak działać wolniej niż zwykle.",

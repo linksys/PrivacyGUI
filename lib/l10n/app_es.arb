@@ -251,6 +251,7 @@
   "filterMulticast": "Filtrar multidifusión",
   "filteredDevices": "Dispositivos filtrados",
   "filters": "Filtros",
+  "featureUnavailableInRemoteMode": "Esta función no está disponible en modo remoto",
   "firewall": "Firewall",
   "firmware": "Firmware",
   "firmwareDownloadingMessage1": "Durante esta actualización podrás utilizar tu red WiFi.",
