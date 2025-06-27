@@ -5,6 +5,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/providers/auth/ra_session_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -354,6 +355,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   }
 
   Future logout() async {
+    logger.d('[Prepare]: Logout');
     state = const AsyncValue.loading();
 
     state = await AsyncValue.guard(() async {
@@ -379,6 +381,9 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
             .onError((error, stackTrace) => null);
         ref.read(raSessionProvider.notifier).stopMonitorSession();
       }
+
+      ref.read(deviceManagerProvider.notifier).init();
+      ref.read(pollingProvider.notifier).init();
       return AuthState.empty();
     });
     ref.read(pollingProvider.notifier).stopPolling();

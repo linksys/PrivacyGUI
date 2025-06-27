@@ -1,7 +1,8 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
@@ -9,7 +10,6 @@ import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 
 import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/views/single_port_forwarding_rule_view.dart';
 import 'package:privacy_gui/page/components/shared_widgets.dart';
 import 'package:privacy_gui/page/instant_topology/views/model/topology_model.dart';
 import 'package:privacy_gui/page/instant_topology/views/model/tree_view_node.dart';
@@ -138,7 +138,7 @@ class TopologyNodeItem extends StatelessWidget {
   }
 }
 
-class TreeNodeItem extends StatelessWidget {
+class TreeNodeItem extends StatefulWidget {
   final RouterTreeNode node;
   final VoidCallback? onTap;
   final List<NodeInstantActions> actions;
@@ -153,14 +153,19 @@ class TreeNodeItem extends StatelessWidget {
   });
 
   @override
+  State<TreeNodeItem> createState() => _TreeNodeItemState();
+}
+
+class _TreeNodeItemState extends State<TreeNodeItem> {
+  @override
   Widget build(BuildContext context) {
     return AppCard(
       margin: EdgeInsets.zero,
       padding: EdgeInsets.zero,
-      color: node.data.isOnline
+      color: widget.node.data.isOnline
           ? Theme.of(context).colorScheme.surface
           : Theme.of(context).colorScheme.surfaceVariant,
-      onTap: onTap,
+      onTap: widget.onTap,
       child: Container(
         constraints: const BoxConstraints(
           minWidth: 180,
@@ -181,7 +186,7 @@ class TreeNodeItem extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         AppText.labelLarge(
-                          node.data.location,
+                          widget.node.data.location,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -192,7 +197,7 @@ class TreeNodeItem extends StatelessWidget {
                           children: [
                             _buildNodeContent(
                               context,
-                              node,
+                              widget.node,
                             )
                           ],
                         ),
@@ -204,19 +209,20 @@ class TreeNodeItem extends StatelessWidget {
                       Center(
                         child: SharedWidgets.resolveSignalStrengthIcon(
                           context,
-                          node.data.signalStrength,
-                          isOnline: node.data.isOnline,
-                          isWired: node.data.isWiredConnection,
+                          widget.node.data.signalStrength,
+                          isOnline: widget.node.data.isOnline,
+                          isWired: widget.node.data.isWiredConnection,
                         ),
                       ),
                       const AppGap.small3(),
-                      SharedWidgets.resolveRouterImage(context, node.data.icon),
+                      SharedWidgets.resolveRouterImage(
+                          context, widget.node.data.icon),
                     ],
                   ),
                 ],
               ),
             ),
-            if (node.data.isOnline && actions.isNotEmpty) ...[
+            if (widget.node.data.isOnline && widget.actions.isNotEmpty) ...[
               const AppGap.medium(),
               const Divider(
                 height: 0,
@@ -233,7 +239,7 @@ class TreeNodeItem extends StatelessWidget {
                       elevation: 10,
                       surfaceTintColor: Theme.of(context).colorScheme.surface,
                       itemBuilder: (context) {
-                        return actions
+                        return widget.actions
                             .mapIndexed(
                                 (index, e) => PopupMenuItem<NodeInstantActions>(
                                     value: e,
@@ -247,7 +253,7 @@ class TreeNodeItem extends StatelessWidget {
                                     )))
                             .toList();
                       },
-                      onSelected: onActionTap,
+                      onSelected: widget.onActionTap,
                     )
                   ],
                 ),
@@ -264,62 +270,70 @@ class TreeNodeItem extends StatelessWidget {
     AppTreeNode<TopologyModel> node,
   ) {
     final signalLevel = getWifiSignalLevel(node.data.signalStrength);
-    return Table(
-      border: const TableBorder(),
-      columnWidths: const {
-        0: FlexColumnWidth(1),
-        1: FlexColumnWidth(2),
-      },
-      children: [
-        TableRow(children: [
-          AppText.labelLarge('${loc(context).model}:'),
-          AppText.bodyMedium(node.data.model),
-        ]),
-        TableRow(children: [
-          AppText.labelLarge('${loc(context).serialNo}:'),
-          AppText.bodyMedium(node.data.serialNumber),
-        ]),
-        TableRow(children: [
-          AppText.labelLarge('${loc(context).fwVersion}:'),
-          Wrap(
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              AppText.bodyMedium(node.data.fwVersion),
-              if (node.data.isOnline) ...[
-                const AppGap.medium(),
-                SharedWidgets.nodeFirmwareStatusWidget(
-                    context, !node.data.fwUpToDate, () {
-                  context.pushNamed(RouteNamed.firmwareUpdateDetail);
-                }),
-              ]
-            ],
-          ),
-        ]),
-        TableRow(children: [
-          AppText.labelLarge('${loc(context).connection}:'),
-          AppText.bodyMedium(!node.data.isOnline
-              ? '--'
-              : node.data.isWiredConnection
-                  ? loc(context).wired
-                  : loc(context).wireless),
-        ]),
-        if (!node.data.isMaster)
+    return SelectToCopyWidget(
+      child: Table(
+        border: const TableBorder(),
+        columnWidths: const {
+          0: FlexColumnWidth(1),
+          1: FlexColumnWidth(2),
+        },
+        children: [
           TableRow(children: [
-            AppText.labelLarge('${loc(context).meshHealth}:'),
-            AppText.labelLarge(
-              node.data.isOnline
-                  ? signalLevel.resolveLabel(context)
-                  : loc(context).offline,
-              color: node.data.isOnline
-                  ? signalLevel.resolveColor(context)
-                  : Theme.of(context).colorScheme.outline,
+            AppText.labelLarge('${loc(context).model}:'),
+            AppText.bodyMedium(
+              node.data.model,
             ),
           ]),
-        TableRow(children: [
-          AppText.labelLarge('${loc(context).ipAddress}:'),
-          AppText.bodyMedium(node.data.isOnline ? node.data.ipAddress : '--'),
-        ]),
-      ],
+          TableRow(children: [
+            AppText.labelLarge('${loc(context).serialNo}:'),
+            AppText.bodyMedium(node.data.serialNumber),
+          ]),
+          TableRow(children: [
+            AppText.labelLarge('${loc(context).mac}:'),
+            AppText.bodyMedium(node.data.macAddress),
+          ]),
+          TableRow(children: [
+            AppText.labelLarge('${loc(context).fwVersion}:'),
+            Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                AppText.bodyMedium(node.data.fwVersion),
+                if (node.data.isOnline) ...[
+                  const AppGap.medium(),
+                  SharedWidgets.nodeFirmwareStatusWidget(
+                      context, !node.data.fwUpToDate, () {
+                    context.pushNamed(RouteNamed.firmwareUpdateDetail);
+                  }),
+                ]
+              ],
+            ),
+          ]),
+          TableRow(children: [
+            AppText.labelLarge('${loc(context).connection}:'),
+            AppText.bodyMedium(!node.data.isOnline
+                ? '--'
+                : node.data.isWiredConnection
+                    ? loc(context).wired
+                    : loc(context).wireless),
+          ]),
+          if (!node.data.isMaster)
+            TableRow(children: [
+              AppText.labelLarge('${loc(context).meshHealth}:'),
+              AppText.labelLarge(
+                node.data.isOnline
+                    ? signalLevel.resolveLabel(context)
+                    : loc(context).offline,
+                color: node.data.isOnline
+                    ? signalLevel.resolveColor(context)
+                    : Theme.of(context).colorScheme.outline,
+              ),
+            ]),
+          TableRow(children: [
+            AppText.labelLarge('${loc(context).ipAddress}:'),
+            AppText.bodyMedium(node.data.isOnline ? node.data.ipAddress : '--'),
+          ]),
+        ],
+      ),
     );
   }
 }
@@ -514,6 +528,61 @@ class _BorderInfoCellState extends State<BorderInfoCell> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class SelectToCopyWidget extends StatefulWidget {
+  final Widget child;
+  const SelectToCopyWidget({super.key, required this.child});
+
+  @override
+  State<SelectToCopyWidget> createState() => _SelectToCopyWidgetState();
+}
+
+class _SelectToCopyWidgetState extends State<SelectToCopyWidget> {
+  SelectedContent? _selectedContent;
+  Offset? _lastPointerPosition;
+
+  @override
+  Widget build(BuildContext context) {
+    return Listener(
+      onPointerMove: (event) {
+        _lastPointerPosition = event.position;
+      },
+      onPointerUp: (event) {
+        _lastPointerPosition = event.position;
+        if (_selectedContent != null &&
+            _selectedContent!.plainText.isNotEmpty) {
+          final text = _selectedContent!.plainText;
+          showMenu(
+            context: context,
+            position: RelativeRect.fromLTRB(
+              _lastPointerPosition!.dx,
+              _lastPointerPosition!.dy,
+              _lastPointerPosition!.dx,
+              _lastPointerPosition!.dy,
+            ),
+            items: <PopupMenuEntry>[
+              PopupMenuItem(
+                child: const Text('Copy'),
+                onTap: () {
+                  Clipboard.setData(ClipboardData(text: text));
+                  setState(() {
+                    _selectedContent = null;
+                  });
+                },
+              ),
+            ],
+          );
+        }
+      },
+      child: SelectionArea(
+        onSelectionChanged: (SelectedContent? content) {
+          _selectedContent = content;
+        },
+        child: widget.child,
+      ),
     );
   }
 }

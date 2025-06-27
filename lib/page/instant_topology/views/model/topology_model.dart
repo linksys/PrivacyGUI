@@ -50,6 +50,7 @@ class TopologyModel extends Equatable {
   final int signalStrength;
   final bool isRouter;
   final String icon;
+  final String macAddress;
   final int connectedDeviceCount;
 
   ///
@@ -70,6 +71,7 @@ class TopologyModel extends Equatable {
     this.signalStrength = 0,
     this.isRouter = false,
     this.icon = 'genericDevice',
+    this.macAddress = '',
     this.connectedDeviceCount = 0,
     this.model = '',
     this.serialNumber = '',
@@ -89,6 +91,7 @@ class TopologyModel extends Equatable {
     int? signalStrength,
     bool? isRouter,
     String? icon,
+    String? macAddress,
     int? connectedDeviceCount,
     String? model,
     String? serialNumber,
@@ -107,6 +110,7 @@ class TopologyModel extends Equatable {
       signalStrength: signalStrength ?? this.signalStrength,
       isRouter: isRouter ?? this.isRouter,
       icon: icon ?? this.icon,
+      macAddress: macAddress ?? this.macAddress,
       connectedDeviceCount: connectedDeviceCount ?? this.connectedDeviceCount,
       model: model ?? this.model,
       serialNumber: serialNumber ?? this.serialNumber,
@@ -128,6 +132,7 @@ class TopologyModel extends Equatable {
       'signalStrength': signalStrength,
       'isRouter': isRouter,
       'icon': icon,
+      'macAddress': macAddress,
       'connectedDeviceCount': connectedDeviceCount,
       'model': model,
       'serialNumber': serialNumber,
@@ -149,6 +154,7 @@ class TopologyModel extends Equatable {
       signalStrength: map['signalStrength'] as int,
       isRouter: map['isRouter'] as bool,
       icon: map['icon'] as String,
+      macAddress: map['macAddress'] as String,
       connectedDeviceCount: map['connectedDeviceCount'] as int,
       model: map['model'] as String,
       serialNumber: map['serialNumber'] as String,
@@ -176,6 +182,7 @@ class TopologyModel extends Equatable {
       signalStrength,
       isRouter,
       icon,
+      macAddress,
       connectedDeviceCount,
       model,
       serialNumber,

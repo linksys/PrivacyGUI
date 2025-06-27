@@ -141,8 +141,6 @@ class RouterRepository {
     return CommandQueue().enqueue(command).then((
       record,
     ) {
-      logger.d(
-          '[sideEffectManager] check side effects: $record, ${record.runtimeType}');
       return sideEffectManager.handleSideEffect(record,
           overrides: sideEffectOverrides);
     }).then((record) {
