@@ -40,7 +40,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
             padding: EdgeInsets.zero,
             child: SizedBox(
                 width: double.infinity,
-                height: 150,
+                height: 250,
                 child: const LoadingTile()))
         : ResponsiveLayout(
             desktop: !hasLanPort
@@ -58,8 +58,8 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
     final hasLanPort = state.lanPortConnections.isNotEmpty;
     return Container(
       width: double.infinity,
-      constraints:
-          BoxConstraints(minHeight: !state.isHealthCheckSupported ? 240 : 420),
+      // constraints:
+      //     BoxConstraints(minHeight: !state.isHealthCheckSupported ? 240 : 420),
       child: AppCard(
           padding: EdgeInsets.zero,
           child: Column(
@@ -67,7 +67,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: Spacing.medium,
-                  vertical: Spacing.large3,
+                  vertical: Spacing.large2,
                 ),
                 child: Row(
                   // mainAxisSize: MainAxisSize.min,
@@ -98,7 +98,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                 ),
               ),
               // const AppGap.large2(),
-              _createSpeedTestTile(context, ref, state, false),
+              _createSpeedTestTile(context, ref, state, hasLanPort, true),
             ],
           )),
     );
@@ -272,19 +272,22 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
   }
 
   Widget _createSpeedTestTile(BuildContext context, WidgetRef ref,
-      DashboardHomeState state, bool hasLanPort) {
+      DashboardHomeState state, bool hasLanPort,
+      [bool mobile = false]) {
     return state.isHealthCheckSupported
-        ? Column(
-            children: [
-              Divider(),
-              SpeedTestWidget(
-                  showDetails: false,
-                  layout: !hasLanPort
-                      ? SpeedTestLayout.horizontal
-                      : SpeedTestLayout.vertical),
-              AppGap.large2(),
-            ],
-          )
+        ? hasLanPort
+            ? Column(
+                children: [
+                  Divider(),
+                  SpeedTestWidget(
+                      showDetails: false,
+                      layout: mobile
+                          ? SpeedTestLayout.horizontal
+                          : SpeedTestLayout.vertical),
+                  AppGap.large2(),
+                ],
+              )
+            : _speedCheckWidget(context, ref, state)
         : _externalSpeedTest(context, state);
   }
 
@@ -741,13 +744,10 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                         AppText.bodySmall(connection),
                       ],
                     ),
-                    SizedBox(
-                      width: 70,
-                      child: AppText.bodySmall(
-                        loc(context).connectedSpeed,
-                        textAlign: TextAlign.center,
-                      ),
-                    )
+                    AppText.bodySmall(
+                      loc(context).connectedSpeed,
+                      textAlign: TextAlign.center,
+                    ),
                   ],
                 ),
               if (isWan) AppText.labelMedium(loc(context).internet),
