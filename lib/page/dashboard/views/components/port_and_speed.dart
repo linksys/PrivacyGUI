@@ -59,7 +59,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
     return Container(
       width: double.infinity,
       constraints:
-          BoxConstraints(minHeight: !state.isHealthCheckSupported ? 240 : 400),
+          BoxConstraints(minHeight: !state.isHealthCheckSupported ? 240 : 420),
       child: AppCard(
           padding: EdgeInsets.zero,
           child: Column(
@@ -98,7 +98,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                 ),
               ),
               // const AppGap.large2(),
-              _createSpeedTestTile(context, ref, state),
+              _createSpeedTestTile(context, ref, state, false),
             ],
           )),
     );
@@ -155,7 +155,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
               SizedBox(
                   width: double.infinity,
                   // height: state.isHealthCheckSupported ? 304 : 154,
-                  child: _createSpeedTestTile(context, ref, state)),
+                  child: _createSpeedTestTile(context, ref, state, hasLanPort)),
             ],
           )),
     );
@@ -210,7 +210,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
               ),
               SizedBox(
                   height: 112,
-                  child: _createSpeedTestTile(context, ref, state)),
+                  child: _createSpeedTestTile(context, ref, state, hasLanPort)),
             ],
           )),
     );
@@ -265,19 +265,23 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
               ),
               SizedBox(
                   height: 136,
-                  child: _createSpeedTestTile(context, ref, state)),
+                  child: _createSpeedTestTile(context, ref, state, false)),
             ],
           )),
     );
   }
 
-  Widget _createSpeedTestTile(
-      BuildContext context, WidgetRef ref, DashboardHomeState state) {
+  Widget _createSpeedTestTile(BuildContext context, WidgetRef ref,
+      DashboardHomeState state, bool hasLanPort) {
     return state.isHealthCheckSupported
         ? Column(
-            children: const [
+            children: [
               Divider(),
-              SpeedTestWidget(showDetails: false),
+              SpeedTestWidget(
+                  showDetails: false,
+                  layout: !hasLanPort
+                      ? SpeedTestLayout.horizontal
+                      : SpeedTestLayout.vertical),
               AppGap.large2(),
             ],
           )

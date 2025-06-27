@@ -702,7 +702,7 @@ void main() async {
         await tester.pumpAndSettle();
       });
     }, screens: [
-      ...responsiveMobileScreens.map((e) => e.copyWith(height: 2480)).toList(),
+      ...responsiveMobileScreens.map((e) => e.copyWith(height: 2680)).toList(),
       ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1280)).toList()
     ]);
 
@@ -782,7 +782,7 @@ void main() async {
     testLocalizations('Dashboard Home View - Vertical Ports with speed check',
         (tester, locale) async {
       when(mockDashboardHomeNotifier.build()).thenReturn(
-          DashboardHomeState.fromMap(dashboardHomeCherry7TestState).copyWith(
+          DashboardHomeState.fromMap(dashboardHomePinnacleTestState).copyWith(
         isHealthCheckSupported: true,
         uploadResult: () => DashboardSpeedItem(unit: 'M', value: '505'),
         downloadResult: () => DashboardSpeedItem(unit: 'M', value: '509'),

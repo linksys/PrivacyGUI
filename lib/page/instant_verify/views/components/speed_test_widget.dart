@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -17,11 +15,18 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/container/animated_meter.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 
+enum SpeedTestLayout {
+  vertical,
+  horizontal,
+}
+
 class SpeedTestWidget extends ConsumerStatefulWidget {
   final bool showDetails;
+  final SpeedTestLayout layout;
   const SpeedTestWidget({
     super.key,
     this.showDetails = true,
+    this.layout = SpeedTestLayout.vertical,
   });
 
   @override
@@ -39,104 +44,34 @@ class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
     final result =
         state.status == 'IDLE' ? latestSpeedTest : state.result.firstOrNull;
 
-    final latency = result?.speedTestResult?.latency?.toStringAsFixed(0) ?? '-';
-
     final bandwidth = NetworkUtils.formatBytesWithUnit(
         state.status == 'COMPLETE'
             ? (result?.speedTestResult?.uploadBandwidth ?? 0) * 1024
             : (state.meterValue * 1024).toInt(),
         decimals: 1);
 
-    final defaultMarkers = <double>[0, 1, 5, 10, 20, 30, 50, 75, 100];
-
     return Column(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (state.status == 'IDLE') _startButton(),
-            if (state.status != 'IDLE')
-              Center(
-                child: AnimatedMeter(
-                  size: 3.col,
-                  value: double.tryParse(bandwidth.value) ?? 0,
-                  markers: defaultMarkers,
-                  centerBuilder: (context, value) {
-                    return Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        AppText.titleSmall(switch (state.step) {
-                          'latency' => '',
-                          'downloadBandwidth' => loc(context).download,
-                          'uploadBandwidth' => loc(context).upload,
-                          _ => '',
-                        }),
-                        AppText.displayLarge(
-                            state.step == 'latency' ? '—' : bandwidth.value),
-                        AppText.bodyMedium(bandwidth.unit),
-                      ],
-                    );
-                  },
-                  bottomBuilder: (context, value) {
-                    return const Center();
-                  },
-                ),
-              ),
-            if (widget.showDetails) const AppGap.large5(),
-            if (!widget.showDetails) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: Spacing.medium),
-                child: Wrap(
-                  direction: Axis.vertical,
-                  children: [
-                    AppText.bodySmall(loc(context).dateAndTime),
-                    AppText.labelMedium(result?.timestamp == null
-                        ? '--'
-                        : _getDateTimeText(result?.timestamp)),
-                  ],
-                ),
-              ),
-              AppGap.medium()
-            ],
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: Spacing.medium),
-              child: _resultCard(result?.speedTestResult),
-            ),
-            if (widget.showDetails) ...[
-              const Divider(
-                thickness: 1,
-                height: Spacing.large5,
-              ),
-              Wrap(
-                direction: Axis.vertical,
+        widget.layout == SpeedTestLayout.vertical
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  AppText.bodySmall(loc(context).dateAndTime),
-                  AppText.labelMedium(result?.timestamp == null
-                      ? '--'
-                      : _getDateTimeText(result?.timestamp)),
+                  meterView(state, result?.speedTestResult, bandwidth.value,
+                      bandwidth.unit),
+                  if (widget.showDetails) const AppGap.large5(),
+                  infoView(state),
+                ],
+              )
+            : Row(
+                children: [
+                  meterView(state, result?.speedTestResult, bandwidth.value,
+                      bandwidth.unit),
+                  if (widget.showDetails) const AppGap.large5(),
+                  Expanded(child: infoView(state)),
                 ],
               ),
-              const AppGap.large2(),
-              Wrap(
-                direction: Axis.vertical,
-                children: [
-                  AppText.bodySmall(loc(context).serverId),
-                  AppText.labelMedium('${result?.resultID ?? '--'}'),
-                ],
-              ),
-              const AppGap.large2(),
-              Wrap(
-                direction: Axis.vertical,
-                children: [
-                  AppText.bodySmall(loc(context).latency),
-                  AppText.labelMedium('$latency ms'),
-                ],
-              ),
-            ],
-          ],
-        ),
         if (supportedBy == 'Ookla') ...[
           Align(
             alignment: Alignment.bottomCenter,
@@ -147,6 +82,108 @@ class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
                 fit: BoxFit.fitWidth,
               ),
             ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget meterView(HealthCheckState state, SpeedTestResult? result,
+      String bandwidthValue, String bandwidthUnit) {
+    final defaultMarkers = <double>[0, 1, 5, 10, 20, 30, 50, 75, 100];
+
+    return state.status == 'IDLE'
+        ? _startButton()
+        : Center(
+            child: AnimatedMeter(
+              size: 3.col,
+              value: double.tryParse(bandwidthValue) ?? 0,
+              markers: defaultMarkers,
+              centerBuilder: (context, value) {
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AppText.titleSmall(switch (state.step) {
+                      'latency' => '',
+                      'downloadBandwidth' => loc(context).download,
+                      'uploadBandwidth' => loc(context).upload,
+                      _ => '',
+                    }),
+                    AppText.displayLarge(
+                        state.step == 'latency' ? '—' : bandwidthValue),
+                    AppText.bodyMedium(bandwidthUnit),
+                  ],
+                );
+              },
+              bottomBuilder: (context, value) {
+                return const Center();
+              },
+            ),
+          );
+  }
+
+  Widget infoView(HealthCheckState state) {
+    final latestSpeedTest = ref.watch(
+        dashboardManagerProvider.select((state) => state.latestSpeedTest));
+
+    final result =
+        state.status == 'IDLE' ? latestSpeedTest : state.result.firstOrNull;
+
+    final latency = result?.speedTestResult?.latency?.toStringAsFixed(0) ?? '-';
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (!widget.showDetails) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: Spacing.medium),
+            child: Wrap(
+              direction: Axis.vertical,
+              children: [
+                AppText.bodySmall(loc(context).dateAndTime),
+                AppText.labelMedium(result?.timestamp == null
+                    ? '--'
+                    : _getDateTimeText(result?.timestamp)),
+              ],
+            ),
+          ),
+          AppGap.medium()
+        ],
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: Spacing.medium),
+          child: _resultCard(result?.speedTestResult),
+        ),
+        if (widget.showDetails) ...[
+          const Divider(
+            thickness: 1,
+            height: Spacing.large5,
+          ),
+          Wrap(
+            direction: Axis.vertical,
+            children: [
+              AppText.bodySmall(loc(context).dateAndTime),
+              AppText.labelMedium(result?.timestamp == null
+                  ? '--'
+                  : _getDateTimeText(result?.timestamp)),
+            ],
+          ),
+          const AppGap.large2(),
+          Wrap(
+            direction: Axis.vertical,
+            children: [
+              AppText.bodySmall(loc(context).serverId),
+              AppText.labelMedium('${result?.resultID ?? '--'}'),
+            ],
+          ),
+          const AppGap.large2(),
+          Wrap(
+            direction: Axis.vertical,
+            children: [
+              AppText.bodySmall(loc(context).latency),
+              AppText.labelMedium('$latency ms'),
+            ],
           ),
         ],
       ],
