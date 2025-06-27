@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:math';
 
+import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
@@ -69,11 +71,23 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
                 final result = await getHealthCheckResults(module, 1, resultId);
                 // Set state
                 if (result is JNAPSuccess) {
-                  state = state.copyWith(step: 'success');
+                  final speedtestTempResult = state.result
+                      .firstWhereOrNull((e) => e.timestamp == state.timestamp)
+                      ?.speedTestResult;
+                  state = state.copyWith(
+                      step: 'success',
+                      status: 'COMPLETE',
+                      meterValue:
+                          speedtestTempResult?.uploadBandwidth?.toDouble() ??
+                              0.0);
                   ref.read(pollingProvider.notifier).forcePolling();
                 } else if (result is JNAPError) {
-                  state = state.copyWith(step: 'error');
+                  state = state.copyWith(step: 'error', status: 'COMPLETE');
                 }
+                // Reset after 5 seconds
+                Future.delayed(const Duration(seconds: 5), () {
+                  state = HealthCheckState.init();
+                });
               })
           .listen((result) {
         logger.d('[SpeedTest] Get Health Check Result - $result');
@@ -83,22 +97,64 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
         }
         final step = _getCurrentStep(result);
         if (step.isNotEmpty) {
+          final randomValue = _randomDouble(-3, 15) * 1024;
           final speedtestTempResult = SpeedTestResult.fromJson(
               (result as JNAPSuccess).output['speedTestResult']);
+          var meterValue = 0.0;
+          if (step == 'latency') {
+            // Enter to collect latency
+            meterValue = 0.0;
+          } else if (step == 'downloadBandwidth' && state.step == 'latency') {
+            // Enter to collect download bandwidth
+            meterValue = 0.0;
+          } else if (step == 'uploadBandwidth' &&
+              state.step == 'downloadBandwidth') {
+            // Enter to collect upload bandwidth, show download bandwidth and reset to 0 after 1 second
+            meterValue =
+                speedtestTempResult.downloadBandwidth?.toDouble() ?? 0.0;
+            Future.delayed(const Duration(milliseconds: 1000), () {
+              state = state.copyWith(meterValue: 0.0);
+            });
+          } else {
+            meterValue = state.meterValue + randomValue;
+          }
           state = state.copyWith(
-            result: [
-              HealthCheckResult(
-                resultID: speedtestTempResult.resultID,
-                timestamp: '',
-                healthCheckModulesRequested: const ['SpeedTest'],
-                speedTestResult: speedtestTempResult,
-              ),
-            ],
             step: step,
+            status: 'RUNNING',
+            meterValue: meterValue < 0 ? 0 : meterValue,
+            randomValue: randomValue,
           );
+          Future.delayed(const Duration(milliseconds: 400), () {
+            state = state.copyWith(
+              result: [
+                HealthCheckResult(
+                  resultID: speedtestTempResult.resultID,
+                  timestamp: '',
+                  healthCheckModulesRequested: const ['SpeedTest'],
+                  speedTestResult: speedtestTempResult,
+                ),
+              ],
+            );
+          });
         }
       });
     }
+  }
+
+  // void updateMeterValue(double meterValue) {
+  //   state = state.copyWith(
+  //     meterValue: meterValue,
+  //   );
+  // }
+
+  // void updateRandomValue(double randomValue) {
+  //   state = state.copyWith(
+  //     randomValue: randomValue,
+  //   );
+  // }
+
+  double _randomDouble(double min, double max) {
+    return (Random().nextDouble() * (max - min) + min);
   }
 
   Future<JNAPResult> getHealthCheckResults(

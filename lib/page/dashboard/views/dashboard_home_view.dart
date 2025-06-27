@@ -58,7 +58,6 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
         ref.watch(dashboardHomeProvider).isHorizontalLayout;
     final hasLanPort =
         ref.read(dashboardHomeProvider).lanPortConnections.isNotEmpty;
-    final isLoading = ref.watch(deviceManagerProvider).deviceList.isEmpty;
 
     return StyledAppPageView(
       scrollable: true,
@@ -68,27 +67,21 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
         top: Spacing.large3,
         bottom: Spacing.medium,
       ),
-      child: (context, constraints) => Shimmer(
-        gradient: shimmerGradient,
-        child: ShimmerContainer(
-          isLoading: false,
-          child: ResponsiveLayout(
-            desktop: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const DashboardHomeTitle(),
-                const AppGap.large1(),
-                !hasLanPort
-                    ? _desktopNoLanPortsLayout()
-                    : horizontalLayout
-                        ? _desktopHorizontalLayout()
-                        : _desktopVerticalLayout(),
-              ],
-            ),
-            mobile: _mobileLayout(),
-          ),
+      child: (context, constraints) => ResponsiveLayout(
+        desktop: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const DashboardHomeTitle(),
+            const AppGap.large1(),
+            !hasLanPort
+                ? _desktopNoLanPortsLayout()
+                : horizontalLayout
+                    ? _desktopHorizontalLayout()
+                    : _desktopVerticalLayout(),
+          ],
         ),
+        mobile: _mobileLayout(),
       ),
     );
   }
@@ -214,6 +207,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
 
   Widget _mobileLayout() {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
