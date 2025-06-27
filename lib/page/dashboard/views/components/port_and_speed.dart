@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -272,9 +273,19 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
 
   Widget _createSpeedTestTile(
       BuildContext context, WidgetRef ref, DashboardHomeState state) {
+    final isRemote = BuildConfig.isRemote();
     return state.isHealthCheckSupported
         ? _speedCheckWidget(context, ref, state)
-        : _externalSpeedTest(context, state);
+        : Tooltip(
+            message: 'This feature is unavailable in remote mode',
+            child: Opacity(
+              opacity: isRemote ? 0.5 : 1,
+              child: AbsorbPointer(
+                absorbing: isRemote,
+                child: _externalSpeedTest(context, state),
+              ),
+            ),
+          );
   }
 
   Widget _speedCheckWidget(
