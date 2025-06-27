@@ -243,7 +243,10 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
                 direction: Axis.vertical,
                 children: [
                   AppText.bodySmall(loc(context).deviceName),
-                  AppText.labelMedium(master.getDeviceLocation()),
+                  AppText.labelMedium(
+                    master.getDeviceLocation(),
+                    selectable: true,
+                  ),
                 ],
               ),
             ),
@@ -252,7 +255,10 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
                 direction: Axis.vertical,
                 children: [
                   AppText.bodySmall(loc(context).deviceModel),
-                  AppText.labelMedium(master.modelNumber ?? '--'),
+                  AppText.labelMedium(
+                    master.modelNumber ?? '--',
+                    selectable: true,
+                  ),
                 ],
               ),
             ),
@@ -261,7 +267,10 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
                 direction: Axis.vertical,
                 children: [
                   AppText.bodySmall(loc(context).sku),
-                  AppText.labelMedium(dashboardState.skuModelNumber ?? '--'),
+                  AppText.labelMedium(
+                    dashboardState.skuModelNumber ?? '--',
+                    selectable: true,
+                  ),
                 ],
               ),
             ),
@@ -270,7 +279,10 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
                 direction: Axis.vertical,
                 children: [
                   AppText.bodySmall(loc(context).serialNumber),
-                  AppText.labelMedium(master.unit.serialNumber ?? '--'),
+                  AppText.labelMedium(
+                    master.unit.serialNumber ?? '--',
+                    selectable: true,
+                  ),
                 ],
               ),
             ),
@@ -279,7 +291,10 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
                 direction: Axis.vertical,
                 children: [
                   AppText.bodySmall(loc(context).mac),
-                  AppText.labelMedium(master.getMacAddress()),
+                  AppText.labelMedium(
+                    master.getMacAddress(),
+                    selectable: true,
+                  ),
                 ],
               ),
             ),
@@ -295,7 +310,10 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      AppText.labelMedium(master.unit.firmwareVersion ?? '--'),
+                      AppText.labelMedium(
+                        master.unit.firmwareVersion ?? '--',
+                        selectable: true,
+                      ),
                     ],
                   )),
                   SharedWidgets.nodeFirmwareStatusWidget(

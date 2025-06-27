@@ -383,6 +383,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       }
 
       ref.read(deviceManagerProvider.notifier).init();
+      ref.read(pollingProvider.notifier).init();
       return AuthState.empty();
     });
     ref.read(pollingProvider.notifier).stopPolling();

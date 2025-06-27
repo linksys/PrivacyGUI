@@ -67,6 +67,11 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     return const CoreTransactionData(lastUpdate: 0, isReady: false, data: {});
   }
 
+  init() {
+    state = AsyncValue.data(
+        const CoreTransactionData(lastUpdate: 0, isReady: false, data: {}));
+  }
+
   fetchFirstLaunchedCacheData() {
     final cache = ref.read(linksysCacheManagerProvider).data;
     final commands = _coreTransactions;
@@ -80,9 +85,11 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
         .map((command) => MapEntry(command.key,
             JNAPSuccess.fromJson(cache[command.key.actionValue]['data'])))
         .toList();
-
+    final previousSnapshot = state.value;
     state = AsyncValue.data(CoreTransactionData(
-        lastUpdate: 0, isReady: false, data: Map.fromEntries(cacheDataList)));
+        lastUpdate: 0,
+        isReady: previousSnapshot?.isReady ?? false,
+        data: Map.fromEntries(cacheDataList)));
   }
 
   Future _polling(RouterRepository repository, {bool force = false}) async {
@@ -161,8 +168,6 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
       return;
     }
     logger.d('prepare start polling data');
-    state = const AsyncValue.data(
-        CoreTransactionData(lastUpdate: 0, isReady: false, data: {}));
     final routerRepository = ref.read(routerRepositoryProvider);
     checkSmartMode().then((mode) {
       _coreTransactions = _buildCoreTransaction(mode: mode);
