@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
-import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/health_check/_health_check.dart';
 import 'package:privacygui_widgets/theme/custom_theme.dart';
 
@@ -79,9 +78,6 @@ Future<void> main() async {
       child: const SpeedTestView(),
     );
     await tester.pumpWidget(widget);
-
-    final goBtnFinder = find.byKey(const Key('goBtn')).first;
-    await tester.tap(goBtnFinder);
     await tester.pump(const Duration(seconds: 2));
   });
 
@@ -102,8 +98,6 @@ Future<void> main() async {
     );
     await tester.pumpWidget(widget);
 
-    final goBtnFinder = find.byKey(const Key('goBtn')).first;
-    await tester.tap(goBtnFinder);
     await tester.pump(const Duration(seconds: 2));
   });
 
@@ -124,8 +118,6 @@ Future<void> main() async {
     );
     await tester.pumpWidget(widget);
 
-    final goBtnFinder = find.byKey(const Key('goBtn')).first;
-    await tester.tap(goBtnFinder);
     await tester.pump(const Duration(seconds: 2));
   });
 
@@ -144,8 +136,6 @@ Future<void> main() async {
     );
     await tester.pumpWidget(widget);
 
-    final goBtnFinder = find.byKey(const Key('goBtn')).first;
-    await tester.tap(goBtnFinder);
     await tester.pump(const Duration(seconds: 2));
   });
 
@@ -162,8 +152,6 @@ Future<void> main() async {
       );
       await tester.pumpWidget(widget);
 
-      final goBtnFinder = find.byKey(const Key('goBtn')).first;
-      await tester.tap(goBtnFinder);
       await tester.pump(const Duration(seconds: 2));
     });
 
@@ -180,8 +168,6 @@ Future<void> main() async {
       );
       await tester.pumpWidget(widget);
 
-      final goBtnFinder = find.byKey(const Key('goBtn')).first;
-      await tester.tap(goBtnFinder);
       await tester.pump(const Duration(seconds: 2));
     });
 
@@ -197,8 +183,6 @@ Future<void> main() async {
       );
       await tester.pumpWidget(widget);
 
-      final goBtnFinder = find.byKey(const Key('goBtn')).first;
-      await tester.tap(goBtnFinder);
       await tester.pump(const Duration(seconds: 2));
     });
 
@@ -214,8 +198,6 @@ Future<void> main() async {
       );
       await tester.pumpWidget(widget);
 
-      final goBtnFinder = find.byKey(const Key('goBtn')).first;
-      await tester.tap(goBtnFinder);
       await tester.pump(const Duration(seconds: 2));
     });
   });
@@ -231,8 +213,6 @@ Future<void> main() async {
     );
     await tester.pumpWidget(widget);
 
-    final goBtnFinder = find.byKey(const Key('goBtn')).first;
-    await tester.tap(goBtnFinder);
     await tester.pump(const Duration(seconds: 2));
   });
 }
