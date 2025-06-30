@@ -143,6 +143,26 @@ class Utils {
     final fileUIVersion = await getVersion();
     return uiVersion.compareToVersion(fileUIVersion) < 0;
   }
+
+  static Color? hexToColor(String hexColor) {
+    try {
+      // Remove the '#' if needed
+      hexColor = hexColor.replaceAll('#', '');
+      if (hexColor.length == 8) {
+        // Opacity is provided
+        return Color(int.parse(hexColor, radix: 16));
+      } else if (hexColor.length == 6) {
+        // Full opaque
+        return Color(int.parse('FF$hexColor', radix: 16));
+      } else {
+        // Invalid color code length
+        return null;
+      }
+    } catch (e) {
+      // Invalid color code string value
+      return null;
+    }
+  }
 }
 
 extension DateFormatUtils on Utils {

@@ -2,10 +2,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dart';
 import 'package:privacy_gui/page/components/styled/menus/widgets/top_navigation_menu.dart';
+import 'package:privacygui_widgets/theme/custom_theme.dart';
 import 'package:privacygui_widgets/theme/material/color_tonal_palettes.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
@@ -17,7 +19,6 @@ import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/debug_mixin.dart';
 import 'package:privacy_gui/utils.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 
 class TopBar extends ConsumerStatefulWidget {
   final void Function(int)? onMenuClick;
@@ -56,9 +57,11 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              AppText.titleLarge(loc(context).appTitle,
-                  color: Color(neutralTonal.get(100))),
-                MenuHolder(type: MenuDisplay.top),
+              Image(
+                image: CustomTheme.of(context).images.dashboardLogo,
+                fit: BoxFit.fitHeight,
+              ),
+              MenuHolder(type: MenuDisplay.top),
               Wrap(
                 children: [
                   if (loginType == LoginType.remote) _networkSelect(),

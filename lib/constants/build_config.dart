@@ -50,6 +50,7 @@ class BuildConfig {
   static const int refreshTimeInterval =
       int.fromEnvironment('refresh_time', defaultValue: 60);
   static const copyRightYear = int.fromEnvironment('year', defaultValue: 2025);
+  static const customThemeColor = String.fromEnvironment('theme_color', defaultValue: '');
 
   @pragma('vm:entry-point')
   static load() async {

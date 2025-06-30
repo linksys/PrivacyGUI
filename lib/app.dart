@@ -66,33 +66,55 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     router.routerDelegate.removeListener(_onReceiveRouteChanged);
     router.routerDelegate.addListener(_onReceiveRouteChanged);
 
-    final appLightColorScheme = appSettings.themeColor == null
-        ? null
-        : AppColorScheme.fromSeed(seedColor: appSettings.themeColor!).light;
-    final appLightColorSchemeExt = appSettings.themeColor == null
-        ? lightColorSchemeExt
-        : AppColorScheme.fromSeed(seedColor: appSettings.themeColor!).lightExt;
+    final customThemeColor = Utils.hexToColor(BuildConfig.customThemeColor);
+    final selectedThemeColor =
+        (appSettings.themeColor == Color(primaryTonal.get(40)))
+            ? null
+            : appSettings.themeColor;
+    ColorScheme? appLightColorScheme;
+    ColorSchemeExt? appLightColorSchemeExt;
+    ColorScheme? appDarkColorScheme;
+    ColorSchemeExt? appDarkColorSchemeExt;
+    if (selectedThemeColor != null) {
+      appLightColorScheme =
+          AppColorScheme.fromSeed(seedColor: selectedThemeColor).light;
+      appLightColorSchemeExt =
+          AppColorScheme.fromSeed(seedColor: selectedThemeColor).lightExt;
+      appDarkColorScheme =
+          AppColorScheme.fromSeed(seedColor: selectedThemeColor).dark;
+      appDarkColorSchemeExt =
+          AppColorScheme.fromSeed(seedColor: selectedThemeColor).darkExt;
+    } else if (customThemeColor != null) {
+      appLightColorScheme =
+          AppColorScheme.fromSeed(seedColor: customThemeColor).light;
+      appLightColorSchemeExt =
+          AppColorScheme.fromSeed(seedColor: customThemeColor).lightExt;
+      appDarkColorScheme =
+          AppColorScheme.fromSeed(seedColor: customThemeColor).dark;
+      appDarkColorSchemeExt =
+          AppColorScheme.fromSeed(seedColor: customThemeColor).darkExt;
+    }
 
-    final appDarkColorScheme = appSettings.themeColor == null
-        ? null
-        : AppColorScheme.fromSeed(seedColor: appSettings.themeColor!).dark;
-    final appDarkColorSchemeExt = appSettings.themeColor == null
-        ? darkColorSchemeExt
-        : AppColorScheme.fromSeed(seedColor: appSettings.themeColor!).darkExt;
     return MaterialApp.router(
       onGenerateTitle: (context) => loc(context).appTitle,
       theme: linksysLightThemeData.copyWith(
-          colorScheme: appLightColorScheme,
-          extensions: [appLightColorSchemeExt, textSchemeExt],
-          splashColor: appLightColorScheme?.primary,
-          focusColor: Colors.transparent,
-          pageTransitionsTheme: pageTransitionsTheme),
+        colorScheme: appLightColorScheme,
+        extensions: appLightColorSchemeExt != null
+            ? [appLightColorSchemeExt, textSchemeExt]
+            : null,
+        splashColor: appLightColorScheme?.primary,
+        focusColor: Colors.transparent,
+        pageTransitionsTheme: pageTransitionsTheme,
+      ),
       darkTheme: linksysDarkThemeData.copyWith(
-          colorScheme: appDarkColorScheme,
-          extensions: [appDarkColorSchemeExt, textSchemeExt],
-          splashColor: appDarkColorScheme?.primary,
-          focusColor: Colors.transparent,
-          pageTransitionsTheme: pageTransitionsTheme),
+        colorScheme: appDarkColorScheme,
+        extensions: appDarkColorSchemeExt != null
+            ? [appDarkColorSchemeExt, textSchemeExt]
+            : null,
+        splashColor: appDarkColorScheme?.primary,
+        focusColor: Colors.transparent,
+        pageTransitionsTheme: pageTransitionsTheme,
+      ),
       themeMode: appSettings.themeMode,
       locale: appSettings.locale ?? systemLocale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,

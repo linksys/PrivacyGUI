@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
+import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:privacygui_widgets/widgets/gap/gap.dart';
 import 'package:privacygui_widgets/widgets/text/app_text.dart';
 
@@ -21,9 +21,9 @@ class _ThemeColorTileState extends ConsumerState<ThemeColorTile> {
     return InkWell(
       onTap: () {
         final appSettings = ref.read(appSettingsProvider);
-        ref.read(appSettingsProvider.notifier).update(appSettings.copyWith(
-            themeColor: () =>
-                (color == Color(primaryTonal.get(40)) ? null : color)));
+        ref
+            .read(appSettingsProvider.notifier)
+            .update(appSettings.copyWith(themeColor: () => color));
       },
       child: Container(
         decoration: BoxDecoration(
@@ -40,8 +40,10 @@ class _ThemeColorTileState extends ConsumerState<ThemeColorTile> {
 
   @override
   Widget build(BuildContext context) {
-    final themeColor =
+    final defaultThemeColor = Color(primaryTonal.get(40));
+    final selectedThemeColor =
         ref.watch(appSettingsProvider.select((value) => value.themeColor));
+    final customThemeColor = Utils.hexToColor(BuildConfig.customThemeColor);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -50,12 +52,18 @@ class _ThemeColorTileState extends ConsumerState<ThemeColorTile> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            _colorRect(Color(primaryTonal.get(40)),
-                themeColor == Color(primaryTonal.get(40))),
-            _colorRect(Colors.amber, themeColor == Colors.amber),
-            _colorRect(Colors.deepPurple, themeColor == Colors.deepPurple),
-            _colorRect(Colors.tealAccent, themeColor == Colors.tealAccent),
-            _colorRect(Colors.pink, themeColor == Colors.pink),
+            if (customThemeColor != null)
+              _colorRect(
+                  customThemeColor, selectedThemeColor == customThemeColor)
+            else
+              _colorRect(
+                  defaultThemeColor, selectedThemeColor == defaultThemeColor),
+            _colorRect(Colors.amber, selectedThemeColor == Colors.amber),
+            _colorRect(
+                Colors.deepPurple, selectedThemeColor == Colors.deepPurple),
+            _colorRect(
+                Colors.tealAccent, selectedThemeColor == Colors.tealAccent),
+            _colorRect(Colors.pink, selectedThemeColor == Colors.pink),
           ],
         ),
       ],
