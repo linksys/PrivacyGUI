@@ -79,35 +79,6 @@ class _PnpNoInternetConnectionState
               loc(context).noInternetConnectionDescription,
             ),
             const AppGap.large3(),
-            if (state.hasResetModem)
-              Padding(
-                padding: const EdgeInsets.only(bottom: Spacing.small2),
-                child: AppCard(
-                  onTap: () {
-                    goRoute(RouteNamed.callSupportMainRegion);
-                  },
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            AppText.labelLarge(
-                              loc(context).needHelp,
-                            ),
-                            const AppGap.small3(),
-                            AppText.bodyMedium(
-                              loc(context)
-                                  .pnpNoInternetConnectionContactSupport,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Icon(LinksysIcons.chevronRight),
-                    ],
-                  ),
-                ),
-              ),
             AppCard(
               onTap: () {
                 goRoute(RouteNamed.pnpUnplugModem);
