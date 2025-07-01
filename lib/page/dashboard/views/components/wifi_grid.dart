@@ -240,6 +240,7 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
       bubbleDimensions: EdgeInsets.zero,
       showBarrier: false,
       controller: _toolTipController,
+      showOnTap: false,
       content: Container(
         color: Colors.white,
         height: 200,
@@ -257,6 +258,7 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
           if (!widget.item.isEnabled) {
             return;
           }
+
           await _completer?.future;
           final widgetPosition = _getWidgetPosition();
           final rect = Rect.fromCenter(
