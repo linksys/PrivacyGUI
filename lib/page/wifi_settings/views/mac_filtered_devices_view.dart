@@ -127,6 +127,7 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
     final results = await context
         .pushNamed<List<DeviceListItem>?>(RouteNamed.devicePicker, extra: {
       'type': 'mac',
+      'connection': 'wireless',
       'selected': ref.read(instantPrivacyProvider).settings.denyMacAddresses
     });
     final temp = ref.read(instantPrivacyProvider).settings.denyMacAddresses;
@@ -206,6 +207,7 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
   _showManuallyAddModal() async {
     final controller = TextEditingController();
     bool isValid = false;
+    bool isDuplicate = false;
     final result = await showSubmitAppDialog<String?>(
       context,
       title: loc(context).macAddress,
@@ -216,10 +218,15 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
             semanticLabel: 'mac address',
             border: const OutlineInputBorder(),
             controller: controller,
+            errorText:
+                isValid && !isDuplicate ? null : loc(context).invalidMACAddress,
             onChanged: (text) {
               setState(() {
                 isValid = InputValidator([MACAddressRule()])
                     .validate(controller.text);
+                isDuplicate = ref
+                    .read(macFilteringDeviceListProvider)
+                    .any((device) => device.macAddress == controller.text);
               });
             },
           )
@@ -228,7 +235,7 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
       event: () async {
         return controller.text.toUpperCase();
       },
-      checkPositiveEnabled: () => isValid,
+      checkPositiveEnabled: () => isValid && !isDuplicate,
     );
     if (result != null) {
       ref.read(instantPrivacyProvider.notifier).setSelection([result], true);
