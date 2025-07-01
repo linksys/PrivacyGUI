@@ -6,7 +6,7 @@ import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provi
 final macFilteringDeviceListProvider = Provider((ref) {
   final deviceListState = ref.watch(deviceListProvider);
   final macFilteringState = ref.watch(instantPrivacyProvider);
-  final deviceList = deviceListState.devices;
+  final deviceList = deviceListState.devices.where((device) => !device.isWired);
   final macAddresses = macFilteringState.settings.denyMacAddresses;
   return macAddresses
       .map((e) =>
