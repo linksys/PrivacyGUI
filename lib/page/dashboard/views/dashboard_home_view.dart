@@ -342,16 +342,15 @@ class _FirmwareUpdateCountdownDialogState
 
   @override
   Widget build(BuildContext context) {
-    final l10n = loc(context);
     return AlertDialog(
-      title: AppText.titleLarge(l10n.firmwareUpdated),
+      title: AppText.titleLarge(loc(context).firmwareUpdated),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           const AppSpinner(),
           AppGap.medium(),
           AppText.labelLarge(
-            l10n.firmwareUpdateCountdownMessage(_seconds),
+            loc(context).firmwareUpdateCountdownMessage(_seconds),
             textAlign: TextAlign.center,
           ),
         ],
