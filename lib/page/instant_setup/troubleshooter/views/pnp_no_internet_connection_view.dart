@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/constants/url_links.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -11,6 +12,8 @@ import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_troubleshooter_provider.dart';
+import 'package:privacy_gui/page/support/faq_data.dart';
+import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
@@ -79,6 +82,36 @@ class _PnpNoInternetConnectionState
               loc(context).noInternetConnectionDescription,
             ),
             const AppGap.large3(),
+            Padding(
+              padding: const EdgeInsets.only(bottom: Spacing.small2),
+              child: AppCard(
+                onTap: () {
+                  gotoOfficialWebUrl(
+                    FaqItem.faqVisitLinksysSupport.url,
+                    locale: ref.read(appSettingsProvider).locale,
+                  );
+                },
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          AppText.labelLarge(
+                            loc(context).needHelp,
+                          ),
+                          const AppGap.small3(),
+                          AppText.bodyMedium(
+                            loc(context).pnpNoInternetConnectionContactSupport,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(LinksysIcons.chevronRight),
+                  ],
+                ),
+              ),
+            ),
             AppCard(
               onTap: () {
                 goRoute(RouteNamed.pnpUnplugModem);
