@@ -570,7 +570,7 @@ String getWifiChannelTitle(
     case 192:
       return '192 - 5.960 GHZ';
     case 193:
-      return '193 - 5.915 GHZ';
+      return '193 - 6.915 GHZ';
     case 195:
       return '195 - 6.925 GHZ';
     case 196:
