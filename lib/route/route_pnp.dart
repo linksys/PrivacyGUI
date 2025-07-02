@@ -39,28 +39,6 @@ final pnpTroubleshootingRoute = LinksysRoute(
   ),
   routes: [
     LinksysRoute(
-      name: RouteNamed.callSupportMainRegion,
-      path: RoutePath.callSupportMainRegion,
-      config: LinksysRouteConfig(
-        column: ColumnGrid(column: 12),
-        noNaviRail: true,
-      ),
-      builder: (context, state) => const CallSupportMainRegionView(),
-      routes: [
-        LinksysRoute(
-          name: RouteNamed.callSupportMoreRegion,
-          path: RoutePath.callSupportMoreRegion,
-          config: LinksysRouteConfig(
-            column: ColumnGrid(column: 12),
-            noNaviRail: true,
-          ),
-          builder: (context, state) => CallSupportMoreRegionView(
-            args: state.extra as Map<String, dynamic>? ?? {},
-          ),
-        )
-      ],
-    ),
-    LinksysRoute(
       name: RouteNamed.pnpUnplugModem,
       path: RoutePath.pnpUnplugModem,
       config: LinksysRouteConfig(
