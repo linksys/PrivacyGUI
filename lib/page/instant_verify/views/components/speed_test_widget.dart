@@ -14,6 +14,7 @@ import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/container/animated_meter.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
 
 enum SpeedTestLayout {
   vertical,
@@ -34,6 +35,7 @@ class SpeedTestWidget extends ConsumerStatefulWidget {
 }
 
 class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
+  bool _loading = false;
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(healthCheckProvider);
@@ -92,34 +94,49 @@ class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
       String bandwidthValue, String bandwidthUnit) {
     final defaultMarkers = <double>[0, 1, 5, 10, 20, 30, 50, 75, 100];
 
-    return state.status == 'IDLE'
-        ? _startButton()
-        : Center(
-            child: AnimatedMeter(
-              size: 3.col,
-              value: double.tryParse(bandwidthValue) ?? 0,
-              markers: defaultMarkers,
-              centerBuilder: (context, value) {
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    AppText.titleSmall(switch (state.step) {
-                      'latency' => '',
-                      'downloadBandwidth' => loc(context).download,
-                      'uploadBandwidth' => loc(context).upload,
-                      _ => '',
-                    }),
-                    AppText.displayLarge(
-                        state.step == 'latency' ? '—' : bandwidthValue),
-                    AppText.bodyMedium(bandwidthUnit),
-                  ],
-                );
-              },
-              bottomBuilder: (context, value) {
-                return const Center();
-              },
+    return _loading
+        ? const Center(
+            child: SizedBox(
+              height: 220,
+              width: 220,
+              child: AppSpinner(),
             ),
-          );
+          )
+        : state.status == 'IDLE'
+            ? _startButton()
+            : Center(
+                child: AnimatedMeter(
+                  size: 3.col,
+                  value: double.tryParse(bandwidthValue) ?? 0,
+                  markers: defaultMarkers,
+                  centerBuilder: (context, value) {
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AppText.titleSmall(switch (state.step) {
+                          'latency' => '',
+                          'downloadBandwidth' => loc(context).download,
+                          'uploadBandwidth' => loc(context).upload,
+                          _ => '',
+                        }),
+                        AppText.displayLarge(
+                            state.step == 'latency' ? '—' : bandwidthValue),
+                        AppText.bodyMedium(bandwidthUnit),
+                      ],
+                    );
+                  },
+                  bottomBuilder: (context, value) {
+                    return state.status == 'COMPLETE'
+                        ? AppTextButton(
+                            loc(context).testAgain,
+                            onTap: () {
+                              run();
+                            },
+                          )
+                        : const Center();
+                  },
+                ),
+              );
   }
 
   Widget infoView(HealthCheckState state) {
@@ -190,6 +207,18 @@ class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
     );
   }
 
+  void run() {
+    setState(() {
+      _loading = true;
+    });
+    ref.read(healthCheckProvider.notifier).runHealthCheck(Module.speedtest);
+    Future.delayed(const Duration(seconds: 5), () {
+      setState(() {
+        _loading = false;
+      });
+    });
+  }
+
   String _getDateTimeText(String? timestamp) {
     final speedTestTimeStamp = DateFormat("yyyy-MM-ddThh:mm:ssZ")
         .tryParse(timestamp ?? '', true)
@@ -223,9 +252,7 @@ class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
                     .read(dashboardManagerProvider.notifier)
                     .isHealthCheckModuleSupported('SpeedTest');
                 if (isSpeedCheckSupported) {
-                  ref
-                      .read(healthCheckProvider.notifier)
-                      .runHealthCheck(Module.speedtest);
+                  run();
                 } else {
                   context.pushNamed(RouteNamed.speedTestExternal);
                 }

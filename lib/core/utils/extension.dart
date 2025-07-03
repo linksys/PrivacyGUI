@@ -71,7 +71,6 @@ extension StringExt on String {
     final current = currentSplit.map((e) => e.padLeft(8, '0')).join();
     List<String> comparedSplit = comparedVersion.split('.');
     final compared = comparedSplit.map((e) => e.padLeft(8, '0')).join();
-    logger.d('XXXXX:: current: $current, compared: $compared');
     return current.compareTo(compared);
   }
 }

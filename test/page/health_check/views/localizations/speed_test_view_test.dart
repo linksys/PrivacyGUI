@@ -255,7 +255,7 @@ class HealthCheckSuccessOkayProvider extends MockHealthCheckSuccessProvider {
 
 class HealthCheckErrorProvider extends MockHealthCheckSuccessProvider {
   @override
-  HealthCheckState build() => HealthCheckState.init();
+  HealthCheckState build() => HealthCheckState.fromJson(healthCheckStateError);
 
   @override
   Future runHealthCheck(Module module) async {

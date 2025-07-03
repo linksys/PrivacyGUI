@@ -84,10 +84,7 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
                 } else if (result is JNAPError) {
                   state = state.copyWith(step: 'error', status: 'COMPLETE');
                 }
-                // Reset after 5 seconds
-                Future.delayed(const Duration(seconds: 5), () {
-                  state = HealthCheckState.init();
-                });
+                
               })
           .listen((result) {
         logger.d('[SpeedTest] Get Health Check Result - $result');
