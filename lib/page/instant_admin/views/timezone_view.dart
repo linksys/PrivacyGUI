@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/models/timezone.dart';
-import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
+import 'package:privacy_gui/page/components/mixin/preserved_state_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/instant_admin/providers/timezone_provider.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacy_gui/page/instant_admin/providers/timezone_state.dart';
 import 'package:privacy_gui/util/timezone.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -29,16 +29,28 @@ class TimezoneView extends ArgumentsConsumerStatefulView {
 }
 
 class _TimezoneContentViewState extends ConsumerState<TimezoneView>
-    with PageSnackbarMixin {
+    with PageSnackbarMixin, PreservedStateMixin<TimezoneState, TimezoneView> {
   late final TimezoneNotifier _notifier;
-  late final String previousTimezoneId;
 
   @override
   void initState() {
     super.initState();
 
     _notifier = ref.read(timezoneProvider.notifier);
-    previousTimezoneId = ref.read(timezoneProvider).timezoneId;
+    doSomethingWithSpinner(
+      context,
+      _notifier.fetch().then((value) {
+        preservedState = ref.read(timezoneProvider);
+      }).onError((error, stackTrace) {
+        showErrorMessageSnackBar(error);
+      }),
+    );
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _notifier.fetch();
   }
 
   @override
@@ -47,7 +59,7 @@ class _TimezoneContentViewState extends ConsumerState<TimezoneView>
     return StyledAppPageView(
       title: loc(context).timezone,
       scrollable: true,
-      onBackTap: _isEdited(state.timezoneId)
+      onBackTap: isStateChanged(state)
           ? () async {
               final goBack = await showUnsavedAlert(context);
               if (goBack == true) {
@@ -57,7 +69,7 @@ class _TimezoneContentViewState extends ConsumerState<TimezoneView>
             }
           : null,
       bottomBar: PageBottomBar(
-          isPositiveEnabled: _isEdited(state.timezoneId),
+          isPositiveEnabled: isStateChanged(state),
           onPositiveTap: () {
             doSomethingWithSpinner(
               context,
@@ -142,10 +154,6 @@ class _TimezoneContentViewState extends ConsumerState<TimezoneView>
     );
   }
 
-  bool _isEdited(String timezoneId) {
-    return timezoneId != previousTimezoneId;
-  }
-
   Future<bool?> showUnsavedAlert(BuildContext context,
       {String? title, String? message}) {
     return showMessageAppDialog<bool>(
@@ -172,8 +180,8 @@ class _TimezoneContentViewState extends ConsumerState<TimezoneView>
   }
 
   void _discardChanges(List<SupportedTimezone> supportedTimezones) {
-    final index = supportedTimezones
-        .indexWhere((timezone) => timezone.timeZoneID == previousTimezoneId);
+    final index = supportedTimezones.indexWhere(
+        (timezone) => timezone.timeZoneID == preservedState?.timezoneId);
     _notifier.setSelectedTimezone(index);
   }
 }
