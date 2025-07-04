@@ -380,6 +380,12 @@ Future<T?> showRedirectNewIpAlert<T>(
 
 Future<bool?> showFactoryResetModal(
     BuildContext context, bool isParent, isLast) {
+  final type = isParent
+      ? 'Master'
+      : isLast
+          ? 'Last'
+          : 'Child';
+
   return showMessageAppDialog<bool>(context,
       icon: Icon(
         LinksysIcons.resetWrench,
@@ -387,9 +393,11 @@ Future<bool?> showFactoryResetModal(
         size: 42,
       ),
       message: loc(context).factoryResetDesc,
-      title: isParent
+      title: type == 'Master'
           ? loc(context).factoryResetParentTitle
-          : loc(context).factoryResetTitle,
+          : type == 'Child'
+              ? loc(context).factoryResetChildTitle
+              : loc(context).factoryResetTitle,
       actions: [
         AppTextButton(
           loc(context).cancel,
@@ -411,17 +419,28 @@ Future<bool?> showFactoryResetModal(
 
 Future<bool?> showRebootModal(
     BuildContext context, bool isParent, bool isLast) {
+  final type = isParent
+      ? 'Master'
+      : isLast
+          ? 'Last'
+          : 'Child';
+
   return showMessageAppDialog<bool>(context,
       icon: Icon(
         LinksysIcons.restartAlt,
         color: Theme.of(context).colorScheme.error,
         size: 42,
       ),
-      message: !isParent && isLast
-          ? loc(context).menuRestartNetworkChildMessage
-          : loc(context).menuRestartNetworkMessage,
-      title:
-          isParent ? loc(context).rebootParentTitle : loc(context).rebootUnit,
+      message: type == 'Master'
+          ? loc(context).menuRestartNetworkMessage
+          : type == 'Last'
+              ? loc(context).menuRestartNetworkLastMessage
+              : loc(context).menuRestartNetworkChildMessage,
+      title: type == 'Master'
+          ? loc(context).rebootParentTitle
+          : type == 'Last'
+              ? loc(context).rebootUnit
+              : loc(context).rebootChildTitle,
       actions: [
         AppTextButton(
           loc(context).cancel,
