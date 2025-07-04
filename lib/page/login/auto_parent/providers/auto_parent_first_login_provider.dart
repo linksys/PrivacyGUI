@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
@@ -5,6 +7,7 @@ import 'package:privacy_gui/core/jnap/models/firmware_update_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/core/retry_strategy/retry.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/login/auto_parent/providers/auto_parent_first_login_state.dart';
 
@@ -82,18 +85,28 @@ class AutoParentFirstLoginNotifier
     );
   }
 
-  // Check internet connection via JNAP
+  // Check internet connection via JNAP with 10 attempts retries
   Future<bool> checkInternetConnection() async {
     final repo = ref.read(routerRepositoryProvider);
-    final result = await repo.send(
-      JNAPAction.getInternetConnectionStatus,
-      fetchRemote: true,
-      auth: true,
+    // make up to 10 attempts to check internet connection
+    final retryStrategy = ExponentialBackoffRetryStrategy(
+      maxRetries: 10,
+      initialDelay: const Duration(seconds: 3),
+      maxDelay: const Duration(seconds: 30),
     );
-    logger.i('[FirstTime]: Internet connection status: ${result.output}');
-    final connectionStatus = result.output['connectionStatus'];
-    final isConnected = connectionStatus == 'InternetConnected';
-    return isConnected;
+    return retryStrategy.execute<bool>(() async {
+      final result = await repo.send(
+        JNAPAction.getInternetConnectionStatus,
+        fetchRemote: true,
+        auth: true,
+      );
+      logger.i('[FirstTime]: Internet connection status: ${result.output}');
+      final connectionStatus = result.output['connectionStatus'];
+      return connectionStatus == 'InternetConnected';
+    }, shouldRetry: (result) => !result).onError((error, stackTrace) {
+      logger.e('[FirstTime]: Error checking internet connection: $error');
+      return false;
+    });
   }
 
   Future<void> finishFirstTimeLogin() async {
