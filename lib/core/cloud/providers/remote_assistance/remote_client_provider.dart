@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/cloud/linksys_device_cloud_service.dart';
 import 'package:privacy_gui/core/cloud/model/guidan_remote_assistance.dart';
 import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client_state.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 
 final remoteClientProvider =
@@ -15,7 +16,15 @@ final remoteClientProvider =
 class RemoteClientNotifier extends Notifier<RemoteClientState> {
   StreamSubscription<GRASessionInfo?>? _sessionInfoStreamSubscription;
   @override
-  RemoteClientState build() => RemoteClientState();
+  RemoteClientState build() {
+    ref.listen(deviceManagerProvider.select((value) => value.masterDevice),
+        (previous, next) {
+      if (next != previous) {
+        _fetchSessionInfo(next);
+      }
+    });
+    return RemoteClientState();
+  }
 
   Future<GRASessionInfo?> fetchSessionInfo(
     String sessionId,
@@ -35,6 +44,21 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
         await ref.read(deviceCloudServiceProvider).getSessions(master: master);
     state = state.copyWith(sessions: () => sessions);
     return sessions;
+  }
+
+  Future<GRASessionInfo?> _fetchSessionInfo(LinksysDevice masterDevice
+) async {
+    final sessions =
+        await ref.read(deviceCloudServiceProvider).getSessions(master: masterDevice);
+    state = state.copyWith(sessions: () => sessions);
+    if (sessions.isEmpty) {
+      return null;
+    }
+    final sessionInfo = await ref
+        .read(deviceCloudServiceProvider)
+        .getSessionInfo(master: masterDevice, sessionId: sessions.first.id);
+    state = state.copyWith(sessionInfo: () => sessionInfo);
+    return sessionInfo;
   }
 
   Future<void> initiateRemoteAssistance() async {

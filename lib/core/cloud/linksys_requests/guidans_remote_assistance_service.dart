@@ -27,11 +27,12 @@ extension GuidansRemoteAssistanceService on LinksysHttpClient {
     final endPoint =
         combineUrl(kSessionInfo, args: {kVarRASessionId: sessionId});
     var header = defaultHeader
-      ..[kHeaderLinksysToken] = token
-      ..[HttpHeaders.authorizationHeader] = wrapSessionToken(token);
+      ..[kHeaderLinksysToken] = token;
 
     if (serialNumber != null) {
       header[kHeaderSerialNumber] = serialNumber;
+    } else {
+      header[HttpHeaders.authorizationHeader] = wrapSessionToken(token);
     }
     return this.get(
       Uri.parse(endPoint),
@@ -46,11 +47,12 @@ extension GuidansRemoteAssistanceService on LinksysHttpClient {
   }) {
     final endPoint = combineUrl(kSessionInfo, args: {kVarRASessionId: sessionId});
     var header = defaultHeader
-      ..[kHeaderLinksysToken] = token
-      ..[HttpHeaders.authorizationHeader] = wrapSessionToken(token);
+      ..[kHeaderLinksysToken] = token;
 
     if (serialNumber != null) {
       header[kHeaderSerialNumber] = serialNumber;
+    } else {
+      header[HttpHeaders.authorizationHeader] = wrapSessionToken(token);
     }
     return this.delete(
       Uri.parse(endPoint),

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client_provider.dart';
 import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client_state.dart';
+import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/customs/timer_contdown_widget.dart';
 import 'package:privacy_gui/page/dashboard/views/components/remote_assistance_animation.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacy_gui/core/cloud/model/guidan_remote_assistance.dart';
@@ -18,7 +20,7 @@ void showRemoteAssistanceDialog(BuildContext context, WidgetRef ref) {
       return Consumer(
         builder: (context, ref, child) {
           return AlertDialog(
-            title: AppText.titleMedium('Remote Assistance'),
+            title: AppText.titleMedium(loc(context).remoteAssistance),
             content: StatefulBuilder(builder: (context, setState) {
               if (isLoading) {
                 ref
@@ -43,6 +45,8 @@ void showRemoteAssistanceDialog(BuildContext context, WidgetRef ref) {
                 loc(context).close,
                 onTap: () {
                   ref.read(remoteClientProvider.notifier).endRemoteAssistance();
+                  // Resume polling
+                  ref.read(pollingProvider.notifier).checkAndStartPolling(true);
                   Navigator.of(context).pop();
                 },
               ),
@@ -57,41 +61,43 @@ void showRemoteAssistanceDialog(BuildContext context, WidgetRef ref) {
 Widget _buildRemoteAssistanceDialog(WidgetRef ref, BuildContext context) {
   final state = ref.watch(remoteClientProvider);
   final sessionInfo = state.sessionInfo;
+  final isPollingPaused = ref.read(pollingProvider.notifier).paused;
+  if (sessionInfo?.status == GRASessionStatus.active && !isPollingPaused) {
+    // Stop polling
+    ref.read(pollingProvider.notifier).paused = true;
+  }
   return switch (sessionInfo?.status ?? GRASessionStatus.initiate) {
-    GRASessionStatus.pending => _buildPendingWidget(state),
-    GRASessionStatus.active => _buildCountingWidget(state),
-    GRASessionStatus.invalid => _buildInvalidWidget(),
+    GRASessionStatus.pending => _buildPendingWidget(state, context),
+    GRASessionStatus.active => _buildCountingWidget(state, context),
+    GRASessionStatus.invalid => _buildInvalidWidget(context),
     GRASessionStatus.initiate => _buildInitiateWidget(context),
   };
 }
 
 Widget _buildInitiateWidget(BuildContext context) {
-  return Center(
-    child: AppStyledText.link(
-        'To take advantage of Remote Assistance, you must first contact a phone support agent. Go to <a href="http://www.linksys.com/support" target="_blank">linksys.com/support</a> and click on Phone Call to get started.',
-        color: Theme.of(context).colorScheme.primary,
-        defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
-        tags: const [
-          'a'
-        ],
-        callbackTags: {
-          'a': (tag, data) {
-            final url = data['href'];
-            if (url != null) {
-              launchUrl(Uri.parse(url));
-            }
-          }
-        }),
+  return AppStyledText.link(
+    loc(context).remoteAssistanceInitiateMessage,
+    color: Theme.of(context).colorScheme.primary,
+    defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
+    tags: const ['a'],
+    callbackTags: {
+      'a': (tag, data) {
+        final url = data['href'];
+        if (url != null) {
+          launchUrl(Uri.parse(url));
+        }
+      }
+    },
   );
 }
 
-Widget _buildPendingWidget(RemoteClientState state) {
+Widget _buildPendingWidget(RemoteClientState state, BuildContext context) {
   final initialSeconds = (2700 + (state.sessionInfo?.expiredIn ?? 0)) * -1;
   return Column(
     mainAxisSize: MainAxisSize.min,
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      AppText.labelLarge('Your pin code is:'),
+      AppText.labelLarge(loc(context).remoteAssistancePinCode),
       AppGap.large1(),
       Center(child: AppText.displayLarge(state.pin ?? '')),
       AppGap.large2(),
@@ -103,24 +109,23 @@ Widget _buildPendingWidget(RemoteClientState state) {
   );
 }
 
-Widget _buildInvalidWidget() {
+Widget _buildInvalidWidget(BuildContext context) {
   return Column(
     mainAxisSize: MainAxisSize.min,
-    children: const [
-      AppText.labelLarge('Invalid session. Please contact a support agent.'),
+    children: [
+      AppText.labelLarge(loc(context).remoteAssistanceInvalidSession),
     ],
   );
 }
 
-Widget _buildCountingWidget(RemoteClientState state) {
+Widget _buildCountingWidget(RemoteClientState state, BuildContext context) {
   final initialSeconds = (state.sessionInfo?.expiredIn ?? 0) * -1;
   return Column(
     mainAxisSize: MainAxisSize.min,
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       const RemoteAssistanceAnimation(),
-      AppText.labelLarge(
-          'A Linksys support agent has remote access to your Linksys Smart Wi-Fi account and your home network.'),
+      AppText.labelLarge(loc(context).remoteAssistanceSessionActive),
       AppGap.large2(),
       TimerCountdownWidget(
         initialSeconds: initialSeconds,
@@ -128,31 +133,4 @@ Widget _buildCountingWidget(RemoteClientState state) {
       ),
     ],
   );
-}
-
-class TimerCountdownWidget extends StatelessWidget {
-  final int initialSeconds;
-  final String? title;
-  const TimerCountdownWidget({
-    Key? key,
-    required this.initialSeconds,
-    this.title,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<int>(
-      stream: Stream.periodic(
-        const Duration(seconds: 1),
-        (count) => initialSeconds - count,
-      ).take(initialSeconds + 1),
-      builder: (context, snapshot) {
-        final secondsLeft = snapshot.data ?? initialSeconds;
-        final display = secondsLeft > 0
-            ? '${title ?? ''} expires in ${DateFormatUtils.formatTimeMSS(secondsLeft)}'
-            : '${title ?? ''} expired';
-        return AppText.bodyMedium(display);
-      },
-    );
-  }
 }
