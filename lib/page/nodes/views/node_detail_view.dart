@@ -12,7 +12,6 @@ import 'package:privacy_gui/core/jnap/providers/node_light_settings_provider.dar
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -28,7 +27,6 @@ import 'package:privacy_gui/page/instant_device/views/devices_filter_widget.dart
 import 'package:privacy_gui/page/nodes/_nodes.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/utils.dart';
-import 'package:privacygui_widgets/hook/icon_hooks.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -416,8 +414,10 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
     bool isSupportNodeLight = serviceHelper.isSupportLedMode();
 
     bool isCognitive = isCognitiveMeshRouter(
-        modelNumber: state.modelNumber, hardwareVersion: state.hardwareVersion);
-    if (!isSupportNodeLight || !isCognitive) {
+      modelNumber: state.modelNumber,
+      hardwareVersion: state.hardwareVersion,
+    );
+    if (!isSupportNodeLight || !isCognitive || !state.isMaster) {
       return const Center();
     }
     return _nodeDetailBackgroundCard(
