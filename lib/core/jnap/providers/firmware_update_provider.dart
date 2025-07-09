@@ -270,7 +270,12 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
         return (resultList, false);
       } else {
         logger.d('[FIRMWARE]: Fetched status mismatch! - show the cached list');
-        return (cachedList, true);
+        // These cached nodes used to temporarily display nodes after updating
+        // need to clear availableUpdate to indicate that these nodes have been updated
+        final updatedCachedList = cachedList.map((e) {
+          return e.copyWith(availableUpdate: () => null);
+        }).toList();
+        return (updatedCachedList, true);
       }
     }
     // Initial state - no updates in progress
