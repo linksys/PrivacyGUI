@@ -14,6 +14,7 @@ final remoteClientProvider =
 
 class RemoteClientNotifier extends Notifier<RemoteClientState> {
   StreamSubscription<GRASessionInfo?>? _sessionInfoStreamSubscription;
+  Timer? _expiredCountdownTimer;
   
   @override
   RemoteClientState build() => RemoteClientState();
@@ -27,6 +28,7 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
         .read(deviceCloudServiceProvider)
         .getSessionInfo(master: master, sessionId: sessionId);
     state = state.copyWith(sessionInfo: () => sessionInfo);
+    _startExpiredCountdownTimer(sessionInfo);
     return sessionInfo;
   }
 
@@ -133,5 +135,19 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
         .createPin(master: master, sessionId: sessionId);
     state = state.copyWith(pin: () => pin);
     return pin;
+  }
+
+  void _startExpiredCountdownTimer(GRASessionInfo sessionInfo) {
+    _expiredCountdownTimer?.cancel();
+    _expiredCountdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      var expiredCountdown = state.expiredCountdown;
+      expiredCountdown ??= sessionInfo.expiredIn * -1;
+      expiredCountdown--;
+      state = state.copyWith(expiredCountdown: () => expiredCountdown);
+      if (expiredCountdown < 0) {
+        timer.cancel();
+        _expiredCountdownTimer = null;
+      }
+    });
   }
 }

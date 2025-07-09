@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
-import 'package:privacy_gui/page/components/customs/timer_contdown_widget.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dart';
@@ -47,6 +46,8 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
     }
     final sessionInfo =
         isRemote ? ref.watch(remoteClientProvider).sessionInfo : null;
+    final expiredCountdown =
+        isRemote ? ref.watch(remoteClientProvider).expiredCountdown : null;
     return SafeArea(
       bottom: false,
       child: GestureDetector(
@@ -77,7 +78,7 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
                       children: [
                         _networkSelect(),
                         if (sessionInfo != null)
-                          _sessionExpireCounter(sessionInfo),
+                          _sessionExpireCounter(sessionInfo, expiredCountdown),
                       ],
                     ),
                   if (loginType == LoginType.local)
@@ -134,12 +135,17 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
     );
   }
 
-  Widget _sessionExpireCounter(GRASessionInfo sessionInfo) {
-    final initialSeconds = (sessionInfo.expiredIn) * -1;
-    return TimerCountdownWidget(
-      initialSeconds: initialSeconds,
-      title: 'Session',
-    );
+  Widget _sessionExpireCounter(GRASessionInfo sessionInfo, int? expiredCountdown) {
+    var display = loc(context).remoteAssistanceSessionExpired;
+    if (sessionInfo.status != GRASessionStatus.active) {
+      return AppText.bodyMedium(display);
+    }
+    final count = expiredCountdown ?? sessionInfo.expiredIn;
+    if (count > 0) {
+      display = loc(context).remoteAssistanceSessionExpiresIn(
+          DateFormatUtils.formatTimeMSS(count));
+    }
+    return AppText.bodyMedium(display);
   }
 
   void _startRemoteAssistance(BuildContext context) {
