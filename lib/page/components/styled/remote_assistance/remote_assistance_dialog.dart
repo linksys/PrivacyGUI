@@ -9,7 +9,6 @@ import 'package:privacy_gui/page/dashboard/views/components/remote_assistance_an
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacy_gui/core/cloud/model/guidan_remote_assistance.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:privacy_gui/utils.dart';
 
 void showRemoteAssistanceDialog(BuildContext context, WidgetRef ref) {
   showDialog(

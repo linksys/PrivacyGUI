@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/page/components/customs/timer_contdown_widget.dart';
+import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dart';
 import 'package:privacygui_widgets/theme/material/color_tonal_palettes.dart';
@@ -39,9 +41,12 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
         ref.watch(authProvider.select((value) => value.value?.loginType)) ??
             LoginType.none;
     final isRemote = loginType == LoginType.remote;
-    final sessionInfo = isRemote
-        ? ref.read(remoteClientProvider).sessionInfo
-        : null;
+    final isPollingDone = ref.watch(deviceManagerProvider).deviceList.isNotEmpty;
+    if (isRemote && isPollingDone) {
+      _startRemoteAssistance(context);
+    }
+    final sessionInfo =
+        isRemote ? ref.watch(remoteClientProvider).sessionInfo : null;
     return SafeArea(
       bottom: false,
       child: GestureDetector(
@@ -135,5 +140,32 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
       initialSeconds: initialSeconds,
       title: 'Session',
     );
+  }
+
+  void _startRemoteAssistance(BuildContext context) {
+    ref.read(remoteClientProvider.notifier).initiateRemoteAssistanceCA();
+    ref.listen(
+        remoteClientProvider.select((value) => value.sessionInfo?.status),
+        (previous, next) {
+      if (previous == GRASessionStatus.active &&
+          next != GRASessionStatus.active) {
+        showSimpleAppDialog(
+          context,
+          dismissible: false,
+          content:
+              AppText.bodyMedium(loc(context).remoteAssistanceSessionExpired),
+          actions: [
+            AppTextButton(
+              loc(context).ok,
+              onTap: () {
+                context.pop();
+                ref.read(remoteClientProvider.notifier).endRemoteAssistance();
+                ref.read(authProvider.notifier).logout();
+              },
+            )
+          ],
+        );
+      }
+    });
   }
 }
