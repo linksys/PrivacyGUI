@@ -5,10 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client_provider.dart';
 import 'package:privacy_gui/page/components/customs/timer_contdown_widget.dart';
-import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/material/color_tonal_palettes.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
@@ -40,8 +38,9 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
     final loginType =
         ref.watch(authProvider.select((value) => value.value?.loginType)) ??
             LoginType.none;
-    final sessionInfo = loginType == LoginType.remote
-        ? ref.watch(remoteClientProvider).sessionInfo
+    final isRemote = loginType == LoginType.remote;
+    final sessionInfo = isRemote
+        ? ref.read(remoteClientProvider).sessionInfo
         : null;
     return SafeArea(
       bottom: false,
@@ -68,7 +67,7 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
               MenuHolder(type: MenuDisplay.top),
               Wrap(
                 children: [
-                  if (loginType == LoginType.remote)
+                  if (isRemote)
                     Column(
                       children: [
                         _networkSelect(),
@@ -132,45 +131,9 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
 
   Widget _sessionExpireCounter(GRASessionInfo sessionInfo) {
     final initialSeconds = (sessionInfo.expiredIn) * -1;
-    return Row(
-      children: [
-        TimerCountdownWidget(
-          initialSeconds: initialSeconds,
-          title: 'Session',
-        ),
-        AppGap.small1(),
-        SizedBox(
-            width: 24,
-            height: 24,
-            child: AppIconButton.noPadding(
-                onTap: () {
-                  showSimpleAppDialog(
-                    context,
-                    title: loc(context).endRemoteAssistance,
-                    content: AppText.bodyMedium(
-                        loc(context).endRemoteAssistanceDesc),
-                    actions: [
-                      AppTextButton(
-                        loc(context).cancel,
-                        color: Theme.of(context).colorScheme.onSurface,
-                        onTap: () {
-                          context.pop();
-                        },
-                      ),
-                      AppTextButton(
-                        loc(context).ok,
-                        color: Theme.of(context).colorScheme.error,
-                        onTap: () {
-                          context.pop();
-                          ref.read(remoteClientProvider.notifier).endRemoteAssistance();
-                          ref.read(authProvider.notifier).logout();
-                        },
-                      ),
-                    ],
-                  );
-                },
-                icon: LinksysIcons.close)),
-      ],
+    return TimerCountdownWidget(
+      initialSeconds: initialSeconds,
+      title: 'Session',
     );
   }
 }
