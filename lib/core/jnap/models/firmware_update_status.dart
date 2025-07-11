@@ -1,7 +1,7 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
-
 import 'package:equatable/equatable.dart';
+import 'package:flutter/widgets.dart';
 
 class FirmwareUpdateStatus extends Equatable {
   final String lastSuccessfulCheckTime;
@@ -17,15 +17,15 @@ class FirmwareUpdateStatus extends Equatable {
 
   FirmwareUpdateStatus copyWith({
     String? lastSuccessfulCheckTime,
-    FirmwareUpdateData? availableUpdate,
-    FirmwareUpdateOperationStatus? pendingOperation,
-    String? lastOperationFailure,
+    ValueGetter<FirmwareUpdateData?>? availableUpdate,
+    ValueGetter<FirmwareUpdateOperationStatus?>? pendingOperation,
+    ValueGetter<String?>? lastOperationFailure,
   }) {
     return FirmwareUpdateStatus(
       lastSuccessfulCheckTime: lastSuccessfulCheckTime ?? this.lastSuccessfulCheckTime,
-      availableUpdate: availableUpdate ?? this.availableUpdate,
-      pendingOperation: pendingOperation ?? this.pendingOperation,
-      lastOperationFailure: lastOperationFailure ?? this.lastOperationFailure,
+      availableUpdate: availableUpdate != null ? availableUpdate() : this.availableUpdate,
+      pendingOperation: pendingOperation != null ? pendingOperation() : this.pendingOperation,
+      lastOperationFailure: lastOperationFailure != null ? lastOperationFailure() : this.lastOperationFailure,
     );
   }
 
