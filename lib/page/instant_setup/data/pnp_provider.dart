@@ -589,7 +589,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
         result.output['devices'],
       )
           .map((e) => LinksysDevice.fromMap(e))
-          .where((device) => device.nodeType != null)
+          .where((device) => device.nodeType != null || device.isAuthority)
           .toList();
       state = state.copyWith(childNodes: deviceList);
     });
