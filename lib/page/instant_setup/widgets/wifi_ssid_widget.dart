@@ -47,12 +47,11 @@ class _WiFiSSIDFieldState extends ConsumerState<WiFiSSIDField> {
             .validateDetail(widget.controller?.text ?? '', onlyFailed: true);
         if (errorKeys.isEmpty) {
           return null;
-        } else if (errorKeys.keys.first ==
-            (NoSurroundWhitespaceRule).toString()) {
+        } else if (errorKeys.keys.first == NoSurroundWhitespaceRule().name) {
           return loc(context).routerPasswordRuleStartEndWithSpace;
-        } else if (errorKeys.keys.first == (LengthRule).toString()) {
+        } else if (errorKeys.keys.first == LengthRule().name) {
           return loc(context).wifiSSIDLengthLimit;
-        } else if (errorKeys.keys.first == (WiFiSsidRule).toString()) {
+        } else if (errorKeys.keys.first == WiFiSsidRule().name) {
           return loc(context).theNameMustNotBeEmpty;
         } else {
           return null;
