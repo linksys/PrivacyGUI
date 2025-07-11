@@ -626,12 +626,12 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
               if (errorKeys.isEmpty) {
                 return null;
               } else if (errorKeys.keys.first ==
-                  (NoSurroundWhitespaceRule).toString()) {
+                  NoSurroundWhitespaceRule().name) {
                 return loc(context).routerPasswordRuleStartEndWithSpace;
-              } else if (errorKeys.keys.first == (WiFiSsidRule).toString() ||
-                  errorKeys.keys.first == (RequiredRule).toString()) {
+              } else if (errorKeys.keys.first == WiFiSsidRule().name ||
+                  errorKeys.keys.first == RequiredRule().name) {
                 return loc(context).theNameMustNotBeEmpty;
-              } else if (errorKeys.keys.first == (LengthRule).toString()) {
+              } else if (errorKeys.keys.first == LengthRule().name) {
                 return loc(context).wifiSSIDLengthLimit;
               } else {
                 return null;
