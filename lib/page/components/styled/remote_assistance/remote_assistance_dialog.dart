@@ -4,7 +4,7 @@ import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client
 import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client_state.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/components/customs/timer_contdown_widget.dart';
+import 'package:privacy_gui/page/components/customs/timer_countdown_widget.dart';
 import 'package:privacy_gui/page/dashboard/views/components/remote_assistance_animation.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacy_gui/core/cloud/model/guidan_remote_assistance.dart';

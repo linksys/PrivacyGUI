@@ -6,7 +6,7 @@ import 'package:privacy_gui/core/cloud/model/error_response.dart';
 import 'package:privacy_gui/core/cloud/model/guidan_remote_assistance.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/components/customs/timer_contdown_widget.dart';
+import 'package:privacy_gui/page/components/customs/timer_countdown_widget.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';

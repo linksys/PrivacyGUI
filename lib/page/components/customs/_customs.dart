@@ -7,4 +7,4 @@ export 'network_check_view.dart';
 export 'qr_view.dart';
 export 'remote_assistance_widget.dart';
 export 'rotating_icon.dart';
-export 'timer_contdown_widget.dart';
+export 'timer_countdown_widget.dart';
