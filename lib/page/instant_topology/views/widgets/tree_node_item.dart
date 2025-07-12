@@ -19,6 +19,8 @@ import 'package:privacy_gui/utils.dart';
 enum NodeInstantActions {
   reboot,
   pair,
+  pairWired,
+  pairWireless,
   blink,
   reset,
   ;
@@ -26,6 +28,8 @@ enum NodeInstantActions {
   String resolveLabel(BuildContext context) => switch (this) {
         reboot => loc(context).rebootUnit,
         pair => loc(context).instantPair,
+        pairWired => loc(context).pairWiredNode,
+        pairWireless => loc(context).pairWirelessNode,
         blink => loc(context).blinkDeviceLight,
         reset => loc(context).resetToFactoryDefault,
       };
@@ -147,7 +151,7 @@ class TreeNodeItem extends StatefulWidget {
   const TreeNodeItem({
     super.key,
     required this.node,
-    this.actions = NodeInstantActions.values,
+    this.actions = const [],
     this.onTap,
     this.onActionTap,
   });
@@ -241,16 +245,15 @@ class _TreeNodeItemState extends State<TreeNodeItem> {
                       itemBuilder: (context) {
                         return widget.actions
                             .mapIndexed(
-                                (index, e) => PopupMenuItem<NodeInstantActions>(
-                                    value: e,
-                                    child: AppText.labelLarge(
-                                      e.resolveLabel(context),
-                                      color: e == NodeInstantActions.reset
-                                          ? Theme.of(context).colorScheme.error
-                                          : Theme.of(context)
-                                              .colorScheme
-                                              .onSurface,
-                                    )))
+                                (index, e) => e == NodeInstantActions.pair
+                                    ? StatefulPopupMenuItem<NodeInstantActions>(
+                                        expandChild: true,
+                                        child: _instantPairItem(context),
+                                      )
+                                    : PopupMenuItem<NodeInstantActions>(
+                                        value: e,
+                                        child: _itemText(context, e),
+                                      ))
                             .toList();
                       },
                       onSelected: widget.onActionTap,
@@ -332,6 +335,50 @@ class _TreeNodeItemState extends State<TreeNodeItem> {
             AppText.labelLarge('${loc(context).ipAddress}:'),
             AppText.bodyMedium(node.data.isOnline ? node.data.ipAddress : '--'),
           ]),
+        ],
+      ),
+    );
+  }
+
+  Widget _itemText(BuildContext context, NodeInstantActions action) {
+    return AppText.labelLarge(
+      action.resolveLabel(context),
+      color: action == NodeInstantActions.reset
+          ? Theme.of(context).colorScheme.error
+          : Theme.of(context).colorScheme.onSurface,
+    );
+  }
+
+  Widget _instantPairItem(BuildContext context) {
+    return PopupMenuButton<NodeInstantActions>(
+      color: Theme.of(context).colorScheme.surface,
+      elevation: 10,
+      surfaceTintColor: Theme.of(context).colorScheme.surface,
+      itemBuilder: (context) {
+        return [
+          PopupMenuItem<NodeInstantActions>(
+            value: NodeInstantActions.pairWired,
+            child: _itemText(context, NodeInstantActions.pairWired),
+          ),
+          PopupMenuItem<NodeInstantActions>(
+            value: NodeInstantActions.pairWireless,
+            child: _itemText(context, NodeInstantActions.pairWireless),
+          )
+        ];
+      },
+      onSelected: widget.onActionTap,
+      child: Row(
+        children: [
+          Expanded(
+            child: AppText.labelLarge(
+              NodeInstantActions.pair.resolveLabel(context),
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          Icon(
+            Icons.arrow_right,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
         ],
       ),
     );
@@ -443,26 +490,69 @@ class SimpleTreeNodeItem extends StatelessWidget {
                       itemBuilder: (context) {
                         return actions
                             .mapIndexed(
-                                (index, e) => PopupMenuItem<NodeInstantActions>(
-                                    value: e,
-                                    child: AppText.labelLarge(
-                                      e.resolveLabel(context),
-                                      color: e == NodeInstantActions.reset
-                                          ? Theme.of(context).colorScheme.error
-                                          : Theme.of(context)
-                                              .colorScheme
-                                              .onSurface,
-                                    )))
+                                (index, e) => e == NodeInstantActions.pair
+                                    ? StatefulPopupMenuItem<NodeInstantActions>(
+                                        expandChild: true,
+                                        child: _instantPairItem(context),
+                                      )
+                                    : PopupMenuItem<NodeInstantActions>(
+                                        value: e,
+                                        child: _itemText(context, e),
+                                      ))
                             .toList();
                       },
                       onSelected: onActionTap,
-                    )
+                    ),
                   ],
                 ),
               ),
             ]
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _itemText(BuildContext context, NodeInstantActions action) {
+    return AppText.labelLarge(
+      action.resolveLabel(context),
+      color: action == NodeInstantActions.reset
+          ? Theme.of(context).colorScheme.error
+          : Theme.of(context).colorScheme.onSurface,
+    );
+  }
+
+  Widget _instantPairItem(BuildContext context) {
+    return PopupMenuButton<NodeInstantActions>(
+      color: Theme.of(context).colorScheme.surface,
+      elevation: 10,
+      surfaceTintColor: Theme.of(context).colorScheme.surface,
+      itemBuilder: (context) {
+        return [
+          PopupMenuItem<NodeInstantActions>(
+            value: NodeInstantActions.pairWired,
+            child: _itemText(context, NodeInstantActions.pairWired),
+          ),
+          PopupMenuItem<NodeInstantActions>(
+            value: NodeInstantActions.pairWireless,
+            child: _itemText(context, NodeInstantActions.pairWireless),
+          )
+        ];
+      },
+      onSelected: onActionTap,
+      child: Row(
+        children: [
+          Expanded(
+            child: AppText.labelLarge(
+              NodeInstantActions.pair.resolveLabel(context),
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          Icon(
+            Icons.arrow_right,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ],
       ),
     );
   }
@@ -583,6 +673,81 @@ class _SelectToCopyWidgetState extends State<SelectToCopyWidget> {
         },
         child: widget.child,
       ),
+    );
+  }
+}
+
+class StatefulPopupMenuItem<T> extends PopupMenuEntry<T> {
+  const StatefulPopupMenuItem({
+    Key? key,
+    this.enabled = true,
+    this.height = kMinInteractiveDimension,
+    required this.child,
+    this.onTap,
+    this.padding,
+    this.expandChild = false,
+  }) : super(key: key);
+
+  /// Whether the user can interact with this item.
+  final bool enabled;
+
+  /// The height of the menu item.
+  ///
+  /// Defaults to [kMinInteractiveDimension] pixels.
+  @override
+  final double height;
+
+  final VoidCallback? onTap;
+  final EdgeInsets? padding;
+  final bool expandChild;
+
+  /// The widget below this widget in the tree.
+  final Widget child;
+
+  @override
+  State<StatefulPopupMenuItem<T>> createState() =>
+      _StatefulPopupMenuItemState<T>();
+
+  @override
+  bool represents(T? value) =>
+      false; // Crucial: Doesn't represent a value, so it won't trigger onSelected
+}
+
+class _StatefulPopupMenuItemState<T> extends State<StatefulPopupMenuItem<T>> {
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    final EdgeInsetsGeometry padding = widget.padding ??
+        (theme.useMaterial3
+            ? const EdgeInsets.symmetric(horizontal: 12.0)
+            : const EdgeInsets.symmetric(horizontal: 16.0));
+
+    final Widget itemContent = widget.expandChild
+        ? widget.child
+        : Align(
+            alignment: AlignmentDirectional.centerStart, child: widget.child);
+
+    // This is the core layout that mimics PopupMenuItem.
+    Widget item = ConstrainedBox(
+      constraints: BoxConstraints(minHeight: widget.height),
+      child: Padding(
+        key: const Key('menu item padding'),
+        padding: padding,
+        child: itemContent,
+      ),
+    );
+
+    // If disabled, return the item without the InkWell.
+    if (!widget.enabled) {
+      return item;
+    }
+
+    // Wrap in an InkWell to get the ripple effect without closing the menu.
+    return InkWell(
+      onTap: widget.onTap,
+      canRequestFocus: false, // Prevents the item from being focused.
+      child: item,
     );
   }
 }

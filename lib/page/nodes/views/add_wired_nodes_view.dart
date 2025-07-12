@@ -67,7 +67,7 @@ class _AddWiredNodesViewState extends ConsumerState<AddWiredNodesView> {
             child: AppFilledButton(
               loc(context).ok,
               onTap: () {
-                ref.read(addWiredNodesProvider.notifier).stopCheckingBackhaul();
+                ref.read(addWiredNodesProvider.notifier).stopCheckingBackhaul(context);
               },
             ),
           )
@@ -86,7 +86,7 @@ class _AddWiredNodesViewState extends ConsumerState<AddWiredNodesView> {
     return StyledAppPageView(
       scrollable: true,
       title: loc(context).addNodes,
-      child: AppBasicLayout(
+      child: (context, constraints) => AppBasicLayout(
           content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -99,7 +99,7 @@ class _AddWiredNodesViewState extends ConsumerState<AddWiredNodesView> {
                 onTap: () {
                   logger
                       .d('[AddWiredNode]: Start to refresh the children list');
-                  ref.read(addWiredNodesProvider.notifier).startRefresh();
+                  ref.read(addWiredNodesProvider.notifier).startRefresh(context);
                 },
               ),
             ],
@@ -168,7 +168,7 @@ class _AddWiredNodesViewState extends ConsumerState<AddWiredNodesView> {
     return StyledAppPageView(
       scrollable: true,
       title: loc(context).addNodes,
-      child: AppBasicLayout(
+      child: (context, constraints) => AppBasicLayout(
           content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -191,7 +191,7 @@ class _AddWiredNodesViewState extends ConsumerState<AddWiredNodesView> {
             loc(context).next,
             onTap: () {
               logger.d('[AddNodes]: Start to search for more nodes');
-              ref.read(addWiredNodesProvider.notifier).startAutoOnboarding();
+              ref.read(addWiredNodesProvider.notifier).startAutoOnboarding(context);
             },
           )
         ],

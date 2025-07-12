@@ -17,6 +17,7 @@ import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacy_gui/page/nodes/providers/add_wired_nodes_provider.dart';
 import 'package:privacy_gui/page/nodes/providers/node_detail_id_provider.dart';
 import 'package:privacy_gui/page/instant_topology/_instant_topology.dart';
 import 'package:privacy_gui/page/instant_topology/views/model/tree_view_node.dart';
@@ -28,7 +29,6 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/bullet_list/bullet_list.dart';
 import 'package:privacygui_widgets/widgets/bullet_list/bullet_style.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class InstantTopologyView extends ArgumentsConsumerStatefulView {
@@ -228,25 +228,7 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
               onNodeTap(context, ref, node);
             },
             onActionTap: (action) {
-              switch (action) {
-                case NodeInstantActions.reboot:
-                  _doReboot(
-                      supportChildReboot && !node.data.isMaster ? node : null,
-                      node.isLeaf());
-                  break;
-                case NodeInstantActions.pair:
-                  _doInstantPair();
-                  break;
-                case NodeInstantActions.blink:
-                  _doBlinkNodeLed(ref, node.data.deviceId);
-                  break;
-                case NodeInstantActions.reset:
-                  // If the target is a master, send null value to factory reset all nodes
-                  _doFactoryReset(
-                      supportChildReboot && !node.data.isMaster ? node : null,
-                      node.isLeaf());
-                  break;
-              }
+              _handleNodeAction(action, node, supportChildReboot);
             },
           )
         : TopologyNodeItem(
@@ -275,27 +257,39 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
               onNodeTap(context, ref, node);
             },
             onActionTap: (action) {
-              switch (action) {
-                case NodeInstantActions.reboot:
-                  _doReboot(
-                      supportChildReboot && !node.data.isMaster ? node : null,
-                      node.isLeaf());
-                  break;
-                case NodeInstantActions.pair:
-                  _doInstantPair();
-                  break;
-                case NodeInstantActions.blink:
-                  _doBlinkNodeLed(ref, node.data.deviceId);
-                  break;
-                case NodeInstantActions.reset:
-                  // If the target is a master, send null value to factory reset all nodes
-                  _doFactoryReset(
-                      supportChildReboot && !node.data.isMaster ? node : null,
-                      node.isLeaf());
-                  break;
-              }
+              _handleNodeAction(action, node, supportChildReboot);
             },
           );
+  }
+
+  _handleNodeAction(
+    NodeInstantActions action,
+    RouterTreeNode node,
+    bool supportChildReboot,
+  ) {
+    switch (action) {
+      case NodeInstantActions.reboot:
+        _doReboot(supportChildReboot && !node.data.isMaster ? node : null,
+            node.isLeaf());
+        break;
+      case NodeInstantActions.pair:
+        // do nothing
+        break;
+      case NodeInstantActions.pairWired:
+        _doInstantPairWired(ref);
+        break;
+      case NodeInstantActions.pairWireless:
+        _doInstantPair();
+        break;
+      case NodeInstantActions.blink:
+        _doBlinkNodeLed(ref, node.data.deviceId);
+        break;
+      case NodeInstantActions.reset:
+        // If the target is a master, send null value to factory reset all nodes
+        _doFactoryReset(supportChildReboot && !node.data.isMaster ? node : null,
+            node.isLeaf());
+        break;
+    }
   }
 
   _doReboot(RouterTreeNode? node, bool isLastNode) {
@@ -368,16 +362,38 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
   }
 
   _doInstantPair() {
-    context.pushNamed(RouteNamed.addWiredNodes).then((result) {
+    context.pushNamed(RouteNamed.addNodes).then((result) {
       if (result is bool && result) {
         _showMoveChildNodesModal();
       }
     });
-    // context.pushNamed(RouteNamed.addNodes).then((result) {
+  }
+
+  _doInstantPairWired(WidgetRef ref) {
+    // context.pushNamed(RouteNamed.addWiredNodes).then((result) {
     //   if (result is bool && result) {
     //     _showMoveChildNodesModal();
     //   }
     // });
+    final addWiredNodesNotifier = ref.read(addWiredNodesProvider.notifier);
+    addWiredNodesNotifier.startAutoOnboarding(context);
+    final addWiredNodesState = ref.watch(addWiredNodesProvider);
+    showAppSpinnerDialog(
+      context,
+      title: loc(context).instantPair,
+      messages: [addWiredNodesState.loadingMessage ?? ''],
+      actions: [
+        AppTextButton(
+          loc(context).donePairing,
+          onTap: () {
+            if (!addWiredNodesState.isLoading) {
+              addWiredNodesNotifier.forceStopAutoOnboarding();
+            }
+            context.pop();
+          },
+        )
+      ],
+    );
   }
 
   Widget _buildHeader(

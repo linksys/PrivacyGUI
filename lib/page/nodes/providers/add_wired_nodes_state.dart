@@ -11,6 +11,7 @@ class AddWiredNodesState extends Equatable {
   final bool? anyOnboarded;
   final List<BackHaulInfoData>? backhaulSnapshot;
   final bool isLoading;
+  final bool forceStop;
   final String? loadingMessage;
   final int onboardingTime;
   final List<LinksysDevice>? nodes;
@@ -20,6 +21,7 @@ class AddWiredNodesState extends Equatable {
     this.anyOnboarded,
     this.backhaulSnapshot,
     required this.isLoading,
+    this.forceStop = false,
     this.loadingMessage,
     this.onboardingTime = 0,
     this.nodes,
@@ -30,6 +32,7 @@ class AddWiredNodesState extends Equatable {
     bool? anyOnboarded,
     List<BackHaulInfoData>? backhaulSnapshot,
     bool? isLoading,
+    bool? forceStop,
     String? loadingMessage,
     int? onboardingTime,
     List<LinksysDevice>? nodes,
@@ -39,6 +42,7 @@ class AddWiredNodesState extends Equatable {
       anyOnboarded: anyOnboarded ?? this.anyOnboarded,
       backhaulSnapshot: backhaulSnapshot ?? this.backhaulSnapshot,
       isLoading: isLoading ?? this.isLoading,
+      forceStop: forceStop ?? this.forceStop,
       loadingMessage: loadingMessage ?? this.loadingMessage,
       onboardingTime: onboardingTime ?? this.onboardingTime,
       nodes: nodes ?? this.nodes,
@@ -51,6 +55,7 @@ class AddWiredNodesState extends Equatable {
       'anyOnboarded': anyOnboarded,
       'backhaulSnapshot': backhaulSnapshot?.map((x) => x.toMap()).toList(),
       'isLoading': isLoading,
+      'forceStop': forceStop,
       'loadingMessage': loadingMessage,
       'onboardingTime': onboardingTime,
       'nodes': nodes,
@@ -66,6 +71,7 @@ class AddWiredNodesState extends Equatable {
               map['backhaulSnapshot']?.map((x) => BackHaulInfoData.fromMap(x)))
           : null,
       isLoading: map['isLoading'] ?? false,
+      forceStop: map['forceStop'] ?? false,
       loadingMessage: map['loadingMessage'],
       onboardingTime: map['onboardingTime'],
       nodes: map['nodes'] != null
@@ -92,6 +98,7 @@ class AddWiredNodesState extends Equatable {
       anyOnboarded,
       backhaulSnapshot,
       isLoading,
+      forceStop,
       loadingMessage,
       onboardingTime,
       nodes,

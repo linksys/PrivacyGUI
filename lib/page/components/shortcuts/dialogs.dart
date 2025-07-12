@@ -50,6 +50,7 @@ Future<T?> showAppSpinnerDialog<T>(
   double? width,
   List<String> messages = const [],
   Duration? period,
+  List<Widget>? actions = const [],
 }) {
   return showDialog<T?>(
     context: context,
@@ -72,14 +73,16 @@ Future<T?> showAppSpinnerDialog<T>(
                         child: AppText.titleLarge(title))
                     : null,
                 content: SizedBox(
-                    width: width ?? kDefaultDialogWidth,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        loadingWidget ?? const AppSpinner(),
-                        if (snapshot.hasData) AppText.labelLarge(snapshot.data!)
-                      ],
-                    )),
+                  width: width ?? kDefaultDialogWidth,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      loadingWidget ?? const AppSpinner(),
+                      if (snapshot.hasData) AppText.labelLarge(snapshot.data!)
+                    ],
+                  ),
+                ),
+                actions: actions,
               );
             });
       });

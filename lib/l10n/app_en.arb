@@ -1019,5 +1019,10 @@
   "addWiredDevicesDesc1": "Start with the new device turned off",
   "addWiredDevicesDesc2": "Connect an Ethernet cable to one of the LAN ports on your existing device.",
   "addWiredDevicesDesc3": "Connect the other end of the cable to the WAN port of the new device you're adding.",
-  "addWiredDevicesDesc4": "Then, power on the new device."
+  "addWiredDevicesDesc4": "Then, power on the new device.",
+  "pairWiredNode": "Pair wired node",
+  "pairWirelessNode": "Pair wireless node",
+  "pairWiredNodeDone": "Pairing wired node. Click 'Done pairing' to finish.",
+  "donePairing": "Done pairing",
+  "refreshing": "Refreshing"
 }
