@@ -115,12 +115,17 @@ class _PnpIspSaveSettingsViewState
     }).onError((error, stackTrace) {
       logger.e(
           '[PnP]: Troubleshooter - Failed to save the new settings - $error');
-      
+
       if (error is JNAPSideEffectError) {
-        // Handle side effect error
-        showRouterNotFoundAlert(context, ref, onComplete: () async {
-          context.goNamed(RouteNamed.pnp);
-        });
+        final lastHandledResult = error.lastHandledResult;
+        if (lastHandledResult != null && lastHandledResult is JNAPSuccess) {
+          context.pop(_getErrorMessage(wanType));
+        } else {
+          // Handle side effect error
+          showRouterNotFoundAlert(context, ref, onComplete: () async {
+            context.goNamed(RouteNamed.pnp);
+          });
+        }
       } else if (error is JNAPError) {
         // Saving new settings failed
         context.pop(

@@ -184,7 +184,12 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
         return result;
       }).catchError(
         (error) {
-          throw JNAPSideEffectError(result);
+          if (error is JNAPSideEffectError) {
+            final lastHandleResult = error.lastHandledResult;
+            throw JNAPSideEffectError(result, lastHandleResult);
+          } else {
+            throw JNAPSideEffectError(result);
+          }
         },
         test: (error) => error is JNAPSideEffectError,
       );
@@ -200,7 +205,7 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
   }
 
   Future<bool> poll({
-    required Future<bool> Function() pollFunc,
+    required Future<(bool, JNAPResult?)> Function() pollFunc,
     int retryDelayInSec = 5,
     int maxRetry = -1,
     int maxPollTimeInSec = -1,
@@ -220,9 +225,13 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
     }
     final startTime = DateTime.now().millisecondsSinceEpoch;
     var result = false;
+    JNAPResult? lastHandledResult;
     while (maxRetry == -1 || retry <= maxRetry) {
       logger.d('[SideEffectManager] poll <$retry> times');
-      result = await pollFunc.call().onError((error, stackTrace) => false) ||
+      result = await pollFunc.call().then((value) {
+            lastHandledResult = value.$2;
+            return value.$1;
+          }).onError((error, stackTrace) => false) ||
           (condition?.call() ?? false);
       if (result) {
         return result;
@@ -240,34 +249,37 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
     }
     if (!result) {
       logger.d(('[SideEffectManager] exceed to MAX retry!'));
-      throw const JNAPSideEffectError();
+      throw JNAPSideEffectError(null, lastHandledResult);
     }
     return result;
   }
 
-  Future<bool> testRouterFullyBootedUp() async {
+  Future<(bool, JNAPResult?)> testRouterFullyBootedUp() async {
     final startTime = DateTime.now().millisecondsSinceEpoch;
 
-    return _getWANStatus().then((status) {
+    return _getWANStatus().then<(bool, JNAPResult?)>((status) {
       final wanConnected = status.wanStatus == 'Connected' ||
           status.wanIPv6Status == 'Connected';
       final isRouterRespondingLongEnough =
           DateTime.now().millisecondsSinceEpoch > startTime + 60 * 1000;
 
-      return wanConnected || isRouterRespondingLongEnough;
-    }).onError((error, stackTrace) => false);
+      return (
+        wanConnected || isRouterRespondingLongEnough,
+        JNAPSuccess(output: status.toMap(), result: 'ok')
+      );
+    }).onError((error, stackTrace) => (false, null));
   }
 
-  Future<bool> testRouterReconnected() async {
+  Future<(bool, JNAPResult?)> testRouterReconnected() async {
     final pref = await SharedPreferences.getInstance();
     final cachedSerialNumber =
         pref.getString(pCurrentSN) ?? pref.getString(pPnpConfiguredSN);
 
     return _getDeviceInfo()
         .then((devceInfo) => devceInfo.serialNumber == cachedSerialNumber)
-        .then(
-            (value) async => (value ? await testRouterFullyBootedUp() : false))
-        .onError((error, stackTrace) => false);
+        .then((value) async =>
+            (value ? await testRouterFullyBootedUp() : (false, null)))
+        .onError((error, stackTrace) => (false, null));
   }
 
   Future<RouterWANStatus> _getWANStatus() => ref
@@ -312,6 +324,7 @@ final sideEffectProvider = NotifierProvider<SideEffectNotifier, JNAPSideEffect>(
 
 class JNAPSideEffectError extends JNAPError {
   final JNAPResult? attach;
-  const JNAPSideEffectError([this.attach])
+  final JNAPResult? lastHandledResult;
+  const JNAPSideEffectError([this.attach, this.lastHandledResult])
       : super(result: 'JNAP handle side effect error');
 }
