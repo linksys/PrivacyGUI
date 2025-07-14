@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/page/components/customs/stateful_popup_menu_item.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
@@ -19,6 +20,8 @@ import 'package:privacy_gui/utils.dart';
 enum NodeInstantActions {
   reboot,
   pair,
+  pairWired,
+  pairWireless,
   blink,
   reset,
   ;
@@ -26,6 +29,8 @@ enum NodeInstantActions {
   String resolveLabel(BuildContext context) => switch (this) {
         reboot => loc(context).rebootUnit,
         pair => loc(context).instantPair,
+        pairWired => loc(context).pairWiredNode,
+        pairWireless => loc(context).pairWirelessNode,
         blink => loc(context).blinkDeviceLight,
         reset => loc(context).resetToFactoryDefault,
       };
@@ -147,7 +152,7 @@ class TreeNodeItem extends StatefulWidget {
   const TreeNodeItem({
     super.key,
     required this.node,
-    this.actions = NodeInstantActions.values,
+    this.actions = const [],
     this.onTap,
     this.onActionTap,
   });
@@ -241,16 +246,15 @@ class _TreeNodeItemState extends State<TreeNodeItem> {
                       itemBuilder: (context) {
                         return widget.actions
                             .mapIndexed(
-                                (index, e) => PopupMenuItem<NodeInstantActions>(
-                                    value: e,
-                                    child: AppText.labelLarge(
-                                      e.resolveLabel(context),
-                                      color: e == NodeInstantActions.reset
-                                          ? Theme.of(context).colorScheme.error
-                                          : Theme.of(context)
-                                              .colorScheme
-                                              .onSurface,
-                                    )))
+                                (index, e) => e == NodeInstantActions.pair
+                                    ? StatefulPopupMenuItem<NodeInstantActions>(
+                                        expandChild: true,
+                                        child: _instantPairItem(context),
+                                      )
+                                    : PopupMenuItem<NodeInstantActions>(
+                                        value: e,
+                                        child: _itemText(context, e),
+                                      ))
                             .toList();
                       },
                       onSelected: widget.onActionTap,
@@ -332,6 +336,50 @@ class _TreeNodeItemState extends State<TreeNodeItem> {
             AppText.labelLarge('${loc(context).ipAddress}:'),
             AppText.bodyMedium(node.data.isOnline ? node.data.ipAddress : '--'),
           ]),
+        ],
+      ),
+    );
+  }
+
+  Widget _itemText(BuildContext context, NodeInstantActions action) {
+    return AppText.labelLarge(
+      action.resolveLabel(context),
+      color: action == NodeInstantActions.reset
+          ? Theme.of(context).colorScheme.error
+          : Theme.of(context).colorScheme.onSurface,
+    );
+  }
+
+  Widget _instantPairItem(BuildContext context) {
+    return PopupMenuButton<NodeInstantActions>(
+      color: Theme.of(context).colorScheme.surface,
+      elevation: 10,
+      surfaceTintColor: Theme.of(context).colorScheme.surface,
+      itemBuilder: (context) {
+        return [
+          PopupMenuItem<NodeInstantActions>(
+            value: NodeInstantActions.pairWired,
+            child: _itemText(context, NodeInstantActions.pairWired),
+          ),
+          PopupMenuItem<NodeInstantActions>(
+            value: NodeInstantActions.pairWireless,
+            child: _itemText(context, NodeInstantActions.pairWireless),
+          )
+        ];
+      },
+      onSelected: widget.onActionTap,
+      child: Row(
+        children: [
+          Expanded(
+            child: AppText.labelLarge(
+              NodeInstantActions.pair.resolveLabel(context),
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          Icon(
+            Icons.arrow_right,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
         ],
       ),
     );
@@ -443,26 +491,69 @@ class SimpleTreeNodeItem extends StatelessWidget {
                       itemBuilder: (context) {
                         return actions
                             .mapIndexed(
-                                (index, e) => PopupMenuItem<NodeInstantActions>(
-                                    value: e,
-                                    child: AppText.labelLarge(
-                                      e.resolveLabel(context),
-                                      color: e == NodeInstantActions.reset
-                                          ? Theme.of(context).colorScheme.error
-                                          : Theme.of(context)
-                                              .colorScheme
-                                              .onSurface,
-                                    )))
+                                (index, e) => e == NodeInstantActions.pair
+                                    ? StatefulPopupMenuItem<NodeInstantActions>(
+                                        expandChild: true,
+                                        child: _instantPairItem(context),
+                                      )
+                                    : PopupMenuItem<NodeInstantActions>(
+                                        value: e,
+                                        child: _itemText(context, e),
+                                      ))
                             .toList();
                       },
                       onSelected: onActionTap,
-                    )
+                    ),
                   ],
                 ),
               ),
             ]
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _itemText(BuildContext context, NodeInstantActions action) {
+    return AppText.labelLarge(
+      action.resolveLabel(context),
+      color: action == NodeInstantActions.reset
+          ? Theme.of(context).colorScheme.error
+          : Theme.of(context).colorScheme.onSurface,
+    );
+  }
+
+  Widget _instantPairItem(BuildContext context) {
+    return PopupMenuButton<NodeInstantActions>(
+      color: Theme.of(context).colorScheme.surface,
+      elevation: 10,
+      surfaceTintColor: Theme.of(context).colorScheme.surface,
+      itemBuilder: (context) {
+        return [
+          PopupMenuItem<NodeInstantActions>(
+            value: NodeInstantActions.pairWired,
+            child: _itemText(context, NodeInstantActions.pairWired),
+          ),
+          PopupMenuItem<NodeInstantActions>(
+            value: NodeInstantActions.pairWireless,
+            child: _itemText(context, NodeInstantActions.pairWireless),
+          )
+        ];
+      },
+      onSelected: onActionTap,
+      child: Row(
+        children: [
+          Expanded(
+            child: AppText.labelLarge(
+              NodeInstantActions.pair.resolveLabel(context),
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          Icon(
+            Icons.arrow_right,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ],
       ),
     );
   }
