@@ -228,7 +228,7 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
               onNodeTap(context, ref, node);
             },
             onActionTap: (action) {
-              _handleNodeAction(action, node, supportChildReboot);
+              _handleSelectedNodeAction(action, node, supportChildReboot);
             },
           )
         : TopologyNodeItem(
@@ -257,12 +257,12 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
               onNodeTap(context, ref, node);
             },
             onActionTap: (action) {
-              _handleNodeAction(action, node, supportChildReboot);
+              _handleSelectedNodeAction(action, node, supportChildReboot);
             },
           );
   }
 
-  _handleNodeAction(
+  _handleSelectedNodeAction(
     NodeInstantActions action,
     RouterTreeNode node,
     bool supportChildReboot,
