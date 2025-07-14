@@ -1015,7 +1015,7 @@
   "wins": "WINS",
   "wired": "Wired",
   "wireless": "Wireless",
-  "addWiredDevices": "Add wried devices",
+  "addWiredDevices": "Add wired devices",
   "addWiredDevicesDesc1": "Start with the new device turned off",
   "addWiredDevicesDesc2": "Connect an Ethernet cable to one of the LAN ports on your existing device.",
   "addWiredDevicesDesc3": "Connect the other end of the cable to the WAN port of the new device you're adding.",
