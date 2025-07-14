@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/cloud/model/error_response.dart';
 import 'package:privacy_gui/core/cloud/model/guidan_remote_assistance.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/customs/timer_countdown_widget.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
@@ -126,6 +127,7 @@ class _LoginCloudAuthViewState extends ConsumerState<LoginCloudAuthView> {
 
   Widget _mainView() {
     bool canProceed = _token != null && _sessionInfo != null;
+    final secondsLeft = (_sessionInfo?.expiredIn ?? 0) * -1;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -144,27 +146,36 @@ class _LoginCloudAuthViewState extends ConsumerState<LoginCloudAuthView> {
         AppText.titleLarge(loc(context).login),
         const AppGap.medium(),
         canProceed
-            ? AppText.labelLarge(
-                'You are log in with access token to manage ${_sessionInfo?.serialNumber}, do you want to proceed?')
-            : AppText.labelLarge('Not enough information to login'),
+            ? AppText.labelLarge(loc(context)
+                .loginWithAccessTokenMessage(_sessionInfo?.serialNumber ?? ''))
+            : AppText.labelLarge(loc(context).notEnoughInfoToLogin),
         AppGap.medium(),
-        if (_sessionInfo != null)
+        if (_sessionInfo != null) ...[
           AppText.bodyMedium(
-              'Status: ${_sessionInfo?.status.toValue()}, Expired in: ${_sessionInfo?.expiredIn}'),
+              '${loc(context).status}: ${_sessionInfo?.status.toValue()}'),
+          TimerCountdownWidget(
+            initialSeconds: secondsLeft,
+            title: 'Session',
+          ),
+        ],
         const AppGap.large3(),
         if (BuildConfig.isEnableEnvPicker &&
             BuildConfig.forceCommandType != ForceCommand.local)
           Align(
-              alignment: Alignment.bottomRight,
-              child: AppTextButton.noPadding('Select Env', onTap: () async {
+            alignment: Alignment.bottomRight,
+            child: AppTextButton.noPadding(
+              loc(context).selectEnv,
+              onTap: () async {
                 final _ = await showModalBottomSheet(
                     enableDrag: false,
                     context: context,
                     builder: (context) => _createEnvPicker());
                 setState(() {});
-              })),
+              },
+            ),
+          ),
         AppFilledButton(
-          'Proceed',
+          loc(context).proceed,
           onTap: _sessionInfo?.status == GRASessionStatus.active && canProceed
               ? () {
                   _cloudLogin(_token!, _session!);
@@ -207,7 +218,7 @@ class _LoginCloudAuthViewState extends ConsumerState<LoginCloudAuthView> {
                           )),
                   const Spacer(),
                   AppFilledButton(
-                    'Save',
+                    loc(context).save,
                     onTap: () async {
                       setState(() {
                         isLoading = true;

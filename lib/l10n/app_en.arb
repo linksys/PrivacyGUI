@@ -1059,5 +1059,29 @@
   "vpnRekeyCount": "Rekey Count",
   "vpnErrorVPNNotConnected": "VPN not connected",
   "vpnErrorVPNUserAlreadyExists": "VPN user already exists",
-  "vpnErrorVPNUserNotFound": "VPN user not found"
+  "vpnErrorVPNUserNotFound": "VPN user not found",
+  "remoteAssistance": "Remote Assistance",
+  "remoteAssistancePinCode": "Your pin code is:",
+  "remoteAssistanceInvalidSession": "Invalid session. Please contact a support agent.",
+  "remoteAssistanceSessionActive": "A Linksys support agent has remote access to your Linksys Smart Wi-Fi account and your home network.",
+  "remoteAssistancePinCodeExpiresIn": "Pin code expires in {time}",
+  "remoteAssistancePinCodeExpired": "Pin code expired",
+  "remoteAssistanceSessionExpiresIn": "Session expires in {time}",
+  "remoteAssistanceSessionExpired": "Session expired",
+  "remoteAssistanceInitiateMessage": "To take advantage of Remote Assistance, you must first contact a phone support agent. Go to <a href=\"http://www.linksys.com/support\" target=\"_blank\">linksys.com/support</a> and click on Phone Call to get started.",
+  "selectEnv": "Select Environment",
+  "proceed": "Proceed",
+  "loginWithAccessTokenMessage": "You are log in with access token to manage {serialNumber}, do you want to proceed?",
+  "@loginWithAccessTokenMessage": {
+    "description": "Message shown when logging in with access token",
+    "placeholders": {
+      "serialNumber": {
+        "type": "String",
+        "example": "SN12345"
+      }
+    }
+  },
+  "notEnoughInfoToLogin": "Not enough information to login",
+  "endRemoteAssistance": "End Remote Assistance",
+  "endRemoteAssistanceDesc": "End remote assistance session?"
 }

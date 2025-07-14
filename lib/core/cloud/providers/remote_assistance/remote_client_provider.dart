@@ -14,6 +14,8 @@ final remoteClientProvider =
 
 class RemoteClientNotifier extends Notifier<RemoteClientState> {
   StreamSubscription<GRASessionInfo?>? _sessionInfoStreamSubscription;
+  Timer? _expiredCountdownTimer;
+  
   @override
   RemoteClientState build() => RemoteClientState();
 
@@ -26,6 +28,7 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
         .read(deviceCloudServiceProvider)
         .getSessionInfo(master: master, sessionId: sessionId);
     state = state.copyWith(sessionInfo: () => sessionInfo);
+    _startExpiredCountdownTimer(sessionInfo);
     return sessionInfo;
   }
 
@@ -58,11 +61,28 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
       await createPin(sessionInfo.id);
     }
     // start a stream to fetch session info
-    _sessionInfoStreamSubscription?.cancel();
-    _sessionInfoStreamSubscription =
-        _fetchSessionInfoStream(sessionInfo.id).listen((sessionInfo) {
-      state = state.copyWith(sessionInfo: () => sessionInfo);
-    });
+    _startSessionInfoStream(sessionInfo.id);
+  }
+
+  Future<void> initiateRemoteAssistanceCA() async {
+    // if the stream is already started, do nothing
+    if (_sessionInfoStreamSubscription != null) {
+      return;
+    }
+    logger.i('[RemoteAssistance]: initiateRemoteAssistanceCA');
+    final sessions = await fetchSessions();
+    if (sessions.isEmpty) {
+      state = RemoteClientState();
+      return;
+    }
+    logger.i('[RemoteAssistance]: sessions: ${sessions.first.id}');
+    final sessionInfo = await fetchSessionInfo(sessions.first.id);
+    if (sessionInfo == null) {
+      state = RemoteClientState();
+      return;
+    }
+    // start a stream to fetch session info
+    _startSessionInfoStream(sessionInfo.id, interval: 60);
   }
 
   Future<void> endRemoteAssistance() async {
@@ -86,13 +106,25 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
     state = RemoteClientState();
   }
 
+  // start a stream to fetch session info
+  Future<void> _startSessionInfoStream(String sessionId,
+      {int interval = 3}) async {
+    _sessionInfoStreamSubscription?.cancel();
+    _sessionInfoStreamSubscription =
+        _fetchSessionInfoStream(sessionId, interval: interval)
+            .listen((sessionInfo) {
+      state = state.copyWith(sessionInfo: () => sessionInfo);
+    });
+  }
+
   // create a stream to fetch session info every 3 seconds
-  Stream<GRASessionInfo?> _fetchSessionInfoStream(String sessionId) async* {
+  Stream<GRASessionInfo?> _fetchSessionInfoStream(String sessionId,
+      {int interval = 3}) async* {
     while (state.sessionInfo?.expiredIn != null &&
         state.sessionInfo!.expiredIn < 0) {
       final sessionInfo = await fetchSessionInfo(sessionId);
       yield sessionInfo;
-      await Future.delayed(const Duration(seconds: 3));
+      await Future.delayed(Duration(seconds: interval));
     }
   }
 
@@ -103,5 +135,19 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
         .createPin(master: master, sessionId: sessionId);
     state = state.copyWith(pin: () => pin);
     return pin;
+  }
+
+  void _startExpiredCountdownTimer(GRASessionInfo sessionInfo) {
+    _expiredCountdownTimer?.cancel();
+    _expiredCountdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      var expiredCountdown = state.expiredCountdown;
+      expiredCountdown ??= sessionInfo.expiredIn * -1;
+      expiredCountdown--;
+      state = state.copyWith(expiredCountdown: () => expiredCountdown);
+      if (expiredCountdown < 0) {
+        timer.cancel();
+        _expiredCountdownTimer = null;
+      }
+    });
   }
 }

@@ -20,7 +20,7 @@ class _RemoteAssistanceAnimationState extends State<RemoteAssistanceAnimation>
     super.initState();
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 2),
+      duration: const Duration(seconds: 1),
     )..repeat();
   }
 
@@ -96,7 +96,7 @@ class FancyDottedLinePainter extends CustomPainter {
     final distance = (end - start).distance;
 
     // Draw the dotted line
-    double currentDistance = animationValue * (dashWidth + dashSpace) * 3;
+    double currentDistance = animationValue * (dashWidth + dashSpace) * 1;
     while (currentDistance < distance) {
       canvas.drawLine(
         start + (end - start) * (currentDistance / distance),

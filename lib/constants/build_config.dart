@@ -63,6 +63,10 @@ class BuildConfig {
   static bool isRemote() {
     return forceCommandType == ForceCommand.remote;
   }
+
+  static bool isLocal() {
+    return forceCommandType == ForceCommand.local;
+  }
 }
 
 bool showDebugPanel = !kReleaseMode && !kIsWeb;
