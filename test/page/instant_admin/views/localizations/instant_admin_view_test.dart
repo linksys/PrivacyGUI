@@ -47,7 +47,6 @@ void main() {
       await Future.delayed(const Duration(seconds: 1));
     });
     when(mockTimezoneNotifier.fetch()).thenAnswer((realInvocation) async {
-      await Future.delayed(const Duration(seconds: 1));
     });
     when(mockPowerTableNotifier.build()).thenReturn(
         PowerTableState.fromMap(powerTableTestState)
