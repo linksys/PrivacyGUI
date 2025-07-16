@@ -165,6 +165,7 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
                         context: context,
                         isScrollControlled: true,
                         useRootNavigator: true,
+                        showDragHandle: true,
                         builder: (context) => Container(
                           padding: const EdgeInsets.all(Spacing.large2),
                           width: double.infinity,
