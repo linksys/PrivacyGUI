@@ -116,6 +116,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
                   final _ = await showModalBottomSheet(
                       enableDrag: false,
                       context: context,
+                      showDragHandle: true,
                       builder: (context) => _createEnvPicker());
                   setState(() {});
                 })),
