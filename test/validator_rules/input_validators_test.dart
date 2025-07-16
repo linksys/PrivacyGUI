@@ -359,8 +359,7 @@ void main() {
       final results = validator.validateDetail('invalid');
       expect(results['NoSurroundWhitespaceRule'], true);
       expect(results['IpAddressHasFourOctetsRule'], false);
-      expect(results['IpAddressNoReservedRule'],
-          true); // not violated in this case
+      expect(results['IpAddressNoReservedRule'], false); // not violated in this case
       expect(results['IpAddressRule'], false);
     });
 
@@ -370,8 +369,9 @@ void main() {
         '255.255.255.256',
         onlyFailed: true,
       );
-      expect(results.length, equals(1));
+      expect(results.length, equals(2));
       expect(results['IpAddressRule'], isFalse);
+      expect(results['IpAddressNoReservedRule'], isFalse);
     });
   });
 
@@ -413,7 +413,7 @@ void main() {
         'RequiredRule': false,
         'NoSurroundWhitespaceRule': true,
         'IpAddressHasFourOctetsRule': false,
-        'IpAddressNoReservedRule': true,
+        'IpAddressNoReservedRule': false,
         'IpAddressRule': false,
       });
     });
@@ -424,7 +424,7 @@ void main() {
         'RequiredRule': true,
         'NoSurroundWhitespaceRule': true,
         'IpAddressHasFourOctetsRule': false,
-        'IpAddressNoReservedRule': true,
+        'IpAddressNoReservedRule': false,
         'IpAddressRule': false,
       });
     });
@@ -506,7 +506,7 @@ void main() {
       expect(results['RequiredRule'], false);
       expect(results['NoSurroundWhitespaceRule'], true);
       expect(results['IpAddressHasFourOctetsRule'], false);
-      expect(results['IpAddressNoReservedRule'], true);
+      expect(results['IpAddressNoReservedRule'], false);
       expect(results['IpAddressRule'], false);
       expect(
           results['HostValidForGivenRouterIPAddressAndSubnetMaskRule'], false);
@@ -519,7 +519,7 @@ void main() {
       expect(results['RequiredRule'], true);
       expect(results['NoSurroundWhitespaceRule'], true);
       expect(results['IpAddressHasFourOctetsRule'], false);
-      expect(results['IpAddressNoReservedRule'], true);
+      expect(results['IpAddressNoReservedRule'], false);
       expect(results['IpAddressRule'], false);
       expect(
           results['HostValidForGivenRouterIPAddressAndSubnetMaskRule'], false);
@@ -614,7 +614,7 @@ void main() {
       expect(results['RequiredRule'], false);
       expect(results['NoSurroundWhitespaceRule'], true);
       expect(results['IpAddressHasFourOctetsRule'], false);
-      expect(results['IpAddressNoReservedRule'], true);
+      expect(results['IpAddressNoReservedRule'], false);
       expect(results['IpAddressRule'], false);
       expect(
           results['HostValidForGivenRouterIPAddressAndSubnetMaskRule'], false);
@@ -626,7 +626,7 @@ void main() {
       expect(results['RequiredRule'], true);
       expect(results['NoSurroundWhitespaceRule'], true);
       expect(results['IpAddressHasFourOctetsRule'], false);
-      expect(results['IpAddressNoReservedRule'], true);
+      expect(results['IpAddressNoReservedRule'], false);
       expect(results['IpAddressRule'], false);
       expect(
           results['HostValidForGivenRouterIPAddressAndSubnetMaskRule'], false);

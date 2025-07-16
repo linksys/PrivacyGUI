@@ -51,7 +51,6 @@ class Ipv6PortServiceRuleNotifier extends Notifier<Ipv6PortServiceRuleState>
     return ruleName.isNotEmpty && ruleName.length <= 32;
   }
 
-
   bool isDeviceIpValidate(String ipAddress) {
     return ipAddress.isNotEmpty;
   }
