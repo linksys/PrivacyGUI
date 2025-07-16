@@ -8,7 +8,8 @@ final macFilteringDeviceListProvider = Provider((ref) {
   final macFilteringState = ref.watch(instantPrivacyProvider);
   final deviceList = deviceListState.devices.where((device) => !device.isWired);
   final macAddresses = macFilteringState.settings.denyMacAddresses;
-  return macAddresses
+  final bssidList = macFilteringState.settings.bssids;
+  return (macAddresses.toSet()).difference(bssidList.toSet()).toList()
       .map((e) =>
           deviceList.firstWhereOrNull((device) => device.macAddress == e) ??
           DeviceListItem(macAddress: e, name: '--'))

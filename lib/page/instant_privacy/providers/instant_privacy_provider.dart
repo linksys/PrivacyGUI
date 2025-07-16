@@ -68,7 +68,7 @@ class InstantPrivacyNotifier extends Notifier<InstantPrivacyState> {
       macAddresses: mode == MacFilterMode.allow ? macAddresses : [],
       denyMacAddresses: mode == MacFilterMode.deny ? macAddresses : [],
       maxMacAddresses: settings.maxMACAddresses,
-      bssids: staBSSIDS,
+      bssids: staBSSIDS.map((e) => e.toUpperCase()).toList(),
       myMac: myMac,
     );
     final InstantPrivacyStatus newStatus = InstantPrivacyStatus(
