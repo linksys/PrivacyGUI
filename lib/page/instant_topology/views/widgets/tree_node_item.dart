@@ -12,29 +12,12 @@ import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shared_widgets.dart';
+import 'package:privacy_gui/page/instant_topology/views/model/node_instant_actions.dart';
 import 'package:privacy_gui/page/instant_topology/views/model/topology_model.dart';
 import 'package:privacy_gui/page/instant_topology/views/model/tree_view_node.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/utils.dart';
-
-enum NodeInstantActions {
-  reboot,
-  pair,
-  pairWired,
-  pairWireless,
-  blink,
-  reset,
-  ;
-
-  String resolveLabel(BuildContext context) => switch (this) {
-        reboot => loc(context).rebootUnit,
-        pair => loc(context).instantPair,
-        pairWired => loc(context).pairWiredNode,
-        pairWireless => loc(context).pairWirelessNode,
-        blink => loc(context).blinkDeviceLight,
-        reset => loc(context).resetToFactoryDefault,
-      };
-}
+import 'node_action_menu.dart';
 
 class TopologyNodeItem extends StatelessWidget {
   final RouterTreeNode node;
@@ -163,6 +146,16 @@ class TreeNodeItem extends StatefulWidget {
 
 class _TreeNodeItemState extends State<TreeNodeItem> {
   @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return AppCard(
       margin: EdgeInsets.zero,
@@ -232,35 +225,10 @@ class _TreeNodeItemState extends State<TreeNodeItem> {
               const Divider(
                 height: 0,
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    vertical: Spacing.large1, horizontal: Spacing.medium),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    AppText.labelLarge(loc(context).instantAction),
-                    PopupMenuButton(
-                      color: Theme.of(context).colorScheme.surface,
-                      elevation: 10,
-                      surfaceTintColor: Theme.of(context).colorScheme.surface,
-                      itemBuilder: (context) {
-                        return widget.actions
-                            .mapIndexed(
-                                (index, e) => e == NodeInstantActions.pair
-                                    ? StatefulPopupMenuItem<NodeInstantActions>(
-                                        expandChild: true,
-                                        child: _instantPairItem(context),
-                                      )
-                                    : PopupMenuItem<NodeInstantActions>(
-                                        value: e,
-                                        child: _itemText(context, e),
-                                      ))
-                            .toList();
-                      },
-                      onSelected: widget.onActionTap,
-                    )
-                  ],
-                ),
+              NodeActionMenu(
+                actions: widget.actions,
+                onActionTap: widget.onActionTap,
+                itemBuilder: _itemText,
               ),
             ]
           ],
@@ -349,41 +317,6 @@ class _TreeNodeItemState extends State<TreeNodeItem> {
           : Theme.of(context).colorScheme.onSurface,
     );
   }
-
-  Widget _instantPairItem(BuildContext context) {
-    return PopupMenuButton<NodeInstantActions>(
-      color: Theme.of(context).colorScheme.surface,
-      elevation: 10,
-      surfaceTintColor: Theme.of(context).colorScheme.surface,
-      itemBuilder: (context) {
-        return [
-          PopupMenuItem<NodeInstantActions>(
-            value: NodeInstantActions.pairWired,
-            child: _itemText(context, NodeInstantActions.pairWired),
-          ),
-          PopupMenuItem<NodeInstantActions>(
-            value: NodeInstantActions.pairWireless,
-            child: _itemText(context, NodeInstantActions.pairWireless),
-          )
-        ];
-      },
-      onSelected: widget.onActionTap,
-      child: Row(
-        children: [
-          Expanded(
-            child: AppText.labelLarge(
-              NodeInstantActions.pair.resolveLabel(context),
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-          Icon(
-            Icons.arrow_right,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class SimpleTreeNodeItem extends StatelessWidget {
@@ -415,7 +348,7 @@ class SimpleTreeNodeItem extends StatelessWidget {
         constraints: BoxConstraints(
             minWidth: 180,
             maxWidth: 300,
-            maxHeight: actions.isEmpty ? 92 : 144),
+            maxHeight: actions.isEmpty ? 92 : 150),
         padding: node.data.isOnline && actions.isNotEmpty
             ? EdgeInsets.only(
                 top: Spacing.medium,
@@ -477,35 +410,10 @@ class SimpleTreeNodeItem extends StatelessWidget {
               const Divider(
                 height: 0,
               ),
-              Container(
-                padding: const EdgeInsets.only(left: Spacing.medium),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    AppText.labelLarge(loc(context).instantAction),
-                    PopupMenuButton(
-                      color: Theme.of(context).colorScheme.surface,
-                      elevation: 10,
-                      surfaceTintColor: Theme.of(context).colorScheme.surface,
-                      itemBuilder: (context) {
-                        return actions
-                            .mapIndexed(
-                                (index, e) => e == NodeInstantActions.pair
-                                    ? StatefulPopupMenuItem<NodeInstantActions>(
-                                        expandChild: true,
-                                        child: _instantPairItem(context),
-                                      )
-                                    : PopupMenuItem<NodeInstantActions>(
-                                        value: e,
-                                        child: _itemText(context, e),
-                                      ))
-                            .toList();
-                      },
-                      onSelected: onActionTap,
-                    ),
-                  ],
-                ),
+              NodeActionMenu(
+                actions: actions,
+                onActionTap: onActionTap,
+                itemBuilder: _itemText,
               ),
             ]
           ],

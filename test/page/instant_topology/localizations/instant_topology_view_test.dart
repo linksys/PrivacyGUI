@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/instant_topology/_instant_topology.dart';
 import 'package:mockito/mockito.dart';
+import 'package:privacy_gui/page/instant_topology/views/model/node_instant_actions.dart';
 import 'package:privacy_gui/page/instant_topology/views/widgets/tree_node_item.dart';
 
 import '../../../common/config.dart';
