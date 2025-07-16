@@ -10,6 +10,7 @@ import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
@@ -157,10 +158,7 @@ class _Ipv6PortServiceListViewState
         lastPortTextController.text =
             '${rule?.portRanges.firstOrNull?.lastPort ?? 0}';
         ipAddressTextController.text = rule?.ipv6Address ?? '';
-        setState(() {
-          _isEditRuleValid =
-              ref.read(ipv6PortServiceRuleProvider.notifier).isRuleValid();
-        });
+        _validateInputData();
       },
       headers: [
         loc(context).applicationName,
@@ -204,11 +202,7 @@ class _Ipv6PortServiceListViewState
                 ref
                     .read(ipv6PortServiceRuleProvider.notifier)
                     .updateRule(stateRule?.copyWith(description: value));
-                setState(() {
-                  _isEditRuleValid = ref
-                      .read(ipv6PortServiceRuleProvider.notifier)
-                      .isRuleValid();
-                });
+                _validateInputData();
               },
             ),
           1 => AppDropdownButton(
@@ -225,34 +219,27 @@ class _Ipv6PortServiceListViewState
                             : [portRange.copyWith(protocol: value)],
                       ),
                     );
-                setState(() {
-                  _isEditRuleValid = ref
-                      .read(ipv6PortServiceRuleProvider.notifier)
-                      .isRuleValid();
-                });
+                _validateInputData();
               },
             ),
-          2 => Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          2 => Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                AppIPv6FormField(
-                  displayType: AppIpFormFieldDisplayType.tight,
-                  controller: ipAddressTextController,
-                  border: const OutlineInputBorder(),
-                  onChanged: (value) {
-                    ref
-                        .read(ipv6PortServiceRuleProvider.notifier)
-                        .updateRule(stateRule?.copyWith(ipv6Address: value));
-                    setState(() {
-                      _isEditRuleValid = ref
+                Expanded(
+                  child: AppIPv6FormField(
+                    displayType: AppIpFormFieldDisplayType.tight,
+                    controller: ipAddressTextController,
+                    border: const OutlineInputBorder(),
+                    onChanged: (value) {
+                      ref
                           .read(ipv6PortServiceRuleProvider.notifier)
-                          .isRuleValid();
-                    });
-                  },
+                          .updateRule(stateRule?.copyWith(ipv6Address: value));
+                      _validateInputData();
+                    },
+                  ),
                 ),
-                const AppGap.small3(),
-                AppTextButton.noPadding(
-                  loc(context).selectDevices,
+                AppIconButton.noPadding(
+                  icon: LinksysIcons.devices,
                   onTap: () async {
                     final result =
                         await context.pushNamed<List<DeviceListItem>?>(
@@ -260,11 +247,15 @@ class _Ipv6PortServiceListViewState
                       extra: {'type': 'ipv6', 'selectMode': 'single'},
                     );
                     if (result != null) {
-                      final device = result.first;
-                      ipAddressTextController.text = device.ipv6Address;
+                      final selectedIpv6Address = result.first.ipv6Address;
+                      ipAddressTextController.text = selectedIpv6Address;
+                      ref.read(ipv6PortServiceRuleProvider.notifier).updateRule(
+                          stateRule?.copyWith(
+                              ipv6Address: selectedIpv6Address));
+                      _validateInputData();
                     }
                   },
-                )
+                ),
               ],
             ),
           3 => Column(
@@ -295,11 +286,7 @@ class _Ipv6PortServiceListViewState
                                         ],
                                 ),
                               );
-                          setState(() {
-                            _isEditRuleValid = ref
-                                .read(ipv6PortServiceRuleProvider.notifier)
-                                .isRuleValid();
-                          });
+                          _validateInputData();
                         },
                       ),
                     ),
@@ -330,11 +317,7 @@ class _Ipv6PortServiceListViewState
                                         ],
                                 ),
                               );
-                          setState(() {
-                            _isEditRuleValid = ref
-                                .read(ipv6PortServiceRuleProvider.notifier)
-                                .isRuleValid();
-                          });
+                          _validateInputData();
                         },
                       ),
                     ),
@@ -394,5 +377,12 @@ class _Ipv6PortServiceListViewState
       },
       isEditingDataValid: _isEditRuleValid,
     );
+  }
+
+  void _validateInputData() {
+    setState(() {
+      _isEditRuleValid =
+          ref.read(ipv6PortServiceRuleProvider.notifier).isRuleValid();
+    });
   }
 }

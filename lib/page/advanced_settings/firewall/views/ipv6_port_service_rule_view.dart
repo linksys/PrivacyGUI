@@ -10,13 +10,13 @@ import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
 import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/input_field/ipv6_form_field.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
 class Ipv6PortServiceRuleView extends ArgumentsConsumerStatelessView {
   const Ipv6PortServiceRuleView({super.key, super.args});
@@ -208,17 +208,19 @@ class _AddRuleContentViewState
         },
         errorText: _ipError,
       ),
-      const AppGap.large2(),
-      AppTextButton.noPadding(
-        loc(context).selectDevices,
+      const AppGap.small3(),
+      AppIconButton.noPadding(
+        icon: LinksysIcons.devices,
         onTap: () async {
           final result = await context.pushNamed<List<DeviceListItem>?>(
               RouteNamed.devicePicker,
               extra: {'type': 'ipv6', 'selectMode': 'single'});
-
           if (result != null) {
             final device = result.first;
             _ipAddressController.text = device.ipv6Address;
+            _notifier.updateRule(
+              state.rule?.copyWith(ipv6Address: device.ipv6Address),
+            );
           }
         },
       ),
