@@ -378,6 +378,7 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
     final addWiredNodesNotifier = ref.read(addWiredNodesProvider.notifier);
     addWiredNodesNotifier.startAutoOnboarding(context);
     final addWiredNodesState = ref.watch(addWiredNodesProvider);
+
     showAppSpinnerDialog(
       context,
       title: loc(context).instantPair,
@@ -394,6 +395,28 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
         )
       ],
     );
+
+    // Consumer(
+    //   builder: (context, ref, child) {
+    //     final addWiredNodesState = ref.watch(addWiredNodesProvider);
+    //     showAppSpinnerDialog(
+    //       context,
+    //       title: loc(context).instantPair,
+    //       messages: [addWiredNodesState.loadingMessage ?? ''],
+    //       actions: [
+    //         AppTextButton(
+    //           loc(context).donePairing,
+    //           onTap: () {
+    //             if (!addWiredNodesState.isLoading) {
+    //               addWiredNodesNotifier.forceStopAutoOnboarding();
+    //             }
+    //             context.pop();
+    //           },
+    //         )
+    //       ],
+    //     );
+    //   },
+    // );
   }
 
   Widget _buildHeader(
