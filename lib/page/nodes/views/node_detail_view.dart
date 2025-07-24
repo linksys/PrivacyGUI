@@ -90,7 +90,10 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
           desktop: _desktopLayout(
               constraint, state, filteredDeviceList, isOnlineFilter),
           mobile: _mobileLayout(
-              constraint, state, filteredDeviceList, isOnlineFilter),
+              constraint,
+              state,
+              filteredDeviceList,
+              isOnlineFilter),
         );
       },
     );
@@ -177,11 +180,11 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
           child: (context, constraints) => infoTab(state),
         ),
         StyledAppPageView.innerPage(
-          scrollable: true,
+          scrollable: false,
           child: (context, constraints) => deviceTab(
             state.deviceId,
             filteredDeviceList,
-            constraint.maxHeight - kDefaultToolbarHeight,
+            0,
             isOnlineFilter,
           ),
         ),
@@ -270,86 +273,96 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
           ],
         ),
         const AppGap.medium(),
-        SizedBox(
-          height: listHeight,
-          child: DeviceListWidget(
-            devices: filteredDeviceList,
-            enableDeauth: isOnlineFilter,
-            enableDelete: !isOnlineFilter,
-            // physics: const NeverScrollableScrollPhysics(),
-            onItemClick: (item) {
-              ref.read(deviceDetailIdProvider.notifier).state = item.deviceId;
-              context.pushNamed(RouteNamed.deviceDetails);
-            },
-            onItemDelete: (device) {
-              showSimpleAppDialog(
-                context,
-                dismissible: false,
-                title: loc(context).nDevicesDeleteDevicesTitle(1),
-                content: AppText.bodyMedium(
-                    loc(context).nDevicesDeleteDevicesDescription(1)),
-                actions: [
-                  AppTextButton(
-                    loc(context).cancel,
-                    color: Theme.of(context).colorScheme.onSurface,
-                    onTap: () {
-                      context.pop();
-                    },
-                  ),
-                  AppTextButton(
-                    loc(context).delete,
-                    color: Theme.of(context).colorScheme.error,
-                    onTap: () {
-                      context.pop();
-                      doSomethingWithSpinner(
-                        context,
-                        ref
-                            .read(deviceManagerProvider.notifier)
-                            .deleteDevices(deviceIds: [device.deviceId]),
-                      );
-                    },
-                  ),
-                ],
-              );
-            },
-            onItemDeauth: (device) {
-              showSimpleAppDialog(
-                context,
-                dismissible: false,
-                title: loc(context).disconnectClient,
-                content: AppText.bodyLarge(''),
-                actions: [
-                  AppTextButton(
-                    loc(context).cancel,
-                    color: Theme.of(context).colorScheme.onSurface,
-                    onTap: () {
-                      context.pop();
-                    },
-                  ),
-                  AppTextButton(
-                    loc(context).disconnect,
-                    color: Theme.of(context).colorScheme.error,
-                    onTap: () {
-                      context.pop();
-                      doSomethingWithSpinner(
-                        context,
-                        ref
-                            .read(deviceManagerProvider.notifier)
-                            .deauthClient(macAddress: device.macAddress)
-                            .then((_) {
-                          showChangesSavedSnackBar();
-                        }).onError((error, stackTrace) {
-                          showErrorMessageSnackBar(error);
-                        }),
-                      );
-                    },
-                  ),
-                ],
-              );
-            },
+        if (listHeight > 0)
+          SizedBox(
+            height: listHeight,
+            child: _deviceList(filteredDeviceList, isOnlineFilter),
           ),
-        ),
+        if (listHeight <= 0)
+          Expanded(
+            child: _deviceList(filteredDeviceList, isOnlineFilter),
+          ),
       ],
+    );
+  }
+
+  Widget _deviceList(
+      List<DeviceListItem> filteredDeviceList, bool isOnlineFilter) {
+    return DeviceListWidget(
+      devices: filteredDeviceList,
+      enableDeauth: isOnlineFilter,
+      enableDelete: !isOnlineFilter,
+      // physics: const NeverScrollableScrollPhysics(),
+      onItemClick: (item) {
+        ref.read(deviceDetailIdProvider.notifier).state = item.deviceId;
+        context.pushNamed(RouteNamed.deviceDetails);
+      },
+      onItemDelete: (device) {
+        showSimpleAppDialog(
+          context,
+          dismissible: false,
+          title: loc(context).nDevicesDeleteDevicesTitle(1),
+          content: AppText.bodyMedium(
+              loc(context).nDevicesDeleteDevicesDescription(1)),
+          actions: [
+            AppTextButton(
+              loc(context).cancel,
+              color: Theme.of(context).colorScheme.onSurface,
+              onTap: () {
+                context.pop();
+              },
+            ),
+            AppTextButton(
+              loc(context).delete,
+              color: Theme.of(context).colorScheme.error,
+              onTap: () {
+                context.pop();
+                doSomethingWithSpinner(
+                  context,
+                  ref
+                      .read(deviceManagerProvider.notifier)
+                      .deleteDevices(deviceIds: [device.deviceId]),
+                );
+              },
+            ),
+          ],
+        );
+      },
+      onItemDeauth: (device) {
+        showSimpleAppDialog(
+          context,
+          dismissible: false,
+          title: loc(context).disconnectClient,
+          content: AppText.bodyLarge(''),
+          actions: [
+            AppTextButton(
+              loc(context).cancel,
+              color: Theme.of(context).colorScheme.onSurface,
+              onTap: () {
+                context.pop();
+              },
+            ),
+            AppTextButton(
+              loc(context).disconnect,
+              color: Theme.of(context).colorScheme.error,
+              onTap: () {
+                context.pop();
+                doSomethingWithSpinner(
+                  context,
+                  ref
+                      .read(deviceManagerProvider.notifier)
+                      .deauthClient(macAddress: device.macAddress)
+                      .then((_) {
+                    showChangesSavedSnackBar();
+                  }).onError((error, stackTrace) {
+                    showErrorMessageSnackBar(error);
+                  }),
+                );
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 
