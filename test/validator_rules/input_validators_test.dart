@@ -159,6 +159,120 @@ void main() {
     });
   });
 
+  group('IPv6Rule', () {
+    late IPv6Rule rule;
+
+    setUp(() {
+      rule = IPv6Rule();
+    });
+
+    test('should have the correct name property', () {
+      expect(rule.name, 'IPv6Rule');
+    });
+
+    group('Valid IPv6 Addresses', () {
+      test('should return true for a standard full IPv6 address', () {
+        expect(
+            rule.validate('2001:0db8:85a3:0000:0000:8a2e:0370:7334'), isTrue);
+      });
+
+      test('should return true for an address with compressed zeros (::)', () {
+        expect(rule.validate('2001:0db8:85a3::8a2e:0370:7334'), isTrue);
+      });
+
+      test('should return true for an address starting with a double colon',
+          () {
+        expect(rule.validate('::1'), isTrue);
+      });
+
+      test('should return true for an address ending with a double colon', () {
+        expect(rule.validate('2001:db8:a0b:12f0::'), isTrue);
+      });
+
+      test('should return true for the unspecified address (::)', () {
+        expect(rule.validate('::'), isTrue);
+      });
+
+      test('should return true for an address with leading zeros in a group',
+          () {
+        expect(
+            rule.validate('2001:0db8:0000:0000:0000:0000:0000:0001'), isTrue);
+      });
+
+      test('should return true for an address with uppercase letters', () {
+        expect(rule.validate('2001:DB8:85A3::8A2E:370:7334'), isTrue);
+      });
+
+      test('should return true for a link-local address', () {
+        expect(rule.validate('fe80::1ff:fe23:4567:890a'), isTrue);
+      });
+
+      test('should return true for a link-local address with a zone index', () {
+        expect(rule.validate('fe80::1ff:fe23:4567:890a%eth0'), isTrue);
+      });
+
+      test('should return true for an IPv4-mapped IPv6 address', () {
+        expect(rule.validate('::ffff:192.0.2.128'), isTrue);
+      });
+
+      test('should return true for an IPv4-embedded IPv6 address', () {
+        expect(rule.validate('2001:db8::192.168.0.1'), isTrue);
+      });
+    });
+
+    group('Invalid IPv6 Addresses', () {
+      test('should return false for an address with more than 8 groups', () {
+        expect(rule.validate('2001:0db8:85a3:0000:0000:8a2e:0370:7334:1234'),
+            isFalse);
+      });
+
+      test('should return false for an address with invalid characters', () {
+        expect(
+            rule.validate('2001:0db8:85a3:000g:0000:8a2e:0370:7334'), isFalse);
+      });
+
+      test('should return false for a group with more than 4 hex digits', () {
+        expect(
+            rule.validate('2001:0db8:85a3:00000:0000:8a2e:0370:7334'), isFalse);
+      });
+
+      test('should return false for an address with more than one double colon',
+          () {
+        expect(rule.validate('2001::85a3::8a2e'), isFalse);
+      });
+
+      test('should return false for an incomplete address', () {
+        expect(rule.validate('2001:0db8:85a3:0000:0000:8a2e:0370'), isFalse);
+      });
+
+      test('should return false for an address with triple colons', () {
+        expect(rule.validate('2001:::8a2e'), isFalse);
+      });
+
+      test('should return false for an invalid IPv4 part in a mapped address',
+          () {
+        expect(rule.validate('::ffff:192.0.2.256'), isFalse);
+      });
+
+      test('should return false for an empty string', () {
+        expect(rule.validate(''), isFalse);
+      });
+
+      test('should return false for a random string', () {
+        expect(rule.validate('not an ip address'), isFalse);
+      });
+
+      test('should return false for an address ending with a colon', () {
+        expect(rule.validate('2001:db8:a0b:12f0:'), isFalse);
+      });
+
+      test(
+          'should return false for an address starting with a colon but not a double colon',
+          () {
+        expect(rule.validate(':2001:db8:a0b:12f0::'), isFalse);
+      });
+    });
+  });
   group('Test EmailValidator', () {
     test('validate method - valid email', () {
       final validator = EmailValidator();
@@ -359,7 +473,8 @@ void main() {
       final results = validator.validateDetail('invalid');
       expect(results['NoSurroundWhitespaceRule'], true);
       expect(results['IpAddressHasFourOctetsRule'], false);
-      expect(results['IpAddressNoReservedRule'], false); // not violated in this case
+      expect(results['IpAddressNoReservedRule'],
+          false); // not violated in this case
       expect(results['IpAddressRule'], false);
     });
 
