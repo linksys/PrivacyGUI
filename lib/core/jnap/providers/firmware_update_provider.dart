@@ -157,10 +157,12 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     final benchmark = BenchMarkLogger(name: 'FirmwareUpdate');
     benchmark.start();
     state = state.copyWith(isUpdating: true);
-    logger.d('[FIRMWARE]: Save the current status list: ${state.nodesStatus}');
-    // Save the current status list
-    ref.read(firmwareUpdateCandidateProvider.notifier).state =
-        state.nodesStatus;
+    // Save the current status list and their corresponding node objects
+    // Note: Before the update process, the nodes should not be null
+    final statusRecords = getIDStatusRecords();
+    ref.read(firmwareUpdateCandidateProvider.notifier).state = statusRecords;
+    logger.d('[FIRMWARE]: Saved current status records: $statusRecords');
+
     final action = serviceHelper.isSupportNodeFirmwareUpdate()
         ? JNAPAction.nodesUpdateFirmwareNow
         : JNAPAction.updateFirmwareNow;
@@ -240,15 +242,21 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
   }
 
   // Get records of nodes' update status and their device IDs
-  List<(LinksysDevice, FirmwareUpdateStatus)> getIDStatusRecords() {
+  List<(LinksysDevice?, FirmwareUpdateStatus)> getIDStatusRecords() {
     return (state.nodesStatus ?? []).map((nodeStatus) {
       final nodes = ref.read(deviceManagerProvider).nodeDevices;
-      return (
-        nodeStatus is NodesFirmwareUpdateStatus
+      LinksysDevice? node;
+      try {
+        node = nodeStatus is NodesFirmwareUpdateStatus
             ? nodes.firstWhere((node) => node.deviceID == nodeStatus.deviceUUID)
-            : ref.read(deviceManagerProvider).masterDevice,
-        nodeStatus
-      );
+            : ref.read(deviceManagerProvider).masterDevice;
+      } catch (error) {
+        // If the node is not found, use null to indicate that the node is not found
+        // Note: This may happen in Pinnacle's CF production firmware
+        logger.e('[FIRMWARE]: Error finding corresponding node: $error');
+        node = null;
+      }
+      return (node, nodeStatus);
     }).toList();
   }
 
@@ -263,8 +271,10 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     // After fw updating and router restarting, the child nodes will be offline for a while
     // During this period, the polling will only obtain the status of the master node
     // In order to maintain the integrity of the list on the page, the status list should not be overwritten in state
-    final cachedList = ref.read(firmwareUpdateCandidateProvider);
-    if (cachedList != null) {
+    final cachedCandidates = ref.read(firmwareUpdateCandidateProvider);
+    if (cachedCandidates != null) {
+      // Get the list of status objects from the cached candidates
+      final cachedList = cachedCandidates.map((e) => e.$2).toList();
       if (_isRecordConsistent(resultList, cachedList)) {
         logger.d('[FIRMWARE]: Fetched status is correct - nodes have resumed');
         return (resultList, false);
@@ -407,6 +417,6 @@ class ManualFirmwareUpdateException implements Exception {
 // This provider is used to save the original list of all nodes and their fw status
 // when the firmware update right started
 final firmwareUpdateCandidateProvider =
-    StateProvider<List<FirmwareUpdateStatus>?>((ref) {
+    StateProvider<List<(LinksysDevice?, FirmwareUpdateStatus)>?>((ref) {
   return null;
 });
