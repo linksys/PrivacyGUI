@@ -58,7 +58,7 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
 
     return StyledAppPageView(
       padding: const EdgeInsets.only(),
-      scrollable: true,
+      scrollable: ResponsiveLayout.isMobileLayout(context) ? false : true,
       title: loc(context).instantDevices,
       bottomBar: isOnlineFilter
           ? null
