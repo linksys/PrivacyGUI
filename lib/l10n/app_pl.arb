@@ -838,6 +838,7 @@
   "wifiName": "Nazwa sieci WiFi",
   "wifiPassword": "Hasło sieci WiFi",
   "wifiPasswordLimit": "8-64 znaki",
+  "wifiPasswordRuleHex": "Wymagany szesnastkowy klucz PSK (0–9, A–F, a–f)",
   "wifiSSIDLengthLimit": "Musi mieć mniej niż 32 znaki",
   "wifiShareQRScan": "Zeskanuj kod QR, aby dołączyć do tej sieci",
   "wildcard": "Wyrażenie wieloznaczne",

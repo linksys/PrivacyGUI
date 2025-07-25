@@ -893,6 +893,7 @@
   "wifiName": "WiFi名称",
   "wifiPassword": "WiFi密码",
   "wifiPasswordLimit": "8 - 64个字符",
+  "wifiPasswordRuleHex": "需要十六进制 PSK (0–9, A–F, a–f)",
   "wifiSSIDLengthLimit": "必须少于32个字符",
   "wifiShareQRScan": "扫描此二维码可加入该网络",
   "wildcard": "通配符",

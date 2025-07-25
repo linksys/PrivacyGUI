@@ -838,6 +838,7 @@
   "wifiName": "WiFi Adı",
   "wifiPassword": "WiFi Şifresi",
   "wifiPasswordLimit": "8 - 64 karakter",
+  "wifiPasswordRuleHex": "Onaltılık PSK gerekli (0–9, A–F, a–f)",
   "wifiSSIDLengthLimit": "32 karakterden az olmalı",
   "wifiShareQRScan": "Bu ağa katılmak için QR kodunu tarayın",
   "wildcard": "Joker karakter",

@@ -885,6 +885,7 @@
   "wifiName": "WLAN-Name",
   "wifiPassword": "WLAN-Passwort",
   "wifiPasswordLimit": "8 - 64 Zeichen",
+  "wifiPasswordRuleHex": "Hexadezimaler PSK erforderlich (0–9, A–F, a–f)",
   "wifiSSIDLengthLimit": "Muss weniger als 32 Zeichen enthalten",
   "wifiShareQRScan": "Scannen Sie den QR-Code, um diesem Netzwerk beizutreten",
   "wildcard": "Platzhalter",

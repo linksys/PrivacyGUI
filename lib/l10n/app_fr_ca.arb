@@ -885,6 +885,7 @@
   "wifiName": "Nom du réseau sans-fil",
   "wifiPassword": "Mot de passe du réseau sans-fil",
   "wifiPasswordLimit": "8 à 64 caractères",
+  "wifiPasswordRuleHex": "PSK hexadécimal requis (0–9, A–F, a–f)",
   "wifiSSIDLengthLimit": "Doit être inférieur à 32 caractères",
   "wifiShareQRScan": "Scanner le code QR pour rejoindre ce réseau",
   "wildcard": "Caractère générique ",

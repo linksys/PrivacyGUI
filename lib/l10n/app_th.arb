@@ -838,6 +838,7 @@
   "wifiName": "ชื่อ WiFi",
   "wifiPassword": "รหัสผ่าน WiFi",
   "wifiPasswordLimit": "8 - 64 ตัวอักษร",
+  "wifiPasswordRuleHex": "ต้องระบุ PSK แบบเลขฐานสิบหก (0–9, A–F, a–f)",
   "wifiSSIDLengthLimit": "ต้องน้อยกว่า 32 ตัวอักษร",
   "wifiShareQRScan": "สแกนรหัส QR เพื่อเข้าร่วมเครือข่ายนี้",
   "wildcard": "อักขระตัวแทน",

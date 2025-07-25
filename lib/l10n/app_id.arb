@@ -838,6 +838,7 @@
   "wifiName": "Nama WiFi",
   "wifiPassword": "Kata Sandi WiFi",
   "wifiPasswordLimit": "8 - 64 karakter",
+  "wifiPasswordRuleHex": "PSK heksadesimal diperlukan (0–9, A–F, a–f)",
   "wifiSSIDLengthLimit": "Harus kurang dari 32 karakter",
   "wifiShareQRScan": "Pindai kode QR untuk bergabung dengan jaringan ini",
   "wildcard": "Wildcard",

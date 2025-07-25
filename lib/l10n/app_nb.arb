@@ -885,6 +885,7 @@
   "wifiName": "WiFi-navn",
   "wifiPassword": "WiFi-passord",
   "wifiPasswordLimit": "8 - 64 tegn",
+  "wifiPasswordRuleHex": "Hexadesimal PSK påkrevd (0–9, A–F, a–f)",
   "wifiSSIDLengthLimit": "Må inneholde mindre enn 32 tegn",
   "wifiShareQRScan": "Skann QR-koden for å bli med i dette nettverket",
   "wildcard": "Jokertegn",

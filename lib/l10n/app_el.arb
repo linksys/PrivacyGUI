@@ -838,6 +838,7 @@
   "wifiName": "Όνομα WiFi",
   "wifiPassword": "Κωδικός πρόσβασης WiFi",
   "wifiPasswordLimit": "8 - 64 χαρακτήρες",
+  "wifiPasswordRuleHex": "Απαιτείται δεκαεξαδικό PSK (0–9, A–F, a–f)",
   "wifiSSIDLengthLimit": "Πρέπει να είναι λιγότερο από 32 χαρακτήρες",
   "wifiShareQRScan": "Σαρώστε τον κωδικό QR για να συνδεθείτε σε αυτό το δίκτυο",
   "wildcard": "Χαρακτήρας μπαλαντέρ",

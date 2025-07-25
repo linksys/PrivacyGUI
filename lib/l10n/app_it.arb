@@ -885,6 +885,7 @@
   "wifiName": "Nome WiFi",
   "wifiPassword": "Password WiFi",
   "wifiPasswordLimit": "8 - 64 caratteri",
+  "wifiPasswordRuleHex": "PSK esadecimale richiesto (0–9, A–F, a–f)",
   "wifiSSIDLengthLimit": "Deve essere inferiore a 32 caratteri",
   "wifiShareQRScan": "Scansionare il codice QR per unirsi alla rete",
   "wildcard": "Wildcard",

@@ -109,6 +109,23 @@ class AsciiRule extends RegExValidationRule {
   RegExp get _rule => RegExp(r'^[\x20-\x7E]+$');
 }
 
+class WiFiPSKRule extends RegExValidationRule {
+  @override
+  String get name => 'WiFiPSKRule';
+
+  @override
+  RegExp get _rule => RegExp(r'^[0-9a-fA-F]+$');
+
+  @override
+  bool validate(String input) {
+    // if length is 64, check if it is a valid hex
+    if (input.length >= 64) {
+      return _rule.hasMatch(input);
+    }
+    return true;
+  }
+}
+
 class WhiteSpaceRule extends RegExValidationRule {
   @override
   String get name => 'WhiteSpaceRule';

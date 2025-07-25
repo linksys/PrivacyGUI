@@ -1009,6 +1009,7 @@
   "wifiName": "WiFi name",
   "wifiPassword": "WiFi password",
   "wifiPasswordLimit": "8 - 64 characters",
+  "wifiPasswordRuleHex": "Hexadecimal PSK required (0–9, A–F, a–f)",
   "wifiSSIDLengthLimit": "Must less than 32 character",
   "wifiShareQRScan": "Scan the QR code to join this network",
   "wildcard": "Wildcard",

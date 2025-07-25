@@ -5,6 +5,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
 import 'package:privacy_gui/page/instant_setup/widgets/wifi_password_widget.dart';
 import 'package:privacy_gui/page/instant_setup/widgets/wifi_ssid_widget.dart';
+import 'package:privacy_gui/validator_rules/input_validators.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -16,7 +17,7 @@ class PersonalWiFiStep extends PnpStep {
 
   PersonalWiFiStep({
     super.saveChanges,
-  }): super(index: id);
+  }) : super(index: id);
 
   @override
   Future<void> onInit(WidgetRef ref) async {
@@ -29,7 +30,7 @@ class PersonalWiFiStep extends PnpStep {
     _ssidEditController?.text = wifi.name;
     _passwordEditController?.text = wifi.password;
 
-    _check(ref);
+    _checkForEnablingNext(ref);
     canGoNext(saveChanges == null);
   }
 
@@ -71,7 +72,7 @@ class PersonalWiFiStep extends PnpStep {
               //       .read(pnpProvider.notifier)
               //       .setStepData(index, data: {'ssid': ''});
               // }
-              _check(ref);
+              _checkForEnablingNext(ref);
             },
           ),
           const AppGap.medium(),
@@ -89,7 +90,7 @@ class PersonalWiFiStep extends PnpStep {
               //       .read(pnpProvider.notifier)
               //       .setStepData(index, data: {'password': ''});
               // }
-              _check(ref);
+              _checkForEnablingNext(ref);
             },
           ),
           const AppGap.large5(),
@@ -120,20 +121,26 @@ class PersonalWiFiStep extends PnpStep {
   @override
   String title(BuildContext context) => loc(context).pnpPersonalizeWiFiTitle;
 
-  void _check(WidgetRef ref) {
-    // final state = ref.read(pnpProvider).stepStateList[index];
-    // final ssid = state?.data['ssid'] as String? ?? '';
-    // final password = state?.data['password'] as String? ?? '';
+  void _checkForEnablingNext(WidgetRef ref) {
     final ssid = _ssidEditController?.text ?? '';
+    final InputValidator wifiSSIDValidator = InputValidator([
+      RequiredRule(),
+      NoSurroundWhitespaceRule(),
+      LengthRule(min: 1, max: 32),
+      WiFiSsidRule(),
+    ]);
+    final isSSIDValid = wifiSSIDValidator.validate(ssid);
+
     final password = _passwordEditController?.text ?? '';
-    final noSurroundSpace = NoSurroundWhitespaceRule().validate(password);
-    final noUseUnsupportChar = AsciiRule().validate(password);
-    if (LengthRule(min: 1, max: 32).validate(ssid) &&
-        password.isNotEmpty &&
-        password.length >= 8 &&
-        password.length <= 64 &&
-        noSurroundSpace &&
-        noUseUnsupportChar) {
+    final InputValidator wifiPasswordValidator = InputValidator([
+      LengthRule(min: 8, max: 64),
+      NoSurroundWhitespaceRule(),
+      AsciiRule(),
+      WiFiPSKRule(),
+    ]);
+    final isPasswordValid = wifiPasswordValidator.validate(password);
+
+    if (isSSIDValid && isPasswordValid) {
       pnp.setStepStatus(index, status: StepViewStatus.data);
     } else {
       pnp.setStepStatus(index, status: StepViewStatus.error);

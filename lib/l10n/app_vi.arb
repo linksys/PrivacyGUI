@@ -838,6 +838,7 @@
   "wifiName": "Tên WiFi",
   "wifiPassword": "Mật khẩu WiFi",
   "wifiPasswordLimit": "Mật khẩu WiFi phải từ 8-63 ký tự",
+  "wifiPasswordRuleHex": "Yêu cầu PSK hệ thập lục phân (0–9, A–F, a–f)",
   "wifiSSIDLengthLimit": "Tên WiFi phải từ 1-32 ký tự",
   "wifiShareQRScan": "Quét mã QR để chia sẻ WiFi",
   "wildcard": "Ký tự đại diện",
