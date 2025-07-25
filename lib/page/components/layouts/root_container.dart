@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/components/layouts/idle_checker.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
+import 'package:privacy_gui/providers/idle_checker_pause_provider.dart';
 import 'package:privacy_gui/providers/root/root_config.dart';
 import 'package:privacy_gui/providers/root/root_provider.dart';
 
@@ -62,6 +63,10 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
           // white list
           final routeName = widget.route?.name;
           if (routeName != null && idleCheckWhiteList.contains(routeName)) {
+            return;
+          }
+          // pause?
+          if (ref.read(idleCheckerPauseProvider) == true) {
             return;
           }
           logger.d('Idled!');

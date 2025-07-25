@@ -14,12 +14,13 @@ import 'package:privacy_gui/core/utils/bench_mark.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/nodes/providers/add_wired_nodes_state.dart';
+import 'package:privacy_gui/providers/idle_checker_pause_provider.dart';
 
 final addWiredNodesProvider =
-    NotifierProvider.autoDispose<AddWiredNodesNotifier, AddWiredNodesState>(
+    NotifierProvider<AddWiredNodesNotifier, AddWiredNodesState>(
         () => AddWiredNodesNotifier());
 
-class AddWiredNodesNotifier extends AutoDisposeNotifier<AddWiredNodesState> {
+class AddWiredNodesNotifier extends Notifier<AddWiredNodesState> {
   @override
   AddWiredNodesState build() => const AddWiredNodesState(isLoading: false);
 
@@ -44,29 +45,35 @@ class AddWiredNodesNotifier extends AutoDisposeNotifier<AddWiredNodesState> {
   Future startAutoOnboarding(BuildContext context) async {
     logger.d('[AddWiredNode]: start auto onboarding');
     final log = BenchMarkLogger(name: 'Add Wired Node Process')..start();
-    // ref.read(pollingProvider.notifier).stopPolling();
-    await setAutoOnboardingSettings(true);
-    final backhaulList = ref.read(deviceManagerProvider).backhaulInfoData;
     state = state.copyWith(
       isLoading: true,
       forceStop: false,
-      backhaulSnapshot: backhaulList,
+      loadingMessage: loc(context).addNodesSearchingNodes,
     );
+    // Pause the idle checker
+    ref.read(idleCheckerPauseProvider.notifier).state = true;
+    // Set router auto onboarding to true
+    await setAutoOnboardingSettings(true);
+    // Get backhaul info
+    final backhaulList = ref.read(deviceManagerProvider).backhaulInfoData;
+    state = state.copyWith(backhaulSnapshot: backhaulList);
 
     // logger.d('[AddWiredNode]: polling connect status');
     // await _startPollingConnectStatus();
-
     // state = state.copyWith(loadingMessage: loc(context).addNodesOnboardingNodes);
+    
     logger.d('[AddWiredNode]: check backhaul changes');
-    await _checkBackhaulChanges();
+    await _checkBackhaulChanges(context);
+    // Set router auto onboarding to false
     await stopAutoOnboarding();
+    // Fetch latest status
     logger.d('[AddWiredNode]: fetch nodes');
     final nodes = await _fetchNodes();
     state = state.copyWith(nodes: nodes);
     stopCheckingBackhaul(context);
     await ref.read(pollingProvider.notifier).forcePolling();
-
-    // ref.read(pollingProvider.notifier).startPolling();
+    // Resume the idle checker
+    ref.read(idleCheckerPauseProvider.notifier).state = false;
     final delta = log.end();
     logger.d('[AddWiredNode]: end auto onboarding, cost time: ${delta}ms');
   }
@@ -77,7 +84,7 @@ class AddWiredNodesNotifier extends AutoDisposeNotifier<AddWiredNodesState> {
       forceStop: false,
       loadingMessage: loc(context).refreshing,
     );
-    await _checkBackhaulChanges(true);
+    await _checkBackhaulChanges(context, true);
     final nodes = await _fetchNodes();
     state = state.copyWith(
       isLoading: false,
@@ -134,12 +141,13 @@ class AddWiredNodesNotifier extends AutoDisposeNotifier<AddWiredNodesState> {
     }
   }
 
-  Future _checkBackhaulChanges([bool refreshing = false]) async {
+  Future _checkBackhaulChanges(BuildContext context,
+      [bool refreshing = false]) async {
     if (state.forceStop) {
       logger.d('[AddWiredNode]: force stop poll backhaul info');
       return;
     }
-    final pollBackhaul = pollBackhaulInfo(refreshing);
+    final pollBackhaul = pollBackhaulInfo(context, refreshing);
 
     await for (final result in pollBackhaul) {
       if (result is! JNAPSuccess) {
@@ -149,7 +157,7 @@ class AddWiredNodesNotifier extends AutoDisposeNotifier<AddWiredNodesState> {
     }
   }
 
-  Stream pollBackhaulInfo([bool refreshing = false]) {
+  Stream pollBackhaulInfo(BuildContext context, [bool refreshing = false]) {
     final repo = ref.read(routerRepositoryProvider);
     final now = DateTime.now();
     return repo.scheduledCommand(
@@ -196,6 +204,10 @@ class AddWiredNodesNotifier extends AutoDisposeNotifier<AddWiredNodesState> {
               ? value
               : value + 1;
         });
+        if (foundCounting > 0) {
+          state = state.copyWith(
+              loadingMessage: loc(context).foundNNodesOnline(foundCounting));
+        }
         logger.i('[AddWiredNode]: Found $foundCounting new nodes');
         return false;
       },
@@ -207,7 +219,7 @@ class AddWiredNodesNotifier extends AutoDisposeNotifier<AddWiredNodesState> {
 
   ///
   /// Auto onboarding flow with _startPollingConnectStatus
-  /// 
+  ///
   // Stream pollBackhaulInfo([bool refreshing = false]) {
   //   final repo = ref.read(routerRepositoryProvider);
   //   int nodeCounting = 0;
@@ -303,15 +315,16 @@ class AddWiredNodesNotifier extends AutoDisposeNotifier<AddWiredNodesState> {
     state = state.copyWith(
       isLoading: false,
       forceStop: false,
-      loadingMessage: loc(context).done,
     );
   }
 
   Future stopAutoOnboarding() async {
     await setAutoOnboardingSettings(false);
+    ref.read(idleCheckerPauseProvider.notifier).state = false;
   }
 
   Future forceStopAutoOnboarding() async {
+    logger.i('[AddWiredNode]: force stop auto onboarding');
     if (state.isLoading) {
       state = state.copyWith(forceStop: true);
     }

@@ -1024,5 +1024,7 @@
   "pairWirelessNode": "Pair wireless node",
   "pairWiredNodeDone": "Pairing wired node. Click 'Done pairing' to finish.",
   "donePairing": "Done pairing",
-  "refreshing": "Refreshing"
+  "refreshing": "Refreshing",
+  "foundNNodesOnline": "{count, plural, other{{count} child nodes have just come online.} one{1 child node has just come online.}}",
+  "pairingWiredChildNodeDesc": "To complete the pairing, make sure your child node is connected to the master via a wired connection."
 }
