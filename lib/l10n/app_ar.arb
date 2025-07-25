@@ -886,6 +886,7 @@
   "wifiName": "اسم WiFi",
   "wifiPassword": "كلمة مرور WiFi",
   "wifiPasswordLimit": "8 - 64 حرفًا",
+  "wifiPasswordRuleHex": "مفتاح PSK سداسي عشري مطلوب (0-9، A-F، a-f)",
   "wifiSSIDLengthLimit": "يجب أن يكون أقل من 32 حرفًا",
   "wifiShareQRScan": "قم بمسح رمز الاستجابة السريعة للانضمام إلى هذه الشبكة",
   "wildcard": "حرف بدل",

@@ -838,6 +838,7 @@
   "wifiName": "WiFi-verkon nimi",
   "wifiPassword": "WiFi-salasana",
   "wifiPasswordLimit": "8–64 merkkiä",
+  "wifiPasswordRuleHex": "Heksadesimaalinen PSK vaaditaan (0–9, A–F, a–f)",
   "wifiSSIDLengthLimit": "Enintään 32 merkkiä",
   "wifiShareQRScan": "Skannaa QR-koodi liittyäksesi tähän verkkoon",
   "wildcard": "Yleismerkki",

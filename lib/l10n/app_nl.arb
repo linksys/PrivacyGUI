@@ -885,6 +885,7 @@
   "wifiName": "WiFi-naam",
   "wifiPassword": "WiFi-wachtwoord",
   "wifiPasswordLimit": "8 - 64 tekens",
+  "wifiPasswordRuleHex": "Hexadecimale PSK vereist (0–9, A–F, a–f)",
   "wifiSSIDLengthLimit": "Moet minder dan 32 tekens lang zijn",
   "wifiShareQRScan": "Scan de QR-code om lid te worden van dit netwerk",
   "wildcard": "Joker",

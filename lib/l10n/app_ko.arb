@@ -838,6 +838,7 @@
   "wifiName": "WiFi 이름",
   "wifiPassword": "WiFi 암호",
   "wifiPasswordLimit": "8 - 64자",
+  "wifiPasswordRuleHex": "16진수 PSK 필요 (0–9, A–F, a–f)",
   "wifiSSIDLengthLimit": "32자 미만이어야 함",
   "wifiShareQRScan": "QR 코드를 스캔하여 이 네트워크에 참여",
   "wildcard": "와일드카드",

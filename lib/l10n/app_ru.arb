@@ -838,6 +838,7 @@
   "wifiName": "Имя сети WiFi",
   "wifiPassword": "Пароль WiFi",
   "wifiPasswordLimit": "8 - 64 символа",
+  "wifiPasswordRuleHex": "Требуется шестнадцатеричный PSK (0–9, A–F, a–f)",
   "wifiSSIDLengthLimit": "Должно быть меньше 32 символов",
   "wifiShareQRScan": "Отсканируйте QR-код, чтобы присоединиться к этой сети",
   "wildcard": "Подстановочный знак",

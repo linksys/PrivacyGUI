@@ -885,6 +885,7 @@
   "wifiName": "Nombre de WiFi",
   "wifiPassword": "Contraseña de WiFi",
   "wifiPasswordLimit": "8 - 64 caracteres",
+  "wifiPasswordRuleHex": "Se requiere PSK hexadecimal (0–9, A–F, a–f)",
   "wifiSSIDLengthLimit": "Debe tener menos de 32 caracteres",
   "wifiShareQRScan": "Escanee el código QR para unirse a esta red",
   "wildcard": "Comodín",

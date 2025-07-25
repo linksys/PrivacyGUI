@@ -886,6 +886,7 @@
   "wifiName": "WiFi の名前",
   "wifiPassword": "WiFi のパスワード",
   "wifiPasswordLimit": "8 - 64文字",
+  "wifiPasswordRuleHex": "16進数PSKが必要です (0–9, A–F, a–f)",
   "wifiSSIDLengthLimit": "32文字未満でなければなりません。",
   "wifiShareQRScan": "このネットワークに参加するにはQRコードをスキャンしてください。",
   "wildcard": "ワイルドカード",
