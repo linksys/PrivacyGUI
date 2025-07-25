@@ -141,6 +141,29 @@ class MACAddressRule extends RegExValidationRule {
   RegExp get _rule => RegExp(r"^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$");
 }
 
+class IPv6Rule extends RegExValidationRule {
+  @override
+  String get name => 'IPv6Rule';
+
+  @override
+  RegExp get _rule => RegExp(
+      r'^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|' // 1:2:3:4:5:6:7:8
+      r'([0-9a-fA-F]{1,4}:){1,7}:|' // 1::, 1:2:3:4:5:6:7::
+      r'([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|' // 1::8, 1:2:3:4:5:6::8
+      r'([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|' // 1::7:8, 1:2:3:4:5::7:8, 1:2:3:4:5::8
+      r'([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|' // 1::6:7:8, 1:2:3:4::6:7:8, etc.
+      r'([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|'
+      r'([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|'
+      r'[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|' // 1::5:6:7:8:9:a:b, ::4:5:6:7:8:9:a:b, etc.
+      r':((:[0-9a-fA-F]{1,4}){1,7}|:)|' // ::2:3:4:5:6:7:8, ::
+      r'fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]+|' // link-local
+      r'::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}'
+      r'(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|' // IPv4-mapped IPv6 (::ffff:255.255.255.255)
+      r'([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}'
+      r'(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))$' // IPv4-embedded IPv6 (2001:db8::192.168.0.1)
+      );
+}
+
 class IPv6WithReservedRule extends ValidationRule {
   @override
   String get name => 'IPv6WithReservedRule';
@@ -490,7 +513,8 @@ class IpAddressNoReservedRule extends ValidationRule {
 
       // 2. Check for 127.0.0.0/8 (Loopback)
       // This range includes any address where the first octet (byte) is 127.
-      if (rawAddress[0] == 0x7F) { // 0x7F is 127 in hexadecimal
+      if (rawAddress[0] == 0x7F) {
+        // 0x7F is 127 in hexadecimal
         // print('Reject: Loopback address (127.0.0.0/8).');
         return false;
       }

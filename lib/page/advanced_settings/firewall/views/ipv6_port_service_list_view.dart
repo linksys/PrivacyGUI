@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/models/ipv6_firewall_rule.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/components/settings_view/editable_card_list_settings_view.dart';
@@ -41,6 +42,7 @@ class _Ipv6PortServiceListViewState
   final TextEditingController lastPortTextController = TextEditingController();
   final TextEditingController ipAddressTextController = TextEditingController();
   bool _isEditRuleValid = false;
+  bool _onSelectDevice = false;
 
   @override
   void initState() {
@@ -241,6 +243,7 @@ class _Ipv6PortServiceListViewState
                 AppIconButton.noPadding(
                   icon: LinksysIcons.devices,
                   onTap: () async {
+                    _onSelectDevice = true;
                     final result =
                         await context.pushNamed<List<DeviceListItem>?>(
                       RouteNamed.devicePicker,
@@ -254,6 +257,7 @@ class _Ipv6PortServiceListViewState
                               ipv6Address: selectedIpv6Address));
                       _validateInputData();
                     }
+                    _onSelectDevice = false;
                   },
                 ),
               ],
@@ -335,9 +339,11 @@ class _Ipv6PortServiceListViewState
           0 => notifier.isRuleNameValidate(applicationTextController.text)
               ? null
               : loc(context).notBeEmptyAndLessThanThirtyThree,
-          2 => notifier.isDeviceIpValidate(ipAddressTextController.text)
+          2 => _onSelectDevice
               ? null
-              : loc(context).invalidIpAddress,
+              : notifier.isDeviceIpValidate(ipAddressTextController.text)
+                  ? null
+                  : loc(context).invalidIpAddress,
           3 => notifier.isPortRangeValid(
                   int.tryParse(firstPortTextController.text) ?? 0,
                   int.tryParse(lastPortTextController.text) ?? 0)
