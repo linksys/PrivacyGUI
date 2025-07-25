@@ -8,8 +8,7 @@ import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/theme/custom_responsive.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 
-import 'testable_widget.dart';
-import 'theme.dart';
+import 'theme_data.dart';
 
 Widget testableRouter({
   required GoRouter router,
@@ -24,8 +23,8 @@ Widget testableRouter({
     overrides: overrides,
     parent: provider,
     child: MaterialApp.router(
-      theme: theme ?? linksysLightThemeData,
-      darkTheme: darkTheme ?? linksysDarkThemeData,
+      theme: theme ?? mockLightThemeData,
+      darkTheme: darkTheme ?? mockDarkThemeData,
       locale: locale,
       themeMode: themeMode,
       localizationsDelegates: AppLocalizations.localizationsDelegates,

@@ -8,7 +8,7 @@ import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 
 import 'config.dart';
 import 'screen.dart';
-import 'theme.dart';
+import 'theme_data.dart';
 
 extension ScreenSizeManager on WidgetTester {
   Future<void> setScreenSize(ScreenSize screenSize) async {
