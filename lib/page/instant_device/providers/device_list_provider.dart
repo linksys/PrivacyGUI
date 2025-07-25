@@ -69,7 +69,7 @@ class DeviceListNotifier extends Notifier<DeviceListState> {
     ipv6Address = isOnline ? (device.connections.first.ipv6Address ?? '') : '';
     macAddress = device.getMacAddress();
     manufacturer = device.manufacturer ?? '';
-    model = device.modelNumber ?? '';
+    model = device.modelNumber ?? device.model.deviceType;
     operatingSystem = device.operatingSystem ?? '';
     band = ref.read(deviceManagerProvider.notifier).getBandConnectedBy(device);
     signalStrength = device.signalDecibels;
