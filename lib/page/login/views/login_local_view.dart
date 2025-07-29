@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/error_code.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/page/components/styled/bottom_bar.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
@@ -41,6 +42,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
   bool isCountdownJustFinished = false;
   bool _showPassword = false;
   late AuthNotifier auth;
+  NodeDeviceInfo? _deviceInfo;
 
   final TextEditingController _passwordController = TextEditingController();
 
@@ -55,6 +57,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
           .read(dashboardManagerProvider.notifier)
           .checkDeviceInfo(null)
           .then((value) {
+        _deviceInfo = value;
         buildBetterActions(value.services);
         _getAdminPasswordAuthStatus(value.services);
       });
@@ -66,6 +69,35 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
     super.dispose();
     _timer?.cancel();
     _passwordController.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant LoginLocalView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.args != oldWidget.args) {
+      if (widget.args['reset'] == true) {
+        _passwordController.clear();
+        auth
+            .getAdminPasswordAuthStatus(_deviceInfo?.services ?? [])
+            .then((value) {
+          // If the delay time is null, it means the status has been reset
+          // Clear the timer and reset the state
+          if (value != null) {
+            final delayTime = value['delayTimeRemaining'] as int?;
+            if (delayTime == null) {
+              auth.init();
+              _timer?.cancel();
+              setState(() {
+                _timer = null;
+                _delayTime = null;
+                _remainingAttempts = null;
+                _errorMessage = null;
+              });
+            }
+          }
+        });
+      }
+    }
   }
 
   @override
@@ -263,7 +295,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
 
   void _getAdminPasswordAuthStatus(List<String> services) {
     auth.getAdminPasswordAuthStatus(services).then((result) {
-      if (result != null && !isCountdownJustFinished) {
+      if (result != null) {
         // Create the error and the countdown has yet to be triggered
         final JNAPError jnapError = JNAPError(
           result: errorPasswordCheckDelayed,

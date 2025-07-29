@@ -322,7 +322,6 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   Future<void> getPasswordHint() async {
     final previousState = state.value;
     if (previousState != null) {
-      state = const AsyncValue.loading();
       state = await AsyncValue.guard(() async {
         final routerRepository = ref.read(routerRepositoryProvider);
         final result = await routerRepository.send(
