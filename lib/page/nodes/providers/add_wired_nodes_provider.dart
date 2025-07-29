@@ -17,10 +17,10 @@ import 'package:privacy_gui/page/nodes/providers/add_wired_nodes_state.dart';
 import 'package:privacy_gui/providers/idle_checker_pause_provider.dart';
 
 final addWiredNodesProvider =
-    NotifierProvider<AddWiredNodesNotifier, AddWiredNodesState>(
+    NotifierProvider.autoDispose<AddWiredNodesNotifier, AddWiredNodesState>(
         () => AddWiredNodesNotifier());
 
-class AddWiredNodesNotifier extends Notifier<AddWiredNodesState> {
+class AddWiredNodesNotifier extends AutoDisposeNotifier<AddWiredNodesState> {
   @override
   AddWiredNodesState build() => const AddWiredNodesState(isLoading: false);
 
@@ -61,7 +61,7 @@ class AddWiredNodesNotifier extends Notifier<AddWiredNodesState> {
     // logger.d('[AddWiredNode]: polling connect status');
     // await _startPollingConnectStatus();
     // state = state.copyWith(loadingMessage: loc(context).addNodesOnboardingNodes);
-    
+
     logger.d('[AddWiredNode]: check backhaul changes');
     await _checkBackhaulChanges(context);
     // Set router auto onboarding to false

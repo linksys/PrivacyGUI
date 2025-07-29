@@ -379,13 +379,15 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
     //   }
     // });
 
-    final addWiredNodesNotifier = ref.read(addWiredNodesProvider.notifier);
-    addWiredNodesNotifier.startAutoOnboarding(context);
-
     showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext dialogContext) {
+        final addWiredNodesNotifier = ref.read(addWiredNodesProvider.notifier);
+        Future.doWhile(() => !mounted).then((_) {
+          addWiredNodesNotifier.startAutoOnboarding(context);
+        });
+
         return AlertDialog(
           title: SizedBox(
             width: kDefaultDialogWidth,
@@ -399,11 +401,11 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
                 addWiredNodesState.isLoading
                     ? const AppSpinner()
                     : SizedBox(
-                        width: 60,
-                        height: 60,
-                        child: Icon(Icons.check_circle_outline, size: 60),
+                        width: 200,
+                        height: 200,
+                        child: Icon(Icons.check_circle_outline, size: 48),
                       ),
-                AppGap.small2(),
+                AppGap.medium(),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
