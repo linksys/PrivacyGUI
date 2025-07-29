@@ -105,8 +105,8 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
 
   Future fetchAvailableFirmwareUpdates() {
     logger.i('[FIRMWARE]: Examine if there are firmware updates available');
-    return fetchFirmwareUpdateStream(force: true, retry: 1)
-        .single
+    return fetchFirmwareUpdateStream(force: true, retry: 3)
+        .last
         .onError((error, stackTrace) => [])
         .then((resultList) {
       // In addition to the build function, state updates here should also be examined
@@ -264,6 +264,11 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     return (state.nodesStatus ?? [])
         .where((e) => e.availableUpdate != null)
         .length;
+  }
+
+  bool isFailedCheckFirmwareUpdate() {
+    return state.nodesStatus?.any((e) => e.lastOperationFailure != null) ??
+        false;
   }
 
   (List<FirmwareUpdateStatus>, bool) _examineStatusResult(
