@@ -230,7 +230,7 @@ class _PortRangeForwardingContentViewState
           _ => AppText.bodySmall(''),
         };
       },
-      editCellBuilder: (context, ref, index, rule, error) {
+      editCellBuilder: (context, index, controller) {
         final stateRule = ref.watch(portRangeForwardingRuleProvider).rule;
 
         return switch (index) {

@@ -7,6 +7,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/components/settings_view/editable_card_list_settings_view.dart';
 import 'package:privacy_gui/page/components/settings_view/editable_table_settings_view.dart';
+import 'package:privacy_gui/page/components/settings_view/editable_table_settings_view.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
@@ -42,7 +43,6 @@ class _Ipv6PortServiceListViewState
   final TextEditingController lastPortTextController = TextEditingController();
   final TextEditingController ipAddressTextController = TextEditingController();
   bool _isEditRuleValid = false;
-  bool _onSelectDevice = false;
 
   @override
   void initState() {
@@ -194,7 +194,7 @@ class _Ipv6PortServiceListViewState
           _ => AppText.bodySmall(''),
         };
       },
-      editCellBuilder: (context, ref, index, rule, error) {
+      editCellBuilder: (context, index, controller) {
         final stateRule = ref.watch(ipv6PortServiceRuleProvider).rule;
 
         return switch (index) {
@@ -243,7 +243,6 @@ class _Ipv6PortServiceListViewState
                 AppIconButton.noPadding(
                   icon: LinksysIcons.devices,
                   onTap: () async {
-                    _onSelectDevice = true;
                     final result =
                         await context.pushNamed<List<DeviceListItem>?>(
                       RouteNamed.devicePicker,
@@ -257,7 +256,7 @@ class _Ipv6PortServiceListViewState
                               ipv6Address: selectedIpv6Address));
                       _validateInputData();
                     }
-                    _onSelectDevice = false;
+                    controller.validate(index);
                   },
                 ),
               ],
@@ -339,11 +338,9 @@ class _Ipv6PortServiceListViewState
           0 => notifier.isRuleNameValidate(applicationTextController.text)
               ? null
               : loc(context).notBeEmptyAndLessThanThirtyThree,
-          2 => _onSelectDevice
+          2 => notifier.isDeviceIpValidate(ipAddressTextController.text)
               ? null
-              : notifier.isDeviceIpValidate(ipAddressTextController.text)
-                  ? null
-                  : loc(context).invalidIpAddress,
+              : loc(context).invalidIpAddress,
           3 => notifier.isPortRangeValid(
                   int.tryParse(firstPortTextController.text) ?? 0,
                   int.tryParse(lastPortTextController.text) ?? 0)
