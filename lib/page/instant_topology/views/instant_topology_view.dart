@@ -11,6 +11,7 @@ import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/customs/animated_refresh_container.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
@@ -23,6 +24,7 @@ import 'package:privacy_gui/page/instant_topology/_instant_topology.dart';
 import 'package:privacy_gui/page/instant_topology/views/model/tree_view_node.dart';
 import 'package:privacy_gui/page/instant_topology/views/widgets/tree_node_item.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -87,11 +89,38 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
             )
           : StyledAppPageView(
               // scrollable: true,
+              onRefresh: () {
+                return ref.read(pollingProvider.notifier).forcePolling();
+              },
               hideTopbar: _isWidget,
               useMainPadding: true,
               appBarStyle: _isWidget ? AppBarStyle.none : AppBarStyle.back,
               padding: EdgeInsets.zero,
               title: loc(context).instantTopology,
+              actions: !Utils.isMobilePlatform()
+                  ? [
+                      AnimatedRefreshContainer(
+                        builder: (controller) {
+                          return Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: AppIconButton.noPadding(
+                              color: Theme.of(context).colorScheme.primary,
+                              icon: LinksysIcons.refresh,
+                              onTap: () {
+                                controller.repeat();
+                                ref
+                                    .read(pollingProvider.notifier)
+                                    .forcePolling()
+                                    .then((value) {
+                                  controller.stop();
+                                });
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                    ]
+                  : null,
               child: (context, constraints) => Column(
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -111,8 +140,8 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
     return ResponsiveLayout.isMobileLayout(context)
         ? TreeView<RouterTreeNode>(
             treeController: treeController,
-            physics: ScrollPhysics(),
-            shrinkWrap: true,
+            physics: const BouncingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics()),
             nodeBuilder:
                 (BuildContext context, TreeEntry<RouterTreeNode> entry) {
               return TreeIndentation(
@@ -150,46 +179,55 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
             scrollDirection: Axis.horizontal,
             child: SizedBox(
               width: largeDesiredTreeWidth,
-              child: TreeView<RouterTreeNode>(
-                treeController: treeController,
-                nodeBuilder:
-                    (BuildContext context, TreeEntry<RouterTreeNode> entry) {
-                  return TreeIndentation(
-                    entry: entry,
-                    guide: IndentGuide.connectingLines(
-                      indent: 72,
-                      thickness: 0.5,
-                      pathModifier: (path) => TopologyNodeItem.buildPath(
-                          path,
-                          entry.node,
-                          entry.node.data.isMaster
-                              ? ref.watch(internetStatusProvider) ==
-                                  InternetStatus.online
-                              : entry.node.data.isOnline),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(0, 16, 8, 0),
-                      child: switch (entry.node.runtimeType) {
-                        OnlineTopologyNode => Row(
-                            children: [
-                              SizedBox(
-                                  width: 200,
-                                  child:
-                                      _buildHeader(context, ref, entry.node)),
-                              const Spacer(),
-                            ],
-                          ),
-                        RouterTopologyNode => Row(
-                            children: [
-                              _buildNode(context, ref, entry.node),
-                              const Spacer(),
-                            ],
-                          ),
-                        _ => const Center(),
-                      },
-                    ),
-                  );
+              // Somehow the parent of the RefreshIndicator is served to the parent of the SingleChildScrollView
+              // So we need to wrap it with another RefreshIndicator again here.
+              child: RefreshIndicator(
+                onRefresh: () {
+                  return ref.read(pollingProvider.notifier).forcePolling();
                 },
+                child: TreeView<RouterTreeNode>(
+                  treeController: treeController,
+                  physics: const BouncingScrollPhysics(
+                      parent: AlwaysScrollableScrollPhysics()),
+                  nodeBuilder:
+                      (BuildContext context, TreeEntry<RouterTreeNode> entry) {
+                    return TreeIndentation(
+                      entry: entry,
+                      guide: IndentGuide.connectingLines(
+                        indent: 72,
+                        thickness: 0.5,
+                        pathModifier: (path) => TopologyNodeItem.buildPath(
+                            path,
+                            entry.node,
+                            entry.node.data.isMaster
+                                ? ref.watch(internetStatusProvider) ==
+                                    InternetStatus.online
+                                : entry.node.data.isOnline),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(0, 16, 8, 0),
+                        child: switch (entry.node.runtimeType) {
+                          OnlineTopologyNode => Row(
+                              children: [
+                                SizedBox(
+                                    width: 200,
+                                    child:
+                                        _buildHeader(context, ref, entry.node)),
+                                const Spacer(),
+                              ],
+                            ),
+                          RouterTopologyNode => Row(
+                              children: [
+                                _buildNode(context, ref, entry.node),
+                                const Spacer(),
+                              ],
+                            ),
+                          _ => const Center(),
+                        },
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
           );
