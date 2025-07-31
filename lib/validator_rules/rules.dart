@@ -179,6 +179,17 @@ class IPv6Rule extends RegExValidationRule {
       r'([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}'
       r'(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))$' // IPv4-embedded IPv6 (2001:db8::192.168.0.1)
       );
+
+  @override
+  bool validate(String input) {
+    try {
+      // Uri.parseIPv6Address will throw a FormatException if the address is invalid.
+      Uri.parseIPv6Address(input);
+      return true;
+    } catch (e) {
+      return false || _rule.hasMatch(input);
+    }
+  }
 }
 
 class IPv6WithReservedRule extends ValidationRule {

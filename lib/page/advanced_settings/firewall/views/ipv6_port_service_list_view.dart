@@ -7,7 +7,6 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/components/settings_view/editable_card_list_settings_view.dart';
 import 'package:privacy_gui/page/components/settings_view/editable_table_settings_view.dart';
-import 'package:privacy_gui/page/components/settings_view/editable_table_settings_view.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
@@ -18,7 +17,6 @@ import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/input_field/ip_form_field_display_type.dart';
 import 'package:privacygui_widgets/widgets/input_field/ipv6_form_field.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
@@ -229,9 +227,29 @@ class _Ipv6PortServiceListViewState
               children: [
                 Expanded(
                   child: AppIPv6FormField(
-                    displayType: AppIpFormFieldDisplayType.tight,
                     controller: ipAddressTextController,
                     border: const OutlineInputBorder(),
+                    autovalidateMode: AutovalidateMode.disabled,
+                    suffixIcon: AppIconButton.noPadding(
+                      icon: LinksysIcons.devices,
+                      onTap: () async {
+                        final result =
+                            await context.pushNamed<List<DeviceListItem>?>(
+                          RouteNamed.devicePicker,
+                          extra: {'type': 'ipv6', 'selectMode': 'single'},
+                        );
+                        if (result != null) {
+                          final selectedIpv6Address = result.first.ipv6Address;
+                          ipAddressTextController.text = selectedIpv6Address;
+                          ref
+                              .read(ipv6PortServiceRuleProvider.notifier)
+                              .updateRule(stateRule?.copyWith(
+                                  ipv6Address: selectedIpv6Address));
+                          _validateInputData();
+                        }
+                        controller.validate(index);
+                      },
+                    ),
                     onChanged: (value) {
                       ref
                           .read(ipv6PortServiceRuleProvider.notifier)
@@ -239,25 +257,6 @@ class _Ipv6PortServiceListViewState
                       _validateInputData();
                     },
                   ),
-                ),
-                AppIconButton.noPadding(
-                  icon: LinksysIcons.devices,
-                  onTap: () async {
-                    final result =
-                        await context.pushNamed<List<DeviceListItem>?>(
-                      RouteNamed.devicePicker,
-                      extra: {'type': 'ipv6', 'selectMode': 'single'},
-                    );
-                    if (result != null) {
-                      final selectedIpv6Address = result.first.ipv6Address;
-                      ipAddressTextController.text = selectedIpv6Address;
-                      ref.read(ipv6PortServiceRuleProvider.notifier).updateRule(
-                          stateRule?.copyWith(
-                              ipv6Address: selectedIpv6Address));
-                      _validateInputData();
-                    }
-                    controller.validate(index);
-                  },
                 ),
               ],
             ),
