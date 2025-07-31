@@ -7,6 +7,7 @@ import 'package:privacy_gui/page/instant_topology/_instant_topology.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/instant_topology/views/model/node_instant_actions.dart';
 import 'package:privacy_gui/page/instant_topology/views/widgets/tree_node_item.dart';
+import 'package:privacygui_widgets/theme/custom_theme.dart';
 
 import '../../../common/config.dart';
 import '../../../common/di.dart';
@@ -154,6 +155,38 @@ void main() async {
         skipOffstage: false,
       );
       await tester.tap(instantActionFinder);
+      await tester.pumpAndSettle();
+    });
+
+    testLocalizations(
+        'Instant-Topology view - instant-action popup - legacy child node',
+        (tester, locale) async {
+      when(mockTopologyNotifier.build())
+          .thenReturn(TopologyTestData().testTopologyLegacySlavesDaisyState);
+
+      final widget = testableSingleRoute(
+        overrides: [
+          instantTopologyProvider.overrideWith(() => mockTopologyNotifier),
+        ],
+        locale: locale,
+        child: const InstantTopologyView(),
+      );
+      await tester.pumpWidget(widget);
+      await tester.runAsync(() async {
+        final context = tester.element(find.byType(InstantTopologyView));
+        await precacheImage(
+            CustomTheme.of(context).images.devices.routerMx5300, context);
+        await precacheImage(
+            CustomTheme.of(context).images.devices.routerLn12, context);
+        await precacheImage(
+            CustomTheme.of(context).images.devices_xl.routerLn12, context);
+        await tester.pumpAndSettle();
+      });
+      await tester.pumpAndSettle();
+      final treeNodeItemFinder =
+          find.byType(TopologyNodeItem, skipOffstage: false);
+      await tester.scrollUntilVisible(treeNodeItemFinder.last, 10,
+          scrollable: find.byType(Scrollable).last);
       await tester.pumpAndSettle();
     });
 

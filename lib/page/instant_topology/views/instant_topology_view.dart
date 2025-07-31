@@ -234,34 +234,12 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
   }
 
   Widget _buildNode(BuildContext context, WidgetRef ref, RouterTreeNode node) {
-    final autoOnboarding = serviceHelper.isSupportAutoOnboarding();
-    final hasBlinkFunction = serviceHelper.isSupportLedBlinking();
     final supportChildReboot = serviceHelper.isSupportChildReboot();
-    final supportChildFactoryReset = serviceHelper.isSupportChildFactoryReset();
 
     return ResponsiveLayout.isMobileLayout(context)
         ? TopologyNodeItem.simple(
             node: node,
-            actions: node.data.isMaster
-                ? [
-                    if (hasBlinkFunction &&
-                        isCognitiveMeshRouter(
-                            modelNumber: node.data.model,
-                            hardwareVersion: node.data.hardwareVersion))
-                      NodeInstantActions.blink,
-                    NodeInstantActions.reboot,
-                    if (autoOnboarding) NodeInstantActions.pair,
-                    NodeInstantActions.reset,
-                  ]
-                : [
-                    if (hasBlinkFunction &&
-                        isCognitiveMeshRouter(
-                            modelNumber: node.data.model,
-                            hardwareVersion: node.data.hardwareVersion))
-                      NodeInstantActions.blink,
-                    if (supportChildReboot) NodeInstantActions.reboot,
-                    if (supportChildFactoryReset) NodeInstantActions.reset,
-                  ],
+            actions: _buildActions(node),
             onTap: () {
               onNodeTap(context, ref, node);
             },
@@ -271,26 +249,7 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
           )
         : TopologyNodeItem(
             node: node,
-            actions: node.data.isMaster
-                ? [
-                    if (hasBlinkFunction &&
-                        isCognitiveMeshRouter(
-                            modelNumber: node.data.model,
-                            hardwareVersion: node.data.hardwareVersion))
-                      NodeInstantActions.blink,
-                    NodeInstantActions.reboot,
-                    if (autoOnboarding) NodeInstantActions.pair,
-                    NodeInstantActions.reset,
-                  ]
-                : [
-                    if (hasBlinkFunction &&
-                        isCognitiveMeshRouter(
-                            modelNumber: node.data.model,
-                            hardwareVersion: node.data.hardwareVersion))
-                      NodeInstantActions.blink,
-                    if (supportChildReboot) NodeInstantActions.reboot,
-                    if (supportChildFactoryReset) NodeInstantActions.reset,
-                  ],
+            actions: _buildActions(node),
             onTap: () {
               onNodeTap(context, ref, node);
             },
@@ -298,6 +257,42 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
               _handleSelectedNodeAction(action, node, supportChildReboot);
             },
           );
+  }
+
+  List<NodeInstantActions> _buildActions(RouterTreeNode node) {
+    final autoOnboarding = serviceHelper.isSupportAutoOnboarding();
+    final hasBlinkFunction = serviceHelper.isSupportLedBlinking();
+    final supportChildReboot = serviceHelper.isSupportChildReboot();
+    final supportChildFactoryReset = serviceHelper.isSupportChildFactoryReset();
+
+    return node.data.isMaster
+        ? [
+            if (hasBlinkFunction &&
+                isCognitiveMeshRouter(
+                    modelNumber: node.data.model,
+                    hardwareVersion: node.data.hardwareVersion))
+              NodeInstantActions.blink,
+            NodeInstantActions.reboot,
+            if (autoOnboarding) NodeInstantActions.pair,
+            NodeInstantActions.reset,
+          ]
+        : [
+            if (hasBlinkFunction &&
+                isCognitiveMeshRouter(
+                    modelNumber: node.data.model,
+                    hardwareVersion: node.data.hardwareVersion))
+              NodeInstantActions.blink,
+            if (supportChildReboot &&
+                isCognitiveMeshRouter(
+                    modelNumber: node.data.model,
+                    hardwareVersion: node.data.hardwareVersion))
+              NodeInstantActions.reboot,
+            if (supportChildFactoryReset &&
+                isCognitiveMeshRouter(
+                    modelNumber: node.data.model,
+                    hardwareVersion: node.data.hardwareVersion))
+              NodeInstantActions.reset,
+          ];
   }
 
   _handleSelectedNodeAction(
