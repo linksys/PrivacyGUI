@@ -115,6 +115,7 @@ class StyledAppPageView extends ConsumerStatefulWidget {
   final Widget Function(BuildContext context, BoxConstraints constraints)?
       child;
   final double toolbarHeight;
+  final Future<void> Function()? onRefresh;
   final VoidCallback? onBackTap;
   final StyledBackState backState;
   final List<Widget>? actions;
@@ -153,6 +154,7 @@ class StyledAppPageView extends ConsumerStatefulWidget {
     this.scrollable,
     this.toolbarHeight = kDefaultToolbarHeight,
     this.onBackTap,
+    this.onRefresh,
     this.backState = StyledBackState.enabled,
     this.actions,
     this.child,
@@ -193,6 +195,7 @@ class StyledAppPageView extends ConsumerStatefulWidget {
     bool largeMenu = false,
     bool useMainPadding = true,
     PageContentType pageContentType = PageContentType.flexible,
+    Future<void> Function()? onRefresh,
   }) {
     return StyledAppPageView(
       child: child,
@@ -206,6 +209,7 @@ class StyledAppPageView extends ConsumerStatefulWidget {
       pageContentType: pageContentType,
       hideTopbar: true,
       appBarStyle: AppBarStyle.none,
+      onRefresh: onRefresh,
     );
   }
 
@@ -296,6 +300,7 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
               : AppPageView(
                   // appBar: _buildAppBar(context, ref),
                   padding: widget.padding,
+                  onRefresh: widget.onRefresh,
                   scrollable: widget.scrollable,
                   scrollController: _scrollController,
                   bottomSheet: widget.bottomSheet,
