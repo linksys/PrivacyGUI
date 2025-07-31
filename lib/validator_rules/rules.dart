@@ -158,10 +158,11 @@ class MACAddressRule extends RegExValidationRule {
   RegExp get _rule => RegExp(r"^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$");
 }
 
-class IPv6Rule extends ValidationRule {
+class IPv6Rule extends RegExValidationRule {
   @override
   String get name => 'IPv6Rule';
 
+  @override
   RegExp get _rule => RegExp(
       r'^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|' // 1:2:3:4:5:6:7:8
       r'([0-9a-fA-F]{1,4}:){1,7}:|' // 1::, 1:2:3:4:5:6:7::

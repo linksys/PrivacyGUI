@@ -49,7 +49,6 @@ class _AddRuleContentViewState
   final TextEditingController _ipAddressController = TextEditingController();
   String? _portError;
   String? _descriptionError;
-  String? _ipError;
 
   bool _isEdit = false;
 
@@ -155,17 +154,14 @@ class _AddRuleContentViewState
       AppTextField.outline(
         headerText: loc(context).ruleName,
         controller: _ruleNameController,
-        onFocusChanged: (focus) {
+        onChanged: (value) {
+          _notifier.updateRule(state.rule?.copyWith(description: value));
           setState(() {
-            _descriptionError = focus
-                ? null
-                : _notifier.isRuleNameValidate(_ruleNameController.text)
+            _descriptionError =
+                _notifier.isRuleNameValidate(_ruleNameController.text)
                     ? null
                     : loc(context).notBeEmptyAndLessThanThirtyThree;
           });
-        },
-        onChanged: (value) {
-          _notifier.updateRule(state.rule?.copyWith(description: value));
         },
         errorText: _descriptionError,
       ),
@@ -188,41 +184,34 @@ class _AddRuleContentViewState
         },
       ),
       const AppGap.large2(),
-      AppText.labelMedium(loc(context).ipAddress),
-      const AppGap.medium(),
       AppIPv6FormField(
         semanticLabel: 'ip address',
+        title: loc(context).ipAddress,
         controller: _ipAddressController,
         border: const OutlineInputBorder(),
         onChanged: (value) {
           _notifier.updateRule(state.rule?.copyWith(ipv6Address: value));
         },
-        onFocusChanged: (focus) {
-          setState(() {
-            _ipError = focus
-                ? null
-                : _notifier.isDeviceIpValidate(_ipAddressController.text)
-                    ? null
-                    : loc(context).invalidIpAddress;
-          });
+        validator: (value) {
+          return _notifier.isDeviceIpValidate(value ?? '')
+              ? null
+              : loc(context).invalidIpAddress;
         },
-        errorText: _ipError,
-      ),
-      const AppGap.small3(),
-      AppIconButton.noPadding(
-        icon: LinksysIcons.devices,
-        onTap: () async {
-          final result = await context.pushNamed<List<DeviceListItem>?>(
-              RouteNamed.devicePicker,
-              extra: {'type': 'ipv6', 'selectMode': 'single'});
-          if (result != null) {
-            final device = result.first;
-            _ipAddressController.text = device.ipv6Address;
-            _notifier.updateRule(
-              state.rule?.copyWith(ipv6Address: device.ipv6Address),
-            );
-          }
-        },
+        suffixIcon: AppIconButton.noPadding(
+          icon: LinksysIcons.devices,
+          onTap: () async {
+            final result = await context.pushNamed<List<DeviceListItem>?>(
+                RouteNamed.devicePicker,
+                extra: {'type': 'ipv6', 'selectMode': 'single'});
+            if (result != null) {
+              final device = result.first;
+              _ipAddressController.text = device.ipv6Address;
+              _notifier.updateRule(
+                state.rule?.copyWith(ipv6Address: device.ipv6Address),
+              );
+            }
+          },
+        ),
       ),
       const AppGap.large2(),
       Row(
