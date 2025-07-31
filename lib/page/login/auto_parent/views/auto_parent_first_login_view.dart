@@ -94,21 +94,27 @@ class _AutoParentFirstLoginViewState
 
   void _doFirmwareUpdateCheck() async {
     logger.i('[FirstTime]: Do Firmware Update Check');
+    bool failCheck = false;
     final isNewFwAvailable = await ref
         .read(autoParentFirstLoginProvider.notifier)
-        .checkAndAutoInstallFirmware();
+        .checkAndAutoInstallFirmware()
+        .onError((e, _) {
+      logger.e('[FirstTime]: Failed to check firmware update');
+      failCheck = true;
+      return false;
+    });
     if (isNewFwAvailable) {
       logger.i('[FirstTime]: Firmware Updateing...');
     } else {
-      logger.i('[FirstTime]: No available FW, ready to go');
-      _finishFirstTimeLogin();
+      logger.i('[FirstTime]: ${failCheck ? 'Fw check failed' : 'No available FW'}, ready to go.');
+      _finishFirstTimeLogin(failCheck);
     }
   }
 
-  void _finishFirstTimeLogin() async {
+  void _finishFirstTimeLogin([bool failCheck = false]) async {
     await ref
         .read(autoParentFirstLoginProvider.notifier)
-        .finishFirstTimeLogin();
+        .finishFirstTimeLogin(failCheck);
     Future.doWhile(() => !mounted).then((_) {
       context.goNamed(RouteNamed.dashboardHome);
     });

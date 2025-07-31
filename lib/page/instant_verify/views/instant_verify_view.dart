@@ -80,13 +80,34 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
     return StyledAppPageView(
       title: loc(context).instantVerify,
       actions: [
-        AppTextButton(
-          loc(context).print,
+        AppIconButton.noPadding(
           icon: LinksysIcons.print,
+          color: Theme.of(context).colorScheme.primary,
           onTap: () {
             doSomethingWithSpinner(context, _printPdf(context, ref));
           },
-        )
+        ),
+        if (!Utils.isMobilePlatform())
+          AnimatedRefreshContainer(
+            builder: (controller) {
+              return Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: AppIconButton.noPadding(
+                  color: Theme.of(context).colorScheme.primary,
+                  icon: LinksysIcons.refresh,
+                  onTap: () {
+                    controller.repeat();
+                    ref
+                        .read(pollingProvider.notifier)
+                        .forcePolling()
+                        .then((value) {
+                      controller.stop();
+                    });
+                  },
+                ),
+              );
+            },
+          ),
       ],
       tabController: _tabController,
       tabs: tabs.map((e) => Tab(text: e)).toList(),
@@ -98,6 +119,9 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
     final dashboardHomeState = ref.watch(dashboardHomeProvider);
     final desktopCol = 4.col;
     return StyledAppPageView.innerPage(
+      onRefresh: () {
+        return ref.read(pollingProvider.notifier).forcePolling();
+      },
       child: (context, constraints) => ResponsiveLayout.isMobileLayout(context)
           ? Column(
               children: [
@@ -515,22 +539,6 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
           children: [
             _headerWidget(
               loc(context).connectivity,
-              AnimatedRefreshContainer(
-                builder: (controller) => AppIconButton(
-                  icon: LinksysIcons.refresh,
-                  semanticLabel: 'refresh',
-                  color: Theme.of(context).colorScheme.primary,
-                  onTap: () {
-                    controller.repeat();
-                    ref
-                        .read(pollingProvider.notifier)
-                        .forcePolling()
-                        .then((value) {
-                      controller.stop();
-                    });
-                  },
-                ),
-              ),
             ),
             const AppGap.large2(),
             Row(

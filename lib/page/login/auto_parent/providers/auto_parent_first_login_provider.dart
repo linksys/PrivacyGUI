@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
@@ -29,6 +27,9 @@ class AutoParentFirstLoginNotifier
     final fwUpdate = ref.read(firmwareUpdateProvider.notifier);
     logger.i('[FirstTime]: Do FW update check');
     await fwUpdate.fetchAvailableFirmwareUpdates();
+    if (fwUpdate.isFailedCheckFirmwareUpdate()) {
+      throw Exception('Failed to check firmware update');
+    }
     if (fwUpdate.getAvailableUpdateNumber() > 0) {
       logger.i('[FirstTime]: New Firmware available!');
       await fwUpdate.updateFirmware();
@@ -88,11 +89,11 @@ class AutoParentFirstLoginNotifier
   // Check internet connection via JNAP with 10 attempts retries
   Future<bool> checkInternetConnection() async {
     final repo = ref.read(routerRepositoryProvider);
-    // make up to 10 attempts to check internet connection
+    // make up to 5 attempts to check internet connection total 10 seconds
     final retryStrategy = ExponentialBackoffRetryStrategy(
-      maxRetries: 10,
-      initialDelay: const Duration(seconds: 3),
-      maxDelay: const Duration(seconds: 30),
+      maxRetries: 5,
+      initialDelay: const Duration(seconds: 2),
+      maxDelay: const Duration(seconds: 2),
     );
     return retryStrategy.execute<bool>(() async {
       final result = await repo.send(
@@ -109,11 +110,12 @@ class AutoParentFirstLoginNotifier
     });
   }
 
-  Future<void> finishFirstTimeLogin() async {
-    // Keep userAcknowledgedAutoConfiguration to false if no internet connection
-    final isConnected = await checkInternetConnection();
-    logger.i('[FirstTime]: Internet connection status: $isConnected');
-    if (isConnected) {
+  Future<void> finishFirstTimeLogin([bool failCheck = false]) async {
+    // Keep userAcknowledgedAutoConfiguration to false if check firmware failed
+    if (!failCheck) {
+      // wait for internet connection
+      final isConnected = await checkInternetConnection();
+      logger.i('[FirstTime]: Internet connection status: $isConnected');
       await setUserAcknowledgedAutoConfiguration();
     }
     // Set firmware update policy

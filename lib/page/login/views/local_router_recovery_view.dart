@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/bottom_bar.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
@@ -13,7 +15,6 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
-import 'package:pinput/pinput.dart';
 
 class LocalRouterRecoveryView extends ArgumentsConsumerStatefulView {
   const LocalRouterRecoveryView({
@@ -46,6 +47,7 @@ class _LocalRouterRecoveryViewState
   Widget build(BuildContext context) => _contentView();
 
   Widget _contentView() {
+    MediaQuery.of(context);
     final state = ref.watch(routerPasswordProvider);
     return StyledAppPageView(
       appBarStyle: AppBarStyle.none,
@@ -65,21 +67,21 @@ class _LocalRouterRecoveryViewState
                   AppText.bodyMedium(
                       loc(context).localRouterRecoveryDescription),
                   const AppGap.large3(),
-                  MergeSemantics(
-                    child: AppPinCodeInput(
-                      semanticLabel: 'pin code text field',
-                      length: 5,
-                      onChanged: (String value) {
-                        setState(() {
-                          userInputCode = value;
-                        });
-                      },
-                      onSubmitted: (_) {
-                        if (userInputCode.length == 5) {
-                          _validateCode(userInputCode);
-                        }
-                      },
-                    ),
+                  AppPinCodeInput(
+                    semanticLabel: 'pin code text field',
+                    length: 5,
+                    controller: _otpController,
+                    stayOnLastField: true,
+                    onChanged: (String value) {
+                      setState(() {
+                        userInputCode = value;
+                      });
+                    },
+                    onSubmitted: (_) {
+                      if (userInputCode.length == 5) {
+                        _validateCode(userInputCode);
+                      }
+                    },
                   ),
                   if (state.remainingErrorAttempts != null)
                     Padding(
