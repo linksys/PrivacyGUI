@@ -32,6 +32,7 @@ import 'package:privacygui_widgets/widgets/bullet_list/bullet_list.dart';
 import 'package:privacygui_widgets/widgets/bullet_list/bullet_style.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
 
 class InstantTopologyView extends ArgumentsConsumerStatefulView {
   const InstantTopologyView({super.key, super.args});
@@ -75,7 +76,6 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
   @override
   Widget build(BuildContext context) {
     final topologyState = ref.watch(instantTopologyProvider);
-
     treeController.roots = [topologyState.root];
     treeController.expandAll();
     return LayoutBuilder(builder: (context, constraint) {
@@ -403,29 +403,64 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
   }
 
   _doInstantPairWired(WidgetRef ref) {
+    ///
+    /// Original flow, go to addWiredNodes page
+    ///
     // context.pushNamed(RouteNamed.addWiredNodes).then((result) {
     //   if (result is bool && result) {
     //     _showMoveChildNodesModal();
     //   }
     // });
-    final addWiredNodesNotifier = ref.read(addWiredNodesProvider.notifier);
-    addWiredNodesNotifier.startAutoOnboarding(context);
-    final addWiredNodesState = ref.watch(addWiredNodesProvider);
-    showAppSpinnerDialog(
-      context,
-      title: loc(context).instantPair,
-      messages: [addWiredNodesState.loadingMessage ?? ''],
-      actions: [
-        AppTextButton(
-          loc(context).donePairing,
-          onTap: () {
-            if (!addWiredNodesState.isLoading) {
-              addWiredNodesNotifier.forceStopAutoOnboarding();
-            }
-            context.pop();
-          },
-        )
-      ],
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        final addWiredNodesNotifier = ref.read(addWiredNodesProvider.notifier);
+        Future.doWhile(() => !mounted).then((_) {
+          addWiredNodesNotifier.startAutoOnboarding(context);
+        });
+
+        return AlertDialog(
+          title: SizedBox(
+            width: kDefaultDialogWidth,
+            child: AppText.titleLarge(loc(context).instantPair),
+          ),
+          content: Consumer(builder: (context, ref, child) {
+            final addWiredNodesState = ref.watch(addWiredNodesProvider);
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                addWiredNodesState.isLoading
+                    ? const AppSpinner()
+                    : SizedBox(
+                        width: 200,
+                        height: 200,
+                        child: Icon(Icons.check_circle_outline, size: 48),
+                      ),
+                AppGap.medium(),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppText.bodyMedium(loc(context).pairingWiredChildNodeDesc),
+                    AppGap.small2(),
+                    AppText.bodyMedium(addWiredNodesState.loadingMessage ?? ''),
+                  ],
+                ),
+              ],
+            );
+          }),
+          actions: [
+            AppTextButton(
+              loc(context).donePairing,
+              onTap: () {
+                addWiredNodesNotifier.forceStopAutoOnboarding();
+                dialogContext.pop();
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 

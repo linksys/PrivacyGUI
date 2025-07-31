@@ -14,6 +14,7 @@ import 'package:privacy_gui/core/utils/bench_mark.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/nodes/providers/add_wired_nodes_state.dart';
+import 'package:privacy_gui/providers/idle_checker_pause_provider.dart';
 
 final addWiredNodesProvider =
     NotifierProvider.autoDispose<AddWiredNodesNotifier, AddWiredNodesState>(
@@ -44,31 +45,37 @@ class AddWiredNodesNotifier extends AutoDisposeNotifier<AddWiredNodesState> {
   Future startAutoOnboarding(BuildContext context) async {
     logger.d('[AddWiredNode]: start auto onboarding');
     final log = BenchMarkLogger(name: 'Add Wired Node Process')..start();
-    ref.read(pollingProvider.notifier).stopPolling();
-    await setAutoOnboardingSettings(true);
-    final backhaulList = ref.read(deviceManagerProvider).backhaulInfoData;
     state = state.copyWith(
-        isLoading: true,
-        forceStop: false,
-        backhaulSnapshot: backhaulList,
-        loadingMessage: loc(context).addNodesSearchingNodes);
+      isLoading: true,
+      forceStop: false,
+      loadingMessage: loc(context).addNodesSearchingNodes,
+    );
+    // Pause the idle checker
+    ref.read(idleCheckerPauseProvider.notifier).state = true;
+    // Set router auto onboarding to true
+    await setAutoOnboardingSettings(true);
+    // Get backhaul info
+    final backhaulList = ref.read(deviceManagerProvider).backhaulInfoData;
+    state = state.copyWith(backhaulSnapshot: backhaulList);
 
-    logger.d('[AddWiredNode]: polling connect status');
-    await _startPollingConnectStatus();
+    // logger.d('[AddWiredNode]: polling connect status');
+    // await _startPollingConnectStatus();
+    // state = state.copyWith(loadingMessage: loc(context).addNodesOnboardingNodes);
 
-    state = state.copyWith(loadingMessage: loc(context).addNodesOnboardingNodes);
     logger.d('[AddWiredNode]: check backhaul changes');
-    await _checkBackhaulChanges();
+    await _checkBackhaulChanges(context);
+    // Set router auto onboarding to false
     await stopAutoOnboarding();
+    // Fetch latest status
     logger.d('[AddWiredNode]: fetch nodes');
     final nodes = await _fetchNodes();
     state = state.copyWith(nodes: nodes);
     stopCheckingBackhaul(context);
     await ref.read(pollingProvider.notifier).forcePolling();
-
-    ref.read(pollingProvider.notifier).startPolling();
+    // Resume the idle checker
+    ref.read(idleCheckerPauseProvider.notifier).state = false;
     final delta = log.end();
-    logger.d('[AddWiredNode]: start auto onboarding, cost time: ${delta}ms');
+    logger.d('[AddWiredNode]: end auto onboarding, cost time: ${delta}ms');
   }
 
   Future startRefresh(BuildContext context) async {
@@ -77,7 +84,7 @@ class AddWiredNodesNotifier extends AutoDisposeNotifier<AddWiredNodesState> {
       forceStop: false,
       loadingMessage: loc(context).refreshing,
     );
-    await _checkBackhaulChanges(true);
+    await _checkBackhaulChanges(context, true);
     final nodes = await _fetchNodes();
     state = state.copyWith(
       isLoading: false,
@@ -134,12 +141,13 @@ class AddWiredNodesNotifier extends AutoDisposeNotifier<AddWiredNodesState> {
     }
   }
 
-  Future _checkBackhaulChanges([bool refreshing = false]) async {
+  Future _checkBackhaulChanges(BuildContext context,
+      [bool refreshing = false]) async {
     if (state.forceStop) {
       logger.d('[AddWiredNode]: force stop poll backhaul info');
       return;
     }
-    final pollBackhaul = pollBackhaulInfo(refreshing);
+    final pollBackhaul = pollBackhaulInfo(context, refreshing);
 
     await for (final result in pollBackhaul) {
       if (result is! JNAPSuccess) {
@@ -149,18 +157,15 @@ class AddWiredNodesNotifier extends AutoDisposeNotifier<AddWiredNodesState> {
     }
   }
 
-  Stream pollBackhaulInfo([bool refreshing = false]) {
+  Stream pollBackhaulInfo(BuildContext context, [bool refreshing = false]) {
     final repo = ref.read(routerRepositoryProvider);
-    int nodeCounting = 0;
-    int noChangesCounting = 0;
-    final noChangesThrethold = refreshing ? 6 : 12;
     final now = DateTime.now();
     return repo.scheduledCommand(
       action: JNAPAction.getBackhaulInfo,
       auth: true,
       firstDelayInMilliSec: 1 * 1000,
       retryDelayInMilliSec: 10 * 1000,
-      maxRetry: refreshing ? 6 : 30,
+      maxRetry: refreshing ? 6 : 60,
       condition: (result) {
         if (state.forceStop) {
           logger.d('[AddWiredNode]: force stop poll backhaul info');
@@ -199,18 +204,9 @@ class AddWiredNodesNotifier extends AutoDisposeNotifier<AddWiredNodesState> {
               ? value
               : value + 1;
         });
-        // if found counting is changed then record the counting
-        // if not changed, increase no changes counting
-        // if no changes counting exceed to 12 (no changes within 2 minutes) and has found changes
-        // then end this check process
-        if (foundCounting != nodeCounting) {
-          nodeCounting = foundCounting;
-        } else {
-          noChangesCounting++;
-          logger.i(
-            '[AddWiredNode]: There has no changes on the backhaul. found counting=$foundCounting, check times=$noChangesCounting',
-          );
-          return noChangesCounting > noChangesThrethold && nodeCounting > 0;
+        if (foundCounting > 0) {
+          state = state.copyWith(
+              loadingMessage: loc(context).foundNNodesOnline(foundCounting));
         }
         logger.i('[AddWiredNode]: Found $foundCounting new nodes');
         return false;
@@ -220,6 +216,81 @@ class AddWiredNodesNotifier extends AutoDisposeNotifier<AddWiredNodesState> {
       },
     );
   }
+
+  ///
+  /// Auto onboarding flow with _startPollingConnectStatus
+  ///
+  // Stream pollBackhaulInfo([bool refreshing = false]) {
+  //   final repo = ref.read(routerRepositoryProvider);
+  //   int nodeCounting = 0;
+  //   int noChangesCounting = 0;
+  //   final noChangesThrethold = refreshing ? 6 : 12;
+  //   final now = DateTime.now();
+  //   return repo.scheduledCommand(
+  //     action: JNAPAction.getBackhaulInfo,
+  //     auth: true,
+  //     firstDelayInMilliSec: 1 * 1000,
+  //     retryDelayInMilliSec: 10 * 1000,
+  //     maxRetry: refreshing ? 6 : 30,
+  //     condition: (result) {
+  //       if (state.forceStop) {
+  //         logger.d('[AddWiredNode]: force stop poll backhaul info');
+  //         return true;
+  //       }
+  //       if (result is! JNAPSuccess) {
+  //         return false;
+  //       }
+  //       final backhaulInfoList = List.from(
+  //         result.output['backhaulDevices'] ?? [],
+  //       ).map((e) => BackHaulInfoData.fromMap(e)).toList();
+  //       final foundCounting = backhaulInfoList.fold<int>(0, (value, infoData) {
+  //         final dateFormat = DateFormat("yyyy-MM-ddThh:mm:ssZ");
+  //         // find the node which uuid is already exist on backhaul snapshot,
+  //         // and the connection type is "Wired"
+  //         // and the timestamp is less than current time
+  //         // and if the uuid is exist the timestamp is less than snapshot one
+  //         // if satisfy the above condition, then this is not the new added one.
+  //         return (state.backhaulSnapshot?.any((e) =>
+  //                     e.deviceUUID == infoData.deviceUUID &&
+  //                     infoData.connectionType == 'Wired' &&
+  //                     now.millisecondsSinceEpoch >
+  //                         (dateFormat
+  //                                 .tryParse(infoData.timestamp)
+  //                                 ?.millisecondsSinceEpoch ??
+  //                             0) &&
+  //                     (dateFormat
+  //                                 .tryParse(e.timestamp)
+  //                                 ?.millisecondsSinceEpoch ??
+  //                             0) <
+  //                         (dateFormat
+  //                                 .tryParse(infoData.timestamp)
+  //                                 ?.millisecondsSinceEpoch ??
+  //                             0)) ==
+  //                 true)
+  //             ? value
+  //             : value + 1;
+  //       });
+  //       // if found counting is changed then record the counting
+  //       // if not changed, increase no changes counting
+  //       // if no changes counting exceed to 12 (no changes within 2 minutes) and has found changes
+  //       // then end this check process
+  //       if (foundCounting != nodeCounting) {
+  //         nodeCounting = foundCounting;
+  //       } else {
+  //         noChangesCounting++;
+  //         logger.i(
+  //           '[AddWiredNode]: There has no changes on the backhaul. found counting=$foundCounting, check times=$noChangesCounting',
+  //         );
+  //         return noChangesCounting > noChangesThrethold && nodeCounting > 0;
+  //       }
+  //       logger.i('[AddWiredNode]: Found $foundCounting new nodes');
+  //       return false;
+  //     },
+  //     onCompleted: (_) {
+  //       logger.i('[AddWiredNode]: poll backhaul info is completed');
+  //     },
+  //   );
+  // }
 
   Future _fetchNodes() async {
     final repo = ref.read(routerRepositoryProvider);
@@ -244,15 +315,16 @@ class AddWiredNodesNotifier extends AutoDisposeNotifier<AddWiredNodesState> {
     state = state.copyWith(
       isLoading: false,
       forceStop: false,
-      loadingMessage: loc(context).done,
     );
   }
 
   Future stopAutoOnboarding() async {
     await setAutoOnboardingSettings(false);
+    ref.read(idleCheckerPauseProvider.notifier).state = false;
   }
 
   Future forceStopAutoOnboarding() async {
+    logger.i('[AddWiredNode]: force stop auto onboarding');
     if (state.isLoading) {
       state = state.copyWith(forceStop: true);
     }
