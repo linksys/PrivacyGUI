@@ -121,7 +121,7 @@ extension RemoteAssistanceService on LinksysHttpClient {
         }));
   }
 
-  Future<Response> deleteSession(
+  Future<Response> deleteSessionInfo(
       {required String token, required String sessionId}) {
     final endPoint = combineUrl(kRASessions);
     final header = defaultHeader

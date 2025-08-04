@@ -59,6 +59,14 @@ class BuildConfig {
     cloudEnvTarget = CloudEnvironment.get(envStr ?? '') ?? cloudEnvTarget;
     logger.d('Cloud Env: $cloudEnvTarget');
   }
+
+  static bool isRemote() {
+    return forceCommandType == ForceCommand.remote;
+  }
+
+  static bool isLocal() {
+    return forceCommandType == ForceCommand.local;
+  }
 }
 
 bool showDebugPanel = !kReleaseMode && !kIsWeb;

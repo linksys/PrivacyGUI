@@ -234,6 +234,7 @@
   "filterMulticast": "Filtrer multikasting",
   "filteredDevices": "Filtrerte enheter",
   "filters": "Filtrer",
+  "featureUnavailableInRemoteMode": "Denne funksjonen er ikke tilgjengelig i fjernmodus",
   "firewall": "Brannmur",
   "firmware": "Fastvare",
   "firmwareDownloadingMessage1": "Du kan bruke WiFi under denne oppdateringen.",

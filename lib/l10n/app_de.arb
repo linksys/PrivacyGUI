@@ -234,6 +234,7 @@
   "filterMulticast": "Multicast filtern",
   "filteredDevices": "Gefilterte Geräte",
   "filters": "Filter",
+  "featureUnavailableInRemoteMode": "Diese Funktion ist im Fernzugriffsmodus nicht verfügbar",
   "firewall": "Firewall",
   "firmware": "Firmware",
   "firmwareDownloadingMessage1": "Sie können Ihr WLAN während dieses Updates nutzen.",
