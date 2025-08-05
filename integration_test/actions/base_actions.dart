@@ -39,6 +39,7 @@ part 'instant_devices_actions.dart';
 part 'advanced_settings_actions.dart';
 part 'instant_verify_actions.dart';
 part 'external_speed_test_actions.dart';
+part 'speed_test_actions.dart';
 part 'add_nodes_actions.dart';
 part 'pnp_setup_actions.dart';
 part 'prepair_pnp_setup_actions.dart';
@@ -80,6 +81,7 @@ sealed class CommonBaseActions extends BaseActions with CommonActionsMixin {
       TestAdvancedSettingsActions() => loc(context).advancedSettings,
       TestInstantVerifyActions() => loc(context).instantVerify,
       TestExternalSpeedTestActions() => loc(context).externalSpeedText,
+      TestSpeedTestActions() => loc(context).speedTest,
       TestAddNodesActions() => loc(context).addNodes,
       TestAdvancedRoutingActions() => loc(context).advancedRouting,
       TestFirewallActions() => loc(context).firewall,

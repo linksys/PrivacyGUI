@@ -99,11 +99,22 @@ void main() {
     final verifyActions = TestInstantVerifyActions(tester);
     await verifyActions.checkTitle(verifyActions.title);
     await verifyActions.tapBackButton();
-    // External Speed Test
-    await menuActions.enterExternalSpeedTestPage();
-    final externalSpeedTestActions = TestExternalSpeedTestActions(tester);
-    await externalSpeedTestActions.checkTitle(externalSpeedTestActions.title);
-    await externalSpeedTestActions.tapBackButton();
+
+    const isHealthCheckSupported = String.fromEnvironment('isHealthCheckSupported', defaultValue: 'false') == 'true';
+    if (isHealthCheckSupported) {
+      // Speed Test
+      await menuActions.enterSpeedTestPage();
+      final speedTestActions = TestSpeedTestActions(tester);
+      await speedTestActions.checkTitle(speedTestActions.title);
+      await speedTestActions.tapBackButton();
+    } else {
+      // External Speed Test
+      await menuActions.enterExternalSpeedTestPage();
+      final externalSpeedTestActions = TestExternalSpeedTestActions(tester);
+      await externalSpeedTestActions.checkTitle(externalSpeedTestActions.title);
+      await externalSpeedTestActions.tapBackButton();
+    }
+
     // Add Nodes
     await menuActions.enterAddNodePage();
     final addNodeActions = TestAddNodesActions(tester);
@@ -112,6 +123,5 @@ void main() {
     // Restart
     await menuActions.tapRestartBtn();
     await menuActions.tapCancelBtn();
-
   });
 }
