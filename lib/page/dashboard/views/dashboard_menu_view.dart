@@ -229,6 +229,14 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
             onTap: () {
               _navigateTo(RouteNamed.dashboardSpeedTest);
             }),
+
+            AppSectionItemData(
+            title: 'Dual WAN',
+            description: 'Enable dual-WAN functionality to use both WAN and LAN/WAN ports for internet connectivity.',
+            iconData: LinksysIcons.networkNode,
+            onTap: () {
+              _navigateTo(RouteNamed.dualWANSettings);
+            }),
     ];
   }
 

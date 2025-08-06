@@ -35,6 +35,8 @@ class RoutePath {
   static const speedTestSelection = 'speedTestSelection';
   static const speedTestExternal = 'speedTestExternal';
 
+  static const dualWANSettings = 'dualWANSettings';
+
   /// settings
   static const settingsNotification = 'notificationSettings';
   static const settingsTimeZone = 'timeZone';
@@ -176,6 +178,8 @@ class RouteNamed {
   static const dashboardSpeedTest = 'dashboardSpeedTest';
   static const speedTestSelection = 'speedTestSelection';
   static const speedTestExternal = 'speedTestExternal';
+
+  static const dualWANSettings = 'dualWANSettings';
 
   /// settings
   static const settingsNotification = 'notificationSettings';
