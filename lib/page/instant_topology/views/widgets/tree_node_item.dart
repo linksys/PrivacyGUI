@@ -286,7 +286,8 @@ class _TreeNodeItemState extends State<TreeNodeItem> {
                     ? loc(context).wired
                     : loc(context).wireless),
           ]),
-          if (!node.data.isMaster)
+          if (!node.data.isMaster &&
+              (!node.data.isOnline || !node.data.isWiredConnection))
             TableRow(children: [
               AppText.labelLarge('${loc(context).meshHealth}:'),
               AppText.labelLarge(
