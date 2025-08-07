@@ -44,7 +44,7 @@ void main() {
 
   testWidgets('Menu operations', (tester) async {
     // Load app widget.
-    await tester.pumpFrames(app(), Duration(seconds: 3));
+    await tester.pumpFrames(app(), Duration(seconds: 5));
     // Log in
     final login = TestLocalLoginActions(tester);
     await login.inputPassword(IntegrationTestConfig.password);

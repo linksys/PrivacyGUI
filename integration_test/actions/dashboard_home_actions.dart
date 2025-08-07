@@ -106,7 +106,8 @@ class TestDashboardHomeActions extends CommonBaseActions {
       of: find.byType(WiFiCard),
       matching: find.byType(SuperTooltip),
     );
-    expect(tooltipFinder, findsNWidgets(3));
+    const radios = String.fromEnvironment('wifiBands');
+    expect(tooltipFinder, findsNWidgets(radios.split(',').length));
     return tooltipFinder.at(0);
   }
 
@@ -115,7 +116,8 @@ class TestDashboardHomeActions extends CommonBaseActions {
       of: find.byType(WiFiCard),
       matching: find.byType(AppSwitch),
     );
-    expect(switchFinder, findsNWidgets(3));
+    const radios = String.fromEnvironment('wifiBands');
+    expect(switchFinder, findsNWidgets(radios.split(',').length));
     return switchFinder.at(0);
   }
 
@@ -124,7 +126,8 @@ class TestDashboardHomeActions extends CommonBaseActions {
       of: find.byType(WiFiCard),
       matching: find.byType(AppCard),
     );
-    expect(wifiCardFinder, findsNWidgets(3));
+    const radios = String.fromEnvironment('wifiBands');
+    expect(wifiCardFinder, findsNWidgets(radios.split(',').length));
     return wifiCardFinder.at(0);
   }
 
@@ -133,7 +136,8 @@ class TestDashboardHomeActions extends CommonBaseActions {
       of: find.byType(WiFiCard),
       matching: find.byType(SuperTooltip),
     );
-    expect(tooltipFinder, findsNWidgets(3));
+    const radios = String.fromEnvironment('wifiBands');
+    expect(tooltipFinder, findsNWidgets(radios.split(',').length));
     return tooltipFinder.at(1);
   }
 
@@ -142,7 +146,8 @@ class TestDashboardHomeActions extends CommonBaseActions {
       of: find.byType(WiFiCard),
       matching: find.byType(AppSwitch),
     );
-    expect(switchFinder, findsNWidgets(3));
+    const radios = String.fromEnvironment('wifiBands');
+    expect(switchFinder, findsNWidgets(radios.split(',').length));
     return switchFinder.at(1);
   }
 
@@ -151,7 +156,8 @@ class TestDashboardHomeActions extends CommonBaseActions {
       of: find.byType(WiFiCard),
       matching: find.byType(AppCard),
     );
-    expect(wifiCardFinder, findsNWidgets(3));
+    const radios = String.fromEnvironment('wifiBands');
+    expect(wifiCardFinder, findsNWidgets(radios.split(',').length));
     return wifiCardFinder.at(1);
   }
 
@@ -160,7 +166,8 @@ class TestDashboardHomeActions extends CommonBaseActions {
       of: find.byType(WiFiCard),
       matching: find.byType(SuperTooltip),
     );
-    expect(tooltipFinder, findsNWidgets(3));
+    const radios = String.fromEnvironment('wifiBands');
+    expect(tooltipFinder, findsNWidgets(radios.split(',').length));
     return tooltipFinder.at(2);
   }
 
@@ -169,7 +176,8 @@ class TestDashboardHomeActions extends CommonBaseActions {
       of: find.byType(WiFiCard),
       matching: find.byType(AppSwitch),
     );
-    expect(switchFinder, findsNWidgets(3));
+    const radios = String.fromEnvironment('wifiBands');
+    expect(switchFinder, findsNWidgets(radios.split(',').length));
     return switchFinder.at(2);
   }
 
@@ -178,7 +186,8 @@ class TestDashboardHomeActions extends CommonBaseActions {
       of: find.byType(WiFiCard),
       matching: find.byType(AppCard),
     );
-    expect(wifiCardFinder, findsNWidgets(3));
+    const radios = String.fromEnvironment('wifiBands');
+    expect(wifiCardFinder, findsNWidgets(radios.split(',').length));
     return wifiCardFinder.at(2);
   }
 

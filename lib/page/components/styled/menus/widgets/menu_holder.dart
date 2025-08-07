@@ -6,12 +6,8 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/page/components/styled/menus/widgets/bottom_navigation_menu.dart';
 import 'package:privacy_gui/page/components/styled/menus/widgets/top_navigation_menu.dart';
-import 'package:privacy_gui/page/dashboard/views/dashboard_shell.dart';
-import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_provider.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/theme/material/theme_data.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 
 final menuController = Provider((ref) => MenuController());
@@ -42,13 +38,15 @@ class MenuHolderState extends ConsumerState<MenuHolder> {
         .routes
         .last as LinksysRoute?;
 
+    final autoHide = false; //LinksysRoute.autoHideNaviRail(context);
     final showNavi = LinksysRoute.isShowNaviRail(context, pageRoute?.config);
     Future.doWhile(() => !mounted).then((value) {
-      final displayType = shellNavigatorKey.currentContext == null || !showNavi
-          ? MenuDisplay.none
-          : ResponsiveLayout.isMobileLayout(context)
-              ? MenuDisplay.bottom
-              : MenuDisplay.top;
+      final displayType =
+          shellNavigatorKey.currentContext == null || autoHide || !showNavi
+              ? MenuDisplay.none
+              : ResponsiveLayout.isMobileLayout(context)
+                  ? MenuDisplay.bottom
+                  : MenuDisplay.top;
       _controller.setDisplayType(displayType);
     });
     return ValueListenableBuilder<NavigationMenus>(

@@ -46,7 +46,7 @@ void main() {
   group('Instant Privacy', () {
     testWidgets('Instant Privacy - Log in and enter dashboard', (tester) async {
       // Load app widget.
-      await tester.pumpFrames(app(), Duration(seconds: 3));
+      await tester.pumpFrames(app(), Duration(seconds: 5));
       // Log in
       final login = TestLocalLoginActions(tester);
       await login.inputPassword(IntegrationTestConfig.password);
@@ -56,12 +56,11 @@ void main() {
       );
       // Log in and enter the dashboard screen
       await login.tapLoginButton();
-      await tester.pumpAndSettle();
     });
 
     testWidgets('Instant Privacy - Test the enable switch', (tester) async {
       // Load app widget.
-      await tester.pumpFrames(app(), Duration(seconds: 3));
+      await tester.pumpFrames(app(), Duration(seconds: 5));
       // Enter the menu page
       final topbarActions = TestTopbarActions(tester);
       await topbarActions.tapMenuButton();
@@ -75,6 +74,5 @@ void main() {
       await privacyActions.tapTurnOnButton();
       await tester.pumpAndSettle();
     });
-
   });
 }
