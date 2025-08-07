@@ -211,11 +211,17 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
                     spacing: gutter,
                     runSpacing: gutter,
                     children: [
-                      SizedBox(
+                      Container(
+                        constraints: BoxConstraints(
+                          minHeight: 280,
+                        ),
                         width: twoColWidth,
                         child: _connectionStatusCard(),
                       ),
-                      SizedBox(
+                      Container(
+                        constraints: BoxConstraints(
+                          minHeight: 280,
+                        ),
                         width: twoColWidth,
                         child: _speedAndDiagnosticsCard(),
                       ),
@@ -312,8 +318,7 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   AppText.labelLarge(loc(context).dualWanEnable),
-                  AppText.bodyLarge(
-                      loc(context).dualWanEnableDescription),
+                  AppText.bodyLarge(loc(context).dualWanEnableDescription),
                 ]),
             AppSwitch(
                 value: enable,
@@ -326,6 +331,7 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
 
   Widget _operationModeCard(double twoColWidth, double gutter) {
     final mode = ref.watch(dualWANSettingsProvider).mode;
+    final balanceRatio = ref.watch(dualWANSettingsProvider).balanceRatio;
     return AppInformationCard(
       title: loc(context).dualWanOperationMode,
       description: loc(context).dualWanOperationModeDescription,
@@ -343,8 +349,7 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
                 groupValue: mode,
                 title: DualWANMode.failover.toDisplayString(context),
                 label: 'Recommended',
-                description:
-                    loc(context).dualWanFailoverDescription,
+                description: loc(context).dualWanFailoverDescription,
                 onTap: () {
                   _notifier.updateOperationMode(DualWANMode.failover);
                 },
@@ -357,8 +362,7 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
                 groupValue: mode,
                 title: DualWANMode.loadBalancing.toDisplayString(context),
                 label: 'Advanced',
-                description:
-                    loc(context).dualWanLoadBalancingDescription,
+                description: loc(context).dualWanLoadBalancingDescription,
                 onTap: () {
                   _notifier.updateOperationMode(DualWANMode.loadBalancing);
                 },
@@ -376,6 +380,7 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
                 children: [
                   AppText.labelLarge(loc(context).dualWanLoadBalanceRatio),
                   AppDropdownButton<DualWANBalanceRatio>(
+                    selected: balanceRatio,
                     items: DualWANBalanceRatio.values,
                     label: (value) => value.toDisplayString(context),
                     onChanged: (value) {
@@ -441,7 +446,7 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
             _buildWANSettingsForm(isPrimary, wan, onChanged),
           AppText.labelLarge(loc(context).mtu),
           AppTextField.minMaxNumber(
-            key: const ValueKey('mtuManualSizeText'),
+            key: ValueKey('${isPrimary ? 'primary' : 'secondary'}MtuSizeText'),
             controller: isPrimary
                 ? _primaryMTUSizeController
                 : _secondaryMTUSizeController,
@@ -523,6 +528,15 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
       'Static' => [
           AppText.labelLarge(loc(context).ipAddress),
           AppIPFormField(
+            key: ValueKey(isPrimary
+                ? 'primaryStaticIpAddress'
+                : 'secondaryStaticIpAddress'),
+            semanticLabel: isPrimary
+                ? 'primaryStaticIpAddress'
+                : 'secondaryStaticIpAddress',
+            identifier: isPrimary
+                ? 'primaryStaticIpAddress'
+                : 'secondaryStaticIpAddress',
             border: const OutlineInputBorder(),
             controller: isPrimary
                 ? _primaryStaticIpAddressController
@@ -556,6 +570,12 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
           const AppGap.small3(),
           AppText.labelLarge(loc(context).subnetMask),
           AppIPFormField(
+            key: ValueKey(
+                isPrimary ? 'primaryStaticSubnet' : 'secondaryStaticSubnet'),
+            semanticLabel:
+                isPrimary ? 'primaryStaticSubnet' : 'secondaryStaticSubnet',
+            identifier:
+                isPrimary ? 'primaryStaticSubnet' : 'secondaryStaticSubnet',
             border: const OutlineInputBorder(),
             controller: isPrimary
                 ? _primaryStaticSubnetController
@@ -578,9 +598,12 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
                 final value = isPrimary
                     ? _primaryStaticSubnetController.text
                     : _secondaryStaticSubnetController.text;
-                onChanged(wan.copyWith(
-                    networkPrefixLength: () =>
-                        NetworkUtils.subnetMaskToPrefixLength(value)));
+                // Prevent to update networkPrefixLength if subnet mask is invalid
+                if (SubnetMaskValidator().validate(value)) {
+                  onChanged(wan.copyWith(
+                      networkPrefixLength: () =>
+                          NetworkUtils.subnetMaskToPrefixLength(value)));
+                }
                 setState(() {});
               }
             },
@@ -591,6 +614,12 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
           const AppGap.small3(),
           AppText.labelLarge(loc(context).gateway),
           AppIPFormField(
+            key: ValueKey(
+                isPrimary ? 'primaryStaticGateway' : 'secondaryStaticGateway'),
+            semanticLabel:
+                isPrimary ? 'primaryStaticGateway' : 'secondaryStaticGateway',
+            identifier:
+                isPrimary ? 'primaryStaticGateway' : 'secondaryStaticGateway',
             border: const OutlineInputBorder(),
             controller: isPrimary
                 ? _primaryStaticGatewayController
@@ -625,6 +654,12 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
       'PPPoE' => [
           AppText.labelLarge(loc(context).username),
           AppTextField.outline(
+            key: ValueKey(
+                isPrimary ? 'primaryPPPoEUsername' : 'secondaryPPPoEUsername'),
+            semanticLabel:
+                isPrimary ? 'primaryPPPoEUsername' : 'secondaryPPPoEUsername',
+            identifier:
+                isPrimary ? 'primaryPPPoEUsername' : 'secondaryPPPoEUsername',
             controller: isPrimary
                 ? _primaryPPPoEUsernameController
                 : _secondaryPPPoEUsernameController,
@@ -657,6 +692,12 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
           const AppGap.small3(),
           AppText.labelLarge(loc(context).password),
           AppTextField.outline(
+            key: ValueKey(
+                isPrimary ? 'primaryPPPoEPassword' : 'secondaryPPPoEPassword'),
+            semanticLabel:
+                isPrimary ? 'primaryPPPoEPassword' : 'secondaryPPPoEPassword',
+            identifier:
+                isPrimary ? 'primaryPPPoEPassword' : 'secondaryPPPoEPassword',
             controller: isPrimary
                 ? _primaryPPPoEPasswordController
                 : _secondaryPPPoEPasswordController,
@@ -689,6 +730,15 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
           const AppGap.small3(),
           AppText.labelLarge(loc(context).serviceNameOptional),
           AppTextField.outline(
+            key: ValueKey(isPrimary
+                ? 'primaryPPPoEServiceName'
+                : 'secondaryPPPoEServiceName'),
+            semanticLabel: isPrimary
+                ? 'primaryPPPoEServiceName'
+                : 'secondaryPPPoEServiceName',
+            identifier: isPrimary
+                ? 'primaryPPPoEServiceName'
+                : 'secondaryPPPoEServiceName',
             controller: isPrimary
                 ? _primaryPPPoEServiceNameController
                 : _secondaryPPPoEServiceNameController,
@@ -710,6 +760,11 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
       'PPTP' => [
           AppText.labelLarge(loc(context).serviceIpName),
           AppTextField.outline(
+            key: ValueKey(
+                isPrimary ? 'primaryPPTPServer' : 'secondaryPPTPServer'),
+            semanticLabel:
+                isPrimary ? 'primaryPPTPServer' : 'secondaryPPTPServer',
+            identifier: isPrimary ? 'primaryPPTPServer' : 'secondaryPPTPServer',
             controller: isPrimary
                 ? _primaryPPTPServerController
                 : _secondaryPPTPServerController,
@@ -730,6 +785,12 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
           const AppGap.small3(),
           AppText.labelLarge(loc(context).username),
           AppTextField.outline(
+            key: ValueKey(
+                isPrimary ? 'primaryPPTPUsername' : 'secondaryPPTPUsername'),
+            semanticLabel:
+                isPrimary ? 'primaryPPTPUsername' : 'secondaryPPTPUsername',
+            identifier:
+                isPrimary ? 'primaryPPTPUsername' : 'secondaryPPTPUsername',
             controller: isPrimary
                 ? _primaryPPTPUsernameController
                 : _secondaryPPTPUsernameController,
@@ -762,6 +823,12 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
           const AppGap.small3(),
           AppText.labelLarge(loc(context).password),
           AppTextField.outline(
+            key: ValueKey(
+                isPrimary ? 'primaryPPTPPassword' : 'secondaryPPTPPassword'),
+            semanticLabel:
+                isPrimary ? 'primaryPPTPPassword' : 'secondaryPPTPPassword',
+            identifier:
+                isPrimary ? 'primaryPPTPPassword' : 'secondaryPPTPPassword',
             controller: isPrimary
                 ? _primaryPPTPPasswordController
                 : _secondaryPPTPPasswordController,
@@ -993,15 +1060,14 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
               spacing: Spacing.small2,
               children: [
                 AppText.labelLarge(loc(context).selfTestTools),
-                AppOutlinedButton.fillWidth(
-                    loc(context).dnsTestPrimaryWan, onTap: () {}),
-                AppOutlinedButton.fillWidth(
-                    loc(context).dnsTestSecondaryWan, onTap: () {}),
-                AppOutlinedButton.fillWidth(
-                    loc(context).connectionHealthCheck,
+                AppOutlinedButton.fillWidth(loc(context).dnsTestPrimaryWan,
                     onTap: () {}),
-                AppOutlinedButton.fillWidth(
-                    loc(context).failoverTest, onTap: () {}),
+                AppOutlinedButton.fillWidth(loc(context).dnsTestSecondaryWan,
+                    onTap: () {}),
+                AppOutlinedButton.fillWidth(loc(context).connectionHealthCheck,
+                    onTap: () {}),
+                AppOutlinedButton.fillWidth(loc(context).failoverTest,
+                    onTap: () {}),
               ],
             ),
           ),
@@ -1044,5 +1110,3 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
     );
   }
 }
-
-
