@@ -1000,7 +1000,7 @@ class TestIncredibleWifiActions extends CommonBaseActions {
     final finder = find.descendant(
       of: alertDialogFinder(),
       matching: find.text(loc(context)
-          .disableBandWarning(getWifiRadioBandTitle(context, radio))),
+          .disableBandWarning(radio.bandName)),
     );
     expect(finder, findsOneWidget);
     return finder;

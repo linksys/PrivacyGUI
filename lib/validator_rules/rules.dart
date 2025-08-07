@@ -182,6 +182,9 @@ class IPv6Rule extends RegExValidationRule {
 
   @override
   bool validate(String input) {
+    if (input == '::') {
+      return false;
+    }
     try {
       // Uri.parseIPv6Address will throw a FormatException if the address is invalid.
       Uri.parseIPv6Address(input);
