@@ -39,7 +39,7 @@ void main() {
   });
 
   testWidgets('Menu - Log in ', (tester) async {
-    await tester.pumpFrames(app(), const Duration(seconds: 3));
+    await tester.pumpFrames(app(), const Duration(seconds: 5));
     final login = TestLocalLoginActions(tester);
     await login.inputPassword(IntegrationTestConfig.password);
     await login.tapLoginButton();
@@ -47,7 +47,7 @@ void main() {
 
   testWidgets('Menu operations', (tester) async {
     // Load app widget.
-    await tester.pumpFrames(app(), Duration(seconds: 3));
+    await tester.pumpFrames(app(), Duration(seconds: 5));
     // Enter the dashboard screen
     final topbarActions = TestTopbarActions(tester);
     await topbarActions.tapMenuButton();

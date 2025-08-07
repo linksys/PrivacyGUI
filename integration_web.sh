@@ -71,6 +71,12 @@ count=0
 successed=0
 failed=0
 
+# config in test_file
+skipActionsInMeta=false
+groupSetup=()
+groupTearDown=()
+groupDescription=""
+
 # if testcase is empty then assign from testcaseArray
 if [ -z "$testcase" ]; then
     # add testcaseArray into cases
@@ -78,13 +84,36 @@ if [ -z "$testcase" ]; then
         cases+=("$case")
     done
 else
+    groupPath="$testcase"
+    groupJson=$(cat $groupPath)
+    skipActionsInMeta=$(jq -r '.skipActionsInMeta' $testcase)
+    groupSetup=($(jq -n -r --arg m "$groupJson" '$m' | jq -r '.groupSetup // [] | .[]'))
+    groupTearDown=($(jq -n -r --arg m "$groupJson" '$m' | jq -r '.groupTearDown // [] | .[]'))
+    groupDescription=$(jq -r '.description' $testcase)
+    
     cases=($(jq -r '.files[]' $testcase))
+    
+    echo "-------Start running test group: $testcase------"
+    echo "Skip Actions in Meta: $skipActionsInMeta"
+    echo "Group Description: $groupDescription"
+    echo "---------------------------------------------"
 fi
 
 echo "Cases ${cases[@]}"
 if [ ${#cases[@]} -eq 0 ]; then
     echo "No testcase found."
     exit 1
+fi
+
+
+# Group SetUp actions
+if [ ${#groupSetup[@]} -gt 0 ]; then
+    echo "Group Setup: ${groupSetup[@]}"
+    for action in "${groupSetup[@]}"; do
+        actionPath="$shActionPath$action.sh"
+        echo "Group Setup Action: $action"
+        bash "$actionPath"
+    done
 fi
 
 flutter pub get
@@ -114,13 +143,15 @@ for case in "${cases[@]}"; do
     echo "Case Path: $casePath"
     echo "$LINE_BREAK"  
 
-    # setActions
-    echo "Case Setup: $caseSetup"
-    for action in "${caseSetup[@]}"; do
-        actionPath="$shActionPath$action.sh"
-        echo "Case Setup Action: $action"
-        bash "$actionPath"
-    done
+    # Meta setup actions skip if skipActionsInMeta is true
+    if [ ${#caseSetup[@]} -gt 0 ] && [ "$skipActionsInMeta" == false ]; then
+        echo "Case Setup: ${caseSetup[@]}"
+        for action in "${caseSetup[@]}"; do
+            actionPath="$shActionPath$action.sh"
+            echo "Case Setup Action: $action"
+            bash "$actionPath"
+        done
+    fi
     
     # Run the WiFi detection script on the background
     sh ./integration_test/shell_scripts/wifi_detection.sh &
@@ -157,13 +188,29 @@ for case in "${cases[@]}"; do
     fi
     echo kill the WiFi detection process
     kill -9 $pid
-    echo "Case TearDown: $caseTearDown"
-    for action in "${caseTearDown[@]}"; do
+    echo "$LINE_BREAK"
+
+    # Meta teardown actions skip if skipActionsInMeta is true
+    if [ ${#caseTearDown[@]} -gt 0 ] && [ "$skipActionsInMeta" == false ]; then
+        echo "Case TearDown: ${caseTearDown[@]}"
+        for action in "${caseTearDown[@]}"; do
+            actionPath="$shActionPath$action.sh"
+            echo "Case TearDown Action Path: $actionPath"
+            bash "$actionPath" true
+        done
+    fi
+done
+
+# Group TearDown actions
+if [ ${#groupTearDown[@]} -gt 0 ]; then
+    echo "Group TearDown: ${groupTearDown[@]}"
+    for action in "${groupTearDown[@]}"; do
         actionPath="$shActionPath$action.sh"
-        echo "Case TearDown Action Path: $actionPath"
+        echo "Group TearDown Action Path: $actionPath"
         bash "$actionPath" true
     done
-done
+fi
+
 end_time=$(date +%s)
 elapsed_time=$((end_time - start_time))
 echo "*******************************"

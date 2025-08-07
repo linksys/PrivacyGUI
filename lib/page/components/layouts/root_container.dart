@@ -12,7 +12,6 @@ import 'package:privacy_gui/providers/root/root_provider.dart';
 
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/page/components/customs/debug_overlay_view.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacy_gui/utils.dart';
@@ -82,22 +81,6 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
                     constraints),
                 ..._handleConnectivity(ref),
                 _handleSpinner(rootConfig),
-                !showDebugPanel
-                    ? const Center()
-                    : CompositedTransformFollower(
-                        link: _link,
-                        targetAnchor: Alignment.topRight,
-                        followerAnchor: Alignment.topRight,
-                        child: IgnorePointer(
-                          ignoring: true,
-                          child: Padding(
-                            padding: EdgeInsets.only(
-                                top: MediaQueryUtils.getTopSafeAreaPadding(
-                                    context)),
-                            child: const OverlayInfoView(),
-                          ),
-                        ),
-                      ),
               ],
             ),
           ),
