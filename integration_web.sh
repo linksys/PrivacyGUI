@@ -1,6 +1,30 @@
 # imports
 root="$(dirname "$0")"
 source "$root/integration_test/shell_scripts/config_loader.sh"
+source "$root/integration_test/shell_scripts/test_result_logger.sh"
+
+
+# --- Function: Check for and kill a process by name ---
+kill_process() {
+    local name_to_kill="wifi_detection.sh"
+
+    # Use ps and grep to find matching process IDs (PIDs)
+    # [g]rep is used to avoid matching the grep command itself
+    pids=$(ps aux | grep -v 'grep' | grep -w "$name_to_kill" | awk '{print $2}')
+
+    # Check if any PIDs were found
+    if [ -z "$pids" ]; then
+        echo "No running processes found for: $name_to_kill"
+    else
+        echo "Found the following processes, preparing to terminate:"
+        echo "$pids"
+
+        # Terminate the processes
+        # Use xargs to pass the list of PIDs to the kill command
+        echo "$pids" | xargs kill -9
+        echo "All related processes have been terminated."
+    fi
+}
 
 force="local"
 cloud="qa"
@@ -67,10 +91,6 @@ if [ ! -z "$tags" ]; then
     fi
 fi
 
-count=0
-successed=0
-failed=0
-
 # config in test_file
 skipActionsInMeta=false
 groupSetup=()
@@ -104,6 +124,11 @@ if [ ${#cases[@]} -eq 0 ]; then
     echo "No testcase found."
     exit 1
 fi
+
+count=0
+successed=0
+failed=0
+initialize_results "$groupDescription" "$testcase" "${#cases[@]}"
 
 
 # Group SetUp actions
@@ -143,6 +168,8 @@ for case in "${cases[@]}"; do
     echo "Case Path: $casePath"
     echo "$LINE_BREAK"  
 
+    start_test
+
     # Meta setup actions skip if skipActionsInMeta is true
     if [ ${#caseSetup[@]} -gt 0 ] && [ "$skipActionsInMeta" == false ]; then
         echo "Case Setup: ${caseSetup[@]}"
@@ -171,23 +198,26 @@ for case in "${cases[@]}"; do
     --no-headless \
     --keep-app-running \
     -d web-server)
+
     if [[ "$result" == *"All tests passed."* ]]; then
         # Passed
         successed=$(( $successed + 1 ))
+        add_success_test "$caseName" "$caseDescription"
         echo "...passed."
     else
         # Failed
         failed=$(( $failed + 1 ))
+        # Extract the failure details
+        message=$(dart run ./test_scripts/extract_failure_messages.dart "$result")
+        echo "$message"
+        add_fail_test "$caseName" "$caseDescription" "$message"
         echo "...failed."
         echo "-------------------"
         echo "Result: $result"
         echo "-------------------"
-        # Extract the failure details
-        message=$(dart run ./test_scripts/extract_failure_messages.dart "$result")
-        echo "$message"
     fi
     echo kill the WiFi detection process
-    kill -9 $pid
+    kill_process
     echo "$LINE_BREAK"
 
     # Meta teardown actions skip if skipActionsInMeta is true
@@ -211,14 +241,11 @@ if [ ${#groupTearDown[@]} -gt 0 ]; then
     done
 fi
 
-end_time=$(date +%s)
-elapsed_time=$((end_time - start_time))
-echo "*******************************"
-echo "Time spent: $elapsed_time seconds"
-echo "Passed: $successed"
-echo "Failed: $failed"
-echo "Total: $count"
-echo "*******************************"
+add_total_time_cost
+cat "$RESULTS_FILE"
+
+sh $root/integration_test/shell_scripts/generate_integration_report.sh
+
 # exit (1) if any failed
 if [ "$failed" -gt 0 ]; then
     exit 1

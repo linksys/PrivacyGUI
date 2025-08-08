@@ -17,7 +17,6 @@ import 'config/integration_test_config.dart';
 import 'extensions/extensions.dart';
 
 void main() {
-  integrationDriver();
   final widgetsBinding =
       IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   const String newPassword = IntegrationTestConfig.newPassword;

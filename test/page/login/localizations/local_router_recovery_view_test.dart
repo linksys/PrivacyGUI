@@ -59,7 +59,7 @@ void main() {
 
     await tester.pump(Duration(seconds: 1));
 
-    await tester.enterText(find.byType(AppPinCodeInput), '12345');
+    tester.widget<AppPinCodeInput>(find.byType(AppPinCodeInput)).controller?.text = '12345';
     await tester.pumpAndSettle();
   });
 

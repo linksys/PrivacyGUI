@@ -101,94 +101,147 @@ class TestDashboardHomeActions extends CommonBaseActions {
     return instantPrivacyFinder;
   }
 
-  Finder wifi24gTooltipFinder() {
+// input - 2.4, 5, 6 or guest
+  Finder wifiCardFinderByBand(String band) {
+    final wifiCardFinder = band == 'guest'
+        ? find.byType(WiFiCard).last
+        : find.ancestor(
+            of: find.text('${band}GHz Band'),
+            matching: find.byType(WiFiCard),
+          );
+    expect(wifiCardFinder, findsOneWidget);
+    return wifiCardFinder;
+  }
+
+  // input - 2.4, 5, 6 or guest
+  Finder wifiTooltipFinderByBand(String band) {
+    final wifiCardFinder = wifiCardFinderByBand(band);
+    expect(wifiCardFinder, findsOneWidget);
+
     final tooltipFinder = find.descendant(
-      of: find.byType(WiFiCard),
+      of: wifiCardFinder,
       matching: find.byType(SuperTooltip),
     );
-    const radios = String.fromEnvironment('wifiBands');
-    expect(tooltipFinder, findsNWidgets(radios.split(',').length));
-    return tooltipFinder.at(0);
+    expect(tooltipFinder, findsOneWidget);
+    return tooltipFinder;
+  }
+
+  // input - 2.4, 5, 6 or guest
+  Finder wifiSwitchFinderByBand(String band) {
+    final wifiCardFinder = wifiCardFinderByBand(band);
+    expect(wifiCardFinder, findsOneWidget);
+
+    final switchFinder = find.descendant(
+      of: wifiCardFinder,
+      matching: find.byType(AppSwitch),
+    );
+    expect(switchFinder, findsOneWidget);
+    return switchFinder;
+  }
+
+  Finder wifi24gTooltipFinder() {
+    return wifiTooltipFinderByBand('2.4');
   }
 
   Finder wifi24gSwitchFinder() {
-    final switchFinder = find.descendant(
-      of: find.byType(WiFiCard),
-      matching: find.byType(AppSwitch),
-    );
-    const radios = String.fromEnvironment('wifiBands');
-    expect(switchFinder, findsNWidgets(radios.split(',').length));
-    return switchFinder.at(0);
+    return wifiSwitchFinderByBand('2.4');
   }
 
   Finder wifi24gCardFinder() {
-    final wifiCardFinder = find.descendant(
-      of: find.byType(WiFiCard),
-      matching: find.byType(AppCard),
-    );
-    const radios = String.fromEnvironment('wifiBands');
-    expect(wifiCardFinder, findsNWidgets(radios.split(',').length));
-    return wifiCardFinder.at(0);
+    return wifiCardFinderByBand('2.4');
   }
 
   Finder wifi5gTooltipFinder() {
-    final tooltipFinder = find.descendant(
-      of: find.byType(WiFiCard),
-      matching: find.byType(SuperTooltip),
-    );
-    const radios = String.fromEnvironment('wifiBands');
-    expect(tooltipFinder, findsNWidgets(radios.split(',').length));
-    return tooltipFinder.at(1);
+    return wifiTooltipFinderByBand('5');
   }
 
   Finder wifi5gSwitchFinder() {
-    final switchFinder = find.descendant(
-      of: find.byType(WiFiCard),
-      matching: find.byType(AppSwitch),
-    );
-    const radios = String.fromEnvironment('wifiBands');
-    expect(switchFinder, findsNWidgets(radios.split(',').length));
-    return switchFinder.at(1);
+    return wifiSwitchFinderByBand('5');
   }
 
   Finder wifi5gCardFinder() {
-    final wifiCardFinder = find.descendant(
-      of: find.byType(WiFiCard),
-      matching: find.byType(AppCard),
-    );
-    const radios = String.fromEnvironment('wifiBands');
-    expect(wifiCardFinder, findsNWidgets(radios.split(',').length));
-    return wifiCardFinder.at(1);
+    return wifiCardFinderByBand('5');
+  }
+
+  Finder wifi6gTooltipFinder() {
+    return wifiTooltipFinderByBand('5');
+  }
+
+  Finder wifi6gSwitchFinder() {
+    return wifiSwitchFinderByBand('6');
+  }
+
+  Finder wifi6gCardFinder() {
+    return wifiCardFinderByBand('6');
   }
 
   Finder guestWifiTooltipFinder() {
-    final tooltipFinder = find.descendant(
-      of: find.byType(WiFiCard),
-      matching: find.byType(SuperTooltip),
-    );
-    const radios = String.fromEnvironment('wifiBands');
-    expect(tooltipFinder, findsNWidgets(radios.split(',').length));
-    return tooltipFinder.at(2);
+    return wifiTooltipFinderByBand('guest');
   }
 
   Finder guestWifiSwitchFinder() {
-    final switchFinder = find.descendant(
-      of: find.byType(WiFiCard),
-      matching: find.byType(AppSwitch),
-    );
-    const radios = String.fromEnvironment('wifiBands');
-    expect(switchFinder, findsNWidgets(radios.split(',').length));
-    return switchFinder.at(2);
+    return wifiSwitchFinderByBand('guest');
   }
 
   Finder guestWifiCardFinder() {
-    final wifiCardFinder = find.descendant(
-      of: find.byType(WiFiCard),
-      matching: find.byType(AppCard),
+    return wifiCardFinderByBand('guest');
+  }
+
+  Finder speedTestWidgetFinder() {
+    final speedTestWidgetFinder = find.byType(SpeedTestWidget);
+    expect(speedTestWidgetFinder, findsOneWidget);
+    return speedTestWidgetFinder;
+  }
+
+  Finder speedTestGoButtonFinder() {
+    final speedTestFinder = speedTestWidgetFinder();
+    
+    final goButtonFinder = find.descendant(
+      of: speedTestFinder,
+      matching: find.byKey(ValueKey('goBtn')),
     );
-    const radios = String.fromEnvironment('wifiBands');
-    expect(wifiCardFinder, findsNWidgets(radios.split(',').length));
-    return wifiCardFinder.at(2);
+    expect(goButtonFinder, findsOneWidget);
+    return goButtonFinder;
+  }
+
+  Finder speedTestDateTimeFinder() {
+    final speedTestFinder = speedTestWidgetFinder();
+    final dateTimeFinder = find.descendant(
+      of: speedTestFinder,
+      matching: find.byKey(ValueKey('speedTestDateTime')),
+    );
+    expect(dateTimeFinder, findsOneWidget);
+    return dateTimeFinder;
+  }
+
+  Finder speedTestDownloadBandWidthFinder() {
+    final speedTestFinder = speedTestWidgetFinder();
+    final downloadBandWidthFinder = find.descendant(
+      of: speedTestFinder,
+      matching: find.byKey(ValueKey('downloadBandWidth')),
+    );
+    expect(downloadBandWidthFinder, findsOneWidget);
+    return downloadBandWidthFinder;
+  }
+
+  Finder speedTestUploadBandWidthFinder() {
+    final speedTestFinder = speedTestWidgetFinder();
+    final uploadBandWidthFinder = find.descendant(
+      of: speedTestFinder,
+      matching: find.byKey(ValueKey('uploadBandWidth')),
+    );
+    expect(uploadBandWidthFinder, findsOneWidget);
+    return uploadBandWidthFinder;
+  }
+
+  Finder speedTestTryAgainFinder() {
+    final speedTestFinder = speedTestWidgetFinder();
+    final tryAgainFinder = find.descendant(
+      of: speedTestFinder,
+      matching: find.byKey(ValueKey('speedTestTestAgain')),
+    );
+    expect(tryAgainFinder, findsOneWidget);
+    return tryAgainFinder;
   }
 
   Future<void> checkTopologyPage() async {
@@ -272,21 +325,29 @@ class TestDashboardHomeActions extends CommonBaseActions {
   }
 
   Future<void> hoverToWifi24gQrIcon() async {
+    final switchFinder = wifi24gSwitchFinder();
+    final isEnabled = tester.widget<AppSwitch>(switchFinder).value;
     // Find 2.4G Wifi QR code icon
     final tooltipFinder = wifi24gTooltipFinder();
     // scroll the screen
     await scrollUntil(tooltipFinder);
     await _hoverToCenter(tooltipFinder);
-    expect(find.byType(QrImageView), findsOneWidget);
+    expect(find.byType(QrImageView), isEnabled ? findsOneWidget : findsNothing);
     await tester.pumpAndSettle();
   }
 
   Future<void> toggle24gWifi() async {
     // Find Wifi 2.4G switch
     final switchFinder = wifi24gSwitchFinder();
+    final switchWidget = tester.widget<AppSwitch>(switchFinder);
+    final isEnabled = switchWidget.value;
     // Tap the switch
     await tester.tap(switchFinder);
     await tester.pumpAndSettle();
+    // Tap alert ok
+    await tapAlertOkButton();
+    await tester.pumpAndSettle();
+    expect(switchWidget.value, !isEnabled);
   }
 
   Future<void> checkWifi24gPage() async {
@@ -300,23 +361,73 @@ class TestDashboardHomeActions extends CommonBaseActions {
 
   Future<void> hoverToWifi5gQrIcon() async {
     // Find 5G Wifi switch
+    final switchFinder = wifi5gSwitchFinder();
+    final isEnabled = tester.widget<AppSwitch>(switchFinder).value;
     final tooltipFinder = wifi5gTooltipFinder();
     // scroll the screen
     await scrollUntil(tooltipFinder);
     await _hoverToCenter(tooltipFinder);
     // If 5g wifi is disabled, there will be no QR code image
-    expect(find.byType(QrImageView), findsAtLeastNWidgets(0));
+    expect(find.byType(QrImageView), isEnabled ? findsOneWidget : findsNothing);
     await tester.pumpAndSettle();
   }
 
   Future<void> toggle5gWifi() async {
     // Find 5G Wifi switch
     final switchFinder = wifi5gSwitchFinder();
+    final switchWidget = tester.widget<AppSwitch>(switchFinder);
+    final isEnabled = switchWidget.value;
     // Tap the switch
     await tester.tap(switchFinder);
     await tester.pumpAndSettle();
     // Tap alert ok
     await tapAlertOkButton();
+    await tester.pumpAndSettle();
+    expect(switchWidget.value, !isEnabled);
+  }
+
+  Future<void> checkWifi5gPage() async {
+    // Find 5G Wifi card
+    final wifiCardFinder = wifi5gCardFinder();
+    // Tap the card
+    await tester.tap(wifiCardFinder);
+    await tester.pumpAndSettle();
+    await tapBackButton();
+  }
+
+  Future<void> hoverToWifi6gQrIcon() async {
+    // Find 6G Wifi QR code icon
+    final tooltipFinder = wifi6gTooltipFinder();
+    // scroll the screen
+    await scrollUntil(tooltipFinder);
+    await _hoverToCenter(tooltipFinder);
+    // If 6g wifi is disabled, there will be no QR code image
+    final isEnabled = tester.widget<AppSwitch>(wifi6gSwitchFinder()).value;
+    expect(find.byType(QrImageView), isEnabled ? findsOneWidget : findsNothing);
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> toggle6gWifi() async {
+    // Find 6G Wifi switch
+    final switchFinder = wifi6gSwitchFinder();
+    final switchWidget = tester.widget<AppSwitch>(switchFinder);
+    final isEnabled = switchWidget.value;
+    // Tap the switch
+    await tester.tap(switchFinder);
+    await tester.pumpAndSettle();
+    // Tap alert ok
+    await tapAlertOkButton();
+    await tester.pumpAndSettle();
+    expect(switchWidget.value, !isEnabled);
+  }
+
+  Future<void> checkWifi6gPage() async {
+    // Find 6G Wifi card
+    final wifiCardFinder = wifi6gCardFinder();
+    // Tap the card
+    await tester.tap(wifiCardFinder);
+    await tester.pumpAndSettle();
+    await tapBackButton();
   }
 
   Future<void> tapAlertOkButton() async {
@@ -334,16 +445,6 @@ class TestDashboardHomeActions extends CommonBaseActions {
     await tester.pumpAndSettle();
   }
 
-
-  Future<void> checkWifi5gPage() async {
-    // Find 5G Wifi card
-    final wifiCardFinder = wifi5gCardFinder();
-    // Tap the card
-    await tester.tap(wifiCardFinder);
-    await tester.pumpAndSettle();
-    await tapBackButton();
-  }
-
   Future<void> hoverToGuestWifiQrIcon() async {
     // Find guest Wifi QR code icon
     final tooltipFinder = guestWifiTooltipFinder();
@@ -351,7 +452,8 @@ class TestDashboardHomeActions extends CommonBaseActions {
     await scrollUntil(tooltipFinder);
     await _hoverToCenter(tooltipFinder);
     // If guest wifi is disabled, there will be no QR code image
-    expect(find.byType(QrImageView), findsAtLeastNWidgets(0));
+    final isEnabled = tester.widget<AppSwitch>(guestWifiSwitchFinder()).value;
+    expect(find.byType(QrImageView), isEnabled ? findsOneWidget : findsNothing);
     await tester.pumpAndSettle();
   }
 
@@ -363,6 +465,7 @@ class TestDashboardHomeActions extends CommonBaseActions {
     await tester.pumpAndSettle();
     // Tap alert ok
     await tapAlertOkButton();
+    await tester.pumpAndSettle();
   }
 
   Future<void> checkGuestWifiPage() async {
@@ -410,5 +513,30 @@ class TestDashboardHomeActions extends CommonBaseActions {
     await tester.pumpAndSettle();
     // Explicitly remove the pointer after the hover action
     await gesture.removePointer();
+  }
+
+  Future<void> startSpeedTest() async {
+    // Find speed test switch
+    final goButtonFinder = speedTestGoButtonFinder();
+    await scrollUntil(goButtonFinder);
+    // Tap the switch
+    await tester.tap(goButtonFinder);
+    await tester.pumpFrames(app(), const Duration(seconds: 10));
+    await tester.pumpAndSettle();
+
+  }
+
+  Future<void> checkSpeedTestResult() async {
+    final dateTimeFinder = speedTestDateTimeFinder();
+    final dateTimeWidget = tester.widget<AppText>(dateTimeFinder);
+    expect(dateTimeWidget.text, isNot('--'));
+    final downloadBandWidthFinder = speedTestDownloadBandWidthFinder();
+    final downloadBandWidthWidget = tester.widget<AppText>(downloadBandWidthFinder);
+    expect(downloadBandWidthWidget.text, isNot('-'));
+    final uploadBandWidthFinder = speedTestUploadBandWidthFinder();
+    final uploadBandWidthWidget = tester.widget<AppText>(uploadBandWidthFinder);
+    expect(uploadBandWidthWidget.text, isNot('-'));
+    speedTestTryAgainFinder();
+    
   }
 }
