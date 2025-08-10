@@ -132,6 +132,7 @@ initialize_results "$groupDescription" "$testcase" "${#cases[@]}"
 
 
 # Group SetUp actions
+shActionPath="./integration_test/shell_scripts/"
 if [ ${#groupSetup[@]} -gt 0 ]; then
     echo "Group Setup: ${groupSetup[@]}"
     for action in "${groupSetup[@]}"; do
@@ -158,7 +159,6 @@ for case in "${cases[@]}"; do
 
     caseSetup=($(jq -n -r --arg m "$metaJson" '$m' | jq -r '.setUp // [] | .[]'))
     caseTearDown=($(jq -n -r --arg m "$metaJson" '$m' | jq -r '.tearDown // [] | .[]'))
-    shActionPath="./integration_test/shell_scripts/"
 
     count=$(( $count + 1 ))
     echo "$LINE_BREAK"
