@@ -2,7 +2,7 @@
     "name": "Test Speed Test",
     "target": "integration_test/speed_test_test.dart",
     "description": "Run speed test and check the result. NOTE: Only run on device supports speed test",
-    "setUp":  ["skip_pnp", "check_auto_parent"],
+    "setUp":  ["skip_setup"],
     "tearDown": [],
     "tags": ["speed_test", "menu"]
 }

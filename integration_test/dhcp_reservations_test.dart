@@ -22,7 +22,7 @@ void main() {
   });
 
   Future<TestDHCPReservationActions> enterDHCPReservationPage(WidgetTester tester) async {
-    await tester.pumpFrames(app(), const Duration(seconds: 3));
+    await tester.pumpFrames(app(), const Duration(seconds: 5));
     final topbarActions = TestTopbarActions(tester);
     await topbarActions.tapMenuButton();
     final menuActions = TestMenuActions(tester);
@@ -38,7 +38,7 @@ void main() {
 
   group('DHCP Reservation - Log in', () {
     testWidgets('DHCP Reservation - Log in', (tester) async {
-      await tester.pumpFrames(app(), const Duration(seconds: 3));
+      await tester.pumpFrames(app(), const Duration(seconds: 5));
       final login = TestLocalLoginActions(tester);
       await login.inputPassword(IntegrationTestConfig.password);
       await login.tapLoginButton();

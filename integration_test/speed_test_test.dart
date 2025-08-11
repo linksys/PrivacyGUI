@@ -30,7 +30,7 @@ void main() {
     });
 
     testWidgets('Speed Test - Run speed test', (tester) async {
-      await tester.pumpFrames(app(), const Duration(seconds: 3));
+      await tester.pumpFrames(app(), const Duration(seconds: 5));
       // Enter the menu screen
       final topbarActions = TestTopbarActions(tester);
       await topbarActions.tapMenuButton();
