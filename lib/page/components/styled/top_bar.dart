@@ -81,16 +81,17 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
                           _sessionExpireCounter(sessionInfo, expiredCountdown),
                       ],
                     ),
-                  if (loginType == LoginType.local)
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 4.0),
-                      child: AppIconButton.noPadding(
-                        icon: Icons.support_agent,
-                        onTap: () {
-                          showRemoteAssistanceDialog(context, ref);
-                        },
-                      ),
-                    ),
+                  // TODO: Add the button back when remote assistance is ready
+                  // if (loginType == LoginType.local)
+                  //   Padding(
+                  //     padding: EdgeInsets.symmetric(horizontal: 4.0),
+                  //     child: AppIconButton.noPadding(
+                  //       icon: Icons.support_agent,
+                  //       onTap: () {
+                  //         showRemoteAssistanceDialog(context, ref);
+                  //       },
+                  //     ),
+                  //   ),
                   const Padding(
                     padding: EdgeInsets.all(4.0),
                     child: GeneralSettingsWidget(),
