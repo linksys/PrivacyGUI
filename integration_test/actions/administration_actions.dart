@@ -3,10 +3,40 @@ part of 'base_actions.dart';
 class TestAdministrationActions extends CommonBaseActions {
   TestAdministrationActions(super.tester);
 
+  bool isManageWirelesslySupported() {
+    return tester.any(find.text('Allow local management wirelessly'));
+  }
+
+  Finder manageWirelesslySwitchFinder() {
+    final cardFinder = find.ancestor(
+      of: find.text('Allow local management wirelessly'),
+      matching: find.byType(AppCard),
+    );
+    final switchFinder = find.descendant(
+      of: cardFinder,
+      matching: find.byType(AppSwitch),
+    );
+    expect(switchFinder, findsOneWidget);
+    return switchFinder;
+  }
+
+  bool isManageWirelesslySwitchEnabled() {
+    final switchFinder = manageWirelesslySwitchFinder();
+    final switchWidget = tester.widget<AppSwitch>(switchFinder);
+    return switchWidget.value;
+  }
+
   Finder upnpSwitchFinder() {
-    final switchFinder = find.byType(AppSwitch);
-    expect(switchFinder, findsNWidgets(3));
-    return switchFinder.at(0);
+    final tileFinder = find.ancestor(
+      of: find.text('UPnP'),
+      matching: find.byType(AppCard),
+    );
+    final switchFinder = find.descendant(
+      of: tileFinder,
+      matching: find.byType(AppSwitch),
+    );
+    expect(switchFinder, findsOneWidget);
+    return switchFinder;
   }
 
   bool isUpnpSwitchEnabled() {
@@ -16,9 +46,16 @@ class TestAdministrationActions extends CommonBaseActions {
   }
 
   Finder sipSwitchFinder() {
-    final switchFinder = find.byType(AppSwitch);
-    expect(switchFinder, findsNWidgets(3));
-    return switchFinder.at(1);
+    final cardFinder = find.ancestor(
+      of: find.text('Application Layer Gateway (SIP)'),
+      matching: find.byType(AppCard),
+    );
+    final switchFinder = find.descendant(
+      of: cardFinder,
+      matching: find.byType(AppSwitch),
+    );
+    expect(switchFinder, findsOneWidget);
+    return switchFinder;
   }
 
   bool isSipSwitchEnabled() {
@@ -28,9 +65,16 @@ class TestAdministrationActions extends CommonBaseActions {
   }
 
   Finder expressForwardingSwitchFinder() {
-    final switchFinder = find.byType(AppSwitch);
-    expect(switchFinder, findsNWidgets(3));
-    return switchFinder.at(2);
+    final cardFinder = find.ancestor(
+      of: find.text('Express Forwarding'),
+      matching: find.byType(AppCard),
+    );
+    final switchFinder = find.descendant(
+      of: cardFinder,
+      matching: find.byType(AppSwitch),
+    );
+    expect(switchFinder, findsOneWidget);
+    return switchFinder;
   }
 
   bool isExpressForwardingSwitchEnabled() {
@@ -51,14 +95,14 @@ class TestAdministrationActions extends CommonBaseActions {
     return checkboxWidget.value!;
   }
 
-  Finder allowToInternetCheckboxFinder() {
+  Finder allowToDisableCheckboxFinder() {
     final checkboxFinder = find.byType(Checkbox);
     expect(checkboxFinder, findsNWidgets(2));
     return checkboxFinder.last;
   }
 
-  bool isAllowToInternetChecked() {
-    final checkboxFinder = allowToInternetCheckboxFinder();
+  bool isAllowToDisableChecked() {
+    final checkboxFinder = allowToDisableCheckboxFinder();
     final checkboxWidget = tester.widget<Checkbox>(checkboxFinder);
     return checkboxWidget.value!;
   }
@@ -67,6 +111,14 @@ class TestAdministrationActions extends CommonBaseActions {
     final saveButton = find.byType(AppFilledButton);
     expect(saveButton, findsOneWidget);
     return saveButton;
+  }
+
+  Future<void> toggleManageWirelesslySwitch() async {
+    // Find local management wirelessly switch
+    final switchFinder = manageWirelesslySwitchFinder();
+    // Tap the switch
+    await tester.tap(switchFinder);
+    await tester.pumpAndSettle();
   }
 
   Future<void> toggleUpnpSwitch() async {
@@ -103,7 +155,7 @@ class TestAdministrationActions extends CommonBaseActions {
 
   Future<void> tapAllowToDisableInternetCheckbox() async {
     // Find the checkbox
-    final checkboxFinder = allowToInternetCheckboxFinder();
+    final checkboxFinder = allowToDisableCheckboxFinder();
     // Tap the checkbox
     await tester.tap(checkboxFinder);
     await tester.pumpAndSettle();

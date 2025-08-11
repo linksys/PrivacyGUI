@@ -49,7 +49,13 @@ void main() {
       final advancedSettingsActions = TestAdvancedSettingsActions(tester);
       await advancedSettingsActions.checkTitle(advancedSettingsActions.title);
       // Enter Advanced routing screen
-      await advancedSettingsActions.enterAdvancedRoutingPage();
+      final isSupported =
+          await advancedSettingsActions.enterAdvancedRoutingPage();
+      if (!isSupported) {
+        Skip(
+            'Skipping test: Advanced Routing is not available in this router model');
+        return;
+      }
       final advancedRoutingActions = TestAdvancedRoutingActions(tester);
       await advancedRoutingActions.checkTitle(advancedRoutingActions.title);
       // Switch to dynamic routing
@@ -109,7 +115,13 @@ void main() {
       final advancedSettingsActions = TestAdvancedSettingsActions(tester);
       await advancedSettingsActions.checkTitle(advancedSettingsActions.title);
       // Enter Advanced routing screen
-      await advancedSettingsActions.enterAdvancedRoutingPage();
+      final isSupported =
+          await advancedSettingsActions.enterAdvancedRoutingPage();
+      if (!isSupported) {
+        Skip(
+            'Skipping test: Advanced Routing is not available in this router model');
+        return;
+      }
       final advancedRoutingActions = TestAdvancedRoutingActions(tester);
       await advancedRoutingActions.checkTitle(advancedRoutingActions.title);
       // Add a new static routing
