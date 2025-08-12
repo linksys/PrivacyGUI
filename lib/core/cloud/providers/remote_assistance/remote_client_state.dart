@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
-import 'package:privacy_gui/core/cloud/model/guidan_remote_assistance.dart';
+import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
 
 class RemoteClientState extends Equatable {
   final GRASessionInfo? sessionInfo;

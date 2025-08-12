@@ -4,7 +4,7 @@ import 'package:http/http.dart';
 import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/http/linksys_http_client.dart';
 
-extension GuidansRemoteAssistanceService on LinksysHttpClient {
+extension GuardiansRemoteAssistanceService on LinksysHttpClient {
   ///
   /// The header requests for 2 combinations:
   /// 1. X-Linksys-Client-Id + X-Linksys-Token + X-Linksys-SN

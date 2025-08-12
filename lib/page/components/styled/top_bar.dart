@@ -19,7 +19,7 @@ import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/debug_mixin.dart';
 import 'package:privacy_gui/utils.dart';
-import 'package:privacy_gui/core/cloud/model/guidan_remote_assistance.dart';
+import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
 import 'remote_assistance/remote_assistance_dialog.dart';
 
 class TopBar extends ConsumerStatefulWidget {
