@@ -20,11 +20,37 @@ initialize_results() {
             "description": $d,
             "filePath": $f,
             "total_count": $t,
+            "deviceInfo": {
+                "description": "",
+                "modelNumber": "",
+                "firmwareVersion": "",
+                "hardwareVersion": "",
+                "uiVersion": ""
+            },
             "success": [],
             "fail": []
         }' > "$RESULTS_FILE"
     # Record the start time of the test suite
     TEST_START_TIME=$(date +%s)
+}
+
+# --- Function: Update device information in the JSON file ---
+# Param 1: Device description
+# Param 2: Device model number
+# Param 3: Device firmware version
+# Param 4: Device hardware version
+# Param 5: Device UI version
+update_device_info() {
+    local desc="$1"
+    local model="$2"
+    local firmware="$3"
+    local hardware="$4"
+    local uiVersion="$5"
+    
+    # Use jq to update the deviceInfo object
+    jq --arg d "$desc" --arg m "$model" --arg f "$firmware" --arg h "$hardware" --arg ui "$uiVersion" \
+       '.deviceInfo = { "description": $d, "modelNumber": $m, "firmwareVersion": $f, "hardwareVersion": $h, "uiVersion": $ui }' \
+       "$RESULTS_FILE" > "$RESULTS_FILE.tmp" && mv "$RESULTS_FILE.tmp" "$RESULTS_FILE"
 }
 
 start_test() {

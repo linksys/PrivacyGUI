@@ -125,6 +125,28 @@ if [ ${#cases[@]} -eq 0 ]; then
     exit 1
 fi
 
+# Fetch Device Info
+deviceInfo=$(sh ./integration_test/shell_scripts/get_device_info.sh)
+modelNumber=$(echo "$deviceInfo" | jq -r '.output.modelNumber')
+firmwareVersion=$(echo "$deviceInfo" | jq -r '.output.firmwareVersion')
+routerDescription=$(echo "$deviceInfo" | jq -r '.output.description')
+hardwareVersion=$(echo "$deviceInfo" | jq -r '.output.hardwareVersion')
+# Combine UI version and commit id
+uiVersion=$(sed -nE 's/^version: ([0-9]+\.[0-9]+\.[0-9]+).*$/\1/p' "pubspec.yaml")
+if ! commit_id=$(git rev-parse --short HEAD 2>/dev/null); then
+  commit_id=""
+fi
+if [ -z "$commit_id" ]; then
+  commitedUIVersion="${uiVersion}"
+else
+  commitedUIVersion="${uiVersion}-${commit_id}"
+fi
+echo "Model Number: $modelNumber"
+echo "Firmware Version: $firmwareVersion"
+echo "Router Description: $routerDescription"
+echo "Hardware Version: $hardwareVersion"
+echo "UI Version: $commitedUIVersion"
+
 count=0
 successed=0
 failed=0
