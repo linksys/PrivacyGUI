@@ -4,6 +4,7 @@ import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/providers/auth/ra_session_provider.dart';
@@ -219,6 +220,33 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     });
   }
 
+  Future cloudLoginAuth(
+      {required String token,
+      required String sn,
+      required GRASessionInfo sessionInfo}) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      // Save nid and sn to prefs
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(pCurrentSN, sn);
+      await prefs.setString(pGRASessionId, sessionInfo.id);
+      // Save the new cloud credentials
+      return await updateCloudCredientials(
+          sessionToken: SessionToken(
+              accessToken: token,
+              tokenType: 'Bearer',
+              expiresIn: DateTime.now()
+                  .add(Duration(seconds: sessionInfo.expiredIn * -1))
+                  .millisecondsSinceEpoch));
+    });
+  }
+
+  Future<GRASessionInfo?> testSessionAuthentication(
+      {required String token, required String session}) async {
+    final cloud = ref.read(cloudRepositoryProvider);
+    return cloud.getSessionInfo(token: token, sessionId: session);
+  }
+
   Future cloudLogin({
     required String username,
     required String password,
@@ -244,6 +272,8 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     String? username,
     String? password,
   }) async {
+    logger.d(
+        '[Auth]: Update cloud credientials: $sessionToken, $username, $password');
     const storage = FlutterSecureStorage();
     if (sessionToken != null) {
       await storage.write(
@@ -362,6 +392,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       await prefs.remove(pSelectedNetworkId);
       await prefs.remove(pCurrentSN);
       await prefs.remove(pDeviceToken);
+      await prefs.remove(pGRASessionId);
       const storage = FlutterSecureStorage();
       await storage.delete(key: pSessionToken);
       await storage.delete(key: pSessionTokenTs);

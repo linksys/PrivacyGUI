@@ -21,14 +21,6 @@
             "program": "lib/main.dart"
         },
         {
-            "name": "linksys - Web (Factory)",
-            "request": "launch",
-            "type": "dart",
-            "args": ["--web-browser-flag", "--disable-web-security", "--web-port", "61672", "--web-renderer", "html"],
-            "toolArgs": ["--dart-define","force=local", "--dart-define","factory=true"],
-            "program": "lib/main.dart"
-        },
-        {
             "name": "linksys - Android",
             "request": "launch",
             "type": "dart",

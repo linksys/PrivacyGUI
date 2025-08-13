@@ -216,6 +216,7 @@
   "filterMulticast": "Filter multicast",
   "filteredDevices": "Perangkat yang Difilter",
   "filters": "Filter",
+  "featureUnavailableInRemoteMode": "Fitur ini tidak tersedia dalam mode jarak jauh",
   "firewall": "Firewall",
   "firmwareDownloadingMessage1": "Anda dapat menggunakan WiFi selama pembaruan ini.",
   "firmwareDownloadingMessage2": "Tetapi konektivitas mungkin akan menjadi lebih lambat dari biasanya saat kami meningkatkan sistem Anda.",

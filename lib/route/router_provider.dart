@@ -32,14 +32,13 @@ import 'package:privacy_gui/page/landing/_landing.dart';
 import 'package:privacy_gui/page/login/views/_views.dart';
 import 'package:privacy_gui/page/login/auto_parent/views/auto_parent_first_login_view.dart';
 import 'package:privacy_gui/page/login/views/local_reset_router_password_view.dart';
+import 'package:privacy_gui/page/login/views/login_cloud_auth_view.dart';
 import 'package:privacy_gui/page/instant_admin/_instant_admin.dart';
 import 'package:privacy_gui/page/nodes/_nodes.dart';
 import 'package:privacy_gui/page/nodes/views/add_nodes_view.dart';
 import 'package:privacy_gui/page/nodes/views/add_wired_nodes_view.dart';
 import 'package:privacy_gui/page/otp_flow/providers/_providers.dart';
 import 'package:privacy_gui/page/otp_flow/views/_views.dart';
-import 'package:privacy_gui/page/instant_setup/troubleshooter/views/call_support/call_support_main_region_view.dart';
-import 'package:privacy_gui/page/instant_setup/troubleshooter/views/call_support/call_support_more_region_view.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
 import 'package:privacy_gui/page/instant_setup/pnp_admin_view.dart';
 import 'package:privacy_gui/page/instant_setup/pnp_setup_view.dart';
@@ -100,6 +99,8 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       localLoginRoute,
       autoParentFirstLoginRoute,
+      cloudLoginAuthRoute,
+      cloudLoginRoute,
       homeRoute,
       // ref.read(otpRouteProvider),
       LinksysRoute(
@@ -257,6 +258,24 @@ class RouterNotifier extends ChangeNotifier {
       return _prepare(state);
     }
 
+    // check query parameter in remote login
+    // if session is not null and different with current session which stores in pref,
+    // then logout
+    final queryParameters = state.uri.queryParameters;
+    final prefs = await SharedPreferences.getInstance();
+    final currentSession = prefs.getString(pGRASessionId);
+    if (loginType == LoginType.remote &&
+        (currentSession == null ||
+            (queryParameters['token'] != null &&
+                queryParameters['session'] != null &&
+                queryParameters['session'] != currentSession))) {
+      FlutterNativeSplash.remove();
+      logger
+          .d('[Route]: session is not null and different with current session');
+      await _ref.read(authProvider.notifier).logout();
+      return _prepare(state);
+    }
+
     // if have no login type and navigate into dashboard, then back to home
     if ((loginType == null || loginType == LoginType.none) &&
         state.matchedLocation.startsWith('/dashboard')) {
@@ -288,21 +307,39 @@ class RouterNotifier extends ChangeNotifier {
     return _ref.read(authProvider.notifier).init().then((authState) async {
       logger.i(
           '[Route]: Check credentials done: Login type = ${authState?.loginType}, ${authState?.localPassword}');
+
+      // check query parameter in remote login
+      // if session is not null and different with current session which stores in pref,
+      // then logout
+      final queryParameters = state.uri.queryParameters;
+      final prefs = await SharedPreferences.getInstance();
+      final currentSession = prefs.getString(pGRASessionId);
+      if (authState?.loginType == LoginType.remote &&
+          (currentSession == null ||
+              (queryParameters['token'] != null &&
+                  queryParameters['session'] != null &&
+                  queryParameters['session'] != currentSession))) {
+        FlutterNativeSplash.remove();
+        logger.d(
+            '[Route]: session is not null and different with current session');
+        await _ref.read(authProvider.notifier).logout();
+        return _home(state.uri.query);
+      }
       FlutterNativeSplash.remove();
       return switch (authState?.loginType ?? LoginType.none) {
         LoginType.remote => await _prepare(state, RoutePath.dashboardHome)
             .then((path) => path ?? RoutePath.dashboardHome),
         LoginType.local => await _prepare(state, RoutePath.dashboardHome)
             .then((path) => path ?? RoutePath.dashboardHome),
-        _ => _home(),
+        _ => _home(state.uri.query),
       };
     });
   }
 
-  String _home() {
+  String _home([String? query]) {
     return BuildConfig.forceCommandType == ForceCommand.local
         ? RoutePath.localLoginPassword
-        : RoutePath.home;
+        : '${RoutePath.cloudLoginAuth}?$query';
   }
 
   FutureOr<String?> _goPnpPath(GoRouterState state) {
@@ -325,7 +362,8 @@ class RouterNotifier extends ChangeNotifier {
 
     if (loginType == LoginType.remote) {
       final networkId = prefs.getString(pSelectedNetworkId);
-      naviPath = await _prepareRemote(networkId, serialNumber);
+      final sessionId = prefs.getString(pGRASessionId);
+      naviPath = await _prepareRemote(networkId, serialNumber, sessionId);
     } else if (loginType == LoginType.local) {
       naviPath = await _prepareLocal(serialNumber);
     }
@@ -369,14 +407,21 @@ class RouterNotifier extends ChangeNotifier {
     } else {
       // TODO #LINKSYS Error handling for unable to get deviceinfo
       logger.i('[Prepare]: Error handling for unable to get deviceinfo');
-      return _home();
+      return _home('error=noDeviceInfo');
     }
   }
 
   Future<String?> _prepareRemote(
-      String? networkId, String? serialNumber) async {
-    logger.i('[Prepare]: remote - $networkId, $serialNumber');
-    if (_ref.read(selectedNetworkIdProvider) == null) {
+      String? networkId, String? serialNumber, String? sessionId) async {
+    logger.i('[Prepare]: remote - $networkId, $serialNumber, $sessionId');
+    if (serialNumber != null && sessionId != null) {
+      if (isSerialNumberChanged(serialNumber)) {
+        return null;
+      }
+      await _ref
+          .read(dashboardManagerProvider.notifier)
+          .saveSelectedNetwork(serialNumber, '');
+    } else if (_ref.read(selectedNetworkIdProvider) == null) {
       _ref.read(selectNetworkProvider.notifier).refreshCloudNetworks();
       if (networkId == null || serialNumber == null) {
         return RoutePath.selectNetwork;

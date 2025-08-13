@@ -216,6 +216,7 @@
   "filterMulticast": "Lọc multicast",
   "filteredDevices": "Các thiết bị được lọc",
   "filters": "Bộ lọc",
+  "featureUnavailableInRemoteMode": "Tính năng này không khả dụng trong chế độ từ xa",
   "firewall": "Tường lửa",
   "firmwareDownloadingMessage1": "Bạn có thể sử dụng WiFi trong quá trình cập nhật này.",
   "firmwareDownloadingMessage2": "Nhưng mọi thứ có thể chậm hơn bình thường trong khi chúng tôi cải thiện hệ thống của bạn.",
