@@ -235,6 +235,7 @@
   "filterMulticast": "过滤组播",
   "filteredDevices": "已过滤的设备",
   "filters": "筛选器",
+  "featureUnavailableInRemoteMode": "此功能在远程模式下不可用",
   "firewall": "防火墙",
   "firmware": "固件",
   "firmwareDownloadingMessage1": "您可以在此更新期间使用 WiFi。",

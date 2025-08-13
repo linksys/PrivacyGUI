@@ -235,6 +235,7 @@
   "filterMulticast": "Filtrera multicast",
   "filteredDevices": "Filtrerade enheter",
   "filters": "Filtrera",
+  "featureUnavailableInRemoteMode": "Den här funktionen är inte tillgänglig i fjärrläge",
   "firewall": "Brandvägg",
   "firmware": "Firmware",
   "firmwareDownloadingMessage1": "Du kan använda ditt WiFi-nätverk under uppdateringen.",

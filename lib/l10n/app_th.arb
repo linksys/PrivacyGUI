@@ -217,6 +217,7 @@
   "filterMulticast": "กรองมัลติคาสท์",
   "filteredDevices": "อุปกรณ์ที่ถูกกรอง",
   "filters": "ตัวกรอง",
+  "featureUnavailableInRemoteMode": "คุณลักษณะนี้ไม่พร้อมใช้งานในโหมดระยะไกล",
   "firewall": "ไฟร์วอลล์",
   "firmwareDownloadingMessage1": "คุณสามารถใช้ WiFi ได้ในระหว่างการอัปเดตนี้",
   "firmwareDownloadingMessage2": "แต่การดำเนินการในส่วนอื่นๆ อาจช้ากว่าปกติในขณะที่เราปรับปรุงระบบของคุณ",

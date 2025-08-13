@@ -235,6 +235,7 @@
   "filterMulticast": "Filtrage multidiffusion",
   "filteredDevices": "Appareils filtrés",
   "filters": "Filtres",
+  "featureUnavailableInRemoteMode": "Cette fonctionnalité n'est pas disponible en mode distant",
   "firewall": "Pare-feu",
   "firmware": "Micrologiciel",
   "firmwareDownloadingMessage1": "Vous pouvez utiliser votre WiFi pendant cette mise à jour.",

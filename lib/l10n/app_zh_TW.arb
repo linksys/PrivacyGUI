@@ -235,6 +235,7 @@
   "filterMulticast": "篩選多點傳送",
   "filteredDevices": "已篩選裝置",
   "filters": "篩選器",
+  "featureUnavailableInRemoteMode": "此功能在遠端模式下無法使用",
   "firewall": "防火牆",
   "firmware": "韌體",
   "firmwareDownloadingMessage1": "在此更新期間您可以使用 WiFi。",

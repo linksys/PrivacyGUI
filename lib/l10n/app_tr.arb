@@ -217,6 +217,7 @@
   "filterMulticast": "Çoklu yayınları engelle",
   "filteredDevices": "Filtrelenen Aygıtlar",
   "filters": "Filtreler",
+  "featureUnavailableInRemoteMode": "Bu özellik uzak modda kullanılamaz",
   "firewall": "Güvenlik Duvarı",
   "firmwareDownloadingMessage1": "WiFi'ınızı bu güncelleme sırasında kullanabilirsiniz.",
   "firmwareDownloadingMessage2": "Ancak sisteminizi geliştirirken işler normalden daha yavaş olabilir.",

@@ -235,6 +235,7 @@
   "filterMulticast": "Multicast-filter",
   "filteredDevices": "Filtrerede enheder",
   "filters": "Filtrer",
+  "featureUnavailableInRemoteMode": "Denne funktion er ikke tilgængelig i fjernbetjeningsfunktionen",
   "firewall": "Firewall",
   "firmware": "Firmware",
   "firmwareDownloadingMessage1": "Du kan bruge dit WiFi under denne opdatering.",

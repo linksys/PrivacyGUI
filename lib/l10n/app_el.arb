@@ -217,6 +217,7 @@
   "filterMulticast": "Φιλτράρισμα multicast",
   "filteredDevices": "Φιλτραρισμένες συσκευές",
   "filters": "Φίλτρα",
+  "featureUnavailableInRemoteMode": "Αυτή η λειτουργία δεν είναι διαθέσιμη σε λειτουργία απομακρυσμένης πρόσβασης",
   "firewall": "Τείχος προστασίας",
   "firmwareDownloadingMessage1": "Μπορείτε να χρησιμοποιήσετε το WiFi στη διάρκεια της ενημέρωσης.",
   "firmwareDownloadingMessage2": "Ίσως είναι πιο αργό απ' όσο συνήθως όσο βελτιώνουμε το σύστημά σας.",

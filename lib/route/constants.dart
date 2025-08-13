@@ -5,7 +5,7 @@ class RoutePath {
   static const selectNetwork = '/selectNetwork';
 
   /// login
-  static const cloudLoginAccount = 'cloudLoginAccount';
+  static const cloudLoginAccount = '/cloudLoginAccount';
   static const cloudLoginPassword = 'cloudLoginPassword';
   static const phoneRegionCode = 'phoneRegionCode';
   static const localLoginPassword = '/localLoginPassword';
@@ -14,6 +14,7 @@ class RoutePath {
   static const cloudRALogin = 'cloudRALogin';
   static const cloudRAPin = 'cloudRAPin';
   static const autoParentFirstLogin = '/autoParentFirstLogin';
+  static const cloudLoginAuth = '/cloudLoginAuth';
 
   /// dashboard
   static const dashboardHome = '/dashboardHome';
@@ -156,6 +157,7 @@ class RouteNamed {
   static const cloudRALogin = 'cloudRALogin';
   static const cloudRAPin = 'cloudRAPin';
   static const autoParentFirstLogin = 'autoParentFirstLogin';
+  static const cloudLoginAuth = 'cloudLoginAuth';
 
   /// dashboard
   static const dashboardMenu = 'dashboardMenu';
