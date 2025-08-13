@@ -36,7 +36,7 @@ void main() {
 
   testWidgets('Dashboard home operations', (tester) async {
     // Log in
-    await tester.pumpFrames(app(), Duration(seconds: 3));
+    await tester.pumpFrames(app(), Duration(seconds: 5));
     final login = TestLocalLoginActions(tester);
     await login.inputPassword(IntegrationTestConfig.password);
     expect(

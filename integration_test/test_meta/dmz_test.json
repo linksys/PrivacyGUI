@@ -2,7 +2,7 @@
     "name": "Test behaviors on Advanced Settings - DMZ",
     "target": "integration_test/dmz_test.dart",
     "description": "Execute all the functions on the page and verify that the new data has been synced",
-    "setUp":  ["factory_reset", "skip_pnp", "check_auto_parent"],
+    "setUp":  ["factory_reset", "skip_setup"],
     "tearDown": [],
     "tags": ["dmz", "advanced_settings", "menu"]
 }

@@ -39,7 +39,7 @@ void main() {
 
     testWidgets('Advanced routing - adding and deleting operations',
         (tester) async {
-      await tester.pumpFrames(app(), Duration(seconds: 3));
+      await tester.pumpFrames(app(), Duration(seconds: 5));
       // Enter the menu screen
       final topbarActions = TestTopbarActions(tester);
       await topbarActions.tapMenuButton();
@@ -105,7 +105,7 @@ void main() {
 
     testWidgets('Advanced routing - Incorrect input operations',
         (tester) async {
-      await tester.pumpFrames(app(), Duration(seconds: 3));
+      await tester.pumpFrames(app(), Duration(seconds: 5));
       // Enter the menu screen
       final topbarActions = TestTopbarActions(tester);
       await topbarActions.tapMenuButton();

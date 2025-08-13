@@ -42,7 +42,7 @@ void main() {
 
   testWidgets('Recovery and log in flow golden', (tester) async {
     // Load app widget.
-    await tester.pumpFrames(app(), Duration(seconds: 3));
+    await tester.pumpFrames(app(), Duration(seconds: 5));
 
     // Login page
     final login = TestLocalLoginActions(tester);
