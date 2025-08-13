@@ -342,20 +342,19 @@ class TestDashboardHomeActions extends CommonBaseActions {
     final switchWidget = tester.widget<AppSwitch>(switchFinder);
     final isEnabled = switchWidget.value;
     // Tap the switch
-    await tester.tap(switchFinder);
-    await tester.pumpAndSettle();
+    await scrollAndTap(switchFinder);
     // Tap alert ok
     await tapAlertOkButton();
     await tester.pumpAndSettle();
-    expect(switchWidget.value, !isEnabled);
+    final switchValue = tester.widget<AppSwitch>(switchFinder).value;
+    expect(switchValue, !isEnabled);
   }
 
   Future<void> checkWifi24gPage() async {
     // Find Wifi 2.4G card
     final wifiCardFinder = wifi24gCardFinder();
     // Tap the card
-    await tester.tap(wifiCardFinder);
-    await tester.pumpAndSettle();
+    await scrollAndTap(wifiCardFinder);
     await tapBackButton();
   }
 
@@ -378,20 +377,19 @@ class TestDashboardHomeActions extends CommonBaseActions {
     final switchWidget = tester.widget<AppSwitch>(switchFinder);
     final isEnabled = switchWidget.value;
     // Tap the switch
-    await tester.tap(switchFinder);
-    await tester.pumpAndSettle();
+    await scrollAndTap(switchFinder);
     // Tap alert ok
     await tapAlertOkButton();
     await tester.pumpAndSettle();
-    expect(switchWidget.value, !isEnabled);
+    final switchValue = tester.widget<AppSwitch>(switchFinder).value;
+    expect(switchValue, !isEnabled);
   }
 
   Future<void> checkWifi5gPage() async {
     // Find 5G Wifi card
     final wifiCardFinder = wifi5gCardFinder();
     // Tap the card
-    await tester.tap(wifiCardFinder);
-    await tester.pumpAndSettle();
+    await scrollAndTap(wifiCardFinder);
     await tapBackButton();
   }
 
@@ -413,20 +411,19 @@ class TestDashboardHomeActions extends CommonBaseActions {
     final switchWidget = tester.widget<AppSwitch>(switchFinder);
     final isEnabled = switchWidget.value;
     // Tap the switch
-    await tester.tap(switchFinder);
-    await tester.pumpAndSettle();
+    await scrollAndTap(switchFinder);
     // Tap alert ok
     await tapAlertOkButton();
     await tester.pumpAndSettle();
-    expect(switchWidget.value, !isEnabled);
+    final switchValue = tester.widget<AppSwitch>(switchFinder).value;
+    expect(switchValue, !isEnabled);
   }
 
   Future<void> checkWifi6gPage() async {
     // Find 6G Wifi card
     final wifiCardFinder = wifi6gCardFinder();
     // Tap the card
-    await tester.tap(wifiCardFinder);
-    await tester.pumpAndSettle();
+    await scrollAndTap(wifiCardFinder);
     await tapBackButton();
   }
 
@@ -461,8 +458,7 @@ class TestDashboardHomeActions extends CommonBaseActions {
     // Find guest Wifi switch
     final switchFinder = guestWifiSwitchFinder();
     // Tap the switch
-    await tester.tap(switchFinder);
-    await tester.pumpAndSettle();
+    await scrollAndTap(switchFinder);
     // Tap alert ok
     await tapAlertOkButton();
     await tester.pumpAndSettle();
@@ -472,8 +468,7 @@ class TestDashboardHomeActions extends CommonBaseActions {
     // Find guest Wifi card
     final wifiCardFinder = guestWifiCardFinder();
     // Tap the card
-    await tester.tap(wifiCardFinder);
-    await tester.pumpAndSettle();
+    await scrollAndTap(wifiCardFinder);
     await tapBackButton();
   }
 
@@ -520,10 +515,9 @@ class TestDashboardHomeActions extends CommonBaseActions {
     final goButtonFinder = speedTestGoButtonFinder();
     await scrollUntil(goButtonFinder);
     // Tap the switch
-    await tester.tap(goButtonFinder);
+    await scrollAndTap(goButtonFinder);
     await tester.pumpFrames(app(), const Duration(seconds: 10));
     await tester.pumpAndSettle();
-
   }
 
   Future<void> checkSpeedTestResult() async {
