@@ -36,7 +36,6 @@ import 'package:privacy_gui/page/login/views/login_cloud_auth_view.dart';
 import 'package:privacy_gui/page/instant_admin/_instant_admin.dart';
 import 'package:privacy_gui/page/nodes/_nodes.dart';
 import 'package:privacy_gui/page/nodes/views/add_nodes_view.dart';
-import 'package:privacy_gui/page/nodes/views/add_wired_nodes_view.dart';
 import 'package:privacy_gui/page/otp_flow/providers/_providers.dart';
 import 'package:privacy_gui/page/otp_flow/views/_views.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
@@ -123,7 +122,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       pnpRoute,
       pnpTroubleshootingRoute,
       addNodesRoute,
-      addWiredNodesRoute,
     ],
     redirect: (context, state) {
       if (state.matchedLocation == '/') {

@@ -153,6 +153,7 @@
   "doYouWantToSaveTheLocalNetworkSettings": "로컬 네트워크 설정을 저장하시겠습니까?",
   "domainName": "도메인 이름",
   "done": "완료",
+  "donePairing": "페어링 완료",
   "download": "다운로드",
   "downloadQR": "QR 다운로드",
   "duid": "DUID",
@@ -237,6 +238,7 @@
   "formalDateTime": "{time} {date}",
   "fortinetSecureDns": "포티넷 보안 DNS",
   "forwardedRange": "전달된 범위",
+  "foundNNodesOnline": "{count, plural, other{{count}개의 자식 노드가 방금 온라인 상태가 되었습니다.} one{1개의 자식 노드가 방금 온라인 상태가 되었습니다.}}",
   "fwVersion": "FW 버전",
   "gateway": "게이트웨이",
   "generalError": "죄송합니다. 문제가 발생했습니다! 나중에 다시 시도하십시오",
@@ -487,6 +489,9 @@
   "otpEnterCodeEmailTitle": "{email}로 보낸 코드를 입력하십시오",
   "otpEnterCodeSmsTitle": "{phone}로 보낸 코드를 입력하십시오",
   "otpSendMethodChoiceTitle": "코드를 어디로 보내시겠습니까?",
+  "pairWiredNode": "유선 노드 페어링",
+  "pairWirelessNode": "무선 노드 페어링",
+  "pairingWiredChildNodeDesc": "페어링을 완료하려면 자식 노드가 유선 연결을 통해 부모 노드에 연결되어 있는지 확인하십시오.",
   "password": "암호",
   "passwordAndAccess": "암호 및 액세스",
   "passwordsMustMatch": "암호가 일치해야 합니다",
@@ -845,5 +850,7 @@
   "wildcard": "와일드카드",
   "wins": "WINS",
   "wired": "유선",
+  "wiredPairComplete": "페어링이 완료되었습니다. 유선 연결을 사용하여 자식 노드가 부모 노드와 성공적으로 페어링되었습니다.",
+  "wiredPairCompleteNotFound": "연결된 자식 노드를 찾을 수 없습니다. 자식 노드의 전원이 켜져 있고 이더넷 케이블을 통해 부모 노드에 올바르게 연결되어 있는지 확인한 후 다시 시도하십시오.",
   "wireless": "무선"
 }

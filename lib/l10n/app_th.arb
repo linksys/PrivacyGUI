@@ -153,6 +153,7 @@
   "doYouWantToSaveTheLocalNetworkSettings": "คุณต้องการบันทึกการตั้งค่าเครือข่ายในเครื่องหรือไม่",
   "domainName": "ชื่อโดเมน",
   "done": "เสร็จสิ้น",
+  "donePairing": "จับคู่เรียบร้อยแล้ว",
   "download": "ดาวน์โหลด",
   "downloadQR": "ดาวน์โหลด QR",
   "duid": "DUID",
@@ -237,6 +238,7 @@
   "formalDateTime": "{time} {date}",
   "fortinetSecureDns": "Fortinet Secure DNS",
   "forwardedRange": "ช่วงที่ส่งต่อ",
+  "foundNNodesOnline": "{count, plural, other{{count} โหนดลูกเพิ่งออนไลน์} one{1 โหนดลูกเพิ่งออนไลน์}}",
   "fwVersion": "เวอร์ชัน FW",
   "gateway": "เกตเวย์",
   "generalError": "อุ๊ปส์ มีบางอย่างผิดพลาด! กรุณาลองอีกครั้งในภายหลัง",
@@ -487,6 +489,9 @@
   "otpEnterCodeEmailTitle": "ป้อนรหัสที่เราส่งไปยัง {email}",
   "otpEnterCodeSmsTitle": "ป้อนรหัสที่เราส่งไปยัง {phone}",
   "otpSendMethodChoiceTitle": "เราควรส่งรหัสของคุณไปที่ไหน",
+  "pairWiredNode": "จับคู่โหนดแบบใช้สาย",
+  "pairWirelessNode": "จับคู่โหนดแบบไร้สาย",
+  "pairingWiredChildNodeDesc": "ในการจับคู่ให้สมบูรณ์ โปรดตรวจสอบให้แน่ใจว่าโหนดลูกของคุณเชื่อมต่อกับโหนดหลักผ่านการเชื่อมต่อแบบใช้สาย",
   "password": "รหัสผ่าน",
   "passwordAndAccess": "รหัสผ่านและการเข้าถึง",
   "passwordsMustMatch": "รหัสผ่านต้องตรงกัน",
@@ -845,5 +850,7 @@
   "wildcard": "อักขระตัวแทน",
   "wins": "WINS",
   "wired": "ใช้สาย",
+  "wiredPairComplete": "การจับคู่เสร็จสมบูรณ์แล้ว โหนดลูกถูกจับคู่กับโหนดหลักสำเร็จแล้วโดยใช้การเชื่อมต่อแบบใช้สาย",
+  "wiredPairCompleteNotFound": "ไม่พบโหนดลูกที่เชื่อมต่ออยู่ โปรดตรวจสอบให้แน่ใจว่าโหนดลูกของคุณเปิดอยู่และเชื่อมต่อกับโหนดหลักอย่างถูกต้องผ่านสายอีเทอร์เน็ต แล้วลองอีกครั้ง",
   "wireless": "Wireless (ระบบไร้สาย)"
 }

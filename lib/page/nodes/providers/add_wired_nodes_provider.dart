@@ -78,22 +78,6 @@ class AddWiredNodesNotifier extends AutoDisposeNotifier<AddWiredNodesState> {
     logger.d('[AddWiredNode]: end auto onboarding, cost time: ${delta}ms');
   }
 
-  Future startRefresh(BuildContext context) async {
-    state = state.copyWith(
-      isLoading: true,
-      forceStop: false,
-      loadingMessage: loc(context).refreshing,
-    );
-    await _checkBackhaulChanges(context, true);
-    final nodes = await _fetchNodes();
-    state = state.copyWith(
-      isLoading: false,
-      forceStop: false,
-      loadingMessage: '',
-      nodes: nodes,
-    );
-  }
-
   _startPollingConnectStatus() async {
     if (state.forceStop) {
       logger.d('[AddWiredNode]: force stop smart connect status');
@@ -206,7 +190,8 @@ class AddWiredNodesNotifier extends AutoDisposeNotifier<AddWiredNodesState> {
         });
         if (foundCounting > 0) {
           state = state.copyWith(
-              loadingMessage: loc(context).foundNNodesOnline(foundCounting));
+              loadingMessage: loc(context).foundNNodesOnline(foundCounting),
+              anyOnboarded: true);
         }
         logger.i('[AddWiredNode]: Found $foundCounting new nodes');
         return false;
