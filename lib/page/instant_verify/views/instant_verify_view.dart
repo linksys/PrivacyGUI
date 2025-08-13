@@ -1195,14 +1195,15 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
                   ? loc(context).wired
                   : loc(context).wireless),
         ]),
-        pw.TableRow(children: [
-          pw.Text('${loc(context).meshHealth}:'),
-          pw.Text(
-            node.data.isOnline
-                ? '${signalLevel.resolveLabel(context)}(${node.data.signalStrength})'
-                : loc(context).offline,
-          ),
-        ]),
+        if (!(node.data.isMaster || node.data.isWiredConnection))
+          pw.TableRow(children: [
+            pw.Text('${loc(context).meshHealth}:'),
+            pw.Text(
+              node.data.isOnline
+                  ? '${signalLevel.resolveLabel(context)}(${node.data.signalStrength})'
+                  : loc(context).offline,
+            ),
+          ]),
         pw.TableRow(children: [
           pw.Text('${loc(context).ipAddress}:'),
           pw.Text(node.data.isOnline ? node.data.ipAddress : '--'),
