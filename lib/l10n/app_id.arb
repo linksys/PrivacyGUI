@@ -153,6 +153,7 @@
   "doYouWantToSaveTheLocalNetworkSettings": "Apakah Anda ingin menyimpan Pengaturan Jaringan Lokal?",
   "domainName": "Nama domain",
   "done": "Selesai",
+  "donePairing": "Pasangan selesai",
   "download": "Unduh",
   "downloadQR": "Unduh QR",
   "duid": "DUID",
@@ -236,6 +237,7 @@
   "formalDateTime": "{time} {date}",
   "fortinetSecureDns": "Fortinet Secure DNS",
   "forwardedRange": "Rentang yang Diteruskan",
+  "foundNNodesOnline": "{count, plural, other{{count} node anak baru saja online.} one{1 node anak baru saja online.}}",
   "fwVersion": "Versi FW",
   "gateway": "Gateway",
   "generalError": "Ups, ada yang salah di sini! Silakan coba lagi nanti",
@@ -486,6 +488,9 @@
   "otpEnterCodeEmailTitle": "Masukkan kode yang kami kirim ke {email}",
   "otpEnterCodeSmsTitle": "Masukkan kode yang kami kirim ke {phone}",
   "otpSendMethodChoiceTitle": "Ke mana kami harus mengirim kode Anda?",
+  "pairWiredNode": "Pasangkan node berkabel",
+  "pairWirelessNode": "Pasangkan node nirkabel",
+  "pairingWiredChildNodeDesc": "Untuk menyelesaikan pemasangan, pastikan node anak Anda terhubung ke node induk melalui koneksi berkabel.",
   "password": "Kata Sandi",
   "passwordAndAccess": "Kata Sandi dan Akses",
   "passwordsMustMatch": "Kata sandi harus cocok",
@@ -844,5 +849,7 @@
   "wildcard": "Wildcard",
   "wins": "WINS",
   "wired": "Terkabel",
+  "wiredPairComplete": "Pemasangan selesai. Node anak berhasil dipasangkan dengan node induk menggunakan koneksi berkabel.",
+  "wiredPairCompleteNotFound": "Tidak ada node anak yang terhubung ditemukan. Pastikan node anak Anda menyala dan terhubung dengan benar ke node induk melalui kabel Ethernet lalu coba lagi.",
   "wireless": "Nirkabel"
 }

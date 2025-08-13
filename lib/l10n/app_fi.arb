@@ -153,6 +153,7 @@
   "doYouWantToSaveTheLocalNetworkSettings": "Haluatko tallentaa lähiverkon asetukset?",
   "domainName": "Toimialueen nimi",
   "done": "Valmis",
+  "donePairing": "Paritus valmis",
   "download": "Lataus",
   "downloadQR": "Lataa QR",
   "duid": "DUID",
@@ -236,6 +237,7 @@
   "formalDateTime": "{time} {date}",
   "fortinetSecureDns": "Fortinet Secure DNS",
   "forwardedRange": "Edelleenohjattu alue",
+  "foundNNodesOnline": "{count, plural, other{{count} lapsisolmua ovat juuri tulleet online-tilaan.} one{1 lapsisolmu on juuri tullut online-tilaan.}}",
   "fwVersion": "Laiteohjelmiston versio",
   "gateway": "Yhdyskäytävä",
   "generalError": "Hups, jokin meni pieleen! Yritä myöhemmin uudelleen",
@@ -486,6 +488,9 @@
   "otpEnterCodeEmailTitle": "Anna koodi, jonka lähetimme osoitteeseen {email}",
   "otpEnterCodeSmsTitle": "Anna koodi, jonka lähetimme numeroon {phone}",
   "otpSendMethodChoiceTitle": "Mihin haluaisit koodin lähetettävän?",
+  "pairWiredNode": "Parita langallinen solmu",
+  "pairWirelessNode": "Parita langaton solmu",
+  "pairingWiredChildNodeDesc": "Parituksen viimeistelemiseksi varmista, että lapsisolmusi on yhdistetty vanhempisolmuun langallisella yhteydellä.",
   "password": "Salasana",
   "passwordAndAccess": "Salasana ja kirjautuminen",
   "passwordsMustMatch": "Salasanojen on täsmättävä",
@@ -844,5 +849,7 @@
   "wildcard": "Yleismerkki",
   "wins": "WINS",
   "wired": "Langallinen",
+  "wiredPairComplete": "Paritus on valmis. Lapsisolmu on paritettu onnistuneesti vanhempisolmun kanssa langallisella yhteydellä.",
+  "wiredPairCompleteNotFound": "Yhteydessä olevaa lapsisolmua ei löytynyt. Varmista, että lapsisolmu on päällä ja yhdistetty oikein vanhempisolmuun Ethernet-kaapelilla, ja yritä uudelleen.",
   "wireless": "Langaton"
 }

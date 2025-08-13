@@ -1,121 +1,73 @@
 import json
 import os
+import sys
 
-# Translations for each language
-translations ={
-  "ar": {
-    "wifiPasswordRuleHex": "مفتاح PSK سداسي عشري مطلوب (0-9، A-F، a-f)"
-  },
-  "da": {
-    "wifiPasswordRuleHex": "Hexadecimal PSK påkrævet (0-9, A-F, a-f)"
-  },
-  "de": {
-    "wifiPasswordRuleHex": "Hexadezimaler PSK erforderlich (0–9, A–F, a–f)"
-  },
-  "el": {
-    "wifiPasswordRuleHex": "Απαιτείται δεκαεξαδικό PSK (0–9, A–F, a–f)"
-  },
-  "en": {
-    "wifiPasswordRuleHex": "Hexadecimal PSK required (0–9, A–F, a–f)"
-  },
-  "es": {
-    "wifiPasswordRuleHex": "Se requiere PSK hexadecimal (0–9, A–F, a–f)"
-  },
-  "es-AR": {
-    "wifiPasswordRuleHex": "Se requiere PSK hexadecimal (0–9, A–F, a–f)"
-  },
-  "fi": {
-    "wifiPasswordRuleHex": "Heksadesimaalinen PSK vaaditaan (0–9, A–F, a–f)"
-  },
-  "fr": {
-    "wifiPasswordRuleHex": "PSK hexadécimal requis (0–9, A–F, a–f)"
-  },
-  "fr-CA": {
-    "wifiPasswordRuleHex": "PSK hexadécimal requis (0–9, A–F, a–f)"
-  },
-  "id": {
-    "wifiPasswordRuleHex": "PSK heksadesimal diperlukan (0–9, A–F, a–f)"
-  },
-  "it": {
-    "wifiPasswordRuleHex": "PSK esadecimale richiesto (0–9, A–F, a–f)"
-  },
-  "ja": {
-    "wifiPasswordRuleHex": "16進数PSKが必要です (0–9, A–F, a–f)"
-  },
-  "ko": {
-    "wifiPasswordRuleHex": "16진수 PSK 필요 (0–9, A–F, a–f)"
-  },
-  "nb": {
-    "wifiPasswordRuleHex": "Hexadesimal PSK påkrevd (0–9, A–F, a–f)"
-  },
-  "nl": {
-    "wifiPasswordRuleHex": "Hexadecimale PSK vereist (0–9, A–F, a–f)"
-  },
-  "pl": {
-    "wifiPasswordRuleHex": "Wymagany szesnastkowy klucz PSK (0–9, A–F, a–f)"
-  },
-  "pt": {
-    "wifiPasswordRuleHex": "PSK hexadecimal necessário (0–9, A–F, a–f)"
-  },
-  "pt-PT": {
-    "wifiPasswordRuleHex": "PSK hexadecimal necessário (0–9, A–F, a–f)"
-  },
-  "ru": {
-    "wifiPasswordRuleHex": "Требуется шестнадцатеричный PSK (0–9, A–F, a–f)"
-  },
-  "sv": {
-    "wifiPasswordRuleHex": "Hexadecimal PSK krävs (0–9, A–F, a–f)"
-  },
-  "th": {
-    "wifiPasswordRuleHex": "ต้องระบุ PSK แบบเลขฐานสิบหก (0–9, A–F, a–f)"
-  },
-  "tr": {
-    "wifiPasswordRuleHex": "Onaltılık PSK gerekli (0–9, A–F, a–f)"
-  },
-  "vi": {
-    "wifiPasswordRuleHex": "Yêu cầu PSK hệ thập lục phân (0–9, A–F, a–f)"
-  },
-  "zh": {
-    "wifiPasswordRuleHex": "需要十六进制 PSK (0–9, A–F, a–f)"
-  },
-  "zh_tw": {
-    "wifiPasswordRuleHex": "需要十六進位 PSK (0–9, A–F, a–f)"
-  }
-}
+def update_translations(translations_file_path=None):
+    """
+    Updates translation files (*.arb) in the 'lib/l10n' directory.
 
-def update_translations():
-    # Construct the path to the 'lib/l10n' directory relative to the script's location
-    # The script is in the 'tools' directory, so we need to go up one level to find 'lib/l10n'
-    l10n_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'lib', 'l10n')
+    Args:
+        translations_file_path (str, optional): The path to the external JSON file
+                                                containing the translations. If not
+                                                provided, it defaults to 'translated.json'
+                                                in the same directory as the script.
+    """
+    # Determine the path for the translations file
+    script_dir = os.path.dirname(__file__)
+    if translations_file_path is None:
+        translations_file = os.path.join(script_dir, 'translated.json')
+    else:
+        translations_file = translations_file_path
+
+    # Load translations from the external JSON file
+    try:
+        with open(translations_file, 'r', encoding='utf-8') as f:
+            translations = json.load(f)
+    except FileNotFoundError:
+        print(f"Error: The translations file '{translations_file}' was not found.")
+        return
+    except json.JSONDecodeError:
+        print(f"Error: The translations file '{translations_file}' is not a valid JSON file.")
+        return
+
+    # Construct the path to the 'lib/l10n' directory
+    l10n_dir = os.path.join(os.path.dirname(script_dir), 'lib', 'l10n')
 
     # Ensure the l10n_dir exists
     if not os.path.isdir(l10n_dir):
         print(f"Error: Directory '{l10n_dir}' not found. Please ensure the script is in the correct location relative to your 'lib/l10n' folder.")
         return
+    
+    # Pre-process translations dictionary for easier lookup
+    normalized_keys = {}
+    for key in translations.keys():
+        normalized_keys[key] = key
+        # Add a lowercased version
+        normalized_keys[key.lower()] = key
+        # Add variations with '-' replaced by '_'
+        normalized_keys[key.replace('-', '_')] = key
+        # Add lowercased variations with '_'
+        normalized_keys[key.lower().replace('-', '_')] = key
 
+    updated_count = 0
     for filename in os.listdir(l10n_dir):
         # Process only app_*.arb files, excluding app_en.arb
         if not filename.startswith('app_') or not filename.endswith('.arb') or filename == 'app_en.arb':
             continue
 
-        # Extract language code and normalize (convert to lowercase and replace - with _)
-        # Example: 'app_es-AR.arb' becomes 'es_ar'
-        lang_code = filename[4:-4].lower().replace('-', '_')
-
-        # Adjust for 'es_ar' and 'fr_ca' if they are distinct in your translations dictionary
-        if lang_code == 'es-ar': # handle potential direct match before _ conversion
-            lang_code = 'es_AR'
-        elif lang_code == 'fr-ca':
-            lang_code = 'fr_CA'
-
-        # Check if the exact language code exists in the translations dictionary
-        if lang_code not in translations:
-            # If not, try to fall back to the base language code (e.g., 'es' for 'es_AR')
-            base_lang_code = lang_code.split('_')[0]
+        # Extract language code
+        arb_lang_code = filename[4:-4]
+        
+        # Look up the correct key from our normalized_keys map
+        found_key = normalized_keys.get(arb_lang_code)
+        
+        # If no exact match, try the base language
+        if found_key is None:
+            base_lang_code = arb_lang_code.split('_')[0].split('-')[0]
             if base_lang_code in translations:
-                lang_code = base_lang_code
+                found_key = base_lang_code
             else:
-                print(f"No translations found for {lang_code}, skipping {filename}...")
+                print(f"No translations found for language code '{arb_lang_code}' or its base language, skipping {filename}...")
                 continue
 
         filepath = os.path.join(l10n_dir, filename)
@@ -124,23 +76,28 @@ def update_translations():
             with open(filepath, 'r', encoding='utf-8') as f:
                 data = json.load(f)
 
-            # Iterate through the keys in the translations dictionary for the current language
-            for key, value in translations[lang_code].items():
+            # Update the translation keys and remove associated metadata keys
+            for key, value in translations[found_key].items():
                 data[key] = value
-                # Remove '@' prefixed keys associated with the updated key if they exist
-                # These are typically metadata keys for the English file and shouldn't be in others.
                 if f'@{key}' in data:
                     del data[f'@{key}']
 
             # Write back to file with proper indentation
             with open(filepath, 'w', encoding='utf-8') as f:
                 json.dump(data, f, ensure_ascii=False, indent=2, sort_keys=True)
-                f.write('\n')  # Add newline at end of file
-
-            print(f"Updated {filename}")
+                f.write('\n')  # Add a newline at the end
+            
+            updated_count += 1
+            print(f"Updated {filename} with translations for key '{found_key}'")
 
         except Exception as e:
             print(f"Error updating {filename}: {str(e)}")
 
+    print(f"\nTotal languages updated: {updated_count}")
+
 if __name__ == '__main__':
-    update_translations()
+    # Check if a file path is provided as a command-line argument
+    if len(sys.argv) > 1:
+        update_translations(sys.argv[1])
+    else:
+        update_translations()

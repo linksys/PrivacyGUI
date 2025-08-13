@@ -429,25 +429,53 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
           ),
           content: Consumer(builder: (context, ref, child) {
             final addWiredNodesState = ref.watch(addWiredNodesProvider);
+            final isCompleted = addWiredNodesState.isLoading == false &&
+                addWiredNodesState.onboardingProceed == true;
+            final anyOnboarded = addWiredNodesState.anyOnboarded == true;
+
+            final message = isCompleted
+                ? anyOnboarded
+                    ? loc(context).wiredPairComplete
+                    : loc(context).wiredPairCompleteNotFound
+                : loc(context).pairingWiredChildNodeDesc;
             return Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 AppGap.medium(),
-                addWiredNodesState.isLoading
-                    ? const AppMeshWiredConnection()
-                    : SizedBox(
-                        width: 200,
-                        height: 200,
-                        child: Icon(Icons.check_circle_outline, size: 48),
-                      ),
+                SizedBox(
+                  width: 300,
+                  height: 200,
+                  child: Stack(children: [
+                    AppMeshWiredConnection(animate: !isCompleted),
+                    if (isCompleted)
+                      Align(
+                          alignment: Alignment.bottomRight,
+                          child: Padding(
+                            padding: const EdgeInsets.only(bottom: 2.0),
+                            child: Icon(
+                                anyOnboarded
+                                    ? Icons.check_circle_outline
+                                    : Icons.warning_rounded,
+                                size: 48,
+                                color: anyOnboarded
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Theme.of(context).colorSchemeExt.orange),
+                          )),
+                  ]),
+                ),
                 AppGap.medium(),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    AppText.bodyMedium(loc(context).pairingWiredChildNodeDesc),
-                    AppGap.small2(),
-                    AppText.bodyMedium(addWiredNodesState.loadingMessage ?? ''),
-                  ],
+                SizedBox(
+                  width: kDefaultDialogWidth,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AppText.bodyMedium(message),
+                      AppGap.small2(),
+                      AppText.bodyMedium(isCompleted && anyOnboarded
+                          ? addWiredNodesState.loadingMessage ?? ''
+                          : ''),
+                    ],
+                  ),
                 ),
               ],
             );
