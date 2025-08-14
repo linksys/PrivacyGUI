@@ -38,9 +38,9 @@ LINE_BREAK="${GREEN} ------------ ${NC}"
 while getopts t:d:g: flag
 do
     case "${flag}" in
-        t) testcase=${OPTARG};;
+        g) testcase=${OPTARG};;
         d) data=${OPTARG};;
-        g) tags=${OPTARG};;
+        t) tags=${OPTARG};;
     esac
 done
 
@@ -48,10 +48,6 @@ if [[ -z "$testcase" && -z "$tags" ]]; then
     echo "ERROR: Empty testcase file or tags."
     exit 1
 fi
-# if [ -z "$data" ]; then
-#     echo "Empty data file."
-#     exit 1
-# fi
 
 # check tags which include tag string from json files in test_meta folder
 if [ ! -z "$tags" ]; then
@@ -147,11 +143,13 @@ echo "Router Description: $routerDescription"
 echo "Hardware Version: $hardwareVersion"
 echo "UI Version: $commitedUIVersion"
 
-count=0
-successed=0
-failed=0
-initialize_results "$groupDescription" "$testcase" "${#cases[@]}"
+# Remove temp files if exists
+rm -rf ./build/integration_test
+mkdir -p ./build/integration_test
 
+initialize_results "$groupDescription" "$testcase" "${#cases[@]}"
+update_device_info "$routerDescription" "$modelNumber" "$firmwareVersion" "$hardwareVersion" "$commitedUIVersion"
+init_config "$data"
 
 # Group SetUp actions
 shActionPath="./integration_test/shell_scripts/"
@@ -202,9 +200,12 @@ for case in "${cases[@]}"; do
         done
     fi
     
-    # Run the WiFi detection script on the background
-    sh ./integration_test/shell_scripts/wifi_detection.sh &
-    pid=$!
+    # Run the WiFi detection script on the background, skip if wiredTesting is true
+    wiredTesting=$(get_config_value '.wired')
+    if [ "$wiredTesting" == "false" ]; then
+        sh ./integration_test/shell_scripts/wifi_detection.sh &
+        pid=$!
+    fi
     
     echo "Initiate Flutter Integration Test..."
     result=$(flutter drive --driver=test_driver/integration_test.dart \
@@ -223,12 +224,10 @@ for case in "${cases[@]}"; do
 
     if [[ "$result" == *"All tests passed."* ]]; then
         # Passed
-        successed=$(( $successed + 1 ))
         add_success_test "$caseName" "$caseDescription"
         echo "...passed."
     else
         # Failed
-        failed=$(( $failed + 1 ))
         # Extract the failure details
         message=$(dart run ./test_scripts/extract_failure_messages.dart "$result")
         echo "$message"

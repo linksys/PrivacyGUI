@@ -13,6 +13,11 @@ initialize_results() {
     local description="$1"
     local filePath="$2"
     local totalCount="$3"
+    
+    # initialize the JSON file
+    if [ -f "$RESULTS_FILE" ]; then
+        rm "$RESULTS_FILE"
+    fi
 
     # Use jq to initialize the JSON structure and write to the file
     jq -n --arg d "$description" --arg f "$filePath" --arg t "$totalCount" \

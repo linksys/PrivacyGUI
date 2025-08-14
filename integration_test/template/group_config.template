@@ -1,0 +1,10 @@
+{
+    "description": "Test group template",
+    "skipActionsInMeta": false,
+    "wired": false,
+    "groupSetup": [],
+    "groupTearDown": [],
+    "files": [
+        "dashboard_home_test"
+    ]
+}

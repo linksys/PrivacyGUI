@@ -60,9 +60,10 @@ default_wifi_password=$(get_config_value '.defaultWiFi.password')
 
 # get password
 password=$(is_default_admin_password_or_get_password)
-echo $password
+echo "Password: $password"
 
 if [[ "$autoConfigurationMethod" == "AutoParent" ]]; then
+    echo "AutoParent scenario: waiting for device mode to be master..."
     #AutoParent
     # Function to wait for device mode to be master
     wait_for_device_mode_to_master() {
@@ -81,17 +82,17 @@ if [[ "$autoConfigurationMethod" == "AutoParent" ]]; then
             attempt=$((attempt + 1))
         done
         
-        echo "Timeout waiting for device mode to be Master"
-        return 1
+        echo "AutoParent scenario: Timeout waiting for device mode to be Master"
+        exit 1
     }
 
     wait_for_device_mode_to_master 60  # Wait up to 300 seconds (60 attempts * 5 seconds)
     status=$?
     if [ $status -ne 0 ]; then
-        echo "Error: Failed to set device mode to Master"
+        echo "AutoParent scenario: Error: Failed to set device mode to Master"
         exit $status
     else
-        echo "Set user auto acknowledgement"
+        echo "AutoParent scenario: Set user auto acknowledgement"
         set_user_auto_acknowledgement "$password"
         wait_for_seconds 3
     fi
@@ -99,16 +100,16 @@ if [[ "$autoConfigurationMethod" == "AutoParent" ]]; then
 else
     #Pnp
     if [[ "$password" == "admin" ]]; then
-        echo "Set admin password to default WiFi Password"
+        echo "Pnp scenario: Set admin password to default WiFi Password"
         set_admin_password_to_wifi_password "$password"
         password=$default_wifi_password
-        echo "Update password: $password"
+        echo "Pnp scenario: Update password: $password"
     else
-        echo "Set user auto acknowledgement"
+        echo "Pnp scenario: Set user auto acknowledgement"
         set_user_auto_acknowledgement "$password"
     fi
     wait_for_seconds 3
-    echo "Set device mode to master"
+    echo "Pnp scenario: Set device mode to master"
     set_device_mode_to_master "$password"
     wait_for_seconds 30
 fi
