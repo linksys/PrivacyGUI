@@ -92,6 +92,7 @@ class PopupMenuItemView extends StatelessWidget {
         ),
       ),
       child: PopupMenuButton<NodeInstantActions>(
+        key: ValueKey('popup-menu-${action.name}'),
         color: Theme.of(context).colorScheme.surface,
         padding: EdgeInsets.zero,
         elevation: 10,
@@ -99,6 +100,7 @@ class PopupMenuItemView extends StatelessWidget {
         itemBuilder: (context) {
           return action.subActions
               .mapIndexed((index, e) => PopupMenuItem<NodeInstantActions>(
+                    key: ValueKey('popup-sub-menu-${e.name}'),
                     padding: EdgeInsets.zero,
                     value: e.isSub ? null : e,
                     enabled: !e.isSub,
