@@ -85,7 +85,7 @@ wait_for_wifi_ssid() {
   local start_time=$(date +%s)
   
   # Skip if wiredTesting is True
-  wiredTesting=$(get_config_value '.wired')
+  wiredTesting=$(get_global_config_value '.wired')
   if [ "$wiredTesting" == "true" ]; then
     echo "Wired testing is enabled. Skipping wifi SSID wait."
     return 0
@@ -164,7 +164,7 @@ connect_to_wifi_ssid_and_check() {
   local start_time=$(date +%s)
 
     # Skip if wiredTesting is True
-  wiredTesting=$(get_config_value '.wired')
+  wiredTesting=$(get_global_config_value '.wired')
   if [ "$wiredTesting" == "true" ]; then
     echo "Wired testing is enabled. Skipping check connected WiFi."
     return 0

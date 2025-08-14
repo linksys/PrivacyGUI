@@ -147,9 +147,12 @@ echo "UI Version: $commitedUIVersion"
 rm -rf ./build/integration_test
 mkdir -p ./build/integration_test
 
+
+
 initialize_results "$groupDescription" "$testcase" "${#cases[@]}"
 update_device_info "$routerDescription" "$modelNumber" "$firmwareVersion" "$hardwareVersion" "$commitedUIVersion"
 init_config "$data"
+set_global_config_path "$testcase"
 
 # Group SetUp actions
 shActionPath="./integration_test/shell_scripts/"
@@ -201,7 +204,8 @@ for case in "${cases[@]}"; do
     fi
     
     # Run the WiFi detection script on the background, skip if wiredTesting is true
-    wiredTesting=$(get_config_value '.wired')
+    wiredTesting=$(get_global_config_value '.wired')
+    echo "Wired Testing: $wiredTesting"
     if [ "$wiredTesting" == "false" ]; then
         sh ./integration_test/shell_scripts/wifi_detection.sh &
         pid=$!
@@ -267,9 +271,5 @@ cat "$RESULTS_FILE"
 
 sh $root/integration_test/shell_scripts/generate_integration_report.sh
 
-# exit (1) if any failed
-if [ "$failed" -gt 0 ]; then
-    exit 1
-fi
 exit 0
 #

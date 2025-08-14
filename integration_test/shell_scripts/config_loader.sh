@@ -1,6 +1,7 @@
 
 root="$(dirname "$0")"
 config_temp_path="./build/integration_test/temp_config.json"
+global_json_path=""
 
 init_config() {
     local p=$1
@@ -131,6 +132,34 @@ get_config_value() {
     fi
     # get value from config_temp_path
     json=$(cat $config_temp_path)
+    # get value from json
+    local value=$(jq -r "$selector" <<< "$json")
+    if [[ $value == "null" ]]; then
+        echo "No such key found. <$selector>"
+        exit 1
+    else
+        echo "$value"
+    fi
+    
+}
+
+set_global_config_path() {
+    global_json_path="$1"
+}
+
+get_global_config_value() {
+    if [ -z "$global_json_path" ]; then
+        echo "Global config path not set."
+        exit 1
+    fi
+    # pass selector if not put .
+    local selector=$1
+    if [ -z "$selector" ]; then
+        echo "No selector passed"
+        exit 1
+    fi
+    # get value from config_temp_path
+    json=$(cat $global_json_path)
     # get value from json
     local value=$(jq -r "$selector" <<< "$json")
     if [[ $value == "null" ]]; then
