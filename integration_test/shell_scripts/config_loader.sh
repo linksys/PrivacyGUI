@@ -1,7 +1,7 @@
 
 root="$(dirname "$0")"
 config_temp_path="./build/integration_test/temp_config.json"
-global_json_path=""
+global_json="{}"
 
 init_config() {
     local p=$1
@@ -17,9 +17,9 @@ init_config() {
         echo "$json"
         # make sure config_temp_path folder exists
         mkdir -p ./build/integration_test
-        # export global_json to config_temp_path
+        # export data_json to config_temp_path
         echo "$json" > "$config_temp_path"
-        echo "export global_json to temp_config.json file"
+        echo "export data_json to temp_config.json file"
     fi
 }
 
@@ -143,12 +143,13 @@ get_config_value() {
     
 }
 
-set_global_config_path() {
-    global_json_path="$1"
+set_global_config() {
+    global_json=$(cat $1)
+    echo "Global config set. $global_json"
 }
 
 get_global_config_value() {
-    if [ -z "$global_json_path" ]; then
+    if [ -z "$global_json" ]; then
         echo "Global config path not set."
         exit 1
     fi
@@ -158,10 +159,8 @@ get_global_config_value() {
         echo "No selector passed"
         exit 1
     fi
-    # get value from config_temp_path
-    json=$(cat $global_json_path)
     # get value from json
-    local value=$(jq -r "$selector" <<< "$json")
+    local value=$(jq -r "$selector" <<< "$global_json")
     if [[ $value == "null" ]]; then
         echo "No such key found. <$selector>"
         exit 1

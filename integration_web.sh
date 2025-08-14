@@ -152,7 +152,7 @@ mkdir -p ./build/integration_test
 initialize_results "$groupDescription" "$testcase" "${#cases[@]}"
 update_device_info "$routerDescription" "$modelNumber" "$firmwareVersion" "$hardwareVersion" "$commitedUIVersion"
 init_config "$data"
-set_global_config_path "$testcase"
+set_global_config "$testcase"
 
 # Group SetUp actions
 shActionPath="./integration_test/shell_scripts/"
