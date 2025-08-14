@@ -154,6 +154,15 @@ update_device_info "$routerDescription" "$modelNumber" "$firmwareVersion" "$hard
 init_config "$data"
 set_global_config "$testcase"
 
+# Run the WiFi detection script on the background, skip if wiredTesting is true
+wiredTesting=$(get_global_config_value '.wired')
+echo "Wired Testing: $wiredTesting"
+
+if [ "$wiredTesting" == "false" ]; then
+    sh ./integration_test/shell_scripts/wifi_detection.sh &
+    pid=$!
+fi
+
 # Group SetUp actions
 shActionPath="./integration_test/shell_scripts/"
 if [ ${#groupSetup[@]} -gt 0 ]; then
@@ -201,14 +210,6 @@ for case in "${cases[@]}"; do
             echo "Case Setup Action: $action"
             bash "$actionPath"
         done
-    fi
-    
-    # Run the WiFi detection script on the background, skip if wiredTesting is true
-    wiredTesting=$(get_global_config_value '.wired')
-    echo "Wired Testing: $wiredTesting"
-    if [ "$wiredTesting" == "false" ]; then
-        sh ./integration_test/shell_scripts/wifi_detection.sh &
-        pid=$!
     fi
     
     echo "Initiate Flutter Integration Test..."

@@ -86,6 +86,7 @@ wait_for_wifi_ssid() {
   
   # Skip if wiredTesting is True
   wiredTesting=$(get_global_config_value '.wired')
+  echo "wiredTesting: $wiredTesting"
   if [ "$wiredTesting" == "true" ]; then
     echo "Wired testing is enabled. Skipping wifi SSID wait."
     return 0
