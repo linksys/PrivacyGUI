@@ -108,6 +108,7 @@ else
         set_user_auto_acknowledgement "$password"
     fi
     wait_for_seconds 3
+    echo "Set device mode to master"
     set_device_mode_to_master "$password"
     wait_for_seconds 30
 fi
