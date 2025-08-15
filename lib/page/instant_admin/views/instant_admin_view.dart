@@ -56,6 +56,7 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
       Future.wait([_routerPasswordNotifier.fetch(), _timezoneNotifier.fetch()])
           .then(
         (_) {
+          if (!mounted) return;
           final provider = ref.read(routerPasswordProvider);
           _passwordController.text = provider.adminPassword;
         },
@@ -119,6 +120,7 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
       child: Column(
         children: [
           AppListCard(
+            key: const Key('passwordCard'),
             padding: EdgeInsets.zero,
             showBorder: false,
             title: AppText.bodyMedium(loc(context).routerPassword),
@@ -198,6 +200,7 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
       description: AppText.labelLarge(firmwareVersion ?? '--'),
       trailing: AppTextButton.noPadding(
         loc(context).manualUpdate,
+        key: const Key('manualUpdateButton'),
         onTap: () {
           context.goNamed(RouteNamed.manualFirmwareUpdate);
         },
@@ -210,15 +213,17 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
     TimezoneState timezoneState,
   ) {
     return AppListCard(
+      key: const Key('timezoneCard'),
       title: AppText.bodyLarge(loc(context).timezone),
       description: AppText.labelLarge(_getTimezone(timezoneState)),
       trailing: const Icon(LinksysIcons.chevronRight),
-      onTap: () {
-        context.pushNamed<bool?>(RouteNamed.settingsTimeZone).then((result) {
-          if (result == true) {
-            showSuccessSnackBar(context, loc(context).done);
-          }
-        });
+      onTap: () async {
+        final result =
+            await context.pushNamed<bool?>(RouteNamed.settingsTimeZone);
+        if (result == true) {
+          if (!mounted) return;
+          showSuccessSnackBar(context, loc(context).done);
+        }
       },
     );
   }
@@ -379,6 +384,7 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
           mainAxisSize: MainAxisSize.min,
           children: [
             AppPasswordField(
+              key: const Key('newPasswordField'),
               border: const OutlineInputBorder(),
               controller: controller,
               headerText: loc(context).routerPasswordNew,
@@ -400,6 +406,7 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
             ),
             const AppGap.medium(),
             AppPasswordField(
+              key: const Key('confirmPasswordField'),
               border: const OutlineInputBorder(),
               controller: confirmController,
               headerText: loc(context).retypeRouterPassword,
@@ -421,6 +428,7 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
             ),
             const AppGap.large3(),
             AppTextField(
+              key: const Key('hintTextField'),
               border: const OutlineInputBorder(),
               controller: hintController,
               headerText: loc(context).routerPasswordHintOptional,
