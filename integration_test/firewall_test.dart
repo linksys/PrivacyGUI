@@ -38,7 +38,7 @@ void main() {
     });
 
     testWidgets('Firewall - Firewall tab operations', (tester) async {
-      await tester.pumpFrames(app(), Duration(seconds: 3));
+      await tester.pumpFrames(app(), Duration(seconds: 5));
       // Enter the menu screen
       final topbarActions = TestTopbarActions(tester);
       await topbarActions.tapMenuButton();
@@ -59,7 +59,7 @@ void main() {
     });
 
     testWidgets('Firewall - VPN Passthrough tab operations', (tester) async {
-      await tester.pumpFrames(app(), Duration(seconds: 3));
+      await tester.pumpFrames(app(), Duration(seconds: 5));
       // Enter the menu screen
       final topbarActions = TestTopbarActions(tester);
       await topbarActions.tapMenuButton();
@@ -81,7 +81,7 @@ void main() {
     });
 
     testWidgets('Firewall - Internet filters tab operations', (tester) async {
-      await tester.pumpFrames(app(), Duration(seconds: 3));
+      await tester.pumpFrames(app(), Duration(seconds: 5));
       // Enter the menu screen
       final topbarActions = TestTopbarActions(tester);
       await topbarActions.tapMenuButton();
@@ -104,7 +104,7 @@ void main() {
     });
 
     testWidgets('Firewall - IPv6 port services tab operations', (tester) async {
-      await tester.pumpFrames(app(), Duration(seconds: 3));
+      await tester.pumpFrames(app(), Duration(seconds: 5));
       // Enter the menu screen
       final topbarActions = TestTopbarActions(tester);
       await topbarActions.tapMenuButton();
@@ -170,7 +170,7 @@ void main() {
     });
 
     testWidgets('Firewall - Error operations', (tester) async {
-      await tester.pumpFrames(app(), Duration(seconds: 3));
+      await tester.pumpFrames(app(), Duration(seconds: 5));
       // Enter the menu screen
       final topbarActions = TestTopbarActions(tester);
       await topbarActions.tapMenuButton();

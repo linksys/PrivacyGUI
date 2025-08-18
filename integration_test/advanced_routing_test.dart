@@ -39,7 +39,7 @@ void main() {
 
     testWidgets('Advanced routing - adding and deleting operations',
         (tester) async {
-      await tester.pumpFrames(app(), Duration(seconds: 3));
+      await tester.pumpFrames(app(), Duration(seconds: 5));
       // Enter the menu screen
       final topbarActions = TestTopbarActions(tester);
       await topbarActions.tapMenuButton();
@@ -49,7 +49,13 @@ void main() {
       final advancedSettingsActions = TestAdvancedSettingsActions(tester);
       await advancedSettingsActions.checkTitle(advancedSettingsActions.title);
       // Enter Advanced routing screen
-      await advancedSettingsActions.enterAdvancedRoutingPage();
+      final isSupported =
+          await advancedSettingsActions.enterAdvancedRoutingPage();
+      if (!isSupported) {
+        Skip(
+            'Skipping test: Advanced Routing is not available in this router model');
+        return;
+      }
       final advancedRoutingActions = TestAdvancedRoutingActions(tester);
       await advancedRoutingActions.checkTitle(advancedRoutingActions.title);
       // Switch to dynamic routing
@@ -99,7 +105,7 @@ void main() {
 
     testWidgets('Advanced routing - Incorrect input operations',
         (tester) async {
-      await tester.pumpFrames(app(), Duration(seconds: 3));
+      await tester.pumpFrames(app(), Duration(seconds: 5));
       // Enter the menu screen
       final topbarActions = TestTopbarActions(tester);
       await topbarActions.tapMenuButton();
@@ -109,7 +115,13 @@ void main() {
       final advancedSettingsActions = TestAdvancedSettingsActions(tester);
       await advancedSettingsActions.checkTitle(advancedSettingsActions.title);
       // Enter Advanced routing screen
-      await advancedSettingsActions.enterAdvancedRoutingPage();
+      final isSupported =
+          await advancedSettingsActions.enterAdvancedRoutingPage();
+      if (!isSupported) {
+        Skip(
+            'Skipping test: Advanced Routing is not available in this router model');
+        return;
+      }
       final advancedRoutingActions = TestAdvancedRoutingActions(tester);
       await advancedRoutingActions.checkTitle(advancedRoutingActions.title);
       // Add a new static routing

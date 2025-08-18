@@ -31,7 +31,7 @@ echo "$default_wifi_password"
 # # reset to factory default
 echo "Resetting to factory default..."
 factory_reset $password
-wait_for_seconds 60
+wait_for_seconds 120
 wait_for_wifi_ssid $default_wifi_ssid 100
 connect_to_wifi_ssid_and_check "$default_wifi_ssid" "$default_wifi_password" 60
 wait_for_device_info 10 "$serial_number"

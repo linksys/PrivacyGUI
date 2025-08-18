@@ -6,7 +6,7 @@ source "$root/config_loader.sh"
 
 echo "Start checking auto parent flow"
 
-password=$(get_config_value '.defaultWiFi.password')
+password=$(is_default_admin_password_or_get_password)
 
 # Function to wait for device mode to be master
 wait_for_device_mode_to_master() {

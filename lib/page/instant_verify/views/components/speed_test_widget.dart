@@ -128,6 +128,7 @@ class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
                   bottomBuilder: (context, value) {
                     return state.status == 'COMPLETE'
                         ? AppTextButton(
+                            key: const Key('speedTestTestAgain'),
                             loc(context).testAgain,
                             onTap: () {
                               run();
@@ -160,7 +161,7 @@ class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
               direction: Axis.vertical,
               children: [
                 AppText.bodySmall(loc(context).dateAndTime),
-                AppText.labelMedium(result?.timestamp == null
+                AppText.labelMedium(key: ValueKey('speedTestDateTime'), result?.timestamp == null
                     ? '--'
                     : _getDateTimeText(result?.timestamp)),
               ],
@@ -181,7 +182,7 @@ class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
             direction: Axis.vertical,
             children: [
               AppText.bodySmall(loc(context).dateAndTime),
-              AppText.labelMedium(result?.timestamp == null
+              AppText.labelMedium(key: ValueKey('speedTestDateTime'), result?.timestamp == null
                   ? '--'
                   : _getDateTimeText(result?.timestamp)),
             ],
@@ -286,12 +287,12 @@ class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
         NetworkUtils.formatBytesWithUnit(uploadBandWidthIntBytes, decimals: 1);
     final downloadBandWidthView = FittedBox(
       fit: BoxFit.scaleDown,
-      child: AppText.displaySmall(
+      child: AppText.displaySmall(key: ValueKey('downloadBandWidth'),
           downloadBandWidthIntBytes == 0 ? '—' : downloadFormat.value),
     );
     final uploadBandWidthView = FittedBox(
       fit: BoxFit.scaleDown,
-      child: AppText.displaySmall(
+      child: AppText.displaySmall(key: ValueKey('uploadBandWidth'),
           uploadBandWidthIntBytes == 0 ? '—' : uploadFormat.value),
     );
     return Row(

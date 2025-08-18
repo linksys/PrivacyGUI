@@ -11,6 +11,7 @@ import 'package:privacy_gui/page/dashboard/views/components/networks.dart';
 import 'package:privacy_gui/page/dashboard/views/components/quick_panel.dart';
 import 'package:privacy_gui/page/dashboard/views/components/wifi_grid.dart';
 import 'package:privacy_gui/page/instant_topology/views/widgets/tree_node_item.dart';
+import 'package:privacy_gui/page/instant_verify/views/components/speed_test_widget.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_item.dart';
 import 'package:privacy_gui/page/wifi_settings/views/wifi_term_titles.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
@@ -39,6 +40,7 @@ part 'instant_devices_actions.dart';
 part 'advanced_settings_actions.dart';
 part 'instant_verify_actions.dart';
 part 'external_speed_test_actions.dart';
+part 'speed_test_actions.dart';
 part 'add_nodes_actions.dart';
 part 'pnp_setup_actions.dart';
 part 'prepair_pnp_setup_actions.dart';
@@ -80,6 +82,7 @@ sealed class CommonBaseActions extends BaseActions with CommonActionsMixin {
       TestAdvancedSettingsActions() => loc(context).advancedSettings,
       TestInstantVerifyActions() => loc(context).instantVerify,
       TestExternalSpeedTestActions() => loc(context).externalSpeedText,
+      TestSpeedTestActions() => loc(context).speedTest,
       TestAddNodesActions() => loc(context).addNodes,
       TestAdvancedRoutingActions() => loc(context).advancedRouting,
       TestFirewallActions() => loc(context).firewall,

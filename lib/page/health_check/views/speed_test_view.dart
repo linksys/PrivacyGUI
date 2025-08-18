@@ -356,15 +356,23 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
     final downloadBandWidthView =
         status == 'RUNNING' && !ResponsiveLayout.isMobileLayout(context)
             ? AppText.displaySmall(
-                double.parse(downloadValue) == 0 ? '—' : downloadValue)
+                double.parse(downloadValue) == 0 ? '—' : downloadValue,
+                key: Key('downloadBandWidth'),
+              )
             : AppText.displayLarge(
-                double.parse(downloadValue) == 0 ? '—' : downloadValue);
+                double.parse(downloadValue) == 0 ? '—' : downloadValue,
+                key: Key('downloadBandWidth'),
+              );
     final uploadBandWidthView =
         status == 'RUNNING' && !ResponsiveLayout.isMobileLayout(context)
             ? AppText.displaySmall(
-                double.parse(uploadValue) == 0 ? '—' : uploadValue)
+                double.parse(uploadValue) == 0 ? '—' : uploadValue,
+                key: Key('uploadBandWidth'),
+              )
             : AppText.displayLarge(
-                double.parse(uploadValue) == 0 ? '—' : uploadValue);
+                double.parse(uploadValue) == 0 ? '—' : uploadValue,
+                key: Key('uploadBandWidth'),
+              );
     return Row(
       children: [
         Expanded(

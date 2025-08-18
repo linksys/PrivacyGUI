@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/app_bar/app_bar.dart';
-import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:privacygui_widgets/widgets/page/base_page_view.dart';
 
 import '../actions/base_actions.dart';
@@ -11,7 +11,7 @@ mixin CommonActionsMixin on BaseActions {
     // Find back button
     final backButtonFinder = find.descendant(
       of: find.byType(LinksysAppBar),
-      matching: find.byType(AppIconButton),
+      matching: find.byIcon(LinksysIcons.arrowBack),
     );
     expect(backButtonFinder, findsOneWidget);
     // Tap the back button

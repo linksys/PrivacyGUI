@@ -105,10 +105,13 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
 
   Future fetchAvailableFirmwareUpdates() {
     logger.i('[FIRMWARE]: Examine if there are firmware updates available');
-    return fetchFirmwareUpdateStream(force: true, retry: 3)
+    final benchmark = BenchMarkLogger(name: 'FirmwareUpdate');
+    benchmark.start();
+    return fetchFirmwareUpdateStream(force: true, retry: 2)
         .last
         .onError((error, stackTrace) => [])
         .then((resultList) {
+      benchmark.end();
       // In addition to the build function, state updates here should also be examined
       final statusRecord = _examineStatusResult(resultList);
       logger.d(
@@ -145,6 +148,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
             cacheLevel: CacheLevel.noCache,
             fetchRemote: true,
             auth: true,
+            retries: 0,
           )
           .then((_) {});
       yield* _startCheckFirmwareUpdateStatus(
@@ -341,7 +345,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
         .scheduledCommand(
           action: action,
           maxRetry: retryTimes ?? -1,
-          retryDelayInMilliSec: retryDelayInMilliSec ?? 3000,
+          retryDelayInMilliSec: retryDelayInMilliSec ?? 2000,
           condition: stopCondition,
           onCompleted: onCompleted,
           requestTimeoutOverride: 3000,

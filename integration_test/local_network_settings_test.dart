@@ -6,8 +6,10 @@ import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/main.dart';
+import 'package:privacygui_widgets/widgets/input_field/app_password_field.dart';
 import 'actions/base_actions.dart';
 import 'config/integration_test_config.dart';
+import 'extensions/extensions.dart';
 
 void main() {
   integrationDriver();
@@ -23,7 +25,7 @@ void main() {
 
   Future<TestLocalNetworkSettingsActions> enterLocalNetworkSettings(
       WidgetTester tester) async {
-    await tester.pumpFrames(app(), const Duration(seconds: 3));
+    await tester.pumpFrames(app(), const Duration(seconds: 5));
     final topbarActions = TestTopbarActions(tester);
     await topbarActions.tapMenuButton();
     final menuActions = TestMenuActions(tester);
@@ -36,16 +38,20 @@ void main() {
     return localNetworkSettingsActions;
   }
 
-  group('Local Network Settings - Log in', () {
+  group('Local Network Settings', () {
     testWidgets('Local Network Settings - Log in ', (tester) async {
-      await tester.pumpFrames(app(), const Duration(seconds: 3));
+      // Log in
+      await tester.pumpFrames(app(), const Duration(seconds: 5));
+      
       final login = TestLocalLoginActions(tester);
       await login.inputPassword(IntegrationTestConfig.password);
+      expect(
+        IntegrationTestConfig.password,
+        tester.getText(find.byType(AppPasswordField)),
+      );
       await login.tapLoginButton();
     });
-  });
 
-  group('Local Network Settings - Host Name Tab', () {
     testWidgets('Local Network Settings - Valid and invalid host name', (tester) async {
       final actions = await enterLocalNetworkSettings(tester);
       await actions.tapHostNameTab();
@@ -64,9 +70,7 @@ void main() {
       await advancedSettingsActions.enterLocalNetworkSettingsPage();
       await actions.verifyHostName('TestHostName');
     });
-  });
 
-  group('Local Network Settings - LAN IP Address Tab', () {
     testWidgets('Local Network Settings - Valid and invalid IP address and subnet mask', (tester) async {
       final actions = await enterLocalNetworkSettings(tester);
       await actions.tapLanIPAddressTab();
@@ -92,9 +96,7 @@ void main() {
       await actions.verifyIPAddress('192.168.1.1');
       await actions.verifySubnetMask('255.255.255.0');
     });
-  });
 
-  group('Local Network Settings - DHCP Server Tab', () {
     testWidgets('Local Network Settings - Valid and invalid DHCP Server settings', (tester) async {
       final actions = await enterLocalNetworkSettings(tester);
       await actions.tapDHCPServerTab();

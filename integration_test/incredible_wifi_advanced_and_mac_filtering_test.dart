@@ -63,7 +63,7 @@ void main() {
 
     testWidgets('Incredible Wifi - Test all switchs', (tester) async {
       // Load app widget.
-      await tester.pumpFrames(app(), Duration(seconds: 3));
+      await tester.pumpFrames(app(), Duration(seconds: 5));
       // Enter the menu page
       final topbarActions = TestTopbarActions(tester);
       await topbarActions.tapMenuButton();
@@ -88,7 +88,7 @@ void main() {
 
     testWidgets('Incredible Wifi - Test MLO alert', (tester) async {
       // Load app widget.
-      await tester.pumpFrames(app(), Duration(seconds: 3));
+      await tester.pumpFrames(app(), Duration(seconds: 5));
       // Enter the menu page
       final topbarActions = TestTopbarActions(tester);
       await topbarActions.tapMenuButton();
@@ -128,7 +128,7 @@ void main() {
 
     testWidgets('Incredible Wifi - Test mac filtering', (tester) async {
       // Load app widget.
-      await tester.pumpFrames(app(), Duration(seconds: 3));
+      await tester.pumpFrames(app(), Duration(seconds: 5));
       // Enter the menu page
       final topbarActions = TestTopbarActions(tester);
       await topbarActions.tapMenuButton();
@@ -181,7 +181,7 @@ void main() {
 
     testWidgets('Incredible Wifi - Test the instant privacy warning', (tester) async {
       // Load app widget.
-      await tester.pumpFrames(app(), Duration(seconds: 3));
+      await tester.pumpFrames(app(), Duration(seconds: 5));
       // Enter the menu page
       final topbarActions = TestTopbarActions(tester);
       await topbarActions.tapMenuButton();
