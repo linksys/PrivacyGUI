@@ -12,7 +12,9 @@ final localLoginRoute = LinksysRoute(
   path: RoutePath.localLoginPassword,
   config: LinksysRouteConfig(column: ColumnGrid(column: 12), noNaviRail: true),
   builder: (context, state) => LoginLocalView(
-    args: state.extra as Map<String, dynamic>? ?? {},
+    args: <String, dynamic>{}
+      ..addAll(state.extra as Map<String, dynamic>? ?? <String, dynamic>{})
+      ..addAll(state.uri.queryParameters),
   ),
   routes: [
     LinksysRoute(
@@ -31,6 +33,5 @@ final localLoginRoute = LinksysRoute(
         ),
       ],
     ),
-    
   ],
 );

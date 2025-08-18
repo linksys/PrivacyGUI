@@ -336,7 +336,7 @@ class RouterNotifier extends ChangeNotifier {
 
   String _home([String? query]) {
     return BuildConfig.forceCommandType == ForceCommand.local
-        ? RoutePath.localLoginPassword
+        ? '${RoutePath.localLoginPassword}?$query'
         : '${RoutePath.cloudLoginAuth}?$query';
   }
 
