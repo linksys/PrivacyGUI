@@ -7,6 +7,8 @@ import 'package:privacy_gui/constants/error_code.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/bottom_bar.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
@@ -45,13 +47,16 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
   NodeDeviceInfo? _deviceInfo;
 
   final TextEditingController _passwordController = TextEditingController();
+  String? _p;
 
   @override
   void initState() {
     super.initState();
     auth = ref.read(authProvider.notifier);
+    _p = widget.args['p'];
     //Use this to prevent errors from modifying the state during the init stage
-    Future.doWhile(() => !mounted).then((value) {
+    doSomethingWithSpinner(context, Future.doWhile(() => !mounted))
+        .then((value) {
       _getAdminPasswordHint();
       ref
           .read(dashboardManagerProvider.notifier)
@@ -59,7 +64,12 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
           .then((value) {
         _deviceInfo = value;
         buildBetterActions(value.services);
-        _getAdminPasswordAuthStatus(value.services);
+        if (_p != null) {
+          _passwordController.text = _p!;
+          _doLogin();
+        } else {
+          _getAdminPasswordAuthStatus(value.services);
+        }
       });
     });
   }
@@ -104,6 +114,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
   Widget build(BuildContext context) {
     final state = ref.watch(authProvider);
     return state.when(error: (error, stack) {
+      _p = null;
       //The countdown has been triggered and finished, but the error still exists in AsyncValue state
       //The error message should not be set again when countdown is terminated
       if (!isCountdownJustFinished) {
@@ -115,7 +126,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
     }, data: (state) {
       //Read password hint from the state
       _passwordHint = state.localPasswordHint;
-      return contentView();
+      return _p != null ? const AppFullScreenSpinner() : contentView();
     }, loading: () {
       return const AppFullScreenSpinner();
     });

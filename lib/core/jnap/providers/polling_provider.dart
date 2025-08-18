@@ -60,6 +60,8 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     }
   }
 
+  bool get paused => _paused;
+
   List<MapEntry<JNAPAction, Map<String, dynamic>>> _coreTransactions = [];
 
   @override

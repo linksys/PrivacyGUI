@@ -8,6 +8,7 @@ const pSmartDeviceSecret = 'LinksysSmartDeviceSecret';
 const pSmartDeviceVerified = 'LinksysSmartDeviceVerified';
 
 const pSelectedNetworkId = 'LinksysSelectedNetworkId';
+const pGRASessionId = 'LinksysGRASessionId';
 const pShowPushPrompt = 'PushPrompt';
 const pAppFirstLaunch = 'AppFirstLaunch';
 const pWebLog = 'web_log';

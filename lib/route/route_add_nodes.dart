@@ -11,13 +11,3 @@ final addNodesRoute = LinksysRoute(
   routes: [],
 );
 
-final addWiredNodesRoute = LinksysRoute(
-  name: RouteNamed.addWiredNodes,
-  path: RoutePath.addWiredNodes,
-  config: LinksysRouteConfig(
-      noNaviRail: true, column: ColumnGrid(column: 6, centered: true)),
-  builder: (context, state) => AddWiredNodesView(
-    args: state.extra as Map<String, dynamic>? ?? {},
-  ),
-  routes: [],
-);

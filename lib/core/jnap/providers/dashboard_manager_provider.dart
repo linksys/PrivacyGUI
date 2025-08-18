@@ -121,6 +121,7 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
 
   Future<void> saveSelectedNetwork(
       String serialNumber, String networkId) async {
+    logger.i('[Prepare]: saveSelectedNetwork - $networkId, $serialNumber');
     // Update latest selected network ID in storage
     final pref = await SharedPreferences.getInstance();
     // await pref.remove(pCurrentSN);

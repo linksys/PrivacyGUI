@@ -171,6 +171,7 @@
   "doYouWantToSaveTheLocalNetworkSettings": "Do you want to save the Local Network Settings?",
   "domainName": "Domain name",
   "done": "Done",
+  "donePairing": "Done pairing",
   "download": "Download",
   "downloadQR": "Download QR",
   "duid": "DUID",
@@ -233,6 +234,7 @@
   "filterMulticast": "Filter multicast",
   "filteredDevices": "Filtered devices",
   "filters": "Filters",
+  "featureUnavailableInRemoteMode": "This feature is unavailable in remote mode",
   "firewall": "Firewall",
   "firmwareDownloadingMessage1": "You can use your WiFi during this update.",
   "firmwareDownloadingMessage2": "But things might be slower than usual while we improve your system.",
@@ -275,6 +277,7 @@
   },
   "fortinetSecureDns": "Fortinet Secure DNS",
   "forwardedRange": "Forwarded range",
+  "foundNNodesOnline": "{count, plural, other{{count} child nodes have just come online.} one{1 child node has just come online.}}",
   "fwVersion": "FW Version",
   "gateway": "Gateway",
   "generalError": "Oops, something wrong here! Please try again later",
@@ -591,6 +594,9 @@
   "otpEnterCodeEmailTitle": "Enter the code we sent to {email}",
   "otpEnterCodeSmsTitle": "Enter the code we sent to {phone}",
   "otpSendMethodChoiceTitle": "Where should we send your code?",
+  "pairWiredNode": "Pair wired node",
+  "pairWirelessNode": "Pair wireless node",
+  "pairingWiredChildNodeDesc": "To complete the pairing, make sure your child node is connected to the parent node via a wired connection.",
   "password": "Password",
   "passwordAndAccess": "Password & Access",
   "passwordsMustMatch": "Passwords must match",
@@ -1016,16 +1022,48 @@
   "wins": "WINS",
   "wired": "Wired",
   "wireless": "Wireless",
-  "addWiredDevices": "Add wired devices",
-  "addWiredDevicesDesc1": "Start with the new device turned off",
-  "addWiredDevicesDesc2": "Connect an Ethernet cable to one of the LAN ports on your existing device.",
-  "addWiredDevicesDesc3": "Connect the other end of the cable to the WAN port of the new device you're adding.",
-  "addWiredDevicesDesc4": "Then, power on the new device.",
-  "pairWiredNode": "Pair wired node",
-  "pairWirelessNode": "Pair wireless node",
-  "pairWiredNodeDone": "Pairing wired node. Click 'Done pairing' to finish.",
-  "donePairing": "Done pairing",
-  "refreshing": "Refreshing",
-  "foundNNodesOnline": "{count, plural, other{{count} child nodes have just come online.} one{1 child node has just come online.}}",
-  "pairingWiredChildNodeDesc": "To complete the pairing, make sure your child node is connected to the master via a wired connection."
+  "wiredPairComplete": "Pairing is complete. The child node has been successfully paired with the parent node using a wired connection.",
+  "wiredPairCompleteNotFound": "No connected child node was found. Please make sure your child node is powered on and properly connected to the parent node via an Ethernet cable and try again.",
+  "remoteAssistance": "Remote Assistance",
+  "remoteAssistancePinCode": "Your pin code is:",
+  "remoteAssistanceInvalidSession": "Invalid session. Please contact a support agent.",
+  "remoteAssistanceSessionActive": "A Linksys support agent has remote access to your Linksys Smart Wi-Fi account and your home network.",
+  "remoteAssistancePinCodeExpiresIn": "Pin code expires in {time}",
+  "@remoteAssistancePinCodeExpiresIn": {
+    "description": "time",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "10:00"
+      }
+    }
+  },
+  "remoteAssistancePinCodeExpired": "Pin code expired",
+  "remoteAssistanceSessionExpiresIn": "Session expires in {time}",
+  "@remoteAssistanceSessionExpiresIn": {
+    "description": "time",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "10:00"
+      }
+    }
+  },
+  "remoteAssistanceSessionExpired": "Session expired",
+  "remoteAssistanceInitiateMessage": "To take advantage of Remote Assistance, you must first contact a phone support agent. Go to <a href=\"http://www.linksys.com/support\" target=\"_blank\">linksys.com/support</a> and click on Phone Call to get started.",
+  "selectEnv": "Select Environment",
+  "proceed": "Proceed",
+  "loginWithAccessTokenMessage": "You are log in with access token to manage {serialNumber}, do you want to proceed?",
+  "@loginWithAccessTokenMessage": {
+    "description": "Message shown when logging in with access token",
+    "placeholders": {
+      "serialNumber": {
+        "type": "String",
+        "example": "SN12345"
+      }
+    }
+  },
+  "notEnoughInfoToLogin": "Not enough information to login",
+  "endRemoteAssistance": "End Remote Assistance",
+  "endRemoteAssistanceDesc": "End remote assistance session?"
 }

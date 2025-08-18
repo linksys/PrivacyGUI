@@ -23,3 +23,13 @@ class SessionTokenExpiredException extends AuthException {
   SessionTokenExpiredException()
       : super(message: 'token expired! logging out!');
 }
+
+class CloudNetworkNotFoundException extends AuthException {
+  CloudNetworkNotFoundException()
+      : super(message: 'cloud network not found!');
+}
+
+class CloudAuthInvalidException extends AuthException {
+  CloudAuthInvalidException()
+      : super(message: 'cloud auth invalid!');
+}

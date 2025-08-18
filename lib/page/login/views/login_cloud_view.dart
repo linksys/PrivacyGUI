@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/constants/error_code.dart';
+import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_session_model.dart';
 import 'package:privacy_gui/core/cloud/model/error_response.dart';
 import 'package:privacy_gui/page/components/styled/bottom_bar.dart';
@@ -19,8 +21,10 @@ import 'package:privacy_gui/validator_rules/input_validators.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginCloudView extends ArgumentsConsumerStatefulView {
   const LoginCloudView({
@@ -130,6 +134,19 @@ class _LoginCloudViewState extends ConsumerState<LoginCloudView> {
                             },
                           ),
                           const AppGap.large3(),
+                          if (BuildConfig.isEnableEnvPicker &&
+                              BuildConfig.forceCommandType !=
+                                  ForceCommand.local)
+                            Align(
+                                alignment: Alignment.bottomRight,
+                                child: AppTextButton.noPadding('Select Env',
+                                    onTap: () async {
+                                  final _ = await showModalBottomSheet(
+                                      enableDrag: false,
+                                      context: context,
+                                      builder: (context) => _createEnvPicker());
+                                  setState(() {});
+                                })),
                           AppFilledButton(
                             'Log in',
                             onTap: _isValidEmail ?? true
@@ -147,6 +164,60 @@ class _LoginCloudViewState extends ConsumerState<LoginCloudView> {
               footer: const BottomBar(),
             ),
           );
+  }
+
+  Widget _createEnvPicker() {
+    bool isLoading = false;
+    return StatefulBuilder(builder: (context, setState) {
+      return isLoading
+          ? AppFullScreenSpinner(text: loc(context).processing)
+          : Padding(
+              padding: const EdgeInsets.all(Spacing.medium),
+              child: Column(
+                children: [
+                  ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: CloudEnvironment.values.length,
+                      itemBuilder: (context, index) => InkWell(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: Spacing.medium),
+                              child: AppPanelWithValueCheck(
+                                title: CloudEnvironment.values[index].name,
+                                valueText: '',
+                                isChecked: cloudEnvTarget ==
+                                    CloudEnvironment.values[index],
+                              ),
+                            ),
+                            onTap: () {
+                              setState(() {
+                                cloudEnvTarget = CloudEnvironment.values[index];
+                              });
+                            },
+                          )),
+                  const Spacer(),
+                  AppFilledButton(
+                    'Save',
+                    onTap: () async {
+                      setState(() {
+                        isLoading = true;
+                      });
+
+                      final pref = await SharedPreferences.getInstance();
+                      pref.setString(pCloudEnv, cloudEnvTarget.name);
+                      BuildConfig.load();
+                      setState(() {
+                        isLoading = false;
+                      });
+                      Navigator.pop(context, cloudEnvTarget);
+                    },
+                  ),
+                  const AppGap.medium(),
+                ],
+              ),
+            );
+    });
   }
 
   _checkFilledInfo(_) {

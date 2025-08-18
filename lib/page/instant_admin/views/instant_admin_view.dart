@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/jnap/models/firmware_update_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_state.dart';
@@ -198,12 +199,19 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
     return AppListCard(
       title: AppText.bodyMedium(loc(context).manualFirmwareUpdate),
       description: AppText.labelLarge(firmwareVersion ?? '--'),
-      trailing: AppTextButton.noPadding(
-        loc(context).manualUpdate,
-        key: const Key('manualUpdateButton'),
-        onTap: () {
-          context.goNamed(RouteNamed.manualFirmwareUpdate);
-        },
+      trailing: Tooltip(
+        message: BuildConfig.isRemote()
+            ? loc(context).featureUnavailableInRemoteMode
+            : '',
+        child: AppTextButton.noPadding(
+          loc(context).manualUpdate,
+          key: const Key('manualUpdateButton'),
+        onTap: BuildConfig.isRemote()
+              ? null
+              : () {
+                  context.goNamed(RouteNamed.manualFirmwareUpdate);
+                },
+        ),
       ),
     );
   }
