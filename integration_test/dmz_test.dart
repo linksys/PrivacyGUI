@@ -38,7 +38,7 @@ void main() {
     });
 
     testWidgets('DMZ - enabling operations', (tester) async {
-      await tester.pumpFrames(app(), Duration(seconds: 3));
+      await tester.pumpFrames(app(), Duration(seconds: 5));
       // Enter the menu screen
       final topbarActions = TestTopbarActions(tester);
       await topbarActions.tapMenuButton();

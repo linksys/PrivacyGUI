@@ -2,6 +2,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/models/back_haul_info.dart';
 import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
@@ -733,7 +734,18 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
           const AppGap.large2(),
           dashboardState.isHealthCheckSupported
               ? const SpeedTestWidget()
-              : AppCard(child: const SpeedTestExternalWidget()),
+              : AppCard(
+                  child: Tooltip(
+                    message: loc(context).featureUnavailableInRemoteMode,
+                    child: Opacity(
+                      opacity: BuildConfig.isRemote() ? 0.5 : 1,
+                      child: AbsorbPointer(
+                        absorbing: BuildConfig.isRemote(),
+                        child: const SpeedTestExternalWidget(),
+                      ),
+                    ),
+                  ),
+                ),
         ],
       ),
     );
@@ -1195,14 +1207,15 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
                   ? loc(context).wired
                   : loc(context).wireless),
         ]),
-        pw.TableRow(children: [
-          pw.Text('${loc(context).meshHealth}:'),
-          pw.Text(
-            node.data.isOnline
-                ? '${signalLevel.resolveLabel(context)}(${node.data.signalStrength})'
-                : loc(context).offline,
-          ),
-        ]),
+        if (!(node.data.isMaster || node.data.isWiredConnection))
+          pw.TableRow(children: [
+            pw.Text('${loc(context).meshHealth}:'),
+            pw.Text(
+              node.data.isOnline
+                  ? '${signalLevel.resolveLabel(context)}(${node.data.signalStrength})'
+                  : loc(context).offline,
+            ),
+          ]),
         pw.TableRow(children: [
           pw.Text('${loc(context).ipAddress}:'),
           pw.Text(node.data.isOnline ? node.data.ipAddress : '--'),

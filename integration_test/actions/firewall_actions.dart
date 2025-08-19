@@ -220,7 +220,7 @@ class TestFirewallActions extends CommonBaseActions {
       of: formFieldFinder,
       matching: find.byType(TextFormField),
     );
-    expect(ipTextFormFieldFinder, findsNWidgets(8));
+    expect(ipTextFormFieldFinder, findsOneWidget);
     return ipTextFormFieldFinder;
   }
 
@@ -482,37 +482,9 @@ class TestFirewallActions extends CommonBaseActions {
 
   Future<void> inputIpv6Address() async {
     final ipv6TextFormFieldFinder = ipv6FormFieldFinder();
-    await tester.tap(ipv6TextFormFieldFinder.at(0));
+    await tester.tap(ipv6TextFormFieldFinder);
     await tester.pumpAndSettle();
-    await tester.enterText(ipv6TextFormFieldFinder.at(0), 'ace0');
-    await tester.pumpAndSettle();
-    await tester.tap(ipv6TextFormFieldFinder.at(1));
-    await tester.pumpAndSettle();
-    await tester.enterText(ipv6TextFormFieldFinder.at(1), 'ace0');
-    await tester.pumpAndSettle();
-    await tester.tap(ipv6TextFormFieldFinder.at(1));
-    await tester.pumpAndSettle();
-    await tester.enterText(ipv6TextFormFieldFinder.at(2), 'ace0');
-    await tester.pumpAndSettle();
-    await tester.tap(ipv6TextFormFieldFinder.at(3));
-    await tester.pumpAndSettle();
-    await tester.enterText(ipv6TextFormFieldFinder.at(3), 'ace0');
-    await tester.pumpAndSettle();
-    await tester.tap(ipv6TextFormFieldFinder.at(4));
-    await tester.pumpAndSettle();
-    await tester.enterText(ipv6TextFormFieldFinder.at(4), 'ace0');
-    await tester.pumpAndSettle();
-    await tester.tap(ipv6TextFormFieldFinder.at(5));
-    await tester.pumpAndSettle();
-    await tester.enterText(ipv6TextFormFieldFinder.at(5), 'ace0');
-    await tester.pumpAndSettle();
-    await tester.tap(ipv6TextFormFieldFinder.at(6));
-    await tester.pumpAndSettle();
-    await tester.enterText(ipv6TextFormFieldFinder.at(6), 'ace0');
-    await tester.pumpAndSettle();
-    await tester.tap(ipv6TextFormFieldFinder.at(7));
-    await tester.pumpAndSettle();
-    await tester.enterText(ipv6TextFormFieldFinder.at(7), 'ace0');
+    await tester.enterText(ipv6TextFormFieldFinder, '2001:db8::g');
     await tester.pumpAndSettle();
   }
 

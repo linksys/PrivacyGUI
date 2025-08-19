@@ -10,7 +10,7 @@ class TestInstantAdminActions extends CommonBaseActions {
   }
 
   Finder manualUpdateButtonFinder() {
-    final textButtonFinder = find.byType(AppTextButton);
+    final textButtonFinder = find.byKey(const Key('manualUpdateButton'));
     expect(textButtonFinder, findsOneWidget);
     return textButtonFinder;
   }
@@ -25,9 +25,9 @@ class TestInstantAdminActions extends CommonBaseActions {
   }
 
   Finder editPasswordTappableFinder() {
-    final editPasswordFinder = find.byType(AppCard);
-    expect(editPasswordFinder, findsNWidgets(6));
-    return editPasswordFinder.at(1);
+    final editPasswordFinder = find.byKey(const Key('passwordCard'));
+    expect(editPasswordFinder, findsOneWidget);
+    return editPasswordFinder;
   }
 
   Finder passwordInputAlertDialogFinder() {
@@ -40,30 +40,28 @@ class TestInstantAdminActions extends CommonBaseActions {
     final dialogFinder = passwordInputAlertDialogFinder();
     final passwordFieldFinder = find.descendant(
       of: dialogFinder,
-      matching: find.byType(AppPasswordField),
+      matching: find.byKey(const Key('newPasswordField')),
     );
-    expect(passwordFieldFinder, findsNWidgets(2));
-    return passwordFieldFinder.first;
+    expect(passwordFieldFinder, findsOneWidget);
+    return passwordFieldFinder;
   }
 
   Finder confirmPasswordFieldFinder() {
     final dialogFinder = passwordInputAlertDialogFinder();
     final passwordFieldFinder = find.descendant(
       of: dialogFinder,
-      matching: find.byType(AppPasswordField),
+      matching: find.byKey(const Key('confirmPasswordField')),
     );
-    expect(passwordFieldFinder, findsNWidgets(2));
-    return passwordFieldFinder.last;
+    expect(passwordFieldFinder, findsOneWidget);
+    return passwordFieldFinder;
   }
 
   Finder passwordHintFieldFinder() {
     final dialogFinder = passwordInputAlertDialogFinder();
-    final hintFieldFinder = find
-        .descendant(
-          of: dialogFinder,
-          matching: find.byType(AppTextField),
-        )
-        .last;
+    final hintFieldFinder = find.descendant(
+      of: dialogFinder,
+      matching: find.byKey(const Key('hintTextField')),
+    );
     expect(hintFieldFinder, findsOneWidget);
     return hintFieldFinder;
   }
@@ -89,9 +87,9 @@ class TestInstantAdminActions extends CommonBaseActions {
   }
 
   Finder editTimezoneTappableFinder() {
-    final editPasswordFinder = find.byType(AppCard);
-    expect(editPasswordFinder, findsNWidgets(6));
-    return editPasswordFinder.at(5);
+    final editPasswordFinder = find.byKey(const Key('timezoneCard'));
+    expect(editPasswordFinder, findsOneWidget);
+    return editPasswordFinder;
   }
 
   Finder daylightSavingSwitchFinder() {

@@ -67,21 +67,24 @@ class _LocalRouterRecoveryViewState
                   AppText.bodyMedium(
                       loc(context).localRouterRecoveryDescription),
                   const AppGap.large3(),
-                  AppPinCodeInput(
-                    semanticLabel: 'pin code text field',
-                    length: 5,
-                    controller: _otpController,
-                    stayOnLastField: true,
-                    onChanged: (String value) {
-                      setState(() {
-                        userInputCode = value;
-                      });
-                    },
-                    onSubmitted: (_) {
-                      if (userInputCode.length == 5) {
-                        _validateCode(userInputCode);
-                      }
-                    },
+                  FittedBox(
+                    fit: BoxFit.contain,
+                    child: AppPinCodeInput(
+                      semanticLabel: 'pin code text field',
+                      length: 5,
+                      controller: _otpController,
+                      stayOnLastField: true,
+                      onChanged: (String value) {
+                        setState(() {
+                          userInputCode = value;
+                        });
+                      },
+                      onSubmitted: (_) {
+                        if (userInputCode.length == 5) {
+                          _validateCode(userInputCode);
+                        }
+                      },
+                    ),
                   ),
                   if (state.remainingErrorAttempts != null)
                     Padding(

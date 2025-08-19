@@ -36,7 +36,7 @@ void main() {
 
   testWidgets('Dashboard home operations', (tester) async {
     // Log in
-    await tester.pumpFrames(app(), Duration(seconds: 3));
+    await tester.pumpFrames(app(), Duration(seconds: 5));
     final login = TestLocalLoginActions(tester);
     await login.inputPassword(IntegrationTestConfig.password);
     expect(
@@ -50,18 +50,57 @@ void main() {
     await dashboardHomeActions.checkDeviceListPage();
     await dashboardHomeActions.checkMasterNodeDetailPage();
     await dashboardHomeActions.hoverToNightModeInfoIcon();
+    //
+    await dashboardHomeActions.toggleNightMode();
+    //
     await dashboardHomeActions.toggleNightMode();
     await dashboardHomeActions.hoverToInstantPrivacyInfoIcon();
+    //
+    await dashboardHomeActions.toggleInstantPrivacy();
+    //
     await dashboardHomeActions.toggleInstantPrivacy();
     await dashboardHomeActions.checkInstantPrivacyPage();
-    await dashboardHomeActions.hoverToWifi24gQrIcon();
-    //await dashboardHomeActions.toggle24gWifi(); // cannot turn off all wifi
-    await dashboardHomeActions.checkWifi24gPage();
-    await dashboardHomeActions.hoverToWifi5gQrIcon();
-    await dashboardHomeActions.toggle5gWifi();
-    await dashboardHomeActions.checkWifi5gPage();
-    await dashboardHomeActions.hoverToGuestWifiQrIcon();
-    await dashboardHomeActions.toggleGuestWifi();
-    await dashboardHomeActions.checkGuestWifiPage();
+
+    // Speed Test
+    const isHealthCheckSupported = String.fromEnvironment(
+            'isHealthCheckSupported',
+            defaultValue: 'false') ==
+        'true';
+
+    if (isHealthCheckSupported) {
+      // Speed Test
+      await dashboardHomeActions.startSpeedTest();
+      await dashboardHomeActions.checkSpeedTestResult();
+    }
+
+    //WiFi cards
+    const bands =
+        String.fromEnvironment('wifiBands', defaultValue: '2.4,5,guest');
+    final bandsList = bands.split(',').map((e) => e.trim()).toList();
+    if (bandsList.contains('2.4')) {
+      await dashboardHomeActions.hoverToWifi24gQrIcon();
+      await dashboardHomeActions.toggle24gWifi();
+      await dashboardHomeActions.toggle24gWifi();
+
+      await dashboardHomeActions.checkWifi24gPage();
+    }
+    if (bandsList.contains('5')) {
+      await dashboardHomeActions.hoverToWifi5gQrIcon();
+      await dashboardHomeActions.toggle5gWifi();
+      await dashboardHomeActions.toggle5gWifi();
+      await dashboardHomeActions.checkWifi5gPage();
+    }
+    if (bandsList.contains('6')) {
+      await dashboardHomeActions.hoverToWifi6gQrIcon();
+      await dashboardHomeActions.toggle6gWifi();
+      await dashboardHomeActions.toggle6gWifi();
+      await dashboardHomeActions.checkWifi6gPage();
+    }
+    if (bandsList.contains('guest')) {
+      await dashboardHomeActions.hoverToGuestWifiQrIcon();
+      await dashboardHomeActions.toggleGuestWifi();
+      await dashboardHomeActions.toggleGuestWifi();
+      await dashboardHomeActions.checkGuestWifiPage();
+    }
   });
 }

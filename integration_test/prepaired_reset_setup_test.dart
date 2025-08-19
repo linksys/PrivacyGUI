@@ -40,7 +40,7 @@ void main() {
 
   testWidgets('Prepaired reset setup flow golden', (tester) async {
     // Load app widget.
-    await tester.pumpFrames(app(), Duration(seconds: 3));
+    await tester.pumpFrames(app(), Duration(seconds: 5));
 
     final setup = TestPrepairPnpSetupActions(tester);
 

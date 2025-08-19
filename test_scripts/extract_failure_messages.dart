@@ -16,5 +16,6 @@ void main(List<String> args) {
   int stackIndex = text.indexOf(stackMarker);
   stackIndex = stackIndex == -1 ? endIndex : stackIndex;
   String result = text.substring(startIndex, stackIndex);
+  result = result.replaceAll(RegExp(r'\n'), '<br>');
   print(result);
 }

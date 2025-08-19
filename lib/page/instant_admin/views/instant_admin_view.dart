@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/jnap/models/firmware_update_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_state.dart';
@@ -56,6 +57,7 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
       Future.wait([_routerPasswordNotifier.fetch(), _timezoneNotifier.fetch()])
           .then(
         (_) {
+          if (!mounted) return;
           final provider = ref.read(routerPasswordProvider);
           _passwordController.text = provider.adminPassword;
         },
@@ -119,6 +121,7 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
       child: Column(
         children: [
           AppListCard(
+            key: const Key('passwordCard'),
             padding: EdgeInsets.zero,
             showBorder: false,
             title: AppText.bodyMedium(loc(context).routerPassword),
@@ -196,11 +199,19 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
     return AppListCard(
       title: AppText.bodyMedium(loc(context).manualFirmwareUpdate),
       description: AppText.labelLarge(firmwareVersion ?? '--'),
-      trailing: AppTextButton.noPadding(
-        loc(context).manualUpdate,
-        onTap: () {
-          context.goNamed(RouteNamed.manualFirmwareUpdate);
-        },
+      trailing: Tooltip(
+        message: BuildConfig.isRemote()
+            ? loc(context).featureUnavailableInRemoteMode
+            : '',
+        child: AppTextButton.noPadding(
+          loc(context).manualUpdate,
+          key: const Key('manualUpdateButton'),
+        onTap: BuildConfig.isRemote()
+              ? null
+              : () {
+                  context.goNamed(RouteNamed.manualFirmwareUpdate);
+                },
+        ),
       ),
     );
   }
@@ -210,15 +221,17 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
     TimezoneState timezoneState,
   ) {
     return AppListCard(
+      key: const Key('timezoneCard'),
       title: AppText.bodyLarge(loc(context).timezone),
       description: AppText.labelLarge(_getTimezone(timezoneState)),
       trailing: const Icon(LinksysIcons.chevronRight),
-      onTap: () {
-        context.pushNamed<bool?>(RouteNamed.settingsTimeZone).then((result) {
-          if (result == true) {
-            showSuccessSnackBar(context, loc(context).done);
-          }
-        });
+      onTap: () async {
+        final result =
+            await context.pushNamed<bool?>(RouteNamed.settingsTimeZone);
+        if (result == true) {
+          if (!mounted) return;
+          showSuccessSnackBar(context, loc(context).done);
+        }
       },
     );
   }
@@ -379,6 +392,7 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
           mainAxisSize: MainAxisSize.min,
           children: [
             AppPasswordField(
+              key: const Key('newPasswordField'),
               border: const OutlineInputBorder(),
               controller: controller,
               headerText: loc(context).routerPasswordNew,
@@ -400,6 +414,7 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
             ),
             const AppGap.medium(),
             AppPasswordField(
+              key: const Key('confirmPasswordField'),
               border: const OutlineInputBorder(),
               controller: confirmController,
               headerText: loc(context).retypeRouterPassword,
@@ -421,6 +436,7 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
             ),
             const AppGap.large3(),
             AppTextField(
+              key: const Key('hintTextField'),
               border: const OutlineInputBorder(),
               controller: hintController,
               headerText: loc(context).routerPasswordHintOptional,

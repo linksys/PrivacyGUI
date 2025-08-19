@@ -1,8 +1,8 @@
 {
-    "name": "Test behaviors on Advanced Settings - Internet Settings",
-    "target": "integration_test/internet_settings_test.dart",
+    "name": "Test behaviors on Advanced Settings - Internet Settings 2",
+    "target": "integration_test/internet_settings_set_2_test.dart",
     "description": "Execute all the functions on the page and verify that the new data has been synced",
-    "setUp":  ["factory_reset", "skip_pnp"],
+    "setUp":  ["factory_reset", "skip_setup"],
     "tearDown": [],
     "tags": ["internet_settings", "advanced_settings", "menu"]
 }

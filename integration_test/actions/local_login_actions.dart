@@ -58,7 +58,7 @@ class TestLocalLoginActions extends CommonBaseActions {
 
   Future<void> tapLoginButton() async {
     await tester.tap(loginButtonFinder());
-    await tester.pumpAndSettle(const Duration(seconds: 5));
+    await tester.pumpFrames(app(), const Duration(seconds: 20));
   }
 
   Future<void> tapForgetPassword() async {

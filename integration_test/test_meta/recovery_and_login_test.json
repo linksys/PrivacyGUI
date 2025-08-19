@@ -2,7 +2,7 @@
     "name": "Recovery with New Password and Login",
     "target": "integration_test/recovery_and_login_test.dart",
     "description": "Recovery with New Password and Login",
-    "setUp":  ["skip_pnp"],
+    "setUp":  ["skip_setup"],
     "tearDown": ["reset_password", "factory_reset"],
     "tags": ["login", "recovery"],
     "config": {

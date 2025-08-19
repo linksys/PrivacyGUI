@@ -99,6 +99,12 @@ pnp() {
   fi
 }
 
+# Get auto configuration supported and user acknowledged auto configuration
+get_auto_configration_settings() {
+  local result=$(jnap "http://linksys.com/jnap/nodes/setup/GetAutoConfigurationSettings")
+  echo "$result"
+}
+
 # set device mode to Master
 set_device_mode_to_master() {
   password=$1

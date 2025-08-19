@@ -18,33 +18,46 @@ void main() {
   final widgetsBinding =
       IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  setUp(() async {
+  setUpAll(() async {
+    // GetIt
+    dependencySetup();
+
+    FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+
     // init better actions
     initBetterActions();
+
+    BuildConfig.load();
+
     // clear all cache data to make sure every test case is independent
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
     const storage = FlutterSecureStorage();
     await storage.deleteAll();
-
-    FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
-
-    BuildConfig.load();
-
-    // GetIt
-    dependencySetup();
   });
 
-  testWidgets('Instant admin operations', (tester) async {
-    // Log in
-    await tester.pumpFrames(app(), Duration(seconds: 3));
-    final login = TestLocalLoginActions(tester);
-    await login.inputPassword(IntegrationTestConfig.password);
-    expect(
-      IntegrationTestConfig.password,
-      tester.getText(find.byType(AppPasswordField)),
-    );
-    await login.tapLoginButton();
+  setUp(() async {});
+
+  tearDown(() async {
+    // Add any cleanup logic here if needed after each test
+  });
+
+  testWidgets('Instant admin - Log in and enter dashboard', (tester) async {
+      // Load app widget.
+      await tester.pumpFrames(app(), Duration(seconds: 5));
+      // Log in
+      final login = TestLocalLoginActions(tester);
+      await login.inputPassword(IntegrationTestConfig.password);
+      expect(
+        IntegrationTestConfig.password,
+        tester.getText(find.byType(AppPasswordField)),
+      );
+      // Log in and enter the dashboard screen
+      await login.tapLoginButton();
+    });
+
+  testWidgets('Instant admin - operations', (tester) async {
+    await tester.pumpFrames(app(), Duration(seconds: 5));
     // Enter the menu screen
     final topbarActions = TestTopbarActions(tester);
     await topbarActions.tapMenuButton();
@@ -104,5 +117,6 @@ void main() {
     final currentCheckIconFinder =
         adminActions.australiaTimezoneCheckIconFinder();
     expect(currentCheckIconFinder, findsOneWidget);
+    await adminActions.tapBackButton();
   });
 }

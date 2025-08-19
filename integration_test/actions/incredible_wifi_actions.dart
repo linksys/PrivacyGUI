@@ -178,6 +178,7 @@ class TestIncredibleWifiActions extends CommonBaseActions {
   Future tapWifiPasswordCard() async {
     final finder = wifiPasswordCardFinder();
     await scrollAndTap(finder);
+    await tester.pumpFrames(app(), Duration(seconds: 1));
   }
 
   Future<void> inputWifiPassword(String wifiPassword) async {
@@ -224,6 +225,7 @@ class TestIncredibleWifiActions extends CommonBaseActions {
   Future tapGuestWifiPasswordCard() async {
     final finder = guestWifiPasswordCardFinder();
     await scrollAndTap(finder);
+    await tester.pumpFrames(app(), Duration(seconds: 1));
   }
 
   Future<void> inputGuestWifiPassword(String wifiPassword) async {
@@ -1000,7 +1002,7 @@ class TestIncredibleWifiActions extends CommonBaseActions {
     final finder = find.descendant(
       of: alertDialogFinder(),
       matching: find.text(loc(context)
-          .disableBandWarning(getWifiRadioBandTitle(context, radio))),
+          .disableBandWarning(radio.bandName)),
     );
     expect(finder, findsOneWidget);
     return finder;

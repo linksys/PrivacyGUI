@@ -31,6 +31,13 @@
   <link rel="manifest" href="manifest.json">
 
   <style id="splash-screen-style">
+    :root {
+      --background-color: #FDFBFF;
+    }
+
+    [data-theme='dark'] {
+      --background-color: #121316;
+    }
     html {
       height: 100%
     }
@@ -38,8 +45,8 @@
     body {
       margin: 0;
       min-height: 100%;
-      background-color: #FDFBFF;
-          background-size: 100% 100%;
+      background-color: var(--background-color);
+      background-size: 100% 100%;
     }
 
     .center {
@@ -87,13 +94,32 @@
       bottom: 0;
       right: 0;
     }
-
-    @media (prefers-color-scheme: dark) {
-      body {
-        background-color: #121316;
-          }
-    }
   </style>
+  <script>
+    (function() {
+      const appSettingsString = window.localStorage.getItem('flutter.AppSettings');
+
+      if (appSettingsString) {
+        try {
+          // Parse twice since it stores as string with double quotes
+          const settings = JSON.parse(JSON.parse(appSettingsString));
+          const themeMode = settings.themeMode;
+          if (themeMode === 'system') {
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+          } else {
+            document.documentElement.setAttribute('data-theme', themeMode);
+          }
+        } catch (error) {
+          console.error("app settings parse error: ", error);
+        }
+      } else {
+        console.log("app settings not found, by system");
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+      }
+    })();
+  </script>
   <script id="splash-screen-script">
     function removeSplashFromWeb() {
       document.getElementById("splash")?.remove();
