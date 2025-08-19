@@ -6,7 +6,7 @@
     "tearDown": ["reset_password", "factory_reset"],
     "tags": ["login", "recovery"],
     "config": {
-        "newAdminPassword": "Linksys123!",
+        "newPassword": "Linksys123!",
         "passwordHint": "Linksys"
     }
 }
