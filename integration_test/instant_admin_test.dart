@@ -76,6 +76,7 @@ void main() {
     // Hide&Show password
     await adminActions.tapPasswordEyeButton();
     await adminActions.tapPasswordEyeButton();
+    
     // Start changing admin password
     // Open the edit password dialog
     await adminActions.tapEditPasswordTappableArea();
@@ -89,6 +90,13 @@ void main() {
     await adminActions.inputPasswordHint(IntegrationTestConfig.passwordHint);
     // Save the new password
     await adminActions.tapEditPasswordSaveButton();
+    // Now we have to change the password back
+    await adminActions.tapEditPasswordTappableArea();
+    await adminActions.inputNewPassword(IntegrationTestConfig.password);
+    await adminActions.inputConfirmPassword(IntegrationTestConfig.password);
+    await adminActions.inputPasswordHint("");
+    await adminActions.tapEditPasswordSaveButton();
+
     // Enter time zone selection screen
     await adminActions.tapTimezoneTappableArea();
     // Record the current status of auto daylight saving

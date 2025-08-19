@@ -3,10 +3,10 @@
     "target": "integration_test/instant_admin_test.dart",
     "description": "Execute all the functions on the page and verify that the new data has been synced",
     "setUp":  ["factory_reset", "skip_setup"],
-    "tearDown": ["reset_password"],
+    "tearDown": [],
     "tags": ["admin", "menu"],
     "config": {
-        "newAdminPassword": "Linksys123!",
+        "newPassword": "Linksys123!",
         "passwordHint": "Linksys"
     }
 }
