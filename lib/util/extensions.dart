@@ -61,3 +61,7 @@ extension DateFormatTryParse on DateFormat {
     }
   }
 }
+
+extension TranslationMarker on String {
+  String get tr => this;
+}

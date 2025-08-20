@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/components/mixin/preserved_state_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
@@ -7,8 +8,11 @@ import 'package:privacy_gui/page/dual/models/balance_ratio.dart';
 import 'package:privacy_gui/page/dual/models/connection.dart';
 import 'package:privacy_gui/page/dual/models/connection_status.dart';
 import 'package:privacy_gui/page/dual/models/mode.dart';
+import 'package:privacy_gui/page/dual/models/port_type.dart';
 import 'package:privacy_gui/page/dual/models/wan_configuration.dart';
 import 'package:privacy_gui/page/dual/providers/dual_wan_settings_state.dart';
+import 'package:privacy_gui/route/constants.dart';
+
 import 'package:privacy_gui/utils.dart';
 import 'package:privacy_gui/validator_rules/input_validators.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
@@ -74,6 +78,9 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
 
   // errors
   final Map<TextEditingController, String?> _errors = {};
+
+  // show logging and advanced settings
+  bool showLoggingAndAdvancedSettings = false;
 
   @override
   void initState() {
@@ -213,25 +220,35 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
                     children: [
                       Container(
                         constraints: BoxConstraints(
-                          minHeight: 280,
+                          minHeight: 486,
                         ),
                         width: twoColWidth,
                         child: _connectionStatusCard(),
                       ),
                       Container(
                         constraints: BoxConstraints(
-                          minHeight: 280,
+                          minHeight: 486,
                         ),
                         width: twoColWidth,
                         child: _speedAndDiagnosticsCard(),
                       ),
                     ],
                   ),
-                  _loggingAndAdvancedSettingsCard(twoColWidth, gutter),
-                  const Divider(
-                    height: 24,
+                  AppFilledButton(
+                    key: ValueKey('toggleLoggingAndAdvancedSettings'),
+                    showLoggingAndAdvancedSettings
+                        ? loc(context).hideLoggingAndAdvancedSettings
+                        : loc(context).showLoggingAndAdvancedSettings,
+                    icon: LinksysIcons.settings,
+                    onTap: () {
+                      setState(() {
+                        showLoggingAndAdvancedSettings =
+                            !showLoggingAndAdvancedSettings;
+                      });
+                    },
                   ),
-                  _failoverWarningCard(),
+                  if (showLoggingAndAdvancedSettings)
+                    _loggingAndAdvancedSettingsCard(twoColWidth, gutter),
                   const AppGap.large1(),
                 ],
               ],
@@ -444,53 +461,53 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
           const AppGap.medium(),
           if (wan.ipv4ConnectionType != 'DHCP')
             _buildWANSettingsForm(isPrimary, wan, onChanged),
-          AppText.labelLarge(loc(context).mtu),
-          AppTextField.minMaxNumber(
-            key: ValueKey('${isPrimary ? 'primary' : 'secondary'}MtuSizeText'),
-            controller: isPrimary
-                ? _primaryMTUSizeController
-                : _secondaryMTUSizeController,
-            errorText: _errors[isPrimary
-                ? _primaryMTUSizeController
-                : _secondaryMTUSizeController],
-            border: const OutlineInputBorder(),
-            inputType: TextInputType.number,
-            min: 576,
-            max: NetworkUtils.getMaxMtu(wan.ipv4ConnectionType),
-            onChanged: (value) {
-              final intVal = int.tryParse(value) ?? 0;
-              // 0 means Auto
-              if (intVal == 0 ||
-                  (576 <= intVal &&
-                      intVal <=
-                          NetworkUtils.getMaxMtu(wan.ipv4ConnectionType))) {
-                _errors.remove(isPrimary
-                    ? _primaryMTUSizeController
-                    : _secondaryMTUSizeController);
-              } else {
-                // invalid valude
-                _errors[isPrimary
-                    ? _primaryMTUSizeController
-                    : _secondaryMTUSizeController] = loc(context).invalidNumber;
-              }
-            },
-            onFocusChanged: (focus) {
-              if (!focus) {
-                final intVal = int.tryParse(isPrimary
-                        ? _primaryMTUSizeController.text
-                        : _secondaryMTUSizeController.text) ??
-                    0;
-                // 0 means Auto
-                if (intVal == 0 ||
-                    (576 <= intVal &&
-                        intVal <=
-                            NetworkUtils.getMaxMtu(wan.ipv4ConnectionType))) {
-                  onChanged(wan.copyWith(mtu: intVal));
-                }
-                setState(() {});
-              }
-            },
-          ),
+          // AppText.labelLarge(loc(context).mtu),
+          // AppTextField.minMaxNumber(
+          //   key: ValueKey('${isPrimary ? 'primary' : 'secondary'}MtuSizeText'),
+          //   controller: isPrimary
+          //       ? _primaryMTUSizeController
+          //       : _secondaryMTUSizeController,
+          //   errorText: _errors[isPrimary
+          //       ? _primaryMTUSizeController
+          //       : _secondaryMTUSizeController],
+          //   border: const OutlineInputBorder(),
+          //   inputType: TextInputType.number,
+          //   min: 576,
+          //   max: NetworkUtils.getMaxMtu(wan.ipv4ConnectionType),
+          //   onChanged: (value) {
+          //     final intVal = int.tryParse(value) ?? 0;
+          //     // 0 means Auto
+          //     if (intVal == 0 ||
+          //         (576 <= intVal &&
+          //             intVal <=
+          //                 NetworkUtils.getMaxMtu(wan.ipv4ConnectionType))) {
+          //       _errors.remove(isPrimary
+          //           ? _primaryMTUSizeController
+          //           : _secondaryMTUSizeController);
+          //     } else {
+          //       // invalid valude
+          //       _errors[isPrimary
+          //           ? _primaryMTUSizeController
+          //           : _secondaryMTUSizeController] = loc(context).invalidNumber;
+          //     }
+          //   },
+          //   onFocusChanged: (focus) {
+          //     if (!focus) {
+          //       final intVal = int.tryParse(isPrimary
+          //               ? _primaryMTUSizeController.text
+          //               : _secondaryMTUSizeController.text) ??
+          //           0;
+          //       // 0 means Auto
+          //       if (intVal == 0 ||
+          //           (576 <= intVal &&
+          //               intVal <=
+          //                   NetworkUtils.getMaxMtu(wan.ipv4ConnectionType))) {
+          //         onChanged(wan.copyWith(mtu: intVal));
+          //       }
+          //       setState(() {});
+          //     }
+          //   },
+          // ),
           const Divider(height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -871,6 +888,7 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
   Widget _connectionStatusCard() {
     final connectionStatus =
         ref.watch(dualWANSettingsProvider).connectionStatus;
+    final ports = ref.watch(dualWANSettingsProvider).ports;
     return AppInformationCard(
       headerIcon: Icon(Icons.show_chart),
       title: loc(context).connectionStatus,
@@ -905,6 +923,24 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
               ],
             ),
           ),
+          const Divider(height: 24),
+          AppText.bodyMedium(loc(context).routerPortLayout),
+          AppCard(
+              showBorder: false,
+              color: Theme.of(context).colorSchemeExt.surfaceContainerLow,
+              child: Column(
+                children: [
+                  AppText.bodyMedium(loc(context).backOfRouter),
+                  Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      spacing: Spacing.small2,
+                      children: ports
+                          .map((port) => _portWidget(
+                              port.speed, port.type, port.portNumber))
+                          .toList()),
+                ],
+              )),
           const AppGap.medium(),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -929,6 +965,46 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
     );
   }
 
+  Widget _portWidget(String? connection, PortType portType, [int? lanIndex]) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(Spacing.small2),
+          child: SvgPicture(
+            connection == null
+                ? CustomTheme.of(context).images.imgPortOff
+                : CustomTheme.of(context).images.imgPortOn,
+            semanticsLabel: 'port status image',
+            width: 40,
+            height: 40,
+            colorFilter: ColorFilter.mode(
+              portType.getDisplayColor(context),
+              BlendMode.srcIn,
+            ),
+          ),
+        ),
+        AppText.labelMedium('${portType.toDisplayString()}${lanIndex ?? ''}',
+            color: portType.getDisplayColor(context)),
+        if (connection != null)
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                LinksysIcons.bidirectional,
+                color: portType.getDisplayColor(context),
+                size: 16,
+              ),
+              AppText.bodySmall(connection,
+                  color: portType.getDisplayColor(context)),
+            ],
+          ),
+      ],
+    );
+  }
+
   Widget _speedAndDiagnosticsCard() {
     final speedStatus = ref.watch(dualWANSettingsProvider).speedStatus;
     return AppInformationCard(
@@ -943,15 +1019,17 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
             loc(context).testPrimaryWanSpeed,
             onTap: () {},
           ),
+          const AppGap.medium(),
           AppOutlinedButton.fillWidth(
             loc(context).testSecondaryWanSpeed,
             onTap: () {},
           ),
+          const AppGap.medium(),
           AppFilledButton.fillWidth(
             loc(context).testBothConnections,
             onTap: () {},
           ),
-          const AppGap.medium(),
+          const AppGap.large2(),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -982,17 +1060,16 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
     return AppInformationCard(
       title: loc(context).loggingAdvancedSettings,
       description: loc(context).loggingAdvancedSettingsDescription,
-      content: Wrap(
-        spacing: gutter,
-        runSpacing: gutter,
+      content: Column(
+        spacing: Spacing.large1,
         children: [
-          SizedBox(
-            width: twoColWidth - gutter,
+          AppCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
                 AppText.labelLarge(loc(context).loggingOptions),
+                const AppGap.medium(),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -1049,21 +1126,28 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
                     ),
                   ],
                 ),
+                const Divider(
+                  height: 24,
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: AppOutlinedButton.fillWidth(loc(context).viewLogs,
+                      onTap: () {
+                    // Log View
+                    context.pushNamed(RouteNamed.dualWANLog);
+                  }),
+                ),
               ],
             ),
           ),
-          SizedBox(
-            width: twoColWidth - gutter,
+          AppCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.start,
               spacing: Spacing.small2,
               children: [
                 AppText.labelLarge(loc(context).selfTestTools),
-                AppOutlinedButton.fillWidth(loc(context).dnsTestPrimaryWan,
-                    onTap: () {}),
-                AppOutlinedButton.fillWidth(loc(context).dnsTestSecondaryWan,
-                    onTap: () {}),
+                const AppGap.medium(),
                 AppOutlinedButton.fillWidth(loc(context).connectionHealthCheck,
                     onTap: () {}),
                 AppOutlinedButton.fillWidth(loc(context).failoverTest,
@@ -1071,6 +1155,7 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
               ],
             ),
           ),
+          _failoverWarningCard(),
         ],
       ),
     );

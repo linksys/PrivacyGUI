@@ -21,6 +21,7 @@ import 'package:privacy_gui/page/components/picker/region_picker_view.dart';
 import 'package:privacy_gui/page/components/settings_view/editable_card_list_edit_view.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/_ddns.dart';
+import 'package:privacy_gui/page/dual/dual_wan_log_view.dart';
 import 'package:privacy_gui/page/dual/dual_wan_settngs_view.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacy_gui/page/instant_device/views/select_device_view.dart';

@@ -1,12 +1,14 @@
 
+import 'package:privacy_gui/localization/localization_hook.dart';
+
 enum DualWANBalanceRatio {
   equalDistribution,
   favorPrimaryWAN;
 
   String toDisplayString(context) {
     return switch (this) {
-      DualWANBalanceRatio.equalDistribution => '1:1 - Eaual distribution (Default)',
-      DualWANBalanceRatio.favorPrimaryWAN => '4:1 - Favor primary WAN',
+      DualWANBalanceRatio.equalDistribution => loc(context).dualWanBalanceRatioEqual,
+      DualWANBalanceRatio.favorPrimaryWAN => loc(context).dualWanBalanceRatioFavorPrimary,
     };
   }
 

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 
+import 'package:privacy_gui/localization/localization_hook.dart';
+
 enum DualWANConnection {
   connected,
   disconnected,
@@ -13,9 +15,9 @@ enum DualWANConnection {
 
   String toDisplayString(BuildContext context) {
     return switch (this) {
-      DualWANConnection.connected => 'Connected',
-      DualWANConnection.disconnected => 'Disconnected',
-      DualWANConnection.active => 'Active',
+      DualWANConnection.connected => loc(context).dualWanConnectionConnected,
+      DualWANConnection.disconnected => loc(context).dualWanConnectionDisconnected,
+      DualWANConnection.active => loc(context).dualWanConnectionActive,
     };
   }
 

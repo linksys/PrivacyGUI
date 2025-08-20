@@ -1114,5 +1114,36 @@
   },
   "notEnoughInfoToLogin": "Not enough information to login",
   "endRemoteAssistance": "End Remote Assistance",
-  "endRemoteAssistanceDesc": "End remote assistance session?"
+  "endRemoteAssistanceDesc": "End remote assistance session?",
+  "dualWanLogsTitle": "Dual-WAN Logs",
+  "logFiltersAndActions": "Log Filters & Actions",
+  "filterAndManageDualWanLogs": "Filter and manage your dual-WAN system logs",
+  "exportLogs": "Export Logs",
+  "logEntries": "Log Entries",
+  "showingNLogEntries": "Showing {count} log entries",
+  "@showingNLogEntries": {
+    "description": "count",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "1"
+      }
+    }
+  },
+  "hideLoggingAndAdvancedSettings": "Hide Logging & Advanced Settings",
+  "showLoggingAndAdvancedSettings": "Show Logging & Advanced Settings",
+  "routerPortLayout": "Router Port Layout",
+  "backOfRouter": "Back of Router",
+  "viewLogs": "View Logs",
+  "errors": "Errors",
+  "warnings": "Warnings",
+  "allLogs": "All Logs",
+  "failoverEvents": "Failover Events",
+  "throughputData": "Throughput Data",
+  "speedTests": "Speed Tests",
+  "uptimeRecords": "Uptime Records",
+  "all": "all",
+  "failover": "failover",
+  "throughput": "throughput",
+  "source": "source"
 }

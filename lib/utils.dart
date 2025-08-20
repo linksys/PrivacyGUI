@@ -28,6 +28,26 @@ import '../../../util/get_log_selector/get_log_base.dart'
     if (dart.library.html) '../../../util/get_log_selector/get_log_web.dart';
 
 class Utils {
+  static Future export(BuildContext context,
+      {required String content,
+      required String fileName,
+      String? text,
+      String? subject}) async {
+    await exportFile(
+      content: content,
+      fileName: fileName,
+      text: text ?? 'Linksys Log',
+      subject: subject ?? 'Log file',
+    ).then((result) {
+      if (result?.status == ShareResultStatus.success && !kIsWeb) {
+        Storage.deleteFile(Storage.logFileUri);
+        Storage.createLoggerFile();
+      }
+      showSnackBar(context,
+          content: Text("${text ?? 'Linksys Log'} exported - $fileName"));
+    });
+  }
+
   static Future exportLogFile(BuildContext context) async {
     final content = await getLog(context);
     final String shareLogFilename =

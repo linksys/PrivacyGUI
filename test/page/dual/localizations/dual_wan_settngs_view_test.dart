@@ -1,23 +1,14 @@
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
-import 'package:privacy_gui/core/jnap/providers/firmware_update_state.dart';
 import 'package:privacy_gui/page/dual/dual_wan_settngs_view.dart';
 import 'package:privacy_gui/page/dual/models/balance_ratio.dart';
 import 'package:privacy_gui/page/dual/models/mode.dart';
 import 'package:privacy_gui/page/dual/providers/dual_wan_settings_provider.dart';
-import 'package:privacy_gui/page/firmware_update/views/firmware_update_detail_view.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:get_it/get_it.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:privacy_gui/di.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/card/information_card.dart';
-import 'package:privacygui_widgets/widgets/input_field/app_text_field.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 
 import '../../../common/config.dart';
@@ -407,44 +398,6 @@ void main() {
       await tester.pumpAndSettle();
     }, screens: screenList);
 
-    testLocalizations('Dual WAN Settings View - primary WAN - invalid MTU',
-        (tester, locale) async {
-      when(mockDualWANSettingsNotifier.build()).thenReturn(
-          testDualWANSettingsState.copyWith(
-              primaryWAN: testDualWANSettingsState.primaryWAN.copyWith(
-                  ipv4ConnectionType: 'Static',
-                  staticIpAddress: () => '10.123.1.89',
-                  networkPrefixLength: () => 24,
-                  staticGateway: () => '10.123.1.1',
-                  staticDns1: () => '8.8.8.8')));
-      when(mockDualWANSettingsNotifier.fetch()).thenAnswer((_) async {
-        await Future.delayed(const Duration(seconds: 1));
-        return testDualWANSettingsState.copyWith(
-            primaryWAN: testDualWANSettingsState.primaryWAN.copyWith(
-                ipv4ConnectionType: 'Static',
-                staticIpAddress: () => '10.123.1.89',
-                networkPrefixLength: () => 24,
-                staticGateway: () => '10.123.1.1',
-                staticDns1: () => '8.8.8.8'));
-      });
-      final widget = testableWidget(locale);
-
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
-
-      final mtuFieldFinder = find.byKey(ValueKey('primaryMtuSizeText'));
-
-      final ipFieldFinder = find.byType(AppIPFormField);
-      final primaryStaticIpFormFieldFinder = ipFieldFinder.at(0);
-
-      await tester.enterText(mtuFieldFinder.last, '5');
-      await tester.tap(find
-          .descendant(
-              of: primaryStaticIpFormFieldFinder,
-              matching: find.byType(TextFormField))
-          .first);
-      await tester.pumpAndSettle();
-    }, screens: screenList);
   });
 
   group('Dual WAN Settings View - secondary WAN', () {
@@ -744,45 +697,6 @@ void main() {
       await tester.tap(secondaryPPTPUsernameFormFieldFinder);
       await tester.pumpAndSettle();
     }, screens: screenList);
-
-    testLocalizations('Dual WAN Settings View - secondary WAN - invalid MTU',
-        (tester, locale) async {
-      when(mockDualWANSettingsNotifier.build()).thenReturn(
-          testDualWANSettingsState.copyWith(
-              secondaryWAN: testDualWANSettingsState.secondaryWAN.copyWith(
-                  ipv4ConnectionType: 'Static',
-                  staticIpAddress: () => '10.123.1.89',
-                  networkPrefixLength: () => 24,
-                  staticGateway: () => '10.123.1.1',
-                  staticDns1: () => '8.8.8.8')));
-      when(mockDualWANSettingsNotifier.fetch()).thenAnswer((_) async {
-        await Future.delayed(const Duration(seconds: 1));
-        return testDualWANSettingsState.copyWith(
-            secondaryWAN: testDualWANSettingsState.secondaryWAN.copyWith(
-                ipv4ConnectionType: 'Static',
-                staticIpAddress: () => '10.123.1.89',
-                networkPrefixLength: () => 24,
-                staticGateway: () => '10.123.1.1',
-                staticDns1: () => '8.8.8.8'));
-      });
-      final widget = testableWidget(locale);
-
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
-
-      final mtuFieldFinder = find.byKey(ValueKey('secondaryMtuSizeText'));
-
-      final ipFieldFinder = find.byType(AppIPFormField);
-      final secondaryStaticIpFormFieldFinder = ipFieldFinder.at(1);
-
-      await tester.enterText(mtuFieldFinder.last, '5');
-      await tester.tap(find
-          .descendant(
-              of: secondaryStaticIpFormFieldFinder,
-              matching: find.byType(TextFormField))
-          .first);
-      await tester.pumpAndSettle();
-    }, screens: screenList);
   });
 
   group('Dual WAN Settings View - logging options', () {
@@ -808,6 +722,16 @@ void main() {
 
       await tester.pumpWidget(widget);
       await tester.pumpAndSettle();
+
+      final toggleLoggingAndAdvancedSettingsButtonFinder =
+          find.byKey(const ValueKey('toggleLoggingAndAdvancedSettings'));
+
+      await tester.tap(toggleLoggingAndAdvancedSettingsButtonFinder);
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(toggleLoggingAndAdvancedSettingsButtonFinder,
+          10, scrollable: find.byType(Scrollable).last);
+      await tester.pumpAndSettle();
     }, screens: screenList);
 
     testLocalizations('Dual WAN Settings View - logging options - enabled',
@@ -831,6 +755,16 @@ void main() {
       final widget = testableWidget(locale);
 
       await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+
+      final toggleLoggingAndAdvancedSettingsButtonFinder =
+          find.byKey(const ValueKey('toggleLoggingAndAdvancedSettings'));
+
+      await tester.tap(toggleLoggingAndAdvancedSettingsButtonFinder);
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(toggleLoggingAndAdvancedSettingsButtonFinder,
+          10, scrollable: find.byType(Scrollable).last);
       await tester.pumpAndSettle();
     }, screens: screenList);
   });
