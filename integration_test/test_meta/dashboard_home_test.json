@@ -1,7 +1,7 @@
 {
-    "name": "Test behaviors on Dashboard",
+    "name": "Dashboard Home",
     "target": "integration_test/dashboard_home_test.dart",
-    "description": "Check all functions on Dashboard page",
+    "description": "Test the outer-layer functions of the dashboard home, including Devices, Privacy, Speed Test, and Wi-Fi",
     "setUp":  ["factory_reset", "skip_setup"],
     "tearDown": [],
     "tags": ["dashboard"]

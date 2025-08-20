@@ -1,7 +1,7 @@
 {
     "name": "Recovery with New Password and Login",
     "target": "integration_test/recovery_and_login_test.dart",
-    "description": "Recovery with New Password and Login",
+    "description": "Test the forgot password flow and login with new password",
     "setUp":  ["skip_setup"],
     "tearDown": ["reset_password", "factory_reset"],
     "tags": ["login", "recovery"],
