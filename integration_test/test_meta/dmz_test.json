@@ -1,7 +1,7 @@
 {
-    "name": "Test behaviors on Advanced Settings - DMZ",
+    "name": "Advanced Settings - DMZ",
     "target": "integration_test/dmz_test.dart",
-    "description": "Execute all the functions on the page and verify that the new data has been synced",
+    "description": "Enable the DMZ function, and manage the IP address and MAC address",
     "setUp":  ["factory_reset", "skip_setup"],
     "tearDown": [],
     "tags": ["dmz", "advanced_settings", "menu"]

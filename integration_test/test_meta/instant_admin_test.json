@@ -1,7 +1,7 @@
 {
-    "name": "Test behaviors on Instant Admin",
+    "name": "Instant Admin",
     "target": "integration_test/instant_admin_test.dart",
-    "description": "Execute all the functions on the page and verify that the new data has been synced",
+    "description": "Change the admin password, time zone, and set manual firmware update",
     "setUp":  ["factory_reset", "skip_setup"],
     "tearDown": [],
     "tags": ["admin", "menu"],
