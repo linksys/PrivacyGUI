@@ -19,11 +19,17 @@ initialize_results() {
         rm "$RESULTS_FILE"
     fi
 
+    # Record the start time of the test suite
+    TEST_START_TIME=$(date +%s)
+    FILE_PATH=$(date -r "$TEST_START_TIME" +"%Y-%m-%d")
+    FILE_SUFFIX=$(date -r "$TEST_START_TIME" +"%Y-%m-%d_%H-%M-%S")
+
     # Use jq to initialize the JSON structure and write to the file
-    jq -n --arg d "$description" --arg f "$filePath" --arg t "$totalCount" \
+    jq -n --arg d "$description" --arg f "$filePath" --arg t "$totalCount" --arg ts "$TEST_START_TIME" --arg fp "$FILE_PATH" --arg fs "$FILE_SUFFIX" \
         '{
             "description": $d,
             "filePath": $f,
+            "timestamp": $ts,
             "total_count": $t,
             "deviceInfo": {
                 "description": "",
@@ -32,11 +38,13 @@ initialize_results() {
                 "hardwareVersion": "",
                 "uiVersion": ""
             },
+            "pathInfo": {
+                "path": $fp,
+                "suffix": $fs
+            },
             "success": [],
             "fail": []
         }' > "$RESULTS_FILE"
-    # Record the start time of the test suite
-    TEST_START_TIME=$(date +%s)
 }
 
 # --- Function: Update device information in the JSON file ---
@@ -51,10 +59,11 @@ update_device_info() {
     local firmware="$3"
     local hardware="$4"
     local uiVersion="$5"
+    local wired="$6"
     
     # Use jq to update the deviceInfo object
-    jq --arg d "$desc" --arg m "$model" --arg f "$firmware" --arg h "$hardware" --arg ui "$uiVersion" \
-       '.deviceInfo = { "description": $d, "modelNumber": $m, "firmwareVersion": $f, "hardwareVersion": $h, "uiVersion": $ui }' \
+    jq --arg d "$desc" --arg m "$model" --arg f "$firmware" --arg h "$hardware" --arg ui "$uiVersion" --arg w "$wired" \
+       '.deviceInfo = { "description": $d, "modelNumber": $m, "firmwareVersion": $f, "hardwareVersion": $h, "uiVersion": $ui, "wired": $w }' \
        "$RESULTS_FILE" > "$RESULTS_FILE.tmp" && mv "$RESULTS_FILE.tmp" "$RESULTS_FILE"
 }
 
