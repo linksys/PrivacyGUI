@@ -44,12 +44,10 @@ FIRMWARE_VERSION=$(jq -r '.deviceInfo.firmwareVersion' "$JSON_FILE")
 HARDWARE_VERSION=$(jq -r '.deviceInfo.hardwareVersion' "$JSON_FILE")
 UI_VERSION=$(jq -r '.deviceInfo.uiVersion' "$JSON_FILE")
 
-# --- 從 JSON 檔案中讀取 timestamp ---
 TIMESTAMP_RAW=$(jq -r '.timestamp' "$JSON_FILE")
 echo "TIMESTAMP_RAW: $TIMESTAMP_RAW"
 if [[ "$TIMESTAMP_RAW" =~ ^[0-9]+$ ]]; then
     SECONDS_EPOCH=$(echo "$TIMESTAMP_RAW" | bc)
-    
     TIMESTAMP=$(date -r "$SECONDS_EPOCH" +"%Y-%m-%d_%H-%M-%S")
     echo "TIMESTAMP: $TIMESTAMP"
 else
