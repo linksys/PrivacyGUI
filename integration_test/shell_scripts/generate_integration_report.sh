@@ -1,14 +1,32 @@
 #!/bin/bash
 
-# Define the JSON input file and the HTML output file
+# Define the JSON input file
 JSON_FILE="./build/integration_test/test_results.json"
-HTML_FILE="./build/integration_test/test_report.html"
 
 # Check if the JSON file exists
 if [ ! -f "$JSON_FILE" ]; then
     echo "Error: JSON file '$JSON_FILE' not found."
     exit 1
 fi
+
+# --- Function: Convert seconds to HH:mm:ss format ---
+format_seconds() {
+  local total_seconds=$1
+  
+  # Use bc to handle floating-point arithmetic
+  if (( $(echo "$total_seconds < 0" | bc -l) )); then
+    echo "00:00:00"
+    return
+  fi
+  
+  # Convert to integer for format calculation
+  local int_seconds=$(echo "$total_seconds / 1" | bc)
+  
+  local hours=$((int_seconds / 3600))
+  local minutes=$(( (int_seconds % 3600) / 60 ))
+  local seconds=$(( int_seconds % 60 ))
+  printf "%02d:%02d:%02d\n" $hours $minutes $seconds
+}
 
 # Use jq to extract data from the JSON file
 DESCRIPTION=$(jq -r '.description' "$JSON_FILE")
@@ -17,19 +35,59 @@ TOTAL_COUNT=$(jq -r '.total_count' "$JSON_FILE")
 SUCCESS_COUNT=$(jq -r '.success | length' "$JSON_FILE")
 FAIL_COUNT=$(jq -r '.fail | length' "$JSON_FILE")
 TOTAL_TIME_COST=$(jq -r '.total_time_cost' "$JSON_FILE")
+WIRED_STATUS=$(jq -r '.deviceInfo.wired' "$JSON_FILE")
 
 # Extract device information
 DEVICE_DESC=$(jq -r '.deviceInfo.description' "$JSON_FILE")
 MODEL_NUMBER=$(jq -r '.deviceInfo.modelNumber' "$JSON_FILE")
 FIRMWARE_VERSION=$(jq -r '.deviceInfo.firmwareVersion' "$JSON_FILE")
 HARDWARE_VERSION=$(jq -r '.deviceInfo.hardwareVersion' "$JSON_FILE")
-UI_VERSION=$(jq -r '.deviceInfo.uiVersion' "$JSON_FILE") # 新增：提取 UI 版本
+UI_VERSION=$(jq -r '.deviceInfo.uiVersion' "$JSON_FILE")
 
-# Generate timestamp for the filename and title
-TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
+# --- 從 JSON 檔案中讀取 timestamp ---
+TIMESTAMP_RAW=$(jq -r '.timestamp' "$JSON_FILE")
+echo "TIMESTAMP_RAW: $TIMESTAMP_RAW"
+if [[ "$TIMESTAMP_RAW" =~ ^[0-9]+$ ]]; then
+    SECONDS_EPOCH=$(echo "$TIMESTAMP_RAW" | bc)
+    
+    TIMESTAMP=$(date -r "$SECONDS_EPOCH" +"%Y-%m-%d_%H-%M-%S")
+    echo "TIMESTAMP: $TIMESTAMP"
+else
+    echo "Warning: 'timestamp' key not found or is not a millisecond timestamp. Using current time as fallback." >&2
+    TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
+fi
 
 # Create the dynamic HTML filename
 HTML_FILE="./build/integration_test/test_report_${MODEL_NUMBER}_${TIMESTAMP}.html"
+
+# Determine connection type based on wired status
+if [[ "$WIRED_STATUS" == "true" ]]; then
+    CONNECTION_TYPE="Wired"
+else
+    CONNECTION_TYPE="Wireless"
+fi
+
+# --- Format Total Time Cost ---
+TOTAL_TIME_COST_FORMATTED=$(format_seconds "$TOTAL_TIME_COST")
+
+# --- Success Cases ---
+SUCCESS_ROWS=$(jq -c '.success[]' "$JSON_FILE" | while IFS= read -r line; do
+  test_name=$(echo "$line" | jq -r '.name')
+  description=$(echo "$line" | jq -r '.description')
+  time_cost=$(echo "$line" | jq -r '.time_cost')
+  formatted_time_cost=$(format_seconds "$time_cost")
+  printf "<tr class=\"success-row\"><td>%s</td><td>%s</td><td>%s</td></tr>\n" "$test_name" "$description" "$formatted_time_cost"
+done)
+
+# --- Fail Cases ---
+FAIL_ROWS=$(jq -c '.fail[]' "$JSON_FILE" | while IFS= read -r line; do
+  test_name=$(echo "$line" | jq -r '.name')
+  description=$(echo "$line" | jq -r '.description')
+  error_message=$(echo "$line" | jq -r '.error_message')
+  time_cost=$(echo "$line" | jq -r '.time_cost')
+  formatted_time_cost=$(format_seconds "$time_cost")
+  printf "<tr class=\"fail-row\"><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>\n" "$test_name" "$description" "$error_message" "$formatted_time_cost"
+done)
 
 # Generate the HTML file using a 'here document'
 cat > "$HTML_FILE" << EOF
@@ -62,7 +120,7 @@ cat > "$HTML_FILE" << EOF
         <h1>${MODEL_NUMBER} Test Report - ${TIMESTAMP}</h1>
         <p><strong>Description:</strong> $DESCRIPTION</p>
         <p><strong>File Path:</strong> $FILE_PATH</p>
-        <p><strong>Total Time Cost:</strong> $TOTAL_TIME_COST seconds</p>
+        <p><strong>Total Time Cost:</strong> $TOTAL_TIME_COST_FORMATTED</p>
 
         <div class="device-info">
             <h2>Device Information</h2>
@@ -71,6 +129,7 @@ cat > "$HTML_FILE" << EOF
             <p><strong>Firmware Version:</strong> $FIRMWARE_VERSION</p>
             <p><strong>Hardware Version:</strong> $HARDWARE_VERSION</p>
             <p><strong>UI Version:</strong> $UI_VERSION</p>
+            <p><strong>Connection:</strong> $CONNECTION_TYPE</p>
         </div>
 
         <hr style="margin: 2rem 0;">
@@ -92,7 +151,7 @@ cat > "$HTML_FILE" << EOF
                     </tr>
                 </thead>
                 <tbody>
-$(jq -r '.success[] | "<tr class=\"success-row\"><td>\(.name)</td><td>\(.description)</td><td>\(.time_cost)</td></tr>"' "$JSON_FILE")
+$SUCCESS_ROWS
                 </tbody>
             </table>
         </div>
@@ -109,7 +168,7 @@ $(jq -r '.success[] | "<tr class=\"success-row\"><td>\(.name)</td><td>\(.descrip
                     </tr>
                 </thead>
                 <tbody>
-$(jq -r '.fail[] | "<tr class=\"fail-row\"><td>\(.name)</td><td>\(.description)</td><td>\(.error_message)</td><td>\(.time_cost)</td></tr>"' "$JSON_FILE")
+$FAIL_ROWS
                 </tbody>
             </table>
         </div>
