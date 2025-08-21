@@ -43,18 +43,18 @@ void main() {
   });
 
   testWidgets('Instant admin - Log in and enter dashboard', (tester) async {
-      // Load app widget.
-      await tester.pumpFrames(app(), Duration(seconds: 5));
-      // Log in
-      final login = TestLocalLoginActions(tester);
-      await login.inputPassword(IntegrationTestConfig.password);
-      expect(
-        IntegrationTestConfig.password,
-        tester.getText(find.byType(AppPasswordField)),
-      );
-      // Log in and enter the dashboard screen
-      await login.tapLoginButton();
-    });
+    // Load app widget.
+    await tester.pumpFrames(app(), Duration(seconds: 5));
+    // Log in
+    final login = TestLocalLoginActions(tester);
+    await login.inputPassword(IntegrationTestConfig.password);
+    expect(
+      IntegrationTestConfig.password,
+      tester.getText(find.byType(AppPasswordField)),
+    );
+    // Log in and enter the dashboard screen
+    await login.tapLoginButton();
+  });
 
   testWidgets('Instant admin - operations', (tester) async {
     await tester.pumpFrames(app(), Duration(seconds: 5));
@@ -70,13 +70,20 @@ void main() {
     final previousAutoUpdateValue = adminActions.isAutoUpdateEnabled();
     // Switch auto firmware update
     await adminActions.toggleAutoFirmwareUpdateSwitch();
+    // Re-enter Instant Admin screen
+    await adminActions.tapBackButton();
+    await menuActions.enterAdminPage();
+    // Verify updated values
+    // Auto firmware update
+    final currentAutoUpdateValue = adminActions.isAutoUpdateEnabled();
+    expect(previousAutoUpdateValue, isNot(currentAutoUpdateValue));
     // Check manual firmware update screen
     await adminActions.tapManualUpdateButton();
     await adminActions.tapBackButton();
     // Hide&Show password
     await adminActions.tapPasswordEyeButton();
     await adminActions.tapPasswordEyeButton();
-    
+
     // Start changing admin password
     // Open the edit password dialog
     await adminActions.tapEditPasswordTappableArea();
@@ -99,22 +106,23 @@ void main() {
 
     // Enter time zone selection screen
     await adminActions.tapTimezoneTappableArea();
+    // Check the auto daylight saving switch with not supported DST
+    // Select the specific time zone value - Singapore, Taiwan, Russia GMT+8:00 (Not support daylight savings time)
+    await adminActions.selectSingaporeTaiwanRussiaTimeZone();
+    expect(adminActions.isAutoDaylightSavingEnabled(), false);
+    // Select the specific time zone value - Australia GMT+10:00 (support daylight savings time)
+    await adminActions.selectAustraliaTimeZone();
     // Record the current status of auto daylight saving
     final previousAutoDaylightSavingValue =
         adminActions.isAutoDaylightSavingEnabled();
     // Toggle the auto daylight saving
     await adminActions.toggleDaylightSavingSwitch();
-    // Select the specific time zone value - Australia GMT+10:00 (support daylight savings time)
-    await adminActions.selectAustraliaTimeZone();
     // Save time zone settings
     await adminActions.tapSaveButton();
     // Re-enter Instant Admin screen
     await adminActions.tapBackButton();
     await menuActions.enterAdminPage();
     // Verify updated values
-    // Auto firmware update
-    final currentAutoUpdateValue = adminActions.isAutoUpdateEnabled();
-    expect(previousAutoUpdateValue, isNot(currentAutoUpdateValue));
     // Enter time zone selection screen
     await adminActions.tapTimezoneTappableArea();
     // Time zone and auto daylight savings time

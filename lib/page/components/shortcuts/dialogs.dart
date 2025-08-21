@@ -23,22 +23,39 @@ Future<T?> doSomethingWithSpinner<T>(
   List<String>? messages,
   Duration? period,
 }) async {
+  NavigatorState? navigator;
+  final completer = Completer();
   Future.delayed(
       Duration.zero,
-      () => showAppSpinnerDialog(
+      () {
+        try {
+          navigator = Navigator.of(context, rootNavigator: true);
+          showAppSpinnerDialog(
             context,
             title: title,
             icon: icon,
             messages: messages ?? [loc(context).processing],
             period: period,
-          ));
+          );
+        } catch (e) {
+          logger.w('Could not show spinner dialog: $e');
+        }
+        completer.complete();
+      });
+
+  await completer.future;
   await Future.delayed(Duration(milliseconds: 100));
   return task.then((value) {
-    context.pop();
     return value;
   }).onError((error, stackTrace) {
-    context.pop();
     throw error ?? '';
+  }).whenComplete(() {
+    try {
+      navigator?.pop();
+    } catch (e) {
+      logger.w(
+          'doSomethingWithSpinner failed to pop. This might be intentional if the caller pops a page. Error: $e');
+    }
   });
 }
 
