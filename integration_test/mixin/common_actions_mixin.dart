@@ -15,8 +15,7 @@ mixin CommonActionsMixin on BaseActions {
     );
     expect(backButtonFinder, findsOneWidget);
     // Tap the back button
-    await tester.tap(backButtonFinder);
-    await tester.pumpAndSettle();
+    await scrollAndTap(backButtonFinder);
   }
 
   Future<void> scrollUntil(Finder finder) async {

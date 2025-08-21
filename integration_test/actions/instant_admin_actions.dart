@@ -99,7 +99,19 @@ class TestInstantAdminActions extends CommonBaseActions {
   }
 
   Finder australiaTimeZoneCardFinder() {
-    final textFinder = find.text('Australia');
+    final textFinder = find.text(loc(getContext()).australia);
+    final cardFinder = find
+        .ancestor(
+          of: textFinder,
+          matching: find.byType(AppCard),
+        )
+        .first;
+    expect(cardFinder, findsOneWidget);
+    return cardFinder;
+  }
+
+  Finder singaporeTaiwanRussiaTimeZoneCardFinder() {
+    final textFinder = find.text(loc(getContext()).timezoneSingaporeTaiwanRussia);
     final cardFinder = find
         .ancestor(
           of: textFinder,
@@ -111,7 +123,7 @@ class TestInstantAdminActions extends CommonBaseActions {
   }
 
   Finder australiaTimezoneCheckIconFinder() {
-    final textFinder = find.text('Australia');
+    final textFinder = find.text(loc(getContext()).australia);
     final card = find
         .ancestor(
           of: textFinder,
@@ -147,24 +159,21 @@ class TestInstantAdminActions extends CommonBaseActions {
     // Find auto update switch
     final switchFinder = autoUpdateSwitchFinder();
     // Toggle the switch
-    await tester.tap(switchFinder);
-    await tester.pumpAndSettle();
+    await scrollAndTap(switchFinder);
   }
 
   Future<void> tapManualUpdateButton() async {
     // Find manual update button
     final buttonFinder = manualUpdateButtonFinder();
     // Tap the button
-    await tester.tap(buttonFinder);
-    await tester.pumpAndSettle();
+    await scrollAndTap(buttonFinder);
   }
 
   Future<void> tapPasswordEyeButton() async {
     // Find password eye button
     final buttonFinder = passwordEyeButtonFinder();
     // Tap the button
-    await tester.tap(buttonFinder);
-    await tester.pumpAndSettle();
+    await scrollAndTap(buttonFinder);
   }
 
   Future<void> inputNewPassword(String adminPassword) async {
@@ -196,37 +205,43 @@ class TestInstantAdminActions extends CommonBaseActions {
 
   Future<void> tapEditPasswordSaveButton() async {
     final saveButton = editPasswordSaveButtonFinder();
-    await tester.tap(saveButton);
-    await tester.pumpAndSettle();
+    await scrollAndTap(saveButton);
   }
 
   Future<void> tapEditPasswordTappableArea() async {
     // Find edit password tappable
     final editPasswordFinder = editPasswordTappableFinder();
     // Tap the edit password
-    await tester.tap(editPasswordFinder);
-    await tester.pumpAndSettle();
+    await scrollAndTap(editPasswordFinder);
   }
 
   Future<void> tapTimezoneTappableArea() async {
     // Find time zone tappable
     final timezoneTappableFinder = editTimezoneTappableFinder();
     // Tap the time zone
-    await tester.tap(timezoneTappableFinder);
-    await tester.pumpAndSettle();
+    await scrollAndTap(timezoneTappableFinder);
   }
 
   Future<void> toggleDaylightSavingSwitch() async {
     // Find daylight saving switch
     final switchFinder = daylightSavingSwitchFinder();
     // Toggle the switch
-    await tester.tap(switchFinder);
-    await tester.pumpAndSettle();
+    await scrollAndTap(switchFinder);
   }
 
   Future<void> selectAustraliaTimeZone() async {
     // Find Australia time zone
     final cardFinder = australiaTimeZoneCardFinder();
+    // Scroll the screen
+    await scrollUntil(cardFinder);
+    // Tap the time zone
+    await tester.tap(cardFinder);
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> selectSingaporeTaiwanRussiaTimeZone() async {
+    // Find Singapore Taiwan Russia time zone
+    final cardFinder = singaporeTaiwanRussiaTimeZoneCardFinder();
     // Scroll the screen
     await scrollUntil(cardFinder);
     // Tap the time zone
