@@ -21,9 +21,11 @@ initialize_results() {
 
     # Record the start time of the test suite
     TEST_START_TIME=$(date +%s)
+    FILE_PATH=$(date -r "$TEST_START_TIME" +"%Y-%m-%d")
+    FILE_SUFFIX=$(date -r "$TEST_START_TIME" +"%Y-%m-%d_%H-%M-%S")
 
     # Use jq to initialize the JSON structure and write to the file
-    jq -n --arg d "$description" --arg f "$filePath" --arg t "$totalCount" --arg ts "$TEST_START_TIME" \
+    jq -n --arg d "$description" --arg f "$filePath" --arg t "$totalCount" --arg ts "$TEST_START_TIME" --arg fp "$FILE_PATH" --arg fs "$FILE_SUFFIX" \
         '{
             "description": $d,
             "filePath": $f,
@@ -35,6 +37,10 @@ initialize_results() {
                 "firmwareVersion": "",
                 "hardwareVersion": "",
                 "uiVersion": ""
+            },
+            "pathInfo": {
+                "path": $fp,
+                "suffix": $fs
             },
             "success": [],
             "fail": []
