@@ -8,8 +8,8 @@ final homeRoute = LinksysRoute(
   ),
   builder: (context, state) => const HomeView(),
   routes: [
-    cloudLoginRoute,
-    cloudRALoginRoute,
+    // cloudLoginRoute,
+    // cloudRALoginRoute,
     //setupRoute
   ],
 );

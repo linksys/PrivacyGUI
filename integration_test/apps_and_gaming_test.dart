@@ -38,7 +38,7 @@ void main() {
     });
 
     testWidgets('Apps and Gaming - DDNS operations', (tester) async {
-      await tester.pumpFrames(app(), Duration(seconds: 3));
+      await tester.pumpFrames(app(), Duration(seconds: 5));
       // Enter the menu screen
       final topbarActions = TestTopbarActions(tester);
       await topbarActions.tapMenuButton();
@@ -74,7 +74,7 @@ void main() {
 
     testWidgets('Apps and Gaming - Single port forwarding operations',
         (tester) async {
-      await tester.pumpFrames(app(), Duration(seconds: 3));
+      await tester.pumpFrames(app(), Duration(seconds: 5));
       // Enter the menu screen
       final topbarActions = TestTopbarActions(tester);
       await topbarActions.tapMenuButton();
@@ -124,7 +124,7 @@ void main() {
 
     testWidgets('Apps and Gaming - Port range forwarding operations',
         (tester) async {
-      await tester.pumpFrames(app(), Duration(seconds: 3));
+      await tester.pumpFrames(app(), Duration(seconds: 5));
       // Enter the menu screen
       final topbarActions = TestTopbarActions(tester);
       await topbarActions.tapMenuButton();
@@ -172,7 +172,7 @@ void main() {
 
     testWidgets('Apps and Gaming - Port range triggering operations',
         (tester) async {
-      await tester.pumpFrames(app(), Duration(seconds: 3));
+      await tester.pumpFrames(app(), Duration(seconds: 5));
       // Enter the menu screen
       final topbarActions = TestTopbarActions(tester);
       await topbarActions.tapMenuButton();

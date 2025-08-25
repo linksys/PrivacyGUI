@@ -1,9 +1,6 @@
-import 'dart:math';
 import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pin_code_fields/pin_code_fields.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/main.dart';
@@ -14,6 +11,7 @@ import 'package:privacy_gui/page/dashboard/views/components/networks.dart';
 import 'package:privacy_gui/page/dashboard/views/components/quick_panel.dart';
 import 'package:privacy_gui/page/dashboard/views/components/wifi_grid.dart';
 import 'package:privacy_gui/page/instant_topology/views/widgets/tree_node_item.dart';
+import 'package:privacy_gui/page/instant_verify/views/components/speed_test_widget.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_item.dart';
 import 'package:privacy_gui/page/wifi_settings/views/wifi_term_titles.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
@@ -42,6 +40,7 @@ part 'instant_devices_actions.dart';
 part 'advanced_settings_actions.dart';
 part 'instant_verify_actions.dart';
 part 'external_speed_test_actions.dart';
+part 'speed_test_actions.dart';
 part 'add_nodes_actions.dart';
 part 'pnp_setup_actions.dart';
 part 'prepair_pnp_setup_actions.dart';
@@ -55,6 +54,7 @@ part 'administration_actions.dart';
 part 'local_network_settings_actions.dart';
 part 'dhcp_reservation_actions.dart';
 part 'internet_settings_actions.dart';
+part 'dmz_actions.dart';
 
 abstract class BaseActions {
   final WidgetTester tester;
@@ -82,14 +82,18 @@ sealed class CommonBaseActions extends BaseActions with CommonActionsMixin {
       TestAdvancedSettingsActions() => loc(context).advancedSettings,
       TestInstantVerifyActions() => loc(context).instantVerify,
       TestExternalSpeedTestActions() => loc(context).externalSpeedText,
+      TestSpeedTestActions() => loc(context).speedTest,
       TestAddNodesActions() => loc(context).addNodes,
       TestAdvancedRoutingActions() => loc(context).advancedRouting,
       TestFirewallActions() => loc(context).firewall,
       TestAppsAndGamingActions() => loc(context).appsGaming,
-      TestAdministrationActions() => loc(context).administration,
       TestLocalNetworkSettingsActions() => loc(context).localNetwork,
-      TestDHCPReservationActions() => loc(context).dhcpReservations.capitalizeWords(),
-      TestInternetSettingsActions() => loc(context).internetSettings.capitalizeWords(),
+      TestAdministrationActions() => loc(context).administration,
+      TestDmzActions() => loc(context).dmz,
+      TestDHCPReservationActions() =>
+        loc(context).dhcpReservations.capitalizeWords(),
+      TestInternetSettingsActions() =>
+        loc(context).internetSettings.capitalizeWords(),
       // TODO: Handle this case.
       TestPnpSetupActions() => throw UnimplementedError(),
       // TODO: Handle this case.
@@ -98,6 +102,4 @@ sealed class CommonBaseActions extends BaseActions with CommonActionsMixin {
       TestTopbarActions() => throw UnimplementedError(),
     };
   }
-
-  
 }

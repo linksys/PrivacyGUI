@@ -69,7 +69,7 @@ void main() {
     testWidgets('Incredible Wifi - Test 2.4 GHz wifi name ande password',
         (tester) async {
       // Load app widget.
-      await tester.pumpFrames(app(), Duration(seconds: 3));
+      await tester.pumpFrames(app(), Duration(seconds: 5));
       if (wifiBands.contains('2.4')) {
         // Enter the menu page
         final topbarActions = TestTopbarActions(tester);
@@ -103,7 +103,7 @@ void main() {
     testWidgets('Incredible Wifi - Test 5 GHz wifi name ande password',
         (tester) async {
       // Load app widget.
-      await tester.pumpFrames(app(), Duration(seconds: 3));
+      await tester.pumpFrames(app(), Duration(seconds: 5));
       if (wifiBands.contains('5')) {
         // Enter the menu page
         final topbarActions = TestTopbarActions(tester);
@@ -137,7 +137,7 @@ void main() {
     testWidgets('Incredible Wifi - Test 6 GHz wifi name ande password',
         (tester) async {
       // Load app widget.
-      await tester.pumpFrames(app(), Duration(seconds: 3));
+      await tester.pumpFrames(app(), Duration(seconds: 5));
       if (wifiBands.contains('6')) {
         // Enter the menu page
         final topbarActions = TestTopbarActions(tester);
@@ -171,7 +171,7 @@ void main() {
     testWidgets('Incredible Wifi - Test guest wifi name ande password',
         (tester) async {
       // Load app widget.
-      await tester.pumpFrames(app(), Duration(seconds: 3));
+      await tester.pumpFrames(app(), Duration(seconds: 5));
       if (wifiBands.contains('guest')) {
         // Enter the menu page
         final topbarActions = TestTopbarActions(tester);
@@ -204,7 +204,7 @@ void main() {
 
     testWidgets('Incredible Wifi - Test 2.4 GHz wifi settings', (tester) async {
       // Load app widget.
-      await tester.pumpFrames(app(), Duration(seconds: 3));
+      await tester.pumpFrames(app(), Duration(seconds: 5));
       if (wifiBands.contains('2.4')) {
         // Enter the menu page
         final topbarActions = TestTopbarActions(tester);
@@ -259,7 +259,7 @@ void main() {
 
     testWidgets('Incredible Wifi - Test 5 GHz wifi settings', (tester) async {
       // Load app widget.
-      await tester.pumpFrames(app(), Duration(seconds: 3));
+      await tester.pumpFrames(app(), Duration(seconds: 5));
       if (wifiBands.contains('5')) {
         // Enter the menu page
         final topbarActions = TestTopbarActions(tester);
@@ -314,7 +314,7 @@ void main() {
 
     testWidgets('Incredible Wifi - Test 6 GHz wifi settings', (tester) async {
       // Load app widget.
-      await tester.pumpFrames(app(), Duration(seconds: 3));
+      await tester.pumpFrames(app(), Duration(seconds: 5));
       if (wifiBands.contains('6')) {
         // Enter the menu page
         final topbarActions = TestTopbarActions(tester);
@@ -369,7 +369,7 @@ void main() {
 
     testWidgets('Incredible Wifi - Test guest wifi warning', (tester) async {
       // Load app widget.
-      await tester.pumpFrames(app(), Duration(seconds: 3));
+      await tester.pumpFrames(app(), Duration(seconds: 5));
       if (wifiBands.contains('guest')) {
         // Enter the menu page
         final topbarActions = TestTopbarActions(tester);

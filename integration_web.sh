@@ -1,6 +1,30 @@
 # imports
 root="$(dirname "$0")"
 source "$root/integration_test/shell_scripts/config_loader.sh"
+source "$root/integration_test/shell_scripts/test_result_logger.sh"
+
+
+# --- Function: Check for and kill a process by name ---
+kill_process() {
+    local name_to_kill="wifi_detection.sh"
+
+    # Use ps and grep to find matching process IDs (PIDs)
+    # [g]rep is used to avoid matching the grep command itself
+    pids=$(ps aux | grep -v 'grep' | grep -w "$name_to_kill" | awk '{print $2}')
+
+    # Check if any PIDs were found
+    if [ -z "$pids" ]; then
+        echo "No running processes found for: $name_to_kill"
+    else
+        echo "Found the following processes, preparing to terminate:"
+        echo "$pids"
+
+        # Terminate the processes
+        # Use xargs to pass the list of PIDs to the kill command
+        echo "$pids" | xargs kill -9
+        echo "All related processes have been terminated."
+    fi
+}
 
 force="local"
 cloud="qa"
@@ -14,9 +38,9 @@ LINE_BREAK="${GREEN} ------------ ${NC}"
 while getopts t:d:g: flag
 do
     case "${flag}" in
-        t) testcase=${OPTARG};;
+        g) testcase=${OPTARG};;
         d) data=${OPTARG};;
-        g) tags=${OPTARG};;
+        t) tags=${OPTARG};;
     esac
 done
 
@@ -24,10 +48,6 @@ if [[ -z "$testcase" && -z "$tags" ]]; then
     echo "ERROR: Empty testcase file or tags."
     exit 1
 fi
-# if [ -z "$data" ]; then
-#     echo "Empty data file."
-#     exit 1
-# fi
 
 # check tags which include tag string from json files in test_meta folder
 if [ ! -z "$tags" ]; then
@@ -67,9 +87,11 @@ if [ ! -z "$tags" ]; then
     fi
 fi
 
-count=0
-successed=0
-failed=0
+# config in test_file
+skipActionsInMeta=false
+groupSetup=()
+groupTearDown=()
+groupDescription=""
 
 # if testcase is empty then assign from testcaseArray
 if [ -z "$testcase" ]; then
@@ -78,13 +100,79 @@ if [ -z "$testcase" ]; then
         cases+=("$case")
     done
 else
+    groupPath="$testcase"
+    groupJson=$(cat $groupPath)
+    skipActionsInMeta=$(jq -r '.skipActionsInMeta' $testcase)
+    groupSetup=($(jq -n -r --arg m "$groupJson" '$m' | jq -r '.groupSetup // [] | .[]'))
+    groupTearDown=($(jq -n -r --arg m "$groupJson" '$m' | jq -r '.groupTearDown // [] | .[]'))
+    groupDescription=$(jq -r '.description' $testcase)
+    
     cases=($(jq -r '.files[]' $testcase))
+    
+    echo "-------Start running test group: $testcase------"
+    echo "Skip Actions in Meta: $skipActionsInMeta"
+    echo "Group Description: $groupDescription"
+    echo "---------------------------------------------"
 fi
 
 echo "Cases ${cases[@]}"
 if [ ${#cases[@]} -eq 0 ]; then
     echo "No testcase found."
     exit 1
+fi
+
+# Fetch Device Info
+deviceInfo=$(sh ./integration_test/shell_scripts/get_device_info.sh)
+modelNumber=$(echo "$deviceInfo" | jq -r '.output.modelNumber')
+firmwareVersion=$(echo "$deviceInfo" | jq -r '.output.firmwareVersion')
+routerDescription=$(echo "$deviceInfo" | jq -r '.output.description')
+hardwareVersion=$(echo "$deviceInfo" | jq -r '.output.hardwareVersion')
+# Combine UI version and commit id
+uiVersion=$(sed -nE 's/^version: ([0-9]+\.[0-9]+\.[0-9]+).*$/\1/p' "pubspec.yaml")
+if ! commit_id=$(git rev-parse --short HEAD 2>/dev/null); then
+  commit_id=""
+fi
+if [ -z "$commit_id" ]; then
+  commitedUIVersion="${uiVersion}"
+else
+  commitedUIVersion="${uiVersion}-${commit_id}"
+fi
+echo "Model Number: $modelNumber"
+echo "Firmware Version: $firmwareVersion"
+echo "Router Description: $routerDescription"
+echo "Hardware Version: $hardwareVersion"
+echo "UI Version: $commitedUIVersion"
+
+# Remove temp files if exists
+rm -rf ./build/integration_test
+mkdir -p ./build/integration_test
+
+
+# Run the WiFi detection script on the background, skip if wiredTesting is true
+wiredTesting=$(get_global_config_value '.wired')
+echo "Wired Testing: $wiredTesting"
+
+initialize_results "$groupDescription" "$testcase" "${#cases[@]}"
+update_device_info "$routerDescription" "$modelNumber" "$firmwareVersion" "$hardwareVersion" "$commitedUIVersion" "$wiredTesting"
+init_config "$data"
+set_global_config "$testcase"
+
+
+
+if [ "$wiredTesting" == "false" ]; then
+    sh ./integration_test/shell_scripts/wifi_detection.sh &
+    pid=$!
+fi
+
+# Group SetUp actions
+shActionPath="./integration_test/shell_scripts/"
+if [ ${#groupSetup[@]} -gt 0 ]; then
+    echo "Group Setup: ${groupSetup[@]}"
+    for action in "${groupSetup[@]}"; do
+        actionPath="$shActionPath$action.sh"
+        echo "Group Setup Action: $action"
+        bash "$actionPath"
+    done
 fi
 
 flutter pub get
@@ -104,7 +192,6 @@ for case in "${cases[@]}"; do
 
     caseSetup=($(jq -n -r --arg m "$metaJson" '$m' | jq -r '.setUp // [] | .[]'))
     caseTearDown=($(jq -n -r --arg m "$metaJson" '$m' | jq -r '.tearDown // [] | .[]'))
-    shActionPath="./integration_test/shell_scripts/"
 
     count=$(( $count + 1 ))
     echo "$LINE_BREAK"
@@ -114,17 +201,17 @@ for case in "${cases[@]}"; do
     echo "Case Path: $casePath"
     echo "$LINE_BREAK"  
 
-    # setActions
-    echo "Case Setup: $caseSetup"
-    for action in "${caseSetup[@]}"; do
-        actionPath="$shActionPath$action.sh"
-        echo "Case Setup Action: $action"
-        bash "$actionPath"
-    done
-    
-    # Run the WiFi detection script on the background
-    sh ./integration_test/shell_scripts/wifi_detection.sh &
-    pid=$!
+    start_test
+
+    # Meta setup actions skip if skipActionsInMeta is true
+    if [ ${#caseSetup[@]} -gt 0 ] && [ "$skipActionsInMeta" == false ]; then
+        echo "Case Setup: ${caseSetup[@]}"
+        for action in "${caseSetup[@]}"; do
+            actionPath="$shActionPath$action.sh"
+            echo "Case Setup Action: $action"
+            bash "$actionPath"
+        done
+    fi
     
     echo "Initiate Flutter Integration Test..."
     result=$(flutter drive --driver=test_driver/integration_test.dart \
@@ -140,41 +227,51 @@ for case in "${cases[@]}"; do
     --no-headless \
     --keep-app-running \
     -d web-server)
+
     if [[ "$result" == *"All tests passed."* ]]; then
         # Passed
-        successed=$(( $successed + 1 ))
+        add_success_test "$caseName" "$caseDescription"
         echo "...passed."
     else
         # Failed
-        failed=$(( $failed + 1 ))
+        # Extract the failure details
+        message=$(dart run ./test_scripts/extract_failure_messages.dart "$result")
+        echo "$message"
+        add_fail_test "$caseName" "$caseDescription" "$message"
         echo "...failed."
         echo "-------------------"
         echo "Result: $result"
         echo "-------------------"
-        # Extract the failure details
-        message=$(dart run ./test_scripts/extract_failure_messages.dart "$result")
-        echo "$message"
     fi
     echo kill the WiFi detection process
-    kill -9 $pid
-    echo "Case TearDown: $caseTearDown"
-    for action in "${caseTearDown[@]}"; do
+    kill_process
+    echo "$LINE_BREAK"
+
+    # Meta teardown actions skip if skipActionsInMeta is true
+    if [ ${#caseTearDown[@]} -gt 0 ] && [ "$skipActionsInMeta" == false ]; then
+        echo "Case TearDown: ${caseTearDown[@]}"
+        for action in "${caseTearDown[@]}"; do
+            actionPath="$shActionPath$action.sh"
+            echo "Case TearDown Action Path: $actionPath"
+            bash "$actionPath" true
+        done
+    fi
+done
+
+# Group TearDown actions
+if [ ${#groupTearDown[@]} -gt 0 ]; then
+    echo "Group TearDown: ${groupTearDown[@]}"
+    for action in "${groupTearDown[@]}"; do
         actionPath="$shActionPath$action.sh"
-        echo "Case TearDown Action Path: $actionPath"
+        echo "Group TearDown Action Path: $actionPath"
         bash "$actionPath" true
     done
-done
-end_time=$(date +%s)
-elapsed_time=$((end_time - start_time))
-echo "*******************************"
-echo "Time spent: $elapsed_time seconds"
-echo "Passed: $successed"
-echo "Failed: $failed"
-echo "Total: $count"
-echo "*******************************"
-# exit (1) if any failed
-if [ "$failed" -gt 0 ]; then
-    exit 1
 fi
+
+add_total_time_cost
+cat "$RESULTS_FILE"
+
+sh $root/integration_test/shell_scripts/generate_integration_report.sh
+
 exit 0
 #

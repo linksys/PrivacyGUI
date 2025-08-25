@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -79,35 +78,36 @@ class _PnpNoInternetConnectionState
               loc(context).noInternetConnectionDescription,
             ),
             const AppGap.large3(),
-            if (state.hasResetModem)
-              Padding(
-                padding: const EdgeInsets.only(bottom: Spacing.small2),
-                child: AppCard(
-                  onTap: () {
-                    goRoute(RouteNamed.callSupportMainRegion);
-                  },
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            AppText.labelLarge(
-                              loc(context).needHelp,
-                            ),
-                            const AppGap.small3(),
-                            AppText.bodyMedium(
-                              loc(context)
-                                  .pnpNoInternetConnectionContactSupport,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Icon(LinksysIcons.chevronRight),
-                    ],
-                  ),
-                ),
-              ),
+            // Padding(
+            //   padding: const EdgeInsets.only(bottom: Spacing.small2),
+            //   child: AppCard(
+            //     onTap: () {
+            //       gotoOfficialWebUrl(
+            //         FaqItem.faqVisitLinksysSupport.url,
+            //         locale: ref.read(appSettingsProvider).locale,
+            //       );
+            //     },
+            //     child: Row(
+            //       children: [
+            //         Expanded(
+            //           child: Column(
+            //             crossAxisAlignment: CrossAxisAlignment.start,
+            //             children: [
+            //               AppText.labelLarge(
+            //                 loc(context).needHelp,
+            //               ),
+            //               const AppGap.small3(),
+            //               AppText.bodyMedium(
+            //                 loc(context).pnpNoInternetConnectionContactSupport,
+            //               ),
+            //             ],
+            //           ),
+            //         ),
+            //         const Icon(LinksysIcons.chevronRight),
+            //       ],
+            //     ),
+            //   ),
+            // ),
             AppCard(
               onTap: () {
                 goRoute(RouteNamed.pnpUnplugModem);

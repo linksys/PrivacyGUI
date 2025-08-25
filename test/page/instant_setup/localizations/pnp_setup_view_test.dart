@@ -1,5 +1,8 @@
+// ignore_for_file: invalid_use_of_protected_member
+
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
@@ -79,20 +82,28 @@ void main() async {
 
   testLocalizations('Instant Setup - PnP: Personalize your wifi',
       (tester, locale) async {
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const PnpSetupView(),
-        config: LinksysRouteConfig(
-            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
-        locale: locale,
-        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
+    final view = testableSingleRoute(
+      child: PnpSetupView(),
+      config: LinksysRouteConfig(
+        column: ColumnGrid(column: 6, centered: true),
+        noNaviRail: true,
       ),
+      locale: locale,
+      overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
     );
+    await tester.pumpWidget(view);
+    await tester.pump(const Duration(seconds: 3));
+    // Trick - setState to trigger build
+    final state = tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    state.setState(() {});
     await tester.pumpAndSettle();
   });
 
   testLocalizations('Instant Setup - PnP: Personalize your wifi and tap info',
       (tester, locale) async {
+    when(mockPnpNotifier.fetchData()).thenAnswer((_) async {
+      await Future.delayed(Duration(seconds: 5));
+    });
     await tester.pumpWidget(
       testableSingleRoute(
         child: const PnpSetupView(),
@@ -102,6 +113,10 @@ void main() async {
         overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
       ),
     );
+    await tester.pump(const Duration(seconds: 6));
+    // Trick - setState to trigger build
+    final state = tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    state.setState(() {});
     await tester.pumpAndSettle();
     final btnFinder = find.byIcon(LinksysIcons.infoCircle);
     await tester.tap(btnFinder.last);
@@ -119,6 +134,10 @@ void main() async {
         overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
       ),
     );
+    await tester.pump(const Duration(seconds: 6));
+    // Trick - setState to trigger build
+    final state = tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    state.setState(() {});
     await tester.pumpAndSettle();
     final ssidEditFinder = find.byType(TextField).first;
     final passwordEditFinder = find.byType(TextField).last;
@@ -142,6 +161,11 @@ void main() async {
         overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
       ),
     );
+    await tester.pump(const Duration(seconds: 6));
+
+    // Trick - setState to trigger build
+    final state = tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    state.setState(() {});
     await tester.pumpAndSettle();
     final ssidEditFinder = find.byType(TextField).first;
     final passwordEditFinder = find.byType(TextField).last;
@@ -168,6 +192,10 @@ void main() async {
         overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
       ),
     );
+    await tester.pump(const Duration(seconds: 6));
+    // Trick - setState to trigger build
+    final state = tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    state.setState(() {});
     await tester.pumpAndSettle();
     final ssidEditFinder = find.byType(TextField).first;
     final passwordEditFinder = find.byType(TextField).last;
@@ -193,6 +221,10 @@ void main() async {
         overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
       ),
     );
+    await tester.pump(const Duration(seconds: 6));
+    // Trick - setState to trigger build
+    final state = tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    state.setState(() {});
     await tester.pumpAndSettle();
     final ssidEditFinder = find.byType(TextField).first;
     final passwordEditFinder = find.byType(TextField).last;
@@ -226,6 +258,10 @@ void main() async {
         overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
       ),
     );
+    await tester.pump(const Duration(seconds: 6));
+    // Trick - setState to trigger build
+    final state = tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    state.setState(() {});
     await tester.pumpAndSettle();
     final ssidEditFinder = find.byType(TextField).first;
     final passwordEditFinder = find.byType(TextField).last;
@@ -268,6 +304,10 @@ void main() async {
         overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
       ),
     );
+    await tester.pump(const Duration(seconds: 6));
+    // Trick - setState to trigger build
+    final state = tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    state.setState(() {});
     await tester.pumpAndSettle();
     final ssidEditFinder = find.byType(TextField).first;
     final passwordEditFinder = find.byType(TextField).last;
@@ -300,6 +340,10 @@ void main() async {
         overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
       ),
     );
+    await tester.pump(const Duration(seconds: 6));
+    // Trick - setState to trigger build
+    final state = tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    state.setState(() {});
     await tester.pumpAndSettle();
     final ssidEditFinder = find.byType(TextField).first;
     final passwordEditFinder = find.byType(TextField).last;
@@ -341,6 +385,10 @@ void main() async {
         ],
       ),
     );
+    await tester.pump(const Duration(seconds: 6));
+    // Trick - setState to trigger build
+    final state = tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    state.setState(() {});
     await tester.pumpAndSettle();
     final ssidEditFinder = find.byType(TextField).first;
     final passwordEditFinder = find.byType(TextField).last;
@@ -387,6 +435,10 @@ void main() async {
         overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
       ),
     );
+    await tester.pump(const Duration(seconds: 6));
+    // Trick - setState to trigger build
+    final state = tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    state.setState(() {});
     await tester.pumpAndSettle();
     final ssidEditFinder = find.byType(TextField).first;
     final passwordEditFinder = find.byType(TextField).last;
@@ -433,6 +485,10 @@ void main() async {
         overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
       ),
     );
+    await tester.pump(const Duration(seconds: 6));
+    // Trick - setState to trigger build
+    final state = tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    state.setState(() {});
     await tester.pumpAndSettle();
     final ssidEditFinder = find.byType(TextField).first;
     final passwordEditFinder = find.byType(TextField).last;

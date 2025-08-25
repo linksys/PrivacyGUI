@@ -109,9 +109,6 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
                 Future.delayed(const Duration(seconds: 5)).then((value) {
                   setState(() {
                     _isCheckingInternet = true;
-                    ref
-                        .read(pnpTroubleshooterProvider.notifier)
-                        .resetModem(true);
                   });
                   ref
                       .read(pnpProvider.notifier)

@@ -1,0 +1,8 @@
+{
+    "name": "Advanced Settings - Internet Settings 1",
+    "target": "integration_test/internet_settings_set_1_test.dart",
+    "description": "Test the configuration of IPv4 with DHCP, Static IP, and PPPoE",
+    "setUp":  ["factory_reset", "skip_setup"],
+    "tearDown": [],
+    "tags": ["internet_settings", "advanced_settings", "menu"]
+}

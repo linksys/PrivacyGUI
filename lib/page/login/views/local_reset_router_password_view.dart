@@ -215,7 +215,7 @@ class _LocalResetRouterPasswordViewState
       dialogContent = loc(context).localResetRouterPasswordSuccessContent;
       actionTitle = loc(context).localResetRouterPasswordSuccessNext;
       action = () {
-        context.goNamed(RouteNamed.localLoginPassword);
+        context.goNamed(RouteNamed.localLoginPassword, extra: {'reset': true});
       };
     }).onError((error, stackTrace) {
       //TODO: Error messages are not defined by UI

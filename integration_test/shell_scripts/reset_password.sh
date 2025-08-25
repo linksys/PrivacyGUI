@@ -19,7 +19,7 @@ if [ $status -ne 0 ]; then
   exit $status
 fi
 
-new_admin_password=$(get_config_value '.newAdminPassword')
+new_admin_password=$(get_config_value '.newPassword')
 # if new_admin_password is empty, exit
 if [ -z "$new_admin_password" ]; then
   echo "Error: newAdminPassword is empty. This reset password can only using for set new admin password case"

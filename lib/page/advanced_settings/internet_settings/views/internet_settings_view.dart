@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
@@ -15,9 +16,7 @@ import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/i
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
-import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
-import 'package:privacy_gui/page/components/styled/styled_tab_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/providers/redirection/redirection_provider.dart';
 import 'package:privacy_gui/util/error_code_helper.dart';
@@ -36,6 +35,7 @@ import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
+import 'package:privacygui_widgets/widgets/input_field/ipv6_form_field.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/radios/radio_list.dart';
 import 'package:privacy_gui/core/jnap/providers/assign_ip/base_assign_ip.dart'
@@ -102,11 +102,16 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
   bool isMtuAuto = true;
   bool isBridgeMode = false;
   String? macAddressCloneErrorText;
+  String? ipv6PrefixErrorText;
   String? subnetMaskErrorText;
+  String? borderRelayErrorText;
   String loadingTitle = '';
   static const inputPadding = EdgeInsets.symmetric(vertical: Spacing.small2);
   final InputValidator _macValidator = InputValidator([MACAddressRule()]);
-
+  final InputValidator _ipv6PrefixValidator =
+      InputValidator([IPv6WithReservedRule()]);
+  final InputValidator _borderRelayValidator =
+      InputValidator([IpAddressNoReservedRule()]);
   late final TabController _tabController;
 
   @override
@@ -312,7 +317,11 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
         title: loc(context).internetSettings.capitalizeWords(),
         bottomBar: isEditing
             ? PageBottomBar(
-                isPositiveEnabled: _isEdited(state),
+                isPositiveEnabled: _isEdited(state) &&
+                    (state.ipv6Setting.ipv6rdTunnelMode !=
+                            IPv6rdTunnelMode.manual ||
+                        ipv6PrefixErrorText == null &&
+                            borderRelayErrorText == null),
                 onPositiveTap: _showRestartAlert,
               )
             : null,
@@ -451,70 +460,79 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
 
   Widget _editButton(
       InternetSettingsViewType viewType, InternetSettingsState state) {
-    return switch (viewType) {
-      InternetSettingsViewType.ipv4 => AppIconButton.noPadding(
-          icon: isIpv4Editing ? LinksysIcons.close : LinksysIcons.edit,
-          color: isIpv4Editing ? null : Theme.of(context).colorScheme.primary,
-          onTap: isIpv4Editing
-              ? () {
-                  setState(() {
-                    isIpv4Editing = false;
-                  });
-                  if (!isEditing) {
-                    _notifier.updateIpv4Settings(originalState.ipv4Setting);
-                    _notifier
-                        .updateMacAddressCloneEnable(originalState.macClone);
-                    _notifier
-                        .updateMacAddressClone(originalState.macCloneAddress);
-                  } else {
-                    _notifier.updateIpv4Settings(originalState.ipv4Setting
-                        .copyWith(mtu: state.ipv4Setting.mtu));
-                  }
-                  setState(() {
-                    initUI(ref.read(internetSettingsProvider));
-                  });
-                }
-              : () {
-                  setState(() {
-                    isIpv4Editing = true;
-                  });
-                },
-        ),
-      InternetSettingsViewType.ipv6 => AppIconButton.noPadding(
-          icon: isIpv6Editing ? LinksysIcons.close : LinksysIcons.edit,
-          color: isBridgeMode
-              ? null
-              : isIpv6Editing
+    final isRemote = BuildConfig.isRemote();
+    return Tooltip(
+        message: isRemote ? loc(context).featureUnavailableInRemoteMode : '',
+        child: switch (viewType) {
+          InternetSettingsViewType.ipv4 => AppIconButton.noPadding(
+              icon: isIpv4Editing ? LinksysIcons.close : LinksysIcons.edit,
+              color:
+                  isIpv4Editing ? null : Theme.of(context).colorScheme.primary,
+              onTap: isRemote
                   ? null
-                  : Theme.of(context).colorScheme.primary,
-          onTap: isBridgeMode
-              ? null
-              : isIpv6Editing
-                  ? () {
-                      setState(() {
-                        isIpv6Editing = false;
-                      });
-                      _notifier.updateIpv6Settings(originalState.ipv6Setting);
-                      if (!isEditing) {
-                        _notifier.updateIpv4Settings(state.ipv4Setting
-                            .copyWith(mtu: originalState.ipv4Setting.mtu));
-                        _notifier.updateMacAddressCloneEnable(
-                            originalState.macClone);
-                        _notifier.updateMacAddressClone(
-                            originalState.macCloneAddress);
-                      }
-                      setState(() {
-                        initUI(ref.read(internetSettingsProvider));
-                      });
-                    }
-                  : () {
-                      setState(() {
-                        isIpv6Editing = true;
-                      });
-                    },
-        ),
-      _ => Container(),
-    };
+                  : isIpv4Editing
+                      ? () {
+                          setState(() {
+                            isIpv4Editing = false;
+                          });
+                          if (!isEditing) {
+                            _notifier
+                                .updateIpv4Settings(originalState.ipv4Setting);
+                            _notifier.updateMacAddressCloneEnable(
+                                originalState.macClone);
+                            _notifier.updateMacAddressClone(
+                                originalState.macCloneAddress);
+                          } else {
+                            _notifier.updateIpv4Settings(originalState
+                                .ipv4Setting
+                                .copyWith(mtu: state.ipv4Setting.mtu));
+                          }
+                          setState(() {
+                            initUI(ref.read(internetSettingsProvider));
+                          });
+                        }
+                      : () {
+                          setState(() {
+                            isIpv4Editing = true;
+                          });
+                        },
+            ),
+          InternetSettingsViewType.ipv6 => AppIconButton.noPadding(
+              icon: isIpv6Editing ? LinksysIcons.close : LinksysIcons.edit,
+              color: isBridgeMode
+                  ? null
+                  : isIpv6Editing
+                      ? null
+                      : Theme.of(context).colorScheme.primary,
+              onTap: isBridgeMode || isRemote
+                  ? null
+                  : isIpv6Editing
+                      ? () {
+                          setState(() {
+                            isIpv6Editing = false;
+                          });
+                          _notifier
+                              .updateIpv6Settings(originalState.ipv6Setting);
+                          if (!isEditing) {
+                            _notifier.updateIpv4Settings(state.ipv4Setting
+                                .copyWith(mtu: originalState.ipv4Setting.mtu));
+                            _notifier.updateMacAddressCloneEnable(
+                                originalState.macClone);
+                            _notifier.updateMacAddressClone(
+                                originalState.macCloneAddress);
+                          }
+                          setState(() {
+                            initUI(ref.read(internetSettingsProvider));
+                          });
+                        }
+                      : () {
+                          setState(() {
+                            isIpv6Editing = true;
+                          });
+                        },
+            ),
+          _ => Container(),
+        });
   }
 
   Widget _internetSettingInfoCard({
@@ -1600,19 +1618,26 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
       mainAxisSize: MainAxisSize.min,
       children: [
         Padding(
-          padding: inputPadding,
-          child: AppTextField(
-            headerText: loc(context).prefix,
-            hintText: '',
-            controller: _ipv6PrefixController,
-            enable: isEnable,
-            border: const OutlineInputBorder(),
-            onChanged: (value) {
-              _notifier.updateIpv6Settings(
-                  ipv6Setting.copyWith(ipv6Prefix: () => value));
-            },
-          ),
-        ),
+            padding: inputPadding,
+            child: AppTextField(
+              headerText: loc(context).prefix,
+              hintText: '',
+              controller: _ipv6PrefixController,
+              enable: isEnable,
+              errorText: ipv6PrefixErrorText,
+              border: const OutlineInputBorder(),
+              onChanged: (value) {
+                setState(() {
+                  if (_ipv6PrefixValidator.validate(value)) {
+                    ipv6PrefixErrorText = null;
+                    _notifier.updateIpv6Settings(
+                        ipv6Setting.copyWith(ipv6Prefix: () => value));
+                  } else {
+                    ipv6PrefixErrorText = loc(context).invalidIpAddress;
+                  }
+                });
+              },
+            )),
         Padding(
           padding: inputPadding,
           child: AppTextField.minMaxNumber(
@@ -1638,10 +1663,18 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
             ),
             controller: _ipv6BorderRelayController,
             enable: isEnable,
+            errorText: borderRelayErrorText,
             border: const OutlineInputBorder(),
             onChanged: (value) {
-              _notifier.updateIpv6Settings(
-                  ipv6Setting.copyWith(ipv6BorderRelay: () => value));
+              setState(() {
+                if (_borderRelayValidator.validate(value)) {
+                  borderRelayErrorText = null;
+                  _notifier.updateIpv6Settings(
+                      ipv6Setting.copyWith(ipv6BorderRelay: () => value));
+                } else {
+                  borderRelayErrorText = loc(context).invalidIpAddress;
+                }
+              });
             },
           ),
         ),

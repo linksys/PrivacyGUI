@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
@@ -22,7 +23,6 @@ import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacy_gui/util/export_selector/export_base.dart'
     if (dart.library.io) 'package:privacy_gui/util/export_selector/export_mobile.dart'
     if (dart.library.html) 'package:privacy_gui/util/export_selector/export_web.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:super_tooltip/super_tooltip.dart';
 
@@ -48,8 +48,8 @@ class _DashboardWiFiGridState extends ConsumerState<DashboardWiFiGrid> {
   Widget build(BuildContext context) {
     final items =
         ref.watch(dashboardHomeProvider.select((value) => value.wifis));
-    final isLoading = ref.watch(deviceManagerProvider).deviceList.isEmpty;
-
+    final isLoading =
+        (ref.watch(pollingProvider).value?.isReady ?? false) == false;
     final crossAxisCount = ResponsiveLayout.isMobileLayout(context) ? 1 : 2;
     final mainSpacing = ResponsiveLayout.columnPadding(context);
     const itemHeight = 176.0;
@@ -240,6 +240,7 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
       bubbleDimensions: EdgeInsets.zero,
       showBarrier: false,
       controller: _toolTipController,
+      showOnTap: false,
       content: Container(
         color: Colors.white,
         height: 200,
@@ -257,6 +258,7 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
           if (!widget.item.isEnabled) {
             return;
           }
+
           await _completer?.future;
           final widgetPosition = _getWidgetPosition();
           final rect = Rect.fromCenter(

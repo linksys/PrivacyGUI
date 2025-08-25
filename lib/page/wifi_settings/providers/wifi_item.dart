@@ -295,7 +295,8 @@ enum WifiWirelessMode {
     return WifiWirelessMode.values.firstWhere((item) => item.value == value);
   }
 
-  bool get isIncludeBeMixedMode => this == axbe || this == anacaxbe;
+  bool get isIncludeBeMixedMode =>
+      this == axbe || this == anacaxbe || this == mixed;
 }
 
 enum WifiChannelWidth {

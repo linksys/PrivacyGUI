@@ -30,8 +30,7 @@ abstract class SharedWidgets {
   static Image resolveRouterImage(BuildContext context, String iconName,
       {double size = 40}) {
     return Image(
-      image: CustomTheme.of(context).images.devices.getByName(iconName) ??
-          CustomTheme.of(context).images.devices.routerMx6200,
+      image: CustomTheme.of(context).getRouterImage(iconName, size > 80),
       semanticLabel: 'router image',
       width: size,
       height: size,
@@ -40,9 +39,10 @@ abstract class SharedWidgets {
 
   static Widget nodeFirmwareStatusWidget(
     BuildContext context,
-    bool hasNewFirmware,
-    [VoidCallback? onTap, bool isOffline = false,]
-  ) {
+    bool hasNewFirmware, [
+    VoidCallback? onTap,
+    bool isOffline = false,
+  ]) {
     return InkWell(
       onTap: hasNewFirmware ? onTap : null,
       child: Wrap(
@@ -73,6 +73,7 @@ abstract class SharedWidgets {
 
   static geolocationWidget(BuildContext context, String name, String location) {
     return AppStyledText.bold('<b>$name</b> • $location',
-        defaultTextStyle: Theme.of(context).textTheme.bodyMedium!, tags: const ['b']);
+        defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
+        tags: const ['b']);
   }
 }

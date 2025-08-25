@@ -6,6 +6,7 @@ import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/asset_service.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/cloud2_service.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/event_service.dart';
+import 'package:privacy_gui/core/cloud/linksys_requests/guardians_remote_assistance_service.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/ping_service.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/remote_assistance_service.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/smart_device_service.dart';
@@ -13,6 +14,7 @@ import 'package:privacy_gui/core/cloud/model/cloud_event_action.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_event_subscription.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_linkup.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_remote_assistance_info.dart';
+import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
 import 'package:privacy_gui/core/http/linksys_http_client.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/authorization_service.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/device_service.dart';
@@ -63,8 +65,8 @@ class LinksysCloudRepository {
         .then((response) => SessionToken.fromJson(jsonDecode(response.body)));
   }
 
-  Future<List<NetworkAccountAssociation>> getNetworks() async {
-    return loadSessionToken().then((token) => _httpClient
+  Future<List<NetworkAccountAssociation>> getNetworks([String? token]) async {
+    return loadSessionToken(token).then((token) => _httpClient
         .getNetworks(token: token)
         .then((response) =>
             List.from(jsonDecode(response.body)['networkAccountAssociations'])
@@ -158,7 +160,10 @@ class LinksysCloudRepository {
         ));
   }
 
-  Future<String> loadSessionToken() async {
+  Future<String> loadSessionToken([String? token]) async {
+    if (token != null) {
+      return token;
+    }
     return const FlutterSecureStorage()
         .read(key: pSessionToken)
         .then((value) =>
@@ -346,6 +351,16 @@ class LinksysCloudRepository {
         }));
   }
 
+  Future<GRASessionInfo> getSessionInfo(
+      {String? token, required String sessionId}) {
+    return loadSessionToken(token).then((token) => _httpClient
+            .getSessionInfo(token: token, sessionId: sessionId)
+            .then((response) {
+          final json = jsonDecode(response.body);
+          return GRASessionInfo.fromMap(json);
+        }));
+  }
+
   ///
   ///{
   ///"remoteAssistanceSession": {
@@ -428,7 +443,10 @@ class LinksysCloudRepository {
   }
 
   // Geolocation
-  Future getGeolocation({required String linksysToken, required String serialNumber,}) {
+  Future getGeolocation({
+    required String linksysToken,
+    required String serialNumber,
+  }) {
     return _httpClient.geolocation(
         linksysToken: linksysToken, serialNumber: serialNumber);
   }

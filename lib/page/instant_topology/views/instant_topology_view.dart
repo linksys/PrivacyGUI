@@ -11,24 +11,29 @@ import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/customs/animated_refresh_container.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacy_gui/page/instant_topology/views/model/node_instant_actions.dart';
+import 'package:privacy_gui/page/nodes/providers/add_wired_nodes_provider.dart';
 import 'package:privacy_gui/page/nodes/providers/node_detail_id_provider.dart';
 import 'package:privacy_gui/page/instant_topology/_instant_topology.dart';
 import 'package:privacy_gui/page/instant_topology/views/model/tree_view_node.dart';
 import 'package:privacy_gui/page/instant_topology/views/widgets/tree_node_item.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/bullet_list/bullet_list.dart';
 import 'package:privacygui_widgets/widgets/bullet_list/bullet_style.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:privacygui_widgets/widgets/lotties/mesh_wired_connection.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
 
 class InstantTopologyView extends ArgumentsConsumerStatefulView {
   const InstantTopologyView({super.key, super.args});
@@ -72,7 +77,6 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
   @override
   Widget build(BuildContext context) {
     final topologyState = ref.watch(instantTopologyProvider);
-
     treeController.roots = [topologyState.root];
     treeController.expandAll();
     return LayoutBuilder(builder: (context, constraint) {
@@ -86,11 +90,38 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
             )
           : StyledAppPageView(
               // scrollable: true,
+              onRefresh: () {
+                return ref.read(pollingProvider.notifier).forcePolling();
+              },
               hideTopbar: _isWidget,
               useMainPadding: true,
               appBarStyle: _isWidget ? AppBarStyle.none : AppBarStyle.back,
               padding: EdgeInsets.zero,
               title: loc(context).instantTopology,
+              actions: !Utils.isMobilePlatform()
+                  ? [
+                      AnimatedRefreshContainer(
+                        builder: (controller) {
+                          return Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: AppIconButton.noPadding(
+                              color: Theme.of(context).colorScheme.primary,
+                              icon: LinksysIcons.refresh,
+                              onTap: () {
+                                controller.repeat();
+                                ref
+                                    .read(pollingProvider.notifier)
+                                    .forcePolling()
+                                    .then((value) {
+                                  controller.stop();
+                                });
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                    ]
+                  : null,
               child: (context, constraints) => Column(
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -110,8 +141,8 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
     return ResponsiveLayout.isMobileLayout(context)
         ? TreeView<RouterTreeNode>(
             treeController: treeController,
-            physics: ScrollPhysics(),
-            shrinkWrap: true,
+            physics: const BouncingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics()),
             nodeBuilder:
                 (BuildContext context, TreeEntry<RouterTreeNode> entry) {
               return TreeIndentation(
@@ -149,152 +180,150 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
             scrollDirection: Axis.horizontal,
             child: SizedBox(
               width: largeDesiredTreeWidth,
-              child: TreeView<RouterTreeNode>(
-                treeController: treeController,
-                nodeBuilder:
-                    (BuildContext context, TreeEntry<RouterTreeNode> entry) {
-                  return TreeIndentation(
-                    entry: entry,
-                    guide: IndentGuide.connectingLines(
-                      indent: 72,
-                      thickness: 0.5,
-                      pathModifier: (path) => TopologyNodeItem.buildPath(
-                          path,
-                          entry.node,
-                          entry.node.data.isMaster
-                              ? ref.watch(internetStatusProvider) ==
-                                  InternetStatus.online
-                              : entry.node.data.isOnline),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(0, 16, 8, 0),
-                      child: switch (entry.node.runtimeType) {
-                        OnlineTopologyNode => Row(
-                            children: [
-                              SizedBox(
-                                  width: 200,
-                                  child:
-                                      _buildHeader(context, ref, entry.node)),
-                              const Spacer(),
-                            ],
-                          ),
-                        RouterTopologyNode => Row(
-                            children: [
-                              _buildNode(context, ref, entry.node),
-                              const Spacer(),
-                            ],
-                          ),
-                        _ => const Center(),
-                      },
-                    ),
-                  );
+              // Somehow the parent of the RefreshIndicator is served to the parent of the SingleChildScrollView
+              // So we need to wrap it with another RefreshIndicator again here.
+              child: RefreshIndicator(
+                onRefresh: () {
+                  return ref.read(pollingProvider.notifier).forcePolling();
                 },
+                child: TreeView<RouterTreeNode>(
+                  treeController: treeController,
+                  physics: const BouncingScrollPhysics(
+                      parent: AlwaysScrollableScrollPhysics()),
+                  nodeBuilder:
+                      (BuildContext context, TreeEntry<RouterTreeNode> entry) {
+                    return TreeIndentation(
+                      entry: entry,
+                      guide: IndentGuide.connectingLines(
+                        indent: 72,
+                        thickness: 0.5,
+                        pathModifier: (path) => TopologyNodeItem.buildPath(
+                            path,
+                            entry.node,
+                            entry.node.data.isMaster
+                                ? ref.watch(internetStatusProvider) ==
+                                    InternetStatus.online
+                                : entry.node.data.isOnline),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(0, 16, 8, 0),
+                        child: switch (entry.node.runtimeType) {
+                          OnlineTopologyNode => Row(
+                              children: [
+                                SizedBox(
+                                    width: 200,
+                                    child:
+                                        _buildHeader(context, ref, entry.node)),
+                                const Spacer(),
+                              ],
+                            ),
+                          RouterTopologyNode => Row(
+                              children: [
+                                _buildNode(context, ref, entry.node),
+                                const Spacer(),
+                              ],
+                            ),
+                          _ => const Center(),
+                        },
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
           );
   }
 
   Widget _buildNode(BuildContext context, WidgetRef ref, RouterTreeNode node) {
+    final supportChildReboot = serviceHelper.isSupportChildReboot();
+
+    return ResponsiveLayout.isMobileLayout(context)
+        ? TopologyNodeItem.simple(
+            node: node,
+            actions: _buildActions(node),
+            onTap: () {
+              onNodeTap(context, ref, node);
+            },
+            onActionTap: (action) {
+              _handleSelectedNodeAction(action, node, supportChildReboot);
+            },
+          )
+        : TopologyNodeItem(
+            node: node,
+            actions: _buildActions(node),
+            onTap: () {
+              onNodeTap(context, ref, node);
+            },
+            onActionTap: (action) {
+              _handleSelectedNodeAction(action, node, supportChildReboot);
+            },
+          );
+  }
+
+  List<NodeInstantActions> _buildActions(RouterTreeNode node) {
     final autoOnboarding = serviceHelper.isSupportAutoOnboarding();
     final hasBlinkFunction = serviceHelper.isSupportLedBlinking();
     final supportChildReboot = serviceHelper.isSupportChildReboot();
     final supportChildFactoryReset = serviceHelper.isSupportChildFactoryReset();
 
-    return ResponsiveLayout.isMobileLayout(context)
-        ? TopologyNodeItem.simple(
-            node: node,
-            actions: node.data.isMaster
-                ? [
-                    if (hasBlinkFunction &&
-                        isCognitiveMeshRouter(
-                            modelNumber: node.data.model,
-                            hardwareVersion: node.data.hardwareVersion))
-                      NodeInstantActions.blink,
-                    NodeInstantActions.reboot,
-                    if (autoOnboarding) NodeInstantActions.pair,
-                    NodeInstantActions.reset,
-                  ]
-                : [
-                    if (hasBlinkFunction &&
-                        isCognitiveMeshRouter(
-                            modelNumber: node.data.model,
-                            hardwareVersion: node.data.hardwareVersion))
-                      NodeInstantActions.blink,
-                    if (supportChildReboot) NodeInstantActions.reboot,
-                    if (supportChildFactoryReset) NodeInstantActions.reset,
-                  ],
-            onTap: () {
-              onNodeTap(context, ref, node);
-            },
-            onActionTap: (action) {
-              switch (action) {
-                case NodeInstantActions.reboot:
-                  _doReboot(
-                      supportChildReboot && !node.data.isMaster ? node : null,
-                      node.isLeaf());
-                  break;
-                case NodeInstantActions.pair:
-                  _doInstantPair();
-                  break;
-                case NodeInstantActions.blink:
-                  _doBlinkNodeLed(ref, node.data.deviceId);
-                  break;
-                case NodeInstantActions.reset:
-                  // If the target is a master, send null value to factory reset all nodes
-                  _doFactoryReset(
-                      supportChildReboot && !node.data.isMaster ? node : null,
-                      node.isLeaf());
-                  break;
-              }
-            },
-          )
-        : TopologyNodeItem(
-            node: node,
-            actions: node.data.isMaster
-                ? [
-                    if (hasBlinkFunction &&
-                        isCognitiveMeshRouter(
-                            modelNumber: node.data.model,
-                            hardwareVersion: node.data.hardwareVersion))
-                      NodeInstantActions.blink,
-                    NodeInstantActions.reboot,
-                    if (autoOnboarding) NodeInstantActions.pair,
-                    NodeInstantActions.reset,
-                  ]
-                : [
-                    if (hasBlinkFunction &&
-                        isCognitiveMeshRouter(
-                            modelNumber: node.data.model,
-                            hardwareVersion: node.data.hardwareVersion))
-                      NodeInstantActions.blink,
-                    if (supportChildReboot) NodeInstantActions.reboot,
-                    if (supportChildFactoryReset) NodeInstantActions.reset,
-                  ],
-            onTap: () {
-              onNodeTap(context, ref, node);
-            },
-            onActionTap: (action) {
-              switch (action) {
-                case NodeInstantActions.reboot:
-                  _doReboot(
-                      supportChildReboot && !node.data.isMaster ? node : null,
-                      node.isLeaf());
-                  break;
-                case NodeInstantActions.pair:
-                  _doInstantPair();
-                  break;
-                case NodeInstantActions.blink:
-                  _doBlinkNodeLed(ref, node.data.deviceId);
-                  break;
-                case NodeInstantActions.reset:
-                  // If the target is a master, send null value to factory reset all nodes
-                  _doFactoryReset(
-                      supportChildReboot && !node.data.isMaster ? node : null,
-                      node.isLeaf());
-                  break;
-              }
-            },
-          );
+    return node.data.isMaster
+        ? [
+            if (hasBlinkFunction &&
+                isCognitiveMeshRouter(
+                    modelNumber: node.data.model,
+                    hardwareVersion: node.data.hardwareVersion))
+              NodeInstantActions.blink,
+            NodeInstantActions.reboot,
+            if (autoOnboarding) NodeInstantActions.pair,
+            NodeInstantActions.reset,
+          ]
+        : [
+            if (hasBlinkFunction &&
+                isCognitiveMeshRouter(
+                    modelNumber: node.data.model,
+                    hardwareVersion: node.data.hardwareVersion))
+              NodeInstantActions.blink,
+            if (supportChildReboot &&
+                isCognitiveMeshRouter(
+                    modelNumber: node.data.model,
+                    hardwareVersion: node.data.hardwareVersion))
+              NodeInstantActions.reboot,
+            if (supportChildFactoryReset &&
+                isCognitiveMeshRouter(
+                    modelNumber: node.data.model,
+                    hardwareVersion: node.data.hardwareVersion))
+              NodeInstantActions.reset,
+          ];
+  }
+
+  _handleSelectedNodeAction(
+    NodeInstantActions action,
+    RouterTreeNode node,
+    bool supportChildReboot,
+  ) {
+    switch (action) {
+      case NodeInstantActions.reboot:
+        _doReboot(supportChildReboot && !node.data.isMaster ? node : null,
+            node.isLeaf());
+        break;
+      case NodeInstantActions.pair:
+        // do nothing
+        break;
+      case NodeInstantActions.pairWired:
+        _doInstantPairWired(ref);
+        break;
+      case NodeInstantActions.pairWireless:
+        _doInstantPair();
+        break;
+      case NodeInstantActions.blink:
+        _doBlinkNodeLed(ref, node.data.deviceId);
+        break;
+      case NodeInstantActions.reset:
+        // If the target is a master, send null value to factory reset all nodes
+        _doFactoryReset(supportChildReboot && !node.data.isMaster ? node : null,
+            node.isLeaf());
+        break;
+    }
   }
 
   _doReboot(RouterTreeNode? node, bool isLastNode) {
@@ -372,6 +401,97 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
         _showMoveChildNodesModal();
       }
     });
+  }
+
+  _doInstantPairWired(WidgetRef ref) {
+    ///
+    /// Original flow, go to addWiredNodes page
+    ///
+    // context.pushNamed(RouteNamed.addWiredNodes).then((result) {
+    //   if (result is bool && result) {
+    //     _showMoveChildNodesModal();
+    //   }
+    // });
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        final addWiredNodesNotifier = ref.read(addWiredNodesProvider.notifier);
+        Future.doWhile(() => !mounted).then((_) {
+          addWiredNodesNotifier.startAutoOnboarding(context);
+        });
+
+        return AlertDialog(
+          title: SizedBox(
+            width: kDefaultDialogWidth,
+            child: AppText.titleLarge(loc(context).instantPair),
+          ),
+          content: Consumer(builder: (context, ref, child) {
+            final addWiredNodesState = ref.watch(addWiredNodesProvider);
+            final isCompleted = addWiredNodesState.isLoading == false &&
+                addWiredNodesState.onboardingProceed == true;
+            final anyOnboarded = addWiredNodesState.anyOnboarded == true;
+
+            final message = isCompleted
+                ? anyOnboarded
+                    ? loc(context).wiredPairComplete
+                    : loc(context).wiredPairCompleteNotFound
+                : loc(context).pairingWiredChildNodeDesc;
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppGap.medium(),
+                SizedBox(
+                  width: 300,
+                  height: 200,
+                  child: Stack(children: [
+                    AppMeshWiredConnection(animate: !isCompleted),
+                    if (isCompleted)
+                      Align(
+                          alignment: Alignment.bottomRight,
+                          child: Padding(
+                            padding: const EdgeInsets.only(bottom: 2.0),
+                            child: Icon(
+                                anyOnboarded
+                                    ? Icons.check_circle_outline
+                                    : Icons.warning_rounded,
+                                size: 48,
+                                color: anyOnboarded
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Theme.of(context).colorSchemeExt.orange),
+                          )),
+                  ]),
+                ),
+                AppGap.medium(),
+                SizedBox(
+                  width: kDefaultDialogWidth,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AppText.bodyMedium(message),
+                      AppGap.small2(),
+                      AppText.bodyMedium(isCompleted && anyOnboarded
+                          ? addWiredNodesState.loadingMessage ?? ''
+                          : ''),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          }),
+          actions: [
+            AppTextButton(
+              loc(context).donePairing,
+              onTap: () {
+                addWiredNodesNotifier.forceStopAutoOnboarding();
+                dialogContext.pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Widget _buildHeader(

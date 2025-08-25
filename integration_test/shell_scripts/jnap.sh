@@ -99,11 +99,25 @@ pnp() {
   fi
 }
 
+# Get auto configuration supported and user acknowledged auto configuration
+get_auto_configration_settings() {
+  local result=$(jnap "http://linksys.com/jnap/nodes/setup/GetAutoConfigurationSettings")
+  echo "$result"
+}
+
 # set device mode to Master
 set_device_mode_to_master() {
   password=$1
   local result=$(jnap "http://linksys.com/jnap/nodes/smartmode/SetDeviceMode" "$password" '{"mode":"Master"}')
   echo "$result"
+}
+
+# Get device mode
+get_device_mode() {
+  password=$1
+  local result=$(jnap "http://linksys.com/jnap/nodes/smartmode/GetDeviceMode" "$password")
+  local deviceMode=$(echo $result | jq -r '.output.mode')
+  echo "$deviceMode"
 }
 
 # set admin password to default WiFi password

@@ -3,6 +3,105 @@ import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:test/test.dart';
 
 void main() {
+  group('IpAddressNoReservedRule', () {
+    late IpAddressNoReservedRule rule;
+
+    setUp(() {
+      rule = IpAddressNoReservedRule();
+    });
+
+    test('should accept valid public IPv4 addresses', () {
+      final validAddresses = [
+        '192.168.1.1',
+        '10.0.0.1',
+        '172.16.0.1',
+        '8.8.8.8',
+        '203.0.113.1',
+      ];
+
+      for (final address in validAddresses) {
+        expect(rule.validate(address), isTrue,
+            reason: 'Should accept $address');
+      }
+    });
+
+    test('should reject invalid IPv4 format', () {
+      final invalidFormats = [
+        '256.1.1.1', // Octet > 255
+        '192.168.1', // Only 3 octets
+        '192.168.1.1.1', // 5 octets
+        '192.168.1.x', // Contains non-numeric
+        '192.168.1.', // Trailing dot
+        '.192.168.1.1', // Leading dot
+        '', // Empty string
+        ' ', // Whitespace
+      ];
+
+      for (final address in invalidFormats) {
+        expect(rule.validate(address), isFalse,
+            reason: 'Should reject invalid format: $address');
+      }
+    });
+
+    test('should reject 0.0.0.0/8 (Unspecified/Current Network)', () {
+      final zeroNetworkAddresses = [
+        '0.0.0.0', // Network address
+        '0.1.2.3', // Any address in 0.0.0.0/8
+        '0.255.255.255', // Last in 0.0.0.0/8
+      ];
+
+      for (final address in zeroNetworkAddresses) {
+        expect(rule.validate(address), isFalse,
+            reason: 'Should reject 0.0.0.0/8 address: $address');
+      }
+    });
+
+    test('should reject 127.0.0.0/8 (Loopback)', () {
+      final loopbackAddresses = [
+        '127.0.0.1', // Common loopback
+        '127.1.2.3', // Any in 127.0.0.0/8
+        '127.255.255.255', // Last in 127.0.0.0/8
+      ];
+
+      for (final address in loopbackAddresses) {
+        expect(rule.validate(address), isFalse,
+            reason: 'Should reject loopback address: $address');
+      }
+    });
+
+    test('should reject 224.0.0.0/4 (Multicast)', () {
+      final multicastAddresses = [
+        '224.0.0.1', // Start of 224.0.0.0/4
+        '230.1.2.3', // Any in 224.0.0.0/4
+        '239.255.255.255', // End of 224.0.0.0/4
+      ];
+
+      for (final address in multicastAddresses) {
+        expect(rule.validate(address), isFalse,
+            reason: 'Should reject multicast address: $address');
+      }
+    });
+
+    test('should reject 255.255.255.255 (Limited Broadcast)', () {
+      expect(rule.validate('255.255.255.255'), isFalse,
+          reason: 'Should reject limited broadcast address');
+    });
+
+    test('should reject non-IPv4 addresses', () {
+      final nonIPv4Addresses = [
+        '2001:0db8:85a3:0000:0000:8a2e:0370:7334', // IPv6
+        'not.an.ip.address',
+        '12345',
+        '192.168.1.1.1',
+      ];
+
+      for (final address in nonIPv4Addresses) {
+        expect(rule.validate(address), isFalse,
+            reason: 'Should reject non-IPv4 address: $address');
+      }
+    });
+  });
+
   group('Test ComplexPasswordValidator', () {
     test('validate method - strong password', () {
       final validator = ComplexPasswordValidator();
@@ -60,6 +159,120 @@ void main() {
     });
   });
 
+  group('IPv6Rule', () {
+    late IPv6Rule rule;
+
+    setUp(() {
+      rule = IPv6Rule();
+    });
+
+    test('should have the correct name property', () {
+      expect(rule.name, 'IPv6Rule');
+    });
+
+    group('Valid IPv6 Addresses', () {
+      test('should return true for a standard full IPv6 address', () {
+        expect(
+            rule.validate('2001:0db8:85a3:0000:0000:8a2e:0370:7334'), isTrue);
+      });
+
+      test('should return true for an address with compressed zeros (::)', () {
+        expect(rule.validate('2001:0db8:85a3::8a2e:0370:7334'), isTrue);
+      });
+
+      test('should return true for an address starting with a double colon',
+          () {
+        expect(rule.validate('::1'), isTrue);
+      });
+
+      test('should return true for an address ending with a double colon', () {
+        expect(rule.validate('2001:db8:a0b:12f0::'), isTrue);
+      });
+
+      test('should return true for the unspecified address (::)', () {
+        expect(rule.validate('::'), isTrue);
+      });
+
+      test('should return true for an address with leading zeros in a group',
+          () {
+        expect(
+            rule.validate('2001:0db8:0000:0000:0000:0000:0000:0001'), isTrue);
+      });
+
+      test('should return true for an address with uppercase letters', () {
+        expect(rule.validate('2001:DB8:85A3::8A2E:370:7334'), isTrue);
+      });
+
+      test('should return true for a link-local address', () {
+        expect(rule.validate('fe80::1ff:fe23:4567:890a'), isTrue);
+      });
+
+      test('should return true for a link-local address with a zone index', () {
+        expect(rule.validate('fe80::1ff:fe23:4567:890a%eth0'), isTrue);
+      });
+
+      test('should return true for an IPv4-mapped IPv6 address', () {
+        expect(rule.validate('::ffff:192.0.2.128'), isTrue);
+      });
+
+      test('should return true for an IPv4-embedded IPv6 address', () {
+        expect(rule.validate('2001:db8::192.168.0.1'), isTrue);
+      });
+    });
+
+    group('Invalid IPv6 Addresses', () {
+      test('should return false for an address with more than 8 groups', () {
+        expect(rule.validate('2001:0db8:85a3:0000:0000:8a2e:0370:7334:1234'),
+            isFalse);
+      });
+
+      test('should return false for an address with invalid characters', () {
+        expect(
+            rule.validate('2001:0db8:85a3:000g:0000:8a2e:0370:7334'), isFalse);
+      });
+
+      test('should return false for a group with more than 4 hex digits', () {
+        expect(
+            rule.validate('2001:0db8:85a3:00000:0000:8a2e:0370:7334'), isFalse);
+      });
+
+      test('should return false for an address with more than one double colon',
+          () {
+        expect(rule.validate('2001::85a3::8a2e'), isFalse);
+      });
+
+      test('should return false for an incomplete address', () {
+        expect(rule.validate('2001:0db8:85a3:0000:0000:8a2e:0370'), isFalse);
+      });
+
+      test('should return false for an address with triple colons', () {
+        expect(rule.validate('2001:::8a2e'), isFalse);
+      });
+
+      test('should return false for an invalid IPv4 part in a mapped address',
+          () {
+        expect(rule.validate('::ffff:192.0.2.256'), isFalse);
+      });
+
+      test('should return false for an empty string', () {
+        expect(rule.validate(''), isFalse);
+      });
+
+      test('should return false for a random string', () {
+        expect(rule.validate('not an ip address'), isFalse);
+      });
+
+      test('should return false for an address ending with a colon', () {
+        expect(rule.validate('2001:db8:a0b:12f0:'), isFalse);
+      });
+
+      test(
+          'should return false for an address starting with a colon but not a double colon',
+          () {
+        expect(rule.validate(':2001:db8:a0b:12f0::'), isFalse);
+      });
+    });
+  });
   group('Test EmailValidator', () {
     test('validate method - valid email', () {
       final validator = EmailValidator();
@@ -261,7 +474,7 @@ void main() {
       expect(results['NoSurroundWhitespaceRule'], true);
       expect(results['IpAddressHasFourOctetsRule'], false);
       expect(results['IpAddressNoReservedRule'],
-          true); // not violated in this case
+          false); // not violated in this case
       expect(results['IpAddressRule'], false);
     });
 
@@ -271,8 +484,9 @@ void main() {
         '255.255.255.256',
         onlyFailed: true,
       );
-      expect(results.length, equals(1));
+      expect(results.length, equals(2));
       expect(results['IpAddressRule'], isFalse);
+      expect(results['IpAddressNoReservedRule'], isFalse);
     });
   });
 
@@ -314,7 +528,7 @@ void main() {
         'RequiredRule': false,
         'NoSurroundWhitespaceRule': true,
         'IpAddressHasFourOctetsRule': false,
-        'IpAddressNoReservedRule': true,
+        'IpAddressNoReservedRule': false,
         'IpAddressRule': false,
       });
     });
@@ -325,7 +539,7 @@ void main() {
         'RequiredRule': true,
         'NoSurroundWhitespaceRule': true,
         'IpAddressHasFourOctetsRule': false,
-        'IpAddressNoReservedRule': true,
+        'IpAddressNoReservedRule': false,
         'IpAddressRule': false,
       });
     });
@@ -407,7 +621,7 @@ void main() {
       expect(results['RequiredRule'], false);
       expect(results['NoSurroundWhitespaceRule'], true);
       expect(results['IpAddressHasFourOctetsRule'], false);
-      expect(results['IpAddressNoReservedRule'], true);
+      expect(results['IpAddressNoReservedRule'], false);
       expect(results['IpAddressRule'], false);
       expect(
           results['HostValidForGivenRouterIPAddressAndSubnetMaskRule'], false);
@@ -420,7 +634,7 @@ void main() {
       expect(results['RequiredRule'], true);
       expect(results['NoSurroundWhitespaceRule'], true);
       expect(results['IpAddressHasFourOctetsRule'], false);
-      expect(results['IpAddressNoReservedRule'], true);
+      expect(results['IpAddressNoReservedRule'], false);
       expect(results['IpAddressRule'], false);
       expect(
           results['HostValidForGivenRouterIPAddressAndSubnetMaskRule'], false);
@@ -515,7 +729,7 @@ void main() {
       expect(results['RequiredRule'], false);
       expect(results['NoSurroundWhitespaceRule'], true);
       expect(results['IpAddressHasFourOctetsRule'], false);
-      expect(results['IpAddressNoReservedRule'], true);
+      expect(results['IpAddressNoReservedRule'], false);
       expect(results['IpAddressRule'], false);
       expect(
           results['HostValidForGivenRouterIPAddressAndSubnetMaskRule'], false);
@@ -527,7 +741,7 @@ void main() {
       expect(results['RequiredRule'], true);
       expect(results['NoSurroundWhitespaceRule'], true);
       expect(results['IpAddressHasFourOctetsRule'], false);
-      expect(results['IpAddressNoReservedRule'], true);
+      expect(results['IpAddressNoReservedRule'], false);
       expect(results['IpAddressRule'], false);
       expect(
           results['HostValidForGivenRouterIPAddressAndSubnetMaskRule'], false);
@@ -772,6 +986,276 @@ void main() {
     test('test valid MAC address - 58:A0:23:9B:78:64', () {
       final rule = MACAddressWithReservedRule();
       final isValid = rule.validate('58:A0:23:9B:78:64');
+
+      expect(isValid, isTrue);
+    });
+  });
+
+  // Test result tracking
+  final Map<String, Map<String, dynamic>> _testResults = {};
+
+  // Helper to track test results
+  void _trackTestResult(String group, String testName, bool passed,
+      String address, String? expectedType,
+      {String? description}) {
+    if (!_testResults.containsKey(group)) {
+      _testResults[group] = {
+        'total': 0,
+        'passed': 0,
+        'failed': 0,
+        'details': <Map<String, dynamic>>[],
+      };
+    }
+
+    final result = {
+      'testName': testName,
+      'address': address,
+      'passed': passed,
+      'expectedType': expectedType,
+      if (description != null) 'description': description,
+    };
+
+    _testResults[group]!['total']++;
+    if (passed) {
+      _testResults[group]!['passed']++;
+    } else {
+      _testResults[group]!['failed']++;
+    }
+    _testResults[group]!['details'].add(result);
+  }
+
+  // Print test summary
+  void _printTestSummary() {
+    print('\n\n=== IPv6 Validation Test Summary ===\n');
+
+    int totalTests = 0;
+    int totalPassed = 0;
+    int totalFailed = 0;
+
+    _testResults.forEach((group, data) {
+      print('\n=== $group ===');
+      print(
+          'Total: ${data['total']} | Passed: ${data['passed']} | Failed: ${data['failed']}');
+
+      // Print failed tests if any
+      final failedTests =
+          (data['details'] as List).where((t) => !t['passed']).toList();
+      if (failedTests.isNotEmpty) {
+        print('\nFailed Tests:');
+        for (var test in failedTests) {
+          print('  - ${test['testName']}');
+          print('    Address: ${test['address']}');
+          print('    Expected: ${test['expectedType']}');
+          if (test['description'] != null) {
+            print('    Description: ${test['description']}');
+          }
+        }
+      }
+
+      // Print all test cases with descriptions
+      print('\nTest Cases:');
+      for (var test in data['details']) {
+        final status = test['passed'] ? '✓' : '✗';
+        print('  $status ${test['testName']}');
+        print('    Address: ${test['address']}');
+        print('    Expected: ${test['expectedType']}');
+        if (test['description'] != null) {
+          print('    Description: ${test['description']}');
+        }
+        print('    Status: ${test['passed'] ? 'PASSED' : 'FAILED'}');
+      }
+
+      totalTests += data['total'] as int;
+      totalPassed += data['passed'] as int;
+      totalFailed += data['failed'] as int;
+    });
+
+    print('\n=== Overall Summary ===');
+    print('Total Tests: $totalTests');
+    print('Passed: $totalPassed');
+    print('Failed: $totalFailed');
+    print(
+        'Success Rate: ${((totalPassed / totalTests) * 100).toStringAsFixed(2)}%');
+    print('\nTest completed at: ${DateTime.now()}');
+  }
+
+  group('IPv6WithReservedRule', () {
+    // Add teardown to print summary after all tests
+    tearDownAll(() {
+      _printTestSummary();
+    });
+
+    // Helper function to run multiple invalid test cases
+    void _runInvalidTestCases(List<String> addresses, String description) {
+      for (var address in addresses) {
+        test('should reject $description: $address', () {
+          final rule = IPv6WithReservedRule();
+          final isValid = rule.validate(address);
+          final testName = 'Reject $description: $address';
+          final passed = isValid == false;
+          _trackTestResult('Invalid Address: $description', testName, passed,
+              address, 'Should be rejected as $description',
+              description: description);
+          expect(isValid, isFalse,
+              reason:
+                  'Expected $address to be rejected as it is a $description address');
+        });
+      }
+    }
+
+    // Test valid global unicast IPv6 addresses (2000::/3)
+    group('valid global unicast IPv6 addresses (2000::/3)', () {
+      final testCases = [
+        // Standard global unicast addresses
+        '2001:0db8:85a3:0000:0000:8a2e:0370:7334',
+        '2001:db8::1',
+        '2a02:c00::1',
+        '3000::1',
+        '2400:cb00:2049:1::a29f:1806',
+        '2606:4700:4700::1111',
+        '2a03:2880:f12f:83:face:b00c::25de',
+        // Edge cases within global unicast range
+        '2000::1', // Start of 2000::/3
+        '3fff:ffff:ffff:ffff:ffff:ffff:ffff:ffff', // End of 2000::/3
+        // Various valid formats
+        '2001:db8:1234:5678:9abc:def0:1234:5678',
+        '2001:db8:1234:5678:9abc:def0:1234::',
+        '2001:db8:1234:5678:9abc:def0::',
+        '2001:db8:1234:5678:9abc::',
+        '2001:db8:1234:5678::',
+        '2001:db8:1234::',
+        '2001:db8::',
+      ];
+
+      for (var address in testCases) {
+        test('should accept valid global unicast address: $address', () {
+          final rule = IPv6WithReservedRule();
+          final isValid = rule.validate(address);
+          final testName = 'Valid Global Unicast: $address';
+          final passed = isValid == true;
+          _trackTestResult('Valid Global Unicast', testName, passed, address,
+              'Valid Global Unicast',
+              description:
+                  'Should be accepted as a valid global unicast IPv6 address');
+          expect(isValid, isTrue,
+              reason:
+                  'Expected $address to be a valid global unicast IPv6 address');
+        });
+      }
+    });
+
+    // Test invalid IPv6 addresses that violate the rules
+    group('invalid IPv6 addresses - reserved/special ranges', () {
+      // Loopback addresses (::1/128)
+      group('loopback addresses', () {
+        final testCases = [
+          '::1',
+          '0:0:0:0:0:0:0:1',
+        ];
+        _runInvalidTestCases(testCases, 'loopback');
+      });
+
+      // Link-local addresses (fe80::/10)
+      group('link-local addresses (fe80::/10)', () {
+        final testCases = [
+          'fe80::1',
+          'fe80::1234:5678',
+          'fe80:0000:0000:0000:0000:0000:0000:0001',
+          'febf:ffff:ffff:ffff:ffff:ffff:ffff:ffff', // End of fe80::/10
+        ];
+        _runInvalidTestCases(testCases, 'link-local');
+      });
+
+      // Unique Local Addresses (fc00::/7)
+      group('unique local addresses (fc00::/7)', () {
+        final testCases = [
+          'fc00::1',
+          'fd00::1',
+          'fd12:3456:789a:1::1',
+          'fdff:ffff:ffff:ffff:ffff:ffff:ffff:ffff', // End of fd00::/8
+        ];
+        _runInvalidTestCases(testCases, 'ULA');
+      });
+
+      // Multicast addresses (ff00::/8)
+      group('multicast addresses (ff00::/8)', () {
+        final testCases = [
+          'ff00::1',
+          'ff02::1',
+          'ff0f:ffff:ffff:ffff:ffff:ffff:ffff:ffff', // End of ff00::/8
+        ];
+        _runInvalidTestCases(testCases, 'multicast');
+      });
+
+      // Unspecified/undefined addresses (::/128 and 0::/96)
+      group('unspecified/undefined addresses', () {
+        final testCases = [
+          '::',
+          '0:0:0:0:0:0:0:0',
+          '0:0:0:0:0:0:0:0',
+          '::0',
+          '0::0',
+          '0:0:0:0:0:0:0:0:0',
+        ];
+        _runInvalidTestCases(testCases, 'unspecified/undefined');
+      });
+
+      // Unallocated address space (e.g., ffff::/16)
+      group('unallocated/reserved address space', () {
+        final testCases = [
+          'ffff::1',
+          'ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff',
+          '100::',
+          '1::',
+          '1::1',
+          // 3FFE::/16 (6bone) - deprecated IPv6 testing network
+          '3ffe::1',
+          '3ffe:0101:0101:0101:0101:0101:0101:0101',
+          '3ffe:ffff:ffff:ffff:ffff:ffff:ffff:ffff', // End of 3ffe::/16 (6bone)
+          // Other reserved ranges
+          '5f00::',
+          '5fff:ffff:ffff:ffff:ffff:ffff:ffff:ffff',
+        ];
+        _runInvalidTestCases(testCases, 'unallocated/reserved');
+      });
+
+      // IPv4-mapped and IPv4-compatible addresses
+      group('IPv4-mapped and IPv4-compatible addresses', () {
+        final testCases = [
+          '::ffff:192.168.1.1',
+          '::192.168.1.1',
+          '::ffff:0:192.168.1.1',
+          '::ffff:c0a8:0101', // Same as ::ffff:192.168.1.1
+        ];
+        _runInvalidTestCases(testCases, 'IPv4-mapped/compatible');
+      });
+
+      // Invalid formats and non-IPv6 addresses
+      group('invalid formats and non-IPv6 addresses', () {
+        final testCases = [
+          '',
+          'not_an_ipv6',
+          '192.168.1.1',
+          '2001:db8::1/64',
+          '2001:db8::1:g',
+          '2001:db8::1::1', // Double ::
+          '2001:db8:1:2:3:4:5:6:7', // Too many segments
+          '2001:db8:1:2:3', // Too few segments
+        ];
+        _runInvalidTestCases(testCases, 'invalid format');
+      });
+    });
+
+    test('test valid IPv6 address - 2001:db8::', () {
+      final rule = IPv6WithReservedRule();
+      final isValid = rule.validate('2001:db8::');
+
+      expect(isValid, isTrue);
+    });
+
+    test('test valid IPv6 address - 2001:db8::1', () {
+      final rule = IPv6WithReservedRule();
+      final isValid = rule.validate('2001:db8::1');
 
       expect(isValid, isTrue);
     });

@@ -84,7 +84,7 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
         children: [
           AppText.bodyLarge(loc(context).instantPrivacyDescription),
           const AppGap.large4(),
-          if (preservedState?.mode == MacFilterMode.deny) ...[
+          if (preservedState?.settings.mode == MacFilterMode.deny) ...[
             _warningCard(),
             const AppGap.small2(),
           ],
@@ -98,7 +98,7 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
                     _enableTile(state),
                     const AppGap.large2(),
                     _deviceListView(
-                        state.mode == MacFilterMode.allow, deviceList),
+                        state.settings.mode == MacFilterMode.allow, deviceList),
                   ],
                 ),
               ),
@@ -121,7 +121,7 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (preservedState?.mode == MacFilterMode.deny) ...[
+          if (preservedState?.settings.mode == MacFilterMode.deny) ...[
             _warningCard(),
             const AppGap.small2(),
           ],
@@ -131,7 +131,7 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
           const AppGap.small2(),
           _infoCard(),
           const AppGap.large2(),
-          _deviceListView(state.mode == MacFilterMode.allow, deviceList),
+          _deviceListView(state.settings.mode == MacFilterMode.allow, deviceList),
           const AppGap.large2(),
         ],
       ),
@@ -234,8 +234,7 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
   }
 
   Widget _deviceCard(bool isEnable, DeviceListItem device) {
-    final myMac =
-        ref.watch(instantPrivacyProvider.select((state) => state.myMac));
+    final myMac = ref.watch(instantPrivacyProvider.select((state) => state.settings.myMac));
     return AppCard(
       color:
           device.isOnline ? null : Theme.of(context).colorScheme.surfaceVariant,
@@ -346,7 +345,7 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
         Expanded(child: AppText.labelLarge(loc(context).instantPrivacy)),
         AppSwitch(
           semanticLabel: 'instant privacy',
-          value: state.mode == MacFilterMode.allow,
+          value: state.settings.mode == MacFilterMode.allow,
           onChanged: _isRefreshing
               ? null
               : (value) {

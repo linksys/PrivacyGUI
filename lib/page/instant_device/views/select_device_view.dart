@@ -42,6 +42,20 @@ enum SelectMode {
       };
 }
 
+enum ConnectionType {
+  all,
+  wired,
+  wireless,
+  ;
+
+  static ConnectionType resolve(String? value) => switch (value) {
+        'all' => ConnectionType.all,
+        'wired' => ConnectionType.wired,
+        'wireless' => ConnectionType.wireless,
+        _ => ConnectionType.all,
+      };
+}
+
 class SelectDeviceView extends ArgumentsConsumerStatefulView {
   const SelectDeviceView({super.key, super.args});
 
@@ -52,6 +66,7 @@ class SelectDeviceView extends ArgumentsConsumerStatefulView {
 class _SelectDeviceViewState extends ConsumerState<SelectDeviceView> {
   late final DisplaySubType _subType;
   late final SelectMode _selectMode;
+  late final ConnectionType _connectionType;
   late final bool _onlineOnly;
 
   final List<DeviceListItem> selected = [];
@@ -63,8 +78,16 @@ class _SelectDeviceViewState extends ConsumerState<SelectDeviceView> {
     _subType = DisplaySubType.resolve(widget.args['type']);
     _selectMode = SelectMode.resolve(widget.args['selectMode']);
     _onlineOnly = widget.args['onlineOnly'] ?? false;
+    _connectionType = ConnectionType.resolve(widget.args['connection']);
     final selectedValues = widget.args['selected'] as List<String>? ?? [];
-    final devices = ref.read(deviceListProvider).devices;
+    final devices = ref
+        .read(deviceListProvider)
+        .devices
+        .where((device) =>
+            _connectionType == ConnectionType.all ||
+            (device.isWired && _connectionType == ConnectionType.wired) ||
+            (!device.isWired && _connectionType == ConnectionType.wireless))
+        .toList();
     final selectedItems = selectedValues
         .map((value) {
           return devices
@@ -88,8 +111,13 @@ class _SelectDeviceViewState extends ConsumerState<SelectDeviceView> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(deviceListProvider);
-    final onlineDevices =
-        state.devices.where((device) => device.isOnline).toList();
+    final onlineDevices = state.devices
+        .where((device) => device.isOnline)
+        .where((device) =>
+            _connectionType == ConnectionType.all ||
+            (device.isWired && _connectionType == ConnectionType.wired) ||
+            (!device.isWired && _connectionType == ConnectionType.wireless))
+        .toList();
     final offlineDevices =
         state.devices.where((device) => !device.isOnline).toList();
     return StyledAppPageView(

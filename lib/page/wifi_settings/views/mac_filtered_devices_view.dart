@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
-import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
@@ -52,7 +51,7 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
         AppTextButton(
           loc(context).edit,
           icon: LinksysIcons.edit,
-          onTap: state.denyMacAddresses.isNotEmpty
+          onTap: state.settings.denyMacAddresses.isNotEmpty
               ? () {
                   _toggleEdit();
                 }
@@ -127,9 +126,10 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
     final results = await context
         .pushNamed<List<DeviceListItem>?>(RouteNamed.devicePicker, extra: {
       'type': 'mac',
-      'selected': ref.read(instantPrivacyProvider).denyMacAddresses
+      'connection': 'wireless',
+      'selected': ref.read(instantPrivacyProvider).settings.denyMacAddresses
     });
-    final temp = ref.read(instantPrivacyProvider).denyMacAddresses;
+    final temp = ref.read(instantPrivacyProvider).settings.denyMacAddresses;
     if (results != null) {
       final newMacs = results.map((e) => e.macAddress).toList();
       // temp and newMacs do XOR
@@ -206,6 +206,7 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
   _showManuallyAddModal() async {
     final controller = TextEditingController();
     bool isValid = false;
+    bool isDuplicate = false;
     final result = await showSubmitAppDialog<String?>(
       context,
       title: loc(context).macAddress,
@@ -216,10 +217,15 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
             semanticLabel: 'mac address',
             border: const OutlineInputBorder(),
             controller: controller,
+            errorText:
+                isValid && !isDuplicate ? null : loc(context).invalidMACAddress,
             onChanged: (text) {
               setState(() {
                 isValid = InputValidator([MACAddressRule()])
                     .validate(controller.text);
+                isDuplicate = ref
+                    .read(macFilteringDeviceListProvider)
+                    .any((device) => device.macAddress == controller.text);
               });
             },
           )
@@ -228,7 +234,7 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
       event: () async {
         return controller.text.toUpperCase();
       },
-      checkPositiveEnabled: () => isValid,
+      checkPositiveEnabled: () => isValid && !isDuplicate,
     );
     if (result != null) {
       ref.read(instantPrivacyProvider.notifier).setSelection([result], true);

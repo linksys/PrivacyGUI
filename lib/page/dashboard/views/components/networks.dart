@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
@@ -22,7 +23,6 @@ import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
 
 class DashboardNetworks extends ConsumerStatefulWidget {
   const DashboardNetworks({super.key});
@@ -76,8 +76,8 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
         ref.read(dashboardHomeProvider).lanPortConnections.isNotEmpty;
     final showAllTopology =
         ResponsiveLayout.isMobileLayout(context) || routerLength <= 3;
-    final isLoading = ref.watch(deviceManagerProvider).deviceList.isEmpty;
-
+    final isLoading =
+        (ref.watch(pollingProvider).value?.isReady ?? false) == false;
     return isLoading
         ? AppCard(
             padding: EdgeInsets.zero,

@@ -6,9 +6,10 @@ import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provi
 final macFilteringDeviceListProvider = Provider((ref) {
   final deviceListState = ref.watch(deviceListProvider);
   final macFilteringState = ref.watch(instantPrivacyProvider);
-  final deviceList = deviceListState.devices;
-  final macAddresses = macFilteringState.denyMacAddresses;
-  return macAddresses
+  final deviceList = deviceListState.devices.where((device) => !device.isWired);
+  final macAddresses = macFilteringState.settings.denyMacAddresses;
+  final bssidList = macFilteringState.settings.bssids;
+  return (macAddresses.toSet()).difference(bssidList.toSet()).toList()
       .map((e) =>
           deviceList.firstWhereOrNull((device) => device.macAddress == e) ??
           DeviceListItem(macAddress: e, name: '--'))

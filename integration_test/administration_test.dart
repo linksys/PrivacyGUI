@@ -38,7 +38,7 @@ void main() {
     });
 
     testWidgets('Administration operations', (tester) async {
-      await tester.pumpFrames(app(), Duration(seconds: 3));
+      await tester.pumpFrames(app(), Duration(seconds: 5));
       // Enter the menu screen
       final topbarActions = TestTopbarActions(tester);
       await topbarActions.tapMenuButton();
@@ -53,10 +53,14 @@ void main() {
       await administrationActions.checkTitle(administrationActions.title);
       // Record the current status
       final previousValue1 = administrationActions.isAllowToConfigureChecked();
-      final previousValue2 = administrationActions.isAllowToInternetChecked();
+      final previousValue2 = administrationActions.isAllowToDisableChecked();
       final previousValue3 = administrationActions.isSipSwitchEnabled();
       final previousValue4 =
           administrationActions.isExpressForwardingSwitchEnabled();
+      // Disable the local management wirelessly if it exists
+      if (administrationActions.isManageWirelesslySupported()) {
+        await administrationActions.toggleManageWirelesslySwitch();
+      }
       // Disable the UPnP switch
       await administrationActions.toggleUpnpSwitch();
       // Check all checkboxes are hidden
@@ -77,7 +81,7 @@ void main() {
       await advancedSettingsActions.enterAdministrationPage();
       // Verify updated values
       final currentValue1 = administrationActions.isAllowToConfigureChecked();
-      final currentValue2 = administrationActions.isAllowToInternetChecked();
+      final currentValue2 = administrationActions.isAllowToDisableChecked();
       final currentValue3 = administrationActions.isSipSwitchEnabled();
       final currentValue4 =
           administrationActions.isExpressForwardingSwitchEnabled();

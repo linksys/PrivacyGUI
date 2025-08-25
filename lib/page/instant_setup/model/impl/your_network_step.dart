@@ -62,10 +62,8 @@ class YourNetworkStep extends PnpStep {
             children: [
               ...state.childNodes
                   .map((e) => AppNodeListCard(
-                      leading: CustomTheme.of(context)
-                          .images
-                          .devices
-                          .getByName(routerIconTest(e.toMap())),
+                      leading: CustomTheme.of(context).getRouterImage(
+                          routerIconTestByModel(modelNumber: e.modelNumber ?? ''), false),
                       title: e.getDeviceLocation(),
                       trailing: null))
                   .toList()

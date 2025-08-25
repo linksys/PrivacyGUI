@@ -286,11 +286,10 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Image(
-                image: CustomTheme.of(context).images.devices.getByName(
-                      routerIconTestByModel(
-                        modelNumber: deviceInfo?.modelNumber ?? 'LN11',
-                      ),
-                    ),
+                image: CustomTheme.of(context)
+                    .getRouterImage(routerIconTestByModel(
+                  modelNumber: deviceInfo?.modelNumber ?? 'LN12',
+                )),
                 height: 160,
                 width: 160,
                 fit: BoxFit.contain,

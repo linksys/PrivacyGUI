@@ -8,8 +8,9 @@ static const topologyModelJsonTemplate = {
   "isOnline": true,
   "isWiredConnection": true,
   "signalStrength": -1,
-  "isRouter": true,
+  "isRouter": true, 
   "icon": "routerLn12",
+  "macAddress": "3C:22:FB:E4:4F:18",
   "connectedDeviceCount": 1,
   "model": "LN16",
   "serialNumber": "65G10M27E03041",
@@ -136,6 +137,21 @@ final _slaveNode5 = RouterTopologyNode(
     signalStrength: -70,
     isRouter: true,
     icon: 'routerLn12',
+    connectedDeviceCount: 999,
+  ),
+  children: [],
+);
+final _slaveLegacyNode1 = RouterTopologyNode(
+  data: TopologyModel.fromMap(topologyModelJsonTemplate).copyWith(
+    deviceId: 'ROUTER-LEGACY-SLAVE-DEVICEID-000005',
+    location: 'Mx4200 Node 1',
+    isMaster: false,
+    isOnline: true,
+    isWiredConnection: false,
+    signalStrength: -70,
+    isRouter: true,
+    icon: 'routerMx5300',
+    model: 'Mx4200',
     connectedDeviceCount: 999,
   ),
   children: [],
@@ -584,6 +600,24 @@ get testTopologyPinnacleSlavesDaisyState => InstantTopologyState(
       ])),
 );
 
+get testTopologyLegacySlavesDaisyState => InstantTopologyState(
+  root: _onlineRoot
+    ..children.clear()
+    ..children.add(_masterNode
+      ..parent = _onlineRoot
+      ..children.clear()
+      ..children.addAll([
+        _slaveNode1
+          ..children.clear()
+          ..parent = _masterNode
+          ..children.addAll([
+            _slaveLegacyNode1
+              ..children.clear()
+              ..parent = _slaveNode1
+          ]),
+      ])),
+);
+
 void cleanup() {
   _onlineRoot.children.clear();
   _slaveOfflineNode1.children.clear();
@@ -598,6 +632,7 @@ void cleanup() {
   _slaveNode3.children.clear();
   _slaveNode4.children.clear();
   _slaveNode5.children.clear();
+  _slaveLegacyNode1.children.clear();
   _slaveGoodNode.children.clear();
   _slaveFairNode.children.clear();
 }

@@ -602,6 +602,10 @@ void initBetterActions() {
       _JNAPActionValue.verifyRouterResetCode.value;
   _betterActionMap[JNAPAction.getVersionInfo] =
       _JNAPActionValue.getVersionInfo.value;
+  _betterActionMap[JNAPAction.getSmartConnectPin] =
+      _JNAPActionValue.getSmartConnectPin.value;
+  _betterActionMap[JNAPAction.getSmartConnectStatus] =
+      _JNAPActionValue.getSmartConnectStatus.value;
   _betterActionMap[JNAPAction.getDeviceMode] =
       _JNAPActionValue.getDeviceMode.value;
   _betterActionMap[JNAPAction.getSupportedDeviceMode] =
@@ -652,6 +656,10 @@ void initBetterActions() {
       _JNAPActionValue.getBluetoothAutoOnboardingStatus.value;
   _betterActionMap[JNAPAction.startBlueboothAutoOnboarding] =
       _JNAPActionValue.startBluetoothAutoOnboarding.value;
+  _betterActionMap[JNAPAction.setWiredAutoOnboardingSettings] =
+      _JNAPActionValue.setWiredAutoOnboardingSettings.value;
+  _betterActionMap[JNAPAction.getWiredAutoOnboardingSettings] =
+      _JNAPActionValue.getWiredAutoOnboardingSettings.value;
   _betterActionMap[JNAPAction.getVLANTaggingSettings] =
       _JNAPActionValue.getVLANTaggingSettings.value;
   _betterActionMap[JNAPAction.setVLANTaggingSettings] =

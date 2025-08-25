@@ -233,7 +233,7 @@ class _SinglePortForwardingContentViewState
           _ => AppText.bodySmall(''),
         };
       },
-      editCellBuilder: (context, ref, index, rule, error) {
+      editCellBuilder: (context, index, controller) {
         final stateRule = ref.watch(singlePortForwardingRuleProvider).rule;
 
         return switch (index) {

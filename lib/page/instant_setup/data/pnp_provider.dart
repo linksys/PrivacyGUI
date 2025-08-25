@@ -85,7 +85,7 @@ abstract class BasePnpNotifier extends Notifier<PnpState> {
   }
   // abstract functions
 
-  Future fetchDeviceInfo();
+  Future fetchDeviceInfo([bool clearCurrentSN = true]);
   Future checkAdminPassword(String? password);
   Future checkInternetConnection([int retries = 1]);
   Future checkRouterConfigured();
@@ -122,7 +122,7 @@ class MockPnpNotifier extends BasePnpNotifier {
   }
 
   @override
-  Future fetchDeviceInfo() {
+  Future fetchDeviceInfo([bool clearCurrentSN = true]) {
     return Future.delayed(const Duration(seconds: 1));
   }
 
@@ -132,7 +132,7 @@ class MockPnpNotifier extends BasePnpNotifier {
         .then((value) => AutoConfigurationSettings(
               isAutoConfigurationSupported: true,
               userAcknowledgedAutoConfiguration: false,
-              autoConfigurationMethod: AutoConfigurationMethod.autoParent,
+              autoConfigurationMethod: AutoConfigurationMethod.preConfigured,
             ));
   }
 
@@ -201,7 +201,7 @@ class MockPnpNotifier extends BasePnpNotifier {
 
 class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
   @override
-  Future fetchDeviceInfo() async {
+  Future fetchDeviceInfo([bool clearCurrentSN = true]) async {
     final deviceInfo = await ref
         .read(routerRepositoryProvider)
         .send(
@@ -218,7 +218,9 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
     });
     // check current sn and clear it
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(pCurrentSN);
+    if (clearCurrentSN) {
+      await prefs.remove(pCurrentSN);
+    }
     await prefs.setString(pPnpConfiguredSN, deviceInfo.serialNumber);
     // Pause polling
     ref.read(pollingProvider.notifier).paused = true;
@@ -587,7 +589,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
         result.output['devices'],
       )
           .map((e) => LinksysDevice.fromMap(e))
-          .where((device) => device.nodeType != null)
+          .where((device) => device.nodeType != null || device.isAuthority)
           .toList();
       state = state.copyWith(childNodes: deviceList);
     });

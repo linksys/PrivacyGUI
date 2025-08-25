@@ -229,7 +229,7 @@ class _PortRangeTriggeringContentViewState
           _ => AppText.bodyLarge(''),
         };
       },
-      editCellBuilder: (context, ref, index, rule, error) {
+      editCellBuilder: (context, index, controller) {
         final stateRule = ref.watch(portRangeTriggeringRuleProvider).rule;
 
         return switch (index) {

@@ -626,12 +626,12 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
               if (errorKeys.isEmpty) {
                 return null;
               } else if (errorKeys.keys.first ==
-                  (NoSurroundWhitespaceRule).toString()) {
+                  NoSurroundWhitespaceRule().name) {
                 return loc(context).routerPasswordRuleStartEndWithSpace;
-              } else if (errorKeys.keys.first == (WiFiSsidRule).toString() ||
-                  errorKeys.keys.first == (RequiredRule).toString()) {
+              } else if (errorKeys.keys.first == WiFiSsidRule().name ||
+                  errorKeys.keys.first == RequiredRule().name) {
                 return loc(context).theNameMustNotBeEmpty;
-              } else if (errorKeys.keys.first == (LengthRule).toString()) {
+              } else if (errorKeys.keys.first == LengthRule().name) {
                 return loc(context).wifiSSIDLengthLimit;
               } else {
                 return null;
@@ -660,10 +660,12 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
     TextEditingController controller = TextEditingController()
       ..text = initValue;
     bool isPasswordValid = true;
+    bool isLength64 = initValue.length == 64;
     final InputValidator wifiPasswordValidator = InputValidator([
       LengthRule(min: 8, max: 64),
       NoSurroundWhitespaceRule(),
       AsciiRule(),
+      WiFiPSKRule(),
     ]);
     final result = await showSubmitAppDialog<String>(
       context,
@@ -697,9 +699,24 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
                       wifiPasswordValidator.getRuleByIndex(2)?.validate(text) ??
                       false),
                 ),
+                if (isLength64)
+                  Validation(
+                    description: loc(context).wifiPasswordRuleHex,
+                    validator: ((text) =>
+                        wifiPasswordValidator
+                            .getRuleByIndex(3)
+                            ?.validate(text) ??
+                        false),
+                  ),
               ],
+              onChanged: (value) {
+                setState(() {
+                  isLength64 = value.length == 64;
+                });
+              },
               onValidationChanged: (isValid) => setState(() {
-                isPasswordValid = isValid;
+                isPasswordValid =
+                    wifiPasswordValidator.validate(controller.text);
               }),
               onSubmitted: (_) {
                 if (wifiPasswordValidator.validate(controller.text)) {

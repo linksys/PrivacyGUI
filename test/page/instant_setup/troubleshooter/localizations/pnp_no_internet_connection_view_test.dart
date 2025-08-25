@@ -74,7 +74,7 @@ void main() async {
       'Troubleshooter - PnP no internet connection: has SSID and need help',
       (tester, locale) async {
     when(mockPnpTroubleshooterNotifier.build())
-        .thenReturn(PnpTroubleshooterState(hasResetModem: true));
+        .thenReturn(PnpTroubleshooterState());
     await tester.pumpWidget(
       testableSingleRoute(
         child: const PnpNoInternetConnectionView(

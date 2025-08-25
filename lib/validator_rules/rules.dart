@@ -109,6 +109,23 @@ class AsciiRule extends RegExValidationRule {
   RegExp get _rule => RegExp(r'^[\x20-\x7E]+$');
 }
 
+class WiFiPSKRule extends RegExValidationRule {
+  @override
+  String get name => 'WiFiPSKRule';
+
+  @override
+  RegExp get _rule => RegExp(r'^[0-9a-fA-F]+$');
+
+  @override
+  bool validate(String input) {
+    // if length is 64, check if it is a valid hex
+    if (input.length >= 64) {
+      return _rule.hasMatch(input);
+    }
+    return true;
+  }
+}
+
 class WhiteSpaceRule extends RegExValidationRule {
   @override
   String get name => 'WhiteSpaceRule';
@@ -139,6 +156,236 @@ class MACAddressRule extends RegExValidationRule {
 
   @override
   RegExp get _rule => RegExp(r"^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$");
+}
+
+class IPv6Rule extends RegExValidationRule {
+  @override
+  String get name => 'IPv6Rule';
+
+  @override
+  RegExp get _rule => RegExp(
+      r'^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|' // 1:2:3:4:5:6:7:8
+      r'([0-9a-fA-F]{1,4}:){1,7}:|' // 1::, 1:2:3:4:5:6:7::
+      r'([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|' // 1::8, 1:2:3:4:5:6::8
+      r'([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|' // 1::7:8, 1:2:3:4:5::7:8, 1:2:3:4:5::8
+      r'([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|' // 1::6:7:8, 1:2:3:4::6:7:8, etc.
+      r'([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|'
+      r'([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|'
+      r'[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|' // 1::5:6:7:8:9:a:b, ::4:5:6:7:8:9:a:b, etc.
+      r':((:[0-9a-fA-F]{1,4}){1,7}|:)|' // ::2:3:4:5:6:7:8, ::
+      r'fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]+|' // link-local
+      r'::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}'
+      r'(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|' // IPv4-mapped IPv6 (::ffff:255.255.255.255)
+      r'([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}'
+      r'(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))$' // IPv4-embedded IPv6 (2001:db8::192.168.0.1)
+      );
+
+  @override
+  bool validate(String input) {
+    if (input == '::') {
+      return false;
+    }
+    try {
+      // Uri.parseIPv6Address will throw a FormatException if the address is invalid.
+      Uri.parseIPv6Address(input);
+      return true;
+    } catch (e) {
+      return false || _rule.hasMatch(input);
+    }
+  }
+}
+
+class IPv6WithReservedRule extends ValidationRule {
+  @override
+  String get name => 'IPv6WithReservedRule';
+
+  @override
+  bool validate(String input) {
+    try {
+      final List<int> rawAddress = _parseIpv6ToBytes(input);
+
+      // If parsing failed, _parseIpv6ToBytes returns an empty list.
+      if (rawAddress.isEmpty) {
+        return false;
+      }
+
+      // An IPv6 address must be 16 bytes long.
+      if (rawAddress.length != 16) {
+        return false;
+      }
+
+      // --- Rule Checks: Exclude Reserved/Special Ranges ---
+
+      // 1. Loopback Address (::1) - All bytes are 0 except the last one which is 1.
+      if (rawAddress[0] == 0 &&
+          rawAddress[1] == 0 &&
+          rawAddress[2] == 0 &&
+          rawAddress[3] == 0 &&
+          rawAddress[4] == 0 &&
+          rawAddress[5] == 0 &&
+          rawAddress[6] == 0 &&
+          rawAddress[7] == 0 &&
+          rawAddress[8] == 0 &&
+          rawAddress[9] == 0 &&
+          rawAddress[10] == 0 &&
+          rawAddress[11] == 0 &&
+          rawAddress[12] == 0 &&
+          rawAddress[13] == 0 &&
+          rawAddress[14] == 0 &&
+          rawAddress[15] == 1) {
+        return false;
+      }
+
+      // 2. Link-local Address (fe80::/10) - First byte is 0xFE, and the top two bits of the second byte are 10 (0x80 to 0xBF).
+      if (rawAddress[0] == 0xFE && (rawAddress[1] & 0xC0) == 0x80) {
+        return false;
+      }
+
+      // 3. Multicast Address (ff00::/8) - First byte is 0xFF.
+      if (rawAddress[0] == 0xFF) {
+        return false;
+      }
+
+      // 4. ULA (Unique Local Address) fc00::/7 - First byte is 0xFC or 0xFD.
+      if (rawAddress[0] == 0xFC || rawAddress[0] == 0xFD) {
+        return false;
+      }
+
+      // 5. Unspecified Address (::) - All 16 bytes are 0.
+      if (rawAddress.every((byte) => byte == 0)) {
+        return false;
+      }
+
+      // 6. Unallocated or Deprecated Address Space
+
+      // 6a. Check for ffff::/16 (unallocated).
+      if (rawAddress[0] == 0xFF && rawAddress[1] == 0xFF) {
+        return false;
+      }
+
+      // 6b. Check for 3ffe::/16 (6bone - deprecated IPv6 testing network).
+      if (rawAddress[0] == 0x3F && rawAddress[1] == 0xFE) {
+        return false;
+      }
+
+      // 6c. Check for other reserved ranges within 2000::/3 (e.g., 5F00::/12, 6000::/3 to 7FFF::/3).
+      if (rawAddress[0] >= 0x5F && rawAddress[0] <= 0x7F) {
+        return false;
+      }
+
+      // --- Rule: Must be a Global Unicast Address ---
+      // Global Unicast addresses fall within the 2000::/3 range,
+      // meaning the first byte starts with binary '001'.
+      // So, the first byte's value should be between 0x20 (00100000) and 0x3F (00111111), inclusive.
+      if (rawAddress[0] < 0x20 || rawAddress[0] > 0x3F) {
+        return false;
+      }
+
+      // If all checks pass, the address is considered a valid global unicast.
+      return true;
+    } catch (e) {
+      // Catch any other unexpected errors during the process.
+      return false;
+    }
+  }
+
+  List<int> _parseIpv6ToBytes(String ipv6String) {
+    List<int> resultBytes = []; // Use List<int> for dynamic byte appending
+
+    // Check for multiple '::' (double colons).
+    // An IPv6 address can only have one '::' for zero compression.
+    if (ipv6String.indexOf('::') != ipv6String.lastIndexOf('::')) {
+      return []; // Invalid format: multiple double colons.
+    }
+
+    // Check for invalid characters (must be hexadecimal digits or colons).
+    if (!RegExp(r'^[0-9a-fA-F:]+$').hasMatch(ipv6String)) {
+      return []; // Contains non-hexadecimal or non-colon characters.
+    }
+
+    if (ipv6String.contains('::')) {
+      // Handle zero compression (double colon abbreviation).
+      List<String> parts = ipv6String.split('::');
+      if (parts.length != 2) {
+        // Should only result in a left and right part.
+        return [];
+      }
+
+      // Split the left and right parts into hexadecimal groups.
+      // Handle cases like "::1" (left part is empty) or "1::" (right part is empty).
+      List<String> leftGroups = parts[0].isEmpty ? [] : parts[0].split(':');
+      List<String> rightGroups = parts[1].isEmpty ? [] : parts[1].split(':');
+
+      // Edge case: "::" should have both left and right parts empty.
+      if (leftGroups.isEmpty && rightGroups.isEmpty && ipv6String != "::") {
+        return []; // e.g., ":::" which is invalid.
+      }
+
+      // Parse the left-hand side groups.
+      for (String group in leftGroups) {
+        // Each group must not be empty and must have 1 to 4 hexadecimal characters.
+        if (group.isEmpty || group.length > 4) return [];
+        try {
+          int value = int.parse(group, radix: 16);
+          resultBytes.add((value >> 8) & 0xFF); // Add high byte.
+          resultBytes.add(value & 0xFF); // Add low byte.
+        } catch (e) {
+          return []; // Parsing error (e.g., non-hex characters in a group).
+        }
+      }
+
+      // Calculate how many zero-compressed groups '::' represents.
+      // An IPv6 address has 8 groups in total.
+      int numGroups = leftGroups.length + rightGroups.length;
+      if (numGroups > 8) {
+        return []; // Too many groups in total.
+      }
+      int zeroCompressedGroups = 8 - numGroups;
+
+      // Fill the middle with zeros (each group is 2 bytes).
+      for (int i = 0; i < zeroCompressedGroups * 2; i++) {
+        resultBytes.add(0);
+      }
+
+      // Parse the right-hand side groups.
+      for (String group in rightGroups) {
+        // Each group must not be empty and must have 1 to 4 hexadecimal characters.
+        if (group.isEmpty || group.length > 4) return [];
+        try {
+          int value = int.parse(group, radix: 16);
+          resultBytes.add((value >> 8) & 0xFF); // Add high byte.
+          resultBytes.add(value & 0xFF); // Add low byte.
+        } catch (e) {
+          return []; // Parsing error.
+        }
+      }
+    } else {
+      // Handle standard (non-abbreviated) IPv6 format.
+      List<String> parts = ipv6String.split(':');
+      if (parts.length != 8) {
+        return []; // Not the standard 8 groups.
+      }
+
+      for (String group in parts) {
+        // Each group must not be empty and must have 1 to 4 hexadecimal characters.
+        if (group.isEmpty || group.length > 4) return [];
+        try {
+          int value = int.parse(group, radix: 16);
+          resultBytes.add((value >> 8) & 0xFF); // Add high byte.
+          resultBytes.add(value & 0xFF); // Add low byte.
+        } catch (e) {
+          return []; // Parsing error.
+        }
+      }
+    }
+
+    // Final check: The total number of bytes must be 16.
+    if (resultBytes.length != 16) {
+      return []; // Not fully parsed to 16 bytes, format error.
+    }
+
+    return resultBytes; // Return the list of bytes.
+  }
 }
 
 class MACAddressWithReservedRule extends ValidationRule {
@@ -251,14 +498,126 @@ class RequiredRule extends ValidationRule {
   }
 }
 
+/// Validates an IPv4 address string against specified rules:
+/// 1. Must be a correct IPv4 format.
+/// 2. Cannot be from reserved or special-use ranges:
+///    - 0.0.0.0/8 (Current Network / Unspecified)
+///    - 127.0.0.0/8 (Loopback)
+///    - 224.0.0.0/4 (Multicast)
+///    - 255.255.255.255 (Broadcast)
 class IpAddressNoReservedRule extends ValidationRule {
   @override
   String get name => 'IpAddressNoReservedRule';
+
+  /// Validates an IPv4 address string against specified rules:
+  /// 1. Must be a correct IPv4 format.
+  /// 2. Cannot be from reserved or special-use ranges:
+  ///    - 0.0.0.0/8 (Current Network / Unspecified)
+  ///    - 127.0.0.0/8 (Loopback)
+  ///    - 224.0.0.0/4 (Multicast)
+  ///    - 255.255.255.255 (Broadcast)
   @override
   bool validate(String input) {
-    return input != '0.0.0.0' &&
-        input != '127.0.0.1' &&
-        input != '255.255.255.255';
+    try {
+      final List<int> rawAddress = _parseIpv4ToBytes(input);
+
+      // If parsing failed, _parseIpv4ToBytes returns an empty list.
+      if (rawAddress.isEmpty) {
+        // print('Reject: Invalid IPv4 format during parsing.');
+        return false;
+      }
+
+      // An IPv4 address must be 4 bytes long.
+      if (rawAddress.length != 4) {
+        // print('Reject: Parsed address is not 4 bytes long (unexpected).');
+        return false;
+      }
+
+      // --- Rule Checks based on IPv4 Address Bytes ---
+
+      // 1. Check for 0.0.0.0/8 (Current Network / Unspecified / This Host)
+      // This range includes any address where the first octet (byte) is 0.
+      if (rawAddress[0] == 0x00) {
+        // print('Reject: Falls within 0.0.0.0/8 range (Unspecified/Current Network).');
+        return false;
+      }
+
+      // 2. Check for 127.0.0.0/8 (Loopback)
+      // This range includes any address where the first octet (byte) is 127.
+      if (rawAddress[0] == 0x7F) {
+        // 0x7F is 127 in hexadecimal
+        // print('Reject: Loopback address (127.0.0.0/8).');
+        return false;
+      }
+
+      // 3. Check for 224.0.0.0/4 (Multicast)
+      // Multicast addresses range from 224.0.0.0 to 239.255.255.255.
+      // This means the first octet (byte) is between 224 (0xE0) and 239 (0xEF).
+      if (rawAddress[0] >= 0xE0 && rawAddress[0] <= 0xEF) {
+        // print('Reject: Multicast address (224.0.0.0/4).');
+        return false;
+      }
+
+      // 4. Check for 255.255.255.255 (Limited Broadcast)
+      // Manually check if all four bytes are 255 (0xFF).
+      if (rawAddress[0] == 0xFF &&
+          rawAddress[1] == 0xFF &&
+          rawAddress[2] == 0xFF &&
+          rawAddress[3] == 0xFF) {
+        // print('Reject: Limited Broadcast address (255.255.255.255).');
+        return false;
+      }
+
+      // If all checks pass, the address is considered valid.
+      // print('Accept: IPv4 address is valid and not from specified reserved/special ranges.');
+      return true;
+    } catch (e) {
+      // Catch any other unexpected errors during the process.
+      // print('An unexpected error occurred during IPv4 validation: $e');
+      return false;
+    }
+  }
+
+  /// Helper function: Parses an IPv4 string into a list of 4 bytes (octets).
+  /// Returns a list of 4 integers (0-255), or an empty list if parsing fails.
+  static List<int> _parseIpv4ToBytes(String ipv4String) {
+    List<String> octets = ipv4String.split('.');
+
+    // An IPv4 address must have exactly 4 octets.
+    if (octets.length != 4) {
+      return []; // Invalid format: incorrect number of octets.
+    }
+
+    List<int> bytes = [];
+    for (String octet in octets) {
+      // Each octet must not be empty.
+      if (octet.isEmpty) {
+        return []; // Invalid format: empty octet.
+      }
+      try {
+        int value = int.parse(octet);
+        // Each octet must be between 0 and 255.
+        if (value < 0 || value > 255) {
+          return []; // Invalid format: octet out of range.
+        }
+        // Leading zeros are generally allowed if the value itself is valid (e.g., "01" is 1).
+        // However, "010" might be problematic if interpreted as octal in some contexts.
+        // For strict validation, you might check for leading zeros on non-"0" octets.
+        // E.g., if octet.length > 1 and octet.startsWith('0') and value != 0, return [].
+        // But for simplicity and common use, `int.parse` handles this.
+        if (octet.length > 1 && octet.startsWith('0') && octet != '0') {
+          // This check rejects "01", "007" etc., which are sometimes considered invalid by strict parsers.
+          // Depending on requirements, you might remove this if you want to allow them.
+          return [];
+        }
+
+        bytes.add(value);
+      } on FormatException {
+        return []; // Invalid format: octet is not a valid integer.
+      }
+    }
+
+    return bytes;
   }
 }
 

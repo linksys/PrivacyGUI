@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/models/ipv6_firewall_rule.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/providers/port_util_mixin.dart';
 import 'package:privacy_gui/page/advanced_settings/firewall/providers/ipv6_port_service_rule_state.dart';
+import 'package:privacy_gui/validator_rules/rules.dart';
 
 final ipv6PortServiceRuleProvider =
     NotifierProvider<Ipv6PortServiceRuleNotifier, Ipv6PortServiceRuleState>(
@@ -51,9 +52,8 @@ class Ipv6PortServiceRuleNotifier extends Notifier<Ipv6PortServiceRuleState>
     return ruleName.isNotEmpty && ruleName.length <= 32;
   }
 
-
   bool isDeviceIpValidate(String ipAddress) {
-    return ipAddress.isNotEmpty;
+    return IPv6Rule().validate(ipAddress);
   }
 
   bool isPortRangeValid(int firstPort, int lastPort) {
