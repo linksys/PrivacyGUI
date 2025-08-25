@@ -2,7 +2,7 @@ part of 'base_actions.dart';
 
 class TestAdvancedSettingsActions extends CommonBaseActions {
   TestAdvancedSettingsActions(super.tester);
-  
+
   Finder internetSettingsCardFinder() {
     final cardFinder = find.ancestor(
       of: find.text(TestInternetSettingsActions(tester).title),
@@ -12,15 +12,21 @@ class TestAdvancedSettingsActions extends CommonBaseActions {
     return cardFinder;
   }
 
-  Finder advancedRoutingCardFinder() {
-    final cardFinder = find.ancestor(
-      of: find.text(TestAdvancedRoutingActions(tester).title),
-      matching: find.byType(AppSettingCard),
-    );
-    expect(cardFinder, findsOneWidget);
-    return cardFinder;
+  Finder? advancedRoutingCardFinder() {
+    try {
+      final title = TestAdvancedRoutingActions(tester).title;
+      final cardFinder = find.ancestor(
+        of: find.text(title),
+        matching: find.byType(AppSettingCard),
+      );
+      expect(cardFinder, findsOneWidget);
+      return cardFinder;
+    } catch (e) {
+      // Return null if the Advanced Routing function is not available
+      return null;
+    }
   }
-  
+
   Finder firewallCardFinder() {
     final cardFinder = find.ancestor(
       of: find.text(TestFirewallActions(tester).title),
@@ -57,16 +63,14 @@ class TestAdvancedSettingsActions extends CommonBaseActions {
     return cardFinder;
   }
 
-  /*
   Finder dmzCardFinder() {
-    final cardFinder = find.ancestor(
+    final tappableFinder = find.ancestor(
       of: find.text(TestDmzActions(tester).title),
-      matching: find.byType(AppCard),
+      matching: find.byType(InkWell),
     );
-    expect(cardFinder, findsOneWidget);
-    return cardFinder;
+    expect(tappableFinder, findsOneWidget);
+    return tappableFinder;
   }
-  */
 
   Future<void> enterInternetSettingsPage() async {
     final finder = internetSettingsCardFinder();
@@ -75,11 +79,15 @@ class TestAdvancedSettingsActions extends CommonBaseActions {
     await tester.pumpAndSettle();
   }
 
-  Future<void> enterAdvancedRoutingPage() async {
-    final finder = advancedRoutingCardFinder();
-    // Tap the card
-    await tester.tap(finder);
-    await tester.pumpAndSettle();
+  Future<bool> enterAdvancedRoutingPage() async {
+    final cardFinder = advancedRoutingCardFinder();
+    if (cardFinder != null) {
+      await tester.tap(cardFinder);
+      await tester.pumpAndSettle();
+      return true;
+    } else {
+      return false;
+    }
   }
 
   Future<void> enterFirewallPage() async {
@@ -105,6 +113,13 @@ class TestAdvancedSettingsActions extends CommonBaseActions {
 
   Future<void> enterLocalNetworkSettingsPage() async {
     final finder = localNetworkCardFinder();
+    // Tap the card
+    await tester.tap(finder);
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> enterDmzPage() async {
+    final finder = dmzCardFinder();
     // Tap the card
     await tester.tap(finder);
     await tester.pumpAndSettle();

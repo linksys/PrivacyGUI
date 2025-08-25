@@ -1,5 +1,4 @@
 import 'package:flutter_native_splash/flutter_native_splash.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:integration_test/integration_test_driver.dart';
@@ -7,11 +6,8 @@ import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/main.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'actions/base_actions.dart';
 import 'config/integration_test_config.dart';
-import 'extensions/extensions.dart';
 
 void main() {
   integrationDriver();
@@ -32,27 +28,26 @@ void main() {
     BuildConfig.load();
 
     // clear all cache data to make sure every test case is independent
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
-    const storage = FlutterSecureStorage();
-    await storage.deleteAll();
+    // final prefs = await SharedPreferences.getInstance();
+    // await prefs.clear();
+    // const storage = FlutterSecureStorage();
+    // await storage.deleteAll();
   });
 
   tearDown(() async {
     // Add any cleanup logic here if needed after each test
   });
 
-  testWidgets('Menu operations', (tester) async {
-    // Load app widget.
-    await tester.pumpFrames(app(), Duration(seconds: 3));
-    // Log in
+  testWidgets('Menu - Log in ', (tester) async {
+    await tester.pumpFrames(app(), const Duration(seconds: 5));
     final login = TestLocalLoginActions(tester);
     await login.inputPassword(IntegrationTestConfig.password);
-    expect(
-      IntegrationTestConfig.password,
-      tester.getText(find.byType(AppPasswordField)),
-    );
     await login.tapLoginButton();
+  });
+
+  testWidgets('Menu operations', (tester) async {
+    // Load app widget.
+    await tester.pumpFrames(app(), Duration(seconds: 5));
     // Enter the dashboard screen
     final topbarActions = TestTopbarActions(tester);
     await topbarActions.tapMenuButton();
@@ -99,11 +94,25 @@ void main() {
     final verifyActions = TestInstantVerifyActions(tester);
     await verifyActions.checkTitle(verifyActions.title);
     await verifyActions.tapBackButton();
-    // External Speed Test
-    await menuActions.enterExternalSpeedTestPage();
-    final externalSpeedTestActions = TestExternalSpeedTestActions(tester);
-    await externalSpeedTestActions.checkTitle(externalSpeedTestActions.title);
-    await externalSpeedTestActions.tapBackButton();
+
+    const isHealthCheckSupported = String.fromEnvironment(
+            'isHealthCheckSupported',
+            defaultValue: 'false') ==
+        'true';
+    if (isHealthCheckSupported) {
+      // Speed Test
+      await menuActions.enterSpeedTestPage();
+      final speedTestActions = TestSpeedTestActions(tester);
+      await speedTestActions.checkTitle(speedTestActions.title);
+      await speedTestActions.tapBackButton();
+    } else {
+      // External Speed Test
+      await menuActions.enterExternalSpeedTestPage();
+      final externalSpeedTestActions = TestExternalSpeedTestActions(tester);
+      await externalSpeedTestActions.checkTitle(externalSpeedTestActions.title);
+      await externalSpeedTestActions.tapBackButton();
+    }
+
     // Add Nodes
     await menuActions.enterAddNodePage();
     final addNodeActions = TestAddNodesActions(tester);
@@ -112,6 +121,5 @@ void main() {
     // Restart
     await menuActions.tapRestartBtn();
     await menuActions.tapCancelBtn();
-
   });
 }

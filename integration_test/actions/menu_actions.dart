@@ -84,6 +84,15 @@ class TestMenuActions extends CommonBaseActions {
     return externalSpeedTestCardFinder;
   }
 
+  Finder speedTestCardFinder() {
+    final speedTestCardFinder = find.ancestor(
+      of: find.byIcon(LinksysIcons.networkCheck),
+      matching: find.byType(AppCard),
+    );
+    expect(speedTestCardFinder, findsOneWidget);
+    return speedTestCardFinder;
+  }
+
   Finder restartBtnFinder() {
     final restartBtnFinder = find.byIcon(LinksysIcons.restartAlt);
     expect(restartBtnFinder, findsOneWidget);
@@ -169,6 +178,13 @@ class TestMenuActions extends CommonBaseActions {
 
   Future<void> enterExternalSpeedTestPage() async {
     final finder = externalSpeedTestCardFinder();
+    // Tap the card
+    await tester.tap(finder);
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> enterSpeedTestPage() async {
+    final finder = speedTestCardFinder();
     // Tap the card
     await tester.tap(finder);
     await tester.pumpAndSettle();

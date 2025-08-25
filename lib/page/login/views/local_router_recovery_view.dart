@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/bottom_bar.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
@@ -13,7 +15,6 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
-import 'package:pin_code_fields/pin_code_fields.dart';
 
 class LocalRouterRecoveryView extends ArgumentsConsumerStatefulView {
   const LocalRouterRecoveryView({
@@ -32,6 +33,11 @@ class _LocalRouterRecoveryViewState
   String userInputCode = '';
 
   @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
   void dispose() {
     super.dispose();
     _otpController.dispose();
@@ -41,8 +47,8 @@ class _LocalRouterRecoveryViewState
   Widget build(BuildContext context) => _contentView();
 
   Widget _contentView() {
+    MediaQuery.of(context);
     final state = ref.watch(routerPasswordProvider);
-
     return StyledAppPageView(
       appBarStyle: AppBarStyle.none,
       padding: EdgeInsets.zero,
@@ -61,43 +67,23 @@ class _LocalRouterRecoveryViewState
                   AppText.bodyMedium(
                       loc(context).localRouterRecoveryDescription),
                   const AppGap.large3(),
-                  MergeSemantics(
-                    child: Semantics(
-                      label: 'pin code text field',
-                      textField: true,
-                      child: PinCodeTextField(
-                        errorTextSpace: 0,
-                        onChanged: (String value) {
-                          setState(() {
-                            userInputCode = value;
-                          });
-                        },
-                        length: 5,
-                        appContext: context,
-                        controller: _otpController,
-                        keyboardType: TextInputType.number,
-                        autoDismissKeyboard: false,
-                        autoDisposeControllers: false,
-                        cursorColor: Theme.of(context).colorScheme.onSurface,
-                        pinTheme: PinTheme(
-                          shape: PinCodeFieldShape.box,
-                          borderRadius: CustomTheme.of(context)
-                              .radius
-                              .asBorderRadius()
-                              .small,
-                          borderWidth: 1,
-                          fieldHeight: 56,
-                          fieldWidth: 40,
-                          activeColor: Theme.of(context).colorScheme.outline,
-                          selectedColor: Theme.of(context).colorScheme.outline,
-                          inactiveColor: Theme.of(context).colorScheme.outline,
-                        ),
-                        onSubmitted: (_) {
-                          if (userInputCode.length == 5) {
-                            _validateCode(userInputCode);
-                          }
-                        },
-                      ),
+                  FittedBox(
+                    fit: BoxFit.contain,
+                    child: AppPinCodeInput(
+                      semanticLabel: 'pin code text field',
+                      length: 5,
+                      controller: _otpController,
+                      stayOnLastField: true,
+                      onChanged: (String value) {
+                        setState(() {
+                          userInputCode = value;
+                        });
+                      },
+                      onSubmitted: (_) {
+                        if (userInputCode.length == 5) {
+                          _validateCode(userInputCode);
+                        }
+                      },
                     ),
                   ),
                   if (state.remainingErrorAttempts != null)

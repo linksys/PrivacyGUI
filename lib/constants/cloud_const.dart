@@ -6,6 +6,7 @@ import 'client_type/get_client_type.dart'
 
 const kCloudBase = 'CLOUD_BASE_URL';
 const kCloudJNAP = 'CLOUD_JNAP_BASE_URL';
+const kCloudRemoteJNAP = 'CLOUD_REMOTE_JNAP_BASE_URL';
 const kCloudStatus = 'CLOUD_STATUS_URL';
 const kCloudAware = 'CLOUD_AWARE_URL';
 const kCloudAwarePort = 'CLOUD_AWARE_PORT';
@@ -19,6 +20,8 @@ const linksysCloudStatusBaseUrl = 'cloudhealth.lswf.net/cloud-availability';
 const kCloudEnvironmentConfigProd = {
   kCloudBase: 'cloud1.$linksysCloudBaseUrl',
   kCloudJNAP: 'https://cloud1.$linksysCloudBaseUrl/cloud/JNAP/',
+  kCloudRemoteJNAP:
+      'https://cloud1.$linksysCloudBaseUrl/cloud/v1/guardians/remote-assistances/sessions/$kVarRASessionId/actions/jnap/',
   kCloudStatus: 'https://$linksysCloudStatusBaseUrl/cloud.json',
   kCloudAware: 'aware.lswf.net',
   kCloudAwarePort: 3000,
@@ -29,6 +32,8 @@ const kCloudEnvironmentConfigProd = {
 const kCloudEnvironmentConfigQa = {
   kCloudBase: 'qa.cloud1.$linksysCloudBaseUrl',
   kCloudJNAP: 'https://qa.cloud1.$linksysCloudBaseUrl/cloud/JNAP/',
+  kCloudRemoteJNAP:
+      'https://qa.cloud1.$linksysCloudBaseUrl/cloud/v1/guardians/remote-assistances/sessions/$kVarRASessionId/actions/jnap/',
   kCloudStatus: 'https://$linksysCloudStatusBaseUrl/cloud-qa.json',
   kCloudAware: 'staging.ds.veriksystems.com',
   kCloudAwarePort: 80,
@@ -39,6 +44,8 @@ const kCloudEnvironmentConfigQa = {
 const kCloudEnvironmentConfigDev = {
   kCloudBase: 'dev.$linksysCloudBaseUrl',
   kCloudJNAP: 'https://dev.$linksysCloudBaseUrl/cloud/JNAP/',
+  kCloudRemoteJNAP:
+      'https://dev.cloud1.$linksysCloudBaseUrl/cloud/v1/guardians/remote-assistances/sessions/$kVarRASessionId/actions/jnap/',
   kCloudStatus: 'https://$linksysCloudStatusBaseUrl/cloud-dev.json',
   kCloudAware: 'staging.ds.veriksystems.com',
   kCloudAwarePort: 80,
@@ -132,9 +139,17 @@ const kCreateTicketUpload = '/cloud/v1/tickets/$kTicketId/uploads';
 // NEW smart device
 const kSmartDeviceAssociate = '/cloud/v1/smart-devices/associate';
 
+/// Guardians
+
 // Geo location
 const kGeoLocation = '/cloud/v1/guardians/devices/geolocation';
 const kDeviceToken = '/cloud/v1/guardians/devices/tokens';
+
+// Remote assistance
+const kSessions = '/cloud/v1/guardians/remote-assistances/sessions';
+const kSessionInfo =
+    '/cloud/v1/guardians/remote-assistances/sessions/$kVarRASessionId';
+const kCreatePin = '/cloud/v1/guardians/remote-assistances/sessions/pin';
 
 // Client type id/secret
 final kClientTypeId = clientTypeID;

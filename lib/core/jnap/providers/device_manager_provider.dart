@@ -32,6 +32,10 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     return createState(pollingResult: coreTransactionData);
   }
 
+  void init() {
+    state = DeviceManagerState();
+  }
+
   DeviceManagerState createState({CoreTransactionData? pollingResult}) {
     Map<String, dynamic>? getNetworkConnectionsData;
     Map<String, dynamic>? getNodesWirelessNetworkConnectionsData;

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
+import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
@@ -85,11 +87,12 @@ class _AdvancedSettingsViewState extends ConsumerState<AdvancedSettingsView> {
           title: loc(context).localNetwork,
           onTap: () => context.goNamed(RouteNamed.settingsLocalNetwork),
           disabledOnBridge: true),
-      AppSectionItemData(
-        title: loc(context).advancedRouting,
-        onTap: () => context.goNamed(RouteNamed.settingsStaticRouting),
-        disabledOnBridge: true,
-      ),
+      if (!_isHidingRipRouting)
+        AppSectionItemData(
+          title: loc(context).advancedRouting,
+          onTap: () => context.goNamed(RouteNamed.settingsStaticRouting),
+          disabledOnBridge: true,
+        ),
       AppSectionItemData(
         title: loc(context).administration,
         onTap: () => context.goNamed(RouteNamed.settingsAdministration),
@@ -124,5 +127,12 @@ class _AdvancedSettingsViewState extends ConsumerState<AdvancedSettingsView> {
         onTap: disabled ? null : item.onTap,
       ),
     );
+  }
+
+  bool get _isHidingRipRouting {
+    final deviceInfo = ref.read(dashboardManagerProvider).deviceInfo;
+    return isHidingRipRouting(
+        modelNumber: deviceInfo?.modelNumber ?? '',
+        hardwareVersion: deviceInfo?.hardwareVersion ?? '1');
   }
 }

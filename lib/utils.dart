@@ -143,6 +143,11 @@ class Utils {
     final fileUIVersion = await getVersion();
     return uiVersion.compareToVersion(fileUIVersion) < 0;
   }
+
+  static bool isMobilePlatform() {
+    return defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS;
+  }
 }
 
 extension DateFormatUtils on Utils {
@@ -309,11 +314,21 @@ extension MediaQueryUtils on Utils {
 
 extension NetworkUtils on Utils {
   static String formatBytes(int bytes, {int decimals = 0}) {
-    if (bytes <= 0) return "0 B";
+    final result = formatBytesWithUnit(bytes, decimals: decimals);
+    return '${result.value} ${result.unit}';
+  }
+
+  static ({String value, String unit}) formatBytesWithUnit(int bytes,
+      {int decimals = 0}) {
+    if (bytes <= 0) return (value: '0', unit: "B");
     const suffixes = ["B", "Kb", "Mb", "Gb", "Tb", "Pb"];
     var i = (log(bytes) / log(1024)).floor();
     var number = (bytes / pow(1024, i));
-    return '${(number).toStringAsFixed(number.truncateToDouble() == number ? 0 : decimals)} ${suffixes[i]}';
+    return (
+      value: number
+          .toStringAsFixed(number.truncateToDouble() == number ? 0 : decimals),
+      unit: suffixes[i]
+    );
   }
 
   static String generateMqttClintId() {

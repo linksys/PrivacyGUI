@@ -1,8 +1,8 @@
 {
-    "name": "Test behaviors on Menu",
+    "name": "Dashboard Menu",
     "target": "integration_test/menu_test.dart",
-    "description": "Click all the cards in the menu page and see the result",
-    "setUp":  ["skip_pnp"],
+    "description": "Click all cards and buttons on the dashboard menu",
+    "setUp":  ["skip_setup"],
     "tearDown": [],
     "tags": ["dashboard", "menu"]
 }

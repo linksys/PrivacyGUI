@@ -83,6 +83,14 @@ wait_for_wifi_ssid() {
   local target_ssid=$1
   local timeout=$2
   local start_time=$(date +%s)
+  
+  # Skip if wiredTesting is True
+  wiredTesting=$(get_global_config_value '.wired')
+  echo "wiredTesting: $wiredTesting"
+  if [ "$wiredTesting" == "true" ]; then
+    echo "Wired testing is enabled. Skipping wifi SSID wait."
+    return 0
+  fi
 
   echo "Waiting for wifi SSID '$target_ssid'..."
 
@@ -114,6 +122,9 @@ get_wifi_site_survey() {
 # get current WiFi connection SSID
 get_current_wifi_ssid() {
   local current_ssid=$(/System/Library/PrivateFrameworks/Apple80211.framework/Resources/airport -I | awk -F': ' '/ SSID/ {print $2}')
+  if [ -z "$current_ssid" ]; then
+    current_ssid=$(system_profiler SPAirPortDataType | grep -A 2 "Current Network Information:" | awk 'NR==2 {gsub(/^[[:space:]]+/, ""); sub(/:$/, ""); print}')
+  fi
   echo "$current_ssid"
 }
 
@@ -153,6 +164,13 @@ connect_to_wifi_ssid_and_check() {
   local timeout=$3
   local start_time=$(date +%s)
 
+    # Skip if wiredTesting is True
+  wiredTesting=$(get_global_config_value '.wired')
+  if [ "$wiredTesting" == "true" ]; then
+    echo "Wired testing is enabled. Skipping check connected WiFi."
+    return 0
+  fi
+
   echo "Connecting to wifi SSID '$target_ssid'..."
 
   # Connect to the target SSID
@@ -170,7 +188,7 @@ connect_to_wifi_ssid_and_check() {
 
 # check is default admin password, if not, get password from config
 is_default_admin_password_or_get_password() {
-  if [ $(is_default_admin_password) == "true" ]; then
+  if [ $(is_default_admin_password) == "true" ] && [ $(is_admin_password_set_by_user) == "false" ]; then
     echo "admin"
   else
     password=$(get_config_value '.password')

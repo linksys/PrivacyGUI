@@ -1,8 +1,8 @@
 {
-    "name": "Test behaviors on Administration",
+    "name": "Advanced Settings - Administration",
     "target": "integration_test/administration_test.dart",
-    "description": "Execute all the functions on the page and verify that the new data has been synced",
-    "setUp":  ["factory_reset", "skip_pnp"],
+    "description": "Toggle each switch and checkbox component, then save the settings.",
+    "setUp":  ["factory_reset", "skip_setup"],
     "tearDown": [],
     "tags": ["administration", "advanced_settings", "menu"]
 }

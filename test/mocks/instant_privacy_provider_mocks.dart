@@ -114,12 +114,12 @@ class MockInstantPrivacyNotifier extends _i2.Notifier<
       ) as _i3.InstantPrivacyState);
 
   @override
-  _i5.Future<_i3.InstantPrivacyState> fetch({bool? fetchRemote = false}) =>
+  _i5.Future<_i3.InstantPrivacyState> fetch({bool? fetchRemote = false, bool statusOnly = false}) =>
       (super.noSuchMethod(
         Invocation.method(
           #fetch,
           [],
-          {#fetchRemote: fetchRemote},
+          {#fetchRemote: fetchRemote, #statusOnly: statusOnly},
         ),
         returnValue: _i5.Future<_i3.InstantPrivacyState>.value(
             _FakeInstantPrivacyState_1(

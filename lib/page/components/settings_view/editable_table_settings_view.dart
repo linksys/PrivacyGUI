@@ -8,6 +8,10 @@ import 'package:privacygui_widgets/widgets/table/table_settings_view.dart';
 import 'package:privacygui_widgets/widgets/text/app_text.dart';
 import 'package:super_tooltip/super_tooltip.dart';
 
+abstract class AppEditableTableController<T> {
+  void validate([int? index]);
+}
+
 class AppEditableTableSettingsView<T> extends ConsumerStatefulWidget {
   final String? title;
   final List<String> headers;
@@ -18,7 +22,7 @@ class AppEditableTableSettingsView<T> extends ConsumerStatefulWidget {
   final void Function(int? index, T? data)? onStartEdit;
   final T Function()? getEditItem;
   final Widget Function(BuildContext, WidgetRef, int, T) cellBuilder;
-  final Widget Function(BuildContext, WidgetRef, int, T, String?)?
+  final Widget Function(BuildContext, int, AppEditableTableController)?
       editCellBuilder;
   final int? editRowIndex;
   final int?
@@ -64,7 +68,8 @@ class AppEditableTableSettingsView<T> extends ConsumerStatefulWidget {
 }
 
 class _AppEditableTableSettingsViewState<T>
-    extends ConsumerState<AppEditableTableSettingsView<T>> {
+    extends ConsumerState<AppEditableTableSettingsView<T>>
+    implements AppEditableTableController<T> {
   int? _editRow;
   T? _tempItem;
   Map<int, String?> errorMap = {};
@@ -161,15 +166,13 @@ class _AppEditableTableSettingsViewState<T>
                   child: Focus(
                     onFocusChange: (focus) =>
                         _focusChangedHandler(focus, index),
-                    child: widget.editCellBuilder?.call(
-                            context, ref, index, data, errorMap[index]) ??
+                    child: widget.editCellBuilder?.call(context, index, this) ??
                         SizedBox.shrink(),
                   ),
                 )
               : Focus(
                   onFocusChange: (focus) => _focusChangedHandler(focus, index),
-                  child: widget.editCellBuilder
-                          ?.call(context, ref, index, data, errorMap[index]) ??
+                  child: widget.editCellBuilder?.call(context, index, this) ??
                       SizedBox.shrink(),
                 ),
       bottomWidget: AppTextButton(
@@ -193,10 +196,7 @@ class _AppEditableTableSettingsViewState<T>
     if (index == widget.pivotalIndex) {
       // Everytime the focus state changes, recheck all other cell items
       setState(() {
-        for (int i = 0; i < widget.headers.length; i++) {
-          final error = widget.onValidate?.call(i);
-          errorMap[i] = error;
-        }
+        validate();
       });
       // Immediately show or hide tooltips for each cell item
       for (int i = 0; i < widget.headers.length; i++) {
@@ -214,8 +214,7 @@ class _AppEditableTableSettingsViewState<T>
       if (!focus) {
         // Check the current focused cell item
         setState(() {
-          final error = widget.onValidate?.call(index);
-          errorMap[index] = error;
+          validate(index);
         });
         Future.delayed(Duration(milliseconds: 100), () {
           final controller = tipControllerMap[index];
@@ -238,4 +237,17 @@ class _AppEditableTableSettingsViewState<T>
   }
 
   bool isNew() => widget.dataList.length == _editRow;
+
+  @override
+  void validate([int? index]) {
+    if (index == null) {
+      for (int i = 0; i < widget.headers.length; i++) {
+        final error = widget.onValidate?.call(i);
+        errorMap[i] = error;
+      }
+    } else {
+      final error = widget.onValidate?.call(index);
+      errorMap[index] = error;
+    }
+  }
 }

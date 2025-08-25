@@ -24,7 +24,8 @@ class InstantPrivacyNotifier extends Notifier<InstantPrivacyState> {
     return InstantPrivacyState.init();
   }
 
-  Future<InstantPrivacyState> fetch({bool fetchRemote = false}) async {
+  Future<InstantPrivacyState> fetch(
+      {bool fetchRemote = false, bool statusOnly = false}) async {
     final settings = await ref
         .read(routerRepositoryProvider)
         .send(
@@ -33,6 +34,15 @@ class InstantPrivacyNotifier extends Notifier<InstantPrivacyState> {
           auth: true,
         )
         .then((result) => MACFilterSettings.fromMap(result.output));
+
+    // update status only
+    if (statusOnly) {
+      state = state.copyWith(
+        status: InstantPrivacyStatus(
+            mode: MacFilterMode.reslove(settings.macFilterMode)),
+      );
+      return state;
+    }
     final List<String> staBSSIDS = serviceHelper.isSupportGetSTABSSID()
         ? await ref
             .read(routerRepositoryProvider)
@@ -53,13 +63,20 @@ class InstantPrivacyNotifier extends Notifier<InstantPrivacyState> {
     final mode = MacFilterMode.reslove(settings.macFilterMode);
     final macAddresses =
         settings.macAddresses.map((e) => e.toUpperCase()).toList();
-    state = state.copyWith(
+    final InstantPrivacySettings newSettings = InstantPrivacySettings(
       mode: mode,
       macAddresses: mode == MacFilterMode.allow ? macAddresses : [],
       denyMacAddresses: mode == MacFilterMode.deny ? macAddresses : [],
       maxMacAddresses: settings.maxMACAddresses,
-      bssids: staBSSIDS,
+      bssids: staBSSIDS.map((e) => e.toUpperCase()).toList(),
       myMac: myMac,
+    );
+    final InstantPrivacyStatus newStatus = InstantPrivacyStatus(
+      mode: mode,
+    );
+    state = state.copyWith(
+      settings: newSettings,
+      status: newStatus,
     );
     logger.d('[State]:[instantPrivacy]: ${state.toJson()}');
     return state;
@@ -71,26 +88,26 @@ class InstantPrivacyNotifier extends Notifier<InstantPrivacyState> {
 
   Future<InstantPrivacyState> save() async {
     var macAddresses = [];
-    if (state.mode == MacFilterMode.allow) {
+    if (state.settings.mode == MacFilterMode.allow) {
       final nodesMacAddresses = ref
           .read(deviceManagerProvider)
           .nodeDevices
           .map((e) => e.getMacAddress().toUpperCase())
           .toList();
       macAddresses = [
-        ...state.macAddresses,
+        ...state.settings.macAddresses,
         ...nodesMacAddresses,
-        ...state.bssids,
+        ...state.settings.bssids,
       ].unique();
-    } else if (state.mode == MacFilterMode.deny) {
+    } else if (state.settings.mode == MacFilterMode.deny) {
       macAddresses = [
-        ...state.macAddresses,
+        ...state.settings.macAddresses,
       ];
     }
     await ref.read(routerRepositoryProvider).send(
           JNAPAction.setMACFilterSettings,
           data: {
-            'macFilterMode': state.mode.name.capitalize(),
+            'macFilterMode': state.settings.mode.name.capitalize(),
             'macAddresses': macAddresses,
           },
           auth: true,
@@ -118,38 +135,44 @@ class InstantPrivacyNotifier extends Notifier<InstantPrivacyState> {
 
   setEnable(bool isEnabled) {
     state = state.copyWith(
-        mode: isEnabled ? MacFilterMode.allow : MacFilterMode.disabled);
+        settings: state.settings.copyWith(
+            mode: isEnabled ? MacFilterMode.allow : MacFilterMode.disabled));
   }
 
   setAccess(MacFilterMode value) {
-    state = state.copyWith(mode: value);
+    state = state.copyWith(settings: state.settings.copyWith(mode: value));
   }
 
   setSelection(List<String> selections, [bool isDeny = false]) {
     selections = selections.map((e) => e.toUpperCase()).toList();
-    final List<String> unique =
-        List.from(isDeny ? state.denyMacAddresses : state.macAddresses)
-          ..addAll(selections)
-          ..unique();
+    final List<String> unique = List.from(
+        isDeny ? state.settings.denyMacAddresses : state.settings.macAddresses)
+      ..addAll(selections)
+      ..unique();
     state = state.copyWith(
-      macAddresses: isDeny ? [] : unique,
-      denyMacAddresses: isDeny ? unique : [],
+      settings: state.settings.copyWith(
+        macAddresses: isDeny ? [] : unique,
+        denyMacAddresses: isDeny ? unique : [],
+      ),
     );
   }
 
   removeSelection(List<String> selection, [bool isDeny = false]) {
     selection = selection.map((e) => e.toUpperCase()).toList();
-    final list =
-        List<String>.from(isDeny ? state.denyMacAddresses : state.macAddresses)
-          ..removeWhere((element) => selection.contains(element));
+    final list = List<String>.from(
+        isDeny ? state.settings.denyMacAddresses : state.settings.macAddresses)
+      ..removeWhere((element) => selection.contains(element));
     state = state.copyWith(
-      macAddresses: isDeny ? null : list,
-      denyMacAddresses: isDeny ? list : null,
+      settings: state.settings.copyWith(
+        macAddresses: isDeny ? null : list,
+        denyMacAddresses: isDeny ? list : null,
+      ),
     );
   }
 
   setMacAddressList(List<String> macAddressList) {
     macAddressList = macAddressList.map((e) => e.toUpperCase()).toList();
-    state = state.copyWith(macAddresses: macAddressList);
+    state = state.copyWith(
+        settings: state.settings.copyWith(macAddresses: macAddressList));
   }
 }

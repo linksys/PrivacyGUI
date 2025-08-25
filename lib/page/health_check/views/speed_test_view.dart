@@ -1,16 +1,16 @@
-import 'dart:math';
-
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:privacy_gui/core/jnap/models/health_check_result.dart';
-import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
+import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
+import 'package:privacy_gui/page/health_check/providers/health_check_state.dart';
+import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -30,10 +30,6 @@ class SpeedTestView extends ArgumentsConsumerStatefulView {
 }
 
 class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
-  String _status = "IDLE";
-  double _meterValue = 0.0;
-  double _randomValue = 0.0;
-
   @override
   void initState() {
     super.initState();
@@ -48,49 +44,11 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
   Widget build(BuildContext context) {
     final state = ref.watch(healthCheckProvider);
     final supportedBy = ref.watch(dashboardHomeProvider).healthCheckModule;
-    ref.listen(healthCheckProvider.select((value) => value.step),
-        (previous, next) {
-      if (next == previous) {
-        return;
-      }
-      if ((previous == 'latency' && next == 'downloadBandwidth')) {
-        setState(() {
-          _meterValue = 0;
-          _randomValue = 0;
-        });
-      } else if ((previous == 'downloadBandwidth' &&
-          next == 'uploadBandwidth')) {
-        setState(() {
-          final downloadBandwidth = ((ref
-                      .read(healthCheckProvider)
-                      .result
-                      .firstOrNull
-                      ?.speedTestResult
-                      ?.downloadBandwidth ??
-                  0) /
-              1024.0);
-          _meterValue = downloadBandwidth;
-          _randomValue = 0;
-        });
-        Future.delayed(const Duration(seconds: 1), () {
-          setState(() {
-            _meterValue = 0;
-            _randomValue = 0;
-          });
-        });
-      }
-      if (next == 'success' || next == 'error') {
-        setState(() {
-          _meterValue = 0;
-          _randomValue = 0;
-          _status = 'COMPLETE';
-        });
-      }
-    });
+
     return StyledAppPageView(
       scrollable: true,
       title: loc(context).speedTest,
-      bottomBar: _status == 'COMPLETE'
+      bottomBar: state.status == 'COMPLETE'
           ? PageBottomBar(
               positiveLabel: loc(context).testAgain,
               isPositiveEnabled: true,
@@ -98,27 +56,20 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
                 ref
                     .read(healthCheckProvider.notifier)
                     .runHealthCheck(Module.speedtest);
-                setState(() {
-                  _status = 'RUNNING';
-                });
               },
             )
           : null,
-      child: (context, constraints) => switch (_status) {
+      child: (context, constraints) => switch (state.status) {
         'RUNNING' => ResponsiveLayout(
             desktop: Container(
               margin: const EdgeInsets.fromLTRB(0, 0, 0, 40),
               child: Center(
                 child: _runningView(
-                  state.step,
-                  state.result.firstOrNull?.speedTestResult,
+                  state,
                 ),
               ),
             ),
-            mobile: _runningView(
-              state.step,
-              state.result.firstOrNull?.speedTestResult,
-            ),
+            mobile: _runningView(state),
           ),
         'COMPLETE' => ResponsiveLayout(
             desktop: Container(
@@ -128,18 +79,12 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
                     ? Alignment.topCenter
                     : Alignment.topLeft,
                 child: _finishView(
-                  state.step,
-                  state.result.firstOrNull?.speedTestResult,
-                  state.timestamp,
-                  state.error,
+                  state,
                 ),
               ),
             ),
             mobile: _finishView(
-              state.step,
-              state.result.firstOrNull?.speedTestResult,
-              state.timestamp,
-              state.error,
+              state,
             ),
           ),
         _ => ResponsiveLayout(
@@ -203,11 +148,6 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
           child: InkWell(
             key: const Key('goBtn'),
             onTap: () {
-              Future.delayed(const Duration(milliseconds: 500), () {
-                setState(() {
-                  _status = 'RUNNING';
-                });
-              });
               ref
                   .read(healthCheckProvider.notifier)
                   .runHealthCheck(Module.speedtest);
@@ -240,44 +180,54 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
     );
   }
 
-  Widget _runningView(String step, SpeedTestResult? result) {
-    final (latency, downloadBandWidth, uploadBandWidth) = _getDataText(result);
-    final value =
-        step == 'downloadBandwidth' ? downloadBandWidth : uploadBandWidth;
-    final meterValue =
-        step == 'latency' ? 0.0 : _getRandomMeterValue(double.parse(value));
+  Widget _runningView(HealthCheckState state) {
+    final latestSpeedTest = ref.watch(
+        dashboardManagerProvider.select((state) => state.latestSpeedTest));
+
+    final result =
+        state.status == 'IDLE' ? latestSpeedTest : state.result.firstOrNull;
+
+    final latency = result?.speedTestResult?.latency?.toStringAsFixed(0) ?? '-';
+
+    final bandwidth = NetworkUtils.formatBytesWithUnit(
+        state.status == 'COMPLETE'
+            ? (result?.speedTestResult?.uploadBandwidth ?? 0) * 1024
+            : (state.meterValue * 1024).toInt(),
+        decimals: 1);
+
     return ResponsiveLayout(
       desktop: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           SizedBox(
             width: 7.col,
-            child: _meterView(step, meterValue, latency),
+            child: _meterView(
+                state.step, bandwidth.value, bandwidth.unit, latency),
           ),
           const AppGap.gutter(),
           SizedBox(
             width: 5.col,
-            child: _infoView(step, downloadBandWidth, uploadBandWidth),
+            child: _infoView(state),
           ),
         ],
       ),
       mobile: Column(
         children: [
-          _meterView(step, meterValue, latency),
+          _meterView(state.step, bandwidth.value, bandwidth.unit, latency),
           const AppGap.medium(),
           const Spacer(),
-          _infoView(step, downloadBandWidth, uploadBandWidth),
+          _infoView(state),
           const AppGap.medium(),
         ],
       ),
     );
   }
 
-  Widget _meterView(String step, double value, String latency) {
+  Widget _meterView(String step, String value, String unit, String latency) {
     final defaultMarkers = <double>[0, 1, 5, 10, 20, 30, 50, 75, 100];
     return AnimatedMeter(
       size: ResponsiveLayout.isMobileLayout(context) ? 4.col : 5.col,
-      value: value,
+      value: double.tryParse(value) ?? 0,
       markers: defaultMarkers,
       centerBuilder: (context, value) {
         return Column(
@@ -291,7 +241,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
             }),
             AppText.displayLarge(
                 step == 'latency' ? '—' : (value).toStringAsFixed(1)),
-            const AppText.bodyMedium('Mbps'),
+            AppText.bodyMedium(unit),
           ],
         );
       },
@@ -337,15 +287,30 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
     );
   }
 
-  Widget _infoView(
-      String step, String downloadBandWidth, String uploadBandWidth) {
+  Widget _infoView(HealthCheckState state) {
+    final result = state.result.firstOrNull;
+
+    final downloadBandwidth = NetworkUtils.formatBytesWithUnit(
+        (result?.speedTestResult?.downloadBandwidth ?? 0) * 1024,
+        decimals: 1);
+    final uploadBandwidth = NetworkUtils.formatBytesWithUnit(
+        (result?.speedTestResult?.uploadBandwidth ?? 0) * 1024,
+        decimals: 1);
+    final step = state.step;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         _descriptionCard(step),
         if (step != 'latency') const AppGap.small3(),
-        if (step != 'latency') _resultCard(downloadBandWidth, uploadBandWidth),
+        if (step != 'latency')
+          _resultCard(
+              state.status,
+              downloadBandwidth.value,
+              downloadBandwidth.unit,
+              uploadBandwidth.value,
+              uploadBandwidth.unit),
       ],
     );
   }
@@ -386,19 +351,28 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
     );
   }
 
-  Widget _resultCard(String downloadBandWidth, String uploadBandWidth) {
+  Widget _resultCard(String status, String downloadValue, String? downloadUnit,
+      String uploadValue, String? uploadUnit) {
     final downloadBandWidthView =
-        _status == 'RUNNING' && !ResponsiveLayout.isMobileLayout(context)
+        status == 'RUNNING' && !ResponsiveLayout.isMobileLayout(context)
             ? AppText.displaySmall(
-                double.parse(downloadBandWidth) == 0 ? '—' : downloadBandWidth)
+                double.parse(downloadValue) == 0 ? '—' : downloadValue,
+                key: Key('downloadBandWidth'),
+              )
             : AppText.displayLarge(
-                double.parse(downloadBandWidth) == 0 ? '—' : downloadBandWidth);
+                double.parse(downloadValue) == 0 ? '—' : downloadValue,
+                key: Key('downloadBandWidth'),
+              );
     final uploadBandWidthView =
-        _status == 'RUNNING' && !ResponsiveLayout.isMobileLayout(context)
+        status == 'RUNNING' && !ResponsiveLayout.isMobileLayout(context)
             ? AppText.displaySmall(
-                double.parse(uploadBandWidth) == 0 ? '—' : uploadBandWidth)
+                double.parse(uploadValue) == 0 ? '—' : uploadValue,
+                key: Key('uploadBandWidth'),
+              )
             : AppText.displayLarge(
-                double.parse(uploadBandWidth) == 0 ? '—' : uploadBandWidth);
+                double.parse(uploadValue) == 0 ? '—' : uploadValue,
+                key: Key('uploadBandWidth'),
+              );
     return Row(
       children: [
         Expanded(
@@ -412,7 +386,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
                 const AppGap.small2(),
                 downloadBandWidthView,
                 const AppGap.small2(),
-                const AppText.bodyMedium('Mbps'),
+                AppText.bodyMedium(downloadUnit ?? ''),
               ],
             ),
           ),
@@ -429,7 +403,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
                 const AppGap.small2(),
                 uploadBandWidthView,
                 const AppGap.small2(),
-                const AppText.bodyMedium('Mbps'),
+                AppText.bodyMedium(uploadUnit ?? ''),
               ],
             ),
           ),
@@ -438,12 +412,24 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
     );
   }
 
-  Widget _finishView(String step, SpeedTestResult? result, String? timestamp,
-      JNAPError? error) {
-    final (latency, downloadBandWidth, uploadBandWidth) = _getDataText(result);
-    final (resultTitle, resultDesc) = _getTestResultDesc(result);
-    final date = _getTestResultDate(timestamp);
-    return switch (step) {
+  Widget _finishView(HealthCheckState state) {
+    final latestSpeedTest = ref.watch(
+        dashboardManagerProvider.select((state) => state.latestSpeedTest));
+
+    final result =
+        state.status == 'IDLE' ? latestSpeedTest : state.result.firstOrNull;
+    final downloadBandWidth = NetworkUtils.formatBytesWithUnit(
+        (result?.speedTestResult?.downloadBandwidth ?? 0) * 1024,
+        decimals: 1);
+    final uploadBandWidth = NetworkUtils.formatBytesWithUnit(
+        (result?.speedTestResult?.uploadBandwidth ?? 0) * 1024,
+        decimals: 1);
+    final latency = result?.speedTestResult?.latency?.toStringAsFixed(0) ?? '-';
+
+    final (resultTitle, resultDesc) =
+        _getTestResultDesc(result?.speedTestResult);
+    final date = _getTestResultDate(result?.timestamp);
+    return switch (state.step) {
       'error' => SizedBox(
           width: ResponsiveLayout.isMobileLayout(context)
               ? double.infinity
@@ -458,7 +444,8 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
               children: [
                 AppText.titleSmall(loc(context).generalError),
                 const AppGap.small2(),
-                AppText.bodyMedium(error?.result ?? loc(context).unknownError),
+                AppText.bodyMedium(
+                    state.error?.result ?? loc(context).unknownError),
               ],
             ),
           ),
@@ -474,10 +461,15 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     AppCard(
-                      child: _pingView(step, latency),
+                      child: _pingView(state.step, latency),
                     ),
                     const AppGap.small2(),
-                    _resultCard(downloadBandWidth, uploadBandWidth),
+                    _resultCard(
+                        state.status,
+                        downloadBandWidth.value,
+                        downloadBandWidth.unit,
+                        uploadBandWidth.value,
+                        uploadBandWidth.unit),
                     // ISP info
                   ],
                 ),
@@ -495,10 +487,15 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               AppCard(
-                child: _pingView(step, latency),
+                child: _pingView(state.step, latency),
               ),
               const AppGap.small2(),
-              _resultCard(downloadBandWidth, uploadBandWidth),
+              _resultCard(
+                  state.status,
+                  downloadBandWidth.value,
+                  downloadBandWidth.unit,
+                  uploadBandWidth.value,
+                  uploadBandWidth.unit),
               // ISP info
               const AppGap.small3(),
               SizedBox(
@@ -532,23 +529,6 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
         ],
       ),
     );
-  }
-
-  double _getRandomMeterValue(double value) {
-    if (value == 0) {
-      _meterValue = _meterValue + _randomValue;
-      _randomValue = _randomDouble(-10, 15);
-    } else {
-      return value;
-    }
-    if (_meterValue < 0) {
-      _meterValue = 0;
-    }
-    return _meterValue;
-  }
-
-  double _randomDouble(double min, double max) {
-    return (Random().nextDouble() * (max - min) + min);
   }
 
   (String, String, String) _getDataText(SpeedTestResult? result) {

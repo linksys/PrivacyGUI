@@ -23,22 +23,39 @@ Future<T?> doSomethingWithSpinner<T>(
   List<String>? messages,
   Duration? period,
 }) async {
+  NavigatorState? navigator;
+  final completer = Completer();
   Future.delayed(
       Duration.zero,
-      () => showAppSpinnerDialog(
+      () {
+        try {
+          navigator = Navigator.of(context, rootNavigator: true);
+          showAppSpinnerDialog(
             context,
             title: title,
             icon: icon,
             messages: messages ?? [loc(context).processing],
             period: period,
-          ));
+          );
+        } catch (e) {
+          logger.w('Could not show spinner dialog: $e');
+        }
+        completer.complete();
+      });
+
+  await completer.future;
   await Future.delayed(Duration(milliseconds: 100));
   return task.then((value) {
-    context.pop();
     return value;
   }).onError((error, stackTrace) {
-    context.pop();
     throw error ?? '';
+  }).whenComplete(() {
+    try {
+      navigator?.pop();
+    } catch (e) {
+      logger.w(
+          'doSomethingWithSpinner failed to pop. This might be intentional if the caller pops a page. Error: $e');
+    }
   });
 }
 
@@ -50,6 +67,7 @@ Future<T?> showAppSpinnerDialog<T>(
   double? width,
   List<String> messages = const [],
   Duration? period,
+  List<Widget>? actions = const [],
 }) {
   return showDialog<T?>(
     context: context,
@@ -72,14 +90,16 @@ Future<T?> showAppSpinnerDialog<T>(
                         child: AppText.titleLarge(title))
                     : null,
                 content: SizedBox(
-                    width: width ?? kDefaultDialogWidth,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        loadingWidget ?? const AppSpinner(),
-                        if (snapshot.hasData) AppText.labelLarge(snapshot.data!)
-                      ],
-                    )),
+                  width: width ?? kDefaultDialogWidth,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      loadingWidget ?? const AppSpinner(),
+                      if (snapshot.hasData) AppText.labelLarge(snapshot.data!)
+                    ],
+                  ),
+                ),
+                actions: actions,
               );
             });
       });
@@ -380,6 +400,12 @@ Future<T?> showRedirectNewIpAlert<T>(
 
 Future<bool?> showFactoryResetModal(
     BuildContext context, bool isParent, isLast) {
+  final type = isParent
+      ? 'Master'
+      : isLast
+          ? 'Last'
+          : 'Child';
+
   return showMessageAppDialog<bool>(context,
       icon: Icon(
         LinksysIcons.resetWrench,
@@ -387,9 +413,11 @@ Future<bool?> showFactoryResetModal(
         size: 42,
       ),
       message: loc(context).factoryResetDesc,
-      title: isParent
+      title: type == 'Master'
           ? loc(context).factoryResetParentTitle
-          : loc(context).factoryResetTitle,
+          : type == 'Child'
+              ? loc(context).factoryResetChildTitle
+              : loc(context).factoryResetTitle,
       actions: [
         AppTextButton(
           loc(context).cancel,
@@ -411,17 +439,28 @@ Future<bool?> showFactoryResetModal(
 
 Future<bool?> showRebootModal(
     BuildContext context, bool isParent, bool isLast) {
+  final type = isParent
+      ? 'Master'
+      : isLast
+          ? 'Last'
+          : 'Child';
+
   return showMessageAppDialog<bool>(context,
       icon: Icon(
         LinksysIcons.restartAlt,
         color: Theme.of(context).colorScheme.error,
         size: 42,
       ),
-      message: !isParent && isLast
-          ? loc(context).menuRestartNetworkChildMessage
-          : loc(context).menuRestartNetworkMessage,
-      title:
-          isParent ? loc(context).rebootParentTitle : loc(context).rebootUnit,
+      message: type == 'Master'
+          ? loc(context).menuRestartNetworkMessage
+          : type == 'Last'
+              ? loc(context).menuRestartNetworkLastMessage
+              : loc(context).menuRestartNetworkChildMessage,
+      title: type == 'Master'
+          ? loc(context).rebootParentTitle
+          : type == 'Last'
+              ? loc(context).rebootUnit
+              : loc(context).rebootChildTitle,
       actions: [
         AppTextButton(
           loc(context).cancel,

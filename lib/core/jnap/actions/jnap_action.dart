@@ -9,6 +9,8 @@ enum JNAPAction {
   getBluetoothAutoOnboardingStatus,
   getBluetoothAutoOnboardingSettings,
   setBluetoothAutoOnboardingSettings,
+  setWiredAutoOnboardingSettings,
+  getWiredAutoOnboardingSettings,
   // bluetooth
   btGetScanUnconfiguredResult,
   btRequestScanUnconfigured,
@@ -175,6 +177,9 @@ enum JNAPAction {
   startBlinkNodeLed,
   stopBlinkNodeLed,
   setUserAcknowledgedAutoConfiguration,
+  // SmartConnect
+  getSmartConnectPin,
+  getSmartConnectStatus,
   // smartMode
   getDeviceMode,
   getSupportedDeviceMode,

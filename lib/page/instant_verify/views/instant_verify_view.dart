@@ -2,6 +2,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/models/back_haul_info.dart';
 import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
@@ -80,13 +81,34 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
     return StyledAppPageView(
       title: loc(context).instantVerify,
       actions: [
-        AppTextButton(
-          loc(context).print,
+        AppIconButton.noPadding(
           icon: LinksysIcons.print,
+          color: Theme.of(context).colorScheme.primary,
           onTap: () {
             doSomethingWithSpinner(context, _printPdf(context, ref));
           },
-        )
+        ),
+        if (!Utils.isMobilePlatform())
+          AnimatedRefreshContainer(
+            builder: (controller) {
+              return Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: AppIconButton.noPadding(
+                  color: Theme.of(context).colorScheme.primary,
+                  icon: LinksysIcons.refresh,
+                  onTap: () {
+                    controller.repeat();
+                    ref
+                        .read(pollingProvider.notifier)
+                        .forcePolling()
+                        .then((value) {
+                      controller.stop();
+                    });
+                  },
+                ),
+              );
+            },
+          ),
       ],
       tabController: _tabController,
       tabs: tabs.map((e) => Tab(text: e)).toList(),
@@ -98,6 +120,9 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
     final dashboardHomeState = ref.watch(dashboardHomeProvider);
     final desktopCol = 4.col;
     return StyledAppPageView.innerPage(
+      onRefresh: () {
+        return ref.read(pollingProvider.notifier).forcePolling();
+      },
       child: (context, constraints) => ResponsiveLayout.isMobileLayout(context)
           ? Column(
               children: [
@@ -243,7 +268,10 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
                 direction: Axis.vertical,
                 children: [
                   AppText.bodySmall(loc(context).deviceName),
-                  AppText.labelMedium(master.getDeviceLocation()),
+                  AppText.labelMedium(
+                    master.getDeviceLocation(),
+                    selectable: true,
+                  ),
                 ],
               ),
             ),
@@ -252,7 +280,10 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
                 direction: Axis.vertical,
                 children: [
                   AppText.bodySmall(loc(context).deviceModel),
-                  AppText.labelMedium(master.modelNumber ?? '--'),
+                  AppText.labelMedium(
+                    master.modelNumber ?? '--',
+                    selectable: true,
+                  ),
                 ],
               ),
             ),
@@ -261,7 +292,10 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
                 direction: Axis.vertical,
                 children: [
                   AppText.bodySmall(loc(context).sku),
-                  AppText.labelMedium(dashboardState.skuModelNumber ?? '--'),
+                  AppText.labelMedium(
+                    dashboardState.skuModelNumber ?? '--',
+                    selectable: true,
+                  ),
                 ],
               ),
             ),
@@ -270,7 +304,10 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
                 direction: Axis.vertical,
                 children: [
                   AppText.bodySmall(loc(context).serialNumber),
-                  AppText.labelMedium(master.unit.serialNumber ?? '--'),
+                  AppText.labelMedium(
+                    master.unit.serialNumber ?? '--',
+                    selectable: true,
+                  ),
                 ],
               ),
             ),
@@ -279,7 +316,10 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
                 direction: Axis.vertical,
                 children: [
                   AppText.bodySmall(loc(context).mac),
-                  AppText.labelMedium(master.getMacAddress()),
+                  AppText.labelMedium(
+                    master.getMacAddress(),
+                    selectable: true,
+                  ),
                 ],
               ),
             ),
@@ -295,7 +335,10 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      AppText.labelMedium(master.unit.firmwareVersion ?? '--'),
+                      AppText.labelMedium(
+                        master.unit.firmwareVersion ?? '--',
+                        selectable: true,
+                      ),
                     ],
                   )),
                   SharedWidgets.nodeFirmwareStatusWidget(
@@ -450,9 +493,13 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
               ),
               SizedBox(
                 width: 70,
-                child: AppText.bodySmall(
-                  loc(context).connectedSpeed,
-                  textAlign: TextAlign.center,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: AppText.bodySmall(
+                    loc(context).connectedSpeed,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                  ),
                 ),
               )
             ],
@@ -493,22 +540,6 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
           children: [
             _headerWidget(
               loc(context).connectivity,
-              AnimatedRefreshContainer(
-                builder: (controller) => AppIconButton(
-                  icon: LinksysIcons.refresh,
-                  semanticLabel: 'refresh',
-                  color: Theme.of(context).colorScheme.primary,
-                  onTap: () {
-                    controller.repeat();
-                    ref
-                        .read(pollingProvider.notifier)
-                        .forcePolling()
-                        .then((value) {
-                      controller.stop();
-                    });
-                  },
-                ),
-              ),
             ),
             const AppGap.large2(),
             Row(
@@ -703,7 +734,18 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
           const AppGap.large2(),
           dashboardState.isHealthCheckSupported
               ? const SpeedTestWidget()
-              : AppCard(child: const SpeedTestExternalWidget()),
+              : AppCard(
+                  child: Tooltip(
+                    message: loc(context).featureUnavailableInRemoteMode,
+                    child: Opacity(
+                      opacity: BuildConfig.isRemote() ? 0.5 : 1,
+                      child: AbsorbPointer(
+                        absorbing: BuildConfig.isRemote(),
+                        child: const SpeedTestExternalWidget(),
+                      ),
+                    ),
+                  ),
+                ),
         ],
       ),
     );
@@ -1165,14 +1207,15 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
                   ? loc(context).wired
                   : loc(context).wireless),
         ]),
-        pw.TableRow(children: [
-          pw.Text('${loc(context).meshHealth}:'),
-          pw.Text(
-            node.data.isOnline
-                ? '${signalLevel.resolveLabel(context)}(${node.data.signalStrength})'
-                : loc(context).offline,
-          ),
-        ]),
+        if (!(node.data.isMaster || node.data.isWiredConnection))
+          pw.TableRow(children: [
+            pw.Text('${loc(context).meshHealth}:'),
+            pw.Text(
+              node.data.isOnline
+                  ? '${signalLevel.resolveLabel(context)}(${node.data.signalStrength})'
+                  : loc(context).offline,
+            ),
+          ]),
         pw.TableRow(children: [
           pw.Text('${loc(context).ipAddress}:'),
           pw.Text(node.data.isOnline ? node.data.ipAddress : '--'),

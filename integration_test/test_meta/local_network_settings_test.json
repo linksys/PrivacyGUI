@@ -1,8 +1,8 @@
 {
-    "name": "Local Network Settings test",
+    "name": "Advanced Settings - Local Network",
     "target": "integration_test/local_network_settings_test.dart",
-    "description": "Test the local network settings",
-    "setUp":  ["factory_reset", "skip_pnp"],
+    "description": "Change host name, set LAN Ip address and DHCP server",
+    "setUp":  ["factory_reset", "skip_setup"],
     "tearDown": [],
     "tags": ["local_network", "advanced_settings", "menu"]
 }

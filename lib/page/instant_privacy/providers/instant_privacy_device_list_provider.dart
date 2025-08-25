@@ -12,15 +12,15 @@ final instantPrivacyDeviceListProvider = Provider((ref) {
   final nodeList =
       ref.watch(deviceManagerProvider.select((state) => state.nodeDevices));
   final deviceList = deviceListState.devices;
-  final macAddresses = macFilteringState.macAddresses;
-  final isEnable = macFilteringState.mode == MacFilterMode.allow;
+  final macAddresses = macFilteringState.settings.macAddresses;
+  final isEnable = macFilteringState.settings.mode == MacFilterMode.allow;
   return isEnable
       ? macAddresses
           .map((e) =>
               deviceList.firstWhereOrNull((device) => device.macAddress == e) ??
               DeviceListItem(macAddress: e))
           .where((device) =>
-              !macFilteringState.bssids.contains(device.macAddress) &&
+              !macFilteringState.settings.bssids.contains(device.macAddress) &&
               deviceList.any((e) => e.macAddress == device.macAddress) &&
               !nodeList.any((e) => e.getMacAddress() == device.macAddress))
           .toList()

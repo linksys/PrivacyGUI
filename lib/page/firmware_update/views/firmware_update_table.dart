@@ -49,10 +49,9 @@ class _FirmwareUpdateTableViewState
                       padding: const EdgeInsets.all(8.0),
                       child: Image(
                         semanticLabel: 'device image',
-                        image: CustomTheme.of(context).images.devices.getByName(
+                        image: CustomTheme.of(context).getRouterImage(
                               routerIconTestByModel(
-                                  modelNumber:
-                                      child.$1.model.modelNumber ?? ''),
+                                  modelNumber: child.$1.modelNumber ?? ''),
                             ),
                         fit: BoxFit.cover,
                         width: 72,

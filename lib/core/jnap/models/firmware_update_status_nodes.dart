@@ -1,5 +1,6 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
+import 'package:flutter/widgets.dart';
 
 import 'package:privacy_gui/core/jnap/models/firmware_update_status.dart';
 
@@ -18,17 +19,17 @@ class NodesFirmwareUpdateStatus extends FirmwareUpdateStatus {
   NodesFirmwareUpdateStatus copyWith({
     String? deviceUUID,
     String? lastSuccessfulCheckTime,
-    FirmwareUpdateData? availableUpdate,
-    FirmwareUpdateOperationStatus? pendingOperation,
-    String? lastOperationFailure,
+    ValueGetter<FirmwareUpdateData?>? availableUpdate,
+    ValueGetter<FirmwareUpdateOperationStatus?>? pendingOperation,
+    ValueGetter<String?>? lastOperationFailure,
   }) {
     return NodesFirmwareUpdateStatus(
       deviceUUID: deviceUUID ?? this.deviceUUID,
       lastSuccessfulCheckTime:
           lastSuccessfulCheckTime ?? super.lastSuccessfulCheckTime,
-      availableUpdate: availableUpdate ?? super.availableUpdate,
-      pendingOperation: pendingOperation ?? super.pendingOperation,
-      lastOperationFailure: lastOperationFailure ?? super.lastOperationFailure,
+      availableUpdate: availableUpdate != null ? availableUpdate() : super.availableUpdate,
+      pendingOperation: pendingOperation != null ? pendingOperation() : super.pendingOperation,
+      lastOperationFailure: lastOperationFailure != null ? lastOperationFailure() : super.lastOperationFailure,
     );
   }
 

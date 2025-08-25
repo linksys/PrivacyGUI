@@ -130,15 +130,6 @@ class MockPnpTroubleshooterNotifier extends _i2.Notifier<_i3.PnpTroubleshooterSt
       ) as _i4.Stream<bool>);
 
   @override
-  void resetModem(bool? hasReset) => super.noSuchMethod(
-        Invocation.method(
-          #resetModem,
-          [hasReset],
-        ),
-        returnValueForMissingStub: null,
-      );
-
-  @override
   void setEnterRoute(String? route) => super.noSuchMethod(
         Invocation.method(
           #setEnterRoute,

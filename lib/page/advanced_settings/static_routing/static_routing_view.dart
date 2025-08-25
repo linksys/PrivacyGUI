@@ -258,7 +258,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
           _ => AppText.bodySmall(''),
         };
       },
-      editCellBuilder: (context, ref, index, rule, error) {
+      editCellBuilder: (context, index, controller) {
         final stateRule = ref.watch(staticRoutingRuleProvider).rule;
         return switch (index) {
           0 => AppTextField.outline(

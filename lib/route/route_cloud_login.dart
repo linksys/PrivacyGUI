@@ -4,8 +4,10 @@ final cloudLoginRoute = LinksysRoute(
   name: RouteNamed.cloudLoginAccount,
   path: RoutePath.cloudLoginAccount,
   config: const LinksysRouteConfig(noNaviRail: true),
-  builder: (context, state) =>
-      LoginCloudView(args: state.extra as Map<String, dynamic>? ?? {}),
+  builder: (context, state) => LoginCloudView(
+      args: state.extra as Map<String, dynamic>? ?? {}
+        ..addAll(state.extra as Map<String, dynamic>? ?? <String, dynamic>{})
+        ..addAll(state.uri.queryParameters)),
   routes: [
     ...otpRoutes,
     LinksysRoute(
@@ -18,19 +20,12 @@ final cloudLoginRoute = LinksysRoute(
   ],
 );
 
-final cloudRALoginRoute = LinksysRoute(
-  name: RouteNamed.cloudRALogin,
-  path: RoutePath.cloudRALogin,
+final cloudLoginAuthRoute = LinksysRoute(
+  name: RouteNamed.cloudLoginAuth,
+  path: RoutePath.cloudLoginAuth,
   config: const LinksysRouteConfig(noNaviRail: true),
-  builder: (context, state) =>
-      LoginCloudRAView(args: state.extra as Map<String, dynamic>? ?? {}),
-  routes: [
-    LinksysRoute(
-      name: RouteNamed.cloudRAPin,
-      path: RoutePath.cloudRAPin,
-      config: const LinksysRouteConfig(noNaviRail: true),
-      builder: (context, state) =>
-          CloudRAPinView(args: state.extra as Map<String, dynamic>? ?? {}),
-    ),
-  ],
+  builder: (context, state) => LoginCloudAuthView(
+      args: state.extra as Map<String, dynamic>? ?? {}
+        ..addAll(state.extra as Map<String, dynamic>? ?? <String, dynamic>{})
+        ..addAll(state.uri.queryParameters)),
 );
