@@ -35,6 +35,9 @@ class _WifiAdvancedSettingsViewState
 
     ref.read(wifiAdvancedProvider.notifier).fetch().then(
       (state) {
+        if (!mounted) {
+          return;
+        }
         setState(
           () {
             _preservedState = state;

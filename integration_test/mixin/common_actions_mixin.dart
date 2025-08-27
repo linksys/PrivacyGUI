@@ -28,7 +28,10 @@ mixin CommonActionsMixin on BaseActions {
   }
 
   Future<void> scrollAndTap(Finder finder) async {
-    await scrollUntil(finder);
+    // Scroll to the finder if it is not visible
+    if (!tester.any(finder.hitTestable())) {
+      await scrollUntil(finder);
+    }
     await tester.tap(finder);
     await tester.pumpAndSettle();
   }

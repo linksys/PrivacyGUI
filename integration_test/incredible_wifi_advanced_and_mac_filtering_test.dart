@@ -84,6 +84,9 @@ void main() {
       wifiActions.checkDFSAlert();
       await wifiActions.tapAlertOkBtn();
       await tester.pumpAndSettle();
+      await tester.pump(Duration(seconds: 3));
+      await wifiActions.tapBackButton();
+      await tester.pumpAndSettle();
     });
 
     testWidgets('Incredible Wifi - Test MLO alert', (tester) async {
@@ -123,6 +126,9 @@ void main() {
       // Go to Advanced tab
       await wifiActions.tapAdvancedTab();
       wifiActions.checkMLOAlert();
+      await tester.pumpAndSettle();
+      await tester.pump(Duration(seconds: 3));
+      await wifiActions.tapBackButton();
       await tester.pumpAndSettle();
     });
 
@@ -177,9 +183,13 @@ void main() {
       await menuActions.enterWifiPage();
       await wifiActions.tapMacFilteringTab();
       wifiActions.checkDeviceCount(1);
+      await tester.pump(Duration(seconds: 3));
+      await wifiActions.tapBackButton();
+      await tester.pumpAndSettle();
     });
 
-    testWidgets('Incredible Wifi - Test the instant privacy warning', (tester) async {
+    testWidgets('Incredible Wifi - Test the instant privacy warning',
+        (tester) async {
       // Load app widget.
       await tester.pumpFrames(app(), Duration(seconds: 5));
       // Enter the menu page
@@ -204,7 +214,9 @@ void main() {
       await wifiActions.tapMacFilteringTab();
       wifiActions.checkInstantPrivacyWarning();
       await tester.pumpAndSettle();
+      await tester.pump(Duration(seconds: 3));
+      await wifiActions.tapBackButton();
+      await tester.pumpAndSettle();
     });
-
   });
 }

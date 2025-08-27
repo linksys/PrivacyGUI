@@ -48,6 +48,9 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
     doSomethingWithSpinner(
       context,
       _notifier.fetch().then((value) {
+        if (!mounted) {
+          return;
+        }
         preservedState = value;
         _notifier.doPolling();
       }),
@@ -131,7 +134,8 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
           const AppGap.small2(),
           _infoCard(),
           const AppGap.large2(),
-          _deviceListView(state.settings.mode == MacFilterMode.allow, deviceList),
+          _deviceListView(
+              state.settings.mode == MacFilterMode.allow, deviceList),
           const AppGap.large2(),
         ],
       ),
@@ -234,7 +238,8 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
   }
 
   Widget _deviceCard(bool isEnable, DeviceListItem device) {
-    final myMac = ref.watch(instantPrivacyProvider.select((state) => state.settings.myMac));
+    final myMac = ref
+        .watch(instantPrivacyProvider.select((state) => state.settings.myMac));
     return AppCard(
       color:
           device.isOnline ? null : Theme.of(context).colorScheme.surfaceVariant,

@@ -49,6 +49,11 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView>
       context,
       _notifier.fetch().then((value) async {
         await _notifier.doPolling();
+        // @Defect - it is possible to set state but this page is not mounted
+        // To revisit if there has better way to handle this
+        if (!mounted) {
+          return;
+        }
         preservedState = value;
         ref
             .read(wifiViewProvider.notifier)
@@ -115,8 +120,8 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView>
                     children: [
                       _enableTile(state),
                       const AppGap.small2(),
-                      _infoCard(
-                          state.settings.mode == MacFilterMode.deny, deviceList.length),
+                      _infoCard(state.settings.mode == MacFilterMode.deny,
+                          deviceList.length),
                     ],
                   ),
                 ),
@@ -141,7 +146,8 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView>
           ],
           _enableTile(state),
           const AppGap.small2(),
-          _infoCard(state.settings.mode == MacFilterMode.deny, deviceList.length),
+          _infoCard(
+              state.settings.mode == MacFilterMode.deny, deviceList.length),
           const AppGap.large2(),
         ],
       ),
@@ -210,10 +216,12 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView>
       }
       doSomethingWithSpinner(
         context,
-        _notifier.save(),
+        _notifier.save().then((state) {
+          preservedState = state;
+          ref.read(wifiViewProvider.notifier).setMacFilteringViewChanged(false);
+          return state;
+        }),
       ).then((state) {
-        preservedState = state;
-        ref.read(wifiViewProvider.notifier).setMacFilteringViewChanged(false);
         showChangesSavedSnackBar();
       }).onError((error, stackTrace) {
         showErrorMessageSnackBar(error);
