@@ -205,7 +205,8 @@ extractInfo(Map<String, dynamic> test) {
       : null;
   String? link;
   if (tsName != null && locale != null && deviceType != null) {
-    link = './$locale/$deviceType/$tsName-$deviceType-$locale.png';
+    // Use relative path
+    link = '$locale/$deviceType/$tsName-$deviceType-$locale.png';
     test['filePath'] = link;
     test['locale'] = locale;
     test['deviceType'] = deviceType;
