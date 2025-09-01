@@ -31,7 +31,7 @@ def generate_report():
                 'name': ts_name,
                 'locale': locale,
                 'resolution': device_type,
-                'imagePath': full_path,
+                'imagePath': file_path,
                 'result': standardized_result, # Use the standardized result
                 'messages': messages
             })
