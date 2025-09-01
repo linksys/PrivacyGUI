@@ -24,7 +24,6 @@ def generate_report():
         messages = item.get('messages', [])
 
         if locale and device_type and file_path and result and ts_name:
-            full_path = os.path.join(base_dir, file_path.lstrip('./'))
             # Standardize result: 'error' becomes 'failure'
             standardized_result = 'failure' if result == 'error' else result
             processed_data.append({
