@@ -57,7 +57,7 @@ void main(List<String> args) {
     // reportHTMLFile.writeAsStringSync(htmlReport);
     //
     final encoder = JsonEncoder.withIndent('  ');
-    
+
     final reportJsonFile =
         File('snapshots/localizations-test-reports$fileSuffix.json');
     if (!reportJsonFile.existsSync()) {
@@ -195,11 +195,14 @@ handleTestRecord(String record, Map<String, dynamic> testResult) {
 
 extractInfo(Map<String, dynamic> test) {
   final name = test['name'];
-  final regex = RegExp(r'(.*) \(variant: (.*)-(.*)_.*');
+  final regex = RegExp(r'(.*) \(variant: (.*)-(.*)_(.*)\(.*');
   final match = regex.firstMatch(name);
   final tsName = match?.group(1)?.trim();
   final deviceType = match?.group(2);
-  final locale = match?.group(3);
+  final region = match?.group(4) ?? '';
+  final locale = (match?.group(3) ?? '').isNotEmpty
+      ? '${match?.group(3)}${region.isNotEmpty ? '_$region' : ''}'
+      : null;
   String? link;
   if (tsName != null && locale != null && deviceType != null) {
     link = './$locale/$deviceType/$tsName-$deviceType-$locale.png';
