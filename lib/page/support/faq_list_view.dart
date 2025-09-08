@@ -70,8 +70,8 @@ class _FaqListViewState extends ConsumerState<FaqListView> {
             primary: true,
             shrinkWrap: true,
             children: [
-              LinksysSearchComponent(),
-              const AppGap.medium(),
+              // LinksysSearchComponent(),
+              // const AppGap.medium(),
               ...categories.map((category) => Column(
                     children: [
                       _buildExpansionCard(
@@ -144,71 +144,71 @@ class SearchResult {
   }
 }
 
-class LinksysSearchComponent extends StatefulWidget {
-  const LinksysSearchComponent({Key? key}) : super(key: key);
+// class LinksysSearchComponent extends StatefulWidget {
+//   const LinksysSearchComponent({Key? key}) : super(key: key);
 
-  @override
-  State<LinksysSearchComponent> createState() => _LinksysSearchComponentState();
-}
+//   @override
+//   State<LinksysSearchComponent> createState() => _LinksysSearchComponentState();
+// }
 
-class _LinksysSearchComponentState extends State<LinksysSearchComponent> {
+// class _LinksysSearchComponentState extends State<LinksysSearchComponent> {
 
-  Future<List<SearchResult>> _fetchSearchResults(String keyword) async {
-    if (keyword.isEmpty) {
-      return [];
-    }
+//   Future<List<SearchResult>> _fetchSearchResults(String keyword) async {
+//     if (keyword.isEmpty) {
+//       return [];
+//     }
 
-    final apiUrl =
-        'https://support.linksys.com/get_related_kb_forums/?text=$keyword';
+//     final apiUrl =
+//         'https://support.linksys.com/get_related_kb_forums/?text=$keyword';
 
-    List<SearchResult> results = [];
-    try {
-      final response = await http.get(Uri.parse(apiUrl));
+//     List<SearchResult> results = [];
+//     try {
+//       final response = await http.get(Uri.parse(apiUrl));
 
-      if (response.statusCode == 200) {
-        final data = json.decode(utf8.decode(response.bodyBytes));
-        final List<dynamic> resultsJson = data;
+//       if (response.statusCode == 200) {
+//         final data = json.decode(utf8.decode(response.bodyBytes));
+//         final List<dynamic> resultsJson = data;
 
-        results =
-            resultsJson.map((json) => SearchResult.fromJson(json)).toList();
-      } else {
-        print('Failed to load search results: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Network error: $e');
-    } finally {}
-    return results;
-  }
+//         results =
+//             resultsJson.map((json) => SearchResult.fromJson(json)).toList();
+//       } else {
+//         print('Failed to load search results: ${response.statusCode}');
+//       }
+//     } catch (e) {
+//       print('Network error: $e');
+//     } finally {}
+//     return results;
+//   }
 
-  void _launchURL(SearchResult result) async {
-    final url =
-        'https://support.linksys.com/${result.type}/article/${result.id}-en/';
-    gotoOfficialWebUrl(url);
-  }
+//   void _launchURL(SearchResult result) async {
+//     final url =
+//         'https://support.linksys.com/${result.type}/article/${result.id}-en/';
+//     gotoOfficialWebUrl(url);
+//   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: SearchAnchor(
-        viewBarPadding: EdgeInsets.zero,
-        builder: (context, controller) => SearchBar(
-          controller: controller,
-          hintText: 'Search in Linksys support',
-          onChanged: (value) {},
-          onSubmitted: (value) {
-            controller.openView();
-          },
-          leading: Icon(Icons.search),
-        ),
-        suggestionsBuilder: (context, controller) async {
-          final suggestion = await _fetchSearchResults(controller.text);
-          return suggestion.map((result) => ListTile(
-                title: Text(result.title),
-                onTap: () => _launchURL(result),
-              ));
-        },
-      ),
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return Padding(
+//       padding: const EdgeInsets.all(16.0),
+//       child: SearchAnchor(
+//         viewBarPadding: EdgeInsets.zero,
+//         builder: (context, controller) => SearchBar(
+//           controller: controller,
+//           hintText: 'Search in Linksys support',
+//           onChanged: (value) {},
+//           onSubmitted: (value) {
+//             controller.openView();
+//           },
+//           leading: Icon(Icons.search),
+//         ),
+//         suggestionsBuilder: (context, controller) async {
+//           final suggestion = await _fetchSearchResults(controller.text);
+//           return suggestion.map((result) => ListTile(
+//                 title: Text(result.title),
+//                 onTap: () => _launchURL(result),
+//               ));
+//         },
+//       ),
+//     );
+//   }
+// }
