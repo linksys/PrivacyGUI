@@ -131,6 +131,20 @@ final menus = [
     ),
   ),
   LinksysRoute(
+    name: RouteNamed.dualWANSettings,
+    path: RoutePath.dualWANSettings,
+    config: LinksysRouteConfig(column: ColumnGrid(column: 12)),
+    builder: (context, state) => DualWANSettingsView(),
+    routes: [
+      LinksysRoute(
+        name: RouteNamed.dualWANLog,
+        path: RoutePath.dualWANLog,
+        config: LinksysRouteConfig(column: ColumnGrid(column: 12)),
+        builder: (context, state) => DualWANLogView(),
+      ),
+    ],
+  ),
+  LinksysRoute(
     name: RouteNamed.devicePicker,
     path: RoutePath.devicePicker,
     config: LinksysRouteConfig(
