@@ -10,6 +10,7 @@ import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_state.dart';
+import 'package:privacy_gui/page/components/customs/animated_digital_text.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
@@ -241,7 +242,8 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
             }),
             AppText.displayLarge(
                 step == 'latency' ? '—' : (value).toStringAsFixed(1)),
-            AppText.bodyMedium(unit),
+            if (step == 'downloadBandwidth' || step == 'uploadBandwidth')
+              AppText.bodyMedium(unit),
           ],
         );
       },
@@ -252,6 +254,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
   }
 
   Widget _pingView(String step, String latency) {
+    final isLatencyStep = step == 'latency' || latency == '0';
     return Column(
       mainAxisAlignment:
           step != 'success' ? MainAxisAlignment.end : MainAxisAlignment.center,
@@ -269,15 +272,26 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
                 borderColor: Theme.of(context).colorScheme.primary,
                 size: 12,
                 dotSize: 6,
-                animated: latency == '—',
+                animated: isLatencyStep,
               ),
             ),
             AppText.titleSmall(
-              step == 'latency' ? 'Ping: —' : 'Ping: ',
+              'Ping: ',
               color: Theme.of(context).colorScheme.primary,
             ),
+            if (isLatencyStep)
+              AnimatedDigitalText(
+                fontSize: 12,
+                fontColor: Theme.of(context).colorScheme.primary,
+              ),
+            if (!isLatencyStep) ...[
+              AppText.bodyMedium(
+                latency,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ],
             AppText.bodyMedium(
-              step == 'latency' ? 'ms' : '${latency}ms',
+              'ms',
               color: Theme.of(context).colorScheme.primary,
             ),
           ],
