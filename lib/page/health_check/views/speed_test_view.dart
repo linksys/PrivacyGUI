@@ -190,7 +190,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
 
     final latency = result?.speedTestResult?.latency?.toStringAsFixed(0) ?? '-';
 
-    final bandwidth = NetworkUtils.formatBytesWithUnit(
+    final bandwidth = NetworkUtils.formatBitsWithUnit(
         state.status == 'COMPLETE'
             ? (result?.speedTestResult?.uploadBandwidth ?? 0) * 1024
             : (state.meterValue * 1024).toInt(),
@@ -243,7 +243,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
             AppText.displayLarge(
                 step == 'latency' ? '—' : (value).toStringAsFixed(1)),
             if (step == 'downloadBandwidth' || step == 'uploadBandwidth')
-              AppText.bodyMedium(unit),
+              AppText.bodyMedium('${unit}ps'),
           ],
         );
       },
@@ -304,10 +304,10 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
   Widget _infoView(HealthCheckState state) {
     final result = state.result.firstOrNull;
 
-    final downloadBandwidth = NetworkUtils.formatBytesWithUnit(
+    final downloadBandwidth = NetworkUtils.formatBitsWithUnit(
         (result?.speedTestResult?.downloadBandwidth ?? 0) * 1024,
         decimals: 1);
-    final uploadBandwidth = NetworkUtils.formatBytesWithUnit(
+    final uploadBandwidth = NetworkUtils.formatBitsWithUnit(
         (result?.speedTestResult?.uploadBandwidth ?? 0) * 1024,
         decimals: 1);
     final step = state.step;
@@ -400,7 +400,8 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
                 const AppGap.small2(),
                 downloadBandWidthView,
                 const AppGap.small2(),
-                AppText.bodyMedium(downloadUnit ?? ''),
+                AppText.bodyMedium(
+                    double.parse(downloadValue) > 0 ? '${downloadUnit}ps' : ''),
               ],
             ),
           ),
@@ -417,7 +418,8 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
                 const AppGap.small2(),
                 uploadBandWidthView,
                 const AppGap.small2(),
-                AppText.bodyMedium(uploadUnit ?? ''),
+                AppText.bodyMedium(
+                    double.parse(uploadValue) > 0 ? '${uploadUnit}ps' : ''),
               ],
             ),
           ),
@@ -432,10 +434,10 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
 
     final result =
         state.status == 'IDLE' ? latestSpeedTest : state.result.firstOrNull;
-    final downloadBandWidth = NetworkUtils.formatBytesWithUnit(
+    final downloadBandWidth = NetworkUtils.formatBitsWithUnit(
         (result?.speedTestResult?.downloadBandwidth ?? 0) * 1024,
         decimals: 1);
-    final uploadBandWidth = NetworkUtils.formatBytesWithUnit(
+    final uploadBandWidth = NetworkUtils.formatBitsWithUnit(
         (result?.speedTestResult?.uploadBandwidth ?? 0) * 1024,
         decimals: 1);
     final latency = result?.speedTestResult?.latency?.toStringAsFixed(0) ?? '-';

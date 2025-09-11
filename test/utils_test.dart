@@ -487,137 +487,133 @@ void main() {
     });
   });
 
-  group('Test Network Utils - formatBytes', () {
-test('formatBytes: formats zero bytes correctly', () {
-      const bytes = 0;
-      const expected = '0 B';
+  group('Test Network Utils - formatBits', () {
+    test('formatBits: formats zero bits correctly', () {
+      const bits = 0;
+      const expected = '0 b';
 
-      final formattedBytes = NetworkUtils.formatBytes(bytes);
-      expect(formattedBytes, expected);
+      final formattedBits = NetworkUtils.formatBits(bits);
+      expect(formattedBits, expected);
     });
 
-    test('formatBytes: formats single-digit bytes with specified decimals', () {
-      const bytes = 123;
-      const expected = '123 B';
+    test('formatBits: formats single-digit bits with specified decimals', () {
+      const bits = 123;
+      const expected = '123 b';
 
-      final formattedBytes = NetworkUtils.formatBytes(bytes, decimals: 0);
-      expect(formattedBytes, expected);
+      final formattedBits = NetworkUtils.formatBits(bits, decimals: 0);
+      expect(formattedBits, expected);
     });
 
-    test(
-        'formatBytes: formats bytes in kilobytes range with specified decimals',
+    test('formatBits: formats bits in kilobytes range with specified decimals',
         () {
-      const bytes = 1234;
+      const bits = 1234;
       const expected = '1.205 Kb';
 
-      final formattedBytes = NetworkUtils.formatBytes(bytes, decimals: 3);
-      expect(formattedBytes, expected);
+      final formattedBits = NetworkUtils.formatBits(bits, decimals: 3);
+      expect(formattedBits, expected);
     });
 
-    test(
-        'formatBytes: formats bytes in megabytes range with specified decimals',
+    test('formatBits: formats bits in megabytes range with specified decimals',
         () {
-      const bytes = 1234567;
+      const bits = 1234567;
       const expected = '1.1774 Mb';
 
-      final formattedBytes = NetworkUtils.formatBytes(bytes, decimals: 4);
-      expect(formattedBytes, expected);
+      final formattedBits = NetworkUtils.formatBits(bits, decimals: 4);
+      expect(formattedBits, expected);
     });
 
-    test(
-        'formatBytes: formats bytes in gigabytes range with specified decimals',
+    test('formatBits: formats bits in gigabytes range with specified decimals',
         () {
-      const bytes = 1234567890;
+      const bits = 1234567890;
       const expected = '1.15 Gb';
 
-      final formattedBytes = NetworkUtils.formatBytes(bytes, decimals: 2);
-      expect(formattedBytes, expected);
+      final formattedBits = NetworkUtils.formatBits(bits, decimals: 2);
+      expect(formattedBits, expected);
     });
 
-    test('formatBytes: handles negative input', () {
-      const expected = '0 B';
+    test('formatBits: handles negative input', () {
+      const expected = '0 b';
 
-      final formattedBytes = NetworkUtils.formatBytes(-1);
-      expect(formattedBytes, expected);
+      final formattedBits = NetworkUtils.formatBits(-1);
+      expect(formattedBits, expected);
     });
 
-    test('formatBytes: handles huge input (exceeding petabytes)', () {
-      num bytes = 1125899906842625; // 1 petabyte
+    test('formatBits: handles huge input (exceeding petabytes)', () {
+      num bits = 1125899906842625; // 1 petabyte
       const expected = '1.00 Pb';
 
-      final formattedBytes =
-          NetworkUtils.formatBytes(bytes.toInt(), decimals: 2);
-      expect(formattedBytes, expected);
+      final formattedBits = NetworkUtils.formatBits(bits.toInt(), decimals: 2);
+      expect(formattedBits, expected);
     });
   });
 
-  group('Test Network Utils - formatBytesWithUnit', () {
-    test('returns 0 B for zero bytes', () {
+  group('Test Network Utils - formatBitsWithUnit', () {
+    test('returns 0 b for zero bytes', () {
       const bytes = 0;
-      final result = NetworkUtils.formatBytesWithUnit(bytes);
+      final result = NetworkUtils.formatBitsWithUnit(bytes);
       expect(result.value, '0');
-      expect(result.unit, 'B');
+      expect(result.unit, 'b');
     });
 
-    test('returns 0 B for negative input', () {
+    test('returns 0 b for negative input', () {
       const bytes = -100;
-      final result = NetworkUtils.formatBytesWithUnit(bytes);
+      final result = NetworkUtils.formatBitsWithUnit(bytes);
       expect(result.value, '0');
-      expect(result.unit, 'B');
+      expect(result.unit, 'b');
     });
 
-    test('formats bytes (less than 1Kb)', () {
-      const bytes = 500;
-      final result = NetworkUtils.formatBytesWithUnit(bytes);
+    test('formats bits (less than 1Kb)', () {
+      const bits = 500;
+      final result = NetworkUtils.formatBitsWithUnit(bits);
       expect(result.value, '500');
-      expect(result.unit, 'B');
+      expect(result.unit, 'b');
     });
 
     test('formats kilobytes with 0 decimal places', () {
-      const bytes = 2048; // 2 Kb
-      final result = NetworkUtils.formatBytesWithUnit(bytes);
+      const bits = 2048; // 2 Kb
+      final result = NetworkUtils.formatBitsWithUnit(bits);
       expect(result.value, '2');
       expect(result.unit, 'Kb');
     });
 
     test('formats megabytes with 2 decimal places', () {
-      const bytes = 1.5 * 1024 * 1024; // 1.5 Mb
-      final result = NetworkUtils.formatBytesWithUnit(bytes.toInt(), decimals: 2);
+      const bits = 1.5 * 1024 * 1024; // 1.5 Mb
+      final result = NetworkUtils.formatBitsWithUnit(bits.toInt(), decimals: 2);
       expect(result.value, '1.50');
       expect(result.unit, 'Mb');
     });
 
     test('formats gigabytes with 1 decimal place', () {
-      const bytes = 2.5 * 1024 * 1024 * 1024; // 2.5 Gb
-      final result = NetworkUtils.formatBytesWithUnit(bytes.toInt(), decimals: 1);
+      const bits = 2.5 * 1024 * 1024 * 1024; // 2.5 Gb
+      final result = NetworkUtils.formatBitsWithUnit(bits.toInt(), decimals: 1);
       expect(result.value, '2.5');
       expect(result.unit, 'Gb');
     });
 
     test('formats terabytes with 3 decimal places', () {
-      const bytes = 3.14159 * 1024 * 1024 * 1024 * 1024; // ~3.14159 Tb
-      final result = NetworkUtils.formatBytesWithUnit(bytes.toInt(), decimals: 3);
+      const bits = 3.14159 * 1024 * 1024 * 1024 * 1024; // ~3.14159 Tb
+      final result = NetworkUtils.formatBitsWithUnit(bits.toInt(), decimals: 3);
       expect(result.value, '3.142');
       expect(result.unit, 'Tb');
     });
 
     test('formats petabytes with 0 decimal places', () {
-      const bytes = 1024 * 1024 * 1024 * 1024 * 1024; // 1 Pb
-      final result = NetworkUtils.formatBytesWithUnit(bytes, decimals: 0);
+      const bits = 1024 * 1024 * 1024 * 1024 * 1024; // 1 Pb
+      final result = NetworkUtils.formatBitsWithUnit(bits, decimals: 0);
       expect(result.value, '1');
       expect(result.unit, 'Pb');
     });
 
     test('handles exact power of 1024 values without decimal places', () {
-      const bytes = 1024 * 1024; // Exactly 1 Mb
-      final result = NetworkUtils.formatBytesWithUnit(bytes);
+      const bits = 1024 * 1024; // Exactly 1 Mb
+      final result = NetworkUtils.formatBitsWithUnit(bits);
       expect(result.value, '1');
       expect(result.unit, 'Mb');
     });
 
     test('handles exactly 1 petabyte', () {
       final onePb = BigInt.from(1024).pow(5).toInt(); // Exactly 1 PiB
-      final result = NetworkUtils.formatBytesWithUnit(onePb);
+      final result = NetworkUtils.formatBitsWithUnit(onePb);
       expect(result.value, '1');
       expect(result.unit, 'Pb');
     });

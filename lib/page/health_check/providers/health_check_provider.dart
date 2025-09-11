@@ -57,7 +57,7 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
               action: JNAPAction.getHealthCheckStatus,
               auth: true,
               firstDelayInMilliSec: 0,
-              retryDelayInMilliSec: 200,
+              retryDelayInMilliSec: 100,
               maxRetry: -1,
               condition: (result) {
                 return result is JNAPSuccess &&
@@ -84,7 +84,6 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
                 } else if (result is JNAPError) {
                   state = state.copyWith(step: 'error', status: 'COMPLETE');
                 }
-                
               })
           .listen((result) {
         logger.d('[SpeedTest] Get Health Check Result - $result');
