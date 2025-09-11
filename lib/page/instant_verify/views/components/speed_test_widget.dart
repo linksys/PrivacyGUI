@@ -48,7 +48,7 @@ class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
     final result =
         state.status == 'IDLE' ? latestSpeedTest : state.result.firstOrNull;
 
-    final bandwidth = NetworkUtils.formatBytesWithUnit(
+    final bandwidth = NetworkUtils.formatBitsWithUnit(
         state.status == 'COMPLETE'
             ? (result?.speedTestResult?.uploadBandwidth ?? 0) * 1024
             : (state.meterValue * 1024).toInt(),
@@ -132,7 +132,7 @@ class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
                             state.step == 'latency' ? '—' : bandwidthValue),
                         if (state.step == 'downloadBandwidth' ||
                             state.step == 'uploadBandwidth')
-                          AppText.bodyMedium(bandwidthUnit),
+                          AppText.bodyMedium('${bandwidthUnit}ps'),
                       ],
                     );
                   },
@@ -354,24 +354,23 @@ class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
   }
 
   Widget _resultCard(SpeedTestResult? result) {
-    final downloadBandWidthIntBytes = (result?.downloadBandwidth ?? 0) * 1024;
-    final uploadBandWidthIntBytes = (result?.uploadBandwidth ?? 0) * 1024;
-    final downloadFormat = NetworkUtils.formatBytesWithUnit(
-        downloadBandWidthIntBytes,
-        decimals: 1);
+    final downloadBandWidthIntBits = (result?.downloadBandwidth ?? 0) * 1024;
+    final uploadBandWidthIntBits = (result?.uploadBandwidth ?? 0) * 1024;
+    final downloadFormat =
+        NetworkUtils.formatBitsWithUnit(downloadBandWidthIntBits, decimals: 1);
     final uploadFormat =
-        NetworkUtils.formatBytesWithUnit(uploadBandWidthIntBytes, decimals: 1);
+        NetworkUtils.formatBitsWithUnit(uploadBandWidthIntBits, decimals: 1);
     final downloadBandWidthView = FittedBox(
       fit: BoxFit.scaleDown,
       child: AppText.displaySmall(
           key: ValueKey('downloadBandWidth'),
-          downloadBandWidthIntBytes == 0 ? '—' : downloadFormat.value),
+          downloadBandWidthIntBits == 0 ? '—' : downloadFormat.value),
     );
     final uploadBandWidthView = FittedBox(
       fit: BoxFit.scaleDown,
       child: AppText.displaySmall(
           key: ValueKey('uploadBandWidth'),
-          uploadBandWidthIntBytes == 0 ? '—' : uploadFormat.value),
+          uploadBandWidthIntBits == 0 ? '—' : uploadFormat.value),
     );
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -396,7 +395,9 @@ class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
                   Expanded(child: downloadBandWidthView),
                 ],
               ),
-              AppText.bodyExtraSmall('${downloadFormat.unit}ps'),
+              AppText.bodyExtraSmall(downloadBandWidthIntBits > 0
+                  ? '${downloadFormat.unit}ps'
+                  : ''),
             ],
           ),
         ),
@@ -420,7 +421,8 @@ class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
                   Expanded(child: uploadBandWidthView),
                 ],
               ),
-              AppText.bodyExtraSmall('${uploadFormat.unit}ps'),
+              AppText.bodyExtraSmall(
+                  uploadBandWidthIntBits > 0 ? '${uploadFormat.unit}ps' : ''),
             ],
           ),
         ),
