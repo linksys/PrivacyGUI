@@ -37,31 +37,31 @@ void main() {
       await login.tapLoginButton();
     });
 
-    // testWidgets('IPv4 - Set back to DHCP operations', (tester) async {
-    //   await tester.pumpFrames(app(), Duration(seconds: 5));
-    //   // Enter the menu screen
-    //   final topbarActions = TestTopbarActions(tester);
-    //   await topbarActions.tapMenuButton();
-    //   final menuActions = TestMenuActions(tester);
-    //   // Enter Advanced Settings screen
-    //   await menuActions.enterAdvancedSettingsPage();
-    //   final advancedSettingsActions = TestAdvancedSettingsActions(tester);
-    //   await advancedSettingsActions.checkTitle(advancedSettingsActions.title);
-    //   // Enter Internet Settings screen
-    //   await advancedSettingsActions.enterInternetSettingsPage();
-    //   final internetSettingsActions = TestInternetSettingsActions(tester);
-    //   await internetSettingsActions.checkTitle(internetSettingsActions.title);
-    //   // Switch to IPv4 tab
-    //   await internetSettingsActions.tapIpv4Tab();
-    //   await internetSettingsActions.tapEditIconButton();
-    //   await internetSettingsActions.selectDhcpType();
-    //   await internetSettingsActions.selectAutoMtu();
-    //   await internetSettingsActions.tapSaveButton();
-    //   await internetSettingsActions.tapCancelButton();
-    //   await internetSettingsActions.tapSaveButton();
-    //   await internetSettingsActions.tapRestartButton();
-    //   await tester.pumpAndSettle(Duration(seconds: 15));
-    // });
+    testWidgets('IPv4 - Set back to DHCP operations', (tester) async {
+      await tester.pumpFrames(app(), Duration(seconds: 5));
+      // Enter the menu screen
+      final topbarActions = TestTopbarActions(tester);
+      await topbarActions.tapMenuButton();
+      final menuActions = TestMenuActions(tester);
+      // Enter Advanced Settings screen
+      await menuActions.enterAdvancedSettingsPage();
+      final advancedSettingsActions = TestAdvancedSettingsActions(tester);
+      await advancedSettingsActions.checkTitle(advancedSettingsActions.title);
+      // Enter Internet Settings screen
+      await advancedSettingsActions.enterInternetSettingsPage();
+      final internetSettingsActions = TestInternetSettingsActions(tester);
+      await internetSettingsActions.checkTitle(internetSettingsActions.title);
+      // Switch to IPv4 tab
+      await internetSettingsActions.tapIpv4Tab();
+      await internetSettingsActions.tapEditIconButton();
+      await internetSettingsActions.selectDhcpType();
+      await internetSettingsActions.selectAutoMtu();
+      await internetSettingsActions.tapSaveButton();
+      await internetSettingsActions.tapCancelButton();
+      await internetSettingsActions.tapSaveButton();
+      await internetSettingsActions.tapRestartButton();
+      await tester.pumpAndSettle(Duration(seconds: 15));
+    });
 
     testWidgets('IPv6 - Automatic operations', (tester) async {
       await tester.pumpFrames(app(), Duration(seconds: 5));

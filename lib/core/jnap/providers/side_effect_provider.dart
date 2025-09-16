@@ -141,7 +141,7 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
       return poll(
         pollFunc: testRouterReconnected,
         maxRetry: overrides?.maxRetry ?? -1,
-        timeDelayStartInSec: overrides?.timeDelayStartInSec ?? 10,
+        timeDelayStartInSec: overrides?.timeDelayStartInSec ?? 20,
         retryDelayInSec: overrides?.retryDelayInSec ?? 10,
         maxPollTimeInSec: overrides?.maxPollTimeInSec ?? 240,
         condition: overrides?.condition,
@@ -158,7 +158,7 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
       return poll(
         pollFunc: testRouterReconnected,
         maxRetry: overrides?.maxRetry ?? -1,
-        timeDelayStartInSec: overrides?.timeDelayStartInSec ?? 10,
+        timeDelayStartInSec: overrides?.timeDelayStartInSec ?? 20,
         retryDelayInSec: overrides?.retryDelayInSec ?? 10,
         maxPollTimeInSec: overrides?.maxPollTimeInSec ?? 120,
         condition: overrides?.condition,
@@ -175,7 +175,7 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
       return poll(
         pollFunc: testRouterFullyBootedUp,
         maxRetry: overrides?.maxRetry ?? 10,
-        timeDelayStartInSec: overrides?.timeDelayStartInSec ?? 5,
+        timeDelayStartInSec: overrides?.timeDelayStartInSec ?? 20,
         retryDelayInSec: overrides?.retryDelayInSec ?? 15,
         maxPollTimeInSec: overrides?.maxPollTimeInSec ?? -1,
         condition: overrides?.condition,
