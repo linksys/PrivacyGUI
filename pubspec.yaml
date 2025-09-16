@@ -65,7 +65,7 @@ dependencies:
   privacygui_widgets:
     git:
       url: https://github.com/linksys/PrivacyGUI-Widgets.git
-      ref: v1.2.6
+      ref: b945f41f67dadd1d30fc06dd4e9d40caddba03c2
   flutter_blue_plus: ^1.4.0
   crypto: ^3.0.2
   riverpod: ^2.6.1
