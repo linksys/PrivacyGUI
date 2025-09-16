@@ -63,7 +63,9 @@ dependencies:
   collection: ^1.18.0
   flutter_secure_storage: ^9.2.2
   privacygui_widgets:
-    path: plugins/widgets
+    git:
+      url: https://github.com/linksys/PrivacyGUI-Widgets.git
+      ref: b945f41f67dadd1d30fc06dd4e9d40caddba03c2
   flutter_blue_plus: ^1.4.0
   crypto: ^3.0.2
   riverpod: ^2.6.1
