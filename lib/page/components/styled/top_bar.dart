@@ -6,11 +6,11 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/page/components/styled/logo_widget.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dart';
 import 'package:privacygui_widgets/theme/material/color_tonal_palettes.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
-
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/general_settings_widget/general_settings_widget.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
@@ -20,7 +20,6 @@ import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/debug_mixin.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
-import 'remote_assistance/remote_assistance_dialog.dart';
 
 class TopBar extends ConsumerStatefulWidget {
   final void Function(int)? onMenuClick;
@@ -35,12 +34,18 @@ class TopBar extends ConsumerStatefulWidget {
 
 class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
   @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final loginType =
         ref.watch(authProvider.select((value) => value.value?.loginType)) ??
             LoginType.none;
     final isRemote = loginType == LoginType.remote;
-    final isPollingDone = ref.watch(deviceManagerProvider).deviceList.isNotEmpty;
+    final isPollingDone =
+        ref.watch(deviceManagerProvider).deviceList.isNotEmpty;
     if (isRemote && isPollingDone) {
       _startRemoteAssistance(context);
     }
@@ -48,6 +53,7 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
         isRemote ? ref.watch(remoteClientProvider).sessionInfo : null;
     final expiredCountdown =
         isRemote ? ref.watch(remoteClientProvider).expiredCountdown : null;
+
     return SafeArea(
       bottom: false,
       child: GestureDetector(
@@ -68,8 +74,7 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              AppText.titleLarge(loc(context).appTitle,
-                  color: Color(neutralTonal.get(100))),
+              LogoWidget(),
               MenuHolder(type: MenuDisplay.top),
               Wrap(
                 children: [
@@ -136,7 +141,8 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
     );
   }
 
-  Widget _sessionExpireCounter(GRASessionInfo sessionInfo, int? expiredCountdown) {
+  Widget _sessionExpireCounter(
+      GRASessionInfo sessionInfo, int? expiredCountdown) {
     var display = loc(context).remoteAssistanceSessionExpired;
     if (sessionInfo.status != GRASessionStatus.active) {
       return AppText.bodyMedium(display);

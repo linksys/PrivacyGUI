@@ -35,6 +35,20 @@
       --background-color: #FDFBFF;
     }
 
+    .branding-img {
+      display: none;
+    }
+
+
+    html[data-theme='light'] #branding-light,
+    html:not([data-theme]) #branding-light {
+      display: block;
+    }
+
+    html[data-theme='dark'] #branding-dark {
+      display: block;
+    }
+
     [data-theme='dark'] {
       --background-color: #121316;
     }
@@ -132,10 +146,17 @@
 </head>
 <body>
   <script src="./flutter_bootstrap.js" async></script>
+  <!-- PNG Branding
   <picture id="splash-branding">
-    <source srcset="splash/img/branding-1x.png 1x, splash/img/branding-2x.png 2x, splash/img/branding-3x.png 3x, splash/img/branding-4x.png 4x" media="(prefers-color-scheme: light)">
-    <source srcset="splash/img/branding-dark-1x.png 1x, splash/img/branding-dark-2x.png 2x, splash/img/branding-dark-3x.png 3x, splash/img/branding-dark-4x.png 4x" media="(prefers-color-scheme: dark)">
-    <img class="center" aria-hidden="true" src="splash/img/branding-1x.png" alt="">
+    <img id="branding-dark" class="center branding-img" aria-hidden="true" alt="branding-dark" src="splash/img/branding-dark.png" srcset="splash/img/branding-dark@2x.png 2x, splash/img/branding-dark@3x.png 3x">
+    <img id="branding-light" class="center branding-img" aria-hidden="true" alt="branding-light" src="splash/img/branding.png" srcset="splash/img/branding@2x.png 2x, splash/img/branding@3x.png 3x">
   </picture>
+  -->
+  <!-- SVG Branding -->
+  <picture id="splash-branding">
+    <img id="branding-light" class="center branding-img" aria-hidden="true" src="splash/img/branding.svg" alt="branding-light">
+    <img id="branding-dark" class="center branding-img" aria-hidden="true" src="splash/img/branding-dark.svg" alt="branding-dark">
+  </picture>
+  
 
 </body></html>
