@@ -279,13 +279,11 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
     return state.isHealthCheckSupported
         ? hasLanPort
             ? Column(
-                children: [
+                children: const [
                   Divider(),
                   SpeedTestWidget(
                       showDetails: false,
-                      layout: mobile
-                          ? SpeedTestLayout.horizontal
-                          : SpeedTestLayout.vertical),
+                      layout: SpeedTestLayout.vertical),
                   AppGap.large2(),
                 ],
               )
