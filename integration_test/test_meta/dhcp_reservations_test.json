@@ -1,7 +1,7 @@
 {
-    "name": "DHCP Reservations test",
+    "name": "Advanced Settings - DHCP Reservations (Local Network)",
     "target": "integration_test/dhcp_reservations_test.dart",
-    "description": "Test the DHCP reservations",
+    "description": "Manually add and edit a DHCP reservation, and verify the new saved data",
     "setUp":  ["factory_reset", "skip_setup"],
     "tearDown": [],
     "tags": ["local_network", "dhcp_reservations", "advanced_settings", "menu"]

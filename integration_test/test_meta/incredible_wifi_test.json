@@ -1,7 +1,7 @@
 {
-    "name": "Incredible wifi test",
+    "name": "Incredible WiFi",
     "target": "integration_test/incredible_wifi_test.dart",
-    "description": "Test the wifi settings",
+    "description": "Test the wifi settings, including 2.4GHz, 5GHz, 6GHz, and guest wifi settings",
     "setUp":  ["factory_reset", "skip_setup"],
     "tearDown": [],
     "tags": ["wifi", "menu"],

@@ -1,7 +1,7 @@
 {
-    "name": "Test behaviors on Instant Safety",
+    "name": "Instant Safety",
     "target": "integration_test/instant_safety_test.dart",
-    "description": "Execute all the functions on the page and verify that the new data has been synced",
+    "description": "Enable the instant safety function",
     "setUp":  ["factory_reset", "skip_setup"],
     "tearDown": [],
     "tags": ["safety", "menu"]

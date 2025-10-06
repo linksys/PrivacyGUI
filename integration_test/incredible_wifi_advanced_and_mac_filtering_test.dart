@@ -84,6 +84,9 @@ void main() {
       wifiActions.checkDFSAlert();
       await wifiActions.tapAlertOkBtn();
       await tester.pumpAndSettle();
+      await tester.pump(Duration(seconds: 3));
+      await wifiActions.tapBackButton();
+      await tester.pumpAndSettle();
     });
 
     testWidgets('Incredible Wifi - Test MLO alert', (tester) async {
@@ -102,19 +105,19 @@ void main() {
       if (wifiBands.contains('2.4')) {
         final wifiActions = TestIncredibleWifiActions(tester, wifiBand: '2.4');
         await wifiActions.tapWifiNameCard();
-        await wifiActions.inputWifiName('$newWifiName-2');
+        await wifiActions.inputWifiName('$newWifiName-2_');
         await wifiActions.tapAlertSaveBtn();
       }
       if (wifiBands.contains('5')) {
         final wifiActions = TestIncredibleWifiActions(tester, wifiBand: '5');
         await wifiActions.tapWifiNameCard();
-        await wifiActions.inputWifiName('$newWifiName-5');
+        await wifiActions.inputWifiName('$newWifiName-5_');
         await wifiActions.tapAlertSaveBtn();
       }
       if (wifiBands.contains('6')) {
         final wifiActions = TestIncredibleWifiActions(tester, wifiBand: '6');
         await wifiActions.tapWifiNameCard();
-        await wifiActions.inputWifiName('$newWifiName-6');
+        await wifiActions.inputWifiName('$newWifiName-6_');
         await wifiActions.tapAlertSaveBtn();
       }
       await wifiActions.tapSaveBtn();
@@ -123,6 +126,9 @@ void main() {
       // Go to Advanced tab
       await wifiActions.tapAdvancedTab();
       wifiActions.checkMLOAlert();
+      await tester.pumpAndSettle();
+      await tester.pump(Duration(seconds: 3));
+      await wifiActions.tapBackButton();
       await tester.pumpAndSettle();
     });
 
@@ -177,9 +183,13 @@ void main() {
       await menuActions.enterWifiPage();
       await wifiActions.tapMacFilteringTab();
       wifiActions.checkDeviceCount(1);
+      await tester.pump(Duration(seconds: 3));
+      await wifiActions.tapBackButton();
+      await tester.pumpAndSettle();
     });
 
-    testWidgets('Incredible Wifi - Test the instant privacy warning', (tester) async {
+    testWidgets('Incredible Wifi - Test the instant privacy warning',
+        (tester) async {
       // Load app widget.
       await tester.pumpFrames(app(), Duration(seconds: 5));
       // Enter the menu page
@@ -203,7 +213,10 @@ void main() {
       // Go to Mac Filtering tab and check the instant privacy warning
       await wifiActions.tapMacFilteringTab();
       wifiActions.checkInstantPrivacyWarning();
+      await tester.pumpAndSettle();
+      await tester.pump(Duration(seconds: 3));
+      await wifiActions.tapBackButton();
+      await tester.pumpAndSettle();
     });
-
   });
 }

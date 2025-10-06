@@ -1,7 +1,7 @@
 {
     "name": "Un-configured Instant-Setup",
     "target": "integration_test/factory_reset_setup_test.dart",
-    "description": "Un-configured Instant-Setup test",
+    "description": "Test every step of the instant setup flow for a factory reset device",
     "setUp":  ["factory_reset"],
     "tags": ["pnp"],
     "tearDown": []

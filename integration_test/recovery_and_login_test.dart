@@ -3,7 +3,6 @@ import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:integration_test/integration_test_driver.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/di.dart';
@@ -23,7 +22,9 @@ void main() {
   const String recoveryCode = IntegrationTestConfig.recoveryCode;
   const String passwordHint = IntegrationTestConfig.passwordHint;
 
-  setUp(() async {
+  setUpAll(() async {
+    // GetIt
+    dependencySetup();
     // init better actions
     initBetterActions();
     // clear all cache data to make sure every test case is independent
@@ -35,10 +36,9 @@ void main() {
     FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
     BuildConfig.load();
-
-    // GetIt
-    dependencySetup();
   });
+
+  setUp(() async {});
 
   testWidgets('Recovery and log in flow golden', (tester) async {
     // Load app widget.
@@ -85,5 +85,26 @@ void main() {
     // Dashboard
     final quickPanelFinder = find.byType(DashboardQuickPanel);
     expect(quickPanelFinder, findsOneWidget);
+  });
+
+  testWidgets('Revert password - operations', (tester) async {
+    await tester.pumpFrames(app(), Duration(seconds: 5));
+    // Enter the menu screen
+    final topbarActions = TestTopbarActions(tester);
+    await topbarActions.tapMenuButton();
+    final menuActions = TestMenuActions(tester);
+    // Enter Instant Admin screen
+    await menuActions.enterAdminPage();
+    final adminActions = TestInstantAdminActions(tester);
+    await adminActions.checkTitle(adminActions.title);
+
+    // Now we have to change the password back
+    await adminActions.tapEditPasswordTappableArea();
+    await adminActions.inputNewPassword(IntegrationTestConfig.password);
+    await adminActions.inputConfirmPassword(IntegrationTestConfig.password);
+    await adminActions.inputPasswordHint("");
+    await adminActions.tapEditPasswordSaveButton();
+
+    await adminActions.tapBackButton();
   });
 }

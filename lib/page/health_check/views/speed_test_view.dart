@@ -10,6 +10,7 @@ import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_state.dart';
+import 'package:privacy_gui/page/components/customs/animated_digital_text.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
@@ -189,7 +190,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
 
     final latency = result?.speedTestResult?.latency?.toStringAsFixed(0) ?? '-';
 
-    final bandwidth = NetworkUtils.formatBytesWithUnit(
+    final bandwidth = NetworkUtils.formatBitsWithUnit(
         state.status == 'COMPLETE'
             ? (result?.speedTestResult?.uploadBandwidth ?? 0) * 1024
             : (state.meterValue * 1024).toInt(),
@@ -241,7 +242,8 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
             }),
             AppText.displayLarge(
                 step == 'latency' ? '—' : (value).toStringAsFixed(1)),
-            AppText.bodyMedium(unit),
+            if (step == 'downloadBandwidth' || step == 'uploadBandwidth')
+              AppText.bodyMedium('${unit}ps'),
           ],
         );
       },
@@ -252,6 +254,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
   }
 
   Widget _pingView(String step, String latency) {
+    final isLatencyStep = step == 'latency' || latency == '0';
     return Column(
       mainAxisAlignment:
           step != 'success' ? MainAxisAlignment.end : MainAxisAlignment.center,
@@ -269,15 +272,26 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
                 borderColor: Theme.of(context).colorScheme.primary,
                 size: 12,
                 dotSize: 6,
-                animated: latency == '—',
+                animated: isLatencyStep,
               ),
             ),
             AppText.titleSmall(
-              step == 'latency' ? 'Ping: —' : 'Ping: ',
+              'Ping: ',
               color: Theme.of(context).colorScheme.primary,
             ),
+            if (isLatencyStep)
+              AnimatedDigitalText(
+                fontSize: 12,
+                fontColor: Theme.of(context).colorScheme.primary,
+              ),
+            if (!isLatencyStep) ...[
+              AppText.bodyMedium(
+                latency,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ],
             AppText.bodyMedium(
-              step == 'latency' ? 'ms' : '${latency}ms',
+              'ms',
               color: Theme.of(context).colorScheme.primary,
             ),
           ],
@@ -290,10 +304,10 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
   Widget _infoView(HealthCheckState state) {
     final result = state.result.firstOrNull;
 
-    final downloadBandwidth = NetworkUtils.formatBytesWithUnit(
+    final downloadBandwidth = NetworkUtils.formatBitsWithUnit(
         (result?.speedTestResult?.downloadBandwidth ?? 0) * 1024,
         decimals: 1);
-    final uploadBandwidth = NetworkUtils.formatBytesWithUnit(
+    final uploadBandwidth = NetworkUtils.formatBitsWithUnit(
         (result?.speedTestResult?.uploadBandwidth ?? 0) * 1024,
         decimals: 1);
     final step = state.step;
@@ -386,7 +400,8 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
                 const AppGap.small2(),
                 downloadBandWidthView,
                 const AppGap.small2(),
-                AppText.bodyMedium(downloadUnit ?? ''),
+                AppText.bodyMedium(
+                    double.parse(downloadValue) > 0 ? '${downloadUnit}ps' : ''),
               ],
             ),
           ),
@@ -403,7 +418,8 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
                 const AppGap.small2(),
                 uploadBandWidthView,
                 const AppGap.small2(),
-                AppText.bodyMedium(uploadUnit ?? ''),
+                AppText.bodyMedium(
+                    double.parse(uploadValue) > 0 ? '${uploadUnit}ps' : ''),
               ],
             ),
           ),
@@ -418,10 +434,10 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
 
     final result =
         state.status == 'IDLE' ? latestSpeedTest : state.result.firstOrNull;
-    final downloadBandWidth = NetworkUtils.formatBytesWithUnit(
+    final downloadBandWidth = NetworkUtils.formatBitsWithUnit(
         (result?.speedTestResult?.downloadBandwidth ?? 0) * 1024,
         decimals: 1);
-    final uploadBandWidth = NetworkUtils.formatBytesWithUnit(
+    final uploadBandWidth = NetworkUtils.formatBitsWithUnit(
         (result?.speedTestResult?.uploadBandwidth ?? 0) * 1024,
         decimals: 1);
     final latency = result?.speedTestResult?.latency?.toStringAsFixed(0) ?? '-';

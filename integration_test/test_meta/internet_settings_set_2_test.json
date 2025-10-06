@@ -1,7 +1,7 @@
 {
-    "name": "Test behaviors on Advanced Settings - Internet Settings 2",
+    "name": "Advanced Settings - Internet Settings 2",
     "target": "integration_test/internet_settings_set_2_test.dart",
-    "description": "Execute all the functions on the page and verify that the new data has been synced",
+    "description": "Test the configuration of IPv4 with PPTP(X), L2TP(X), and Bridge mode",
     "setUp":  ["factory_reset", "skip_setup"],
     "tearDown": [],
     "tags": ["internet_settings", "advanced_settings", "menu"]

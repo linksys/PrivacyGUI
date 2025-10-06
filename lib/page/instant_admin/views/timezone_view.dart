@@ -73,14 +73,14 @@ class _TimezoneContentViewState extends ConsumerState<TimezoneView>
           onPositiveTap: () {
             doSomethingWithSpinner(
               context,
-              _notifier.save().then((value) {
-                context.pop(true);
-                showChangesSavedSnackBar();
-              }).onError((error, stackTrace) {
-                showErrorMessageSnackBar(error);
-              }),
+              _notifier.save(),
               title: loc(context).savingChanges,
-            );
+            ).then((value) {
+              context.pop(true);
+              showChangesSavedSnackBar();
+            }).onError((error, stackTrace) {
+              showErrorMessageSnackBar(error);
+            });
           }),
       child: (context, constraints) => AppBasicLayout(
         content: Column(

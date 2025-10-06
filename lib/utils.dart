@@ -333,17 +333,17 @@ extension MediaQueryUtils on Utils {
 }
 
 extension NetworkUtils on Utils {
-  static String formatBytes(int bytes, {int decimals = 0}) {
-    final result = formatBytesWithUnit(bytes, decimals: decimals);
+  static String formatBits(int bits, {int decimals = 0}) {
+    final result = formatBitsWithUnit(bits, decimals: decimals);
     return '${result.value} ${result.unit}';
   }
 
-  static ({String value, String unit}) formatBytesWithUnit(int bytes,
+  static ({String value, String unit}) formatBitsWithUnit(int bits,
       {int decimals = 0}) {
-    if (bytes <= 0) return (value: '0', unit: "B");
-    const suffixes = ["B", "Kb", "Mb", "Gb", "Tb", "Pb"];
-    var i = (log(bytes) / log(1024)).floor();
-    var number = (bytes / pow(1024, i));
+    if (bits <= 0) return (value: '0', unit: "b");
+    const suffixes = ["b", "Kb", "Mb", "Gb", "Tb", "Pb"];
+    var i = (log(bits) / log(1024)).floor();
+    var number = (bits / pow(1024, i));
     return (
       value: number
           .toStringAsFixed(number.truncateToDouble() == number ? 0 : decimals),

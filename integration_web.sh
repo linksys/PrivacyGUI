@@ -148,15 +148,16 @@ rm -rf ./build/integration_test
 mkdir -p ./build/integration_test
 
 
-
-initialize_results "$groupDescription" "$testcase" "${#cases[@]}"
-update_device_info "$routerDescription" "$modelNumber" "$firmwareVersion" "$hardwareVersion" "$commitedUIVersion"
-init_config "$data"
-set_global_config "$testcase"
-
 # Run the WiFi detection script on the background, skip if wiredTesting is true
 wiredTesting=$(get_global_config_value '.wired')
 echo "Wired Testing: $wiredTesting"
+
+initialize_results "$groupDescription" "$testcase" "${#cases[@]}"
+update_device_info "$routerDescription" "$modelNumber" "$firmwareVersion" "$hardwareVersion" "$commitedUIVersion" "$wiredTesting"
+init_config "$data"
+set_global_config "$testcase"
+
+
 
 if [ "$wiredTesting" == "false" ]; then
     sh ./integration_test/shell_scripts/wifi_detection.sh &

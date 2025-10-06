@@ -48,6 +48,9 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
       context,
       ref.read(wifiListProvider.notifier).fetch().then(
         (state) {
+          if (!mounted) {
+            return;
+          }
           setState(
             () {
               update(state);
@@ -1008,6 +1011,9 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
   }
 
   void update(WiFiState? state) {
+    if (!mounted) {
+      return;
+    }
     if (state == null) {
       return;
     }
