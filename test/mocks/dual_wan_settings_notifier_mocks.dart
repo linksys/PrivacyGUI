@@ -55,7 +55,8 @@ class _FakeDualWANSettingsState_1 extends _i1.SmartFake
 /// A class which mocks [DualWANSettingsNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockDualWANSettingsNotifier extends _i2.Notifier<_i3.DualWANSettingsState> with _i1.Mock
+class MockDualWANSettingsNotifier extends _i2.Notifier<_i3.DualWANSettingsState>
+    with _i1.Mock
     implements _i4.DualWANSettingsNotifier {
   @override
   _i2.NotifierProviderRef<_i3.DualWANSettingsState> get ref =>
@@ -117,18 +118,27 @@ class MockDualWANSettingsNotifier extends _i2.Notifier<_i3.DualWANSettingsState>
       ) as _i3.DualWANSettingsState);
 
   @override
-  _i5.Future<_i3.DualWANSettingsState> fetch([bool? fetchRemote = true]) =>
+  _i5.Future<_i3.DualWANSettingsState> fetch([
+    bool? fetchRemote = true,
+    bool? statusOnly = false,
+  ]) =>
       (super.noSuchMethod(
         Invocation.method(
           #fetch,
-          [fetchRemote],
+          [
+            fetchRemote,
+            statusOnly,
+          ],
         ),
         returnValue: _i5.Future<_i3.DualWANSettingsState>.value(
             _FakeDualWANSettingsState_1(
           this,
           Invocation.method(
             #fetch,
-            [fetchRemote],
+            [
+              fetchRemote,
+              statusOnly,
+            ],
           ),
         )),
         returnValueForMissingStub: _i5.Future<_i3.DualWANSettingsState>.value(
@@ -136,7 +146,10 @@ class MockDualWANSettingsNotifier extends _i2.Notifier<_i3.DualWANSettingsState>
           this,
           Invocation.method(
             #fetch,
-            [fetchRemote],
+            [
+              fetchRemote,
+              statusOnly,
+            ],
           ),
         )),
       ) as _i5.Future<_i3.DualWANSettingsState>);

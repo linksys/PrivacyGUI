@@ -145,6 +145,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
     final isSupportHealthCheck =
         ref.watch(dashboardHomeProvider).isHealthCheckSupported;
     final isSupportVPN = getIt.get<ServiceHelper>().isSupportVPN();
+    final isSupportDualWAN = getIt.get<ServiceHelper>().isSupportDualWAN();
     return [
       AppSectionItemData(
           title: loc(context).incredibleWiFi,
@@ -229,10 +230,10 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
             onTap: () {
               _navigateTo(RouteNamed.dashboardSpeedTest);
             }),
-
-            AppSectionItemData(
-            title: 'Dual WAN',
-            description: 'Enable dual-WAN functionality to use both WAN and LAN/WAN ports for internet connectivity.',
+      if (isSupportDualWAN)
+        AppSectionItemData(
+            title: loc(context).dualWan,
+            description: loc(context).dualWanDescription,
             iconData: LinksysIcons.networkNode,
             onTap: () {
               _navigateTo(RouteNamed.dualWANSettings);

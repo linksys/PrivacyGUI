@@ -2,14 +2,16 @@ import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
+import 'package:privacy_gui/core/jnap/models/dual_wan_settings.dart';
+import 'package:privacy_gui/core/jnap/models/wan_settings.dart';
 import 'package:privacy_gui/core/jnap/models/wan_status.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
 
 // TODO Clone from [#InternetSettingsState], revisit when spec confirmed
 class DualWANConfiguration extends Equatable {
-  final String ipv4ConnectionType;
-  final List<String> supportedIPv4ConnectionType;
-  final List<SupportedWANCombination> supportedWANCombinations;
+  static const supportedWANConnectionType = ['DHCP', 'PPPoE', 'Static', 'PPTP'];
+  final String wanType;
+  final List<String> supportedWANType;
   final int mtu;
   // PPPConnection
   final PPPConnectionBehavior? behavior;
@@ -29,16 +31,10 @@ class DualWANConfiguration extends Equatable {
   final String? serviceName;
   final String? serverIp;
   final bool? useStaticSettings;
-  // Brigde
-  final String? redirection;
-  // Wan Tagging Settings
-  final bool? wanTaggingSettingsEnable;
-  final int? vlanId;
 
   const DualWANConfiguration({
-    required this.ipv4ConnectionType,
-    required this.supportedIPv4ConnectionType,
-    required this.supportedWANCombinations,
+    required this.wanType,
+    required this.supportedWANType,
     required this.mtu,
     this.behavior,
     this.maxIdleMinutes,
@@ -55,17 +51,13 @@ class DualWANConfiguration extends Equatable {
     this.serviceName,
     this.serverIp,
     this.useStaticSettings,
-    this.redirection,
-    this.wanTaggingSettingsEnable,
-    this.vlanId,
   });
 
   @override
   List<Object?> get props {
     return [
-      ipv4ConnectionType,
-      supportedIPv4ConnectionType,
-      supportedWANCombinations,
+      wanType,
+      supportedWANType,
       mtu,
       behavior,
       maxIdleMinutes,
@@ -82,18 +74,13 @@ class DualWANConfiguration extends Equatable {
       serviceName,
       serverIp,
       useStaticSettings,
-      redirection,
-      wanTaggingSettingsEnable,
-      vlanId,
     ];
   }
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
-      'ipv4ConnectionType': ipv4ConnectionType,
-      'supportedIPv4ConnectionType': supportedIPv4ConnectionType,
-      'supportedWANCombinations':
-          supportedWANCombinations.map((x) => x.toMap()).toList(),
+      'ipv4ConnectionType': wanType,
+      'supportedIPv4ConnectionType': supportedWANType,
       'mtu': mtu,
       'behavior': behavior?.value,
       'maxIdleMinutes': maxIdleMinutes,
@@ -110,22 +97,13 @@ class DualWANConfiguration extends Equatable {
       'serviceName': serviceName,
       'serverIp': serverIp,
       'useStaticSettings': useStaticSettings,
-      'redirection': redirection,
-      'wanTaggingSettingsEnable': wanTaggingSettingsEnable,
-      'vlanId': vlanId,
     }..removeWhere((key, value) => value == null);
   }
 
   factory DualWANConfiguration.fromMap(Map<String, dynamic> map) {
     return DualWANConfiguration(
-      ipv4ConnectionType: map['ipv4ConnectionType'],
-      supportedIPv4ConnectionType:
-          List<String>.from(map['supportedIPv4ConnectionType']),
-      supportedWANCombinations: List<SupportedWANCombination>.from(
-        map['supportedWANCombinations'].map(
-          (x) => SupportedWANCombination.fromMap(x),
-        ),
-      ),
+      wanType: map['ipv4ConnectionType'],
+      supportedWANType: List<String>.from(map['supportedIPv4ConnectionType']),
       mtu: map['mtu'] as int,
       behavior: PPPConnectionBehavior.resolve(map['behavior']),
       maxIdleMinutes:
@@ -154,12 +132,6 @@ class DualWANConfiguration extends Equatable {
       useStaticSettings: map['useStaticSettings'] != null
           ? map['useStaticSettings'] as bool
           : null,
-      redirection:
-          map['redirection'] != null ? map['redirection'] as String : null,
-      wanTaggingSettingsEnable: map['wanTaggingSettingsEnable'] != null
-          ? map['wanTaggingSettingsEnable'] as bool
-          : null,
-      vlanId: map['vlanId'] != null ? map['vlanId'] as int : null,
     );
   }
 
@@ -191,16 +163,10 @@ class DualWANConfiguration extends Equatable {
     ValueGetter<String?>? serviceName,
     ValueGetter<String?>? serverIp,
     ValueGetter<bool?>? useStaticSettings,
-    ValueGetter<String?>? redirection,
-    ValueGetter<bool?>? wanTaggingSettingsEnable,
-    ValueGetter<int?>? vlanId,
   }) {
     return DualWANConfiguration(
-      ipv4ConnectionType: ipv4ConnectionType ?? this.ipv4ConnectionType,
-      supportedIPv4ConnectionType:
-          supportedIPv4ConnectionType ?? this.supportedIPv4ConnectionType,
-      supportedWANCombinations:
-          supportedWANCombinations ?? this.supportedWANCombinations,
+      wanType: ipv4ConnectionType ?? this.wanType,
+      supportedWANType: supportedIPv4ConnectionType ?? this.supportedWANType,
       mtu: mtu ?? this.mtu,
       behavior: behavior != null ? behavior() : this.behavior,
       maxIdleMinutes:
@@ -226,11 +192,100 @@ class DualWANConfiguration extends Equatable {
       useStaticSettings: useStaticSettings != null
           ? useStaticSettings()
           : this.useStaticSettings,
-      redirection: redirection != null ? redirection() : this.redirection,
-      wanTaggingSettingsEnable: wanTaggingSettingsEnable != null
-          ? wanTaggingSettingsEnable()
-          : this.wanTaggingSettingsEnable,
-      vlanId: vlanId != null ? vlanId() : this.vlanId,
     );
+  }
+
+  factory DualWANConfiguration.fromData(DualWANSettingsData data) {
+    final wanType = data.wanType;
+    return switch (wanType) {
+      'DHCP' => DualWANConfiguration(
+          wanType: wanType,
+          supportedWANType: supportedWANConnectionType,
+          mtu: 0,
+        ),
+      'PPPoE' => DualWANConfiguration(
+          wanType: wanType,
+          supportedWANType: supportedWANConnectionType,
+          mtu: 0,
+          behavior: PPPConnectionBehavior.resolve(data.pppoeSettings?.behavior),
+          maxIdleMinutes: data.pppoeSettings?.maxIdleMinutes,
+          reconnectAfterSeconds: data.pppoeSettings?.reconnectAfterSeconds,
+          username: data.pppoeSettings?.username,
+          password: data.pppoeSettings?.password,
+          serviceName: data.pppoeSettings?.serviceName,
+        ),
+      'Static' => DualWANConfiguration(
+          wanType: wanType,
+          supportedWANType: supportedWANConnectionType,
+          mtu: 0,
+          staticIpAddress: data.staticSettings?.ipAddress,
+          staticGateway: data.staticSettings?.gateway,
+          staticDns1: data.staticSettings?.dnsServer1,
+          staticDns2: data.staticSettings?.dnsServer2,
+          staticDns3: data.staticSettings?.dnsServer3,
+          networkPrefixLength: data.staticSettings?.networkPrefixLength,
+        ),
+      'PPTP' => DualWANConfiguration(
+          wanType: wanType,
+          supportedWANType: supportedWANConnectionType,
+          mtu: 0,
+          behavior: PPPConnectionBehavior.resolve(data.tpSettings?.behavior),
+          maxIdleMinutes: data.tpSettings?.maxIdleMinutes,
+          reconnectAfterSeconds: data.tpSettings?.reconnectAfterSeconds,
+          username: data.tpSettings?.username,
+          password: data.tpSettings?.password,
+          serverIp: data.tpSettings?.server,
+          useStaticSettings: data.tpSettings?.useStaticSettings,
+        ),
+      _ => DualWANConfiguration(
+          wanType: wanType,
+          supportedWANType: supportedWANConnectionType,
+          mtu: 0,
+        ),
+    };
+  }
+  DualWANSettingsData toData() {
+    return switch (wanType) {
+      'DHCP' => DualWANSettingsData(
+          wanType: wanType,
+        ),
+      'PPPoE' => DualWANSettingsData(
+          wanType: wanType,
+          pppoeSettings: PPPoESettings(
+            behavior: behavior?.value ?? PPPConnectionBehavior.keepAlive.value,
+            maxIdleMinutes: maxIdleMinutes,
+            reconnectAfterSeconds: reconnectAfterSeconds,
+            username: username ?? '',
+            password: password ?? '',
+            serviceName: serviceName ?? '',
+          ),
+        ),
+      'Static' => DualWANSettingsData(
+          wanType: wanType,
+          staticSettings: StaticSettings(
+            ipAddress: staticIpAddress ?? '',
+            gateway: staticGateway ?? '',
+            dnsServer1: staticDns1 ?? '',
+            dnsServer2: staticDns2 ?? '',
+            dnsServer3: staticDns3 ?? '',
+            networkPrefixLength: networkPrefixLength ?? 24,
+          ),
+        ),
+      'PPTP' => DualWANSettingsData(
+          wanType: wanType,
+          tpSettings: TPSettings(
+            behavior: behavior?.value ?? PPPConnectionBehavior.keepAlive.value,
+            maxIdleMinutes: maxIdleMinutes,
+            reconnectAfterSeconds: reconnectAfterSeconds,
+            username: username ?? '',
+            password: password ?? '',
+            server: serverIp ?? '',
+            useStaticSettings: useStaticSettings ?? false,
+          ),
+        ),
+      _ => DualWANSettingsData(
+          wanType: wanType,
+        ),
+    };
   }
 }

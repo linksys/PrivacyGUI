@@ -151,8 +151,12 @@ enum JNAPAction {
   renewDHCPIPv6WANLease,
   getEthernetPortConnections,
   getExpressForwardingSettings,
-  setExpressForwardingSettings, 
+  setExpressForwardingSettings,
   getWANExternal,
+  setDualWANSettings,
+  getDualWANSettings,
+  getDualWANStatus,
+  getEthernetPortConnections2, // TODO rename
   // routerManagement
   getManagementSettings,
   setManagementSettings,
@@ -229,7 +233,7 @@ enum JNAPAction {
   getSelectedChannels,
   startAutoChannelSelection,
   ;
-  
+
   String get actionValue {
     return _betterActionMap[this]!;
   }

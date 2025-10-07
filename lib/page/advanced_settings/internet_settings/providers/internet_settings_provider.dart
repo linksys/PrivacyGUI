@@ -44,7 +44,7 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
         JNAPAction.getWANSettings, Map.fromEntries(results));
     final wanSettings = wanSettingsResult == null
         ? null
-        : RouterWANSettings.fromJson(wanSettingsResult.output);
+        : RouterWANSettings.fromMap(wanSettingsResult.output);
     // IPv6 Settings
     final getIPv6SettingsResult = JNAPTransactionSuccessWrap.getResult(
         JNAPAction.getIPv6Settings, Map.fromEntries(results));
@@ -281,7 +281,7 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
       List<MapEntry<JNAPAction, Map<String, dynamic>>> transactions = [];
       transactions.add(MapEntry(
         JNAPAction.setWANSettings,
-        wanSettings.toJson(),
+        wanSettings.toMap(),
       ));
       if (additionalSetting != null) {
         transactions.add(additionalSetting);

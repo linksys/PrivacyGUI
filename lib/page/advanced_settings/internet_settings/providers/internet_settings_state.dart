@@ -91,9 +91,9 @@ enum PPPConnectionBehavior {
 
   final String value;
 
-  static PPPConnectionBehavior? resolve(String? value) {
+  static PPPConnectionBehavior resolve(String? value) {
     return PPPConnectionBehavior.values
-        .firstWhereOrNull((element) => element.value == value);
+        .firstWhereOrNull((element) => element.value == value) ?? PPPConnectionBehavior.keepAlive;
   }
 }
 

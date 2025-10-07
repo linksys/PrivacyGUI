@@ -247,6 +247,12 @@ void _updateBetterActions(JNAPService service) {
       _betterActionMap[JNAPAction.setWANSettings] =
           _JNAPActionValue.setWANSettings5.value;
       break;
+    case JNAPService.router15:
+      _betterActionMap[JNAPAction.getDualWANSettings] = _JNAPActionValue.getDualWANSettings.value;
+      _betterActionMap[JNAPAction.setDualWANSettings] = _JNAPActionValue.setDualWANSettings.value;
+      _betterActionMap[JNAPAction.getDualWANStatus] = _JNAPActionValue.getDualWANStatus.value;
+      _betterActionMap[JNAPAction.getEthernetPortConnections2] = _JNAPActionValue.getEthernetPortConnections2.value;
+      break;
     case JNAPService.routerManagement:
       break;
     case JNAPService.routerManagement2:

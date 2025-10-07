@@ -1,4 +1,5 @@
 
+import 'package:privacy_gui/core/jnap/models/dual_wan_settings.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 
 enum DualWANBalanceRatio {
@@ -12,15 +13,15 @@ enum DualWANBalanceRatio {
     };
   }
 
-  static DualWANBalanceRatio fromValue(String value) {
+  static DualWANBalanceRatio fromValue(DualWANRatioData value) {
     return DualWANBalanceRatio.values
-        .firstWhere((e) => e.name == value, orElse: () => DualWANBalanceRatio.equalDistribution);
+        .firstWhere((e) => e.name == value.name, orElse: () => DualWANBalanceRatio.equalDistribution);
   }
 
   String toValue() {
     return switch (this) {
-      DualWANBalanceRatio.equalDistribution => 'equalDistribution',
-      DualWANBalanceRatio.favorPrimaryWAN => 'favorPrimaryWAN',
+      DualWANBalanceRatio.equalDistribution => '1-1',
+      DualWANBalanceRatio.favorPrimaryWAN => '4-1',
     };
   }
 } 

@@ -43,8 +43,8 @@ class DualWANPort extends Equatable {
 
   String toJson() => json.encode(toMap());
 
-  factory DualWANPort.fromJson(String source) => DualWANPort.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory DualWANPort.fromJson(String source) =>
+      DualWANPort.fromMap(json.decode(source) as Map<String, dynamic>);
   @override
   List<Object?> get props => [type, portNumber, speed];
 }
-  

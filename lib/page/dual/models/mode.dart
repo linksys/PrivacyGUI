@@ -1,26 +1,27 @@
 import 'package:flutter/widgets.dart';
+import 'package:privacy_gui/core/jnap/models/dual_wan_settings.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 
 enum DualWANMode {
   failover,
-  loadBalancing;
+  loadBalanced;
 
   String toDisplayString(BuildContext context) {
     return switch (this) {
       DualWANMode.failover => loc(context).dualWanFailover,
-      DualWANMode.loadBalancing => loc(context).dualWanLoadBalancing,
+      DualWANMode.loadBalanced => loc(context).dualWanLoadBalancing,
     };
   }
 
-  static DualWANMode fromValue(String value) {
-    return DualWANMode.values
-        .firstWhere((e) => e.name == value, orElse: () => DualWANMode.failover);
+  static DualWANMode fromValue(DualWANModeData value) {
+    return DualWANMode.values.firstWhere((e) => e.name == value.name,
+        orElse: () => DualWANMode.failover);
   }
-  
+
   String toValue() {
     return switch (this) {
-      DualWANMode.failover => 'failover',
-      DualWANMode.loadBalancing => 'loadBalancing',
+      DualWANMode.failover => 'Fail Over',
+      DualWANMode.loadBalanced => 'Load Balanced',
     };
   }
 }

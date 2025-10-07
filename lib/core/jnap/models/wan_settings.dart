@@ -1,5 +1,7 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 
+import 'dart:convert';
+
 import 'package:equatable/equatable.dart';
 
 class RouterWANSettings extends Equatable {
@@ -138,7 +140,7 @@ class RouterWANSettings extends Equatable {
     );
   }
 
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toMap() {
     return {
       'wanType': wanType,
       'pppoeSettings': pppoeSettings,
@@ -154,35 +156,35 @@ class RouterWANSettings extends Equatable {
     }..removeWhere((key, value) => value == null);
   }
 
-  factory RouterWANSettings.fromJson(Map<String, dynamic> json) {
+  factory RouterWANSettings.fromMap(Map<String, dynamic> map) {
     return RouterWANSettings(
-      wanType: json['wanType'],
-      pppoeSettings: json['pppoeSettings'] == null
+      wanType: map['wanType'],
+      pppoeSettings: map['pppoeSettings'] == null
           ? null
-          : PPPoESettings.fromJson(json['pppoeSettings']),
-      tpSettings: json['tpSettings'] == null
+          : PPPoESettings.fromMap(map['pppoeSettings']),
+      tpSettings: map['tpSettings'] == null
           ? null
-          : TPSettings.fromJson(json['tpSettings']),
-      telstraSettings: json['telstraSettings'] == null
+          : TPSettings.fromMap(map['tpSettings']),
+      telstraSettings: map['telstraSettings'] == null
           ? null
-          : TelstraSettings.fromJson(json['telstraSettings']),
-      staticSettings: json['staticSettings'] == null
+          : TelstraSettings.fromMap(map['telstraSettings']),
+      staticSettings: map['staticSettings'] == null
           ? null
-          : StaticSettings.fromJson(json['staticSettings']),
-      bridgeSettings: json['bridgeSettings'] == null
+          : StaticSettings.fromMap(map['staticSettings']),
+      bridgeSettings: map['bridgeSettings'] == null
           ? null
-          : BridgeSettings.fromJson(json['bridgeSettings']),
-      dsliteSettings: json['dsliteSettings'] == null
+          : BridgeSettings.fromMap(map['bridgeSettings']),
+      dsliteSettings: map['dsliteSettings'] == null
           ? null
-          : DSLiteSettings.fromJson(json['dsliteSettings']),
-      wirelessModeSettings: json['wirelessModeSettings'] == null
+          : DSLiteSettings.fromMap(map['dsliteSettings']),
+      wirelessModeSettings: map['wirelessModeSettings'] == null
           ? null
-          : WirelessModeSettings.fromJson(json['wirelessModeSettings']),
-      domainName: json['domainName'],
-      mtu: json['mtu'],
-      wanTaggingSettings: json['wanTaggingSettings'] == null
+          : WirelessModeSettings.fromMap(map['wirelessModeSettings']),
+      domainName: map['domainName'],
+      mtu: map['mtu'],
+      wanTaggingSettings: map['wanTaggingSettings'] == null
           ? null
-          : SinglePortVLANTaggingSettings.fromJson(json['wanTaggingSettings']),
+          : SinglePortVLANTaggingSettings.fromMap(map['wanTaggingSettings']),
     );
   }
 
@@ -200,6 +202,11 @@ class RouterWANSettings extends Equatable {
         mtu,
         wanTaggingSettings,
       ];
+
+  String toJson() => jsonEncode(toMap());
+
+  factory RouterWANSettings.fromJson(String source) =>
+      RouterWANSettings.fromMap(jsonDecode(source) as Map<String, dynamic>);
 }
 
 class StaticSettings {
@@ -241,7 +248,7 @@ class StaticSettings {
     );
   }
 
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toMap() {
     return {
       'ipAddress': ipAddress,
       'networkPrefixLength': networkPrefixLength,
@@ -253,17 +260,22 @@ class StaticSettings {
     }..removeWhere((key, value) => value == null);
   }
 
-  factory StaticSettings.fromJson(Map<String, dynamic> json) {
+  factory StaticSettings.fromMap(Map<String, dynamic> map) {
     return StaticSettings(
-      ipAddress: json['ipAddress'],
-      networkPrefixLength: json['networkPrefixLength'],
-      gateway: json['gateway'],
-      dnsServer1: json['dnsServer1'],
-      dnsServer2: json['dnsServer2'],
-      dnsServer3: json['dnsServer3'],
-      domainName: json['domainName'],
+      ipAddress: map['ipAddress'],
+      networkPrefixLength: map['networkPrefixLength'],
+      gateway: map['gateway'],
+      dnsServer1: map['dnsServer1'],
+      dnsServer2: map['dnsServer2'],
+      dnsServer3: map['dnsServer3'],
+      domainName: map['domainName'],
     );
   }
+
+  String toJson() => jsonEncode(toMap());
+
+  factory StaticSettings.fromJson(String source) =>
+      StaticSettings.fromMap(jsonDecode(source) as Map<String, dynamic>);
 }
 
 class PPPoESettings {
@@ -304,7 +316,7 @@ class PPPoESettings {
     );
   }
 
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toMap() {
     return {
       'username': username,
       'password': password,
@@ -315,16 +327,21 @@ class PPPoESettings {
     }..removeWhere((key, value) => value == null);
   }
 
-  factory PPPoESettings.fromJson(Map<String, dynamic> json) {
+  factory PPPoESettings.fromMap(Map<String, dynamic> map) {
     return PPPoESettings(
-      username: json['username'],
-      password: json['password'],
-      serviceName: json['serviceName'],
-      behavior: json['behavior'],
-      maxIdleMinutes: json['maxIdleMinutes'],
-      reconnectAfterSeconds: json['reconnectAfterSeconds'],
+      username: map['username'],
+      password: map['password'],
+      serviceName: map['serviceName'],
+      behavior: map['behavior'],
+      maxIdleMinutes: map['maxIdleMinutes'],
+      reconnectAfterSeconds: map['reconnectAfterSeconds'],
     );
   }
+
+  String toJson() => jsonEncode(toMap());
+
+  factory PPPoESettings.fromJson(String source) =>
+      PPPoESettings.fromMap(jsonDecode(source) as Map<String, dynamic>);
 }
 
 class TPSettings extends Equatable {
@@ -371,7 +388,7 @@ class TPSettings extends Equatable {
     );
   }
 
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toMap() {
     return {
       'useStaticSettings': useStaticSettings,
       'staticSettings': staticSettings,
@@ -384,18 +401,18 @@ class TPSettings extends Equatable {
     }..removeWhere((key, value) => value == null);
   }
 
-  factory TPSettings.fromJson(Map<String, dynamic> json) {
+  factory TPSettings.fromMap(Map<String, dynamic> map) {
     return TPSettings(
-      useStaticSettings: json['useStaticSettings'],
-      staticSettings: json['staticSettings'] == null
+      useStaticSettings: map['useStaticSettings'],
+      staticSettings: map['staticSettings'] == null
           ? null
-          : StaticSettings.fromJson(json['staticSettings']),
-      server: json['server'],
-      username: json['username'],
-      password: json['password'],
-      behavior: json['behavior'],
-      maxIdleMinutes: json['maxIdleMinutes'],
-      reconnectAfterSeconds: json['reconnectAfterSeconds'],
+          : StaticSettings.fromMap(map['staticSettings']),
+      server: map['server'],
+      username: map['username'],
+      password: map['password'],
+      behavior: map['behavior'],
+      maxIdleMinutes: map['maxIdleMinutes'],
+      reconnectAfterSeconds: map['reconnectAfterSeconds'],
     );
   }
 
@@ -410,6 +427,11 @@ class TPSettings extends Equatable {
         maxIdleMinutes,
         reconnectAfterSeconds,
       ];
+
+  String toJson() => jsonEncode(toMap());
+
+  factory TPSettings.fromJson(String source) =>
+      TPSettings.fromMap(jsonDecode(source) as Map<String, dynamic>);
 }
 
 class TelstraSettings extends Equatable {
@@ -435,7 +457,7 @@ class TelstraSettings extends Equatable {
     );
   }
 
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toMap() {
     return {
       'server': server,
       'username': username,
@@ -443,16 +465,21 @@ class TelstraSettings extends Equatable {
     }..removeWhere((key, value) => value == null);
   }
 
-  factory TelstraSettings.fromJson(Map<String, dynamic> json) {
+  factory TelstraSettings.fromMap(Map<String, dynamic> map) {
     return TelstraSettings(
-      server: json['server'],
-      username: json['username'],
-      password: json['password'],
+      server: map['server'],
+      username: map['username'],
+      password: map['password'],
     );
   }
 
   @override
   List<Object> get props => [server, username, password];
+
+  String toJson() => jsonEncode(toMap());
+
+  factory TelstraSettings.fromJson(String source) =>
+      TelstraSettings.fromMap(jsonDecode(source) as Map<String, dynamic>);
 }
 
 class BridgeSettings extends Equatable {
@@ -474,24 +501,29 @@ class BridgeSettings extends Equatable {
     );
   }
 
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toMap() {
     return {
       'useStaticSettings': useStaticSettings,
       'staticSettings': staticSettings,
     }..removeWhere((key, value) => value == null);
   }
 
-  factory BridgeSettings.fromJson(Map<String, dynamic> json) {
+  factory BridgeSettings.fromMap(Map<String, dynamic> map) {
     return BridgeSettings(
-      useStaticSettings: json['useStaticSettings'],
-      staticSettings: json['staticSettings'] == null
+      useStaticSettings: map['useStaticSettings'],
+      staticSettings: map['staticSettings'] == null
           ? null
-          : StaticSettings.fromJson(json['staticSettings']),
+          : StaticSettings.fromMap(map['staticSettings']),
     );
   }
 
   @override
   List<Object?> get props => [useStaticSettings, staticSettings];
+
+  String toJson() => jsonEncode(toMap());
+
+  factory BridgeSettings.fromJson(String source) =>
+      BridgeSettings.fromMap(jsonDecode(source) as Map<String, dynamic>);
 }
 
 class DSLiteSettings extends Equatable {
@@ -513,24 +545,29 @@ class DSLiteSettings extends Equatable {
     );
   }
 
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toMap() {
     return {
       'useManualSettings': useManualSettings,
       'manualSettings': manualSettings,
     }..removeWhere((key, value) => value == null);
   }
 
-  factory DSLiteSettings.fromJson(Map<String, dynamic> json) {
+  factory DSLiteSettings.fromMap(Map<String, dynamic> map) {
     return DSLiteSettings(
-      useManualSettings: json['useManualSettings'],
-      manualSettings: json['manualSettings'] == null
+      useManualSettings: map['useManualSettings'],
+      manualSettings: map['manualSettings'] == null
           ? null
-          : AFTRSettings.fromJson(json['manualSettings']),
+          : AFTRSettings.fromMap(map['manualSettings']),
     );
   }
 
   @override
   List<Object?> get props => [useManualSettings, manualSettings];
+
+  String toJson() => jsonEncode(toMap());
+
+  factory DSLiteSettings.fromJson(String source) =>
+      DSLiteSettings.fromMap(jsonDecode(source) as Map<String, dynamic>);
 }
 
 class WirelessModeSettings extends Equatable {
@@ -564,7 +601,7 @@ class WirelessModeSettings extends Equatable {
     );
   }
 
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toMap() {
     return {
       'ssid': ssid,
       'bssid': bssid,
@@ -574,18 +611,23 @@ class WirelessModeSettings extends Equatable {
     }..removeWhere((key, value) => value == null);
   }
 
-  factory WirelessModeSettings.fromJson(Map<String, dynamic> json) {
+  factory WirelessModeSettings.fromMap(Map<String, dynamic> map) {
     return WirelessModeSettings(
-      ssid: json['ssid'],
-      bssid: json['bssid'],
-      band: json['band'],
-      security: json['security'],
-      password: json['password'],
+      ssid: map['ssid'],
+      bssid: map['bssid'],
+      band: map['band'],
+      security: map['security'],
+      password: map['password'],
     );
   }
 
   @override
   List<Object?> get props => [ssid, bssid, band, security, password];
+
+  String toJson() => jsonEncode(toMap());
+
+  factory WirelessModeSettings.fromJson(String source) =>
+      WirelessModeSettings.fromMap(jsonDecode(source) as Map<String, dynamic>);
 }
 
 class AFTRSettings extends Equatable {
@@ -607,25 +649,30 @@ class AFTRSettings extends Equatable {
     );
   }
 
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toMap() {
     return {
       'aftrURL': aftrURL,
       'afterAddress': afterAddress,
     }..removeWhere((key, value) => value == null);
   }
 
-  factory AFTRSettings.fromJson(Map<String, dynamic> json) {
+  factory AFTRSettings.fromMap(Map<String, dynamic> map) {
     return AFTRSettings(
-      aftrURL: json['aftrURL'],
-      afterAddress: json['afterAddress'],
+      aftrURL: map['aftrURL'],
+      afterAddress: map['afterAddress'],
     );
   }
 
   @override
   List<Object?> get props => [aftrURL, afterAddress];
+
+  String toJson() => jsonEncode(toMap());
+
+  factory AFTRSettings.fromJson(String source) =>
+      AFTRSettings.fromMap(jsonDecode(source) as Map<String, dynamic>);
 }
 
-class SinglePortVLANTaggingSettings {
+class SinglePortVLANTaggingSettings extends Equatable {
   final bool isEnabled;
   final PortTaggingSettings? vlanTaggingSettings;
   final int? vlanLowerLimit;
@@ -652,20 +699,20 @@ class SinglePortVLANTaggingSettings {
     );
   }
 
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'isEnabled': isEnabled,
-      'vlanTaggingSettings': vlanTaggingSettings?.toJson(),
+      'vlanTaggingSettings': vlanTaggingSettings?.toMap(),
       'vlanLowerLimit': vlanLowerLimit,
       'vlanUpperLimit': vlanUpperLimit,
     }..removeWhere((key, value) => value == null);
   }
 
-  factory SinglePortVLANTaggingSettings.fromJson(Map<String, dynamic> map) {
+  factory SinglePortVLANTaggingSettings.fromMap(Map<String, dynamic> map) {
     return SinglePortVLANTaggingSettings(
       isEnabled: map['isEnabled'],
       vlanTaggingSettings: map['vlanTaggingSettings'] != null
-          ? PortTaggingSettings.fromJson(
+          ? PortTaggingSettings.fromMap(
               map['vlanTaggingSettings'] as Map<String, dynamic>)
           : null,
       vlanLowerLimit:
@@ -674,9 +721,19 @@ class SinglePortVLANTaggingSettings {
           map['vlanUpperLimit'] != null ? map['vlanUpperLimit'] as int : null,
     );
   }
+
+  @override
+  List<Object?> get props =>
+      [isEnabled, vlanTaggingSettings, vlanLowerLimit, vlanUpperLimit];
+
+  String toJson() => jsonEncode(toMap());
+
+  factory SinglePortVLANTaggingSettings.fromJson(String source) =>
+      SinglePortVLANTaggingSettings.fromMap(
+          jsonDecode(source) as Map<String, dynamic>);
 }
 
-class PortTaggingSettings {
+class PortTaggingSettings extends Equatable {
   final int vlanID;
   final int? vlanPriority;
 
@@ -703,7 +760,7 @@ class PortTaggingSettings {
     );
   }
 
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'vlanID': vlanID,
       'vlanPriority': vlanPriority,
@@ -711,7 +768,7 @@ class PortTaggingSettings {
     }..removeWhere((key, value) => value == null);
   }
 
-  factory PortTaggingSettings.fromJson(Map<String, dynamic> map) {
+  factory PortTaggingSettings.fromMap(Map<String, dynamic> map) {
     return PortTaggingSettings(
       vlanID: map['vlanID'] as int,
       vlanPriority:
@@ -719,4 +776,12 @@ class PortTaggingSettings {
       vlanStatus: map['vlanStatus'] as String,
     );
   }
+
+  @override
+  List<Object?> get props => [vlanID, vlanPriority, vlanStatus];
+
+  String toJson() => jsonEncode(toMap());
+
+  factory PortTaggingSettings.fromJson(String source) =>
+      PortTaggingSettings.fromMap(jsonDecode(source) as Map<String, dynamic>);
 }

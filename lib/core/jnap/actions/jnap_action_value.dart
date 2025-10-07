@@ -254,6 +254,11 @@ enum _JNAPActionValue {
   setLANSettings(value: 'http://linksys.com/jnap/router/SetLANSettings'),
   setRoutingSettings(
       value: 'http://linksys.com/jnap/router/SetRoutingSettings'),
+      // Dual WAN
+  getDualWANSettings(value: 'http://linksys.com/jnap/router/GetDualWANSettings'),
+  setDualWANSettings(value: 'http://linksys.com/jnap/router/SetDualWANSettings'),
+  getDualWANStatus(value: 'http://linksys.com/jnap/router/GetDualWANStatus'),
+  getEthernetPortConnections2(value: 'http://linksys.com/jnap/router/GetEthernetPortConnections2'),
   releaseDHCPWANLease(
       value: 'http://linksys.com/jnap/router/ReleaseDHCPWANLease'),
   releaseDHCPIPv6WANLease(

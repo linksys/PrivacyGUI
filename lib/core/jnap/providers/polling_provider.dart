@@ -11,6 +11,7 @@ import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/bench_mark.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/page/dual/providers/dual_wan_settings_provider.dart';
 import 'package:privacy_gui/page/vpn/providers/vpn_notifier.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
@@ -51,6 +52,8 @@ class CoreTransactionData extends Equatable {
 class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
   static Timer? _timer;
   bool _paused = false;
+  bool _isPollAdditional = false;
+
   set paused(bool value) {
     _paused = value;
     if (_paused) {
@@ -117,11 +120,16 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
 
       throw error ?? '';
     });
+    if (_isPollAdditional) {
+      return;
+    }
 
     state = await AsyncValue.guard(
       () => fetchFuture.then(
         (result) async {
+          _isPollAdditional = true;
           await _additionalPolling();
+          _isPollAdditional = false;
           return result.copyWith(isReady: true);
         },
       ).onError((e, stackTrace) {
@@ -134,11 +142,27 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
   }
 
   Future _additionalPolling() async {
+    logger.d('Additional polling');
+    // Fetch with transaction, put additional JNAP actions here
+    final repo = ref.read(routerRepositoryProvider);
+    final builder = JNAPTransactionBuilder(commands: [
+      if (serviceHelper.isSupportDualWAN())
+        MapEntry(JNAPAction.getDualWANSettings, {}),
+      if (serviceHelper.isSupportLedMode())
+        MapEntry(JNAPAction.getLedNightModeSetting, {}),
+      MapEntry(JNAPAction.getMACFilterSettings, {}),
+    ], auth: true);
+    await repo.transaction(builder);
+
+    // Update providers via cache data
     if (serviceHelper.isSupportLedMode()) {
       await ref.read(nodeLightSettingsProvider.notifier).fetch();
     }
     if (serviceHelper.isSupportVPN()) {
       await ref.read(vpnProvider.notifier).fetch(false, true);
+    }
+    if (serviceHelper.isSupportDualWAN()) {
+      await ref.read(dualWANSettingsProvider.notifier).fetch();
     }
 
     await ref.read(instantPrivacyProvider.notifier).fetch(statusOnly: true);

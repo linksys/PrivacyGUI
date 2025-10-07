@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
@@ -9,7 +8,6 @@ import 'package:privacy_gui/page/dual/providers/dual_wan_settings_provider.dart'
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:get_it/get_it.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 
 import '../../../common/config.dart';
 import '../../../common/di.dart';
@@ -72,13 +70,19 @@ void main() {
       (tester, locale) async {
     when(mockDualWANSettingsNotifier.build()).thenReturn(
         testDualWANSettingsState.copyWith(
-            mode: DualWANMode.loadBalancing,
-            balanceRatio: DualWANBalanceRatio.favorPrimaryWAN));
+            settings: testDualWANSettingsState.settings.copyWith(
+                mode: DualWANMode.loadBalanced,
+                balanceRatio: DualWANBalanceRatio.favorPrimaryWAN)));
     when(mockDualWANSettingsNotifier.fetch()).thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 1));
       return testDualWANSettingsState.copyWith(
-          mode: DualWANMode.loadBalancing,
-          balanceRatio: DualWANBalanceRatio.favorPrimaryWAN);
+          settings: testDualWANSettingsState.settings.copyWith(
+              enable: true,
+              mode: DualWANMode.loadBalanced,
+              balanceRatio: DualWANBalanceRatio.favorPrimaryWAN,
+              primaryWAN: testDualWANSettingsState.settings.primaryWAN,
+              secondaryWAN: testDualWANSettingsState.settings.secondaryWAN,
+              loggingOptions: testDualWANSettingsState.settings.loggingOptions));
     });
     final widget = testableWidget(locale);
 
@@ -89,10 +93,19 @@ void main() {
       'Dual WAN Settings View - load balancing with 1:1 - Eaual distribution (Default)',
       (tester, locale) async {
     when(mockDualWANSettingsNotifier.build()).thenReturn(
-        testDualWANSettingsState.copyWith(mode: DualWANMode.loadBalancing));
+        testDualWANSettingsState.copyWith(
+            settings: testDualWANSettingsState.settings.copyWith(
+                mode: DualWANMode.loadBalanced)));
     when(mockDualWANSettingsNotifier.fetch()).thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 1));
-      return testDualWANSettingsState.copyWith(mode: DualWANMode.loadBalancing);
+      return testDualWANSettingsState.copyWith(
+          settings: testDualWANSettingsState.settings.copyWith(
+              enable: true,
+              mode: DualWANMode.loadBalanced,
+              balanceRatio: DualWANBalanceRatio.equalDistribution,
+              primaryWAN: testDualWANSettingsState.settings.primaryWAN,
+              secondaryWAN: testDualWANSettingsState.settings.secondaryWAN,
+              loggingOptions: testDualWANSettingsState.settings.loggingOptions));
     });
     final widget = testableWidget(locale);
 
@@ -105,21 +118,23 @@ void main() {
         (tester, locale) async {
       when(mockDualWANSettingsNotifier.build()).thenReturn(
           testDualWANSettingsState.copyWith(
-              primaryWAN: testDualWANSettingsState.primaryWAN.copyWith(
-                  ipv4ConnectionType: 'Static',
-                  staticIpAddress: () => '10.123.1.89',
-                  networkPrefixLength: () => 24,
-                  staticGateway: () => '10.123.1.1',
-                  staticDns1: () => '8.8.8.8')));
+              settings: testDualWANSettingsState.settings.copyWith(
+                  primaryWAN: testDualWANSettingsState.settings.primaryWAN.copyWith(
+                      ipv4ConnectionType: 'Static',
+                      staticIpAddress: () => '10.123.1.89',
+                      networkPrefixLength: () => 24,
+                      staticGateway: () => '10.123.1.1',
+                      staticDns1: () => '8.8.8.8'))));
       when(mockDualWANSettingsNotifier.fetch()).thenAnswer((_) async {
         await Future.delayed(const Duration(seconds: 1));
         return testDualWANSettingsState.copyWith(
-            primaryWAN: testDualWANSettingsState.primaryWAN.copyWith(
-                ipv4ConnectionType: 'Static',
-                staticIpAddress: () => '10.123.1.89',
-                networkPrefixLength: () => 24,
-                staticGateway: () => '10.123.1.1',
-                staticDns1: () => '8.8.8.8'));
+            settings: testDualWANSettingsState.settings.copyWith(
+                primaryWAN: testDualWANSettingsState.settings.primaryWAN.copyWith(
+                    ipv4ConnectionType: 'Static',
+                    staticIpAddress: () => '10.123.1.89',
+                    networkPrefixLength: () => 24,
+                    staticGateway: () => '10.123.1.1',
+                    staticDns1: () => '8.8.8.8')));
       });
       final widget = testableWidget(locale);
 
@@ -131,19 +146,21 @@ void main() {
         (tester, locale) async {
       when(mockDualWANSettingsNotifier.build()).thenReturn(
           testDualWANSettingsState.copyWith(
-              primaryWAN: testDualWANSettingsState.primaryWAN.copyWith(
-                  ipv4ConnectionType: 'PPPoE',
-                  username: () => 'username',
-                  password: () => 'password',
-                  serviceName: () => 'serviceName')));
+              settings: testDualWANSettingsState.settings.copyWith(
+                  primaryWAN: testDualWANSettingsState.settings.primaryWAN.copyWith(
+                      ipv4ConnectionType: 'PPPoE',
+                      username: () => 'username',
+                      password: () => 'password',
+                      serviceName: () => 'serviceName'))));
       when(mockDualWANSettingsNotifier.fetch()).thenAnswer((_) async {
         await Future.delayed(const Duration(seconds: 1));
         return testDualWANSettingsState.copyWith(
-            primaryWAN: testDualWANSettingsState.primaryWAN.copyWith(
-                ipv4ConnectionType: 'PPPoE',
-                username: () => 'username',
-                password: () => 'password',
-                serviceName: () => 'serviceName'));
+            settings: testDualWANSettingsState.settings.copyWith(
+                primaryWAN: testDualWANSettingsState.settings.primaryWAN.copyWith(
+                    ipv4ConnectionType: 'PPPoE',
+                    username: () => 'username',
+                    password: () => 'password',
+                    serviceName: () => 'serviceName')));
       });
       final widget = testableWidget(locale);
 
@@ -155,19 +172,21 @@ void main() {
         (tester, locale) async {
       when(mockDualWANSettingsNotifier.build()).thenReturn(
           testDualWANSettingsState.copyWith(
-              primaryWAN: testDualWANSettingsState.primaryWAN.copyWith(
-                  ipv4ConnectionType: 'PPTP',
-                  username: () => 'username',
-                  password: () => 'password',
-                  serviceName: () => 'serviceName')));
+              settings: testDualWANSettingsState.settings.copyWith(
+                  primaryWAN: testDualWANSettingsState.settings.primaryWAN.copyWith(
+                      ipv4ConnectionType: 'PPTP',
+                      username: () => 'username',
+                      password: () => 'password',
+                      serviceName: () => 'serviceName'))));
       when(mockDualWANSettingsNotifier.fetch()).thenAnswer((_) async {
         await Future.delayed(const Duration(seconds: 1));
         return testDualWANSettingsState.copyWith(
-            primaryWAN: testDualWANSettingsState.primaryWAN.copyWith(
-                ipv4ConnectionType: 'PPTP',
-                username: () => 'username',
-                password: () => 'password',
-                serviceName: () => 'serviceName'));
+            settings: testDualWANSettingsState.settings.copyWith(
+                primaryWAN: testDualWANSettingsState.settings.primaryWAN.copyWith(
+                    ipv4ConnectionType: 'PPTP',
+                    username: () => 'username',
+                    password: () => 'password',
+                    serviceName: () => 'serviceName')));
       });
       final widget = testableWidget(locale);
 
@@ -180,21 +199,23 @@ void main() {
         (tester, locale) async {
       when(mockDualWANSettingsNotifier.build()).thenReturn(
           testDualWANSettingsState.copyWith(
-              primaryWAN: testDualWANSettingsState.primaryWAN.copyWith(
-                  ipv4ConnectionType: 'Static',
-                  staticIpAddress: () => '10.123.1.89',
-                  networkPrefixLength: () => 24,
-                  staticGateway: () => '10.123.1.1',
-                  staticDns1: () => '8.8.8.8')));
+              settings: testDualWANSettingsState.settings.copyWith(
+                  primaryWAN: testDualWANSettingsState.settings.primaryWAN.copyWith(
+                      ipv4ConnectionType: 'Static',
+                      staticIpAddress: () => '10.123.1.89',
+                      networkPrefixLength: () => 24,
+                      staticGateway: () => '10.123.1.1',
+                      staticDns1: () => '8.8.8.8'))));
       when(mockDualWANSettingsNotifier.fetch()).thenAnswer((_) async {
         await Future.delayed(const Duration(seconds: 1));
         return testDualWANSettingsState.copyWith(
-            primaryWAN: testDualWANSettingsState.primaryWAN.copyWith(
-                ipv4ConnectionType: 'Static',
-                staticIpAddress: () => '10.123.1.89',
-                networkPrefixLength: () => 24,
-                staticGateway: () => '10.123.1.1',
-                staticDns1: () => '8.8.8.8'));
+            settings: testDualWANSettingsState.settings.copyWith(
+                primaryWAN: testDualWANSettingsState.settings.primaryWAN.copyWith(
+                    ipv4ConnectionType: 'Static',
+                    staticIpAddress: () => '10.123.1.89',
+                    networkPrefixLength: () => 24,
+                    staticGateway: () => '10.123.1.1',
+                    staticDns1: () => '8.8.8.8')));
       });
       final widget = testableWidget(locale);
 
@@ -213,21 +234,23 @@ void main() {
         (tester, locale) async {
       when(mockDualWANSettingsNotifier.build()).thenReturn(
           testDualWANSettingsState.copyWith(
-              primaryWAN: testDualWANSettingsState.primaryWAN.copyWith(
-                  ipv4ConnectionType: 'Static',
-                  staticIpAddress: () => '10.123.1.89',
-                  networkPrefixLength: () => 24,
-                  staticGateway: () => '10.123.1.1',
-                  staticDns1: () => '8.8.8.8')));
+              settings: testDualWANSettingsState.settings.copyWith(
+                  primaryWAN: testDualWANSettingsState.settings.primaryWAN.copyWith(
+                      ipv4ConnectionType: 'Static',
+                      staticIpAddress: () => '10.123.1.89',
+                      networkPrefixLength: () => 24,
+                      staticGateway: () => '10.123.1.1',
+                      staticDns1: () => '8.8.8.8'))));
       when(mockDualWANSettingsNotifier.fetch()).thenAnswer((_) async {
         await Future.delayed(const Duration(seconds: 1));
         return testDualWANSettingsState.copyWith(
-            primaryWAN: testDualWANSettingsState.primaryWAN.copyWith(
-                ipv4ConnectionType: 'Static',
-                staticIpAddress: () => '10.123.1.89',
-                networkPrefixLength: () => 24,
-                staticGateway: () => '10.123.1.1',
-                staticDns1: () => '8.8.8.8'));
+            settings: testDualWANSettingsState.settings.copyWith(
+                primaryWAN: testDualWANSettingsState.settings.primaryWAN.copyWith(
+                    ipv4ConnectionType: 'Static',
+                    staticIpAddress: () => '10.123.1.89',
+                    networkPrefixLength: () => 24,
+                    staticGateway: () => '10.123.1.1',
+                    staticDns1: () => '8.8.8.8')));
       });
       final widget = testableWidget(locale);
 
@@ -246,21 +269,23 @@ void main() {
         (tester, locale) async {
       when(mockDualWANSettingsNotifier.build()).thenReturn(
           testDualWANSettingsState.copyWith(
-              primaryWAN: testDualWANSettingsState.primaryWAN.copyWith(
-                  ipv4ConnectionType: 'Static',
-                  staticIpAddress: () => '10.123.1.89',
-                  networkPrefixLength: () => 24,
-                  staticGateway: () => '10.123.1.1',
-                  staticDns1: () => '8.8.8.8')));
+              settings: testDualWANSettingsState.settings.copyWith(
+                  primaryWAN: testDualWANSettingsState.settings.primaryWAN.copyWith(
+                      ipv4ConnectionType: 'Static',
+                      staticIpAddress: () => '10.123.1.89',
+                      networkPrefixLength: () => 24,
+                      staticGateway: () => '10.123.1.1',
+                      staticDns1: () => '8.8.8.8'))));
       when(mockDualWANSettingsNotifier.fetch()).thenAnswer((_) async {
         await Future.delayed(const Duration(seconds: 1));
         return testDualWANSettingsState.copyWith(
-            primaryWAN: testDualWANSettingsState.primaryWAN.copyWith(
-                ipv4ConnectionType: 'Static',
-                staticIpAddress: () => '10.123.1.89',
-                networkPrefixLength: () => 24,
-                staticGateway: () => '10.123.1.1',
-                staticDns1: () => '8.8.8.8'));
+            settings: testDualWANSettingsState.settings.copyWith(
+                primaryWAN: testDualWANSettingsState.settings.primaryWAN.copyWith(
+                    ipv4ConnectionType: 'Static',
+                    staticIpAddress: () => '10.123.1.89',
+                    networkPrefixLength: () => 24,
+                    staticGateway: () => '10.123.1.1',
+                    staticDns1: () => '8.8.8.8')));
       });
       final widget = testableWidget(locale);
 
@@ -279,17 +304,19 @@ void main() {
         (tester, locale) async {
       when(mockDualWANSettingsNotifier.build()).thenReturn(
           testDualWANSettingsState.copyWith(
-              primaryWAN: testDualWANSettingsState.primaryWAN.copyWith(
-                  ipv4ConnectionType: 'PPPoE',
-                  username: () => 'username',
-                  password: () => 'password')));
+              settings: testDualWANSettingsState.settings.copyWith(
+                  primaryWAN: testDualWANSettingsState.settings.primaryWAN.copyWith(
+                      ipv4ConnectionType: 'PPPoE',
+                      username: () => 'username',
+                      password: () => 'password'))));
       when(mockDualWANSettingsNotifier.fetch()).thenAnswer((_) async {
         await Future.delayed(const Duration(seconds: 1));
         return testDualWANSettingsState.copyWith(
-            primaryWAN: testDualWANSettingsState.primaryWAN.copyWith(
-                ipv4ConnectionType: 'PPPoE',
-                username: () => 'username',
-                password: () => 'password'));
+            settings: testDualWANSettingsState.settings.copyWith(
+                primaryWAN: testDualWANSettingsState.settings.primaryWAN.copyWith(
+                    ipv4ConnectionType: 'PPPoE',
+                    username: () => 'username',
+                    password: () => 'password')));
       });
       final widget = testableWidget(locale);
 
@@ -310,17 +337,19 @@ void main() {
         (tester, locale) async {
       when(mockDualWANSettingsNotifier.build()).thenReturn(
           testDualWANSettingsState.copyWith(
-              primaryWAN: testDualWANSettingsState.primaryWAN.copyWith(
-                  ipv4ConnectionType: 'PPPoE',
-                  username: () => 'username',
-                  password: () => 'password')));
+              settings: testDualWANSettingsState.settings.copyWith(
+                  primaryWAN: testDualWANSettingsState.settings.primaryWAN.copyWith(
+                      ipv4ConnectionType: 'PPPoE',
+                      username: () => 'username',
+                      password: () => 'password'))));
       when(mockDualWANSettingsNotifier.fetch()).thenAnswer((_) async {
         await Future.delayed(const Duration(seconds: 1));
         return testDualWANSettingsState.copyWith(
-            primaryWAN: testDualWANSettingsState.primaryWAN.copyWith(
-                ipv4ConnectionType: 'PPPoE',
-                username: () => 'username',
-                password: () => 'password'));
+            settings: testDualWANSettingsState.settings.copyWith(
+                primaryWAN: testDualWANSettingsState.settings.primaryWAN.copyWith(
+                    ipv4ConnectionType: 'PPPoE',
+                    username: () => 'username',
+                    password: () => 'password')));
       });
       final widget = testableWidget(locale);
 
@@ -341,17 +370,19 @@ void main() {
         (tester, locale) async {
       when(mockDualWANSettingsNotifier.build()).thenReturn(
           testDualWANSettingsState.copyWith(
-              primaryWAN: testDualWANSettingsState.primaryWAN.copyWith(
-                  ipv4ConnectionType: 'PPTP',
-                  username: () => 'username',
-                  password: () => 'password')));
+              settings: testDualWANSettingsState.settings.copyWith(
+                  primaryWAN: testDualWANSettingsState.settings.primaryWAN.copyWith(
+                      ipv4ConnectionType: 'PPTP',
+                      username: () => 'username',
+                      password: () => 'password'))));
       when(mockDualWANSettingsNotifier.fetch()).thenAnswer((_) async {
         await Future.delayed(const Duration(seconds: 1));
         return testDualWANSettingsState.copyWith(
-            primaryWAN: testDualWANSettingsState.primaryWAN.copyWith(
-                ipv4ConnectionType: 'PPTP',
-                username: () => 'username',
-                password: () => 'password'));
+            settings: testDualWANSettingsState.settings.copyWith(
+                primaryWAN: testDualWANSettingsState.settings.primaryWAN.copyWith(
+                    ipv4ConnectionType: 'PPTP',
+                    username: () => 'username',
+                    password: () => 'password')));
       });
       final widget = testableWidget(locale);
 
@@ -372,17 +403,19 @@ void main() {
         (tester, locale) async {
       when(mockDualWANSettingsNotifier.build()).thenReturn(
           testDualWANSettingsState.copyWith(
-              primaryWAN: testDualWANSettingsState.primaryWAN.copyWith(
-                  ipv4ConnectionType: 'PPTP',
-                  username: () => 'username',
-                  password: () => 'password')));
+              settings: testDualWANSettingsState.settings.copyWith(
+                  primaryWAN: testDualWANSettingsState.settings.primaryWAN.copyWith(
+                      ipv4ConnectionType: 'PPTP',
+                      username: () => 'username',
+                      password: () => 'password'))));
       when(mockDualWANSettingsNotifier.fetch()).thenAnswer((_) async {
         await Future.delayed(const Duration(seconds: 1));
         return testDualWANSettingsState.copyWith(
-            primaryWAN: testDualWANSettingsState.primaryWAN.copyWith(
-                ipv4ConnectionType: 'PPTP',
-                username: () => 'username',
-                password: () => 'password'));
+            settings: testDualWANSettingsState.settings.copyWith(
+                primaryWAN: testDualWANSettingsState.settings.primaryWAN.copyWith(
+                    ipv4ConnectionType: 'PPTP',
+                    username: () => 'username',
+                    password: () => 'password')));
       });
       final widget = testableWidget(locale);
 
@@ -397,7 +430,6 @@ void main() {
       await tester.tap(primaryPPTPUsernameFormFieldFinder);
       await tester.pumpAndSettle();
     }, screens: screenList);
-
   });
 
   group('Dual WAN Settings View - secondary WAN', () {
@@ -405,21 +437,23 @@ void main() {
         (tester, locale) async {
       when(mockDualWANSettingsNotifier.build()).thenReturn(
           testDualWANSettingsState.copyWith(
-              secondaryWAN: testDualWANSettingsState.secondaryWAN.copyWith(
-                  ipv4ConnectionType: 'Static',
-                  staticIpAddress: () => '10.123.1.89',
-                  networkPrefixLength: () => 24,
-                  staticGateway: () => '10.123.1.1',
-                  staticDns1: () => '8.8.8.8')));
+              settings: testDualWANSettingsState.settings.copyWith(
+                  secondaryWAN: testDualWANSettingsState.settings.secondaryWAN.copyWith(
+                      ipv4ConnectionType: 'Static',
+                      staticIpAddress: () => '10.123.1.89',
+                      networkPrefixLength: () => 24,
+                      staticGateway: () => '10.123.1.1',
+                      staticDns1: () => '8.8.8.8'))));
       when(mockDualWANSettingsNotifier.fetch()).thenAnswer((_) async {
         await Future.delayed(const Duration(seconds: 1));
         return testDualWANSettingsState.copyWith(
-            secondaryWAN: testDualWANSettingsState.secondaryWAN.copyWith(
-                ipv4ConnectionType: 'Static',
-                staticIpAddress: () => '10.123.1.89',
-                networkPrefixLength: () => 24,
-                staticGateway: () => '10.123.1.1',
-                staticDns1: () => '8.8.8.8'));
+            settings: testDualWANSettingsState.settings.copyWith(
+                secondaryWAN: testDualWANSettingsState.settings.secondaryWAN.copyWith(
+                    ipv4ConnectionType: 'Static',
+                    staticIpAddress: () => '10.123.1.89',
+                    networkPrefixLength: () => 24,
+                    staticGateway: () => '10.123.1.1',
+                    staticDns1: () => '8.8.8.8')));
       });
       final widget = testableWidget(locale);
 
@@ -430,19 +464,21 @@ void main() {
         (tester, locale) async {
       when(mockDualWANSettingsNotifier.build()).thenReturn(
           testDualWANSettingsState.copyWith(
-              secondaryWAN: testDualWANSettingsState.secondaryWAN.copyWith(
-                  ipv4ConnectionType: 'PPPoE',
-                  username: () => 'username',
-                  password: () => 'password',
-                  serviceName: () => 'serviceName')));
+              settings: testDualWANSettingsState.settings.copyWith(
+                  secondaryWAN: testDualWANSettingsState.settings.secondaryWAN.copyWith(
+                      ipv4ConnectionType: 'PPPoE',
+                      username: () => 'username',
+                      password: () => 'password',
+                      serviceName: () => 'serviceName'))));
       when(mockDualWANSettingsNotifier.fetch()).thenAnswer((_) async {
         await Future.delayed(const Duration(seconds: 1));
         return testDualWANSettingsState.copyWith(
-            secondaryWAN: testDualWANSettingsState.secondaryWAN.copyWith(
-                ipv4ConnectionType: 'PPPoE',
-                username: () => 'username',
-                password: () => 'password',
-                serviceName: () => 'serviceName'));
+            settings: testDualWANSettingsState.settings.copyWith(
+                secondaryWAN: testDualWANSettingsState.settings.secondaryWAN.copyWith(
+                    ipv4ConnectionType: 'PPPoE',
+                    username: () => 'username',
+                    password: () => 'password',
+                    serviceName: () => 'serviceName')));
       });
       final widget = testableWidget(locale);
 
@@ -454,19 +490,21 @@ void main() {
         (tester, locale) async {
       when(mockDualWANSettingsNotifier.build()).thenReturn(
           testDualWANSettingsState.copyWith(
-              secondaryWAN: testDualWANSettingsState.secondaryWAN.copyWith(
-                  ipv4ConnectionType: 'PPTP',
-                  username: () => 'username',
-                  password: () => 'password',
-                  serviceName: () => 'serviceName')));
+              settings: testDualWANSettingsState.settings.copyWith(
+                  secondaryWAN: testDualWANSettingsState.settings.secondaryWAN.copyWith(
+                      ipv4ConnectionType: 'PPTP',
+                      username: () => 'username',
+                      password: () => 'password',
+                      serviceName: () => 'serviceName'))));
       when(mockDualWANSettingsNotifier.fetch()).thenAnswer((_) async {
         await Future.delayed(const Duration(seconds: 1));
         return testDualWANSettingsState.copyWith(
-            secondaryWAN: testDualWANSettingsState.secondaryWAN.copyWith(
-                ipv4ConnectionType: 'PPTP',
-                username: () => 'username',
-                password: () => 'password',
-                serviceName: () => 'serviceName'));
+            settings: testDualWANSettingsState.settings.copyWith(
+                secondaryWAN: testDualWANSettingsState.settings.secondaryWAN.copyWith(
+                    ipv4ConnectionType: 'PPTP',
+                    username: () => 'username',
+                    password: () => 'password',
+                    serviceName: () => 'serviceName')));
       });
       final widget = testableWidget(locale);
 
@@ -479,21 +517,23 @@ void main() {
         (tester, locale) async {
       when(mockDualWANSettingsNotifier.build()).thenReturn(
           testDualWANSettingsState.copyWith(
-              secondaryWAN: testDualWANSettingsState.secondaryWAN.copyWith(
-                  ipv4ConnectionType: 'Static',
-                  staticIpAddress: () => '10.123.1.89',
-                  networkPrefixLength: () => 24,
-                  staticGateway: () => '10.123.1.1',
-                  staticDns1: () => '8.8.8.8')));
+              settings: testDualWANSettingsState.settings.copyWith(
+                  secondaryWAN: testDualWANSettingsState.settings.secondaryWAN.copyWith(
+                      ipv4ConnectionType: 'Static',
+                      staticIpAddress: () => '10.123.1.89',
+                      networkPrefixLength: () => 24,
+                      staticGateway: () => '10.123.1.1',
+                      staticDns1: () => '8.8.8.8'))));
       when(mockDualWANSettingsNotifier.fetch()).thenAnswer((_) async {
         await Future.delayed(const Duration(seconds: 1));
         return testDualWANSettingsState.copyWith(
-            secondaryWAN: testDualWANSettingsState.secondaryWAN.copyWith(
-                ipv4ConnectionType: 'Static',
-                staticIpAddress: () => '10.123.1.89',
-                networkPrefixLength: () => 24,
-                staticGateway: () => '10.123.1.1',
-                staticDns1: () => '8.8.8.8'));
+            settings: testDualWANSettingsState.settings.copyWith(
+                secondaryWAN: testDualWANSettingsState.settings.secondaryWAN.copyWith(
+                    ipv4ConnectionType: 'Static',
+                    staticIpAddress: () => '10.123.1.89',
+                    networkPrefixLength: () => 24,
+                    staticGateway: () => '10.123.1.1',
+                    staticDns1: () => '8.8.8.8')));
       });
       final widget = testableWidget(locale);
 
@@ -513,21 +553,23 @@ void main() {
         (tester, locale) async {
       when(mockDualWANSettingsNotifier.build()).thenReturn(
           testDualWANSettingsState.copyWith(
-              secondaryWAN: testDualWANSettingsState.secondaryWAN.copyWith(
-                  ipv4ConnectionType: 'Static',
-                  staticIpAddress: () => '10.123.1.89',
-                  networkPrefixLength: () => 24,
-                  staticGateway: () => '10.123.1.1',
-                  staticDns1: () => '8.8.8.8')));
+              settings: testDualWANSettingsState.settings.copyWith(
+                  secondaryWAN: testDualWANSettingsState.settings.secondaryWAN.copyWith(
+                      ipv4ConnectionType: 'Static',
+                      staticIpAddress: () => '10.123.1.89',
+                      networkPrefixLength: () => 24,
+                      staticGateway: () => '10.123.1.1',
+                      staticDns1: () => '8.8.8.8'))));
       when(mockDualWANSettingsNotifier.fetch()).thenAnswer((_) async {
         await Future.delayed(const Duration(seconds: 1));
         return testDualWANSettingsState.copyWith(
-            secondaryWAN: testDualWANSettingsState.secondaryWAN.copyWith(
-                ipv4ConnectionType: 'Static',
-                staticIpAddress: () => '10.123.1.89',
-                networkPrefixLength: () => 24,
-                staticGateway: () => '10.123.1.1',
-                staticDns1: () => '8.8.8.8'));
+            settings: testDualWANSettingsState.settings.copyWith(
+                secondaryWAN: testDualWANSettingsState.settings.secondaryWAN.copyWith(
+                    ipv4ConnectionType: 'Static',
+                    staticIpAddress: () => '10.123.1.89',
+                    networkPrefixLength: () => 24,
+                    staticGateway: () => '10.123.1.1',
+                    staticDns1: () => '8.8.8.8')));
       });
       final widget = testableWidget(locale);
 
@@ -546,21 +588,23 @@ void main() {
         (tester, locale) async {
       when(mockDualWANSettingsNotifier.build()).thenReturn(
           testDualWANSettingsState.copyWith(
-              secondaryWAN: testDualWANSettingsState.secondaryWAN.copyWith(
-                  ipv4ConnectionType: 'Static',
-                  staticIpAddress: () => '10.123.1.89',
-                  networkPrefixLength: () => 24,
-                  staticGateway: () => '10.123.1.1',
-                  staticDns1: () => '8.8.8.8')));
+              settings: testDualWANSettingsState.settings.copyWith(
+                  secondaryWAN: testDualWANSettingsState.settings.secondaryWAN.copyWith(
+                      ipv4ConnectionType: 'Static',
+                      staticIpAddress: () => '10.123.1.89',
+                      networkPrefixLength: () => 24,
+                      staticGateway: () => '10.123.1.1',
+                      staticDns1: () => '8.8.8.8'))));
       when(mockDualWANSettingsNotifier.fetch()).thenAnswer((_) async {
         await Future.delayed(const Duration(seconds: 1));
         return testDualWANSettingsState.copyWith(
-            secondaryWAN: testDualWANSettingsState.secondaryWAN.copyWith(
-                ipv4ConnectionType: 'Static',
-                staticIpAddress: () => '10.123.1.89',
-                networkPrefixLength: () => 24,
-                staticGateway: () => '10.123.1.1',
-                staticDns1: () => '8.8.8.8'));
+            settings: testDualWANSettingsState.settings.copyWith(
+                secondaryWAN: testDualWANSettingsState.settings.secondaryWAN.copyWith(
+                    ipv4ConnectionType: 'Static',
+                    staticIpAddress: () => '10.123.1.89',
+                    networkPrefixLength: () => 24,
+                    staticGateway: () => '10.123.1.1',
+                    staticDns1: () => '8.8.8.8')));
       });
       final widget = testableWidget(locale);
 
@@ -579,17 +623,19 @@ void main() {
         (tester, locale) async {
       when(mockDualWANSettingsNotifier.build()).thenReturn(
           testDualWANSettingsState.copyWith(
-              secondaryWAN: testDualWANSettingsState.secondaryWAN.copyWith(
-                  ipv4ConnectionType: 'PPPoE',
-                  username: () => 'username',
-                  password: () => 'password')));
+              settings: testDualWANSettingsState.settings.copyWith(
+                  secondaryWAN: testDualWANSettingsState.settings.secondaryWAN.copyWith(
+                      ipv4ConnectionType: 'PPPoE',
+                      username: () => 'username',
+                      password: () => 'password'))));
       when(mockDualWANSettingsNotifier.fetch()).thenAnswer((_) async {
         await Future.delayed(const Duration(seconds: 1));
         return testDualWANSettingsState.copyWith(
-            secondaryWAN: testDualWANSettingsState.secondaryWAN.copyWith(
-                ipv4ConnectionType: 'PPPoE',
-                username: () => 'username',
-                password: () => 'password'));
+            settings: testDualWANSettingsState.settings.copyWith(
+                secondaryWAN: testDualWANSettingsState.settings.secondaryWAN.copyWith(
+                    ipv4ConnectionType: 'PPPoE',
+                    username: () => 'username',
+                    password: () => 'password')));
       });
       final widget = testableWidget(locale);
 
@@ -610,17 +656,19 @@ void main() {
         (tester, locale) async {
       when(mockDualWANSettingsNotifier.build()).thenReturn(
           testDualWANSettingsState.copyWith(
-              secondaryWAN: testDualWANSettingsState.secondaryWAN.copyWith(
-                  ipv4ConnectionType: 'PPPoE',
-                  username: () => 'username',
-                  password: () => 'password')));
+              settings: testDualWANSettingsState.settings.copyWith(
+                  secondaryWAN: testDualWANSettingsState.settings.secondaryWAN.copyWith(
+                      ipv4ConnectionType: 'PPPoE',
+                      username: () => 'username',
+                      password: () => 'password'))));
       when(mockDualWANSettingsNotifier.fetch()).thenAnswer((_) async {
         await Future.delayed(const Duration(seconds: 1));
         return testDualWANSettingsState.copyWith(
-            secondaryWAN: testDualWANSettingsState.secondaryWAN.copyWith(
-                ipv4ConnectionType: 'PPPoE',
-                username: () => 'username',
-                password: () => 'password'));
+            settings: testDualWANSettingsState.settings.copyWith(
+                secondaryWAN: testDualWANSettingsState.settings.secondaryWAN.copyWith(
+                    ipv4ConnectionType: 'PPPoE',
+                    username: () => 'username',
+                    password: () => 'password')));
       });
       final widget = testableWidget(locale);
 
@@ -641,17 +689,19 @@ void main() {
         (tester, locale) async {
       when(mockDualWANSettingsNotifier.build()).thenReturn(
           testDualWANSettingsState.copyWith(
-              secondaryWAN: testDualWANSettingsState.secondaryWAN.copyWith(
-                  ipv4ConnectionType: 'PPTP',
-                  username: () => 'username',
-                  password: () => 'password')));
+              settings: testDualWANSettingsState.settings.copyWith(
+                  secondaryWAN: testDualWANSettingsState.settings.secondaryWAN.copyWith(
+                      ipv4ConnectionType: 'PPTP',
+                      username: () => 'username',
+                      password: () => 'password'))));
       when(mockDualWANSettingsNotifier.fetch()).thenAnswer((_) async {
         await Future.delayed(const Duration(seconds: 1));
         return testDualWANSettingsState.copyWith(
-            secondaryWAN: testDualWANSettingsState.secondaryWAN.copyWith(
-                ipv4ConnectionType: 'PPTP',
-                username: () => 'username',
-                password: () => 'password'));
+            settings: testDualWANSettingsState.settings.copyWith(
+                secondaryWAN: testDualWANSettingsState.settings.secondaryWAN.copyWith(
+                    ipv4ConnectionType: 'PPTP',
+                    username: () => 'username',
+                    password: () => 'password')));
       });
       final widget = testableWidget(locale);
 
@@ -672,17 +722,19 @@ void main() {
         (tester, locale) async {
       when(mockDualWANSettingsNotifier.build()).thenReturn(
           testDualWANSettingsState.copyWith(
-              secondaryWAN: testDualWANSettingsState.secondaryWAN.copyWith(
-                  ipv4ConnectionType: 'PPTP',
-                  username: () => 'username',
-                  password: () => 'password')));
+              settings: testDualWANSettingsState.settings.copyWith(
+                  secondaryWAN: testDualWANSettingsState.settings.secondaryWAN.copyWith(
+                      ipv4ConnectionType: 'PPTP',
+                      username: () => 'username',
+                      password: () => 'password'))));
       when(mockDualWANSettingsNotifier.fetch()).thenAnswer((_) async {
         await Future.delayed(const Duration(seconds: 1));
         return testDualWANSettingsState.copyWith(
-            secondaryWAN: testDualWANSettingsState.secondaryWAN.copyWith(
-                ipv4ConnectionType: 'PPTP',
-                username: () => 'username',
-                password: () => 'password'));
+            settings: testDualWANSettingsState.settings.copyWith(
+                secondaryWAN: testDualWANSettingsState.settings.secondaryWAN.copyWith(
+                    ipv4ConnectionType: 'PPTP',
+                    username: () => 'username',
+                    password: () => 'password')));
       });
       final widget = testableWidget(locale);
 
@@ -704,19 +756,21 @@ void main() {
         (tester, locale) async {
       when(mockDualWANSettingsNotifier.build()).thenReturn(
           testDualWANSettingsState.copyWith(
-              loggingOptions: testDualWANSettingsState.loggingOptions.copyWith(
-                  failoverEvents: false,
-                  wanUptime: false,
-                  speedChecks: false,
-                  throughputData: false)));
+              settings: testDualWANSettingsState.settings.copyWith(
+                  loggingOptions: testDualWANSettingsState.settings.loggingOptions?.copyWith(
+                      failoverEvents: false,
+                      wanUptime: false,
+                      speedChecks: false,
+                      throughputData: false))));
       when(mockDualWANSettingsNotifier.fetch()).thenAnswer((_) async {
         await Future.delayed(const Duration(seconds: 1));
         return testDualWANSettingsState.copyWith(
-            loggingOptions: testDualWANSettingsState.loggingOptions.copyWith(
-                failoverEvents: false,
-                wanUptime: false,
-                speedChecks: false,
-                throughputData: false));
+            settings: testDualWANSettingsState.settings.copyWith(
+                loggingOptions: testDualWANSettingsState.settings.loggingOptions?.copyWith(
+                    failoverEvents: false,
+                    wanUptime: false,
+                    speedChecks: false,
+                    throughputData: false)));
       });
       final widget = testableWidget(locale);
 
@@ -729,8 +783,9 @@ void main() {
       await tester.tap(toggleLoggingAndAdvancedSettingsButtonFinder);
       await tester.pumpAndSettle();
 
-      await tester.scrollUntilVisible(toggleLoggingAndAdvancedSettingsButtonFinder,
-          10, scrollable: find.byType(Scrollable).last);
+      await tester.scrollUntilVisible(
+          toggleLoggingAndAdvancedSettingsButtonFinder, 10,
+          scrollable: find.byType(Scrollable).last);
       await tester.pumpAndSettle();
     }, screens: screenList);
 
@@ -738,19 +793,21 @@ void main() {
         (tester, locale) async {
       when(mockDualWANSettingsNotifier.build()).thenReturn(
           testDualWANSettingsState.copyWith(
-              loggingOptions: testDualWANSettingsState.loggingOptions.copyWith(
-                  failoverEvents: true,
-                  wanUptime: true,
-                  speedChecks: true,
-                  throughputData: true)));
+              settings: testDualWANSettingsState.settings.copyWith(
+                  loggingOptions: testDualWANSettingsState.settings.loggingOptions?.copyWith(
+                      failoverEvents: true,
+                      wanUptime: true,
+                      speedChecks: true,
+                      throughputData: true))));
       when(mockDualWANSettingsNotifier.fetch()).thenAnswer((_) async {
         await Future.delayed(const Duration(seconds: 1));
         return testDualWANSettingsState.copyWith(
-            loggingOptions: testDualWANSettingsState.loggingOptions.copyWith(
-                failoverEvents: true,
-                wanUptime: true,
-                speedChecks: true,
-                throughputData: true));
+            settings: testDualWANSettingsState.settings.copyWith(
+                loggingOptions: testDualWANSettingsState.settings.loggingOptions?.copyWith(
+                    failoverEvents: true,
+                    wanUptime: true,
+                    speedChecks: true,
+                    throughputData: true)));
       });
       final widget = testableWidget(locale);
 
@@ -763,8 +820,9 @@ void main() {
       await tester.tap(toggleLoggingAndAdvancedSettingsButtonFinder);
       await tester.pumpAndSettle();
 
-      await tester.scrollUntilVisible(toggleLoggingAndAdvancedSettingsButtonFinder,
-          10, scrollable: find.byType(Scrollable).last);
+      await tester.scrollUntilVisible(
+          toggleLoggingAndAdvancedSettingsButtonFinder, 10,
+          scrollable: find.byType(Scrollable).last);
       await tester.pumpAndSettle();
     }, screens: screenList);
   });

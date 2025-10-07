@@ -47,7 +47,7 @@ class DualWANSettingsView extends ArgumentsConsumerStatefulView {
 class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
     with
         PageSnackbarMixin,
-        PreservedStateMixin<DualWANSettingsState, DualWANSettingsView> {
+        PreservedStateMixin<DualWANSettings, DualWANSettingsView> {
   late final DualWANSettingsNotifier _notifier;
 
   // Primary
@@ -114,7 +114,7 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
       context,
       _notifier.fetch(),
     ).then((value) {
-      preservedState = value;
+      preservedState = value?.settings;
       _initWANConfiguration(preservedState);
     });
     super.initState();
@@ -162,17 +162,18 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
         // scrollable: true,
         pageContentType: PageContentType.fit,
         title: loc(context).dualWanTitle,
-        onBackTap: () async {
-          if (!mounted) return;
-          if (isStateChanged(state)) {
-            final goBack = await showUnsavedAlert(context);
-            if (goBack == true) {
-              context.pop();
-            }
-          }
-        },
+        onBackTap: isStateChanged(state.settings)
+            ? () async {
+                if (!mounted) return;
+
+                final goBack = await showUnsavedAlert(context);
+                if (goBack == true) {
+                  context.pop();
+                }
+              }
+            : null,
         bottomBar: PageBottomBar(
-          isPositiveEnabled: _errors.isEmpty && isStateChanged(state),
+          isPositiveEnabled: _errors.isEmpty && isStateChanged(state.settings),
           onPositiveTap: () {
             if (!mounted) return;
 
@@ -184,7 +185,7 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
               if (value != null) {
                 showChangesSavedSnackBar();
               }
-              preservedState = value;
+              preservedState = value?.settings;
             }).onError((e, _) {
               if (!mounted) return;
               showErrorMessageSnackBar(e);
@@ -198,7 +199,7 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
               spacing: Spacing.large1,
               children: [
                 _enableCard(),
-                if (state.enable) ...[
+                if (state.settings.enable) ...[
                   _operationModeCard(twoColWidth, gutter),
                   Wrap(
                     spacing: gutter,
@@ -225,28 +226,30 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
                         width: twoColWidth,
                         child: _connectionStatusCard(),
                       ),
-                      Container(
-                        constraints: BoxConstraints(
-                          minHeight: 486,
+                      if (state.status.speedStatus != null)
+                        Container(
+                          constraints: BoxConstraints(
+                            minHeight: 486,
+                          ),
+                          width: twoColWidth,
+                          child: _speedAndDiagnosticsCard(),
                         ),
-                        width: twoColWidth,
-                        child: _speedAndDiagnosticsCard(),
-                      ),
                     ],
                   ),
-                  AppFilledButton(
-                    key: ValueKey('toggleLoggingAndAdvancedSettings'),
-                    showLoggingAndAdvancedSettings
-                        ? loc(context).hideLoggingAndAdvancedSettings
-                        : loc(context).showLoggingAndAdvancedSettings,
-                    icon: LinksysIcons.settings,
-                    onTap: () {
-                      setState(() {
-                        showLoggingAndAdvancedSettings =
-                            !showLoggingAndAdvancedSettings;
-                      });
-                    },
-                  ),
+                  if (state.settings.loggingOptions != null)
+                    AppFilledButton(
+                      key: ValueKey('toggleLoggingAndAdvancedSettings'),
+                      showLoggingAndAdvancedSettings
+                          ? loc(context).hideLoggingAndAdvancedSettings
+                          : loc(context).showLoggingAndAdvancedSettings,
+                      icon: LinksysIcons.settings,
+                      onTap: () {
+                        setState(() {
+                          showLoggingAndAdvancedSettings =
+                              !showLoggingAndAdvancedSettings;
+                        });
+                      },
+                    ),
                   if (showLoggingAndAdvancedSettings)
                     _loggingAndAdvancedSettingsCard(twoColWidth, gutter),
                   const AppGap.large1(),
@@ -257,71 +260,77 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
         });
   }
 
-  void _initWANConfiguration(DualWANSettingsState? state) {
-    if (state == null) return;
-    switch (state.primaryWAN.ipv4ConnectionType) {
+  void _initWANConfiguration(DualWANSettings? settings) {
+    if (settings == null) return;
+    switch (settings.primaryWAN.wanType) {
       case 'Static':
         _primaryStaticIpAddressController.text =
-            state.primaryWAN.staticIpAddress ?? '';
+            settings.primaryWAN.staticIpAddress ?? '';
         _primaryStaticSubnetController.text =
-            state.primaryWAN.networkPrefixLength != null
+            settings.primaryWAN.networkPrefixLength != null
                 ? NetworkUtils.prefixLengthToSubnetMask(
-                    state.primaryWAN.networkPrefixLength!)
+                    settings.primaryWAN.networkPrefixLength!)
                 : '';
         _primaryStaticGatewayController.text =
-            state.primaryWAN.staticGateway ?? '';
-        _primaryStaticDNSController.text = state.primaryWAN.staticDns1 ?? '';
+            settings.primaryWAN.staticGateway ?? '';
+        _primaryStaticDNSController.text =
+            settings.primaryWAN.staticDns1 ?? '';
         break;
       case 'PPPoE':
-        _primaryPPPoEUsernameController.text = state.primaryWAN.username ?? '';
-        _primaryPPPoEPasswordController.text = state.primaryWAN.password ?? '';
+        _primaryPPPoEUsernameController.text =
+            settings.primaryWAN.username ?? '';
+        _primaryPPPoEPasswordController.text =
+            settings.primaryWAN.password ?? '';
         _primaryPPPoEServiceNameController.text =
-            state.primaryWAN.serviceName ?? '';
+            settings.primaryWAN.serviceName ?? '';
         break;
       case 'PPTP':
-        _primaryPPTPUsernameController.text = state.primaryWAN.username ?? '';
-        _primaryPPTPPasswordController.text = state.primaryWAN.password ?? '';
-        _primaryPPTPServerController.text = state.primaryWAN.serviceName ?? '';
+        _primaryPPTPUsernameController.text =
+            settings.primaryWAN.username ?? '';
+        _primaryPPTPPasswordController.text =
+            settings.primaryWAN.password ?? '';
+        _primaryPPTPServerController.text =
+            settings.primaryWAN.serviceName ?? '';
         break;
     }
-    _primaryMTUSizeController.text = state.primaryWAN.mtu.toString();
+    _primaryMTUSizeController.text = settings.primaryWAN.mtu.toString();
 
-    switch (state.secondaryWAN.ipv4ConnectionType) {
+    switch (settings.secondaryWAN.wanType) {
       case 'Static':
         _secondaryStaticIpAddressController.text =
-            state.secondaryWAN.staticIpAddress ?? '';
+            settings.secondaryWAN.staticIpAddress ?? '';
         _secondaryStaticSubnetController.text =
-            state.secondaryWAN.networkPrefixLength != null
+            settings.secondaryWAN.networkPrefixLength != null
                 ? NetworkUtils.prefixLengthToSubnetMask(
-                    state.secondaryWAN.networkPrefixLength!)
+                    settings.secondaryWAN.networkPrefixLength!)
                 : '';
         _secondaryStaticGatewayController.text =
-            state.secondaryWAN.staticGateway ?? '';
+            settings.secondaryWAN.staticGateway ?? '';
         _secondaryStaticDNSController.text =
-            state.secondaryWAN.staticDns1 ?? '';
+            settings.secondaryWAN.staticDns1 ?? '';
         break;
       case 'PPPoE':
         _secondaryPPPoEUsernameController.text =
-            state.secondaryWAN.username ?? '';
+            settings.secondaryWAN.username ?? '';
         _secondaryPPPoEPasswordController.text =
-            state.secondaryWAN.password ?? '';
+            settings.secondaryWAN.password ?? '';
         _secondaryPPPoEServiceNameController.text =
-            state.secondaryWAN.serviceName ?? '';
+            settings.secondaryWAN.serviceName ?? '';
         break;
       case 'PPTP':
         _secondaryPPTPUsernameController.text =
-            state.secondaryWAN.username ?? '';
+            settings.secondaryWAN.username ?? '';
         _secondaryPPTPPasswordController.text =
-            state.secondaryWAN.password ?? '';
+            settings.secondaryWAN.password ?? '';
         _secondaryPPTPServerController.text =
-            state.secondaryWAN.serviceName ?? '';
+            settings.secondaryWAN.serviceName ?? '';
         break;
     }
-    _secondaryMTUSizeController.text = state.secondaryWAN.mtu.toString();
+    _secondaryMTUSizeController.text = settings.secondaryWAN.mtu.toString();
   }
 
   Widget _enableCard() {
-    final enable = ref.watch(dualWANSettingsProvider).enable;
+    final enable = ref.watch(dualWANSettingsProvider).settings.enable;
     return AppInformationCard(
       headerIcon: Icon(LinksysIcons.networkNode),
       title: loc(context).dualWan,
@@ -347,8 +356,9 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
   }
 
   Widget _operationModeCard(double twoColWidth, double gutter) {
-    final mode = ref.watch(dualWANSettingsProvider).mode;
-    final balanceRatio = ref.watch(dualWANSettingsProvider).balanceRatio;
+    final mode = ref.watch(dualWANSettingsProvider).settings.mode;
+    final balanceRatio =
+        ref.watch(dualWANSettingsProvider).settings.balanceRatio;
     return AppInformationCard(
       title: loc(context).dualWanOperationMode,
       description: loc(context).dualWanOperationModeDescription,
@@ -375,18 +385,18 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
             SizedBox(
               width: twoColWidth - gutter / 2 - 6,
               child: AppSelectionCard(
-                value: DualWANMode.loadBalancing,
+                value: DualWANMode.loadBalanced,
                 groupValue: mode,
-                title: DualWANMode.loadBalancing.toDisplayString(context),
+                title: DualWANMode.loadBalanced.toDisplayString(context),
                 label: 'Advanced',
                 description: loc(context).dualWanLoadBalancingDescription,
                 onTap: () {
-                  _notifier.updateOperationMode(DualWANMode.loadBalancing);
+                  _notifier.updateOperationMode(DualWANMode.loadBalanced);
                 },
               ),
             ),
           ]),
-          if (mode == DualWANMode.loadBalancing) ...[
+          if (mode == DualWANMode.loadBalanced) ...[
             AppCard(
               color: Theme.of(context).colorScheme.primary.withAlpha(0x10),
               child: Column(
@@ -416,25 +426,29 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
   }
 
   Widget _primaryWANCard() {
-    final primaryWAN = ref.watch(dualWANSettingsProvider).primaryWAN;
+    final primaryWAN = ref.watch(dualWANSettingsProvider).settings.primaryWAN;
     final connectionStatus =
-        ref.watch(dualWANSettingsProvider).connectionStatus;
+        ref.watch(dualWANSettingsProvider).status.connectionStatus;
     return _wanCard(primaryWAN, connectionStatus, true, (wan) {
       _notifier.updatePrimaryWAN(wan);
     });
   }
 
   Widget _secondaryWANCard() {
-    final secondaryWAN = ref.watch(dualWANSettingsProvider).secondaryWAN;
+    final secondaryWAN =
+        ref.watch(dualWANSettingsProvider).settings.secondaryWAN;
     final connectionStatus =
-        ref.watch(dualWANSettingsProvider).connectionStatus;
+        ref.watch(dualWANSettingsProvider).status.connectionStatus;
     return _wanCard(secondaryWAN, connectionStatus, false, (wan) {
       _notifier.updateSecondaryWAN(wan);
     });
   }
 
-  Widget _wanCard(DualWANConfiguration wan, ConnectionStatus connectionStatus,
-      bool isPrimary, void Function(DualWANConfiguration wan) onChanged) {
+  Widget _wanCard(
+      DualWANConfiguration wan,
+      DualWANConnectionStatus connectionStatus,
+      bool isPrimary,
+      void Function(DualWANConfiguration wan) onChanged) {
     return AppInformationCard(
       headerIcon: Icon(Icons.settings_ethernet,
           color: isPrimary
@@ -452,14 +466,14 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
         children: [
           AppText.labelLarge(loc(context).connectionType),
           AppDropdownButton<String>(
-            items: wan.supportedIPv4ConnectionType,
+            items: wan.supportedWANType,
             label: (value) => value,
             onChanged: (value) {
               onChanged(wan.copyWith(ipv4ConnectionType: value));
             },
           ),
           const AppGap.medium(),
-          if (wan.ipv4ConnectionType != 'DHCP')
+          if (wan.wanType != 'DHCP')
             _buildWANSettingsForm(isPrimary, wan, onChanged),
           // AppText.labelLarge(loc(context).mtu),
           // AppTextField.minMaxNumber(
@@ -522,9 +536,10 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               AppText.bodyMedium(loc(context).ipAddress),
-              AppText.bodyMedium(isPrimary
-                  ? connectionStatus.primaryWANIPAddress
-                  : connectionStatus.secondaryWANIPAddress),
+              AppText.bodyMedium((isPrimary
+                      ? connectionStatus.primaryWANIPAddress
+                      : connectionStatus.secondaryWANIPAddress) ??
+                  '--'),
             ],
           ),
         ],
@@ -541,7 +556,7 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
 
   Widget _buildWANSettingsForm(bool isPrimary, DualWANConfiguration wan,
       Function(DualWANConfiguration) onChanged) {
-    final List<Widget> children = switch (wan.ipv4ConnectionType) {
+    final List<Widget> children = switch (wan.wanType) {
       'Static' => [
           AppText.labelLarge(loc(context).ipAddress),
           AppIPFormField(
@@ -887,8 +902,8 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
 
   Widget _connectionStatusCard() {
     final connectionStatus =
-        ref.watch(dualWANSettingsProvider).connectionStatus;
-    final ports = ref.watch(dualWANSettingsProvider).ports;
+        ref.watch(dualWANSettingsProvider).status.connectionStatus;
+    final ports = ref.watch(dualWANSettingsProvider).status.ports;
     return AppInformationCard(
       headerIcon: Icon(Icons.show_chart),
       title: loc(context).connectionStatus,
@@ -899,7 +914,7 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
         children: [
           AppCard(
             showBorder: false,
-            color: Theme.of(context).colorSchemeExt.green?.withAlpha(0x10),
+            color: Theme.of(context).colorScheme.primary.withAlpha(0x10),
             child: Row(
               children: [
                 Icon(LinksysIcons.check),
@@ -912,7 +927,7 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
           ),
           AppCard(
             showBorder: false,
-            color: Theme.of(context).colorScheme.primary.withAlpha(0x10),
+            color: Theme.of(context).colorSchemeExt.green?.withAlpha(0x10),
             child: Row(
               children: [
                 Icon(LinksysIcons.check),
@@ -924,48 +939,54 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
             ),
           ),
           const Divider(height: 24),
-          AppText.bodyMedium(loc(context).routerPortLayout),
-          AppCard(
-              showBorder: false,
-              color: Theme.of(context).colorSchemeExt.surfaceContainerLow,
-              child: Column(
-                children: [
-                  AppText.bodyMedium(loc(context).backOfRouter),
-                  Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      spacing: Spacing.small2,
-                      children: ports
-                          .map((port) => _portWidget(
-                              port.speed, port.type, port.portNumber))
-                          .toList()),
-                ],
-              )),
-          const AppGap.medium(),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              AppText.bodyMedium(loc(context).primaryWanUptime),
-              AppText.bodyMedium(DateFormatUtils.formatDuration(
-                  Duration(seconds: connectionStatus.primaryUptime), null)),
-            ],
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              AppText.bodyMedium(loc(context).secondaryWanUptime),
-              AppText.bodyMedium(DateFormatUtils.formatDuration(
-                  Duration(seconds: connectionStatus.secondaryUptime), null)),
-            ],
-          ),
+          if (ports.isNotEmpty) ...[
+            AppText.bodyMedium(loc(context).routerPortLayout),
+            AppCard(
+                showBorder: false,
+                color: Theme.of(context).colorSchemeExt.surfaceContainerLow,
+                child: Column(
+                  children: [
+                    AppText.bodyMedium(loc(context).backOfRouter),
+                    Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        spacing: Spacing.small2,
+                        children: ports
+                            .map((port) => _portWidget(
+                                port.speed, port.type, port.portNumber))
+                            .toList()),
+                  ],
+                )),
+            const AppGap.medium(),
+          ],
+          if (connectionStatus.primaryUptime != null)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                AppText.bodyMedium(loc(context).primaryWanUptime),
+                AppText.bodyMedium(DateFormatUtils.formatDuration(
+                    Duration(seconds: connectionStatus.primaryUptime!), null)),
+              ],
+            ),
+          if (connectionStatus.secondaryUptime != null)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                AppText.bodyMedium(loc(context).secondaryWanUptime),
+                AppText.bodyMedium(DateFormatUtils.formatDuration(
+                    Duration(seconds: connectionStatus.secondaryUptime!),
+                    null)),
+              ],
+            ),
         ],
       ),
     );
   }
 
   Widget _portWidget(String? connection, PortType portType, [int? lanIndex]) {
+    final hasConnection = connection != null && connection != 'None';
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -974,7 +995,7 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
         Padding(
           padding: const EdgeInsets.all(Spacing.small2),
           child: SvgPicture(
-            connection == null
+            hasConnection
                 ? CustomTheme.of(context).images.imgPortOff
                 : CustomTheme.of(context).images.imgPortOn,
             semanticsLabel: 'port status image',
@@ -988,7 +1009,7 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
         ),
         AppText.labelMedium('${portType.toDisplayString()}${lanIndex ?? ''}',
             color: portType.getDisplayColor(context)),
-        if (connection != null)
+        if (hasConnection)
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1006,7 +1027,7 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
   }
 
   Widget _speedAndDiagnosticsCard() {
-    final speedStatus = ref.watch(dualWANSettingsProvider).speedStatus;
+    final speedStatus = ref.watch(dualWANSettingsProvider).status.speedStatus;
     return AppInformationCard(
       headerIcon: Icon(Icons.monitor_heart),
       title: loc(context).speedTestsDiagnostics,
@@ -1035,8 +1056,8 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               AppText.bodyMedium(loc(context).primaryWanSpeed),
-              AppText.bodyMedium(NetworkUtils.formatBytes(
-                  speedStatus.primaryDownloadSpeed,
+              AppText.bodyMedium(NetworkUtils.formatBits(
+                  speedStatus?.primaryDownloadSpeed ?? 0,
                   decimals: 2)),
             ],
           ),
@@ -1045,8 +1066,8 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               AppText.bodyMedium(loc(context).secondaryWanSpeed),
-              AppText.bodyMedium(NetworkUtils.formatBytes(
-                  speedStatus.secondaryDownloadSpeed,
+              AppText.bodyMedium(NetworkUtils.formatBits(
+                  speedStatus?.secondaryDownloadSpeed ?? 0,
                   decimals: 2)),
             ],
           ),
@@ -1056,7 +1077,8 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
   }
 
   Widget _loggingAndAdvancedSettingsCard(double twoColWidth, double gutter) {
-    final loggingOptions = ref.watch(dualWANSettingsProvider).loggingOptions;
+    final loggingOptions =
+        ref.watch(dualWANSettingsProvider).settings.loggingOptions;
     return AppInformationCard(
       title: loc(context).loggingAdvancedSettings,
       description: loc(context).loggingAdvancedSettingsDescription,
@@ -1076,8 +1098,10 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
                   children: [
                     AppText.labelMedium(loc(context).logFailoverEvents),
                     AppSwitch(
-                      value: loggingOptions.failoverEvents,
+                      value: loggingOptions?.failoverEvents ?? false,
                       onChanged: (value) {
+                        if (loggingOptions == null) return;
+
                         _notifier.updateLoggingOptions(
                             loggingOptions.copyWith(failoverEvents: value));
                       },
@@ -1090,8 +1114,10 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
                   children: [
                     AppText.labelMedium(loc(context).logWanUptime),
                     AppSwitch(
-                      value: loggingOptions.wanUptime,
+                      value: loggingOptions?.wanUptime ?? false,
                       onChanged: (value) {
+                        if (loggingOptions == null) return;
+
                         _notifier.updateLoggingOptions(
                             loggingOptions.copyWith(wanUptime: value));
                       },
@@ -1104,8 +1130,9 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
                   children: [
                     AppText.labelMedium(loc(context).logSpeedChecks),
                     AppSwitch(
-                      value: loggingOptions.speedChecks,
+                      value: loggingOptions?.speedChecks ?? false,
                       onChanged: (value) {
+                        if (loggingOptions == null) return;
                         _notifier.updateLoggingOptions(
                             loggingOptions.copyWith(speedChecks: value));
                       },
@@ -1118,8 +1145,9 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
                   children: [
                     AppText.labelMedium(loc(context).logThroughputData),
                     AppSwitch(
-                      value: loggingOptions.throughputData,
+                      value: loggingOptions?.throughputData ?? false,
                       onChanged: (value) {
+                        if (loggingOptions == null) return;
                         _notifier.updateLoggingOptions(
                             loggingOptions.copyWith(throughputData: value));
                       },
