@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
@@ -22,6 +23,7 @@ import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
+import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/input_field/validator_widget.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
@@ -39,6 +41,18 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
   WiFiState? _preservedMainWiFiState;
 
   final Map<String, TextEditingController> _advancedPasswordController = {};
+  final InputValidator wifiSSIDValidator = InputValidator([
+    RequiredRule(),
+    NoSurroundWhitespaceRule(),
+    LengthRule(min: 1, max: 32),
+    WiFiSsidRule(),
+  ]);
+  final InputValidator wifiPasswordValidator = InputValidator([
+    LengthRule(min: 8, max: 64),
+    NoSurroundWhitespaceRule(),
+    AsciiRule(),
+    WiFiPSKRule(),
+  ]);
 
   @override
   void initState() {
@@ -105,12 +119,16 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
             children: [
               _wifiDescription(wifiBands),
               const AppGap.medium(),
+              _quickSetup(state.mainWiFi),
+              const AppGap.medium(),
               Expanded(child: _wifiContentView()),
             ],
           ),
           mobile: Column(
             children: [
               _wifiDescription(wifiBands),
+              const AppGap.medium(),
+              _quickSetup(state.mainWiFi),
               const AppGap.medium(),
               Expanded(child: _wifiContentView()),
             ],
@@ -125,18 +143,216 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
-            LinksysIcons.infoCircle,
+            Icons.info_outline_rounded,
             semanticLabel: 'info icon',
             color: Theme.of(context).colorScheme.primary,
           ),
           const AppGap.medium(),
-          AppText.bodySmall(
-            loc(context).wifiListDescription(wifiBands),
-            maxLines: 30,
+          SizedBox(
+            width: double.infinity,
+            child: AppText.bodySmall(
+              loc(context).wifiListDescription(wifiBands),
+              maxLines: 30,
+            ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _quickSetup(List<WiFiItem> mainWiFi) {
+    return AppCard(
+      color: Theme.of(context).colorScheme.surfaceVariant,
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.bolt_outlined,
+                      semanticLabel: 'quick settings icon',
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const AppGap.small2(),
+                    AppText.labelMedium(
+                      loc(context).quickSetup,
+                    ),
+                  ],
+                ),
+                const AppGap.medium(),
+                AppText.bodySmall(
+                  loc(context).quickSetupDesc,
+                  maxLines: 30,
+                ),
+              ],
+            ),
+          ),
+          const AppGap.medium(),
+          AppTextButton(
+            loc(context).configureAllBands,
+            onTap: () {
+              _showQuickSetupModal(mainWiFi: mainWiFi);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showQuickSetupModal({required List<WiFiItem> mainWiFi}) async {
+    final firstActiveWifi = mainWiFi.firstWhere((e) => e.isEnabled);
+    Set<WifiSecurityType> securityTypeSet =
+        mainWiFi.first.availableSecurityTypes.toSet();
+    for (var e in mainWiFi) {
+      final availableSecurityTypesSet = e.availableSecurityTypes.toSet();
+      securityTypeSet = securityTypeSet.intersection(availableSecurityTypesSet);
+    }
+    final securityTypeList = securityTypeSet.toList();
+    final activeBands = mainWiFi
+        .where((e) => e.isEnabled)
+        .map((e) => e.radioID.bandName)
+        .toList()
+        .join(', ');
+    final wifiNameController = TextEditingController()
+      ..text = firstActiveWifi.ssid;
+    final wifiPasswordController = TextEditingController()
+      ..text = firstActiveWifi.password;
+    bool isPasswordValid = true;
+    bool isLength64 = firstActiveWifi.password.length == 64;
+    WifiSecurityType selectedSecurityType = firstActiveWifi.securityType;
+    final result =
+        await showSubmitAppDialog<(String, String, WifiSecurityType)>(
+      context,
+      positiveLabel: loc(context).applyToAllBands,
+      scrollable: true,
+      contentBuilder: (context, setState, onSubmit) => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.wifi,
+                semanticLabel: 'alert quick settings icon',
+              ),
+              const AppGap.small2(),
+              AppText.titleLarge(loc(context).quickSetup),
+            ],
+          ),
+          const AppGap.small2(),
+          AppText.bodyMedium(loc(context).configureAllBandsDesc),
+          const AppGap.medium(),
+          AppCard(
+            child: SizedBox(
+              width: double.infinity,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppText.bodyMedium(loc(context).settingsWillBeAppliedTo),
+                  const AppGap.small2(),
+                  AppText.labelMedium(activeBands),
+                ],
+              ),
+            ),
+          ),
+          _quickSetupCard([
+            AppText.labelMedium(loc(context).wifiName),
+            const AppGap.small1(),
+            _wifiNameInputField(
+              wifiNameController,
+              onChanged: (value) {
+                setState(() {
+                  // Do setState to show error message
+                });
+              },
+            ),
+          ]),
+          _quickSetupCard([
+            AppText.labelMedium(loc(context).wifiPassword),
+            const AppGap.small1(),
+            _wifiPasswordInputField(
+              wifiPasswordController,
+              isLength64: isLength64,
+              onChanged: (value) {
+                setState(() {
+                  isLength64 = value.length == 64;
+                });
+              },
+              onValidationChanged: (isValid) => setState(() {
+                isPasswordValid =
+                    wifiPasswordValidator.validate(wifiPasswordController.text);
+              }),
+            ),
+          ]),
+          _quickSetupCard([
+            AppText.labelMedium(loc(context).securityMode),
+            const AppGap.small1(),
+            AppDropdownButton(
+              initial: selectedSecurityType,
+              items: securityTypeList,
+              label: (e) => getWifiSecurityTypeTitle(context, e),
+              onChanged: (value) {
+                selectedSecurityType = value;
+              },
+            ),
+          ]),
+        ],
+      ),
+      event: () async => (
+        wifiNameController.text,
+        wifiPasswordController.text,
+        selectedSecurityType
+      ),
+      checkPositiveEnabled: () =>
+          wifiSSIDValidator.validate(wifiNameController.text) &&
+          isPasswordValid,
+    );
+    setQuickSetup(
+      ssid: result!.$1,
+      password: result.$2,
+      securityType: result.$3,
+      mainWiFi: mainWiFi,
+    );
+  }
+
+  Widget _quickSetupCard(List<Widget> children) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: children,
+      ),
+    );
+  }
+
+  void setQuickSetup({
+    required String ssid,
+    required String password,
+    required WifiSecurityType securityType,
+    required List<WiFiItem> mainWiFi,
+  }) {
+    logger.i('[WiFiListView] setQuickSetup: $ssid, $password, $securityType');
+    for (var radio in mainWiFi) {
+      // Only update enabled WiFi
+      if (!radio.isEnabled) continue;
+      // SSID
+      ref.read(wifiListProvider.notifier).setWiFiSSID(ssid, radio.radioID);
+      // Password
+      ref
+          .read(wifiListProvider.notifier)
+          .setWiFiPassword(password, radio.radioID);
+      _advancedPasswordController[radio.radioID.value]?.text = password;
+      // Security type
+      ref
+          .read(wifiListProvider.notifier)
+          .setWiFiSecurityType(securityType, radio.radioID);
+    }
   }
 
   Widget _wifiContentView() {
@@ -292,6 +508,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
 
   ///
   /// Guest Cards
+  ///
   Widget _guestWiFiBandCard(GuestWiFiItem state) => AppListCard(
         showBorder: false,
         padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -612,51 +829,25 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
   _showWiFiNameModal(String initValue, void Function(String) onEdited) async {
     TextEditingController controller = TextEditingController()
       ..text = initValue;
-    bool isEmpty = initValue.isEmpty;
-    final InputValidator wifiSSIDValidator = InputValidator([
-      RequiredRule(),
-      NoSurroundWhitespaceRule(),
-      LengthRule(min: 1, max: 32),
-      WiFiSsidRule(),
-    ]);
     final result = await showSubmitAppDialog<String>(
       context,
       title: loc(context).wifiName,
       contentBuilder: (context, setState, onSubmit) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          AppTextField(
-            semanticLabel: 'wifi name',
-            controller: controller,
-            border: const OutlineInputBorder(),
+          _wifiNameInputField(
+            controller,
             onChanged: (value) {
               setState(() {
-                isEmpty = value.isEmpty;
+                // Do setState to show error message
               });
             },
-            errorText: () {
-              final errorKeys = wifiSSIDValidator
-                  .validateDetail(controller.text, onlyFailed: true);
-              if (errorKeys.isEmpty) {
-                return null;
-              } else if (errorKeys.keys.first ==
-                  NoSurroundWhitespaceRule().name) {
-                return loc(context).routerPasswordRuleStartEndWithSpace;
-              } else if (errorKeys.keys.first == WiFiSsidRule().name ||
-                  errorKeys.keys.first == RequiredRule().name) {
-                return loc(context).theNameMustNotBeEmpty;
-              } else if (errorKeys.keys.first == LengthRule().name) {
-                return loc(context).wifiSSIDLengthLimit;
-              } else {
-                return null;
-              }
-            }(),
             onSubmitted: (_) {
               if (wifiSSIDValidator.validate(controller.text)) {
                 context.pop(controller.text);
               }
             },
-          )
+          ),
         ],
       ),
       event: () async => controller.text,
@@ -669,18 +860,41 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
     }
   }
 
+  Widget _wifiNameInputField(TextEditingController controller,
+      {String semanticLabel = '',
+      Function(String)? onChanged,
+      Function(String)? onSubmitted}) {
+    return AppTextField(
+      semanticLabel: '$semanticLabel wifi name',
+      controller: controller,
+      border: const OutlineInputBorder(),
+      onChanged: onChanged,
+      errorText: () {
+        final errorKeys =
+            wifiSSIDValidator.validateDetail(controller.text, onlyFailed: true);
+        if (errorKeys.isEmpty) {
+          return null;
+        } else if (errorKeys.keys.first == NoSurroundWhitespaceRule().name) {
+          return loc(context).routerPasswordRuleStartEndWithSpace;
+        } else if (errorKeys.keys.first == WiFiSsidRule().name ||
+            errorKeys.keys.first == RequiredRule().name) {
+          return loc(context).theNameMustNotBeEmpty;
+        } else if (errorKeys.keys.first == LengthRule().name) {
+          return loc(context).wifiSSIDLengthLimit;
+        } else {
+          return null;
+        }
+      }(),
+      onSubmitted: onSubmitted,
+    );
+  }
+
   _showWifiPasswordModal(
       String initValue, void Function(String) onEdited) async {
     TextEditingController controller = TextEditingController()
       ..text = initValue;
     bool isPasswordValid = true;
     bool isLength64 = initValue.length == 64;
-    final InputValidator wifiPasswordValidator = InputValidator([
-      LengthRule(min: 8, max: 64),
-      NoSurroundWhitespaceRule(),
-      AsciiRule(),
-      WiFiPSKRule(),
-    ]);
     final result = await showSubmitAppDialog<String>(
       context,
       title: loc(context).wifiPassword,
@@ -688,41 +902,9 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AppPasswordField.withValidator(
-              semanticLabel: 'wifi password',
-              autofocus: true,
-              controller: controller,
-              border: const OutlineInputBorder(),
-              validations: [
-                Validation(
-                  description: loc(context).wifiPasswordLimit,
-                  validator: ((text) =>
-                      wifiPasswordValidator.getRuleByIndex(0)?.validate(text) ??
-                      false),
-                ),
-                Validation(
-                  description: loc(context).routerPasswordRuleStartEndWithSpace,
-                  validator: ((text) =>
-                      wifiPasswordValidator.getRuleByIndex(1)?.validate(text) ??
-                      false),
-                ),
-                Validation(
-                  description:
-                      loc(context).routerPasswordRuleUnsupportSpecialChar,
-                  validator: ((text) =>
-                      wifiPasswordValidator.getRuleByIndex(2)?.validate(text) ??
-                      false),
-                ),
-                if (isLength64)
-                  Validation(
-                    description: loc(context).wifiPasswordRuleHex,
-                    validator: ((text) =>
-                        wifiPasswordValidator
-                            .getRuleByIndex(3)
-                            ?.validate(text) ??
-                        false),
-                  ),
-              ],
+            _wifiPasswordInputField(
+              controller,
+              isLength64: isLength64,
               onChanged: (value) {
                 setState(() {
                   isLength64 = value.length == 64;
@@ -737,7 +919,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
                   context.pop(controller.text);
                 }
               },
-            )
+            ),
           ],
         ),
       ),
@@ -748,6 +930,47 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
     if (result != null) {
       onEdited(result);
     }
+  }
+
+  Widget _wifiPasswordInputField(TextEditingController controller,
+      {String semanticLabel = '',
+      bool isLength64 = false,
+      Function(String)? onChanged,
+      Function(bool)? onValidationChanged,
+      Function(String)? onSubmitted}) {
+    return AppPasswordField.withValidator(
+      semanticLabel: '$semanticLabel wifi password',
+      autofocus: true,
+      controller: controller,
+      border: const OutlineInputBorder(),
+      validations: [
+        Validation(
+          description: loc(context).wifiPasswordLimit,
+          validator: ((text) =>
+              wifiPasswordValidator.getRuleByIndex(0)?.validate(text) ?? false),
+        ),
+        Validation(
+          description: loc(context).routerPasswordRuleStartEndWithSpace,
+          validator: ((text) =>
+              wifiPasswordValidator.getRuleByIndex(1)?.validate(text) ?? false),
+        ),
+        Validation(
+          description: loc(context).routerPasswordRuleUnsupportSpecialChar,
+          validator: ((text) =>
+              wifiPasswordValidator.getRuleByIndex(2)?.validate(text) ?? false),
+        ),
+        if (isLength64)
+          Validation(
+            description: loc(context).wifiPasswordRuleHex,
+            validator: ((text) =>
+                wifiPasswordValidator.getRuleByIndex(3)?.validate(text) ??
+                false),
+          ),
+      ],
+      onChanged: onChanged,
+      onValidationChanged: onValidationChanged,
+      onSubmitted: onSubmitted,
+    );
   }
 
   _showSecurityModeModal(
