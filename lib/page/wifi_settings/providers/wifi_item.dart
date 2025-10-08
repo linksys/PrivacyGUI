@@ -312,15 +312,18 @@ enum WifiWirelessMode {
       case WifiWirelessMode.mixed:
         return WifiChannelWidth.wide320;
 
-      // 802.11ax/ac (Wi-Fi 6/5) supports up to 160MHz (Contiguous or Non-Contiguous)
+      // 802.11ax (Wi-Fi 6/6E) supports up to 160MHz
       case WifiWirelessMode.ax:
       case WifiWirelessMode.anacax:
       case WifiWirelessMode.bgnax:
+        // Includes both contiguous and non-contiguous 160MHz options
+        return WifiChannelWidth.wide160nc;
+
+      // 802.11ac (Wi-Fi 5) supports 80MHz (160MHz is optional, conservatively set to 80MHz)
       case WifiWirelessMode.ac:
       case WifiWirelessMode.anac:
       case WifiWirelessMode.bgnac:
-        // Using wide160nc to represent the highest 160MHz option
-        return WifiChannelWidth.wide160nc;
+        return WifiChannelWidth.wide80;
 
       // 802.11n (Wi-Fi 4) supports 40MHz
       case WifiWirelessMode.n:

@@ -824,7 +824,6 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
                         title: getWifiWirelessModeTitle(
                             context, e, defaultMixedMode),
                         value: e,
-                        // enabled: availablelist.contains(e),
                         subTitleWidget: !availablelist.contains(e)
                             ? AppText.bodySmall(
                                 loc(context).wifiModeNotAvailable,
@@ -1154,54 +1153,8 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
   /// @returns A list of channel widths supported by the specified mode.
   List<WifiChannelWidth> getAvailableChannelWidths(
       WifiWirelessMode mode, List<WifiChannelWidth> list) {
-    // Determine the maximum channel width supported by this mode
-    WifiChannelWidth maxSupportedWidth = WifiChannelWidth.wide20;
-
-    switch (mode) {
-      // 802.11be (Wi-Fi 7) supports 320MHz
-      case WifiWirelessMode.anacaxbe:
-      case WifiWirelessMode.axbe:
-        maxSupportedWidth = WifiChannelWidth.wide320;
-        break;
-
-      // 802.11ax (Wi-Fi 6/6E) supports up to 160MHz
-      case WifiWirelessMode.ax:
-      case WifiWirelessMode.anacax:
-      case WifiWirelessMode.bgnax:
-        // Includes both contiguous and non-contiguous 160MHz options
-        maxSupportedWidth = WifiChannelWidth.wide160nc;
-        break;
-
-      // 802.11ac (Wi-Fi 5) supports 80MHz (160MHz is optional, conservatively set to 80MHz)
-      case WifiWirelessMode.ac:
-      case WifiWirelessMode.anac:
-      case WifiWirelessMode.bgnac:
-        maxSupportedWidth = WifiChannelWidth.wide80;
-        break;
-
-      // 802.11n (Wi-Fi 4) supports 40MHz
-      case WifiWirelessMode.n:
-      case WifiWirelessMode.an:
-      case WifiWirelessMode.bn:
-      case WifiWirelessMode.gn:
-      case WifiWirelessMode.bgn:
-        maxSupportedWidth = WifiChannelWidth.wide40;
-        break;
-
-      // 802.11a/b/g and other legacy modes only support 20MHz
-      case WifiWirelessMode.a:
-      case WifiWirelessMode.b:
-      case WifiWirelessMode.g:
-      case WifiWirelessMode.bg:
-      default:
-        // maxSupportedWidth remains wide20
-        break;
-    }
-
-    // 'mixed' mode is assumed to support the highest spec available (320MHz)
-    if (mode == WifiWirelessMode.mixed) {
-      maxSupportedWidth = WifiChannelWidth.wide320;
-    }
+    // Use the getter from the enum, removing the duplicated switch statement.
+    WifiChannelWidth maxSupportedWidth = mode.maxSupportedWidth;
 
     // Filtering Logic: Only include 'Auto' and widths less than or equal to the maximum supported width.
     // We rely on the enum's index order (20 < 40 < 80 < 160c < 160nc < 320).
