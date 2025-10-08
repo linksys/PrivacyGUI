@@ -70,6 +70,7 @@ class NodeDetailState extends Equatable {
   final String wanIpAddress;
   final BlinkingStatus blinkingStatus;
   final bool isMLO;
+  final String macAddress;
 
   const NodeDetailState({
     this.deviceId = '',
@@ -88,6 +89,7 @@ class NodeDetailState extends Equatable {
     this.wanIpAddress = '',
     this.blinkingStatus = BlinkingStatus.blinkNode,
     this.isMLO = false,
+    this.macAddress = '',
   });
 
   NodeDetailState copyWith({
@@ -108,6 +110,7 @@ class NodeDetailState extends Equatable {
     NodeLightSettings? nodeLightSettings,
     BlinkingStatus? blinkingStatus,
     bool? isMLO,
+    String? macAddress,
   }) {
     return NodeDetailState(
       deviceId: deviceId ?? this.deviceId,
@@ -126,6 +129,7 @@ class NodeDetailState extends Equatable {
       wanIpAddress: wanIpAddress ?? this.wanIpAddress,
       blinkingStatus: blinkingStatus ?? this.blinkingStatus,
       isMLO: isMLO ?? this.isMLO,
+      macAddress: macAddress ?? this.macAddress,
     );
   }
 
@@ -147,6 +151,7 @@ class NodeDetailState extends Equatable {
       'wanIpAddress': wanIpAddress,
       'blinkingStatus': blinkingStatus.value,
       'isMLO': isMLO,
+      'macAddress': macAddress,
     };
   }
 
@@ -172,6 +177,7 @@ class NodeDetailState extends Equatable {
       wanIpAddress: map['wanIpAddress'] as String,
       blinkingStatus: BlinkingStatus.resolve(map['blinkingStatus'] as String),
       isMLO: map['isMLO'] ?? false,
+      macAddress: map['macAddress'] as String,
     );
   }
 
@@ -202,6 +208,7 @@ class NodeDetailState extends Equatable {
       wanIpAddress,
       blinkingStatus,
       isMLO,
+      macAddress,
     ];
   }
 }

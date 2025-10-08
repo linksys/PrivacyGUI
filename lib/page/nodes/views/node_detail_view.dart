@@ -90,10 +90,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
           desktop: _desktopLayout(
               constraint, state, filteredDeviceList, isOnlineFilter),
           mobile: _mobileLayout(
-              constraint,
-              state,
-              filteredDeviceList,
-              isOnlineFilter),
+              constraint, state, filteredDeviceList, isOnlineFilter),
         );
       },
     );
@@ -532,6 +529,10 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
             _detailInfoCard(
               title: loc(context).serialNumber,
               description: _checkEmptyValue(state.serialNumber),
+            ),
+            _detailInfoCard(
+              title: loc(context).macAddress,
+              description: _checkEmptyValue(state.macAddress),
             ),
           ],
         ),
