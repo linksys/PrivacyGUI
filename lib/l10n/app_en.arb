@@ -1065,5 +1065,6 @@
   },
   "notEnoughInfoToLogin": "Not enough information to login",
   "endRemoteAssistance": "End Remote Assistance",
-  "endRemoteAssistanceDesc": "End remote assistance session?"
+  "endRemoteAssistanceDesc": "End remote assistance session?",
+  "wifiModeNotAvailable": "Mode change resets channel width to auto."
 }
