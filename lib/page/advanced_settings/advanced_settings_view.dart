@@ -87,12 +87,11 @@ class _AdvancedSettingsViewState extends ConsumerState<AdvancedSettingsView> {
           title: loc(context).localNetwork,
           onTap: () => context.goNamed(RouteNamed.settingsLocalNetwork),
           disabledOnBridge: true),
-      if (!_isHidingRipRouting)
-        AppSectionItemData(
-          title: loc(context).advancedRouting,
-          onTap: () => context.goNamed(RouteNamed.settingsStaticRouting),
-          disabledOnBridge: true,
-        ),
+      AppSectionItemData(
+        title: loc(context).advancedRouting,
+        onTap: () => context.goNamed(RouteNamed.settingsStaticRouting),
+        disabledOnBridge: true,
+      ),
       AppSectionItemData(
         title: loc(context).administration,
         onTap: () => context.goNamed(RouteNamed.settingsAdministration),
@@ -127,12 +126,5 @@ class _AdvancedSettingsViewState extends ConsumerState<AdvancedSettingsView> {
         onTap: disabled ? null : item.onTap,
       ),
     );
-  }
-
-  bool get _isHidingRipRouting {
-    final deviceInfo = ref.read(dashboardManagerProvider).deviceInfo;
-    return isHidingRipRouting(
-        modelNumber: deviceInfo?.modelNumber ?? '',
-        hardwareVersion: deviceInfo?.hardwareVersion ?? '1');
   }
 }
