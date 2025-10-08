@@ -233,6 +233,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
             child: Column(
               children: [
                 AppCard(
+                    key: ValueKey('WiFiGuestCard'),
                     padding: const EdgeInsets.symmetric(
                         vertical: Spacing.small2, horizontal: Spacing.large2),
                     child: Column(children: [
@@ -260,6 +261,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
       child: Column(
         children: [
           AppCard(
+              key: ValueKey('WiFiCard-${radio.radioID.bandName}'),
               padding: const EdgeInsets.symmetric(
                   vertical: Spacing.small2, horizontal: Spacing.large2),
               child: Column(
@@ -522,11 +524,18 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
           semanticLabel: 'edit',
         ),
         onTap: () {
+          final validWirelessModes = validWirelessModeForChannelWidth(
+              radio.channelWidth, radio.availableWirelessModes);
           _showWirelessWiFiModeModal(radio.wirelessMode, radio.defaultMixedMode,
-              radio.availableWirelessModes, (value) {
+              radio.availableWirelessModes, validWirelessModes, (value) {
             ref
                 .read(wifiListProvider.notifier)
                 .setWiFiMode(value, radio.radioID);
+            if (!validWirelessModes.contains(value)) {
+              ref
+                  .read(wifiListProvider.notifier)
+                  .setChannelWidth(WifiChannelWidth.auto, radio.radioID);
+            }
           });
         },
       );
@@ -563,6 +572,8 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
           _showChannelWidthModal(
             radio.channelWidth,
             radio.availableChannels.keys.toList(),
+            getAvailableChannelWidths(
+                radio.wirelessMode, radio.availableChannels.keys.toList()),
             (value) {
               ref
                   .read(wifiListProvider.notifier)
@@ -794,6 +805,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
     WifiWirelessMode mode,
     WifiWirelessMode? defaultMixedMode,
     List<WifiWirelessMode> list,
+    List<WifiWirelessMode> availablelist,
     void Function(WifiWirelessMode) onSelected,
   ) async {
     WifiWirelessMode selected = mode;
@@ -812,6 +824,13 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
                         title: getWifiWirelessModeTitle(
                             context, e, defaultMixedMode),
                         value: e,
+                        // enabled: availablelist.contains(e),
+                        subTitleWidget: !availablelist.contains(e)
+                            ? AppText.bodySmall(
+                                loc(context).wifiModeNotAvailable,
+                                color: Theme.of(context).colorScheme.error,
+                              )
+                            : null,
                       ))
                   .toList(),
               onChanged: (index, selectedType) {
@@ -900,6 +919,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
   _showChannelWidthModal(
     WifiChannelWidth channelWidth,
     List<WifiChannelWidth> list,
+    List<WifiChannelWidth> validList,
     void Function(WifiChannelWidth) onSelected,
   ) async {
     WifiChannelWidth selected = channelWidth;
@@ -921,6 +941,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
                             e,
                           ),
                           value: e,
+                          enabled: validList.contains(e),
                         ))
                     .toList(),
                 onChanged: (index, selectedType) {
@@ -1124,5 +1145,102 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
       ),
     );
     return advanced;
+  }
+
+  /// Filters the list of available channel widths based on the selected wireless mode.
+  ///
+  /// [mode] The currently selected Wireless mode from the UI.
+  /// [list] The full list of all possible channel widths.
+  /// @returns A list of channel widths supported by the specified mode.
+  List<WifiChannelWidth> getAvailableChannelWidths(
+      WifiWirelessMode mode, List<WifiChannelWidth> list) {
+    // Determine the maximum channel width supported by this mode
+    WifiChannelWidth maxSupportedWidth = WifiChannelWidth.wide20;
+
+    switch (mode) {
+      // 802.11be (Wi-Fi 7) supports 320MHz
+      case WifiWirelessMode.anacaxbe:
+      case WifiWirelessMode.axbe:
+        maxSupportedWidth = WifiChannelWidth.wide320;
+        break;
+
+      // 802.11ax (Wi-Fi 6/6E) supports up to 160MHz
+      case WifiWirelessMode.ax:
+      case WifiWirelessMode.anacax:
+      case WifiWirelessMode.bgnax:
+        // Includes both contiguous and non-contiguous 160MHz options
+        maxSupportedWidth = WifiChannelWidth.wide160nc;
+        break;
+
+      // 802.11ac (Wi-Fi 5) supports 80MHz (160MHz is optional, conservatively set to 80MHz)
+      case WifiWirelessMode.ac:
+      case WifiWirelessMode.anac:
+      case WifiWirelessMode.bgnac:
+        maxSupportedWidth = WifiChannelWidth.wide80;
+        break;
+
+      // 802.11n (Wi-Fi 4) supports 40MHz
+      case WifiWirelessMode.n:
+      case WifiWirelessMode.an:
+      case WifiWirelessMode.bn:
+      case WifiWirelessMode.gn:
+      case WifiWirelessMode.bgn:
+        maxSupportedWidth = WifiChannelWidth.wide40;
+        break;
+
+      // 802.11a/b/g and other legacy modes only support 20MHz
+      case WifiWirelessMode.a:
+      case WifiWirelessMode.b:
+      case WifiWirelessMode.g:
+      case WifiWirelessMode.bg:
+      default:
+        // maxSupportedWidth remains wide20
+        break;
+    }
+
+    // 'mixed' mode is assumed to support the highest spec available (320MHz)
+    if (mode == WifiWirelessMode.mixed) {
+      maxSupportedWidth = WifiChannelWidth.wide320;
+    }
+
+    // Filtering Logic: Only include 'Auto' and widths less than or equal to the maximum supported width.
+    // We rely on the enum's index order (20 < 40 < 80 < 160c < 160nc < 320).
+    return list.where((width) {
+      if (width == WifiChannelWidth.auto) {
+        return true;
+      }
+
+      return width.index <= maxSupportedWidth.index;
+    }).toList();
+  }
+
+  /// Filters a list of wireless modes to find those that support the selected channel width.
+  ///
+  /// This function verifies which modes' maximum supported width is greater than
+  /// or equal to the selected [channelWidth].
+  ///
+  /// [channelWidth] The channel width selected by the user (e.g., wide80).
+  /// [modes] The full list of all available wireless modes.
+  /// @returns A list of WifiWirelessMode that are valid for the selected channelWidth.
+  List<WifiWirelessMode> validWirelessModeForChannelWidth(
+      WifiChannelWidth channelWidth, List<WifiWirelessMode> modes) {
+    // If the selected width is 'Auto', all modes are considered valid choices
+    // as 'Auto' means the device will negotiate a supported width.
+    if (channelWidth == WifiChannelWidth.auto) {
+      return modes.toList();
+    }
+
+    // The required channel width index for filtering
+    final int requiredWidthIndex = channelWidth.index;
+
+    // Filter the list of modes
+    return modes.where((mode) {
+      // Access the max supported width directly from the enum's getter
+      final int maxModeWidthIndex = mode.maxSupportedWidth.index;
+
+      // The mode is valid if its maximum supported width index is greater than
+      // or equal to the required width index.
+      return maxModeWidthIndex >= requiredWidthIndex;
+    }).toList();
   }
 }
