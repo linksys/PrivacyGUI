@@ -337,7 +337,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
     required WifiSecurityType securityType,
     required List<WiFiItem> mainWiFi,
   }) {
-    logger.i('[WiFiListView] setQuickSetup: $ssid, $password, $securityType');
+    logger.i('[WiFiListView] setQuickSetup');
     for (var radio in mainWiFi) {
       // Only update enabled WiFi
       if (!radio.isEnabled) continue;
