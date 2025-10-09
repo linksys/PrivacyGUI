@@ -14,7 +14,8 @@ import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/guest_wifi_item.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_state.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/wifi_view_provider.dart';
+import 'package:privacy_gui/page/wifi_settings/views/advanced_mode_view.dart';
+import 'package:privacy_gui/page/wifi_settings/views/simple_mode_view.dart';
 import 'package:privacy_gui/validator_rules/_validator_rules.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
@@ -39,6 +40,10 @@ class WiFiListView extends ArgumentsConsumerStatefulView {
 class _WiFiListViewState extends ConsumerState<WiFiListView>
     with PageSnackbarMixin {
   WiFiState? _preservedMainWiFiState;
+
+  final _simpleWifiNameController = TextEditingController();
+  final _simpleWifiPasswordController = TextEditingController();
+  WifiSecurityType? _simpleSecurityType;
 
   final Map<String, TextEditingController> _advancedPasswordController = {};
   final InputValidator wifiSSIDValidator = InputValidator([
@@ -78,6 +83,8 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
   @override
   void dispose() {
     super.dispose();
+    _simpleWifiNameController.dispose();
+    _simpleWifiPasswordController.dispose();
     for (var element in _advancedPasswordController.values) {
       element.dispose();
     }
@@ -98,42 +105,121 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
                 .equals(_preservedMainWiFiState?.mainWiFi, state.mainWiFi) ||
             _preservedMainWiFiState?.guestWiFi != state.guestWiFi) &&
         _dataVerify(state);
-    final wifiBands =
-        state.mainWiFi.map((e) => e.radioID.bandName).toList().join(', ');
 
     return StyledAppPageView(
       appBarStyle: AppBarStyle.none,
       hideTopbar: true,
       scrollable: true,
-      // controller: _scrollController,
       padding: EdgeInsets.zero,
       bottomBar: PageBottomBar(
-          isPositiveEnabled: isPositiveEnabled,
-          onPositiveTap: () {
-            _showSaveConfirmModal();
-          }),
+        isPositiveEnabled: isPositiveEnabled,
+        onPositiveTap: () {
+          if (ref.read(wifiListProvider).isSimpleMode) {
+            setQuickSetup(
+              ssid: _simpleWifiNameController.text,
+              password: _simpleWifiPasswordController.text,
+              securityType: _simpleSecurityType!,
+              mainWiFi: state.mainWiFi,
+            );
+          }
+          _showSaveConfirmModal();
+        },
+      ),
       useMainPadding: true,
-      child: (context, constraints) => ResponsiveLayout(
-          desktop: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _wifiDescription(wifiBands),
-              const AppGap.medium(),
-              _quickSetup(state.mainWiFi),
-              const AppGap.medium(),
-              Expanded(child: _wifiContentView()),
-            ],
-          ),
-          mobile: Column(
-            children: [
-              _wifiDescription(wifiBands),
-              const AppGap.medium(),
-              _quickSetup(state.mainWiFi),
-              const AppGap.medium(),
-              Expanded(child: _wifiContentView()),
-            ],
-          )),
+      child: (context, constraints) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _advancedModeSwitch(),
+            const AppGap.medium(),
+            if (state.isSimpleMode)
+              SimpleModeView(
+                simpleWifiNameController: _simpleWifiNameController,
+                simpleWifiPasswordController: _simpleWifiPasswordController,
+                simpleSecurityType: _simpleSecurityType,
+                onSecurityTypeChanged: (value) {
+                  setState(() {
+                    _simpleSecurityType = value;
+                  });
+                },
+                guestWiFiCard: (state, {lastInRow = false}) =>
+                    _guestWiFiCard(state, lastInRow),
+              )
+            else
+              AdvancedModeView(
+                wifiDescription: (wifiBands) => _wifiDescription(wifiBands),
+                quickSetup: (mainWiFi) => _quickSetup(mainWiFi),
+                mainWiFiCard: (radio, canBeDisable, {lastInRow = false}) =>
+                    _mainWiFiCard(radio, canBeDisable, lastInRow),
+                guestWiFiCard: (state, {lastInRow = false}) =>
+                    _guestWiFiCard(state, lastInRow),
+              ),
+          ],
+        );
+      },
     );
+  }
+
+  Widget _advancedModeSwitch() {
+    final isSimpleMode =
+        ref.watch(wifiListProvider.select((value) => value.isSimpleMode));
+    return AppCard(
+      child: AppListCard(
+        title: AppText.labelLarge(loc(context).advancedMode),
+        trailing: AppSwitch(
+          value: !isSimpleMode,
+          onChanged: (value) {
+            if (value) {
+              final state = ref.read(wifiListProvider);
+              setQuickSetup(
+                ssid: _simpleWifiNameController.text,
+                password: _simpleWifiPasswordController.text,
+                securityType: _simpleSecurityType!,
+                mainWiFi: state.mainWiFi,
+              );
+            }
+            ref.read(wifiListProvider.notifier).setSimpleMode(!value);
+            if (!value) {
+              // from advanced to simple
+              final state = ref.read(wifiListProvider);
+              final firstEnabledWifi =
+                  state.mainWiFi.firstWhereOrNull((e) => e.isEnabled);
+              if (firstEnabledWifi != null) {
+                _simpleWifiNameController.text = firstEnabledWifi.ssid;
+                _simpleWifiPasswordController.text = firstEnabledWifi.password;
+                setState(() {
+                  _simpleSecurityType = firstEnabledWifi.securityType;
+                });
+              }
+            }
+          },
+        ),
+      ),
+    );
+  }
+
+  void setQuickSetup({
+    required String ssid,
+    required String password,
+    required WifiSecurityType securityType,
+    required List<WiFiItem> mainWiFi,
+  }) {
+    logger.i('[WiFiListView] setQuickSetup');
+    for (var radio in mainWiFi) {
+      // Only update enabled WiFi
+      if (!radio.isEnabled) continue;
+      // SSID
+      ref.read(wifiListProvider.notifier).setWiFiSSID(ssid, radio.radioID);
+      // Password
+      ref
+          .read(wifiListProvider.notifier)
+          .setWiFiPassword(password, radio.radioID);
+      _advancedPasswordController[radio.radioID.value]?.text = password;
+      // Security type
+      ref
+          .read(wifiListProvider.notifier)
+          .setWiFiSecurityType(securityType, radio.radioID);
+    }
   }
 
   Widget _wifiDescription(String wifiBands) {
@@ -331,113 +417,6 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
     );
   }
 
-  void setQuickSetup({
-    required String ssid,
-    required String password,
-    required WifiSecurityType securityType,
-    required List<WiFiItem> mainWiFi,
-  }) {
-    logger.i('[WiFiListView] setQuickSetup');
-    for (var radio in mainWiFi) {
-      // Only update enabled WiFi
-      if (!radio.isEnabled) continue;
-      // SSID
-      ref.read(wifiListProvider.notifier).setWiFiSSID(ssid, radio.radioID);
-      // Password
-      ref
-          .read(wifiListProvider.notifier)
-          .setWiFiPassword(password, radio.radioID);
-      _advancedPasswordController[radio.radioID.value]?.text = password;
-      // Security type
-      ref
-          .read(wifiListProvider.notifier)
-          .setWiFiSecurityType(securityType, radio.radioID);
-    }
-  }
-
-  Widget _wifiContentView() {
-    final state = ref.watch(wifiListProvider);
-
-    final columnCount = ResponsiveLayout.isOverExtraLargeLayout(context)
-        ? 4
-        : ResponsiveLayout.isOverLargeLayout(context)
-            ? 3
-            : ResponsiveLayout.isOverMedimumLayout(context)
-                ? 3
-                : 2;
-    final fixedWidth = ResponsiveLayout.isOverExtraLargeLayout(context)
-        ? 3.col
-        : ResponsiveLayout.isOverLargeLayout(context)
-            ? 4.col
-            : ResponsiveLayout.isOverMedimumLayout(context)
-                ? 4.col
-                : ResponsiveLayout.isOverSmallLayout(context)
-                    ? 4.col
-                    : 2.col;
-    final columnWidths = Map.fromEntries(
-        List.generate(columnCount, (index) => index).map((e) => e ==
-                columnCount - 1
-            ? MapEntry(e, FixedColumnWidth(fixedWidth))
-            : MapEntry(
-                e,
-                FixedColumnWidth(
-                    fixedWidth + ResponsiveLayout.columnPadding(context)))));
-
-    final enabledWiFiCount = state.mainWiFi.where((e) => e.isEnabled).length;
-    final canDisableAllMainWiFi =
-        ref.watch(wifiListProvider).canDisableMainWiFi;
-    final canBeDisabled = enabledWiFiCount > 1 || canDisableAllMainWiFi;
-    final children = [
-      columnCount > state.mainWiFi.length
-          ? TableRow(children: [
-              ...state.mainWiFi
-                  .mapIndexed((index, e) =>
-                      _mainWiFiCard(e, canBeDisabled, index == columnCount - 1))
-                  .toList(),
-              _guestWiFiCard(state.guestWiFi, true),
-            ])
-          : columnCount == state.mainWiFi.length
-              ? TableRow(children: [
-                  ...state.mainWiFi
-                      .mapIndexed((index, e) => _mainWiFiCard(
-                          e, canBeDisabled, index == columnCount - 1))
-                      .toList(),
-                ])
-              : TableRow(children: [
-                  ...state.mainWiFi
-                      .take(columnCount)
-                      .mapIndexed((index, e) => _mainWiFiCard(
-                          e, canBeDisabled, index == columnCount - 1))
-                      .toList(),
-                ]),
-      if (columnCount <= state.mainWiFi.length)
-        columnCount == state.mainWiFi.length
-            ? TableRow(children: [
-                _guestWiFiCard(state.guestWiFi, false),
-                ...List.filled(columnCount - 1, 0).map(
-                  (_) => const SizedBox.shrink(),
-                ),
-              ])
-            : TableRow(children: [
-                ...state.mainWiFi
-                    .getRange(columnCount, state.mainWiFi.length)
-                    .mapIndexed((index, e) => _mainWiFiCard(
-                        e, canBeDisabled, index == columnCount - 1))
-                    .toList(),
-                _guestWiFiCard(state.guestWiFi, true),
-              ])
-    ];
-
-    return AppBasicLayout(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        content: Table(
-          border: const TableBorder(),
-          columnWidths: columnWidths,
-          defaultVerticalAlignment: TableCellVerticalAlignment.top,
-          children: children,
-        ));
-  }
-
   Widget _guestWiFiCard(GuestWiFiItem state, [bool lastInRow = false]) {
     final isSupportGuestWiFi = serviceHelper.isSupportGuestNetwork();
     return isSupportGuestWiFi
@@ -464,7 +443,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
               ],
             ),
           )
-        : SizedBox.shrink();
+        : const SizedBox.shrink();
   }
 
   Widget _mainWiFiCard(WiFiItem radio, bool canBeDisable,
@@ -512,7 +491,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
   Widget _guestWiFiBandCard(GuestWiFiItem state) => AppListCard(
         showBorder: false,
         padding: const EdgeInsets.symmetric(vertical: 8.0),
-        title: AppText.labelLarge(loc(context).guest),
+        title: AppText.labelLarge(loc(context).guestNetwork),
         trailing: AppSwitch(
           semanticLabel: 'guest',
           value: state.isEnabled,
@@ -1266,6 +1245,13 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
           .read(wifiViewProvider.notifier)
           .setWifiListViewStateChanged(state != _preservedMainWiFiState);
       updateController(state);
+      final firstEnabledWifi =
+          state.mainWiFi.firstWhereOrNull((e) => e.isEnabled);
+      if (firstEnabledWifi != null) {
+        _simpleWifiNameController.text = firstEnabledWifi.ssid;
+        _simpleWifiPasswordController.text = firstEnabledWifi.password;
+        _simpleSecurityType = firstEnabledWifi.securityType;
+      }
     });
   }
 
