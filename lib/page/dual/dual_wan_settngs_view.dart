@@ -469,59 +469,59 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
             items: wan.supportedWANType,
             label: (value) => value,
             onChanged: (value) {
-              onChanged(wan.copyWith(ipv4ConnectionType: value));
+              onChanged(wan.copyWith(wanType: value));
             },
           ),
           const AppGap.medium(),
           if (wan.wanType != 'DHCP')
             _buildWANSettingsForm(isPrimary, wan, onChanged),
-          // AppText.labelLarge(loc(context).mtu),
-          // AppTextField.minMaxNumber(
-          //   key: ValueKey('${isPrimary ? 'primary' : 'secondary'}MtuSizeText'),
-          //   controller: isPrimary
-          //       ? _primaryMTUSizeController
-          //       : _secondaryMTUSizeController,
-          //   errorText: _errors[isPrimary
-          //       ? _primaryMTUSizeController
-          //       : _secondaryMTUSizeController],
-          //   border: const OutlineInputBorder(),
-          //   inputType: TextInputType.number,
-          //   min: 576,
-          //   max: NetworkUtils.getMaxMtu(wan.ipv4ConnectionType),
-          //   onChanged: (value) {
-          //     final intVal = int.tryParse(value) ?? 0;
-          //     // 0 means Auto
-          //     if (intVal == 0 ||
-          //         (576 <= intVal &&
-          //             intVal <=
-          //                 NetworkUtils.getMaxMtu(wan.ipv4ConnectionType))) {
-          //       _errors.remove(isPrimary
-          //           ? _primaryMTUSizeController
-          //           : _secondaryMTUSizeController);
-          //     } else {
-          //       // invalid valude
-          //       _errors[isPrimary
-          //           ? _primaryMTUSizeController
-          //           : _secondaryMTUSizeController] = loc(context).invalidNumber;
-          //     }
-          //   },
-          //   onFocusChanged: (focus) {
-          //     if (!focus) {
-          //       final intVal = int.tryParse(isPrimary
-          //               ? _primaryMTUSizeController.text
-          //               : _secondaryMTUSizeController.text) ??
-          //           0;
-          //       // 0 means Auto
-          //       if (intVal == 0 ||
-          //           (576 <= intVal &&
-          //               intVal <=
-          //                   NetworkUtils.getMaxMtu(wan.ipv4ConnectionType))) {
-          //         onChanged(wan.copyWith(mtu: intVal));
-          //       }
-          //       setState(() {});
-          //     }
-          //   },
-          // ),
+          AppText.labelLarge(loc(context).mtu),
+          AppTextField.minMaxNumber(
+            key: ValueKey('${isPrimary ? 'primary' : 'secondary'}MtuSizeText'),
+            controller: isPrimary
+                ? _primaryMTUSizeController
+                : _secondaryMTUSizeController,
+            errorText: _errors[isPrimary
+                ? _primaryMTUSizeController
+                : _secondaryMTUSizeController],
+            border: const OutlineInputBorder(),
+            inputType: TextInputType.number,
+            min: 576,
+            max: NetworkUtils.getMaxMtu(wan.wanType),
+            onChanged: (value) {
+              final intVal = int.tryParse(value) ?? 0;
+              // 0 means Auto
+              if (intVal == 0 ||
+                  (576 <= intVal &&
+                      intVal <=
+                          NetworkUtils.getMaxMtu(wan.wanType))) {
+                _errors.remove(isPrimary
+                    ? _primaryMTUSizeController
+                    : _secondaryMTUSizeController);
+              } else {
+                // invalid valude
+                _errors[isPrimary
+                    ? _primaryMTUSizeController
+                    : _secondaryMTUSizeController] = loc(context).invalidNumber;
+              }
+            },
+            onFocusChanged: (focus) {
+              if (!focus) {
+                final intVal = int.tryParse(isPrimary
+                        ? _primaryMTUSizeController.text
+                        : _secondaryMTUSizeController.text) ??
+                    0;
+                // 0 means Auto
+                if (intVal == 0 ||
+                    (576 <= intVal &&
+                        intVal <=
+                            NetworkUtils.getMaxMtu(wan.wanType))) {
+                  onChanged(wan.copyWith(mtu: intVal));
+                }
+                setState(() {});
+              }
+            },
+          ),
           const Divider(height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,

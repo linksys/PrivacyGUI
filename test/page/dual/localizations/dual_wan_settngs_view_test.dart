@@ -120,7 +120,7 @@ void main() {
           testDualWANSettingsState.copyWith(
               settings: testDualWANSettingsState.settings.copyWith(
                   primaryWAN: testDualWANSettingsState.settings.primaryWAN.copyWith(
-                      ipv4ConnectionType: 'Static',
+                      wanType: 'Static',
                       staticIpAddress: () => '10.123.1.89',
                       networkPrefixLength: () => 24,
                       staticGateway: () => '10.123.1.1',
@@ -130,7 +130,7 @@ void main() {
         return testDualWANSettingsState.copyWith(
             settings: testDualWANSettingsState.settings.copyWith(
                 primaryWAN: testDualWANSettingsState.settings.primaryWAN.copyWith(
-                    ipv4ConnectionType: 'Static',
+                    wanType: 'Static',
                     staticIpAddress: () => '10.123.1.89',
                     networkPrefixLength: () => 24,
                     staticGateway: () => '10.123.1.1',
@@ -148,7 +148,7 @@ void main() {
           testDualWANSettingsState.copyWith(
               settings: testDualWANSettingsState.settings.copyWith(
                   primaryWAN: testDualWANSettingsState.settings.primaryWAN.copyWith(
-                      ipv4ConnectionType: 'PPPoE',
+                      wanType: 'PPPoE',
                       username: () => 'username',
                       password: () => 'password',
                       serviceName: () => 'serviceName'))));
@@ -157,7 +157,7 @@ void main() {
         return testDualWANSettingsState.copyWith(
             settings: testDualWANSettingsState.settings.copyWith(
                 primaryWAN: testDualWANSettingsState.settings.primaryWAN.copyWith(
-                    ipv4ConnectionType: 'PPPoE',
+                    wanType: 'PPPoE',
                     username: () => 'username',
                     password: () => 'password',
                     serviceName: () => 'serviceName')));
@@ -174,7 +174,7 @@ void main() {
           testDualWANSettingsState.copyWith(
               settings: testDualWANSettingsState.settings.copyWith(
                   primaryWAN: testDualWANSettingsState.settings.primaryWAN.copyWith(
-                      ipv4ConnectionType: 'PPTP',
+                      wanType: 'PPTP',
                       username: () => 'username',
                       password: () => 'password',
                       serviceName: () => 'serviceName'))));
@@ -183,7 +183,7 @@ void main() {
         return testDualWANSettingsState.copyWith(
             settings: testDualWANSettingsState.settings.copyWith(
                 primaryWAN: testDualWANSettingsState.settings.primaryWAN.copyWith(
-                    ipv4ConnectionType: 'PPTP',
+                    wanType: 'PPTP',
                     username: () => 'username',
                     password: () => 'password',
                     serviceName: () => 'serviceName')));
@@ -201,7 +201,7 @@ void main() {
           testDualWANSettingsState.copyWith(
               settings: testDualWANSettingsState.settings.copyWith(
                   primaryWAN: testDualWANSettingsState.settings.primaryWAN.copyWith(
-                      ipv4ConnectionType: 'Static',
+                      wanType: 'Static',
                       staticIpAddress: () => '10.123.1.89',
                       networkPrefixLength: () => 24,
                       staticGateway: () => '10.123.1.1',
@@ -211,7 +211,7 @@ void main() {
         return testDualWANSettingsState.copyWith(
             settings: testDualWANSettingsState.settings.copyWith(
                 primaryWAN: testDualWANSettingsState.settings.primaryWAN.copyWith(
-                    ipv4ConnectionType: 'Static',
+                    wanType: 'Static',
                     staticIpAddress: () => '10.123.1.89',
                     networkPrefixLength: () => 24,
                     staticGateway: () => '10.123.1.1',
@@ -236,7 +236,7 @@ void main() {
           testDualWANSettingsState.copyWith(
               settings: testDualWANSettingsState.settings.copyWith(
                   primaryWAN: testDualWANSettingsState.settings.primaryWAN.copyWith(
-                      ipv4ConnectionType: 'Static',
+                      wanType: 'Static',
                       staticIpAddress: () => '10.123.1.89',
                       networkPrefixLength: () => 24,
                       staticGateway: () => '10.123.1.1',
@@ -246,7 +246,7 @@ void main() {
         return testDualWANSettingsState.copyWith(
             settings: testDualWANSettingsState.settings.copyWith(
                 primaryWAN: testDualWANSettingsState.settings.primaryWAN.copyWith(
-                    ipv4ConnectionType: 'Static',
+                    wanType: 'Static',
                     staticIpAddress: () => '10.123.1.89',
                     networkPrefixLength: () => 24,
                     staticGateway: () => '10.123.1.1',
@@ -271,7 +271,7 @@ void main() {
           testDualWANSettingsState.copyWith(
               settings: testDualWANSettingsState.settings.copyWith(
                   primaryWAN: testDualWANSettingsState.settings.primaryWAN.copyWith(
-                      ipv4ConnectionType: 'Static',
+                      wanType: 'Static',
                       staticIpAddress: () => '10.123.1.89',
                       networkPrefixLength: () => 24,
                       staticGateway: () => '10.123.1.1',
@@ -281,7 +281,7 @@ void main() {
         return testDualWANSettingsState.copyWith(
             settings: testDualWANSettingsState.settings.copyWith(
                 primaryWAN: testDualWANSettingsState.settings.primaryWAN.copyWith(
-                    ipv4ConnectionType: 'Static',
+                    wanType: 'Static',
                     staticIpAddress: () => '10.123.1.89',
                     networkPrefixLength: () => 24,
                     staticGateway: () => '10.123.1.1',
@@ -306,7 +306,7 @@ void main() {
           testDualWANSettingsState.copyWith(
               settings: testDualWANSettingsState.settings.copyWith(
                   primaryWAN: testDualWANSettingsState.settings.primaryWAN.copyWith(
-                      ipv4ConnectionType: 'PPPoE',
+                      wanType: 'PPPoE',
                       username: () => 'username',
                       password: () => 'password'))));
       when(mockDualWANSettingsNotifier.fetch()).thenAnswer((_) async {
@@ -314,7 +314,7 @@ void main() {
         return testDualWANSettingsState.copyWith(
             settings: testDualWANSettingsState.settings.copyWith(
                 primaryWAN: testDualWANSettingsState.settings.primaryWAN.copyWith(
-                    ipv4ConnectionType: 'PPPoE',
+                    wanType: 'PPPoE',
                     username: () => 'username',
                     password: () => 'password')));
       });
@@ -339,7 +339,7 @@ void main() {
           testDualWANSettingsState.copyWith(
               settings: testDualWANSettingsState.settings.copyWith(
                   primaryWAN: testDualWANSettingsState.settings.primaryWAN.copyWith(
-                      ipv4ConnectionType: 'PPPoE',
+                      wanType: 'PPPoE',
                       username: () => 'username',
                       password: () => 'password'))));
       when(mockDualWANSettingsNotifier.fetch()).thenAnswer((_) async {
@@ -347,7 +347,7 @@ void main() {
         return testDualWANSettingsState.copyWith(
             settings: testDualWANSettingsState.settings.copyWith(
                 primaryWAN: testDualWANSettingsState.settings.primaryWAN.copyWith(
-                    ipv4ConnectionType: 'PPPoE',
+                    wanType: 'PPPoE',
                     username: () => 'username',
                     password: () => 'password')));
       });
@@ -372,7 +372,7 @@ void main() {
           testDualWANSettingsState.copyWith(
               settings: testDualWANSettingsState.settings.copyWith(
                   primaryWAN: testDualWANSettingsState.settings.primaryWAN.copyWith(
-                      ipv4ConnectionType: 'PPTP',
+                      wanType: 'PPTP',
                       username: () => 'username',
                       password: () => 'password'))));
       when(mockDualWANSettingsNotifier.fetch()).thenAnswer((_) async {
@@ -380,7 +380,7 @@ void main() {
         return testDualWANSettingsState.copyWith(
             settings: testDualWANSettingsState.settings.copyWith(
                 primaryWAN: testDualWANSettingsState.settings.primaryWAN.copyWith(
-                    ipv4ConnectionType: 'PPTP',
+                    wanType: 'PPTP',
                     username: () => 'username',
                     password: () => 'password')));
       });
@@ -405,7 +405,7 @@ void main() {
           testDualWANSettingsState.copyWith(
               settings: testDualWANSettingsState.settings.copyWith(
                   primaryWAN: testDualWANSettingsState.settings.primaryWAN.copyWith(
-                      ipv4ConnectionType: 'PPTP',
+                      wanType: 'PPTP',
                       username: () => 'username',
                       password: () => 'password'))));
       when(mockDualWANSettingsNotifier.fetch()).thenAnswer((_) async {
@@ -413,7 +413,7 @@ void main() {
         return testDualWANSettingsState.copyWith(
             settings: testDualWANSettingsState.settings.copyWith(
                 primaryWAN: testDualWANSettingsState.settings.primaryWAN.copyWith(
-                    ipv4ConnectionType: 'PPTP',
+                    wanType: 'PPTP',
                     username: () => 'username',
                     password: () => 'password')));
       });
@@ -439,7 +439,7 @@ void main() {
           testDualWANSettingsState.copyWith(
               settings: testDualWANSettingsState.settings.copyWith(
                   secondaryWAN: testDualWANSettingsState.settings.secondaryWAN.copyWith(
-                      ipv4ConnectionType: 'Static',
+                      wanType: 'Static',
                       staticIpAddress: () => '10.123.1.89',
                       networkPrefixLength: () => 24,
                       staticGateway: () => '10.123.1.1',
@@ -449,7 +449,7 @@ void main() {
         return testDualWANSettingsState.copyWith(
             settings: testDualWANSettingsState.settings.copyWith(
                 secondaryWAN: testDualWANSettingsState.settings.secondaryWAN.copyWith(
-                    ipv4ConnectionType: 'Static',
+                    wanType: 'Static',
                     staticIpAddress: () => '10.123.1.89',
                     networkPrefixLength: () => 24,
                     staticGateway: () => '10.123.1.1',
@@ -466,7 +466,7 @@ void main() {
           testDualWANSettingsState.copyWith(
               settings: testDualWANSettingsState.settings.copyWith(
                   secondaryWAN: testDualWANSettingsState.settings.secondaryWAN.copyWith(
-                      ipv4ConnectionType: 'PPPoE',
+                      wanType: 'PPPoE',
                       username: () => 'username',
                       password: () => 'password',
                       serviceName: () => 'serviceName'))));
@@ -475,7 +475,7 @@ void main() {
         return testDualWANSettingsState.copyWith(
             settings: testDualWANSettingsState.settings.copyWith(
                 secondaryWAN: testDualWANSettingsState.settings.secondaryWAN.copyWith(
-                    ipv4ConnectionType: 'PPPoE',
+                    wanType: 'PPPoE',
                     username: () => 'username',
                     password: () => 'password',
                     serviceName: () => 'serviceName')));
@@ -492,7 +492,7 @@ void main() {
           testDualWANSettingsState.copyWith(
               settings: testDualWANSettingsState.settings.copyWith(
                   secondaryWAN: testDualWANSettingsState.settings.secondaryWAN.copyWith(
-                      ipv4ConnectionType: 'PPTP',
+                      wanType: 'PPTP',
                       username: () => 'username',
                       password: () => 'password',
                       serviceName: () => 'serviceName'))));
@@ -501,7 +501,7 @@ void main() {
         return testDualWANSettingsState.copyWith(
             settings: testDualWANSettingsState.settings.copyWith(
                 secondaryWAN: testDualWANSettingsState.settings.secondaryWAN.copyWith(
-                    ipv4ConnectionType: 'PPTP',
+                    wanType: 'PPTP',
                     username: () => 'username',
                     password: () => 'password',
                     serviceName: () => 'serviceName')));
@@ -519,7 +519,7 @@ void main() {
           testDualWANSettingsState.copyWith(
               settings: testDualWANSettingsState.settings.copyWith(
                   secondaryWAN: testDualWANSettingsState.settings.secondaryWAN.copyWith(
-                      ipv4ConnectionType: 'Static',
+                      wanType: 'Static',
                       staticIpAddress: () => '10.123.1.89',
                       networkPrefixLength: () => 24,
                       staticGateway: () => '10.123.1.1',
@@ -529,7 +529,7 @@ void main() {
         return testDualWANSettingsState.copyWith(
             settings: testDualWANSettingsState.settings.copyWith(
                 secondaryWAN: testDualWANSettingsState.settings.secondaryWAN.copyWith(
-                    ipv4ConnectionType: 'Static',
+                    wanType: 'Static',
                     staticIpAddress: () => '10.123.1.89',
                     networkPrefixLength: () => 24,
                     staticGateway: () => '10.123.1.1',
@@ -555,7 +555,7 @@ void main() {
           testDualWANSettingsState.copyWith(
               settings: testDualWANSettingsState.settings.copyWith(
                   secondaryWAN: testDualWANSettingsState.settings.secondaryWAN.copyWith(
-                      ipv4ConnectionType: 'Static',
+                      wanType: 'Static',
                       staticIpAddress: () => '10.123.1.89',
                       networkPrefixLength: () => 24,
                       staticGateway: () => '10.123.1.1',
@@ -565,7 +565,7 @@ void main() {
         return testDualWANSettingsState.copyWith(
             settings: testDualWANSettingsState.settings.copyWith(
                 secondaryWAN: testDualWANSettingsState.settings.secondaryWAN.copyWith(
-                    ipv4ConnectionType: 'Static',
+                    wanType: 'Static',
                     staticIpAddress: () => '10.123.1.89',
                     networkPrefixLength: () => 24,
                     staticGateway: () => '10.123.1.1',
@@ -590,7 +590,7 @@ void main() {
           testDualWANSettingsState.copyWith(
               settings: testDualWANSettingsState.settings.copyWith(
                   secondaryWAN: testDualWANSettingsState.settings.secondaryWAN.copyWith(
-                      ipv4ConnectionType: 'Static',
+                      wanType: 'Static',
                       staticIpAddress: () => '10.123.1.89',
                       networkPrefixLength: () => 24,
                       staticGateway: () => '10.123.1.1',
@@ -600,7 +600,7 @@ void main() {
         return testDualWANSettingsState.copyWith(
             settings: testDualWANSettingsState.settings.copyWith(
                 secondaryWAN: testDualWANSettingsState.settings.secondaryWAN.copyWith(
-                    ipv4ConnectionType: 'Static',
+                    wanType: 'Static',
                     staticIpAddress: () => '10.123.1.89',
                     networkPrefixLength: () => 24,
                     staticGateway: () => '10.123.1.1',
@@ -625,7 +625,7 @@ void main() {
           testDualWANSettingsState.copyWith(
               settings: testDualWANSettingsState.settings.copyWith(
                   secondaryWAN: testDualWANSettingsState.settings.secondaryWAN.copyWith(
-                      ipv4ConnectionType: 'PPPoE',
+                      wanType: 'PPPoE',
                       username: () => 'username',
                       password: () => 'password'))));
       when(mockDualWANSettingsNotifier.fetch()).thenAnswer((_) async {
@@ -633,7 +633,7 @@ void main() {
         return testDualWANSettingsState.copyWith(
             settings: testDualWANSettingsState.settings.copyWith(
                 secondaryWAN: testDualWANSettingsState.settings.secondaryWAN.copyWith(
-                    ipv4ConnectionType: 'PPPoE',
+                    wanType: 'PPPoE',
                     username: () => 'username',
                     password: () => 'password')));
       });
@@ -658,7 +658,7 @@ void main() {
           testDualWANSettingsState.copyWith(
               settings: testDualWANSettingsState.settings.copyWith(
                   secondaryWAN: testDualWANSettingsState.settings.secondaryWAN.copyWith(
-                      ipv4ConnectionType: 'PPPoE',
+                      wanType: 'PPPoE',
                       username: () => 'username',
                       password: () => 'password'))));
       when(mockDualWANSettingsNotifier.fetch()).thenAnswer((_) async {
@@ -666,7 +666,7 @@ void main() {
         return testDualWANSettingsState.copyWith(
             settings: testDualWANSettingsState.settings.copyWith(
                 secondaryWAN: testDualWANSettingsState.settings.secondaryWAN.copyWith(
-                    ipv4ConnectionType: 'PPPoE',
+                    wanType: 'PPPoE',
                     username: () => 'username',
                     password: () => 'password')));
       });
@@ -691,7 +691,7 @@ void main() {
           testDualWANSettingsState.copyWith(
               settings: testDualWANSettingsState.settings.copyWith(
                   secondaryWAN: testDualWANSettingsState.settings.secondaryWAN.copyWith(
-                      ipv4ConnectionType: 'PPTP',
+                      wanType: 'PPTP',
                       username: () => 'username',
                       password: () => 'password'))));
       when(mockDualWANSettingsNotifier.fetch()).thenAnswer((_) async {
@@ -699,7 +699,7 @@ void main() {
         return testDualWANSettingsState.copyWith(
             settings: testDualWANSettingsState.settings.copyWith(
                 secondaryWAN: testDualWANSettingsState.settings.secondaryWAN.copyWith(
-                    ipv4ConnectionType: 'PPTP',
+                    wanType: 'PPTP',
                     username: () => 'username',
                     password: () => 'password')));
       });
@@ -724,7 +724,7 @@ void main() {
           testDualWANSettingsState.copyWith(
               settings: testDualWANSettingsState.settings.copyWith(
                   secondaryWAN: testDualWANSettingsState.settings.secondaryWAN.copyWith(
-                      ipv4ConnectionType: 'PPTP',
+                      wanType: 'PPTP',
                       username: () => 'username',
                       password: () => 'password'))));
       when(mockDualWANSettingsNotifier.fetch()).thenAnswer((_) async {
@@ -732,7 +732,7 @@ void main() {
         return testDualWANSettingsState.copyWith(
             settings: testDualWANSettingsState.settings.copyWith(
                 secondaryWAN: testDualWANSettingsState.settings.secondaryWAN.copyWith(
-                    ipv4ConnectionType: 'PPTP',
+                    wanType: 'PPTP',
                     username: () => 'username',
                     password: () => 'password')));
       });

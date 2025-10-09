@@ -79,8 +79,8 @@ class DualWANConfiguration extends Equatable {
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
-      'ipv4ConnectionType': wanType,
-      'supportedIPv4ConnectionType': supportedWANType,
+      'wanType': wanType,
+      'supportedWANType': supportedWANType,
       'mtu': mtu,
       'behavior': behavior?.value,
       'maxIdleMinutes': maxIdleMinutes,
@@ -102,8 +102,8 @@ class DualWANConfiguration extends Equatable {
 
   factory DualWANConfiguration.fromMap(Map<String, dynamic> map) {
     return DualWANConfiguration(
-      wanType: map['ipv4ConnectionType'],
-      supportedWANType: List<String>.from(map['supportedIPv4ConnectionType']),
+      wanType: map['wanType'],
+      supportedWANType: List<String>.from(map['supportedWANType']),
       mtu: map['mtu'] as int,
       behavior: PPPConnectionBehavior.resolve(map['behavior']),
       maxIdleMinutes:
@@ -144,8 +144,8 @@ class DualWANConfiguration extends Equatable {
   bool get stringify => true;
 
   DualWANConfiguration copyWith({
-    String? ipv4ConnectionType,
-    List<String>? supportedIPv4ConnectionType,
+    String? wanType,
+    List<String>? supportedWANType,
     List<SupportedWANCombination>? supportedWANCombinations,
     int? mtu,
     ValueGetter<PPPConnectionBehavior?>? behavior,
@@ -165,8 +165,8 @@ class DualWANConfiguration extends Equatable {
     ValueGetter<bool?>? useStaticSettings,
   }) {
     return DualWANConfiguration(
-      wanType: ipv4ConnectionType ?? this.wanType,
-      supportedWANType: supportedIPv4ConnectionType ?? this.supportedWANType,
+      wanType: wanType ?? this.wanType,
+      supportedWANType: supportedWANType ?? this.supportedWANType,
       mtu: mtu ?? this.mtu,
       behavior: behavior != null ? behavior() : this.behavior,
       maxIdleMinutes:
@@ -237,6 +237,24 @@ class DualWANConfiguration extends Equatable {
           serverIp: data.tpSettings?.server,
           useStaticSettings: data.tpSettings?.useStaticSettings,
         ),
+      'L2TP' => DualWANConfiguration(
+          wanType: wanType,
+          supportedWANType: supportedWANConnectionType,
+          mtu: 0,
+          behavior: PPPConnectionBehavior.resolve(data.tpSettings?.behavior),
+          maxIdleMinutes: data.tpSettings?.maxIdleMinutes,
+          reconnectAfterSeconds: data.tpSettings?.reconnectAfterSeconds,
+          username: data.tpSettings?.username,
+          password: data.tpSettings?.password,
+          serverIp: data.tpSettings?.server,
+          useStaticSettings: data.tpSettings?.useStaticSettings,
+          staticIpAddress: data.tpSettings?.staticSettings?.ipAddress,
+          staticGateway: data.tpSettings?.staticSettings?.gateway,
+          staticDns1: data.tpSettings?.staticSettings?.dnsServer1,
+          staticDns2: data.tpSettings?.staticSettings?.dnsServer2,
+          staticDns3: data.tpSettings?.staticSettings?.dnsServer3,
+          networkPrefixLength: data.tpSettings?.staticSettings?.networkPrefixLength,
+        ),
       _ => DualWANConfiguration(
           wanType: wanType,
           supportedWANType: supportedWANConnectionType,
@@ -281,6 +299,27 @@ class DualWANConfiguration extends Equatable {
             password: password ?? '',
             server: serverIp ?? '',
             useStaticSettings: useStaticSettings ?? false,
+          ),
+        ),
+      'L2TP' => DualWANSettingsData(
+          wanType: wanType,
+          tpSettings: TPSettings(
+            behavior: behavior?.value ?? PPPConnectionBehavior.keepAlive.value,
+            maxIdleMinutes: maxIdleMinutes,
+            reconnectAfterSeconds: reconnectAfterSeconds,
+            username: username ?? '',
+            password: password ?? '',
+            server: serverIp ?? '',
+            useStaticSettings: useStaticSettings ?? false,
+            staticSettings: StaticSettings(
+              ipAddress: staticIpAddress ?? '',
+              networkPrefixLength: networkPrefixLength ?? 24,
+              gateway: staticGateway ?? '',
+              dnsServer1: staticDns1 ?? '',
+              dnsServer2: staticDns2,
+              dnsServer3: staticDns3,
+              domainName: domainName,
+            ),
           ),
         ),
       _ => DualWANSettingsData(
