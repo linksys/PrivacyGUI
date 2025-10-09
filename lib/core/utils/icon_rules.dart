@@ -2,6 +2,18 @@ import 'package:collection/collection.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/core/utils/icon_device_category.dart';
 
+/// A list of rules used to determine the appropriate icon for a network device.
+///
+/// Each rule in the list is a `Map` with the following structure:
+/// - `description`: A `String` describing the rule's purpose.
+/// - `test`: A `Map` defining the conditions to match against a device's data.
+///   The keys in this map correspond to properties of the device (e.g., 'model',
+///   'friendlyName'), and the values are `RegExp` patterns to test against.
+///   The structure can be nested to match properties within nested objects.
+/// - `iconClass`: A `String` or `Map` representing the icon to be used if the
+///   test passes. If it's a string, it's the name of the icon class. If it's a
+///   map (e.g., `{'lookup': 'model.modelNumber'}`), the icon name is derived
+///   dynamically from the device's data.
 const List<Map<String, dynamic>> iconRules = [
   {
     'description': 'Linksys EA6350v4',
@@ -682,6 +694,10 @@ const List<Map<String, dynamic>> iconRules = [
   }
 ];
 
+/// A smaller, sample list of icon rules, likely used for testing purposes.
+///
+/// This list follows the same structure as [iconRules] but contains a very
+/// limited set of rules, making it easier to test the icon matching logic.
 const List<Map<String, dynamic>> iconTestRules = [
   {
     'description': 'Google TV',
@@ -697,6 +713,18 @@ const List<Map<String, dynamic>> iconTestRules = [
   }
 ];
 
+/// Maps a specific `iconClass` from [iconRules] to a more generic or consolidated icon name.
+///
+/// This function acts as an aliasing system. For example, several different
+/// router model icon classes ('routerMr7350', 'routerMr5500', etc.) might all
+/// map to the same final icon asset, 'routerMr7350'. This helps reduce the
+/// number of unique icon assets required.
+///
+/// [iconClass] The specific icon class name derived from the matching rule.
+/// [fallback] An optional fallback icon name to use if the [iconClass] does not
+///   have a specific mapping. If `null`, a default value is used.
+///
+/// Returns the final, mapped icon name as a `String`.
 String _iconMapping(String iconClass, {String? fallback}) {
   switch (iconClass) {
     case 'routerMr7350':
@@ -776,6 +804,17 @@ String _iconMapping(String iconClass, {String? fallback}) {
   }
 }
 
+/// Determines a router's icon based on its model number and hardware version.
+///
+/// This is a convenience function that constructs a standard device data `Map`
+/// and then calls [iconTest] to find the appropriate icon. It provides a default
+/// icon if the test returns a generic result.
+///
+/// [modelNumber] The model number of the router.
+/// [hardwareVersion] The hardware version of the router.
+///
+/// Returns the determined icon name as a `String`. Returns 'node' if the model
+/// number is empty.
 String routerIconTestByModel(
     {required String modelNumber, String? hardwareVersion}) {
   if (modelNumber.isEmpty) {
@@ -793,10 +832,26 @@ String routerIconTestByModel(
   return result == 'genericDevice' ? 'routerLn12' : result;
 }
 
+/// A wrapper for [iconTest] specifically for testing router devices.
+///
+/// This function directly passes the [target] device data to [iconTest].
+///
+/// [target] A `Map` containing the device's data.
+///
+/// Returns the determined icon name as a `String`.
 String routerIconTest(Map<String, dynamic> target) {
   return iconTest(target);
 }
 
+/// Determines a generic device category icon for a given device.
+///
+/// This function first calls [iconTest] to get a specific icon class name.
+/// It then uses a regular expression to map that specific class to a broader
+/// [IconDeviceCategory] (e.g., mapping 'laptopMac' to 'computer').
+///
+/// [target] A `Map` containing the device's data.
+///
+/// Returns the name of the determined [IconDeviceCategory] as a `String`.
 String deviceIconTest(Map<String, dynamic> target) {
   const regex =
       r'^.*((digitalMediaPlayer)|(phone)|(android)|(iphone)|(mobile)|(desktop)|(laptop)|(windows)|(mac)|(pc)|(tv)|(vacauum)|(plug)|(gameConsole)|(generic)).*$';
@@ -823,9 +878,18 @@ String deviceIconTest(Map<String, dynamic> target) {
       .name;
 }
 
+/// The core icon testing function that evaluates a device against the [iconRules].
 ///
-/// Please use #deviceIconTest or routerIconTest instead
+/// This function iterates through the [iconRules] list, applying the `test`
+/// conditions of each rule to the [target] device data. The first rule that
+_/// matches successfully determines the icon.
 ///
+/// It is recommended to use the more specific wrappers [deviceIconTest] or
+/// [routerIconTest] instead of calling this function directly.
+///
+/// [target] A `Map` containing the data of the device to be tested.
+///
+/// Returns the determined icon class name as a `String`.
 String iconTest(Map<String, dynamic> target) {
   final result = iconRules.firstWhereOrNull((iconRule) {
     List<bool> testResults = [];
@@ -848,6 +912,17 @@ String iconTest(Map<String, dynamic> target) {
   return _iconMapping(result['iconClass'] as String? ?? 'genericDevice');
 }
 
+/// Recursively performs attribute tests on a nested map structure.
+///
+/// This function is the engine behind [iconTest]. It traverses the `test` rule
+/// map and the `target` device data map in parallel. When it reaches a leaf node
+/// in the `test` map (a key-value pair where the value is a string), it performs
+/// a regular expression match against the corresponding value in the `target` map.
+///
+/// [target] The device data map.
+/// [test] The test rule map.
+/// [results] A list to which the boolean results of each individual regex test
+///   are added.
 doAttributesTests(Map<String, dynamic> target, Map<String, dynamic> test,
     List<bool> results) {
   if (isPlainObject(test)) {
@@ -868,6 +943,14 @@ doAttributesTests(Map<String, dynamic> target, Map<String, dynamic> test,
   }
 }
 
+/// Checks if a map contains at least one value that is also a map.
+///
+/// This is used by [doAttributesTests] to determine if it has reached a leaf
+/// node in the test rule structure or if it needs to recurse further.
+///
+/// [json] The map to check.
+///
+/// Returns `true` if any value in the map is a `Map`, `false` otherwise.
 bool isPlainObject(Map<String, dynamic> json) {
   return json.values.any((element) => element is Map<String, dynamic>);
 }

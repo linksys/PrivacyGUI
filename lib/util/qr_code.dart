@@ -21,6 +21,14 @@ import 'package:pdf/pdf.dart';
 //   return byteData!.buffer.asUint8List();
 // }
 
+/// Generates a QR code image for a given set of Wi-Fi credentials.
+///
+/// This function takes a [WiFiCredential] object, creates a QR code, and
+/// then renders it into a PNG image format as a `Uint8List`.
+///
+/// [wifiCredential] The Wi-Fi credentials to encode in the QR code.
+///
+/// Returns a `Future<Uint8List>` containing the PNG data for the QR code image.
 Future<Uint8List> createWiFiQRCode(WiFiCredential wifiCredential) async {
   final qrCode = QrCode(4, QrErrorCorrectLevel.L)
     ..addData(wifiCredential.generate());
@@ -28,6 +36,17 @@ Future<Uint8List> createWiFiQRCode(WiFiCredential wifiCredential) async {
   return createQRCodeBytes(qrImage);
 }
 
+/// Creates a PNG image from a [QrImage] object.
+///
+/// This function manually constructs an image from the QR code data, drawing
+/// each module as a block of pixels. The resulting image is then resized to
+/// the specified dimensions.
+///
+/// [qr] The [QrImage] object to render.
+///
+/// [size] The desired width and height of the output image. Defaults to 360.
+///
+/// Returns a `Future<Uint8List>` containing the PNG data of the generated image.
 Future<Uint8List> createQRCodeBytes(QrImage qr, {int size = 360}) async {
   int blockSize = (size / qr.moduleCount).floor() + 2;
   int imageSize = (blockSize * qr.moduleCount) + (blockSize * 2);
@@ -71,6 +90,19 @@ Future<Uint8List> createQRCodeBytes(QrImage qr, {int size = 360}) async {
   return image.encodePng(result);
 }
 
+/// Generates a PDF document containing Wi-Fi credentials and a QR code, then initiates printing.
+///
+/// This function constructs a PDF page that displays the network SSID, password,
+/// and the provided QR code image. It then uses the `printing` package to
+/// open the system's print dialog.
+///
+/// [context] The `BuildContext` for accessing localized strings.
+///
+/// [imageBytes] The `Uint8List` data for the QR code image.
+///
+/// [ssid] The Wi-Fi network's SSID to be displayed in the PDF.
+///
+/// [password] The Wi-Fi network's password to be displayed in the PDF.
 Future<void> printWiFiQRCode(BuildContext context, Uint8List imageBytes,
     String ssid, String password) async {
   final image = pw.MemoryImage(imageBytes);
