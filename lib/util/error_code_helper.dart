@@ -3,6 +3,23 @@ import 'package:privacy_gui/constants/error_code.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 
+/// Translates a given error code into a human-readable, localized error message.
+///
+/// This function uses a `switch` statement to map predefined error codes to
+/// corresponding localized strings. If the error code is not recognized, it logs
+/// the unknown code and returns a generic error message.
+///
+/// [context] The `BuildContext` used to access localized strings.
+///
+/// [code] The error code string to be translated. If `null` or empty,
+/// the function will return `null`.
+///
+/// [generalErrorMessage] An optional fallback message to display for
+/// unrecognized error codes. If not provided, a default "unknown error"
+/// message is used.
+///
+/// Returns the localized error message as a `String?`, or `null` if the
+/// input code is null or empty.
 String? errorCodeHelper(BuildContext context, String? code,
     [String? generalErrorMessage]) {
   String unknownHandle(String code) {

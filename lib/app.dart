@@ -20,19 +20,38 @@ import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 
+/// The root widget of the Linksys application.
+///
+/// This is a [ConsumerStatefulWidget], which serves as the entry point for the
+/// UI and integrates with the Riverpod state management system. It sets up the
+/// `MaterialApp.router` and configures theme, localization, and routing for the
+/// entire app.
 class LinksysApp extends ConsumerStatefulWidget {
+  /// Creates an instance of the [LinksysApp].
   const LinksysApp({Key? key}) : super(key: key);
 
   @override
   ConsumerState<LinksysApp> createState() => _LinksysAppState();
 }
 
+/// The state for the [LinksysApp] widget.
+///
+/// This class manages the lifecycle of the application. It initializes key services
+/// like connectivity checking and authentication, observes app lifecycle events
+/// (e.g., resumed, paused), and builds the main [MaterialApp.router]. It also
+/// handles dynamic theme updates, localization, and listens for route changes
+/// to update the UI accordingly.
 class _LinksysAppState extends ConsumerState<LinksysApp>
     with DebugObserver, WidgetsBindingObserver {
   LinksysRoute? _currentRoute;
   late ConnectivityNotifier _connectivityNotifier;
   late GoRouterDelegate _routerDelegate;
 
+  /// Initializes the state of the widget.
+  ///
+  /// This method is called when the widget is first inserted into the widget tree.
+  /// It sets up an observer for app lifecycle events, starts the connectivity
+  /// notifier, initializes the authentication service, and loads app settings.
   @override
   void initState() {
     WidgetsBinding.instance.addObserver(this);
@@ -47,6 +66,10 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     getVersion();
   }
 
+  /// Cleans up resources when the widget is removed from the widget tree.
+  ///
+  /// This method removes the app lifecycle observer, stops the connectivity
+  /// notifier, and removes the listener for route changes to prevent memory leaks.
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
@@ -55,6 +78,20 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     super.dispose();
   }
 
+  /// Builds the main widget tree for the application.
+  ///
+  /// This method constructs the `MaterialApp.router`, which is the root of the
+  /// application's UI. It configures the following:
+  /// - **Theming:** Dynamically sets the light and dark themes based on the
+  ///   user's selected theme color and mode from [appSettingsProvider].
+  /// - **Localization:** Sets the application's locale based on user settings,
+  ///   falling back to the system locale. It also provides the necessary
+  ///   localization delegates and supported locales.
+  /// - **Routing:** Integrates with `go_router` by providing its delegate,
+  ///   parser, and information provider.
+  /// - **Global UI:** Uses the `builder` property to wrap the entire app in
+  ///   a `Material` widget, a `Shortcuts` and `Actions` setup for global hotkeys,
+  ///   and a responsive layout container.
   @override
   Widget build(BuildContext context) {
     logger.d('App:: build: $_currentRoute');
@@ -134,6 +171,12 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     );
   }
 
+  /// Called when the system puts the app in the background or returns it to the foreground.
+  ///
+  /// This method is part of the [WidgetsBindingObserver] mixin. It logs the
+  /// current lifecycle state. The commented-out code suggests it was intended
+  /// to handle tasks like refreshing connectivity and polling when the app is
+  /// resumed, and stopping polling when it is paused.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     logger.i('didChangeAppLifecycleState: ${state.name}');
@@ -161,6 +204,11 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     // }
   }
 
+  /// Initializes the authentication state.
+  ///
+  /// This method is called after the initial connectivity check. It triggers the
+  /// `init` method of the [authProvider] and, upon completion, removes the
+  /// native splash screen, revealing the app's UI.
   _initAuth() {
     ref.read(authProvider.notifier).init().then((_) {
       logger.d('init auth finish');
@@ -168,6 +216,11 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     });
   }
 
+  /// A callback that is triggered whenever the route changes.
+  ///
+  /// This method listens to the `GoRouterDelegate` and updates the [_currentRoute]
+  /// state variable whenever the user navigates to a new page. This allows
+  /// other parts of the UI, like the [AppRootContainer], to adapt to the current route.
   void _onReceiveRouteChanged() {
     Future.delayed(Duration.zero).then((_) {
       if (!mounted) return;
@@ -191,6 +244,12 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     });
   }
 
+  /// Provides a custom [PageTransitionsTheme] for the web platform.
+  ///
+  /// When the app is running on the web, this getter returns a theme that uses
+  /// a simple fade transition for all page navigation, disabling the default
+  /// platform-specific animations. For mobile, it returns `null`, allowing the
+  /// default transitions to be used.
   PageTransitionsTheme? get pageTransitionsTheme => kIsWeb
       ? PageTransitionsTheme(
           builders: {
@@ -202,6 +261,10 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
       : null;
 }
 
+/// A [PageTransitionsBuilder] that creates a simple fade-in transition.
+///
+/// This is used to provide a consistent, non-native transition animation,
+/// particularly for the web platform.
 class FadePageTransitionsBuilder extends PageTransitionsBuilder {
   /// Constructs a page transition animation that slides the page up.
   const FadePageTransitionsBuilder();
@@ -218,6 +281,11 @@ class FadePageTransitionsBuilder extends PageTransitionsBuilder {
   }
 }
 
+/// A private widget that applies a fade transition to its child.
+///
+/// It wraps the child in a `FadeTransition` widget, driven by the provided
+/// route animation. For mobile web, it also wraps the child in an
+/// `InteractiveViewer` to allow for pinch-to-zoom.
 class _FadePageTransition extends StatelessWidget {
   _FadePageTransition({
     required Animation<double>
@@ -244,7 +312,12 @@ class _FadePageTransition extends StatelessWidget {
   }
 }
 
+/// A [PageTransitionsBuilder] that applies no transition animation.
+///
+/// This builder simply returns the child widget directly, resulting in an
+/// instantaneous page change.
 class NoTransitionsBuilder extends PageTransitionsBuilder {
+  /// Creates an instance of [NoTransitionsBuilder].
   const NoTransitionsBuilder();
 
   @override
@@ -260,10 +333,21 @@ class NoTransitionsBuilder extends PageTransitionsBuilder {
   }
 }
 
+/// An [Intent] used to signal the toggling of a display column overlay.
+///
+/// This is typically mapped to a keyboard shortcut for debugging UI layouts.
 class ToggleDisplayColumnOverlayIntent extends Intent {}
 
+/// An [Intent] used to signal the action of downloading a log file.
+///
+/// This is mapped to a keyboard shortcut for debugging and support purposes.
 class ToggleDownloadLogIntent extends Intent {}
 
+/// A custom [ActionDispatcher] for handling global actions.
+///
+/// This class can be extended to intercept and handle actions invoked via
+/// shortcuts or other means at a global application level. Currently, it
+// simply forwards the actions to the default dispatcher.
 class AppGlobalActionDispatcher extends ActionDispatcher {
   @override
   Object? invokeAction(
