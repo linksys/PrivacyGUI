@@ -77,15 +77,21 @@ This repository includes shell scripts to simplify the build process for differe
 
 ## 🧪 Running Tests
 
-To run the suite of unit and widget tests, use the provided script:
+This project contains several types of tests.
+
+### Functional Unit Tests (Non-UI)
+
+To run the suite of functional (non-UI) unit tests, use the provided script. This will execute all tests that are not tagged as `golden`, `loc`, or `ui`.
 
 ```bash
 ./run_tests.sh
 ```
 
-For running screenshot tests (golden tests), use the `run_generate_loc_snapshots.sh` script. This script runs all tests tagged with `loc`.
+### Screenshot Tests (Golden Files)
 
--   **Run all screenshot tests (with default settings)**:
+For running screenshot tests, which verify UI consistency, use the `run_generate_loc_snapshots.sh` script. This script specifically runs tests tagged with `loc`.
+
+-   **Run all screenshot tests (default settings)**:
     ```bash
     ./run_generate_loc_snapshots.sh
     ```
@@ -102,6 +108,14 @@ For running screenshot tests (golden tests), use the `run_generate_loc_snapshots
     ```
 
 For more details on creating and updating screenshot tests, refer to [SCREENSHOT_TESTING.md](SCREENSHOT_TESTING.md).
+
+### UI Widget Tests
+
+To run tests that are specifically tagged for UI widgets (and are not screenshot tests), you can use the following command:
+
+```bash
+flutter test --tags ui
+```
 
 ## Contributing
 

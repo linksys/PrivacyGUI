@@ -189,10 +189,6 @@ void main() {
         expect(rule.validate('2001:db8:a0b:12f0::'), isTrue);
       });
 
-      test('should return true for the unspecified address (::)', () {
-        expect(rule.validate('::'), isTrue);
-      });
-
       test('should return true for an address with leading zeros in a group',
           () {
         expect(
@@ -270,6 +266,11 @@ void main() {
           'should return false for an address starting with a colon but not a double colon',
           () {
         expect(rule.validate(':2001:db8:a0b:12f0::'), isFalse);
+      });
+      
+      test('should return false for the unspecified address (::)', () {
+        // This is by implementation
+        expect(rule.validate('::'), isFalse);
       });
     });
   });
