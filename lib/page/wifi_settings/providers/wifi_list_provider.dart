@@ -173,8 +173,8 @@ class WifiListNotifier extends Notifier<WiFiState> {
       // if (isGuestChanged)
       MapEntry(JNAPAction.setRadioSettings, newSettings.toMap()),
       if (isSupportGuestWiFi)
-        MapEntry(
-            JNAPAction.setGuestRadioSettings, newSetGuestRadioSettings?.toMap() ?? {}),
+        MapEntry(JNAPAction.setGuestRadioSettings,
+            newSetGuestRadioSettings?.toMap() ?? {}),
     ]);
     return routerRepository
         .transaction(
@@ -322,6 +322,7 @@ class WifiListNotifier extends Notifier<WiFiState> {
             mainWiFi: List.from(state.mainWiFi)..[index] = newOne);
       }
     }
+    checkMode();
   }
 
   void setWiFiSecurityType(WifiSecurityType type, WifiRadioBand band) {
@@ -387,14 +388,9 @@ class WifiListNotifier extends Notifier<WiFiState> {
   }
 
   void checkMode() {
-    final mainWiFi = state.mainWiFi.where((e) => e.isEnabled).toList();
-    if (mainWiFi.isEmpty) {
-      state = state.copyWith(isSimpleMode: true);
-      return;
-    }
-
-    final firstWifi = mainWiFi.first;
-    final isSimple = mainWiFi.every((wifi) =>
+    final firstWifi = state.mainWiFi.first;
+    final isSimple = state.mainWiFi.every((wifi) =>
+        wifi.isEnabled == firstWifi.isEnabled &&
         wifi.ssid == firstWifi.ssid &&
         wifi.password == firstWifi.password &&
         wifi.securityType == firstWifi.securityType);

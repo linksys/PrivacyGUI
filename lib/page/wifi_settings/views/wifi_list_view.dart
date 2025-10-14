@@ -2,21 +2,21 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
-import 'package:privacy_gui/page/wifi_settings/utils.dart';
-import 'package:privacy_gui/page/wifi_settings/views/advanced_mode_view.dart';
-import 'package:privacy_gui/page/wifi_settings/views/simple_mode_view.dart';
-import 'package:privacy_gui/validator_rules/_validator_rules.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_state.dart';
+import 'package:privacy_gui/page/wifi_settings/views/wifi_list_advanced_mode_view.dart';
+import 'package:privacy_gui/page/wifi_settings/views/wifi_list_simple_mode_view.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:privacygui_widgets/widgets/card/list_card.dart';
 
 class WiFiListView extends ArgumentsConsumerStatefulView {
   const WiFiListView({Key? key, super.args}) : super(key: key);
@@ -73,6 +73,9 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
             _preservedMainWiFiState?.guestWiFi != state.guestWiFi) &&
         _dataVerify(state);
 
+    final wifiBands =
+        state.mainWiFi.map((e) => e.radioID.bandName).toList().join(', ');
+
     return StyledAppPageView(
       appBarStyle: AppBarStyle.none,
       hideTopbar: true,
@@ -96,62 +99,89 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
       child: (context, constraints) {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          // mainAxisSize: MainAxisSize.min,
+          // shrinkWrap: true,
+          // physics: const NeverScrollableScrollPhysics(),
           children: [
+            _wifiDescription(wifiBands),
+            const AppGap.medium(),
             _advancedModeSwitch(),
             const AppGap.medium(),
-            if (state.isSimpleMode)
-              SimpleModeView(
-                simpleWifiNameController: _simpleWifiNameController,
-                simpleWifiPasswordController: _simpleWifiPasswordController,
-                simpleSecurityType: _simpleSecurityType,
-                onSecurityTypeChanged: (value) {
-                  setState(() {
-                    _simpleSecurityType = value;
-                  });
-                },
-              )
-            else
-              const AdvancedModeView(),
+            Expanded(
+              child: state.isSimpleMode
+                  ? SimpleModeView(
+                      simpleWifiNameController: _simpleWifiNameController,
+                      simpleWifiPasswordController:
+                          _simpleWifiPasswordController,
+                      simpleSecurityType: _simpleSecurityType,
+                      onSecurityTypeChanged: (value) {
+                        setState(() {
+                          _simpleSecurityType = value;
+                        });
+                      },
+                    )
+                  : const AdvancedModeView(),
+            ),
           ],
         );
       },
     );
   }
 
+  Widget _wifiDescription(String wifiBands) {
+    return AppCard(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.info_outline_rounded,
+            semanticLabel: 'info icon',
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const AppGap.medium(),
+          Expanded(
+            child: AppText.bodySmall(
+              loc(context).wifiListDescription(wifiBands),
+              maxLines: 30,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _advancedModeSwitch() {
     final isSimpleMode =
         ref.watch(wifiListProvider.select((value) => value.isSimpleMode));
-    return AppCard(
-      child: AppListCard(
-        title: AppText.labelLarge(loc(context).advancedSettings),
-        trailing: AppSwitch(
-          value: !isSimpleMode,
-          onChanged: (value) {
-            if (value) {
-              final state = ref.read(wifiListProvider);
-              setQuickSetup(
-                ssid: _simpleWifiNameController.text,
-                password: _simpleWifiPasswordController.text,
-                securityType: _simpleSecurityType!,
-                mainWiFi: state.mainWiFi,
-              );
-            }
-            ref.read(wifiListProvider.notifier).setSimpleMode(!value);
-            if (!value) {
-              // from advanced to simple
-              final state = ref.read(wifiListProvider);
-              final firstEnabledWifi =
-                  state.mainWiFi.firstWhereOrNull((e) => e.isEnabled);
-              if (firstEnabledWifi != null) {
-                _simpleWifiNameController.text = firstEnabledWifi.ssid;
-                _simpleWifiPasswordController.text = firstEnabledWifi.password;
-                setState(() {
-                  _simpleSecurityType = firstEnabledWifi.securityType;
-                });
-              }
-            }
-          },
-        ),
+    return AppListCard(
+      title: AppText.labelLarge(loc(context).advancedSettings),
+      trailing: AppSwitch(
+        value: !isSimpleMode,
+        onChanged: (value) {
+          // if (value) {
+          //   final state = ref.read(wifiListProvider);
+          //   setQuickSetup(
+          //     ssid: _simpleWifiNameController.text,
+          //     password: _simpleWifiPasswordController.text,
+          //     securityType: _simpleSecurityType!,
+          //     mainWiFi: state.mainWiFi,
+          //   );
+          // }
+          ref.read(wifiListProvider.notifier).setSimpleMode(!value);
+          // if (!value) {
+          //   // from advanced to simple
+          //   final state = ref.read(wifiListProvider);
+          //   final firstEnabledWifi =
+          //       state.mainWiFi.firstWhereOrNull((e) => e.isEnabled);
+          //   if (firstEnabledWifi != null) {
+          //     _simpleWifiNameController.text = firstEnabledWifi.ssid;
+          //     _simpleWifiPasswordController.text = firstEnabledWifi.password;
+          //     setState(() {
+          //       _simpleSecurityType = firstEnabledWifi.securityType;
+          //     });
+          //   }
+          // }
+        },
       ),
     );
   }
