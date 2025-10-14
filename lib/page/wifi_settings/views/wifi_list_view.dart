@@ -865,7 +865,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
       Function(String)? onChanged,
       Function(String)? onSubmitted}) {
     return AppTextField(
-      semanticLabel: '$semanticLabel wifi name',
+      semanticLabel: '$semanticLabel wifi name'.trim(),
       controller: controller,
       border: const OutlineInputBorder(),
       onChanged: onChanged,
@@ -939,7 +939,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
       Function(bool)? onValidationChanged,
       Function(String)? onSubmitted}) {
     return AppPasswordField.withValidator(
-      semanticLabel: '$semanticLabel wifi password',
+      semanticLabel: '$semanticLabel wifi password'.trim(),
       autofocus: true,
       controller: controller,
       border: const OutlineInputBorder(),

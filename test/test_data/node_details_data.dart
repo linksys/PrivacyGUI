@@ -57,11 +57,13 @@ const nodeDetailsCherry7TestState = {
   "lanIpAddress": "10.216.1.1",
   "wanIpAddress": "192.168.1.88",
   "blinkingStatus": "Blink Node",
-  "isMLO": false
+  "isMLO": false,
+  "macAddress": "AA:BB:CC:DD:EE:FF"
 };
 const fakeNodeDetailsState1 = {
   "deviceId": "ef07238c-4870-46fb-a524-80691a13160e",
   "location": "Router123",
+  "macAddress": "AA:BB:CC:DD:EE:FF",
   "isMaster": true,
   "isOnline": true,
   "connectedDevices": [
@@ -862,6 +864,7 @@ const fakeNodeDetailsState1 = {
 const fakeNodeDetailsState2 = {
   "deviceId": "ef07238c-4870-46fb-a524-80691a13160e",
   "location": "Linksys03048",
+  "macAddress": "AA:BB:CC:DD:EE:FF",
   "isMaster": false,
   "isOnline": true,
   "connectedDevices": [
