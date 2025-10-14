@@ -78,7 +78,7 @@ void main() {
     });
     when(mockSinglePortForwardingRuleNotifier.build()).thenReturn(
         const SinglePortForwardingRuleState(
-            routerIp: '192.1618.1.1', subnetMask: '255.255.255.0'));
+            routerIp: '192.168.1.1', subnetMask: '255.255.255.0'));
     when(mockPortRangeForwardingRuleNotifier.build()).thenReturn(
         const PortRangeForwardingRuleState(
             routerIp: '192.168.1.1', subnetMask: '255.255.255.0'));
