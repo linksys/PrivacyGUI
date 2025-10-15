@@ -1,0 +1,48 @@
+- id: 46
+  symbolic_id: "SETUP_FACTORY_RESET_FLOW"
+  tags:
+    - "pnp"
+  name: "Setup - Complete Flow from Factory Reset"
+  objective: "Verify the setup process from a factory reset state."
+  preconditions:
+    - "The device is in a factory reset state."
+  steps:
+    - action: "Start the application."
+    - action: "Follow on-screen instructions, clicking \"Next\" or \"Continue\" on each page."
+      verify: "Each step completes and transitions to the next page."
+    - action: "On the final step, click \"Done\"."
+  expected_result: "The user lands on the main dashboard."
+
+- id: 47
+  symbolic_id: "SETUP_PREPAIRED_FLOW"
+  tags:
+    - "pnp"
+  name: "Setup - Complete Flow for Pre-Paired Device"
+  objective: "Verify the setup process for a pre-paired device."
+  preconditions:
+    - "The device is in a pre-paired state."
+  steps:
+    - action: "Start the application and log in."
+      verify: "Login is successful."
+    - action: "Follow on-screen instructions to complete the setup."
+  expected_result: "The user lands on the main dashboard."
+
+- id: 48
+  symbolic_id: "RECOVERY_PASSWORD_RESET_FLOW"
+  tags:
+    - "login"
+    - "recovery"
+  name: "Recovery - Forgot Password and Reset"
+  objective: "Verify password reset using a recovery code."
+  preconditions:
+    - "The user has a valid recovery code."
+  steps:
+    - action: "On the login page, click \"Forgot Password?\"."
+    - action: "Enter the recovery code."
+      verify: "The app transitions to the reset password screen."
+    - action: "Enter and confirm a new valid password."
+    - action: "Click \"Save\"."
+      verify: "A success dialog appears."
+    - action: "Log in with the new password."
+      verify: "Login is successful."
+  expected_result: "The user successfully resets their password and logs in."

@@ -1,0 +1,118 @@
+- id: 24
+  symbolic_id: "FW_IPV4V6_TOGGLE_AND_SAVE"
+  tags:
+    - "firewall"
+    - "advanced_settings"
+    - "menu"
+  name: "Firewall - IPv4/IPv6 SPI Protection Toggle and Save"
+  objective: "Verify SPI firewall protection settings can be toggled and saved."
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to the \"Firewall\" tab."
+    - action: "Toggle the \"IPv4 SPI firewall protection\" switch."
+      verify: "The switch state changes in the UI."
+    - action: "Toggle the \"IPv6 SPI firewall protection\" switch."
+      verify: "The switch state changes in the UI."
+    - action: "Click the \"Save\" button."
+      verify: "A success toast (e.g., \"Saved\") is displayed."
+    - action: "Wait for the confirmation to disappear."
+  expected_result: "The settings are saved successfully."
+
+- id: 25
+  symbolic_id: "FW_VPN_PASSTHROUGH_TOGGLE_AND_SAVE"
+  tags:
+    - "firewall"
+    - "advanced_settings"
+    - "menu"
+  name: "Firewall - VPN Passthrough Toggle and Save"
+  objective: "Verify VPN Passthrough options can be toggled and saved."
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to the \"VPN Passthrough\" tab."
+    - action: "Toggle all passthrough switches."
+      verify: "Each switch changes its state in the UI."
+    - action: "Click the \"Save\" button."
+      verify: "A success toast (e.g., \"Saved\") is displayed."
+    - action: "Wait for the confirmation to disappear."
+  expected_result: "The VPN Passthrough settings are saved successfully."
+
+- id: 26
+  symbolic_id: "FW_INTERNET_FILTERS_TOGGLE_AND_SAVE"
+  tags:
+    - "firewall"
+    - "advanced_settings"
+    - "menu"
+  name: "Firewall - Internet Filters Toggle and Save"
+  objective: "Verify Internet Filter options can be toggled and saved."
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to the \"Internet filters\" tab."
+    - action: "Toggle all filter switches."
+      verify: "Each switch changes its state in the UI."
+    - action: "Click the \"Save\" button."
+      verify: "A success toast (e.g., \"Saved\") is displayed."
+    - action: "Wait for the confirmation to disappear."
+  expected_result: "The Internet Filter settings are saved successfully."
+
+- id: 27
+  symbolic_id: "FW_IPV6_PORT_SERVICES_ADD_POSITIVE"
+  tags:
+    - "firewall"
+    - "advanced_settings"
+    - "menu"
+  name: "Firewall - IPv6 Port Services - Add Rule"
+  objective: "Verify a valid IPv6 port service rule can be added."
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to the \"IPv6 port services\" tab and click \"Add New IPv6\"."
+    - action: "Enter valid data for all fields."
+    - action: "Click the checkmark icon to save the rule."
+      verify: "The rule appears in the list."
+    - action: "Click the \"Save\" button."
+      verify: "A success toast (e.g., \"Saved\") is displayed."
+    - action: "Wait for the confirmation to disappear."
+  expected_result: "The new IPv6 port service rule is saved successfully."
+
+- id: 28
+  symbolic_id: "FW_IPV6_PORT_SERVICES_EDIT_AND_DELETE"
+  tags:
+    - "firewall"
+    - "advanced_settings"
+    - "menu"
+  name: "Firewall - IPv6 Port Services - Edit and Delete Rule"
+  objective: "Verify an existing rule can be edited and deleted."
+  preconditions:
+    - "An IPv6 port service rule has been previously added."
+  steps:
+    - action: "Navigate to the \"IPv6 port services\" tab."
+    - action: "Locate the rule and click the \"Edit\" icon."
+    - action: "Change the application name and click the checkmark to save."
+      verify: "The name is updated in the list."
+    - action: "Click the \"Delete\" icon for the same rule."
+      verify: "The rule is removed from the list."
+    - action: "Click the \"Save\" button."
+      verify: "A success toast (e.g., \"Saved\") is displayed."
+    - action: "Wait for the confirmation to disappear."
+  expected_result: "The rule is successfully edited and deleted."
+
+- id: 29
+  symbolic_id: "FW_IPV6_PORT_SERVICES_INVALID_INPUT"
+  tags:
+    - "firewall"
+    - "advanced_settings"
+    - "menu"
+  name: "Firewall - IPv6 Port Services - Invalid Input Validation"
+  objective: "Verify input validation for IPv6 port services."
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to the \"IPv6 port services\" tab and click \"Add New IPv6\"."
+    - action: "Enter an invalid IPv6 address."
+      verify: "An \"Invalid IPv6 address\" error is displayed."
+    - action: "Enter an invalid port range (start > end)."
+      verify: "An \"Invalid port range\" error is displayed."
+  expected_result: "The system prevents saving and provides clear error messages."

@@ -1,0 +1,16 @@
+- id: 34
+  symbolic_id: "INST_SAFE_ENABLE_POSITIVE"
+  tags:
+    - "safety"
+    - "menu"
+  name: "Instant Safety - Enable"
+  objective: "Verify the Instant Safety feature can be enabled."
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to \"Menu\" -> \"Instant Safety\"."
+    - action: "Toggle the \"Instant Safety\" switch to 'On'."
+    - action: "Click \"Save\"."
+      verify: "A restart confirmation dialog appears."
+    - action: "Click \"Restart\"."
+  expected_result: "The device initiates a restart."

@@ -1,0 +1,139 @@
+- id: 50
+  symbolic_id: "WIFI_SETTINGS_CHANGE_POSITIVE"
+  tags:
+    - "wifi"
+    - "menu"
+  name: "Incredible WiFi - Change and Save WiFi Settings"
+  objective: "Verify Wi-Fi settings for a band can be changed and saved."
+  note: "This is a meta test case, to be executed for each supported band (2.4GHz, 5GHz, 6GHz)."
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to \"Menu\" -> \"Incredible WiFi\" and select the band's tab."
+    - action: "Change Wi-Fi Name, Password, Security Mode, etc."
+      verify: "UI elements update as changes are made."
+    - action: "Click the \"Save\" button."
+      verify: "A success toast (e.g., \"Saved\") is displayed."
+    - action: "Wait for the confirmation to disappear."
+  expected_result: "The new settings for the band are saved successfully."
+
+- id: 51
+  symbolic_id: "WIFI_SETTINGS_PERSISTENCE"
+  tags:
+    - "wifi"
+    - "menu"
+  name: "Incredible WiFi - WiFi Settings Persistence"
+  objective: "Verify saved Wi-Fi settings for a band persist."
+  note: "This is a meta test case, to be executed for each supported band (2.4GHz, 5GHz, 6GHz)."
+  preconditions:
+    - "Wi-Fi settings for the band have been previously saved."
+  steps:
+    - action: "Navigate to the band's tab in \"Incredible WiFi\"."
+    - action: "Verify all settings match the previously saved values."
+    - action: "Navigate away and return."
+      verify: "Settings remain unchanged."
+  expected_result: "All saved settings for the band persist correctly."
+
+- id: 52
+  symbolic_id: "WIFI_GUEST_WIFI_POSITIVE"
+  tags:
+    - "wifi"
+    - "menu"
+  name: "Incredible WiFi - Guest WiFi Configuration"
+  objective: "Verify Guest WiFi can be enabled and configured."
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to the \"Guest\" tab in \"Incredible WiFi\"."
+    - action: "Enable the \"Guest WiFi\" switch."
+      verify: "Configuration options appear."
+    - action: "Set a new name and password."
+    - action: "Click \"Save\"."
+      verify: "A success toast (e.g., \"Saved\") is displayed."
+    - action: "Wait for the confirmation to disappear."
+  expected_result: "Guest WiFi is enabled and configured successfully."
+
+- id: 53
+  symbolic_id: "WIFI_GUEST_WIFI_DEPENDENCY_CHECK"
+  tags:
+    - "wifi"
+    - "menu"
+  name: "Incredible WiFi - Guest WiFi Dependency on Main Bands"
+  objective: "Verify warning is shown if main bands are disabled."
+  preconditions:
+    - "Guest WiFi is enabled."
+  steps:
+    - action: "Navigate to \"Incredible WiFi\"."
+    - action: "Disable the switches for all main bands (2.4GHz, 5GHz)."
+    - action: "Click \"Save\"."
+      verify: "A warning dialog appears."
+  expected_result: "The system warns the user about the dependency before saving."
+
+- id: 54
+  symbolic_id: "WIFI_MAC_FILTER_ENABLE_AND_ADD"
+  tags:
+    - "wifi"
+    - "menu"
+  name: "Incredible WiFi - MAC Filtering - Enable and Add Device"
+  objective: "Verify MAC filtering can be enabled and a device added."
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to the \"MAC Filtering\" tab."
+    - action: "Enable the \"MAC Filtering\" switch."
+    - action: "Go to \"Filtered Devices\" and manually add a device."
+      verify: "The device appears in the list."
+    - action: "Click \"Save\"."
+      verify: "A success toast (e.g., \"Saved\") is displayed."
+    - action: "Wait for the confirmation to disappear."
+  expected_result: "MAC filtering is enabled and the device is added successfully."
+
+- id: 55
+  symbolic_id: "WIFI_MAC_FILTER_REMOVE"
+  tags:
+    - "wifi"
+    - "menu"
+  name: "Incredible WiFi - MAC Filtering - Remove Device"
+  objective: "Verify a device can be removed from the MAC filter list."
+  preconditions:
+    - "A device has been added to the filter list."
+  steps:
+    - action: "Navigate to the \"Filtered Devices\" page."
+    - action: "Select a device and remove it."
+      verify: "The device is removed from the UI list."
+    - action: "Click \"Save\"."
+      verify: "A success toast (e.g., \"Saved\") is displayed."
+    - action: "Wait for the confirmation to disappear."
+  expected_result: "The device is successfully removed from the filter list."
+
+- id: 56
+  symbolic_id: "WIFI_ADVANCED_SETTINGS_SAVE"
+  tags:
+    - "wifi"
+    - "menu"
+  name: "Incredible WiFi - Advanced Settings - Toggle and Save"
+  objective: "Verify advanced WiFi settings can be toggled and saved."
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to the \"Advanced\" tab in \"Incredible WiFi\"."
+    - action: "Toggle all available switches."
+      verify: "Each switch updates in the UI."
+    - action: "Click \"Save\"."
+      verify: "A success toast (e.g., \"Saved\") is displayed."
+    - action: "Wait for the confirmation to disappear."
+  expected_result: "The advanced settings are saved successfully."
+
+- id: 57
+  symbolic_id: "WIFI_MLO_ALERT_CHECK"
+  tags:
+    - "wifi"
+    - "menu"
+  name: "Incredible WiFi - MLO Alert for Different SSIDs"
+  objective: "Verify MLO alert is shown for different SSIDs."
+  preconditions:
+    - "SSIDs for 2.4GHz and 5GHz bands are different."
+  steps:
+    - action: "Navigate to the \"Advanced\" tab in \"Incredible WiFi\"."
+      verify: "An MLO warning is displayed."
+  expected_result: "The system correctly detects the SSID mismatch and displays the MLO alert."

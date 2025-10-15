@@ -1,0 +1,60 @@
+- id: 19
+  symbolic_id: "DHCP_ADD_RESERVATION_POSITIVE"
+  tags:
+    - "local_network"
+    - "dhcp_reservations"
+    - "advanced_settings"
+    - "menu"
+  name: "DHCP Reservations - Add Reservation"
+  objective: "Verify a new DHCP reservation can be added."
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to the \"DHCP Reservation\" page."
+    - action: "Click \"Add Reservation\" and enter valid data."
+    - action: "Click \"Save\" in the dialog."
+      verify: "The reservation appears in the list."
+    - action: "Click \"Save\" on the page."
+      verify: "A success toast (e.g., \"Saved\") is displayed."
+    - action: "Wait for the confirmation to disappear."
+  expected_result: "The new DHCP reservation is saved successfully."
+
+- id: 20
+  symbolic_id: "DHCP_EDIT_AND_DELETE_RESERVATION"
+  tags:
+    - "local_network"
+    - "dhcp_reservations"
+    - "advanced_settings"
+    - "menu"
+  name: "DHCP Reservations - Edit and Delete Reservation"
+  objective: "Verify an existing reservation can be edited and deleted."
+  preconditions:
+    - "A DHCP reservation has been added."
+  steps:
+    - action: "On the \"DHCP Reservation\" page, edit a reservation."
+      verify: "The details are updated in the UI."
+    - action: "Delete the same reservation."
+      verify: "The reservation is removed from the UI."
+    - action: "Click \"Save\"."
+      verify: "A success toast (e.g., \"Saved\") is displayed."
+    - action: "Wait for the confirmation to disappear."
+  expected_result: "The reservation is successfully edited and deleted."
+
+- id: 21
+  symbolic_id: "DHCP_INVALID_INPUT_CHECK"
+  tags:
+    - "local_network"
+    - "dhcp_reservations"
+    - "advanced_settings"
+    - "menu"
+  name: "DHCP Reservations - Invalid Input Validation"
+  objective: "Verify validation for MAC and IP address inputs."
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "On the \"DHCP Reservation\" page, click \"Add Reservation\"."
+    - action: "Enter an invalid MAC address."
+      verify: "An \"Invalid MAC address\" error is shown."
+    - action: "Enter an out-of-range IP address."
+      verify: "An \"IP address out of range\" error is shown."
+  expected_result: "The system prevents saving and shows clear error messages."

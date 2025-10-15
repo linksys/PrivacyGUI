@@ -1,0 +1,22 @@
+- id: 18
+  symbolic_id: "DASHBOARD_HOME_OPERATIONS"
+  tags:
+    - "dashboard"
+  name: "Dashboard Home operations"
+  objective: "Test the outer-layer functions of the dashboard home, including Devices, Privacy, Speed Test, and Wi-Fi"
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Go to the \"Topology\" page and back."
+    - action: "Go to the \"Device List\" page and back."
+    - action: "Go to the \"Master Node Detail\" page and back."
+    - action: "Hover over the \"Night Mode\" info icon to see the tooltip."
+    - action: "Toggle the \"Night Mode\" switch on and off."
+    - action: "Hover over the \"Instant Privacy\" info icon to see the tooltip."
+    - action: "Toggle the \"Instant Privacy\" switch on and off, handling the confirmation dialog."
+    - action: "Go to the \"Instant Privacy\" page and back."
+    - action: "If health check is supported, start a speed test and verify the results."
+    - action: "For each supported Wi-Fi band (2.4GHz, 5GHz, 6GHz, Guest), hover over the QR code icon to view the QR code."
+    - action: "For each supported Wi-Fi band (2.4GHz, 5GHz, 6GHz, Guest), toggle the Wi-Fi band on and off."
+    - action: "For each supported Wi-Fi band (2.4GHz, 5GHz, 6GHz, Guest), go to the Wi-Fi band's settings page and back."
+  expected_result: "All dashboard home functions are interactive and navigate to their respective pages correctly. Toggled settings are reflected in the UI."
