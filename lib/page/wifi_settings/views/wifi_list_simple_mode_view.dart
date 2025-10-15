@@ -43,35 +43,52 @@ class _SimpleModeViewState extends ConsumerState<SimpleModeView> {
     }
     final securityTypeList = securityTypeSet.toList();
 
-    return AppBasicLayout(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      content: ResponsiveLayout(
-        mobile: Column(
-          // mainAxisSize: MainAxisSize.min,
+    final isMobile = ResponsiveLayout.isMobileLayout(context);
+
+    final Map<int, TableColumnWidth> columnWidths;
+    final List<TableRow> children;
+
+    if (isMobile) {
+      columnWidths = const {0: FlexColumnWidth()};
+      children = [
+        TableRow(
+          children: [
+            _settingsView(securityTypeList),
+          ],
+        ),
+        TableRow(
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 16),
+              child: GuestWiFiCard(state: state.guestWiFi, lastInRow: true),
+            ),
+          ],
+        ),
+      ];
+    } else {
+      columnWidths = const {
+        0: FlexColumnWidth(2),
+        1: FixedColumnWidth(16),
+        2: FlexColumnWidth(1),
+      };
+      children = [
+        TableRow(
           children: [
             _settingsView(securityTypeList),
             const AppGap.medium(),
-            SizedBox(
-              // height: 400,
-              width: double.infinity,
-              child: GuestWiFiCard(state: state.guestWiFi, lastInRow: true),
-            ),
+            GuestWiFiCard(state: state.guestWiFi, lastInRow: true),
           ],
         ),
-        desktop: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              flex: 2,
-              child: _settingsView(securityTypeList),
-            ),
-            const AppGap.medium(),
-            Expanded(
-              flex: 1,
-              child: GuestWiFiCard(state: state.guestWiFi, lastInRow: true),
-            ),
-          ],
-        ),
+      ];
+    }
+
+    return AppBasicLayout(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      content: Table(
+        border: const TableBorder(),
+        columnWidths: columnWidths,
+        defaultVerticalAlignment: TableCellVerticalAlignment.top,
+        children: children,
       ),
     );
   }
