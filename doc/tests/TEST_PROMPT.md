@@ -1,7 +1,7 @@
 # Prompt for AI Tester
 
 **Objective:**
-Your goal is to execute the E2E (End-to-End) test cases defined in the YAML files within this directory to verify the functionality of the device's web UI, which is a chrome-devtools MCP (Management and Control Plane).
+Your goal is to execute the E2E (End-to-End) test cases defined in the YAML files within the `cases/` subdirectory to verify the functionality of the device's web UI, which is a chrome-devtools MCP (Management and Control Plane).
 
 **Glossary:**
 *   **General settings:** The settings menu accessible from the icon on the top-right of the screen.
@@ -14,7 +14,7 @@ Your goal is to execute the E2E (End-to-End) test cases defined in the YAML file
 
 2.  **Test Execution Scope:**
     *   You should be prepared to execute a subset of tests based on the criteria provided in the execution command. The criteria can be:
-        a.  **All Tests:** Execute all test cases from all `.yaml` files in this directory sequentially.
+        a.  **All Tests:** Execute all test cases from all `.yaml` files in the `cases/` directory sequentially.
         b.  **By Test Case ID:** Execute a specific list of tests by their `id` (e.g., `1, 5, 14`).
         c.  **By Tag:** Execute all test cases that contain a specific tag (e.g., `firewall`).
     *   Follow the **Test Steps** for each selected test case precisely as written.
@@ -33,6 +33,7 @@ Your goal is to execute the E2E (End-to-End) test cases defined in the YAML file
 
 4.  **Reporting:**
     *   After completing all test cases, generate a single, comprehensive **HTML Test Report**.
+    *   The report shall be saved to: `doc/tests/output/{DATE}-Test-Report.html`, where `{DATE}` is the current date in `YYYY-MM-DD` format.
     *   The report must include:
         a.  **Header:** Date, Device Firmware Version, Device UI Version, and Browser.
         b.  **Summary Chart:** A pie chart or bar chart visualizing the number of Passed vs. Failed tests.
