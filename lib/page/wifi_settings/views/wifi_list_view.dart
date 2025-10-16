@@ -31,7 +31,6 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
   // Simple mode
   final _simpleWifiNameController = TextEditingController();
   final _simpleWifiPasswordController = TextEditingController();
-  WifiSecurityType _simpleSecurityType = WifiSecurityType.wpa2Personal;
 
   @override
   void initState() {
@@ -75,7 +74,8 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
     final isPositiveEnabled = (!const ListEquality()
                 .equals(_preservedMainWiFiState?.mainWiFi, state.mainWiFi) ||
             _preservedMainWiFiState?.guestWiFi != state.guestWiFi ||
-            _preservedMainWiFiState?.isSimpleMode != state.isSimpleMode) &&
+            _preservedMainWiFiState?.isSimpleMode != state.isSimpleMode ||
+            _preservedMainWiFiState?.simpleModeWifi != state.simpleModeWifi) &&
         _dataVerify(state);
 
     final wifiBands =
@@ -91,9 +91,9 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
         onPositiveTap: () {
           if (state.isSimpleMode) {
             setQuickSetup(
-              ssid: _simpleWifiNameController.text,
-              password: _simpleWifiPasswordController.text,
-              securityType: _simpleSecurityType,
+              ssid: state.simpleModeWifi.ssid,
+              password: state.simpleModeWifi.password,
+              securityType: state.simpleModeWifi.securityType,
               mainWiFi: state.mainWiFi,
             );
           }
@@ -115,20 +115,34 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
                       simpleWifiNameController: _simpleWifiNameController,
                       simpleWifiPasswordController:
                           _simpleWifiPasswordController,
-                      simpleSecurityType: _simpleSecurityType,
+                      simpleSecurityType: state.simpleModeWifi.securityType,
                       onWifiNameEdited: (value) {
                         setState(() {
                           _simpleWifiNameController.text = value;
+                          final wifiItem =
+                              state.simpleModeWifi.copyWith(ssid: value);
+                          ref
+                              .read(wifiListProvider.notifier)
+                              .setSimpleModeWifi(wifiItem);
                         });
                       },
                       onWifiPasswordEdited: (value) {
                         setState(() {
                           _simpleWifiPasswordController.text = value;
+                          final wifiItem =
+                              state.simpleModeWifi.copyWith(password: value);
+                          ref
+                              .read(wifiListProvider.notifier)
+                              .setSimpleModeWifi(wifiItem);
                         });
                       },
                       onSecurityTypeChanged: (value) {
                         setState(() {
-                          _simpleSecurityType = value;
+                          final wifiItem = state.simpleModeWifi
+                              .copyWith(securityType: value);
+                          ref
+                              .read(wifiListProvider.notifier)
+                              .setSimpleModeWifi(wifiItem);
                         });
                       },
                     )
@@ -195,6 +209,9 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
                 ref.read(wifiListProvider.notifier).setSimpleMode(value);
                 if (value) {
                   _initSimpleModeSettings(ref.read(wifiListProvider));
+                } else {
+                  ref.read(wifiListProvider.notifier).setSimpleModeWifi(
+                      _preservedMainWiFiState!.simpleModeWifi);
                 }
               });
             },
@@ -304,10 +321,8 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
 
   void _initSimpleModeSettings(WiFiState state) {
     setState(() {
-      final firstEnabledWifi = _getFirstEnabledWifi(state.mainWiFi);
-      _simpleWifiNameController.text = firstEnabledWifi.ssid;
-      _simpleWifiPasswordController.text = firstEnabledWifi.password;
-      _simpleSecurityType = firstEnabledWifi.securityType;
+      _simpleWifiNameController.text = state.simpleModeWifi.ssid;
+      _simpleWifiPasswordController.text = state.simpleModeWifi.password;
     });
   }
 

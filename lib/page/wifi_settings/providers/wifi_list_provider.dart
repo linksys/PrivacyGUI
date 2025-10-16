@@ -85,7 +85,7 @@ class WifiListNotifier extends Notifier<WiFiState> {
       mainWiFi: wifiItems,
       guestWiFi: guestWiFi,
     );
-    checkMode();
+    _checkMode();
     logger.d('[State]:[wiFiList]: ${state.toJson()}');
     return state;
   }
@@ -114,7 +114,9 @@ class WifiListNotifier extends Notifier<WiFiState> {
             password: dashboardManagerState
                     .guestRadios.firstOrNull?.guestWPAPassphrase ??
                 '',
-            numOfDevices: deviceManagerState.guestWifiDevices.length));
+            numOfDevices: deviceManagerState.guestWifiDevices.length),
+        simpleModeWifi:
+            wifiItems.firstWhereOrNull((e) => e.isEnabled) ?? wifiItems.first);
   }
 
   Future<WiFiState> save() async {
@@ -288,7 +290,6 @@ class WifiListNotifier extends Notifier<WiFiState> {
             mainWiFi: List.from(state.mainWiFi)..[index] = newOne);
       }
     }
-    checkMode();
   }
 
   void setWiFiPassword(String password, [WifiRadioBand? band]) {
@@ -305,7 +306,6 @@ class WifiListNotifier extends Notifier<WiFiState> {
             mainWiFi: List.from(state.mainWiFi)..[index] = newOne);
       }
     }
-    checkMode();
   }
 
   void setWiFiEnabled(bool isEnabled, [WifiRadioBand? band]) {
@@ -322,7 +322,6 @@ class WifiListNotifier extends Notifier<WiFiState> {
             mainWiFi: List.from(state.mainWiFi)..[index] = newOne);
       }
     }
-    checkMode();
   }
 
   void setWiFiSecurityType(WifiSecurityType type, WifiRadioBand band) {
@@ -334,7 +333,6 @@ class WifiListNotifier extends Notifier<WiFiState> {
       state =
           state.copyWith(mainWiFi: List.from(state.mainWiFi)..[index] = newOne);
     }
-    checkMode();
   }
 
   void setWiFiMode(WifiWirelessMode mode, WifiRadioBand band) {
@@ -387,18 +385,25 @@ class WifiListNotifier extends Notifier<WiFiState> {
     }
   }
 
-  void checkMode() {
-    final firstWifi = state.mainWiFi.first;
+  void _checkMode() {
+    final simpleModeWifi =
+        state.mainWiFi.firstWhereOrNull((e) => e.isEnabled) ??
+            state.mainWiFi.first;
     final isSimple = state.mainWiFi.every((wifi) =>
-        wifi.isEnabled == firstWifi.isEnabled &&
-        wifi.ssid == firstWifi.ssid &&
-        wifi.password == firstWifi.password &&
-        wifi.securityType == firstWifi.securityType);
+        wifi.isEnabled == simpleModeWifi.isEnabled &&
+        wifi.ssid == simpleModeWifi.ssid &&
+        wifi.password == simpleModeWifi.password &&
+        wifi.securityType == simpleModeWifi.securityType);
 
-    state = state.copyWith(isSimpleMode: isSimple);
+    state =
+        state.copyWith(isSimpleMode: isSimple, simpleModeWifi: simpleModeWifi);
   }
 
   void setSimpleMode(bool isSimple) {
     state = state.copyWith(isSimpleMode: isSimple);
+  }
+
+  void setSimpleModeWifi(WiFiItem wifi) {
+    state = state.copyWith(simpleModeWifi: wifi);
   }
 }
