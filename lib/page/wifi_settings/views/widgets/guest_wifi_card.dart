@@ -1,15 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/guest_wifi_item.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_list_provider.dart';
-import 'package:privacy_gui/page/wifi_settings/views/widgets/validators.dart';
-import 'package:privacy_gui/page/wifi_settings/views/widgets/wifi_name_field.dart';
-import 'package:privacy_gui/page/wifi_settings/views/widgets/wifi_password_field.dart';
-import 'package:privacy_gui/validator_rules/_validator_rules.dart';
+import 'package:privacy_gui/page/wifi_settings/views/widgets/wifi_setting_modal_mixin.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
@@ -32,10 +27,7 @@ class GuestWiFiCard extends ConsumerStatefulWidget {
   ConsumerState<GuestWiFiCard> createState() => _GuestWiFiCardState();
 }
 
-class _GuestWiFiCardState extends ConsumerState<GuestWiFiCard> {
-  final InputValidator wifiSSIDValidator = getWifiSSIDValidator();
-  final InputValidator wifiPasswordValidator = getWifiPasswordValidator();
-
+class _GuestWiFiCardState extends ConsumerState<GuestWiFiCard> with WifiSettingModalMixin {
   final _guestPasswordController = TextEditingController();
 
   @override
@@ -111,7 +103,7 @@ class _GuestWiFiCardState extends ConsumerState<GuestWiFiCard> {
           semanticLabel: 'edit',
         ),
         onTap: () {
-          _showWiFiNameModal(state.ssid, (value) {
+          showWiFiNameModal(state.ssid, (value) {
             ref.read(wifiListProvider.notifier).setWiFiSSID(value);
           });
         },
@@ -139,87 +131,10 @@ class _GuestWiFiCardState extends ConsumerState<GuestWiFiCard> {
                 ))),
         trailing: const Icon(LinksysIcons.edit),
         onTap: () {
-          _showWifiPasswordModal(state.password, (value) {
+          showWifiPasswordModal(state.password, (value) {
             ref.read(wifiListProvider.notifier).setWiFiPassword(value);
           });
         },
       );
-
-  _showWiFiNameModal(String initValue, void Function(String) onEdited) async {
-    TextEditingController controller = TextEditingController()
-      ..text = initValue;
-    final result = await showSubmitAppDialog<String>(
-      context,
-      title: loc(context).wifiName,
-      contentBuilder: (context, setState, onSubmit) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          WifiNameField(
-            controller: controller,
-            semanticLabel: 'guest',
-            onChanged: (value) {
-              setState(() {
-                // Do setState to show error message
-              });
-            },
-            onSubmitted: (_) {
-              if (wifiSSIDValidator.validate(controller.text)) {
-                context.pop(controller.text);
-              }
-            },
-          ),
-        ],
-      ),
-      event: () async => controller.text,
-      checkPositiveEnabled: () => wifiSSIDValidator.validate(controller.text),
-    );
-
-    if (result != null) {
-      onEdited.call(result);
-    }
-  }
-
-  _showWifiPasswordModal(
-      String initValue, void Function(String) onEdited) async {
-    TextEditingController controller = TextEditingController()
-      ..text = initValue;
-    bool isPasswordValid = true;
-    bool isLength64 = initValue.length == 64;
-    final result = await showSubmitAppDialog<String>(
-      context,
-      title: loc(context).wifiPassword,
-      contentBuilder: (context, setState, onSubmit) => SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            WifiPasswordField(
-              controller: controller,
-              semanticLabel: 'guest',
-              isLength64: isLength64,
-              onChanged: (value) {
-                setState(() {
-                  isLength64 = value.length == 64;
-                });
-              },
-              onValidationChanged: (isValid) => setState(() {
-                isPasswordValid =
-                    wifiPasswordValidator.validate(controller.text);
-              }),
-              onSubmitted: (_) {
-                if (wifiPasswordValidator.validate(controller.text)) {
-                  context.pop(controller.text);
-                }
-              },
-            ),
-          ],
-        ),
-      ),
-      event: () async => controller.text,
-      checkPositiveEnabled: () => isPasswordValid,
-    );
-
-    if (result != null) {
-      onEdited(result);
-    }
-  }
+  
 }

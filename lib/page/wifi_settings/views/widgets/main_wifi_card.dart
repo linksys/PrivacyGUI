@@ -1,13 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
-import 'package:privacy_gui/page/wifi_settings/views/widgets/validators.dart';
-import 'package:privacy_gui/page/wifi_settings/views/widgets/wifi_name_field.dart';
-import 'package:privacy_gui/page/wifi_settings/views/widgets/wifi_password_field.dart';
-import 'package:privacy_gui/validator_rules/_validator_rules.dart';
+import 'package:privacy_gui/page/wifi_settings/views/widgets/wifi_setting_modal_mixin.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
@@ -15,7 +10,6 @@ import 'package:privacygui_widgets/widgets/card/list_card.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/radios/radio_list.dart';
 
 class MainWiFiCard extends ConsumerStatefulWidget {
   const MainWiFiCard({
@@ -33,17 +27,16 @@ class MainWiFiCard extends ConsumerStatefulWidget {
   ConsumerState<MainWiFiCard> createState() => _MainWiFiCardState();
 }
 
-class _MainWiFiCardState extends ConsumerState<MainWiFiCard> {
-  final InputValidator wifiSSIDValidator = getWifiSSIDValidator();
-  final InputValidator wifiPasswordValidator = getWifiPasswordValidator();
-
+class _MainWiFiCardState extends ConsumerState<MainWiFiCard>
+    with WifiSettingModalMixin {
   late final TextEditingController _passwordController;
 
   @override
   void initState() {
     super.initState();
     _passwordController = TextEditingController()
-      ..text = widget.radio.securityType.isOpenVariant ? '' : widget.radio.password;
+      ..text =
+          widget.radio.securityType.isOpenVariant ? '' : widget.radio.password;
   }
 
   @override
@@ -70,334 +63,33 @@ class _MainWiFiCardState extends ConsumerState<MainWiFiCard> {
         right: widget.lastInRow ? 0 : ResponsiveLayout.columnPadding(context),
         bottom: Spacing.medium,
       ),
-      child: Column(
-        children: [
-          AppCard(
-              key: ValueKey('WiFiCard-${radio.radioID.bandName}'),
-              padding: const EdgeInsets.symmetric(
-                  vertical: Spacing.small2, horizontal: Spacing.large2),
-              child: Column(
-                children: [
-                  _advancedWiFiBandCard(radio, widget.canBeDisable),
-                  if (radio.isEnabled) ...[
-                    const Divider(),
-                    _advancedWiFiNameCard(radio),
-                    const Divider(),
-                    _advancedWiFiPasswordCard(radio),
-                    const Divider(),
-                    _advancedWiFiSecurityTypeCard(radio),
-                    const Divider(),
-                    _advanvedWiFiWirelessModeCard(radio),
-                    const Divider(),
-                    _advancedWiFiBoradcastCard(radio),
-                    const Divider(),
-                    _advancedWiFiChannelWidthCard(radio),
-                    const Divider(),
-                    _advancedWiFiChannelCard(radio),
-                  ]
-                ],
-              )),
-        ],
-      ),
-    );
-  }
-
-  ///
-  /// Dialog modal
-  ///
-  _showWiFiNameModal(String initValue, void Function(String) onEdited) async {
-    TextEditingController controller = TextEditingController()
-      ..text = initValue;
-    final result = await showSubmitAppDialog<String>(
-      context,
-      title: loc(context).wifiName,
-      contentBuilder: (context, setState, onSubmit) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          WifiNameField(
-            controller: controller,
-            onChanged: (value) {
-              setState(() {
-                // Do setState to show error message
-              });
-            },
-            onSubmitted: (_) {
-              if (wifiSSIDValidator.validate(controller.text)) {
-                context.pop(controller.text);
-              }
-            },
-          ),
-        ],
-      ),
-      event: () async => controller.text,
-      checkPositiveEnabled: () => wifiSSIDValidator.validate(controller.text),
-    );
-
-    if (result != null) {
-      onEdited.call(result);
-    }
-  }
-
-  _showWifiPasswordModal(
-      String initValue, void Function(String) onEdited) async {
-    TextEditingController controller = TextEditingController()
-      ..text = initValue;
-    bool isPasswordValid = true;
-    bool isLength64 = initValue.length == 64;
-    final result = await showSubmitAppDialog<String>(
-      context,
-      title: loc(context).wifiPassword,
-      contentBuilder: (context, setState, onSubmit) => SingleChildScrollView(
+      child: AppCard(
+        key: ValueKey('WiFiCard-${radio.radioID.bandName}'),
+        padding: const EdgeInsets.symmetric(
+            vertical: Spacing.small2, horizontal: Spacing.large2),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            WifiPasswordField(
-              controller: controller,
-              isLength64: isLength64,
-              onChanged: (value) {
-                setState(() {
-                  isLength64 = value.length == 64;
-                });
-              },
-              onValidationChanged: (isValid) => setState(() {
-                isPasswordValid =
-                    wifiPasswordValidator.validate(controller.text);
-              }),
-              onSubmitted: (_) {
-                if (wifiPasswordValidator.validate(controller.text)) {
-                  context.pop(controller.text);
-                }
-              },
-            ),
+            _advancedWiFiBandCard(radio, widget.canBeDisable),
+            if (radio.isEnabled) ...[
+              const Divider(),
+              _advancedWiFiNameCard(radio),
+              const Divider(),
+              _advancedWiFiPasswordCard(radio),
+              const Divider(),
+              _advancedWiFiSecurityTypeCard(radio),
+              const Divider(),
+              _advanvedWiFiWirelessModeCard(radio),
+              const Divider(),
+              _advancedWiFiBoradcastCard(radio),
+              const Divider(),
+              _advancedWiFiChannelWidthCard(radio),
+              const Divider(),
+              _advancedWiFiChannelCard(radio),
+            ]
           ],
         ),
       ),
-      event: () async => controller.text,
-      checkPositiveEnabled: () => isPasswordValid,
     );
-
-    if (result != null) {
-      onEdited(result);
-    }
-  }
-
-  _showSecurityModeModal(
-    WifiSecurityType type,
-    List<WifiSecurityType> list,
-    void Function(WifiSecurityType) onSelected,
-  ) async {
-    WifiSecurityType selected = type;
-    final result = await showSimpleAppDialog<WifiSecurityType?>(context,
-        title: loc(context).securityMode,
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AppRadioList<WifiSecurityType>(
-              initial: type,
-              mainAxisSize: MainAxisSize.min,
-              itemHeight: 56,
-              items: list
-                  .map((e) => AppRadioListItem(
-                        title: getWifiSecurityTypeTitle(context, e),
-                        value: e,
-                      ))
-                  .toList(),
-              onChanged: (index, selectedType) {
-                if (selectedType != null) {
-                  selected = selectedType;
-                }
-              },
-            ),
-          ],
-        ),
-        actions: [
-          AppTextButton(
-            loc(context).cancel,
-            onTap: () {
-              context.pop();
-            },
-          ),
-          AppTextButton(
-            loc(context).ok,
-            onTap: () {
-              context.pop(selected);
-            },
-          ),
-        ]);
-
-    if (result != null) {
-      onSelected.call(result);
-    }
-  }
-
-  _showWirelessWiFiModeModal(
-    WifiWirelessMode mode,
-    WifiWirelessMode? defaultMixedMode,
-    List<WifiWirelessMode> list,
-    List<WifiWirelessMode> availablelist,
-    void Function(WifiWirelessMode) onSelected,
-  ) async {
-    WifiWirelessMode selected = mode;
-    final result = await showSimpleAppDialog<WifiWirelessMode?>(context,
-        title: loc(context).wifiMode,
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AppRadioList<WifiWirelessMode>(
-              initial: mode,
-              itemHeight: 56,
-              mainAxisSize: MainAxisSize.min,
-              items: list
-                  .map((e) => AppRadioListItem(
-                        title: getWifiWirelessModeTitle(
-                            context, e, defaultMixedMode),
-                        value: e,
-                        subTitleWidget: !availablelist.contains(e)
-                            ? AppText.bodySmall(
-                                loc(context).wifiModeNotAvailable,
-                                color: Theme.of(context).colorScheme.error,
-                              )
-                            : null,
-                      ))
-                  .toList(),
-              onChanged: (index, selectedType) {
-                if (selectedType != null) {
-                  selected = selectedType;
-                }
-              },
-            ),
-          ],
-        ),
-        actions: [
-          AppTextButton(
-            loc(context).cancel,
-            onTap: () {
-              context.pop();
-            },
-          ),
-          AppTextButton(
-            loc(context).ok,
-            onTap: () {
-              context.pop(selected);
-            },
-          ),
-        ]);
-
-    if (result != null) {
-      onSelected.call(result);
-    }
-  }
-
-  _showChannelModal(
-    int channel,
-    List<int> list,
-    WifiRadioBand band,
-    void Function(int) onSelected,
-  ) async {
-    int selected = channel;
-    final result = await showSimpleAppDialog<int?>(context,
-        title: loc(context).channel,
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AppRadioList<int>(
-                initial: channel,
-                itemHeight: 56,
-                mainAxisSize: MainAxisSize.min,
-                items: list
-                    .map((e) => AppRadioListItem(
-                          title: getWifiChannelTitle(context, e, band),
-                          value: e,
-                        ))
-                    .toList(),
-                onChanged: (index, selectedType) {
-                  if (selectedType != null) {
-                    selected = selectedType;
-                  }
-                },
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          AppTextButton(
-            loc(context).cancel,
-            onTap: () {
-              context.pop();
-            },
-          ),
-          AppTextButton(
-            loc(context).ok,
-            onTap: () {
-              context.pop(selected);
-            },
-          ),
-        ]);
-
-    if (result != null) {
-      onSelected.call(result);
-    }
-  }
-
-  _showChannelWidthModal(
-    WifiChannelWidth channelWidth,
-    List<WifiChannelWidth> list,
-    List<WifiChannelWidth> validList,
-    void Function(WifiChannelWidth) onSelected,
-  ) async {
-    WifiChannelWidth selected = channelWidth;
-    final result = await showSimpleAppDialog<WifiChannelWidth?>(context,
-        title: loc(context).channelWidth,
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AppRadioList<WifiChannelWidth>(
-                initial: channelWidth,
-                itemHeight: 56,
-                mainAxisSize: MainAxisSize.min,
-                items: list
-                    .map((e) => AppRadioListItem(
-                          title: getWifiChannelWidthTitle(
-                            context,
-                            e,
-                          ),
-                          value: e,
-                          enabled: validList.contains(e),
-                        ))
-                    .toList(),
-                onChanged: (index, selectedType) {
-                  if (selectedType != null) {
-                    selected = selectedType;
-                  }
-                },
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          AppTextButton(
-            loc(context).cancel,
-            onTap: () {
-              context.pop();
-            },
-          ),
-          AppTextButton(
-            loc(context).ok,
-            onTap: () {
-              context.pop(selected);
-            },
-          ),
-        ]);
-
-    if (result != null) {
-      onSelected.call(result);
-    }
   }
 
   List<WifiChannelWidth> getAvailableChannelWidths(
@@ -451,7 +143,7 @@ class _MainWiFiCardState extends ConsumerState<MainWiFiCard> {
           semanticLabel: 'edit',
         ),
         onTap: () {
-          _showWiFiNameModal(radio.ssid, (value) {
+          showWiFiNameModal(radio.ssid, (value) {
             ref
                 .read(wifiListProvider.notifier)
                 .setWiFiSSID(value, radio.radioID);
@@ -502,7 +194,7 @@ class _MainWiFiCardState extends ConsumerState<MainWiFiCard> {
             ),
             trailing: const Icon(LinksysIcons.edit),
             onTap: () {
-              _showWifiPasswordModal(radio.password, (value) {
+              showWifiPasswordModal(radio.password, (value) {
                 ref
                     .read(wifiListProvider.notifier)
                     .setWiFiPassword(value, radio.radioID);
@@ -527,7 +219,7 @@ class _MainWiFiCardState extends ConsumerState<MainWiFiCard> {
         semanticLabel: 'edit',
       ),
       onTap: () {
-        _showSecurityModeModal(radio.securityType, radio.availableSecurityTypes,
+        showSecurityModeModal(radio.securityType, radio.availableSecurityTypes,
             (value) {
           ref
               .read(wifiListProvider.notifier)
@@ -553,7 +245,7 @@ class _MainWiFiCardState extends ConsumerState<MainWiFiCard> {
         onTap: () {
           final validWirelessModes = validWirelessModeForChannelWidth(
               radio.channelWidth, radio.availableWirelessModes);
-          _showWirelessWiFiModeModal(radio.wirelessMode, radio.defaultMixedMode,
+          showWirelessWiFiModeModal(radio.wirelessMode, radio.defaultMixedMode,
               radio.availableWirelessModes, validWirelessModes, (value) {
             ref
                 .read(wifiListProvider.notifier)
@@ -597,7 +289,7 @@ class _MainWiFiCardState extends ConsumerState<MainWiFiCard> {
           semanticLabel: 'edit',
         ),
         onTap: () {
-          _showChannelWidthModal(
+          showChannelWidthModal(
             radio.channelWidth,
             radio.availableChannels.keys.toList(),
             getAvailableChannelWidths(
@@ -624,7 +316,7 @@ class _MainWiFiCardState extends ConsumerState<MainWiFiCard> {
           semanticLabel: 'edit',
         ),
         onTap: () {
-          _showChannelModal(
+          showChannelModal(
               radio.channel,
               radio.availableChannels[radio.channelWidth] ?? [],
               radio.radioID, (value) {
