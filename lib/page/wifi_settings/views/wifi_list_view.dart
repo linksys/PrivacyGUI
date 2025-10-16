@@ -188,6 +188,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
             ),
           ),
           AppSwitch(
+            semanticLabel: 'quick setup switch',
             value: isSimpleMode,
             onChanged: (value) {
               setState(() {

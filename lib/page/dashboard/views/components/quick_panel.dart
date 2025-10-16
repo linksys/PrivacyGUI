@@ -165,6 +165,7 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
                       message: tips,
                       child: Icon(
                         Icons.info_outline,
+                        semanticLabel: '{$semantics} icon',
                         color: Theme.of(context).colorScheme.primary,
                       ),
                     )
