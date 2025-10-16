@@ -1,0 +1,37 @@
+- id: 56
+  symbolic_id: "WIFI_ADVANCED_SETTINGS_SAVE"
+  tags:
+    - "wifi"
+    - "menu"
+  name: "Incredible WiFi - Advanced Settings - Toggle and Save"
+  objective: "Verify advanced WiFi settings can be toggled and saved."
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to the \"Advanced\" tab in \"Incredible WiFi\"."
+    - action: "Toggle the 'Client Steering' switch."
+    - action: "Toggle the 'Node Steering' switch."
+    - action: "Toggle the 'DFS' switch."
+    - action: "Toggle the 'MLO' switch."
+    - action: "Toggle the 'IPTV' switch."
+      verify: "Each switch updates in the UI."
+    - action: "Click \"Save\"."
+      verify: "If DFS was enabled, a confirmation modal for DFS appears."
+    - action: "Click 'OK' on the confirmation modal (if it appeared)."
+    - action: "Wait for the confirmation to disappear."
+      verify: "A success toast (e.g., \"Saved\") is displayed."
+  expected_result: "The advanced settings are saved successfully."
+
+- id: 57
+  symbolic_id: "WIFI_MLO_ALERT_CHECK"
+  tags:
+    - "wifi"
+    - "menu"
+  name: "Incredible WiFi - MLO Alert for Different SSIDs"
+  objective: "Verify MLO alert is shown for different SSIDs."
+  preconditions:
+    - "SSIDs for 2.4GHz and 5GHz bands are different."
+  steps:
+    - action: "Navigate to the \"Advanced\" tab in \"Incredible WiFi\"."
+      verify: "An MLO warning is displayed."
+  expected_result: "The system correctly detects the SSID mismatch and displays the MLO alert."
