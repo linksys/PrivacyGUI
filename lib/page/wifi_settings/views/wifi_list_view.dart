@@ -88,7 +88,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
       padding: EdgeInsets.zero,
       bottomBar: PageBottomBar(
         isPositiveEnabled: isPositiveEnabled,
-        onPositiveTap: () {
+        onPositiveTap: () async {
           if (state.isSimpleMode) {
             setQuickSetup(
               ssid: state.simpleModeWifi.ssid,
@@ -97,7 +97,10 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
               mainWiFi: state.mainWiFi,
             );
           }
-          _showSaveConfirmModal();
+          final result = await _showSaveConfirmModal();
+          if (!result) {
+            _restoreMainWifi();
+          }
         },
       ),
       useMainPadding: true,
@@ -228,8 +231,8 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
     required List<WiFiItem> mainWiFi,
   }) {
     logger.i('[WiFiListView] setQuickSetup');
+    final notifier = ref.read(wifiListProvider.notifier);
     for (var radio in mainWiFi) {
-      final notifier = ref.read(wifiListProvider.notifier);
       // SSID
       notifier.setWiFiSSID(ssid, radio.radioID);
       // Password
@@ -241,7 +244,22 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
     }
   }
 
-  _showSaveConfirmModal() async {
+  void _restoreMainWifi() {
+    logger.i('[WiFiListView] restoreMainWifi');
+    final notifier = ref.read(wifiListProvider.notifier);
+    for (var radio in _preservedMainWiFiState!.mainWiFi) {
+      // SSID
+      notifier.setWiFiSSID(radio.ssid, radio.radioID);
+      // Password
+      notifier.setWiFiPassword(radio.password, radio.radioID);
+      // Security type
+      notifier.setWiFiSecurityType(radio.securityType, radio.radioID);
+      // Enable wifi
+      notifier.setWiFiEnabled(radio.isEnabled, radio.radioID);
+    }
+  }
+
+  Future<bool> _showSaveConfirmModal() async {
     final newState = ref.read(wifiListProvider);
     final result = await showSimpleAppDialog(context,
         title: loc(context).wifiListSaveModalTitle,
@@ -264,7 +282,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
           AppTextButton(
             loc(context).cancel,
             onTap: () {
-              context.pop();
+              context.pop(false);
             },
           ),
           AppTextButton(loc(context).ok, onTap: () {
@@ -272,28 +290,29 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
           })
         ]);
     if (result) {
-      if (!mounted) return;
+      if (!mounted) return false;
       doSomethingWithSpinner(
               context, ref.read(wifiListProvider.notifier).save())
           .then((state) {
-        if (!mounted) return;
+        if (!mounted) return false;
         update(state);
         showChangesSavedSnackBar();
       }).catchError((error, stackTrace) {
-        if (!mounted) return;
+        if (!mounted) return false;
         showRouterNotFoundAlert(context, ref,
             onComplete: () =>
                 ref.read(wifiListProvider.notifier).fetch(true)).then((state) {
-          if (!mounted) return;
+          if (!mounted) return false;
           update(state);
           showChangesSavedSnackBar();
         });
       }, test: (error) => error is JNAPSideEffectError).onError(
               (error, stackTrace) {
-        if (!mounted) return;
+        if (!mounted) return false;
         showErrorMessageSnackBar(error);
       });
     }
+    return result;
   }
 
   bool _dataVerify(WiFiState state) {
