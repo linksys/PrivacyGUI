@@ -160,7 +160,6 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
   Widget _wifiDescription(String wifiBands) {
     return AppCard(
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
             Icons.info_outline_rounded,
@@ -182,7 +181,6 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
   Widget _quickSetupSwitch(bool isSimpleMode) {
     return AppCard(
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
             Icons.bolt_outlined,
