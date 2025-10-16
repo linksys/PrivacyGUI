@@ -11,6 +11,7 @@ import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
 class SimpleModeView extends ConsumerStatefulWidget {
@@ -100,6 +101,7 @@ class _SimpleModeViewState extends ConsumerState<SimpleModeView>
 
   Widget _settingsView(List<WifiSecurityType> securityTypeList) {
     return AppCard(
+      padding: const EdgeInsets.symmetric(horizontal: Spacing.medium),
       child: Column(
         children: [
           _advancedWiFiNameCard(widget.simpleWifiNameController.text),
