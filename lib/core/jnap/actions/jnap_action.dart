@@ -156,7 +156,7 @@ enum JNAPAction {
   setDualWANSettings,
   getDualWANSettings,
   getDualWANStatus,
-  getEthernetPortConnections2, // TODO rename
+  getDualWANEthernetPortConnections, // TODO rename
   // routerManagement
   getManagementSettings,
   setManagementSettings,

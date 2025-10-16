@@ -39,7 +39,7 @@ class DualWANSettingsNotifier extends Notifier<DualWANSettingsState> {
     if (settings.enabled) {
       final builder = JNAPTransactionBuilder(commands: [
         MapEntry(JNAPAction.getDualWANStatus, {}),
-        MapEntry(JNAPAction.getEthernetPortConnections2, {}),
+        MapEntry(JNAPAction.getEthernetPortConnections, {}),
       ], auth: true);
 
       await repo.transaction(builder).then((result) {
@@ -50,7 +50,7 @@ class DualWANSettingsNotifier extends Notifier<DualWANSettingsState> {
             ?.output;
         final portsData = (result.data
                 .firstWhereOrNull((entry) =>
-                    entry.key == JNAPAction.getEthernetPortConnections2)
+                    entry.key == JNAPAction.getEthernetPortConnections)
                 ?.value as JNAPSuccess?)
             ?.output;
 

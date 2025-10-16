@@ -78,12 +78,16 @@ class DualWANConnectionStatus extends Equatable {
 
   factory DualWANConnectionStatus.fromData(RouterDualWANStatus data) {
     return DualWANConnectionStatus(
-      primaryStatus: DualWANConnection.fromValue(data.primaryWANStatus),
-      secondaryStatus: DualWANConnection.fromValue(data.secondaryWANStatus),
-      primaryWANIPAddress: data.primaryWANConnection.ipAddress,
-      secondaryWANIPAddress: data.secondaryWANConnection.ipAddress,
-      primaryUptime: data.primaryWANConnection.uptime,
-      secondaryUptime: data.secondaryWANConnection.uptime,
+      primaryStatus: data.primaryWANStatus != null
+          ? DualWANConnection.fromValue(data.primaryWANStatus!)
+          : DualWANConnection.disconnected,
+      secondaryStatus: data.secondaryWANStatus != null
+          ? DualWANConnection.fromValue(data.secondaryWANStatus!)
+          : DualWANConnection.disconnected,
+      primaryWANIPAddress: data.primaryWANConnection?.ipAddress,
+      secondaryWANIPAddress: data.secondaryWANConnection?.ipAddress,
+      primaryUptime: data.primaryWANConnection?.uptime,
+      secondaryUptime: data.secondaryWANConnection?.uptime,
     );
   }
 }
