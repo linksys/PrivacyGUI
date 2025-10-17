@@ -10,22 +10,30 @@ class WiFiState extends Equatable {
   final List<WiFiItem> mainWiFi;
   final GuestWiFiItem guestWiFi;
   final bool canDisableMainWiFi;
+  final bool isSimpleMode;
+  final WiFiItem simpleModeWifi;
 
   const WiFiState({
     required this.mainWiFi,
     required this.guestWiFi,
     this.canDisableMainWiFi = true,
+    this.isSimpleMode = true,
+    required this.simpleModeWifi,
   });
 
   WiFiState copyWith({
     List<WiFiItem>? mainWiFi,
     GuestWiFiItem? guestWiFi,
     bool? canDisableMainWiFi,
+    bool? isSimpleMode,
+    WiFiItem? simpleModeWifi,
   }) {
     return WiFiState(
       mainWiFi: mainWiFi ?? this.mainWiFi,
       guestWiFi: guestWiFi ?? this.guestWiFi,
       canDisableMainWiFi: canDisableMainWiFi ?? this.canDisableMainWiFi,
+      isSimpleMode: isSimpleMode ?? this.isSimpleMode,
+      simpleModeWifi: simpleModeWifi ?? this.simpleModeWifi,
     );
   }
 
@@ -34,6 +42,8 @@ class WiFiState extends Equatable {
         mainWiFi,
         guestWiFi,
         canDisableMainWiFi,
+        isSimpleMode,
+        simpleModeWifi,
       ];
 
   Map<String, dynamic> toMap() {
@@ -41,6 +51,8 @@ class WiFiState extends Equatable {
       'mainWiFi': mainWiFi.map((x) => x.toMap()).toList(),
       'guestWiFi': guestWiFi.toMap(),
       'canDisableMainWiFi': canDisableMainWiFi,
+      'isSimpleMode': isSimpleMode,
+      'simpleModeWifi': simpleModeWifi.toMap(),
     };
   }
 
@@ -53,6 +65,8 @@ class WiFiState extends Equatable {
       ),
       guestWiFi: GuestWiFiItem.fromMap(map['guestWiFi'] ?? {}),
       canDisableMainWiFi: map['canDisableMainWiFi'],
+      isSimpleMode: map['isSimpleMode'] as bool? ?? true,
+      simpleModeWifi: WiFiItem.fromMap(map['simpleModeWifi'] ?? {}),
     );
   }
 
