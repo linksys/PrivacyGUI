@@ -56,6 +56,7 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
     var wanIpAddress = '';
     var hardwareVersion = '';
     var isMLO = false;
+    var macAddress = '';
 
     RawDevice? master = deviceManagerState.deviceList
         .firstWhereOrNull((element) => element.isAuthority);
@@ -84,6 +85,7 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
             .map((e) => ref.read(deviceListProvider.notifier).createItem(e))
             .toList();
         isMLO = device.wirelessConnectionInfo?.isMultiLinkOperation ?? false;
+        macAddress = device.getMacAddress();
       }
     }
 
@@ -103,6 +105,7 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
       lanIpAddress: lanIpAddress,
       wanIpAddress: wanIpAddress,
       isMLO: isMLO,
+      macAddress: macAddress,
     );
     logger.d('[State]:[NodeDetailsState]: ${state.toJson()}');
     return state;

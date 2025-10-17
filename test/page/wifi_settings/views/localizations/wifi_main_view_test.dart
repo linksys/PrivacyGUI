@@ -295,6 +295,38 @@ void main() {
       await tester.pumpWidget(widget);
       await tester.pumpAndSettle();
       final editIconFinder = find.byIcon(LinksysIcons.edit);
+      await tester.scrollUntilVisible(editIconFinder.at(3), 100,
+          scrollable: find.byType(Scrollable).last);
+      await tester.tap(editIconFinder.at(3));
+      await tester.pumpAndSettle();
+    });
+
+    testLocalizations(
+        'Incredible-WiFi - Wifi list view - edit WiFi mode with invalid value',
+        (tester, locale) async {
+      when(mockWiFiListNotifier.build())
+          .thenReturn(WiFiState.fromMap(wifiListInvalidWirelessModeTestState));
+
+      when(mockWiFiListNotifier.fetch(any)).thenAnswer((realInvocation) async {
+        await Future.delayed(Durations.extralong1);
+        return WiFiState.fromMap(wifiListInvalidWirelessModeTestState);
+      });
+      final widget = testableSingleRoute(
+        overrides: [
+          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
+          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
+          wifiAdvancedProvider
+              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
+          instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
+        ],
+        locale: locale,
+        child: const WiFiMainView(),
+      );
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+      final editIconFinder = find.byIcon(LinksysIcons.edit);
+      await tester.scrollUntilVisible(editIconFinder.at(3), 100,
+          scrollable: find.byType(Scrollable).last);
       await tester.tap(editIconFinder.at(3));
       await tester.pumpAndSettle();
     });
@@ -315,6 +347,42 @@ void main() {
       await tester.pumpWidget(widget);
       await tester.pumpAndSettle();
       final editIconFinder = find.byIcon(LinksysIcons.edit);
+      await tester.scrollUntilVisible(editIconFinder.at(4), 100,
+          scrollable: find.byType(Scrollable).last);
+      await tester.tap(editIconFinder.at(4));
+      await tester.pumpAndSettle();
+    });
+
+    testLocalizations(
+        'Incredible-WiFi - Wifi list view - edit channel width with unavailable value',
+        (tester, locale) async {
+      when(mockWiFiListNotifier.build()).thenReturn(
+          WiFiState.fromMap(wifiListUnavailableChannelWidthTestState));
+
+      when(mockWiFiListNotifier.fetch(any)).thenAnswer((realInvocation) async {
+        await Future.delayed(Durations.extralong1);
+        return WiFiState.fromMap(wifiListUnavailableChannelWidthTestState);
+      });
+      final widget = testableSingleRoute(
+        overrides: [
+          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
+          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
+          wifiAdvancedProvider
+              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
+          instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
+        ],
+        locale: locale,
+        child: const WiFiMainView(),
+      );
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+      // find wifi card
+      final wifiCardFinder = find.byKey(ValueKey('WiFiCard-5GHz'));
+      expect(wifiCardFinder, findsOneWidget);
+      final editIconFinder = find.descendant(
+          of: wifiCardFinder, matching: find.byIcon(LinksysIcons.edit));
+      await tester.scrollUntilVisible(editIconFinder.at(4), 100,
+          scrollable: find.byType(Scrollable).last);
       await tester.tap(editIconFinder.at(4));
       await tester.pumpAndSettle();
     });
@@ -758,7 +826,8 @@ void main() {
         args: {
           'type': 'mac',
           'selected': InstantPrivacyState.fromMap(instantPrivacyDenyTestState)
-              .settings.denyMacAddresses,
+              .settings
+              .denyMacAddresses,
         },
       ),
     );
