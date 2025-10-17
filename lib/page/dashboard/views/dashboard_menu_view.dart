@@ -172,7 +172,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
           description: loc(context).instantSafetyDesc,
           iconData: LinksysIcons.encrypted,
           disabledOnBridge: true,
-          status: safetyState.safeBrowsingType == InstantSafetyType.off,
+          status: safetyState.settings.current.safeBrowsingType == InstantSafetyType.off,
           onTap: () {
             _navigateTo(RouteNamed.menuInstantSafety);
           }),

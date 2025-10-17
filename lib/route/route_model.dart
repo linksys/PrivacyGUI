@@ -1,11 +1,12 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
+import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/build_config.dart';
-
-import 'package:privacy_gui/page/components/styled/top_bar.dart';
+import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/providers/feature_state.dart';
+import 'package:privacy_gui/providers/preservable_notifier.dart';
 
 ValueNotifier<bool> showColumnOverlayNotifier =
     ValueNotifier(BuildConfig.showColumnOverlay);
@@ -47,22 +48,53 @@ class LinksysRoute extends GoRoute {
   LinksysRoute({
     required super.path,
     super.name,
-    required Widget Function(BuildContext, GoRouterState) builder,
+    required super.builder,
     super.pageBuilder,
     super.parentNavigatorKey,
     super.redirect,
-    super.onExit,
+    FutureOr<bool> Function(BuildContext, GoRouterState)? onExit,
     this.config,
     super.routes = const <RouteBase>[],
-  }) : super(builder: (context, state) {
-          return builder(context, state);
-        });
+    // New parameters for dirty checking
+    Provider<PreservableContract>? preservableProvider,
+    bool enableDirtyCheck = false,
+    Future<bool?> Function(BuildContext)? showAlertForTest,
+  }) : super(
+          onExit: (context, state) async {
+            // First, run any custom onExit logic provided by the developer.
+            if (onExit != null) {
+              if (!await onExit(context, state)) {
+                return false; // Custom logic blocked navigation.
+              }
+            }
+
+            // If dirty checking is enabled and a provider is given...
+            if (enableDirtyCheck && preservableProvider != null) {
+              final container = ProviderScope.containerOf(context);
+              final notifier = container.read(preservableProvider);
+
+              if (notifier.isDirty()) {
+                final bool? confirmed = await (showAlertForTest?.call(context) ?? showUnsavedAlert(context));
+                if (confirmed == true) {
+                  // User wants to discard, so revert the state.
+                  notifier.revert();
+                  return true; // Allow navigation
+                } else {
+                  return false; // User cancelled, block navigation.
+                }
+              }
+            }
+
+            // Allow navigation to proceed.
+            return true;
+          },
+        );
 
   static bool isShowNaviRail(
           BuildContext context, LinksysRouteConfig? config) =>
       config == null ? true : config.noNaviRail != true;
 
-  // 
+  //
 
   static bool autoHideNaviRail(BuildContext context) =>
       (GoRouter.of(context)

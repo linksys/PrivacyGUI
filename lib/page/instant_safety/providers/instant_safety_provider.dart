@@ -1,4 +1,3 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
@@ -12,10 +11,17 @@ import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/page/instant_safety/providers/instant_safety_state.dart';
+import 'package:privacy_gui/providers/preservable.dart';
+
+import 'package:privacy_gui/providers/preservable_notifier.dart';
 
 final instantSafetyProvider =
     NotifierProvider<InstantSafetyNotifier, InstantSafetyState>(
         () => InstantSafetyNotifier());
+
+final preservableInstantSafetyProvider = Provider<PreservableContract>((ref) {
+  return ref.watch(instantSafetyProvider.notifier);
+});
 
 final DhcpOption fortinetSetting = DhcpOption(
   type: InstantSafetyType.fortinet,
@@ -27,108 +33,118 @@ final DhcpOption openDNSSetting = DhcpOption(
   dnsServer2: '208.67.220.123',
 );
 // Remove all fortinet compatibility map
-final compatibilityMap = [
-  // const CompatibilityItem(
-  //   modelRegExp: '^MX62',
-  //   compatibleFW: CompatibilityFW(min: '1.0.5.213402'),
-  // ),
-  // const CompatibilityItem(
-  //   modelRegExp: '^MBE70',
-  //   compatibleFW: CompatibilityFW(min: '1.0.4.213257'),
-  // ),
-  // const CompatibilityItem(modelRegExp: '^MBE71'),
-  // const CompatibilityItem(
-  //   modelRegExp: '^LN11',
-  //   compatibleFW: CompatibilityFW(min: '1.0.2.213420'),
-  // ),
-  // const CompatibilityItem(modelRegExp: '^LN14'),
-  // const CompatibilityItem(modelRegExp: '^LN15'),
-  // const CompatibilityItem(modelRegExp: '^LN16'),
-  // const CompatibilityItem(modelRegExp: '^MX57'),
-];
+final compatibilityMap = [];
 
-class InstantSafetyNotifier extends Notifier<InstantSafetyState> {
+class InstantSafetyNotifier extends Notifier<InstantSafetyState> 
+    with PreservableNotifierMixin<InstantSafetySettings, InstantSafetyStatus, InstantSafetyState> {
   @override
   InstantSafetyState build() {
     fetchLANSettings(fetchRemote: true);
-    return const InstantSafetyState();
+    return InstantSafetyState.initial();
   }
 
-  Future fetchLANSettings({bool fetchRemote = false}) async {
+  Future<void> fetchLANSettings({bool fetchRemote = false}) async {
     final repo = ref.read(routerRepositoryProvider);
-    final lanSettings = await repo
-        .send(
-          JNAPAction.getLANSettings,
-          fetchRemote: fetchRemote,
-          auth: true,
-        )
-        .then((value) => RouterLANSettings.fromMap(value.output));
+    try {
+      final lanSettings = await repo
+          .send(
+            JNAPAction.getLANSettings,
+            fetchRemote: fetchRemote,
+            auth: true,
+          )
+          .then((value) => RouterLANSettings.fromMap(value.output));
 
-    final safeBrowsingType = getSafeBrowsingType(lanSettings);
+      final safeBrowsingType = _getSafeBrowsingType(lanSettings);
+      final hasFortinetValue = _hasFortinet();
 
-    state = state.copyWith(
-      lanSetting: lanSettings,
-      safeBrowsingType: safeBrowsingType,
-      hasFortinet: hasFortinet(),
-    );
+      final settings = InstantSafetySettings(safeBrowsingType: safeBrowsingType);
+      final status = InstantSafetyStatus(lanSetting: lanSettings, hasFortinet: hasFortinetValue);
+
+      state = state.copyWith(
+        settings: Preservable(original: settings, current: settings),
+        status: status,
+      );
+    } catch (e) {
+      rethrow;
+    }
   }
 
-  Future setSafeBrowsing(InstantSafetyType safeBrowsingType) async {
-    final lanSetting = state.lanSetting;
-    if (lanSetting != null) {
-      DHCPSettings dhcpSettings;
-      switch (safeBrowsingType) {
-        case InstantSafetyType.fortinet:
-          dhcpSettings = lanSetting.dhcpSettings.copyWith(
-            dnsServer1: fortinetSetting.dnsServer1,
-            dnsServer2: fortinetSetting.dnsServer2,
-            dnsServer3: fortinetSetting.dnsServer3,
-          );
-        case InstantSafetyType.openDNS:
-          dhcpSettings = lanSetting.dhcpSettings.copyWith(
-            dnsServer1: openDNSSetting.dnsServer1,
-            dnsServer2: openDNSSetting.dnsServer2,
-            dnsServer3: openDNSSetting.dnsServer3,
-          );
-        case InstantSafetyType.off:
-          dhcpSettings = DHCPSettings(
-            lastClientIPAddress: lanSetting.dhcpSettings.lastClientIPAddress,
-            leaseMinutes: lanSetting.dhcpSettings.leaseMinutes,
-            reservations: lanSetting.dhcpSettings.reservations,
-            firstClientIPAddress: lanSetting.dhcpSettings.firstClientIPAddress,
-          );
-      }
-      final setLanSetting = SetRouterLANSettings(
-        ipAddress: lanSetting.ipAddress,
-        networkPrefixLength: lanSetting.networkPrefixLength,
-        hostName: lanSetting.hostName,
-        isDHCPEnabled: lanSetting.isDHCPEnabled,
-        dhcpSettings: dhcpSettings,
-      );
+  Future<void> save() async {
+    final currentSettings = state.settings.current;
+    final lanSetting = state.status.lanSetting;
 
-      final repo = ref.read(routerRepositoryProvider);
-      await repo
-          .send(
+    if (lanSetting == null) {
+      throw SafeBrowsingError(message: 'Lan settings not available');
+    }
+
+    DHCPSettings dhcpSettings;
+    switch (currentSettings.safeBrowsingType) {
+      case InstantSafetyType.fortinet:
+        dhcpSettings = lanSetting.dhcpSettings.copyWith(
+          dnsServer1: fortinetSetting.dnsServer1,
+          dnsServer2: fortinetSetting.dnsServer2,
+          dnsServer3: fortinetSetting.dnsServer3,
+        );
+      case InstantSafetyType.openDNS:
+        dhcpSettings = lanSetting.dhcpSettings.copyWith(
+          dnsServer1: openDNSSetting.dnsServer1,
+          dnsServer2: openDNSSetting.dnsServer2,
+          dnsServer3: openDNSSetting.dnsServer3,
+        );
+      case InstantSafetyType.off:
+        dhcpSettings = DHCPSettings(
+          lastClientIPAddress: lanSetting.dhcpSettings.lastClientIPAddress,
+          leaseMinutes: lanSetting.dhcpSettings.leaseMinutes,
+          reservations: lanSetting.dhcpSettings.reservations,
+          firstClientIPAddress: lanSetting.dhcpSettings.firstClientIPAddress,
+        );
+    }
+    final setLanSetting = SetRouterLANSettings(
+      ipAddress: lanSetting.ipAddress,
+      networkPrefixLength: lanSetting.networkPrefixLength,
+      hostName: lanSetting.hostName,
+      isDHCPEnabled: lanSetting.isDHCPEnabled,
+      dhcpSettings: dhcpSettings,
+    );
+
+    final repo = ref.read(routerRepositoryProvider);
+    try {
+      await repo.send(
         JNAPAction.setLANSettings,
         auth: true,
         cacheLevel: CacheLevel.noCache,
         data: setLanSetting.toMap(),
-      )
-          .then((value) async {
-        await fetchLANSettings(fetchRemote: true);
-      }).onError((error, stackTrace) {
-        if (error is JNAPSideEffectError) {
-          throw error;
-        }
-        throw SafeBrowsingError(message: (error as JNAPError).error);
-      });
-    } else {
-      // ERROR
-      throw SafeBrowsingError(message: 'Lan settings NULL');
+      );
+      await fetchLANSettings(fetchRemote: true);
+    } catch (error) {
+      if (error is JNAPSideEffectError) {
+        rethrow;
+      }
+      throw SafeBrowsingError(message: (error as JNAPError).error);
     }
   }
 
-  InstantSafetyType getSafeBrowsingType(RouterLANSettings lanSettings) {
+  void setSafeBrowsingEnabled(bool isEnabled) {
+    final newType = isEnabled
+        ? (state.status.hasFortinet ? InstantSafetyType.fortinet : InstantSafetyType.openDNS)
+        : InstantSafetyType.off;
+    
+    state = state.copyWith(
+      settings: state.settings.update(
+        state.settings.current.copyWith(safeBrowsingType: newType),
+      ),
+    );
+  }
+
+  void setSafeBrowsingProvider(InstantSafetyType provider) {
+    state = state.copyWith(
+      settings: state.settings.update(
+        state.settings.current.copyWith(safeBrowsingType: provider),
+      ),
+    );
+  }
+
+  InstantSafetyType _getSafeBrowsingType(RouterLANSettings lanSettings) {
     final dnsServer1 = lanSettings.dhcpSettings.dnsServer1;
     if (dnsServer1 == fortinetSetting.dnsServer1) {
       return InstantSafetyType.fortinet;
@@ -139,7 +155,7 @@ class InstantSafetyNotifier extends Notifier<InstantSafetyState> {
     }
   }
 
-  bool hasFortinet() {
+  bool _hasFortinet() {
     final coreTransactionData = ref.read(pollingProvider).value;
     final result = coreTransactionData?.data;
     if (result != null) {

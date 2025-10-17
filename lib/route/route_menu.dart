@@ -4,6 +4,8 @@ final menus = [
   LinksysRoute(
     name: RouteNamed.menuInstantSafety,
     path: RoutePath.safeBrowsing,
+    preservableProvider: preservableInstantSafetyProvider,
+    enableDirtyCheck: true,
     config: LinksysRouteConfig(
       column: ColumnGrid(column: 9),
     ),

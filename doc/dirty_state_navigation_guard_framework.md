@@ -1,10 +1,10 @@
-# Dirty State Navigation Guard Framework
+# "Dirty State" Navigation Guard Framework
 
 ## 1. Problem Statement
 
 In a complex application, users frequently make changes to settings on a page. If the user accidentally navigates away (e.g., by clicking the browser's back button, or using a menu to go to another page) before saving, their changes are lost without warning.
 
-The existing approach of handling this via a custom `onBackTap` callback on a page's app bar is insufficient, as it does not cover all navigation scenarios. A robust, application-wide solution is needed to intercept any navigation attempt away from a "dirty" (modified but unsaved) page and prompt the user for confirmation.
+A robust, application-wide solution is needed to intercept any navigation attempt away from a "dirty" (modified but unsaved) page and prompt the user for confirmation.
 
 ## 2. Core Requirement
 
@@ -12,37 +12,30 @@ To design and implement a generic, reusable, and declarative framework that:
 1.  Can be easily applied to any feature/page that has saveable settings.
 2.  Reliably detects if a page's state is "dirty".
 3.  Separates user-configurable "settings" from transient system "status" to prevent false-positive dirty checks.
-4.  Integrates seamlessly with `go_router` to intercept all forms of navigation (pops, `go`, `push`).
+4.  Integrates seamlessly with `go_router` to intercept all forms of navigation.
 5.  Provides a simple, declarative API for developers to enable this feature on a per-route basis.
 
 ## 3. Architectural Solution
 
-The proposed solution is a three-part framework that leverages Riverpod for state management and `go_router` for navigation, built on a principle of composition.
+The proposed solution is a framework built on a principle of composition and contracts, consisting of four main parts.
 
-### Part 1: `Preservable<T>` - The Core Wrapper
+### Part 1: `Preservable<T>` - The Core Data Wrapper
 
-This is a generic wrapper class responsible for tracking the state of user-configurable settings. It holds two copies of the data: `original` (the state when the page was loaded or last saved) and `current` (the state after user modifications). It contains the core `isDirty` logic.
+This generic class tracks the state of user-configurable settings. It holds `original` and `current` versions of the data and contains the core `isDirty` logic.
 
 **File:** `lib/providers/preservable.dart`
 ```dart
 import 'package:equatable/equatable.dart';
 
-/// A generic wrapper for data that needs dirty-checking.
-/// `T` represents the settings data class.
 class Preservable<T extends Equatable> extends Equatable {
   final T original;
   final T current;
 
   const Preservable({required this.original, required this.current});
 
-  /// True if the current data is different from the original.
   bool get isDirty => original != current;
 
-  /// Returns a new instance with an updated `current` value.
   Preservable<T> update(T newCurrent) => copyWith(current: newCurrent);
-
-  /// Returns a new instance where `original` is updated to match `current`.
-  /// This is called after a successful save operation.
   Preservable<T> saved() => copyWith(original: current);
 
   Preservable<T> copyWith({T? original, T? current}) {
@@ -59,148 +52,132 @@ class Preservable<T extends Equatable> extends Equatable {
 
 ### Part 2: `FeatureState<S, T>` - The State Template
 
-This abstract class provides a standardized structure for a feature's state object. It enforces the separation of concerns between `settings` (which are wrapped by `Preservable<T>`) and `status` (transient, read-only data).
+This abstract class provides a standardized structure for a feature's state object, separating `settings` from `status`. We add an abstract `copyWith` method to ensure subclasses can be updated immutably.
 
 **File:** `lib/providers/feature_state.dart`
 ```dart
 import 'package:equatable/equatable.dart';
 import 'preservable.dart';
 
-/// An abstract base class for feature states that separates
-/// preservable settings from transient status.
-///
-/// [TSettings] is the type for user-configurable data.
-/// [TStatus] is the type for read-only system status data.
 abstract class FeatureState<TSettings extends Equatable, TStatus extends Equatable> extends Equatable {
   final Preservable<TSettings> settings;
   final TStatus status;
 
   const FeatureState({required this.settings, required this.status});
 
-  /// Checks if the settings have been modified.
   bool get isDirty => settings.isDirty;
+
+  // Contract to ensure subclasses are copyable.
+  FeatureState<TSettings, TStatus> copyWith({
+    Preservable<TSettings>? settings,
+    TStatus? status,
+  });
 
   @override
   List<Object?> get props => [settings, status];
 }
 ```
 
-### Part 3: `LinksysRoute` - The Smart Router
+### Part 3: The Notifier Contract & Implementation (Interface + Mixin)
 
-This custom `GoRoute` subclass encapsulates the navigation guard logic. By making it generic and aware of the feature's provider, it can automatically enable the `onExit` dirty check in a declarative way.
+To provide reusable logic (`revert`, `isDirty`) while allowing `LinksysRoute` to safely interact with any Notifier, we use a combination of an interface and a mixin.
 
-**File:** `lib/route/linksys_route.dart` (Example Path)
+**File:** `lib/providers/preservable_notifier.dart`
 ```dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/providers/feature_state.dart';
+import 'package:equatable/equatable.dart';
+import 'feature_state.dart';
+import 'preservable.dart';
 
-class LinksysRoute<S extends FeatureState> extends GoRoute {
-  
+// The Interface (The "What")
+// This defines the contract that LinksysRoute will check for.
+abstract class PreservableContract {
+  void revert();
+  bool isDirty();
+}
+
+// The Mixin (The "How")
+// This provides the reusable implementation for any Notifier.
+mixin PreservableNotifierMixin<
+    TSettings extends Equatable,
+    TStatus extends Equatable,
+    TState extends FeatureState<TSettings, TStatus>> on Notifier<TState> implements PreservableContract {
+  @override
+  void revert() {
+    state = state.copyWith(
+      settings: state.settings.copyWith(current: state.settings.original),
+    ) as TState;
+  }
+
+  @override
+  bool isDirty() => state.isDirty;
+
+  void markAsSaved() {
+    state = state.copyWith(settings: state.settings.saved()) as TState;
+  }
+}
+```
+
+### Part 4: `LinksysRoute` - The Smart Router
+
+The custom route class is updated to check for the `PreservableContract` and call `revert` when needed.
+
+**File:** `lib/route/route_model.dart`
+```dart
+// ... imports ...
+import 'package:privacy_gui/providers/preservable_notifier.dart';
+
+class LinksysRoute extends GoRoute {
+  // ... constructor ...
   LinksysRoute({
-    required super.path,
-    required super.builder,
-    NotifierProviderBase<dynamic, S>? provider,
+    // ... other parameters
+    ProviderListenable<FeatureState>? provider,
     bool enableDirtyCheck = false,
-    FutureOr<bool> Function(BuildContext)? onExit,
-    // ... other GoRoute parameters
   }) : super(
-          onExit: (context) async {
-            // First, run any custom onExit logic provided by the developer.
-            if (onExit != null) {
-              if (!await onExit(context)) {
-                return false; // Custom logic blocked navigation.
-              }
-            }
-
-            // If dirty checking is enabled and a provider is given...
+          onExit: (context, state) async {
             if (enableDirtyCheck && provider != null) {
               final container = ProviderScope.containerOf(context);
-              final currentState = container.read(provider);
+              final notifier = container.read(provider.notifier);
 
-              if (currentState.isDirty) {
+              // Check if the notifier follows the contract
+              if (notifier is PreservableContract && notifier.isDirty()) {
                 final bool? confirmed = await showUnsavedAlert(context);
-                if (confirmed != true) {
+                if (confirmed == true) {
+                  // User wants to discard, so revert the state.
+                  notifier.revert();
+                  return true; // Allow navigation
+                } else {
                   return false; // User cancelled, block navigation.
                 }
               }
             }
-
-            // Allow navigation to proceed.
-            return true;
+            return true; // Allow navigation
           },
         );
+  // ...
 }
 ```
 
 ## 4. Implementation Guide
 
-To apply this framework to a new or existing feature (e.g., a "VPN" page):
+To apply this framework to a new feature:
 
-**Step 1: Define Data Classes**
-Create separate, `Equatable` classes for your settings and status.
+1.  **Define Data Classes**: Create `Equatable` classes for your `Settings` and `Status`.
+2.  **Create Feature State**: Extend `FeatureState` and implement the `copyWith` method.
+3.  **Create Notifier**: Create a `Notifier` that `extends Notifier<YourState>` and add `with PreservableNotifierMixin`.
+4.  **Update Route**: Use `LinksysRoute` in your router configuration, passing the `provider` and setting `enableDirtyCheck: true`.
+
+**Example `InstantSafetyNotifier`:**
 ```dart
-class VPNSettings extends Equatable { /* ... */ }
-class VPNStatus extends Equatable { /* ... */ }
-```
+class InstantSafetyNotifier extends Notifier<InstantSafetyState>
+    with PreservableNotifierMixin<InstantSafetySettings, InstantSafetyStatus, InstantSafetyState> {
+  
+  // Implement build, fetch, and save methods...
 
-**Step 2: Create the Feature State**
-Create your state class by extending `FeatureState`.
-```dart
-class VPNState extends FeatureState<VPNSettings, VPNStatus> {
-  const VPNState({required super.settings, required super.status});
-
-  // Implement initial state factory and copyWith
-  factory VPNState.initial() { ... }
-  VPNState copyWith({ ... }) { ... }
+  // revert() and isDirty() are now provided automatically by the mixin!
 }
-```
-
-**Step 3: Implement the Notifier**
-Your `StateNotifier` will manage the `VPNState`.
-```dart
-class VPNNotifier extends StateNotifier<VPNState> {
-  // ...
-  Future<void> fetch() async {
-    // On fetch, initialize both original and current settings
-    state = state.copyWith(
-      settings: Preservable(original: settingsData, current: settingsData),
-      status: statusData,
-    );
-  }
-
-  void updateSomeSetting(String value) {
-    // When updating, use the .update() helper on the settings
-    state = state.copyWith(
-      settings: state.settings.update(
-        state.settings.current.copyWith(someValue: value),
-      ),
-    );
-  }
-
-  Future<void> save() async {
-    await _repo.save(state.settings.current);
-    // After saving, use the .saved() helper to reset the dirty state
-    state = state.copyWith(settings: state.settings.saved());
-  }
-}
-```
-
-**Step 4: Configure the Route**
-In your router configuration, use the `LinksysRoute` and enable the dirty check.
-```dart
-// router.dart
-final routes = [
-  LinksysRoute<VPNState>(
-    path: '/vpn',
-    builder: (context, state) => const VPNView(),
-    provider: vpnProvider,      // Pass the provider
-    enableDirtyCheck: true,   // Enable the guard
-  ),
-];
 ```
 
 ## 5. Conclusion
 
-This framework provides a robust, scalable, and maintainable solution for handling unsaved changes. It centralizes complex logic, reduces boilerplate code, and provides a simple, declarative API for developers, significantly improving both code quality and developer experience.
+This framework, combining a data wrapper, a state template, an interface, and a mixin, provides a highly reusable, robust, and developer-friendly solution for managing unsaved changes and navigation guards across the application.
