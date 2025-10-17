@@ -7,6 +7,7 @@ import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_state.d
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
+import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_state.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
@@ -16,8 +17,6 @@ import 'package:privacy_gui/route/route_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../mocks/_index.dart';
-import '../test_data/geolocation_test_state.dart';
-import '../test_data/vpn_test_state.dart';
 import 'di.dart';
 import 'testable_router.dart';
 
@@ -71,8 +70,9 @@ class TestHelper {
   late MockWifiAdvancedSettingsNotifier mockWiFiAdvancedSettingsNotifier;
   late MockWiFiViewNotifier mockWiFiViewNotifier;
   late MockDeviceListNotifier mockDeviceListNotifier;
-  late MockServiceHelper mockServiceHelper;
   late MockHealthCheckProvider mockHealthCheckProvider;
+
+  late ServiceHelper mockServiceHelper;
 
   void setup() {
     mockAdministrationSettingsNotifier = MockAdministrationSettingsNotifier();
@@ -101,7 +101,6 @@ class TestHelper {
     mockWiFiAdvancedSettingsNotifier = MockWifiAdvancedSettingsNotifier();
     mockWiFiViewNotifier = MockWiFiViewNotifier();
     mockDeviceListNotifier = MockDeviceListNotifier();
-    mockServiceHelper = MockServiceHelper();
     mockHealthCheckProvider = MockHealthCheckProvider();
 
     SharedPreferences.setMockInitialValues({});
@@ -110,15 +109,9 @@ class TestHelper {
     _setupDefaultData();
   }
 
-  void tearDown() {
-    GetIt.I.unregister<ServiceHelper>();
-  }
-
   void _setupServiceHelper() {
-    if (!GetIt.I.isRegistered<ServiceHelper>()) {
-      GetIt.I.registerSingleton<ServiceHelper>(mockServiceHelper);
-    }
     mockDependencyRegister();
+    mockServiceHelper = getIt.get<ServiceHelper>();
     when(mockServiceHelper.isSupportGuestNetwork()).thenReturn(true);
     when(mockServiceHelper.isSupportLedMode()).thenReturn(true);
     when(mockServiceHelper.isSupportLedBlinking()).thenReturn(true);

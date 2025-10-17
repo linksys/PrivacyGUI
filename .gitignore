@@ -118,3 +118,4 @@ lib/l10n/gen/app_localizations_tr.dart
 lib/l10n/gen/app_localizations_vi.dart
 lib/l10n/gen/app_localizations_zh.dart
 lib/l10n/gen/app_localizations.dart
+ios/Flutter/flutter_export_environment.sh

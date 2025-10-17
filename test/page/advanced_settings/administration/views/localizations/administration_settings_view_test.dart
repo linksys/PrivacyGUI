@@ -14,7 +14,7 @@ void main() {
   });
 
   tearDown(() {
-    testHelper.tearDown();
+
   });
 
   testLocalizations('Administration settings view', (tester, locale) async {

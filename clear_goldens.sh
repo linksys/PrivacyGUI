@@ -3,16 +3,15 @@
 # This script finds and deletes all old golden files and snapshots.
 # This is useful for cleaning the environment before regenerating all screenshots.
 
-echo "(1/2) Clearing all old golden files under test/**/goldens/..."
+echo "(1/2) Clearing all old golden directories under test/**/..."
 
-# Use the find command to safely find and delete golden files
-# -path: matches the path pattern
-# -type f: finds files only
-# -name "*.png": finds all files ending with .png
-# -print: prints the file path before deleting
-# -delete: performs the delete operation
-find ./test -path '*/goldens/*.png' -type f -name "*.png" -print -delete
-echo "Old golden files have been cleared."
+# Use the find command to safely find and delete golden directories
+# -type d: finds directories only
+# -name "goldens": finds all directories named "goldens"
+# -print: prints the directory path before deleting
+# -exec rm -rf {} +: performs the delete operation
+find ./test -type d -name "goldens" -print -exec rm -rf {} +
+echo "Old golden directories have been cleared."
 
 echo "---------------------------------"
 
@@ -27,4 +26,5 @@ else
   echo "snapshots/ directory not found, skipping."
 fi
 
-echo "\nAll old golden files and snapshots have been successfully cleared."
+echo "
+All old golden files and snapshots have been successfully cleared."
