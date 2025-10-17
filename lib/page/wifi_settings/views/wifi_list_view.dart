@@ -71,12 +71,29 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
             .setWifiListViewStateChanged(next != _preservedMainWiFiState);
       }
     });
-    final isPositiveEnabled = (!const ListEquality()
-                .equals(_preservedMainWiFiState?.mainWiFi, state.mainWiFi) ||
-            _preservedMainWiFiState?.guestWiFi != state.guestWiFi ||
-            _preservedMainWiFiState?.isSimpleMode != state.isSimpleMode ||
-            _preservedMainWiFiState?.simpleModeWifi != state.simpleModeWifi) &&
-        _dataVerify(state);
+    // The "Save" button is enabled if settings have changed and the data is valid.
+    // A change is detected if:
+    // - The main WiFi list has been modified.
+    // - The guest WiFi settings have changed.
+    // - The user has switched to simple mode.
+    // - The simple mode WiFi settings have been modified.
+    // The data is considered valid if no secured WiFi network has an empty password.
+    final mainWiFiChanged = !const ListEquality()
+        .equals(_preservedMainWiFiState?.mainWiFi, state.mainWiFi);
+    final guestWiFiChanged =
+        _preservedMainWiFiState?.guestWiFi != state.guestWiFi;
+    final switchedToSimpleMode =
+        _preservedMainWiFiState?.isSimpleMode != state.isSimpleMode &&
+            state.isSimpleMode == true;
+    final simpleModeWifiChanged =
+        _preservedMainWiFiState?.simpleModeWifi != state.simpleModeWifi;
+
+    final hasChanged = mainWiFiChanged ||
+        guestWiFiChanged ||
+        switchedToSimpleMode ||
+        simpleModeWifiChanged;
+
+    final isPositiveEnabled = hasChanged && _dataVerify(state);
 
     final wifiBands =
         state.mainWiFi.map((e) => e.radioID.bandName).toList().join(', ');
@@ -160,7 +177,6 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
   Widget _wifiDescription(String wifiBands) {
     return AppCard(
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
             Icons.info_outline_rounded,
@@ -182,7 +198,6 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
   Widget _quickSetupSwitch(bool isSimpleMode) {
     return AppCard(
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
             Icons.bolt_outlined,

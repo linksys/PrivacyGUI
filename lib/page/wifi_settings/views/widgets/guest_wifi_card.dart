@@ -9,7 +9,6 @@ import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
-import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 
@@ -94,9 +93,10 @@ class _GuestWiFiCardState extends ConsumerState<GuestWiFiCard> with WifiSettingM
         ),
       );
 
-  Widget _guestWiFiNameCard(GuestWiFiItem state) => AppSettingCard.noBorder(
-        title: loc(context).guestWiFiName,
-        description: state.ssid,
+  Widget _guestWiFiNameCard(GuestWiFiItem state) => AppListCard(
+        showBorder: false,
+        title: AppText.bodyMedium(loc(context).guestWiFiName),
+        description: AppText.labelLarge(state.ssid),
         padding: const EdgeInsets.symmetric(vertical: 8.0),
         trailing: const Icon(
           LinksysIcons.edit,

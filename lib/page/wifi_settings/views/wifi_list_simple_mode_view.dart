@@ -6,10 +6,10 @@ import 'package:privacy_gui/page/wifi_settings/providers/wifi_list_provider.dart
 import 'package:privacy_gui/page/wifi_settings/views/widgets/wifi_setting_modal_mixin.dart';
 import 'package:privacy_gui/page/wifi_settings/views/wifi_term_titles.dart';
 import 'package:privacy_gui/page/wifi_settings/views/widgets/guest_wifi_card.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
-import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
@@ -101,27 +101,29 @@ class _SimpleModeViewState extends ConsumerState<SimpleModeView>
 
   Widget _settingsView(List<WifiSecurityType> securityTypeList) {
     return AppCard(
-      padding: const EdgeInsets.symmetric(horizontal: Spacing.medium),
+      padding: const EdgeInsets.symmetric(
+          vertical: Spacing.small2, horizontal: Spacing.large2),
       child: Column(
         children: [
-          _advancedWiFiNameCard(widget.simpleWifiNameController.text),
+          _simpleWiFiNameCard(widget.simpleWifiNameController.text),
           const Divider(),
-          _advancedWiFiPasswordCard(widget.simpleWifiPasswordController.text,
+          _simpleWiFiPasswordCard(widget.simpleWifiPasswordController.text,
               widget.simpleSecurityType),
           const Divider(),
-          _advancedWiFiSecurityTypeCard(
+          _simpleWiFiSecurityTypeCard(
               widget.simpleSecurityType, securityTypeList),
         ],
       ),
     );
   }
 
-  Widget _advancedWiFiNameCard(String ssid) => AppSettingCard.noBorder(
-        title: loc(context).wifiName,
-        description: widget.simpleWifiNameController.text,
+  Widget _simpleWiFiNameCard(String ssid) => AppListCard(
+        showBorder: false,
+        title: AppText.bodyMedium(loc(context).wifiName),
+        description: AppText.labelLarge(widget.simpleWifiNameController.text),
         padding: const EdgeInsets.symmetric(vertical: 8.0),
         trailing: const Icon(
-          Icons.edit,
+          LinksysIcons.edit,
           semanticLabel: 'edit',
         ),
         onTap: () {
@@ -131,7 +133,7 @@ class _SimpleModeViewState extends ConsumerState<SimpleModeView>
         },
       );
 
-  Widget _advancedWiFiPasswordCard(
+  Widget _simpleWiFiPasswordCard(
           String password, WifiSecurityType securityType) =>
       Opacity(
         opacity: securityType.isOpenVariant ? .5 : 1,
@@ -173,7 +175,7 @@ class _SimpleModeViewState extends ConsumerState<SimpleModeView>
                       ),
               ),
             ),
-            trailing: const Icon(Icons.edit),
+            trailing: const Icon(LinksysIcons.edit),
             onTap: () {
               showWifiPasswordModal(password, (value) {
                 widget.onWifiPasswordEdited(value);
@@ -183,19 +185,16 @@ class _SimpleModeViewState extends ConsumerState<SimpleModeView>
         ),
       );
 
-  Widget _advancedWiFiSecurityTypeCard(
+  Widget _simpleWiFiSecurityTypeCard(
       WifiSecurityType securityType, List<WifiSecurityType> securityTypeList) {
     final securityTypeTitle = getWifiSecurityTypeTitle(context, securityType);
     return AppListCard(
       showBorder: false,
       title: AppText.bodyMedium(loc(context).securityMode),
-      description: SizedBox(
-        height: 36,
-        child: AppText.labelLarge(securityTypeTitle),
-      ),
+      description: AppText.labelLarge(securityTypeTitle),
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       trailing: const Icon(
-        Icons.edit,
+        LinksysIcons.edit,
         semanticLabel: 'edit',
       ),
       onTap: () {

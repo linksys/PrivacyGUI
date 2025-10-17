@@ -134,9 +134,10 @@ class _MainWiFiCardState extends ConsumerState<MainWiFiCard>
         ),
       );
 
-  Widget _advancedWiFiNameCard(WiFiItem radio) => AppSettingCard.noBorder(
-        title: loc(context).wifiName,
-        description: radio.ssid,
+  Widget _advancedWiFiNameCard(WiFiItem radio) => AppListCard(
+        showBorder: false,
+        title: AppText.bodyMedium(loc(context).wifiName),
+        description: AppText.labelLarge(radio.ssid),
         padding: const EdgeInsets.symmetric(vertical: 8.0),
         trailing: const Icon(
           LinksysIcons.edit,
