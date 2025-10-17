@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
+import 'package:privacy_gui/core/jnap/providers/ethernet_port_connection_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/di.dart';
@@ -53,7 +54,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     final horizontalLayout =
         ref.watch(dashboardHomeProvider).isHorizontalLayout;
     final hasLanPort =
-        ref.read(dashboardHomeProvider).lanPortConnections.isNotEmpty;
+        ref.read(ethernetPortConnectionProvider).hasLanPort;
 
     return StyledAppPageView(
       scrollable: true,

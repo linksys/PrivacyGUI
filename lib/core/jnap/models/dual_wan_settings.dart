@@ -35,12 +35,14 @@ class DualWANSettingsData extends Equatable {
   final PPPoESettings? pppoeSettings; // only present if wanType is PPPoE
   final TPSettings? tpSettings; // only present if wanType is PPTP or L2TP
   final StaticSettings? staticSettings; // only present if wanType is Static
+  final int mtu;
 
   const DualWANSettingsData({
     required this.wanType,
     this.pppoeSettings,
     this.tpSettings,
     this.staticSettings,
+    required this.mtu,
   });
 
   @override
@@ -49,6 +51,7 @@ class DualWANSettingsData extends Equatable {
         pppoeSettings,
         tpSettings,
         staticSettings,
+        mtu,
       ];
 
   factory DualWANSettingsData.fromMap(Map<String, dynamic> map) {
@@ -65,6 +68,7 @@ class DualWANSettingsData extends Equatable {
           ? StaticSettings.fromMap(
               map['staticSettings'] as Map<String, dynamic>)
           : null,
+      mtu: map['mtu'] as int,
     );
   }
 
@@ -74,6 +78,7 @@ class DualWANSettingsData extends Equatable {
       if (pppoeSettings != null) 'pppoeSettings': pppoeSettings!.toMap(),
       if (tpSettings != null) 'tpSettings': tpSettings!.toMap(),
       if (staticSettings != null) 'staticSettings': staticSettings!.toMap(),
+      'mtu': mtu,
     };
   }
 
@@ -129,8 +134,8 @@ class RouterDualWANSettings extends Equatable {
       'enabled': enabled,
       'mode': mode.value,
       'ratio': ratio?.value,
-      'primaryWanSettings': primaryWAN,
-      'secondaryWanSettings': secondaryWAN,
+      'primaryWanSettings': primaryWAN.toMap(),
+      'secondaryWanSettings': secondaryWAN.toMap(),
     };
   }
 

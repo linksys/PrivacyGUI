@@ -89,6 +89,7 @@ void main() {
     await tester.pumpWidget(widget);
     await tester.pumpAndSettle();
   }, screens: screenList);
+
   testLocalizations(
       'Dual WAN Settings View - load balancing with 1:1 - Eaual distribution (Default)',
       (tester, locale) async {
@@ -112,6 +113,29 @@ void main() {
     await tester.pumpWidget(widget);
     await tester.pumpAndSettle();
   }, screens: screenList);
+
+  testLocalizations('Dual WAN Settings View - supported WAN type',
+        (tester, locale) async {
+      when(mockDualWANSettingsNotifier.build()).thenReturn(
+          testDualWANSettingsState.copyWith(
+              status: testDualWANSettingsState.status.copyWith(
+                  supportedWANTypes: ['DHCP', 'Static', 'PPPoE', 'PPTP', 'L2TP', 'L2TPv3'])));
+      when(mockDualWANSettingsNotifier.fetch()).thenAnswer((_) async {
+        await Future.delayed(const Duration(seconds: 1));
+        return testDualWANSettingsState.copyWith(
+            status: testDualWANSettingsState.status.copyWith(
+                supportedWANTypes: ['DHCP', 'Static', 'PPPoE', 'PPTP', 'L2TP', 'L2TPv3']));
+      });
+      final widget = testableWidget(locale);
+
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('primaryWANType')));
+      await tester.pumpAndSettle();
+    }, screens: screenList);
+
+  
 
   group('Dual WAN Settings View - primary WAN', () {
     testLocalizations('Dual WAN Settings View - primary WAN - static IP',

@@ -33,10 +33,8 @@ class DualWANSettings extends Equatable {
       enable: false,
       mode: DualWANMode.failover,
       balanceRatio: DualWANBalanceRatio.equalDistribution,
-      primaryWAN:
-          DualWANConfiguration(wanType: 'DHCP', supportedWANType: [], mtu: 0),
-      secondaryWAN:
-          DualWANConfiguration(wanType: 'DHCP', supportedWANType: [], mtu: 0),
+      primaryWAN: DualWANConfiguration(wanType: 'DHCP', mtu: 0),
+      secondaryWAN: DualWANConfiguration(wanType: 'DHCP', mtu: 0),
       loggingOptions: null,
     );
   }
@@ -85,11 +83,14 @@ class DualWANSettings extends Equatable {
       'loggingOptions': loggingOptions?.toMap(),
     }..removeWhere((key, value) => value == null);
   }
+
   factory DualWANSettings.fromData(RouterDualWANSettings data) {
     return DualWANSettings(
       enable: data.enabled,
       mode: DualWANMode.fromValue(data.mode),
-      balanceRatio: data.ratio != null ? DualWANBalanceRatio.fromValue(data.ratio!) : null,
+      balanceRatio: data.ratio != null
+          ? DualWANBalanceRatio.fromValue(data.ratio!)
+          : null,
       primaryWAN: DualWANConfiguration.fromData(data.primaryWAN),
       secondaryWAN: DualWANConfiguration.fromData(data.secondaryWAN),
     );
@@ -98,11 +99,14 @@ class DualWANSettings extends Equatable {
     return RouterDualWANSettings(
       enabled: enable,
       mode: DualWANModeData.fromJson(mode.toValue()),
-      ratio: DualWANRatioData.fromJson(balanceRatio?.toValue() ?? ''),
+      ratio: balanceRatio != null
+          ? DualWANRatioData.fromJson(balanceRatio!.toValue())
+          : null,
       primaryWAN: primaryWAN.toData(),
       secondaryWAN: secondaryWAN.toData(),
     );
   }
+
   @override
   List<Object?> get props => [
         enable,
@@ -116,11 +120,13 @@ class DualWANSettings extends Equatable {
 
 class DualWANStatus extends Equatable {
   final DualWANConnectionStatus connectionStatus;
+  final List<String> supportedWANTypes;
   final SpeedStatus? speedStatus;
   final List<DualWANPort> ports;
 
   const DualWANStatus({
     required this.connectionStatus,
+    required this.supportedWANTypes,
     this.speedStatus,
     required this.ports,
   });
@@ -128,17 +134,20 @@ class DualWANStatus extends Equatable {
   factory DualWANStatus.init() {
     return const DualWANStatus(
       connectionStatus: DualWANConnectionStatus(),
+      supportedWANTypes: [],
       ports: [],
     );
   }
 
   DualWANStatus copyWith({
     DualWANConnectionStatus? connectionStatus,
+    List<String>? supportedWANTypes,
     SpeedStatus? speedStatus,
     List<DualWANPort>? ports,
   }) {
     return DualWANStatus(
       connectionStatus: connectionStatus ?? this.connectionStatus,
+      supportedWANTypes: supportedWANTypes ?? this.supportedWANTypes,
       speedStatus: speedStatus ?? this.speedStatus,
       ports: ports ?? this.ports,
     );
@@ -148,6 +157,7 @@ class DualWANStatus extends Equatable {
     return DualWANStatus(
       connectionStatus:
           DualWANConnectionStatus.fromMap(map['connectionStatus']),
+      supportedWANTypes: List.from(map['supportedWANTypes'] ?? []),
       speedStatus: SpeedStatus.fromMap(map['speedStatus']),
       ports: map['ports'].map((x) => DualWANPort.fromMap(x)).toList(),
     );
@@ -161,6 +171,7 @@ class DualWANStatus extends Equatable {
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'connectionStatus': connectionStatus.toMap(),
+      'supportedWANTypes': supportedWANTypes,
       'speedStatus': speedStatus?.toMap(),
       'ports': ports.map((x) => x.toMap()).toList(),
     }..removeWhere((key, value) => value == null);
@@ -169,13 +180,16 @@ class DualWANStatus extends Equatable {
   @override
   List<Object?> get props => [
         connectionStatus,
+        supportedWANTypes,
         speedStatus,
         ports,
       ];
 
-  factory DualWANStatus.fromData({required RouterDualWANStatus data, List<DualWANPort>? ports}) {
+  factory DualWANStatus.fromData(
+      {required RouterDualWANStatus data, List<DualWANPort>? ports}) {
     return DualWANStatus(
       connectionStatus: DualWANConnectionStatus.fromData(data),
+      supportedWANTypes: data.supportedWANTypes,
       ports: ports ?? [],
     );
   }

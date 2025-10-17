@@ -9,9 +9,7 @@ import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/i
 
 // TODO Clone from [#InternetSettingsState], revisit when spec confirmed
 class DualWANConfiguration extends Equatable {
-  static const supportedWANConnectionType = ['DHCP', 'PPPoE', 'Static', 'PPTP'];
   final String wanType;
-  final List<String> supportedWANType;
   final int mtu;
   // PPPConnection
   final PPPConnectionBehavior? behavior;
@@ -34,7 +32,6 @@ class DualWANConfiguration extends Equatable {
 
   const DualWANConfiguration({
     required this.wanType,
-    required this.supportedWANType,
     required this.mtu,
     this.behavior,
     this.maxIdleMinutes,
@@ -57,7 +54,6 @@ class DualWANConfiguration extends Equatable {
   List<Object?> get props {
     return [
       wanType,
-      supportedWANType,
       mtu,
       behavior,
       maxIdleMinutes,
@@ -80,7 +76,6 @@ class DualWANConfiguration extends Equatable {
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'wanType': wanType,
-      'supportedWANType': supportedWANType,
       'mtu': mtu,
       'behavior': behavior?.value,
       'maxIdleMinutes': maxIdleMinutes,
@@ -103,7 +98,6 @@ class DualWANConfiguration extends Equatable {
   factory DualWANConfiguration.fromMap(Map<String, dynamic> map) {
     return DualWANConfiguration(
       wanType: map['wanType'],
-      supportedWANType: List<String>.from(map['supportedWANType']),
       mtu: map['mtu'] as int,
       behavior: PPPConnectionBehavior.resolve(map['behavior']),
       maxIdleMinutes:
@@ -145,8 +139,6 @@ class DualWANConfiguration extends Equatable {
 
   DualWANConfiguration copyWith({
     String? wanType,
-    List<String>? supportedWANType,
-    List<SupportedWANCombination>? supportedWANCombinations,
     int? mtu,
     ValueGetter<PPPConnectionBehavior?>? behavior,
     ValueGetter<int?>? maxIdleMinutes,
@@ -166,7 +158,6 @@ class DualWANConfiguration extends Equatable {
   }) {
     return DualWANConfiguration(
       wanType: wanType ?? this.wanType,
-      supportedWANType: supportedWANType ?? this.supportedWANType,
       mtu: mtu ?? this.mtu,
       behavior: behavior != null ? behavior() : this.behavior,
       maxIdleMinutes:
@@ -200,13 +191,11 @@ class DualWANConfiguration extends Equatable {
     return switch (wanType) {
       'DHCP' => DualWANConfiguration(
           wanType: wanType,
-          supportedWANType: supportedWANConnectionType,
-          mtu: 0,
+          mtu: data.mtu,
         ),
       'PPPoE' => DualWANConfiguration(
           wanType: wanType,
-          supportedWANType: supportedWANConnectionType,
-          mtu: 0,
+          mtu: data.mtu,
           behavior: PPPConnectionBehavior.resolve(data.pppoeSettings?.behavior),
           maxIdleMinutes: data.pppoeSettings?.maxIdleMinutes,
           reconnectAfterSeconds: data.pppoeSettings?.reconnectAfterSeconds,
@@ -216,8 +205,7 @@ class DualWANConfiguration extends Equatable {
         ),
       'Static' => DualWANConfiguration(
           wanType: wanType,
-          supportedWANType: supportedWANConnectionType,
-          mtu: 0,
+          mtu: data.mtu,
           staticIpAddress: data.staticSettings?.ipAddress,
           staticGateway: data.staticSettings?.gateway,
           staticDns1: data.staticSettings?.dnsServer1,
@@ -227,8 +215,7 @@ class DualWANConfiguration extends Equatable {
         ),
       'PPTP' => DualWANConfiguration(
           wanType: wanType,
-          supportedWANType: supportedWANConnectionType,
-          mtu: 0,
+          mtu: data.mtu,
           behavior: PPPConnectionBehavior.resolve(data.tpSettings?.behavior),
           maxIdleMinutes: data.tpSettings?.maxIdleMinutes,
           reconnectAfterSeconds: data.tpSettings?.reconnectAfterSeconds,
@@ -239,8 +226,7 @@ class DualWANConfiguration extends Equatable {
         ),
       'L2TP' => DualWANConfiguration(
           wanType: wanType,
-          supportedWANType: supportedWANConnectionType,
-          mtu: 0,
+          mtu: data.mtu,
           behavior: PPPConnectionBehavior.resolve(data.tpSettings?.behavior),
           maxIdleMinutes: data.tpSettings?.maxIdleMinutes,
           reconnectAfterSeconds: data.tpSettings?.reconnectAfterSeconds,
@@ -257,8 +243,7 @@ class DualWANConfiguration extends Equatable {
         ),
       _ => DualWANConfiguration(
           wanType: wanType,
-          supportedWANType: supportedWANConnectionType,
-          mtu: 0,
+          mtu: data.mtu,
         ),
     };
   }
@@ -266,9 +251,11 @@ class DualWANConfiguration extends Equatable {
     return switch (wanType) {
       'DHCP' => DualWANSettingsData(
           wanType: wanType,
+          mtu: mtu,
         ),
       'PPPoE' => DualWANSettingsData(
           wanType: wanType,
+          mtu: mtu,
           pppoeSettings: PPPoESettings(
             behavior: behavior?.value ?? PPPConnectionBehavior.keepAlive.value,
             maxIdleMinutes: maxIdleMinutes,
@@ -280,6 +267,7 @@ class DualWANConfiguration extends Equatable {
         ),
       'Static' => DualWANSettingsData(
           wanType: wanType,
+          mtu: mtu,
           staticSettings: StaticSettings(
             ipAddress: staticIpAddress ?? '',
             gateway: staticGateway ?? '',
@@ -291,6 +279,7 @@ class DualWANConfiguration extends Equatable {
         ),
       'PPTP' => DualWANSettingsData(
           wanType: wanType,
+          mtu: mtu, 
           tpSettings: TPSettings(
             behavior: behavior?.value ?? PPPConnectionBehavior.keepAlive.value,
             maxIdleMinutes: maxIdleMinutes,
@@ -303,6 +292,7 @@ class DualWANConfiguration extends Equatable {
         ),
       'L2TP' => DualWANSettingsData(
           wanType: wanType,
+          mtu: mtu,
           tpSettings: TPSettings(
             behavior: behavior?.value ?? PPPConnectionBehavior.keepAlive.value,
             maxIdleMinutes: maxIdleMinutes,
@@ -324,6 +314,7 @@ class DualWANConfiguration extends Equatable {
         ),
       _ => DualWANSettingsData(
           wanType: wanType,
+          mtu: mtu,
         ),
     };
   }

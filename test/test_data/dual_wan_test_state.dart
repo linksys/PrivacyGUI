@@ -18,11 +18,9 @@ const testDualWANSettingsState = DualWANSettingsState(
     balanceRatio: DualWANBalanceRatio.equalDistribution,
     primaryWAN: DualWANConfiguration(
         wanType: 'DHCP',
-        supportedWANType: ['DHCP', 'Static', 'PPPoE', 'PPTP'],
         mtu: 0),
     secondaryWAN: DualWANConfiguration(
         wanType: 'DHCP',
-        supportedWANType: ['DHCP', 'Static', 'PPPoE', 'PPTP'],
         mtu: 0),
     loggingOptions: LoggingOptions(
       failoverEvents: true,
@@ -32,6 +30,7 @@ const testDualWANSettingsState = DualWANSettingsState(
     ),
   ),
   status: DualWANStatus(
+    supportedWANTypes: ['DHCP', 'Static', 'PPPoE', 'PPTP', 'L2TP'],
     connectionStatus: DualWANConnectionStatus(
       primaryStatus: DualWANConnection.connected,
       secondaryStatus: DualWANConnection.active,

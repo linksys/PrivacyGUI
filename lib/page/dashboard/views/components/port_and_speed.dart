@@ -5,6 +5,8 @@ import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/ethernet_port_connection_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/ethernet_port_connection_state.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -29,12 +31,13 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(dashboardHomeProvider);
+    final portState = ref.watch(ethernetPortConnectionProvider);
     final isLoading =
         (ref.watch(pollingProvider).value?.isReady ?? false) == false;
     final horizontalLayout = state.isHorizontalLayout;
     final wanStatus = ref.watch(internetStatusProvider);
     final isOnline = wanStatus == InternetStatus.online;
-    final hasLanPort = state.lanPortConnections.isNotEmpty;
+    final hasLanPort = portState.hasLanPort;
 
     return isLoading
         ? AppCard(
@@ -45,18 +48,19 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                 child: const LoadingTile()))
         : ResponsiveLayout(
             desktop: !hasLanPort
-                ? _desktopNoLanPorts(context, ref, state, isOnline, isLoading)
+                ? _desktopNoLanPorts(context, ref, state, portState, isOnline,
+                    isLoading)
                 : horizontalLayout
                     ? _desktopHorizontal(
-                        context, ref, state, isOnline, isLoading)
+                        context, ref, state, portState, isOnline, isLoading)
                     : _desktopVertical(
-                        context, ref, state, isOnline, isLoading),
-            mobile: _mobile(context, ref, state, isOnline, isLoading));
+                        context, ref, state, portState, isOnline, isLoading),
+            mobile: _mobile(context, ref, state, portState, isOnline, isLoading));
   }
 
   Widget _mobile(BuildContext context, WidgetRef ref, DashboardHomeState state,
-      bool isOnline, bool isLoading) {
-    final hasLanPort = state.lanPortConnections.isNotEmpty;
+      EthernetPortConnectionState portState, bool isOnline, bool isLoading) {
+    final hasLanPort = portState.hasLanPort;
     return Container(
       width: double.infinity,
       // constraints:
@@ -75,7 +79,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    ...state.lanPortConnections
+                    ...portState.lans
                         .mapIndexed((index, e) => Expanded(
                               child: _portWidget(
                                   context,
@@ -88,9 +92,9 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                     Expanded(
                       child: _portWidget(
                           context,
-                          state.wanPortConnection == 'None'
+                          portState.primaryWAN == 'None'
                               ? null
-                              : state.wanPortConnection,
+                              : portState.primaryWAN,
                           loc(context).wan,
                           true,
                           hasLanPort),
@@ -99,15 +103,16 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                 ),
               ),
               // const AppGap.large2(),
-              _createSpeedTestTile(context, ref, state, hasLanPort, true),
+              _createSpeedTestTile(context, ref, state, portState, true),
             ],
           )),
     );
   }
 
   Widget _desktopVertical(BuildContext context, WidgetRef ref,
-      DashboardHomeState state, bool isOnline, bool isLoading) {
-    final hasLanPort = state.lanPortConnections.isNotEmpty;
+      DashboardHomeState state, EthernetPortConnectionState portState,
+      bool isOnline, bool isLoading) {
+    final hasLanPort = portState.hasLanPort;
 
     return Container(
       constraints: BoxConstraints(
@@ -130,7 +135,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      ...state.lanPortConnections
+                      ...portState.lans
                           .mapIndexed((index, e) => Padding(
                                 padding: const EdgeInsets.only(bottom: 36.0),
                                 child: _portWidget(
@@ -143,9 +148,9 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                           .toList(),
                       _portWidget(
                           context,
-                          state.wanPortConnection == 'None'
+                          portState.primaryWAN == 'None'
                               ? null
-                              : state.wanPortConnection,
+                              : portState.primaryWAN,
                           loc(context).wan,
                           true,
                           hasLanPort),
@@ -156,15 +161,16 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
               SizedBox(
                   width: double.infinity,
                   // height: state.isHealthCheckSupported ? 304 : 154,
-                  child: _createSpeedTestTile(context, ref, state, hasLanPort)),
+                  child: _createSpeedTestTile(context, ref, state, portState)),
             ],
           )),
     );
   }
 
   Widget _desktopHorizontal(BuildContext context, WidgetRef ref,
-      DashboardHomeState state, bool isOnline, bool isLoading) {
-    final hasLanPort = state.lanPortConnections.isNotEmpty;
+      DashboardHomeState state, EthernetPortConnectionState portState,
+      bool isOnline, bool isLoading) {
+    final hasLanPort = portState.hasLanPort;
 
     return Container(
       width: double.infinity,
@@ -185,7 +191,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      ...state.lanPortConnections
+                      ...portState.lans
                           .mapIndexed((index, e) => Expanded(
                                 child: _portWidget(
                                     context,
@@ -198,9 +204,9 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                       Expanded(
                         child: _portWidget(
                             context,
-                            state.wanPortConnection == 'None'
+                            portState.primaryWAN == 'None'
                                 ? null
-                                : state.wanPortConnection,
+                                : portState.primaryWAN,
                             loc(context).wan,
                             true,
                             hasLanPort),
@@ -211,15 +217,16 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
               ),
               SizedBox(
                   height: 112,
-                  child: _createSpeedTestTile(context, ref, state, hasLanPort)),
+                  child: _createSpeedTestTile(context, ref, state, portState)),
             ],
           )),
     );
   }
 
   Widget _desktopNoLanPorts(BuildContext context, WidgetRef ref,
-      DashboardHomeState state, bool isOnline, bool isLoading) {
-    final hasLanPort = state.lanPortConnections.isNotEmpty;
+      DashboardHomeState state, EthernetPortConnectionState portState,
+      bool isOnline, bool isLoading) {
+    final hasLanPort = portState.hasLanPort;
 
     return Container(
       width: double.infinity,
@@ -240,7 +247,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      ...state.lanPortConnections
+                      ...portState.lans
                           .mapIndexed((index, e) => Expanded(
                                 child: _portWidget(
                                     context,
@@ -253,9 +260,9 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                       Expanded(
                         child: _portWidget(
                             context,
-                            state.wanPortConnection == 'None'
+                            portState.primaryWAN == 'None'
                                 ? null
-                                : state.wanPortConnection,
+                                : portState.primaryWAN,
                             loc(context).wan,
                             true,
                             hasLanPort),
@@ -266,18 +273,18 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
               ),
               SizedBox(
                   height: 136,
-                  child: _createSpeedTestTile(context, ref, state, false)),
+                  child: _createSpeedTestTile(context, ref, state, portState)),
             ],
           )),
     );
   }
 
   Widget _createSpeedTestTile(BuildContext context, WidgetRef ref,
-      DashboardHomeState state, bool hasLanPort,
+      DashboardHomeState state, EthernetPortConnectionState portState,
       [bool mobile = false]) {
     final isRemote = BuildConfig.isRemote();
     return state.isHealthCheckSupported
-        ? hasLanPort
+        ? portState.hasLanPort
             ? Column(
                 children: [
                   Divider(),
@@ -289,24 +296,24 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                   AppGap.large2(),
                 ],
               )
-            : _speedCheckWidget(context, ref, state)
+            : _speedCheckWidget(context, ref, state, portState)
         : Tooltip(
             message: loc(context).featureUnavailableInRemoteMode,
             child: Opacity(
               opacity: isRemote ? 0.5 : 1,
               child: AbsorbPointer(
                 absorbing: isRemote,
-                child: _externalSpeedTest(context, state),
+                child: _externalSpeedTest(context, state, portState),
               ),
             ),
           );
   }
 
   Widget _speedCheckWidget(
-      BuildContext context, WidgetRef ref, DashboardHomeState state) {
+      BuildContext context, WidgetRef ref, DashboardHomeState state,
+      EthernetPortConnectionState portState) {
     final horizontalLayout = state.isHorizontalLayout;
-    final hasLanPort =
-        ref.read(dashboardHomeProvider).lanPortConnections.isNotEmpty;
+    final hasLanPort = portState.hasLanPort;
     final dateTime = state.speedCheckTimestamp == null
         ? null
         : DateTime.fromMillisecondsSinceEpoch(state.speedCheckTimestamp!);
@@ -483,9 +490,10 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
     );
   }
 
-  Widget _externalSpeedTest(BuildContext context, DashboardHomeState state) {
+  Widget _externalSpeedTest(BuildContext context, DashboardHomeState state,
+      EthernetPortConnectionState portState) {
     final horizontalLayout = state.isHorizontalLayout;
-    final hasLanPort = state.lanPortConnections.isNotEmpty;
+    final hasLanPort = portState.hasLanPort;
 
     return Container(
       decoration: BoxDecoration(
@@ -502,7 +510,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _speedTestHeader(context, state),
+          _speedTestHeader(context, state, portState),
           AppGap.small2(),
           Flexible(
             child: hasLanPort &&
@@ -561,9 +569,10 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
     );
   }
 
-  Widget _speedTestHeader(BuildContext context, DashboardHomeState state) {
+  Widget _speedTestHeader(BuildContext context, DashboardHomeState state,
+      EthernetPortConnectionState portState) {
     final horizontalLayout = state.isHorizontalLayout;
-    final hasLanPort = state.lanPortConnections.isNotEmpty;
+    final hasLanPort = portState.hasLanPort;
     final speedTitle = AppText.titleMedium(loc(context).speedTextTileStart);
     final infoIcon = InkWell(
       child: Icon(

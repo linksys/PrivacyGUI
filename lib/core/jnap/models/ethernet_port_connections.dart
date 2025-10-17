@@ -32,7 +32,7 @@ class RouterEthernetPortConnections extends Equatable {
     return RouterEthernetPortConnections(
       wanPortConnection: map['wanPortConnection'] as String,
       lanPortConnections: List<String>.from(
-        (map['lanPortConnections'] as List<String>),
+        map['lanPortConnections'],
       ),
     );
   }

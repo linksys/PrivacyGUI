@@ -10,6 +10,7 @@ import 'package:privacy_gui/core/jnap/models/radio_info.dart';
 import 'package:privacy_gui/core/jnap/models/wan_status.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/ethernet_port_connection_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/wan_external_provider.dart';
@@ -382,7 +383,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
   }
 
   Widget _portsCard(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(dashboardHomeProvider);
+    final portState = ref.watch(ethernetPortConnectionProvider);
     final isLoading = ref
         .watch(deviceManagerProvider.select((value) => value.deviceList))
         .isEmpty;
@@ -405,7 +406,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    ...state.lanPortConnections
+                    ...portState.lans
                         .mapIndexed((index, e) => Expanded(
                               child: _portWidget(
                                   context,
@@ -417,9 +418,9 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
                     Expanded(
                       child: _portWidget(
                           context,
-                          state.wanPortConnection == 'None'
+                          portState.secondaryWAN == 'None'
                               ? null
-                              : state.wanPortConnection,
+                              : portState.secondaryWAN,
                           loc(context).wan,
                           true),
                     )

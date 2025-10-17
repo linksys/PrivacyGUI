@@ -11,6 +11,8 @@ import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart'
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
+import 'package:privacy_gui/core/jnap/providers/ethernet_port_connection_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/ethernet_port_connection_state.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_state.dart';
 import 'package:privacy_gui/core/jnap/providers/node_light_settings_provider.dart';
@@ -34,11 +36,13 @@ import '../../../common/di.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
 import '../../../mocks/_index.dart';
+import '../../../mocks/ethernet_port_connection_notifier_mocks.dart';
 import '../../../mocks/gelocation_notifier_mocks.dart';
 import '../../../mocks/node_light_settings_notifier_mocks.dart';
 import '../../../mocks/polling_notifier_mocks.dart';
 import '../../../mocks/vpn_notifier_mocks.dart';
 import '../../../test_data/_index.dart';
+import '../../../test_data/ethernet_port_connection_test_state.dart';
 import '../../../test_data/geolocation_test_state.dart';
 import '../../../test_data/vpn_test_state.dart';
 
@@ -53,6 +57,7 @@ void main() async {
   late NodeLightSettingsNotifier mockNodeLightSettingsNotifier;
   late PollingNotifier mockPollingNotifier;
   late VPNNotifier mockVPNNotifier;
+  late EthernetPortConnectionNotifier mockEthernetPortConnectionNotifier;
 
   late TopologyTestData topologyTestData;
 
@@ -74,6 +79,7 @@ void main() async {
       mockGeolocationNotifer = MockGeolocationNotifier();
       mockNodeLightSettingsNotifier = MockNodeLightSettingsNotifier();
       mockPollingNotifier = MockPollingNotifier();
+      mockEthernetPortConnectionNotifier = MockEthernetPortConnectionNotifier();
 
       when(mockDashboardHomeNotifier.build()).thenReturn(
           DashboardHomeState.fromMap(dashboardHomeCherry7TestState));
@@ -94,6 +100,8 @@ void main() async {
       when(mockServiceHelper.isSupportLedMode()).thenReturn(true);
       when(mockPollingNotifier.build()).thenReturn(CoreTransactionData(
           lastUpdate: 0, isReady: true, data: {}));
+      when(mockEthernetPortConnectionNotifier.build()).thenReturn(
+          EthernetPortConnectionState.fromMap(portTestState));
     });
 
     tearDown(() {
@@ -120,6 +128,8 @@ void main() async {
                 .overrideWith(() => mockInstantTopologyNotifier),
             geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             pollingProvider.overrideWith(() => mockPollingNotifier),
+            ethernetPortConnectionProvider
+                .overrideWith(() => mockEthernetPortConnectionNotifier),
           ],
         ),
       );
@@ -157,6 +167,8 @@ void main() async {
                 .overrideWith(() => mockInstantTopologyNotifier),
             geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             pollingProvider.overrideWith(() => mockPollingNotifier),
+            ethernetPortConnectionProvider
+                .overrideWith(() => mockEthernetPortConnectionNotifier),
           ],
         ),
       );
@@ -194,6 +206,8 @@ void main() async {
                 .overrideWith(() => mockInstantTopologyNotifier),
             geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             pollingProvider.overrideWith(() => mockPollingNotifier),
+            ethernetPortConnectionProvider
+                .overrideWith(() => mockEthernetPortConnectionNotifier),
           ],
         ),
       );
@@ -236,6 +250,8 @@ void main() async {
                 .overrideWith(() => mockInstantTopologyNotifier),
             geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             pollingProvider.overrideWith(() => mockPollingNotifier),
+            ethernetPortConnectionProvider
+                .overrideWith(() => mockEthernetPortConnectionNotifier),
           ],
         ),
       );
@@ -276,6 +292,8 @@ void main() async {
                 .overrideWith(() => mockInstantTopologyNotifier),
             geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             pollingProvider.overrideWith(() => mockPollingNotifier),
+            ethernetPortConnectionProvider
+                .overrideWith(() => mockEthernetPortConnectionNotifier),
           ],
         ),
       );
@@ -316,7 +334,9 @@ void main() async {
                 .overrideWith(() => mockNodeLightSettingsNotifier),
             geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             pollingProvider.overrideWith(() => mockPollingNotifier),
-          ],
+            ethernetPortConnectionProvider
+                .overrideWith(() => mockEthernetPortConnectionNotifier),
+            ],
         ),
       );
       await tester.pumpAndSettle();
@@ -356,7 +376,9 @@ void main() async {
                 .overrideWith(() => mockNodeLightSettingsNotifier),
             geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             pollingProvider.overrideWith(() => mockPollingNotifier),
-          ],
+            ethernetPortConnectionProvider
+                .overrideWith(() => mockEthernetPortConnectionNotifier),
+            ],
         ),
       );
       await tester.pumpAndSettle();
@@ -394,6 +416,8 @@ void main() async {
                 .overrideWith(() => mockNodeLightSettingsNotifier),
             geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             pollingProvider.overrideWith(() => mockPollingNotifier),
+            ethernetPortConnectionProvider
+                .overrideWith(() => mockEthernetPortConnectionNotifier),
           ],
         ),
       );
@@ -442,7 +466,9 @@ void main() async {
                 .overrideWith(() => mockNodeLightSettingsNotifier),
             geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             pollingProvider.overrideWith(() => mockPollingNotifier),
-          ],
+            ethernetPortConnectionProvider
+                .overrideWith(() => mockEthernetPortConnectionNotifier),
+                      ],
         ),
       );
       await tester.pumpAndSettle();
@@ -490,6 +516,8 @@ void main() async {
                   .overrideWith(() => mockNodeLightSettingsNotifier),
               geolocationProvider.overrideWith(() => mockGeolocationNotifer),
               pollingProvider.overrideWith(() => mockPollingNotifier),
+              ethernetPortConnectionProvider
+                  .overrideWith(() => mockEthernetPortConnectionNotifier),
             ],
           ),
         );
@@ -521,12 +549,9 @@ void main() async {
 
     testLocalizations('Dashboard Home View - no LAN ports offline status',
         (tester, locale) async {
-      when(mockDashboardHomeNotifier.build()).thenReturn(
-          DashboardHomeState.fromMap(dashboardHomeCherry7TestState)
-              .copyWith(wanPortConnection: () => 'None'));
-      when(mockDashboardManagerNotifier.build()).thenReturn(
-          DashboardManagerState.fromMap(dashboardManagerChrry7TestState)
-              .copyWith(wanConnection: 'None'));
+      when(mockEthernetPortConnectionNotifier.build()).thenReturn(
+          EthernetPortConnectionState.fromMap(portTestState).copyWith(primaryWAN: 'None'));
+      
       await tester.pumpWidget(
         testableRouteShellWidget(
           child: const DashboardHomeView(),
@@ -547,6 +572,8 @@ void main() async {
                 .overrideWith(() => mockNodeLightSettingsNotifier),
             geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             pollingProvider.overrideWith(() => mockPollingNotifier),
+            ethernetPortConnectionProvider
+                .overrideWith(() => mockEthernetPortConnectionNotifier),
           ],
         ),
       );
@@ -587,6 +614,8 @@ void main() async {
                 .overrideWith(() => mockNodeLightSettingsNotifier),
             geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             pollingProvider.overrideWith(() => mockPollingNotifier),
+            ethernetPortConnectionProvider
+                .overrideWith(() => mockEthernetPortConnectionNotifier),
           ],
         ),
       );
@@ -627,6 +656,8 @@ void main() async {
                 .overrideWith(() => mockInstantTopologyNotifier),
             geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             pollingProvider.overrideWith(() => mockPollingNotifier),
+            ethernetPortConnectionProvider
+                .overrideWith(() => mockEthernetPortConnectionNotifier),
           ],
         ),
       );
@@ -666,7 +697,8 @@ void main() async {
       mockNodeLightSettingsNotifier = MockNodeLightSettingsNotifier();
       mockVPNNotifier = MockVPNNotifier();
       mockPollingNotifier = MockPollingNotifier();
-
+      mockEthernetPortConnectionNotifier = MockEthernetPortConnectionNotifier();
+      
       when(mockDashboardHomeNotifier.build()).thenReturn(
           DashboardHomeState.fromMap(dashboardHomePinnacleTestState));
       when(mockDashboardManagerNotifier.build()).thenReturn(
@@ -688,6 +720,8 @@ void main() async {
       when(mockVPNNotifier.build()).thenReturn(VPNTestState.defaultState);
       when(mockPollingNotifier.build()).thenReturn(
           CoreTransactionData(lastUpdate: 0, isReady: true, data: const {}));
+      when(mockEthernetPortConnectionNotifier.build()).thenReturn(
+          EthernetPortConnectionState.fromMap(portTestState));
     });
 
     tearDown(() {
@@ -714,6 +748,8 @@ void main() async {
                 .overrideWith(() => mockInstantTopologyNotifier),
             geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             pollingProvider.overrideWith(() => mockPollingNotifier),
+            ethernetPortConnectionProvider
+                .overrideWith(() => mockEthernetPortConnectionNotifier),
           ],
         ),
       );
@@ -751,6 +787,8 @@ void main() async {
                 .overrideWith(() => mockInstantTopologyNotifier),
             geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             pollingProvider.overrideWith(() => mockPollingNotifier),
+            ethernetPortConnectionProvider
+                .overrideWith(() => mockEthernetPortConnectionNotifier),
           ],
         ),
       );
@@ -789,6 +827,8 @@ void main() async {
                 .overrideWith(() => mockInstantTopologyNotifier),
             geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             pollingProvider.overrideWith(() => mockPollingNotifier),
+            ethernetPortConnectionProvider
+                .overrideWith(() => mockEthernetPortConnectionNotifier),
           ],
         ),
       );
@@ -831,6 +871,8 @@ void main() async {
                 .overrideWith(() => mockInstantTopologyNotifier),
             geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             pollingProvider.overrideWith(() => mockPollingNotifier),
+            ethernetPortConnectionProvider
+                .overrideWith(() => mockEthernetPortConnectionNotifier),
           ],
         ),
       );
@@ -872,6 +914,8 @@ void main() async {
                 .overrideWith(() => mockInstantTopologyNotifier),
             geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             pollingProvider.overrideWith(() => mockPollingNotifier),
+            ethernetPortConnectionProvider
+                .overrideWith(() => mockEthernetPortConnectionNotifier),
           ],
         ),
       );
@@ -912,6 +956,8 @@ void main() async {
                 .overrideWith(() => mockNodeLightSettingsNotifier),
             geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             pollingProvider.overrideWith(() => mockPollingNotifier),
+            ethernetPortConnectionProvider
+                .overrideWith(() => mockEthernetPortConnectionNotifier),
           ],
         ),
       );
@@ -952,6 +998,8 @@ void main() async {
                 .overrideWith(() => mockNodeLightSettingsNotifier),
             geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             pollingProvider.overrideWith(() => mockPollingNotifier),
+            ethernetPortConnectionProvider
+                .overrideWith(() => mockEthernetPortConnectionNotifier),
           ],
         ),
       );
@@ -990,6 +1038,8 @@ void main() async {
                 .overrideWith(() => mockNodeLightSettingsNotifier),
             geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             pollingProvider.overrideWith(() => mockPollingNotifier),
+            ethernetPortConnectionProvider
+                .overrideWith(() => mockEthernetPortConnectionNotifier),
           ],
         ),
       );
@@ -1038,6 +1088,8 @@ void main() async {
                 .overrideWith(() => mockNodeLightSettingsNotifier),
             geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             pollingProvider.overrideWith(() => mockPollingNotifier),
+            ethernetPortConnectionProvider
+                .overrideWith(() => mockEthernetPortConnectionNotifier),
           ],
         ),
       );
@@ -1087,6 +1139,8 @@ void main() async {
                   .overrideWith(() => mockNodeLightSettingsNotifier),
               geolocationProvider.overrideWith(() => mockGeolocationNotifer),
               pollingProvider.overrideWith(() => mockPollingNotifier),
+              ethernetPortConnectionProvider
+                  .overrideWith(() => mockEthernetPortConnectionNotifier),
             ],
           ),
         );
@@ -1118,12 +1172,8 @@ void main() async {
 
     testLocalizations('Dashboard Home View - Vertical Ports offline status',
         (tester, locale) async {
-      when(mockDashboardHomeNotifier.build()).thenReturn(
-          DashboardHomeState.fromMap(dashboardHomeCherry7TestState)
-              .copyWith(wanPortConnection: () => 'None'));
-      when(mockDashboardManagerNotifier.build()).thenReturn(
-          DashboardManagerState.fromMap(dashboardManagerChrry7TestState)
-              .copyWith(wanConnection: 'None'));
+      when(mockEthernetPortConnectionNotifier.build()).thenReturn(
+          EthernetPortConnectionState.fromMap(portTestState).copyWith(primaryWAN: 'None'));
       await tester.pumpWidget(
         testableRouteShellWidget(
           child: const DashboardHomeView(),
@@ -1145,6 +1195,8 @@ void main() async {
                 .overrideWith(() => mockNodeLightSettingsNotifier),
             geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             pollingProvider.overrideWith(() => mockPollingNotifier),
+            ethernetPortConnectionProvider
+                .overrideWith(() => mockEthernetPortConnectionNotifier),
           ],
         ),
       );
@@ -1185,6 +1237,8 @@ void main() async {
                 .overrideWith(() => mockNodeLightSettingsNotifier),
             geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             pollingProvider.overrideWith(() => mockPollingNotifier),
+            ethernetPortConnectionProvider
+                .overrideWith(() => mockEthernetPortConnectionNotifier),
           ],
         ),
       );
@@ -1225,6 +1279,8 @@ void main() async {
                 .overrideWith(() => mockInstantTopologyNotifier),
             geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             pollingProvider.overrideWith(() => mockPollingNotifier),
+            ethernetPortConnectionProvider
+                .overrideWith(() => mockEthernetPortConnectionNotifier),
           ],
         ),
       );
@@ -1273,6 +1329,8 @@ void main() async {
             geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             vpnProvider.overrideWith(() => mockVPNNotifier),
             pollingProvider.overrideWith(() => mockPollingNotifier),
+            ethernetPortConnectionProvider
+                .overrideWith(() => mockEthernetPortConnectionNotifier),
           ],
         ),
       );
@@ -1311,6 +1369,8 @@ void main() async {
             geolocationProvider.overrideWith(() => mockGeolocationNotifer),
             vpnProvider.overrideWith(() => mockVPNNotifier),
             pollingProvider.overrideWith(() => mockPollingNotifier),
+            ethernetPortConnectionProvider
+                .overrideWith(() => mockEthernetPortConnectionNotifier),
           ],
         ),
       );

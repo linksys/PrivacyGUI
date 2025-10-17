@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
+import 'package:privacy_gui/core/jnap/providers/ethernet_port_connection_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_light_settings_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
@@ -164,6 +165,7 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     if (serviceHelper.isSupportDualWAN()) {
       await ref.read(dualWANSettingsProvider.notifier).fetch();
     }
+    await ref.read(ethernetPortConnectionProvider.notifier).fetch();
 
     await ref.read(instantPrivacyProvider.notifier).fetch(statusOnly: true);
   }

@@ -51,7 +51,7 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
   late final DualWANSettingsNotifier _notifier;
 
   // Primary
-  late final TextEditingController _primaryMTUSizeController;
+  // late final TextEditingController _primaryMTUSizeController;
   late final TextEditingController _primaryStaticIpAddressController;
   late final TextEditingController _primaryStaticSubnetController;
   late final TextEditingController _primaryStaticGatewayController;
@@ -64,7 +64,7 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
   late final TextEditingController _primaryPPTPServerController;
 
   // Secondary
-  late final TextEditingController _secondaryMTUSizeController;
+  // late final TextEditingController _secondaryMTUSizeController;
   late final TextEditingController _secondaryStaticIpAddressController;
   late final TextEditingController _secondaryStaticSubnetController;
   late final TextEditingController _secondaryStaticGatewayController;
@@ -86,7 +86,7 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
   void initState() {
     _notifier = ref.read(dualWANSettingsProvider.notifier);
 
-    _primaryMTUSizeController = TextEditingController();
+    // _primaryMTUSizeController = TextEditingController();
     _primaryStaticIpAddressController = TextEditingController();
     _primaryStaticSubnetController = TextEditingController();
     _primaryStaticGatewayController = TextEditingController();
@@ -98,7 +98,7 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
     _primaryPPTPPasswordController = TextEditingController();
     _primaryPPTPServerController = TextEditingController();
 
-    _secondaryMTUSizeController = TextEditingController();
+    // _secondaryMTUSizeController = TextEditingController();
     _secondaryStaticIpAddressController = TextEditingController();
     _secondaryStaticSubnetController = TextEditingController();
     _secondaryStaticGatewayController = TextEditingController();
@@ -123,7 +123,7 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
   @override
   void dispose() {
     _errors.clear();
-    _primaryMTUSizeController.dispose();
+    // _primaryMTUSizeController.dispose();
     _primaryStaticIpAddressController.dispose();
     _primaryStaticSubnetController.dispose();
     _primaryStaticGatewayController.dispose();
@@ -135,7 +135,7 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
     _primaryPPTPPasswordController.dispose();
     _primaryPPTPServerController.dispose();
 
-    _secondaryMTUSizeController.dispose();
+    // _secondaryMTUSizeController.dispose();
     _secondaryStaticIpAddressController.dispose();
     _secondaryStaticSubnetController.dispose();
     _secondaryStaticGatewayController.dispose();
@@ -273,8 +273,7 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
                 : '';
         _primaryStaticGatewayController.text =
             settings.primaryWAN.staticGateway ?? '';
-        _primaryStaticDNSController.text =
-            settings.primaryWAN.staticDns1 ?? '';
+        _primaryStaticDNSController.text = settings.primaryWAN.staticDns1 ?? '';
         break;
       case 'PPPoE':
         _primaryPPPoEUsernameController.text =
@@ -293,7 +292,7 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
             settings.primaryWAN.serviceName ?? '';
         break;
     }
-    _primaryMTUSizeController.text = settings.primaryWAN.mtu.toString();
+    // _primaryMTUSizeController.text = settings.primaryWAN.mtu.toString();
 
     switch (settings.secondaryWAN.wanType) {
       case 'Static':
@@ -326,7 +325,7 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
             settings.secondaryWAN.serviceName ?? '';
         break;
     }
-    _secondaryMTUSizeController.text = settings.secondaryWAN.mtu.toString();
+    // _secondaryMTUSizeController.text = settings.secondaryWAN.mtu.toString();
   }
 
   Widget _enableCard() {
@@ -427,9 +426,8 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
 
   Widget _primaryWANCard() {
     final primaryWAN = ref.watch(dualWANSettingsProvider).settings.primaryWAN;
-    final connectionStatus =
-        ref.watch(dualWANSettingsProvider).status.connectionStatus;
-    return _wanCard(primaryWAN, connectionStatus, true, (wan) {
+    final status = ref.watch(dualWANSettingsProvider).status;
+    return _wanCard(primaryWAN, status, true, (wan) {
       _notifier.updatePrimaryWAN(wan);
     });
   }
@@ -437,18 +435,14 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
   Widget _secondaryWANCard() {
     final secondaryWAN =
         ref.watch(dualWANSettingsProvider).settings.secondaryWAN;
-    final connectionStatus =
-        ref.watch(dualWANSettingsProvider).status.connectionStatus;
-    return _wanCard(secondaryWAN, connectionStatus, false, (wan) {
+    final status = ref.watch(dualWANSettingsProvider).status;
+    return _wanCard(secondaryWAN, status, false, (wan) {
       _notifier.updateSecondaryWAN(wan);
     });
   }
 
-  Widget _wanCard(
-      DualWANConfiguration wan,
-      DualWANConnectionStatus connectionStatus,
-      bool isPrimary,
-      void Function(DualWANConfiguration wan) onChanged) {
+  Widget _wanCard(DualWANConfiguration wan, DualWANStatus status,
+      bool isPrimary, void Function(DualWANConfiguration wan) onChanged) {
     return AppInformationCard(
       headerIcon: Icon(Icons.settings_ethernet,
           color: isPrimary
@@ -466,7 +460,8 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
         children: [
           AppText.labelLarge(loc(context).connectionType),
           AppDropdownButton<String>(
-            items: wan.supportedWANType,
+            key: ValueKey(isPrimary ? 'primaryWANType' : 'secondaryWANType'),
+            items: status.supportedWANTypes,
             label: (value) => value,
             onChanged: (value) {
               onChanged(wan.copyWith(wanType: value));
@@ -475,61 +470,61 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
           const AppGap.medium(),
           if (wan.wanType != 'DHCP')
             _buildWANSettingsForm(isPrimary, wan, onChanged),
-          AppText.labelLarge(loc(context).mtu),
-          AppTextField.minMaxNumber(
-            key: ValueKey('${isPrimary ? 'primary' : 'secondary'}MtuSizeText'),
-            controller: isPrimary
-                ? _primaryMTUSizeController
-                : _secondaryMTUSizeController,
-            errorText: _errors[isPrimary
-                ? _primaryMTUSizeController
-                : _secondaryMTUSizeController],
-            border: const OutlineInputBorder(),
-            inputType: TextInputType.number,
-            min: 576,
-            max: NetworkUtils.getMaxMtu(wan.wanType),
-            onChanged: (value) {
-              final intVal = int.tryParse(value) ?? 0;
-              // 0 means Auto
-              if (intVal == 0 ||
-                  (576 <= intVal &&
-                      intVal <=
-                          NetworkUtils.getMaxMtu(wan.wanType))) {
-                _errors.remove(isPrimary
-                    ? _primaryMTUSizeController
-                    : _secondaryMTUSizeController);
-              } else {
-                // invalid valude
-                _errors[isPrimary
-                    ? _primaryMTUSizeController
-                    : _secondaryMTUSizeController] = loc(context).invalidNumber;
-              }
-            },
-            onFocusChanged: (focus) {
-              if (!focus) {
-                final intVal = int.tryParse(isPrimary
-                        ? _primaryMTUSizeController.text
-                        : _secondaryMTUSizeController.text) ??
-                    0;
-                // 0 means Auto
-                if (intVal == 0 ||
-                    (576 <= intVal &&
-                        intVal <=
-                            NetworkUtils.getMaxMtu(wan.wanType))) {
-                  onChanged(wan.copyWith(mtu: intVal));
-                }
-                setState(() {});
-              }
-            },
-          ),
+          // AppText.labelLarge(loc(context).mtu),
+          // AppTextField.minMaxNumber(
+          //   key: ValueKey('${isPrimary ? 'primary' : 'secondary'}MtuSizeText'),
+          //   controller: isPrimary
+          //       ? _primaryMTUSizeController
+          //       : _secondaryMTUSizeController,
+          //   errorText: _errors[isPrimary
+          //       ? _primaryMTUSizeController
+          //       : _secondaryMTUSizeController],
+          //   border: const OutlineInputBorder(),
+          //   inputType: TextInputType.number,
+          //   min: 576,
+          //   max: NetworkUtils.getMaxMtu(wan.wanType),
+          //   onChanged: (value) {
+          //     final intVal = int.tryParse(value) ?? 0;
+          //     // 0 means Auto
+          //     if (intVal == 0 ||
+          //         (576 <= intVal &&
+          //             intVal <=
+          //                 NetworkUtils.getMaxMtu(wan.wanType))) {
+          //       _errors.remove(isPrimary
+          //           ? _primaryMTUSizeController
+          //           : _secondaryMTUSizeController);
+          //     } else {
+          //       // invalid valude
+          //       _errors[isPrimary
+          //           ? _primaryMTUSizeController
+          //           : _secondaryMTUSizeController] = loc(context).invalidNumber;
+          //     }
+          //   },
+          //   onFocusChanged: (focus) {
+          //     if (!focus) {
+          //       final intVal = int.tryParse(isPrimary
+          //               ? _primaryMTUSizeController.text
+          //               : _secondaryMTUSizeController.text) ??
+          //           0;
+          //       // 0 means Auto
+          //       if (intVal == 0 ||
+          //           (576 <= intVal &&
+          //               intVal <=
+          //                   NetworkUtils.getMaxMtu(wan.wanType))) {
+          //         onChanged(wan.copyWith(mtu: intVal));
+          //       }
+          //       setState(() {});
+          //     }
+          //   },
+          // ),
           const Divider(height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               AppText.bodyMedium(loc(context).status),
               _wanConnectionLabel(isPrimary
-                  ? connectionStatus.primaryStatus
-                  : connectionStatus.secondaryStatus),
+                  ? status.connectionStatus.primaryStatus
+                  : status.connectionStatus.secondaryStatus),
             ],
           ),
           Row(
@@ -537,8 +532,8 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
             children: [
               AppText.bodyMedium(loc(context).ipAddress),
               AppText.bodyMedium((isPrimary
-                      ? connectionStatus.primaryWANIPAddress
-                      : connectionStatus.secondaryWANIPAddress) ??
+                      ? status.connectionStatus.primaryWANIPAddress
+                      : status.connectionStatus.secondaryWANIPAddress) ??
                   '--'),
             ],
           ),

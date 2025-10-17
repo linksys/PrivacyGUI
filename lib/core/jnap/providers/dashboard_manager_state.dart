@@ -16,8 +16,6 @@ class DashboardManagerState extends Equatable {
   final HealthCheckResult? latestSpeedTest;
   final List<String> healthCheckModules;
   final int uptimes;
-  final String? wanConnection;
-  final List<String> lanConnections;
   final String? skuModelNumber;
   final int localTime;
   final String? cpuLoad;
@@ -31,8 +29,6 @@ class DashboardManagerState extends Equatable {
     this.latestSpeedTest,
     this.healthCheckModules = const [],
     this.uptimes = 0,
-    this.wanConnection,
-    this.lanConnections = const [],
     this.skuModelNumber,
     this.localTime = 0,
     this.cpuLoad,
@@ -49,8 +45,6 @@ class DashboardManagerState extends Equatable {
       latestSpeedTest,
       healthCheckModules,
       uptimes,
-      wanConnection,
-      lanConnections,
       skuModelNumber,
       localTime,
       cpuLoad,
@@ -66,8 +60,6 @@ class DashboardManagerState extends Equatable {
     HealthCheckResult? latestSpeedTest,
     List<String>? healthCheckModules,
     int? uptimes,
-    String? wanConnection,
-    List<String>? lanConnections,
     String? skuModelNumber,
     int? localTime,
     String? cpuLoad,
@@ -82,8 +74,6 @@ class DashboardManagerState extends Equatable {
       latestSpeedTest: latestSpeedTest ?? this.latestSpeedTest,
       healthCheckModules: healthCheckModules ?? this.healthCheckModules,
       uptimes: uptimes ?? this.uptimes,
-      wanConnection: wanConnection ?? this.wanConnection,
-      lanConnections: lanConnections ?? this.lanConnections,
       skuModelNumber: skuModelNumber ?? this.skuModelNumber,
       localTime: localTime ?? this.localTime,
       cpuLoad: cpuLoad ?? this.cpuLoad,
@@ -100,8 +90,6 @@ class DashboardManagerState extends Equatable {
       'latestSpeedTest': latestSpeedTest?.toJson(),
       'healthCheckModules': healthCheckModules,
       'uptimes': uptimes,
-      'wanConnection': wanConnection,
-      'lanConnections': lanConnections,
       'skuModelNumber': skuModelNumber,
       'localTime': localTime,
       'cpuLoad': cpuLoad,
@@ -134,10 +122,6 @@ class DashboardManagerState extends Equatable {
           : null,
       healthCheckModules: List<String>.from(map['healthCheckModules']),
       uptimes: map['uptimes'] as int,
-      wanConnection: map['wanConnection'],
-      lanConnections: List<String>.from(
-        map['lanConnections'],
-      ),
       skuModelNumber: map['skuModelNumber'],
       localTime: map['localTime'],
       cpuLoad: map['cpuLoad'],

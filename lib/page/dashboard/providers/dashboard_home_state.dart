@@ -167,8 +167,6 @@ class DashboardHomeState extends Equatable {
   final DashboardSpeedItem? downloadResult;
   final int? speedCheckTimestamp;
   final int? uptime;
-  final String? wanPortConnection;
-  final List<String> lanPortConnections;
   final List<DashboardWiFiItem> wifis;
   final String? wanType;
   final String? detectedWANType;
@@ -184,8 +182,6 @@ class DashboardHomeState extends Equatable {
     this.downloadResult,
     this.speedCheckTimestamp,
     this.uptime,
-    this.wanPortConnection,
-    this.lanPortConnections = const [],
     this.wifis = const [],
     this.wanType,
     this.detectedWANType,
@@ -203,8 +199,6 @@ class DashboardHomeState extends Equatable {
       'downloadResult': downloadResult?.toMap(),
       'speedCheckTimestamp': speedCheckTimestamp,
       'uptime': uptime,
-      'wanPortConnection': wanPortConnection,
-      'lanPortConnections': lanPortConnections,
       'wifis': wifis.map((x) => x.toMap()).toList(),
       'wanType': wanType,
       'detectedWANType': detectedWANType,
@@ -223,8 +217,6 @@ class DashboardHomeState extends Equatable {
       downloadResult: map['downloadResult'] != null ? DashboardSpeedItem.fromMap(map['downloadResult']) : null,
       speedCheckTimestamp: map['speedCheckTimestamp']?.toInt(),
       uptime: map['uptime']?.toInt(),
-      wanPortConnection: map['wanPortConnection'],
-      lanPortConnections: List<String>.from(map['lanPortConnections']),
       wifis: List<DashboardWiFiItem>.from(map['wifis']?.map((x) => DashboardWiFiItem.fromMap(x))),
       wanType: map['wanType'],
       detectedWANType: map['detectedWANType'],
@@ -252,8 +244,6 @@ class DashboardHomeState extends Equatable {
       downloadResult,
       speedCheckTimestamp,
       uptime,
-      wanPortConnection,
-      lanPortConnections,
       wifis,
       wanType,
       detectedWANType,
@@ -271,8 +261,6 @@ class DashboardHomeState extends Equatable {
     ValueGetter<DashboardSpeedItem?>? downloadResult,
     ValueGetter<int?>? speedCheckTimestamp,
     ValueGetter<int?>? uptime,
-    ValueGetter<String?>? wanPortConnection,
-    List<String>? lanPortConnections,
     List<DashboardWiFiItem>? wifis,
     ValueGetter<String?>? wanType,
     ValueGetter<String?>? detectedWANType,
@@ -288,8 +276,6 @@ class DashboardHomeState extends Equatable {
       downloadResult: downloadResult != null ? downloadResult() : this.downloadResult,
       speedCheckTimestamp: speedCheckTimestamp != null ? speedCheckTimestamp() : this.speedCheckTimestamp,
       uptime: uptime != null ? uptime() : this.uptime,
-      wanPortConnection: wanPortConnection != null ? wanPortConnection() : this.wanPortConnection,
-      lanPortConnections: lanPortConnections ?? this.lanPortConnections,
       wifis: wifis ?? this.wifis,
       wanType: wanType != null ? wanType() : this.wanType,
       detectedWANType: detectedWANType != null ? detectedWANType() : this.detectedWANType,
@@ -299,7 +285,7 @@ class DashboardHomeState extends Equatable {
 
   @override
   String toString() {
-    return 'DashboardHomeState(isFirstPolling: $isFirstPolling, isHorizontalLayout: $isHorizontalLayout, isHealthCheckSupported: $isHealthCheckSupported, masterIcon: $masterIcon, isAnyNodesOffline: $isAnyNodesOffline, uploadResult: $uploadResult, downloadResult: $downloadResult, speedCheckTimestamp: $speedCheckTimestamp, uptime: $uptime, wanPortConnection: $wanPortConnection, lanPortConnections: $lanPortConnections, wifis: $wifis, wanType: $wanType, detectedWANType: $detectedWANType, healthCheckModule: $healthCheckModule)';
+    return 'DashboardHomeState(isFirstPolling: $isFirstPolling, isHorizontalLayout: $isHorizontalLayout, isHealthCheckSupported: $isHealthCheckSupported, masterIcon: $masterIcon, isAnyNodesOffline: $isAnyNodesOffline, uploadResult: $uploadResult, downloadResult: $downloadResult, speedCheckTimestamp: $speedCheckTimestamp, uptime: $uptime, wifis: $wifis, wanType: $wanType, detectedWANType: $detectedWANType, healthCheckModule: $healthCheckModule)';
   }
 }
 

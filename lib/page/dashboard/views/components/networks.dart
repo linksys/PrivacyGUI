@@ -5,6 +5,7 @@ import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/ethernet_port_connection_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
@@ -73,7 +74,7 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
         ? routerLength * topologyItemHeight
         : min(routerLength * topologyItemHeight, 3 * topologyItemHeight);
     final hasLanPort =
-        ref.read(dashboardHomeProvider).lanPortConnections.isNotEmpty;
+        ref.watch(ethernetPortConnectionProvider).hasLanPort;
     final showAllTopology =
         ResponsiveLayout.isMobileLayout(context) || routerLength <= 3;
     final isLoading =

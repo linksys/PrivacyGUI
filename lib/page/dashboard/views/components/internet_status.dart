@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_provide
 import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_state.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/ethernet_port_connection_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/customs/animated_refresh_container.dart';
@@ -46,7 +47,7 @@ class _InternetConnectionWidgetState
         : ref.watch(instantTopologyProvider).root.children.first;
     final masterIcon = ref.watch(dashboardHomeProvider).masterIcon;
     final wanPortConnection =
-        ref.watch(dashboardHomeProvider).wanPortConnection;
+        ref.watch(ethernetPortConnectionProvider).primaryWAN;
     final isMasterOffline =
         master?.data.isOnline == false || wanPortConnection == 'None';
     return isLoading

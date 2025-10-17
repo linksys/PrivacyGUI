@@ -6,6 +6,8 @@ import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart'
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
+import 'package:privacy_gui/core/jnap/providers/ethernet_port_connection_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/ethernet_port_connection_state.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_state.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
@@ -24,8 +26,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../common/_index.dart';
 import '../../../../common/di.dart';
 import '../../../../mocks/_index.dart';
+import '../../../../mocks/ethernet_port_connection_notifier_mocks.dart';
 import '../../../../mocks/instant_verify_notifier_mocks.dart';
 import '../../../../test_data/_index.dart';
+import '../../../../test_data/ethernet_port_connection_test_state.dart';
 import '../../../../test_data/instant_verify_test_state.dart';
 
 void main() {
@@ -36,7 +40,8 @@ void main() {
   late InstantTopologyNotifier mockInstantTopologyNotifier;
   late InstantVerifyNotifier mockInstantVerifyNotifier;
   late DashboardManagerNotifier mockDashboardManagerNotifier;
-
+  late EthernetPortConnectionNotifier mockEthernetPortConnectionNotifier;
+  
   mockDependencyRegister();
   ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
 
@@ -50,6 +55,7 @@ void main() {
     mockInstantTopologyNotifier = MockInstantTopologyNotifier();
     mockInstantVerifyNotifier = MockInstantVerifyNotifier();
     mockDashboardManagerNotifier = MockDashboardManagerNotifier();
+    mockEthernetPortConnectionNotifier = MockEthernetPortConnectionNotifier();
 
     when(mockDashboardHomeNotifier.build())
         .thenReturn(DashboardHomeState.fromMap(dashboardHomeCherry7TestState));
@@ -65,6 +71,8 @@ void main() {
         .thenReturn(InstantVerifyState.fromMap(instantVerifyTestState));
     when(mockDashboardManagerNotifier.build()).thenReturn(
         DashboardManagerState.fromMap(dashboardManagerChrry7TestState));
+    when(mockEthernetPortConnectionNotifier.build()).thenReturn(
+        EthernetPortConnectionState.fromMap(portTestState));
   });
   testLocalizations(
     'Instant-Verify view - Instant-Topology',
@@ -86,6 +94,8 @@ void main() {
             instantVerifyProvider.overrideWith(() => mockInstantVerifyNotifier),
             dashboardManagerProvider
                 .overrideWith(() => mockDashboardManagerNotifier),
+            ethernetPortConnectionProvider
+                .overrideWith(() => mockEthernetPortConnectionNotifier),
           ],
         ),
       );
@@ -132,6 +142,8 @@ void main() {
             instantVerifyProvider.overrideWith(() => mockInstantVerifyNotifier),
             dashboardManagerProvider
                 .overrideWith(() => mockDashboardManagerNotifier),
+            ethernetPortConnectionProvider
+                .overrideWith(() => mockEthernetPortConnectionNotifier),
           ],
         ),
       );
@@ -173,6 +185,8 @@ void main() {
             instantVerifyProvider.overrideWith(() => mockInstantVerifyNotifier),
             dashboardManagerProvider
                 .overrideWith(() => mockDashboardManagerNotifier),
+            ethernetPortConnectionProvider
+                .overrideWith(() => mockEthernetPortConnectionNotifier),
           ],
         ),
       );
@@ -217,6 +231,8 @@ void main() {
             instantVerifyProvider.overrideWith(() => mockInstantVerifyNotifier),
             dashboardManagerProvider
                 .overrideWith(() => mockDashboardManagerNotifier),
+            ethernetPortConnectionProvider
+                .overrideWith(() => mockEthernetPortConnectionNotifier),
           ],
         ),
       );
@@ -258,6 +274,8 @@ void main() {
             instantVerifyProvider.overrideWith(() => mockInstantVerifyNotifier),
             dashboardManagerProvider
                 .overrideWith(() => mockDashboardManagerNotifier),
+            ethernetPortConnectionProvider
+                .overrideWith(() => mockEthernetPortConnectionNotifier),
           ],
         ),
       );
@@ -303,6 +321,8 @@ void main() {
                   .overrideWith(() => mockInstantVerifyNotifier),
               dashboardManagerProvider
                   .overrideWith(() => mockDashboardManagerNotifier),
+              ethernetPortConnectionProvider
+                  .overrideWith(() => mockEthernetPortConnectionNotifier),
             ],
           ),
         );
@@ -329,9 +349,8 @@ void main() {
       final testState =
           InstantVerifyState.fromMap(instantVerifyAllWiFiOffTestState);
       when(mockInstantVerifyNotifier.build()).thenReturn(testState);
-      when(mockDashboardHomeNotifier.build()).thenReturn(
-          DashboardHomeState.fromMap(dashboardHomeCherry7TestState)
-              .copyWith(wanPortConnection: () => 'None'));
+      when(mockEthernetPortConnectionNotifier.build()).thenReturn(
+          EthernetPortConnectionState.fromMap(portTestState).copyWith(primaryWAN: 'None'));
       await tester.runAsync(() async {
         await tester.pumpWidget(
           testableRouteShellWidget(
@@ -354,6 +373,8 @@ void main() {
                   .overrideWith(() => mockInstantVerifyNotifier),
               dashboardManagerProvider
                   .overrideWith(() => mockDashboardManagerNotifier),
+              ethernetPortConnectionProvider
+                  .overrideWith(() => mockEthernetPortConnectionNotifier),
             ],
           ),
         );
@@ -403,6 +424,8 @@ void main() {
                   .overrideWith(() => mockInstantVerifyNotifier),
               dashboardManagerProvider
                   .overrideWith(() => mockDashboardManagerNotifier),
+              ethernetPortConnectionProvider
+                  .overrideWith(() => mockEthernetPortConnectionNotifier),
             ],
           ),
         );

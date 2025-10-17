@@ -35,7 +35,6 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
     Map<String, dynamic>? getHealthCheckResultsData;
     Map<String, dynamic>? getHealthCheckModuleData;
     Map<String, dynamic>? getSystemStats;
-    Map<String, dynamic>? getEthernetPortConnections;
     Map<String, dynamic>? getLocalTime;
 
     final result = pollingResult?.data;
@@ -53,9 +52,6 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
               ?.output;
       getSystemStats =
           (result[JNAPAction.getSystemStats] as JNAPSuccess?)?.output;
-      getEthernetPortConnections =
-          (result[JNAPAction.getEthernetPortConnections] as JNAPSuccess?)
-              ?.output;
       getLocalTime = (result[JNAPAction.getLocalTime] as JNAPSuccess?)?.output;
     }
 
@@ -88,14 +84,6 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
         cpuLoad: cpuLoad,
         memoryLoad: memoryLoad,
       );
-    }
-
-    if (getEthernetPortConnections != null) {
-      final lanPortConnections =
-          List<String>.from(getEthernetPortConnections['lanPortConnections']);
-      final wanPortConnection = getEthernetPortConnections['wanPortConnection'];
-      newState = newState.copyWith(
-          lanConnections: lanPortConnections, wanConnection: wanPortConnection);
     }
 
     String? timeString;

@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/jnap/models/alg_settings.dart';
 import 'package:privacy_gui/core/jnap/models/express_forwarding_settings.dart';
 import 'package:privacy_gui/core/jnap/models/management_settings.dart';
 import 'package:privacy_gui/core/jnap/models/unpn_settings.dart';
+import 'package:privacy_gui/core/jnap/providers/ethernet_port_connection_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
@@ -85,7 +86,7 @@ class AdministrationSettingsNotifier
         : null;
 
     final hasLanPort =
-        ref.read(dashboardHomeProvider).lanPortConnections.isNotEmpty;
+        ref.read(ethernetPortConnectionProvider).hasLanPort;
     state = state.copyWith(
       managementSettings: managementSettings,
       isUPnPEnabled: upnpSettings?.isUPnPEnabled,

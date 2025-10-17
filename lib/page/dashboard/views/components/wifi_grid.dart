@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/ethernet_port_connection_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -58,7 +59,7 @@ class _DashboardWiFiGridState extends ConsumerState<DashboardWiFiGrid> {
     final enabledWiFiCount =
         items.where((e) => !e.isGuest && e.isEnabled).length;
     final hasLanPort =
-        ref.read(dashboardHomeProvider).lanPortConnections.isNotEmpty;
+        ref.read(ethernetPortConnectionProvider).hasLanPort;
     final canBeDisabled = enabledWiFiCount > 1 || hasLanPort;
 
     return SizedBox(
