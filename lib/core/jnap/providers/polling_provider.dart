@@ -163,7 +163,7 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
       await ref.read(vpnProvider.notifier).fetch(false, true);
     }
     if (serviceHelper.isSupportDualWAN()) {
-      await ref.read(dualWANSettingsProvider.notifier).fetch();
+      await ref.read(dualWANSettingsProvider.notifier).fetch(false, true);
     }
     await ref.read(ethernetPortConnectionProvider.notifier).fetch();
 

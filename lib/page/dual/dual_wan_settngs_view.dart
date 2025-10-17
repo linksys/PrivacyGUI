@@ -461,6 +461,7 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
           AppText.labelLarge(loc(context).connectionType),
           AppDropdownButton<String>(
             key: ValueKey(isPrimary ? 'primaryWANType' : 'secondaryWANType'),
+            selected: wan.wanType,
             items: status.supportedWANTypes,
             label: (value) => value,
             onChanged: (value) {
