@@ -136,7 +136,7 @@ class RouterDualWANSettings extends Equatable {
       'ratio': ratio?.value,
       'primaryWanSettings': primaryWAN.toMap(),
       'secondaryWanSettings': secondaryWAN.toMap(),
-    };
+    }..removeWhere((key, value) => value == null);
   }
 
   factory RouterDualWANSettings.fromMap(Map<String, dynamic> map) {

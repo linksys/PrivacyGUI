@@ -1,6 +1,5 @@
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
@@ -10,7 +9,6 @@ import 'package:privacy_gui/core/jnap/models/radio_info.dart';
 import 'package:privacy_gui/core/jnap/models/wan_status.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
-import 'package:privacy_gui/core/jnap/providers/ethernet_port_connection_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/wan_external_provider.dart';
@@ -45,6 +43,7 @@ import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:pdf/pdf.dart';
+import 'package:privacy_gui/page/components/ports_layout_widget.dart';
 
 class InstantVerifyView extends ArgumentsConsumerStatefulView {
   const InstantVerifyView({super.key, super.args});
@@ -383,130 +382,17 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
   }
 
   Widget _portsCard(BuildContext context, WidgetRef ref) {
-    final portState = ref.watch(ethernetPortConnectionProvider);
-    final isLoading = ref
-        .watch(deviceManagerProvider.select((value) => value.deviceList))
-        .isEmpty;
     return Container(
       height: ResponsiveLayout.isMobileLayout(context) ? 224 : 208,
       width: double.infinity,
       child: AppCard(
-          key: const ValueKey('portCard'),
-          padding: EdgeInsets.zero,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: Spacing.small2,
-                  vertical: Spacing.large2,
-                ),
-                child: Row(
-                  // mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ...portState.lans
-                        .mapIndexed((index, e) => Expanded(
-                              child: _portWidget(
-                                  context,
-                                  e == 'None' ? null : e,
-                                  loc(context).indexedPort(index + 1),
-                                  false),
-                            ))
-                        .toList(),
-                    Expanded(
-                      child: _portWidget(
-                          context,
-                          portState.secondaryWAN == 'None'
-                              ? null
-                              : portState.secondaryWAN,
-                          loc(context).wan,
-                          true),
-                    )
-                  ],
-                ),
-              ),
-            ],
-          )),
-    );
-  }
-
-  Widget _portWidget(
-      BuildContext context, String? connection, String label, bool isWan) {
-    final isMobile = ResponsiveLayout.isMobileLayout(context);
-    final portLabel = [
-      Icon(
-        connection == null
-            ? LinksysIcons.circle
-            : LinksysIcons.checkCircleFilled,
-        color: connection == null
-            ? Theme.of(context).colorScheme.surfaceVariant
-            : Theme.of(context).colorSchemeExt.green,
-        semanticLabel: connection == null ? 'circle' : 'checked circle',
+        key: const ValueKey('portCard'),
+        padding: const EdgeInsets.symmetric(
+          horizontal: Spacing.small2,
+          vertical: Spacing.large2,
+        ),
+        child: const PortsLayoutWidget(axis: Axis.horizontal),
       ),
-      const AppGap.small2(),
-      AppText.labelMedium(label),
-    ];
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Wrap(
-          // mainAxisSize: MainAxisSize.min,
-          alignment: WrapAlignment.center,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            isMobile
-                ? Column(
-                    children: portLabel,
-                  )
-                : Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: portLabel,
-                  )
-          ],
-        ),
-        Padding(
-          padding: const EdgeInsets.all(Spacing.small2),
-          child: SvgPicture(
-            connection == null
-                ? CustomTheme.of(context).images.imgPortOff
-                : CustomTheme.of(context).images.imgPortOn,
-            semanticsLabel:
-                connection == null ? 'port off image' : 'port on image',
-            width: 40,
-            height: 40,
-          ),
-        ),
-        if (connection != null)
-          Column(
-            children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    LinksysIcons.bidirectional,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  AppText.bodySmall(connection),
-                ],
-              ),
-              SizedBox(
-                width: 70,
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: AppText.bodySmall(
-                    loc(context).connectedSpeed,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                  ),
-                ),
-              )
-            ],
-          ),
-        if (isWan) AppText.labelMedium(loc(context).internet),
-      ],
     );
   }
 

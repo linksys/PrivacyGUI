@@ -12,7 +12,7 @@ class EthernetPortConnectionState extends Equatable {
     this.isDualWANEnabled = false,
     this.primaryWAN = '',
     this.secondaryWAN = '',
-    this.lans = const [], 
+    this.lans = const [],
   });
 
   EthernetPortConnectionState copyWith({
@@ -59,6 +59,12 @@ class EthernetPortConnectionState extends Equatable {
   @override
   List<Object?> get props => [isDualWANEnabled, primaryWAN, secondaryWAN, lans];
 
-
   bool get hasLanPort => lans.isNotEmpty;
+  bool get hasPrimaryWANConnection =>
+      primaryWAN.isNotEmpty && primaryWAN != 'None';
+  bool get hasSecondaryWANConnection =>
+      secondaryWAN.isNotEmpty && secondaryWAN != 'None';
+  bool get hasWanConnections =>
+      hasPrimaryWANConnection ||
+      (isDualWANEnabled && hasSecondaryWANConnection);
 }

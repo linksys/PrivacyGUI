@@ -36,43 +36,42 @@ class DualWANSettingsNotifier extends Notifier<DualWANSettingsState> {
     });
     RouterDualWANStatus? status;
     List<DualWANPort> ports = [];
-    if (settings.enabled) {
-      final builder = JNAPTransactionBuilder(commands: [
-        MapEntry(JNAPAction.getDualWANStatus, {}),
+    final builder = JNAPTransactionBuilder(commands: [
+      MapEntry(JNAPAction.getDualWANStatus, {}),
+      if (settings.enabled)
         MapEntry(JNAPAction.getDualWANEthernetPortConnections, {}),
-      ], auth: true);
+    ], auth: true);
 
-      await repo.transaction(builder).then((result) {
-        final dualWANStatusData = (result.data
-                .firstWhereOrNull(
-                    (entry) => entry.key == JNAPAction.getDualWANStatus)
-                ?.value as JNAPSuccess?)
-            ?.output;
-        final portsData = (result.data
-                .firstWhereOrNull((entry) =>
-                    entry.key == JNAPAction.getDualWANEthernetPortConnections)
-                ?.value as JNAPSuccess?)
-            ?.output;
+    await repo.transaction(builder).then((result) {
+      final dualWANStatusData = (result.data
+              .firstWhereOrNull(
+                  (entry) => entry.key == JNAPAction.getDualWANStatus)
+              ?.value as JNAPSuccess?)
+          ?.output;
+      final portsData = (result.data
+              .firstWhereOrNull((entry) =>
+                  entry.key == JNAPAction.getDualWANEthernetPortConnections)
+              ?.value as JNAPSuccess?)
+          ?.output;
 
-        if (dualWANStatusData != null) {
-          status = RouterDualWANStatus.fromMap(dualWANStatusData);
-        }
-        if (portsData != null) {
-          final dualWANPorts =
-              DualWANEthernetPortConnections.fromMap(portsData);
-          ports = [
-            DualWANPort(
-                type: PortType.wan1,
-                speed: dualWANPorts.primaryWANPortConnection),
-            DualWANPort(
-                type: PortType.wan2,
-                speed: dualWANPorts.secondaryWANPortConnection),
-            ...dualWANPorts.lanPortConnections
-                .map((e) => DualWANPort(type: PortType.lan, speed: e)),
-          ];
-        }
-      });
-    }
+      if (dualWANStatusData != null) {
+        status = RouterDualWANStatus.fromMap(dualWANStatusData);
+      }
+      if (portsData != null) {
+        final dualWANPorts = DualWANEthernetPortConnections.fromMap(portsData);
+        ports = [
+          DualWANPort(
+              type: PortType.wan1,
+              speed: dualWANPorts.primaryWANPortConnection),
+          DualWANPort(
+              type: PortType.wan2,
+              speed: dualWANPorts.secondaryWANPortConnection),
+          ...dualWANPorts.lanPortConnections
+              .map((e) => DualWANPort(type: PortType.lan, speed: e)),
+        ];
+      }
+    });
+
     // TODO: Log options
     DualWANSettings dualWANSettings = DualWANSettings.fromData(settings);
     // TODO: Speed data

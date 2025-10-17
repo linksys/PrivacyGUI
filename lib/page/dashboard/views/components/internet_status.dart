@@ -46,10 +46,10 @@ class _InternetConnectionWidgetState
         ? null
         : ref.watch(instantTopologyProvider).root.children.first;
     final masterIcon = ref.watch(dashboardHomeProvider).masterIcon;
-    final wanPortConnection =
-        ref.watch(ethernetPortConnectionProvider).primaryWAN;
+    final portStatus =
+        ref.watch(ethernetPortConnectionProvider);
     final isMasterOffline =
-        master?.data.isOnline == false || wanPortConnection == 'None';
+        master?.data.isOnline == false || !portStatus.hasWanConnections;
     return isLoading
         ? AppCard(
             padding: EdgeInsets.zero,

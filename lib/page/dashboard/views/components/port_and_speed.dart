@@ -1,10 +1,7 @@
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/build_config.dart';
-import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/ethernet_port_connection_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/ethernet_port_connection_state.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
@@ -24,6 +21,7 @@ import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacy_gui/util/url_helper/url_helper.dart'
     if (dart.library.io) 'package:privacy_gui/util/url_helper/url_helper_mobile.dart'
     if (dart.library.html) 'package:privacy_gui/util/url_helper/url_helper_web.dart';
+import 'package:privacy_gui/page/components/ports_layout_widget.dart';
 
 class DashboardHomePortAndSpeed extends ConsumerWidget {
   const DashboardHomePortAndSpeed({super.key});
@@ -48,19 +46,19 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                 child: const LoadingTile()))
         : ResponsiveLayout(
             desktop: !hasLanPort
-                ? _desktopNoLanPorts(context, ref, state, portState, isOnline,
-                    isLoading)
+                ? _desktopNoLanPorts(
+                    context, ref, state, portState, isOnline, isLoading)
                 : horizontalLayout
                     ? _desktopHorizontal(
                         context, ref, state, portState, isOnline, isLoading)
                     : _desktopVertical(
                         context, ref, state, portState, isOnline, isLoading),
-            mobile: _mobile(context, ref, state, portState, isOnline, isLoading));
+            mobile:
+                _mobile(context, ref, state, portState, isOnline, isLoading));
   }
 
   Widget _mobile(BuildContext context, WidgetRef ref, DashboardHomeState state,
       EthernetPortConnectionState portState, bool isOnline, bool isLoading) {
-    final hasLanPort = portState.hasLanPort;
     return Container(
       width: double.infinity,
       // constraints:
@@ -74,33 +72,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                   horizontal: Spacing.medium,
                   vertical: Spacing.large2,
                 ),
-                child: Row(
-                  // mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ...portState.lans
-                        .mapIndexed((index, e) => Expanded(
-                              child: _portWidget(
-                                  context,
-                                  e == 'None' ? null : e,
-                                  loc(context).indexedPort(index + 1),
-                                  false,
-                                  hasLanPort),
-                            ))
-                        .toList(),
-                    Expanded(
-                      child: _portWidget(
-                          context,
-                          portState.primaryWAN == 'None'
-                              ? null
-                              : portState.primaryWAN,
-                          loc(context).wan,
-                          true,
-                          hasLanPort),
-                    )
-                  ],
-                ),
+                child: const PortsLayoutWidget(axis: Axis.horizontal),
               ),
               // const AppGap.large2(),
               _createSpeedTestTile(context, ref, state, portState, true),
@@ -109,11 +81,13 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
     );
   }
 
-  Widget _desktopVertical(BuildContext context, WidgetRef ref,
-      DashboardHomeState state, EthernetPortConnectionState portState,
-      bool isOnline, bool isLoading) {
-    final hasLanPort = portState.hasLanPort;
-
+  Widget _desktopVertical(
+      BuildContext context,
+      WidgetRef ref,
+      DashboardHomeState state,
+      EthernetPortConnectionState portState,
+      bool isOnline,
+      bool isLoading) {
     return Container(
       constraints: BoxConstraints(
           minWidth: 150, minHeight: !state.isHealthCheckSupported ? 360 : 520),
@@ -131,31 +105,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                     horizontal: Spacing.small2,
                     vertical: Spacing.large2,
                   ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      ...portState.lans
-                          .mapIndexed((index, e) => Padding(
-                                padding: const EdgeInsets.only(bottom: 36.0),
-                                child: _portWidget(
-                                    context,
-                                    e == 'None' ? null : e,
-                                    loc(context).indexedPort(index + 1),
-                                    false,
-                                    hasLanPort),
-                              ))
-                          .toList(),
-                      _portWidget(
-                          context,
-                          portState.primaryWAN == 'None'
-                              ? null
-                              : portState.primaryWAN,
-                          loc(context).wan,
-                          true,
-                          hasLanPort),
-                    ],
-                  ),
+                  child: const PortsLayoutWidget(axis: Axis.vertical),
                 ),
               ),
               SizedBox(
@@ -167,11 +117,13 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
     );
   }
 
-  Widget _desktopHorizontal(BuildContext context, WidgetRef ref,
-      DashboardHomeState state, EthernetPortConnectionState portState,
-      bool isOnline, bool isLoading) {
-    final hasLanPort = portState.hasLanPort;
-
+  Widget _desktopHorizontal(
+      BuildContext context,
+      WidgetRef ref,
+      DashboardHomeState state,
+      EthernetPortConnectionState portState,
+      bool isOnline,
+      bool isLoading) {
     return Container(
       width: double.infinity,
       constraints: const BoxConstraints(minHeight: 110),
@@ -187,32 +139,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                     horizontal: Spacing.small2,
                     vertical: Spacing.large3,
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ...portState.lans
-                          .mapIndexed((index, e) => Expanded(
-                                child: _portWidget(
-                                    context,
-                                    e == 'None' ? null : e,
-                                    loc(context).indexedPort(index + 1),
-                                    false,
-                                    hasLanPort),
-                              ))
-                          .toList(),
-                      Expanded(
-                        child: _portWidget(
-                            context,
-                            portState.primaryWAN == 'None'
-                                ? null
-                                : portState.primaryWAN,
-                            loc(context).wan,
-                            true,
-                            hasLanPort),
-                      )
-                    ],
-                  ),
+                  child: const PortsLayoutWidget(axis: Axis.horizontal),
                 ),
               ),
               SizedBox(
@@ -223,11 +150,13 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
     );
   }
 
-  Widget _desktopNoLanPorts(BuildContext context, WidgetRef ref,
-      DashboardHomeState state, EthernetPortConnectionState portState,
-      bool isOnline, bool isLoading) {
-    final hasLanPort = portState.hasLanPort;
-
+  Widget _desktopNoLanPorts(
+      BuildContext context,
+      WidgetRef ref,
+      DashboardHomeState state,
+      EthernetPortConnectionState portState,
+      bool isOnline,
+      bool isLoading) {
     return Container(
       width: double.infinity,
       constraints: const BoxConstraints(minHeight: 256),
@@ -243,32 +172,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                     horizontal: Spacing.small2,
                     vertical: Spacing.large1,
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ...portState.lans
-                          .mapIndexed((index, e) => Expanded(
-                                child: _portWidget(
-                                    context,
-                                    e == 'None' ? null : e,
-                                    loc(context).indexedPort(index + 1),
-                                    false,
-                                    hasLanPort),
-                              ))
-                          .toList(),
-                      Expanded(
-                        child: _portWidget(
-                            context,
-                            portState.primaryWAN == 'None'
-                                ? null
-                                : portState.primaryWAN,
-                            loc(context).wan,
-                            true,
-                            hasLanPort),
-                      )
-                    ],
-                  ),
+                  child: const PortsLayoutWidget(axis: Axis.horizontal),
                 ),
               ),
               SizedBox(
@@ -309,9 +213,8 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
           );
   }
 
-  Widget _speedCheckWidget(
-      BuildContext context, WidgetRef ref, DashboardHomeState state,
-      EthernetPortConnectionState portState) {
+  Widget _speedCheckWidget(BuildContext context, WidgetRef ref,
+      DashboardHomeState state, EthernetPortConnectionState portState) {
     final horizontalLayout = state.isHorizontalLayout;
     final hasLanPort = portState.hasLanPort;
     final dateTime = state.speedCheckTimestamp == null
@@ -698,142 +601,5 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
         ]
       ],
     );
-  }
-
-  Widget _portWidget(BuildContext context, String? connection, String label,
-      bool isWan, bool hasLanPorts) {
-    final isMobile = ResponsiveLayout.isMobileLayout(context);
-    final portLabel = [
-      Icon(
-        connection == null
-            ? LinksysIcons.circle
-            : LinksysIcons.checkCircleFilled,
-        color: connection == null
-            ? Theme.of(context).colorScheme.surfaceVariant
-            : Theme.of(context).colorSchemeExt.green,
-        semanticLabel: 'port icon',
-      ),
-      if (hasLanPorts) ...[
-        const AppGap.small2(),
-        AppText.labelMedium(label),
-      ],
-    ];
-
-    return hasLanPorts
-        ? Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Wrap(
-                // mainAxisSize: MainAxisSize.min,
-                alignment: WrapAlignment.center,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  isMobile
-                      ? Column(
-                          children: portLabel,
-                        )
-                      : Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: portLabel,
-                        )
-                ],
-              ),
-              Padding(
-                padding: const EdgeInsets.all(Spacing.small2),
-                child: SvgPicture(
-                  connection == null
-                      ? CustomTheme.of(context).images.imgPortOff
-                      : CustomTheme.of(context).images.imgPortOn,
-                  semanticsLabel: 'port status image',
-                  width: 40,
-                  height: 40,
-                ),
-              ),
-              if (connection != null)
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          LinksysIcons.bidirectional,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        AppText.bodySmall(connection),
-                      ],
-                    ),
-                    AppText.bodySmall(
-                      loc(context).connectedSpeed,
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              if (isWan) AppText.labelMedium(loc(context).internet),
-            ],
-          )
-        : Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              Column(
-                children: [
-                  Wrap(
-                    // mainAxisSize: MainAxisSize.min,
-                    alignment: WrapAlignment.center,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      isMobile
-                          ? Column(
-                              children: portLabel,
-                            )
-                          : Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: portLabel,
-                            )
-                    ],
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(Spacing.small2),
-                    child: SvgPicture(
-                      connection == null
-                          ? CustomTheme.of(context).images.imgPortOff
-                          : CustomTheme.of(context).images.imgPortOn,
-                      semanticsLabel: 'port status image',
-                      width: 40,
-                      height: 40,
-                    ),
-                  ),
-                ],
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (connection != null)
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              LinksysIcons.bidirectional,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                            AppText.bodyMedium(connection),
-                          ],
-                        ),
-                        AppText.bodySmall(
-                          loc(context).connectedSpeed,
-                          textAlign: TextAlign.center,
-                        )
-                      ],
-                    ),
-                  if (isWan) AppText.labelMedium(loc(context).internet),
-                ],
-              ),
-            ],
-          );
   }
 }
