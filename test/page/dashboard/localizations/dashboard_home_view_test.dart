@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_provider.dart';
@@ -20,6 +21,7 @@ import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/dashboard/views/components/quick_panel.dart';
 import 'package:privacy_gui/page/dashboard/views/components/wifi_grid.dart';
+import 'package:privacy_gui/page/health_check/_health_check.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
 import 'package:privacy_gui/page/instant_topology/providers/_providers.dart';
@@ -53,11 +55,44 @@ void main() async {
   late NodeLightSettingsNotifier mockNodeLightSettingsNotifier;
   late PollingNotifier mockPollingNotifier;
   late VPNNotifier mockVPNNotifier;
+  late HealthCheckProvider mockHealthCheckProvider;
 
   late TopologyTestData topologyTestData;
 
   mockDependencyRegister();
   ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
+
+  List<Override> overrideRegister({
+    bool withHealthCheck = false,
+    bool withNodeLightSettings = false,
+    bool withVpn = false,
+    InternetStatus internetStatus = InternetStatus.online,
+  }) {
+    final overrides = [
+      dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
+      dashboardManagerProvider.overrideWith(() => mockDashboardManagerNotifier),
+      firmwareUpdateProvider.overrideWith(() => mockFirmwareUpdateNotifier),
+      deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
+      internetStatusProvider.overrideWith((ref) => internetStatus),
+      instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
+      instantTopologyProvider.overrideWith(() => mockInstantTopologyNotifier),
+      geolocationProvider.overrideWith(() => mockGeolocationNotifer),
+      pollingProvider.overrideWith(() => mockPollingNotifier),
+    ];
+
+    if (withHealthCheck) {
+      overrides
+          .add(healthCheckProvider.overrideWith(() => mockHealthCheckProvider));
+    }
+    if (withNodeLightSettings) {
+      overrides.add(nodeLightSettingsProvider
+          .overrideWith(() => mockNodeLightSettingsNotifier));
+    }
+    if (withVpn) {
+      overrides.add(vpnProvider.overrideWith(() => mockVPNNotifier));
+    }
+    return overrides;
+  }
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
@@ -74,6 +109,7 @@ void main() async {
       mockGeolocationNotifer = MockGeolocationNotifier();
       mockNodeLightSettingsNotifier = MockNodeLightSettingsNotifier();
       mockPollingNotifier = MockPollingNotifier();
+      mockHealthCheckProvider = MockHealthCheckProvider();
 
       when(mockDashboardHomeNotifier.build()).thenReturn(
           DashboardHomeState.fromMap(dashboardHomeCherry7TestState));
@@ -92,8 +128,10 @@ void main() async {
       when(mockNodeLightSettingsNotifier.build())
           .thenReturn(NodeLightSettings(isNightModeEnable: false));
       when(mockServiceHelper.isSupportLedMode()).thenReturn(true);
-      when(mockPollingNotifier.build()).thenReturn(CoreTransactionData(
-          lastUpdate: 0, isReady: true, data: {}));
+      when(mockPollingNotifier.build()).thenReturn(
+          CoreTransactionData(lastUpdate: 0, isReady: true, data: {}));
+      when(mockHealthCheckProvider.build())
+          .thenReturn(HealthCheckState.fromJson(healthCheckInitState));
     });
 
     tearDown(() {
@@ -106,21 +144,7 @@ void main() async {
         testableRouteShellWidget(
           child: const DashboardHomeView(),
           locale: locale,
-          overrides: [
-            dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
-            dashboardManagerProvider
-                .overrideWith(() => mockDashboardManagerNotifier),
-            firmwareUpdateProvider
-                .overrideWith(() => mockFirmwareUpdateNotifier),
-            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
-            instantPrivacyProvider
-                .overrideWith(() => mockInstantPrivacyNotifier),
-            instantTopologyProvider
-                .overrideWith(() => mockInstantTopologyNotifier),
-            geolocationProvider.overrideWith(() => mockGeolocationNotifer),
-            pollingProvider.overrideWith(() => mockPollingNotifier),
-          ],
+          overrides: overrideRegister(withHealthCheck: true),
         ),
       );
       await tester.pumpAndSettle();
@@ -143,21 +167,7 @@ void main() async {
         testableRouteShellWidget(
           child: const DashboardHomeView(),
           locale: locale,
-          overrides: [
-            dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
-            dashboardManagerProvider
-                .overrideWith(() => mockDashboardManagerNotifier),
-            firmwareUpdateProvider
-                .overrideWith(() => mockFirmwareUpdateNotifier),
-            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
-            instantPrivacyProvider
-                .overrideWith(() => mockInstantPrivacyNotifier),
-            instantTopologyProvider
-                .overrideWith(() => mockInstantTopologyNotifier),
-            geolocationProvider.overrideWith(() => mockGeolocationNotifer),
-            pollingProvider.overrideWith(() => mockPollingNotifier),
-          ],
+          overrides: overrideRegister(withHealthCheck: true),
         ),
       );
       await tester.pumpAndSettle();
@@ -180,21 +190,7 @@ void main() async {
         testableRouteShellWidget(
           child: const DashboardHomeView(),
           locale: locale,
-          overrides: [
-            dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
-            dashboardManagerProvider
-                .overrideWith(() => mockDashboardManagerNotifier),
-            firmwareUpdateProvider
-                .overrideWith(() => mockFirmwareUpdateNotifier),
-            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
-            instantPrivacyProvider
-                .overrideWith(() => mockInstantPrivacyNotifier),
-            instantTopologyProvider
-                .overrideWith(() => mockInstantTopologyNotifier),
-            geolocationProvider.overrideWith(() => mockGeolocationNotifer),
-            pollingProvider.overrideWith(() => mockPollingNotifier),
-          ],
+          overrides: overrideRegister(),
         ),
       );
       await tester.pumpAndSettle();
@@ -222,21 +218,7 @@ void main() async {
         testableRouteShellWidget(
           child: const DashboardHomeView(),
           locale: locale,
-          overrides: [
-            dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
-            dashboardManagerProvider
-                .overrideWith(() => mockDashboardManagerNotifier),
-            firmwareUpdateProvider
-                .overrideWith(() => mockFirmwareUpdateNotifier),
-            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
-            instantPrivacyProvider
-                .overrideWith(() => mockInstantPrivacyNotifier),
-            instantTopologyProvider
-                .overrideWith(() => mockInstantTopologyNotifier),
-            geolocationProvider.overrideWith(() => mockGeolocationNotifer),
-            pollingProvider.overrideWith(() => mockPollingNotifier),
-          ],
+          overrides: overrideRegister(),
         ),
       );
       await tester.pumpAndSettle();
@@ -262,21 +244,7 @@ void main() async {
         testableRouteShellWidget(
           child: const DashboardHomeView(),
           locale: locale,
-          overrides: [
-            dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
-            dashboardManagerProvider
-                .overrideWith(() => mockDashboardManagerNotifier),
-            firmwareUpdateProvider
-                .overrideWith(() => mockFirmwareUpdateNotifier),
-            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
-            instantPrivacyProvider
-                .overrideWith(() => mockInstantPrivacyNotifier),
-            instantTopologyProvider
-                .overrideWith(() => mockInstantTopologyNotifier),
-            geolocationProvider.overrideWith(() => mockGeolocationNotifer),
-            pollingProvider.overrideWith(() => mockPollingNotifier),
-          ],
+          overrides: overrideRegister(),
         ),
       );
       await tester.pumpAndSettle();
@@ -300,23 +268,7 @@ void main() async {
         testableRouteShellWidget(
           child: const DashboardHomeView(),
           locale: locale,
-          overrides: [
-            dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
-            dashboardManagerProvider
-                .overrideWith(() => mockDashboardManagerNotifier),
-            firmwareUpdateProvider
-                .overrideWith(() => mockFirmwareUpdateNotifier),
-            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
-            instantPrivacyProvider
-                .overrideWith(() => mockInstantPrivacyNotifier),
-            instantTopologyProvider
-                .overrideWith(() => mockInstantTopologyNotifier),
-            nodeLightSettingsProvider
-                .overrideWith(() => mockNodeLightSettingsNotifier),
-            geolocationProvider.overrideWith(() => mockGeolocationNotifer),
-            pollingProvider.overrideWith(() => mockPollingNotifier),
-          ],
+          overrides: overrideRegister(withNodeLightSettings: true),
         ),
       );
       await tester.pumpAndSettle();
@@ -340,23 +292,7 @@ void main() async {
         testableRouteShellWidget(
           child: const DashboardHomeView(),
           locale: locale,
-          overrides: [
-            dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
-            dashboardManagerProvider
-                .overrideWith(() => mockDashboardManagerNotifier),
-            firmwareUpdateProvider
-                .overrideWith(() => mockFirmwareUpdateNotifier),
-            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
-            instantPrivacyProvider
-                .overrideWith(() => mockInstantPrivacyNotifier),
-            instantTopologyProvider
-                .overrideWith(() => mockInstantTopologyNotifier),
-            nodeLightSettingsProvider
-                .overrideWith(() => mockNodeLightSettingsNotifier),
-            geolocationProvider.overrideWith(() => mockGeolocationNotifer),
-            pollingProvider.overrideWith(() => mockPollingNotifier),
-          ],
+          overrides: overrideRegister(withNodeLightSettings: true),
         ),
       );
       await tester.pumpAndSettle();
@@ -378,23 +314,7 @@ void main() async {
         testableRouteShellWidget(
           child: const DashboardHomeView(),
           locale: locale,
-          overrides: [
-            dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
-            dashboardManagerProvider
-                .overrideWith(() => mockDashboardManagerNotifier),
-            firmwareUpdateProvider
-                .overrideWith(() => mockFirmwareUpdateNotifier),
-            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
-            instantPrivacyProvider
-                .overrideWith(() => mockInstantPrivacyNotifier),
-            instantTopologyProvider
-                .overrideWith(() => mockInstantTopologyNotifier),
-            nodeLightSettingsProvider
-                .overrideWith(() => mockNodeLightSettingsNotifier),
-            geolocationProvider.overrideWith(() => mockGeolocationNotifer),
-            pollingProvider.overrideWith(() => mockPollingNotifier),
-          ],
+          overrides: overrideRegister(withNodeLightSettings: true),
         ),
       );
       await tester.pumpAndSettle();
@@ -426,23 +346,7 @@ void main() async {
         testableRouteShellWidget(
           child: const DashboardHomeView(),
           locale: locale,
-          overrides: [
-            dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
-            dashboardManagerProvider
-                .overrideWith(() => mockDashboardManagerNotifier),
-            firmwareUpdateProvider
-                .overrideWith(() => mockFirmwareUpdateNotifier),
-            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
-            instantPrivacyProvider
-                .overrideWith(() => mockInstantPrivacyNotifier),
-            instantTopologyProvider
-                .overrideWith(() => mockInstantTopologyNotifier),
-            nodeLightSettingsProvider
-                .overrideWith(() => mockNodeLightSettingsNotifier),
-            geolocationProvider.overrideWith(() => mockGeolocationNotifer),
-            pollingProvider.overrideWith(() => mockPollingNotifier),
-          ],
+          overrides: overrideRegister(withNodeLightSettings: true),
         ),
       );
       await tester.pumpAndSettle();
@@ -472,25 +376,7 @@ void main() async {
           testableRouteShellWidget(
             child: const DashboardHomeView(),
             locale: locale,
-            overrides: [
-              dashboardHomeProvider
-                  .overrideWith(() => mockDashboardHomeNotifier),
-              dashboardManagerProvider
-                  .overrideWith(() => mockDashboardManagerNotifier),
-              firmwareUpdateProvider
-                  .overrideWith(() => mockFirmwareUpdateNotifier),
-              deviceManagerProvider
-                  .overrideWith(() => mockDeviceManagerNotifier),
-              internetStatusProvider.overrideWith((ref) => InternetStatus.online),
-              instantPrivacyProvider
-                  .overrideWith(() => mockInstantPrivacyNotifier),
-              instantTopologyProvider
-                  .overrideWith(() => mockInstantTopologyNotifier),
-              nodeLightSettingsProvider
-                  .overrideWith(() => mockNodeLightSettingsNotifier),
-              geolocationProvider.overrideWith(() => mockGeolocationNotifer),
-              pollingProvider.overrideWith(() => mockPollingNotifier),
-            ],
+            overrides: overrideRegister(withNodeLightSettings: true),
           ),
         );
         await tester.pumpAndSettle();
@@ -531,23 +417,9 @@ void main() async {
         testableRouteShellWidget(
           child: const DashboardHomeView(),
           locale: locale,
-          overrides: [
-            dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
-            dashboardManagerProvider
-                .overrideWith(() => mockDashboardManagerNotifier),
-            firmwareUpdateProvider
-                .overrideWith(() => mockFirmwareUpdateNotifier),
-            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            internetStatusProvider.overrideWith((ref) => InternetStatus.offline),
-            instantPrivacyProvider
-                .overrideWith(() => mockInstantPrivacyNotifier),
-            instantTopologyProvider
-                .overrideWith(() => mockInstantTopologyNotifier),
-            nodeLightSettingsProvider
-                .overrideWith(() => mockNodeLightSettingsNotifier),
-            geolocationProvider.overrideWith(() => mockGeolocationNotifer),
-            pollingProvider.overrideWith(() => mockPollingNotifier),
-          ],
+          overrides: overrideRegister(
+              withNodeLightSettings: true,
+              internetStatus: InternetStatus.offline),
         ),
       );
       await tester.pumpAndSettle();
@@ -571,23 +443,7 @@ void main() async {
         testableRouteShellWidget(
           child: const DashboardHomeView(),
           locale: locale,
-          overrides: [
-            dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
-            dashboardManagerProvider
-                .overrideWith(() => mockDashboardManagerNotifier),
-            firmwareUpdateProvider
-                .overrideWith(() => mockFirmwareUpdateNotifier),
-            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
-            instantPrivacyProvider
-                .overrideWith(() => mockInstantPrivacyNotifier),
-            instantTopologyProvider
-                .overrideWith(() => mockInstantTopologyNotifier),
-            nodeLightSettingsProvider
-                .overrideWith(() => mockNodeLightSettingsNotifier),
-            geolocationProvider.overrideWith(() => mockGeolocationNotifer),
-            pollingProvider.overrideWith(() => mockPollingNotifier),
-          ],
+          overrides: overrideRegister(withNodeLightSettings: true),
         ),
       );
       await tester.pumpAndSettle();
@@ -613,21 +469,7 @@ void main() async {
         testableRouteShellWidget(
           child: const DashboardHomeView(),
           locale: locale,
-          overrides: [
-            dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
-            dashboardManagerProvider
-                .overrideWith(() => mockDashboardManagerNotifier),
-            firmwareUpdateProvider
-                .overrideWith(() => mockFirmwareUpdateNotifier),
-            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
-            instantPrivacyProvider
-                .overrideWith(() => mockInstantPrivacyNotifier),
-            instantTopologyProvider
-                .overrideWith(() => mockInstantTopologyNotifier),
-            geolocationProvider.overrideWith(() => mockGeolocationNotifer),
-            pollingProvider.overrideWith(() => mockPollingNotifier),
-          ],
+          overrides: overrideRegister(),
         ),
       );
       await tester.pumpAndSettle();
@@ -666,6 +508,7 @@ void main() async {
       mockNodeLightSettingsNotifier = MockNodeLightSettingsNotifier();
       mockVPNNotifier = MockVPNNotifier();
       mockPollingNotifier = MockPollingNotifier();
+      mockHealthCheckProvider = MockHealthCheckProvider();
 
       when(mockDashboardHomeNotifier.build()).thenReturn(
           DashboardHomeState.fromMap(dashboardHomePinnacleTestState));
@@ -688,6 +531,8 @@ void main() async {
       when(mockVPNNotifier.build()).thenReturn(VPNTestState.defaultState);
       when(mockPollingNotifier.build()).thenReturn(
           CoreTransactionData(lastUpdate: 0, isReady: true, data: const {}));
+      when(mockHealthCheckProvider.build())
+          .thenReturn(HealthCheckState.fromJson(healthCheckStateSuccessGood));
     });
 
     tearDown(() {
@@ -700,21 +545,7 @@ void main() async {
         testableRouteShellWidget(
           child: const DashboardHomeView(),
           locale: locale,
-          overrides: [
-            dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
-            dashboardManagerProvider
-                .overrideWith(() => mockDashboardManagerNotifier),
-            firmwareUpdateProvider
-                .overrideWith(() => mockFirmwareUpdateNotifier),
-            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
-            instantPrivacyProvider
-                .overrideWith(() => mockInstantPrivacyNotifier),
-            instantTopologyProvider
-                .overrideWith(() => mockInstantTopologyNotifier),
-            geolocationProvider.overrideWith(() => mockGeolocationNotifer),
-            pollingProvider.overrideWith(() => mockPollingNotifier),
-          ],
+          overrides: overrideRegister(),
         ),
       );
       await tester.pumpAndSettle();
@@ -737,21 +568,7 @@ void main() async {
         testableRouteShellWidget(
           child: const DashboardHomeView(),
           locale: locale,
-          overrides: [
-            dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
-            dashboardManagerProvider
-                .overrideWith(() => mockDashboardManagerNotifier),
-            firmwareUpdateProvider
-                .overrideWith(() => mockFirmwareUpdateNotifier),
-            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
-            instantPrivacyProvider
-                .overrideWith(() => mockInstantPrivacyNotifier),
-            instantTopologyProvider
-                .overrideWith(() => mockInstantTopologyNotifier),
-            geolocationProvider.overrideWith(() => mockGeolocationNotifer),
-            pollingProvider.overrideWith(() => mockPollingNotifier),
-          ],
+          overrides: overrideRegister(),
         ),
       );
       await tester.pumpAndSettle();
@@ -775,21 +592,7 @@ void main() async {
         testableRouteShellWidget(
           child: const DashboardHomeView(),
           locale: locale,
-          overrides: [
-            dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
-            dashboardManagerProvider
-                .overrideWith(() => mockDashboardManagerNotifier),
-            firmwareUpdateProvider
-                .overrideWith(() => mockFirmwareUpdateNotifier),
-            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
-            instantPrivacyProvider
-                .overrideWith(() => mockInstantPrivacyNotifier),
-            instantTopologyProvider
-                .overrideWith(() => mockInstantTopologyNotifier),
-            geolocationProvider.overrideWith(() => mockGeolocationNotifer),
-            pollingProvider.overrideWith(() => mockPollingNotifier),
-          ],
+          overrides: overrideRegister(),
         ),
       );
       await tester.pumpAndSettle();
@@ -813,25 +616,36 @@ void main() async {
         downloadResult: () => DashboardSpeedItem(unit: 'M', value: '509'),
         speedCheckTimestamp: () => 1719802401000,
       ));
+      when(mockHealthCheckProvider.build())
+          .thenReturn(HealthCheckState.fromJson(healthCheckStateSuccessGood));
       await tester.pumpWidget(
         testableRouteShellWidget(
           child: const DashboardHomeView(),
           locale: locale,
-          overrides: [
-            dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
-            dashboardManagerProvider
-                .overrideWith(() => mockDashboardManagerNotifier),
-            firmwareUpdateProvider
-                .overrideWith(() => mockFirmwareUpdateNotifier),
-            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
-            instantPrivacyProvider
-                .overrideWith(() => mockInstantPrivacyNotifier),
-            instantTopologyProvider
-                .overrideWith(() => mockInstantTopologyNotifier),
-            geolocationProvider.overrideWith(() => mockGeolocationNotifer),
-            pollingProvider.overrideWith(() => mockPollingNotifier),
-          ],
+          overrides: overrideRegister(withHealthCheck: true),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.runAsync(() async {
+        final context = tester.element(find.byType(DashboardHomeView));
+        await precacheImage(
+            CustomTheme.of(context).images.devices.routerLn12, context);
+        await tester.pumpAndSettle();
+      });
+    }, screens: [
+      ...responsiveMobileScreens.map((e) => e.copyWith(height: 2480)).toList(),
+      ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1280)).toList()
+    ]);
+
+    testLocalizations('Dashboard Home View - Vertical Ports with speed check - init',
+        (tester, locale) async {
+      when(mockHealthCheckProvider.build())
+          .thenReturn(HealthCheckState.fromJson(healthCheckInitState));
+      await tester.pumpWidget(
+        testableRouteShellWidget(
+          child: const DashboardHomeView(),
+          locale: locale,
+          overrides: overrideRegister(withHealthCheck: true),
         ),
       );
       await tester.pumpAndSettle();
@@ -858,21 +672,7 @@ void main() async {
         testableRouteShellWidget(
           child: const DashboardHomeView(),
           locale: locale,
-          overrides: [
-            dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
-            dashboardManagerProvider
-                .overrideWith(() => mockDashboardManagerNotifier),
-            firmwareUpdateProvider
-                .overrideWith(() => mockFirmwareUpdateNotifier),
-            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
-            instantPrivacyProvider
-                .overrideWith(() => mockInstantPrivacyNotifier),
-            instantTopologyProvider
-                .overrideWith(() => mockInstantTopologyNotifier),
-            geolocationProvider.overrideWith(() => mockGeolocationNotifer),
-            pollingProvider.overrideWith(() => mockPollingNotifier),
-          ],
+          overrides: overrideRegister(),
         ),
       );
       await tester.pumpAndSettle();
@@ -896,23 +696,7 @@ void main() async {
         testableRouteShellWidget(
           child: const DashboardHomeView(),
           locale: locale,
-          overrides: [
-            dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
-            dashboardManagerProvider
-                .overrideWith(() => mockDashboardManagerNotifier),
-            firmwareUpdateProvider
-                .overrideWith(() => mockFirmwareUpdateNotifier),
-            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
-            instantPrivacyProvider
-                .overrideWith(() => mockInstantPrivacyNotifier),
-            instantTopologyProvider
-                .overrideWith(() => mockInstantTopologyNotifier),
-            nodeLightSettingsProvider
-                .overrideWith(() => mockNodeLightSettingsNotifier),
-            geolocationProvider.overrideWith(() => mockGeolocationNotifer),
-            pollingProvider.overrideWith(() => mockPollingNotifier),
-          ],
+          overrides: overrideRegister(withNodeLightSettings: true),
         ),
       );
       await tester.pumpAndSettle();
@@ -936,23 +720,7 @@ void main() async {
         testableRouteShellWidget(
           child: const DashboardHomeView(),
           locale: locale,
-          overrides: [
-            dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
-            dashboardManagerProvider
-                .overrideWith(() => mockDashboardManagerNotifier),
-            firmwareUpdateProvider
-                .overrideWith(() => mockFirmwareUpdateNotifier),
-            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
-            instantPrivacyProvider
-                .overrideWith(() => mockInstantPrivacyNotifier),
-            instantTopologyProvider
-                .overrideWith(() => mockInstantTopologyNotifier),
-            nodeLightSettingsProvider
-                .overrideWith(() => mockNodeLightSettingsNotifier),
-            geolocationProvider.overrideWith(() => mockGeolocationNotifer),
-            pollingProvider.overrideWith(() => mockPollingNotifier),
-          ],
+          overrides: overrideRegister(withNodeLightSettings: true),
         ),
       );
       await tester.pumpAndSettle();
@@ -974,23 +742,7 @@ void main() async {
         testableRouteShellWidget(
           child: const DashboardHomeView(),
           locale: locale,
-          overrides: [
-            dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
-            dashboardManagerProvider
-                .overrideWith(() => mockDashboardManagerNotifier),
-            firmwareUpdateProvider
-                .overrideWith(() => mockFirmwareUpdateNotifier),
-            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
-            instantPrivacyProvider
-                .overrideWith(() => mockInstantPrivacyNotifier),
-            instantTopologyProvider
-                .overrideWith(() => mockInstantTopologyNotifier),
-            nodeLightSettingsProvider
-                .overrideWith(() => mockNodeLightSettingsNotifier),
-            geolocationProvider.overrideWith(() => mockGeolocationNotifer),
-            pollingProvider.overrideWith(() => mockPollingNotifier),
-          ],
+          overrides: overrideRegister(withNodeLightSettings: true),
         ),
       );
       await tester.pumpAndSettle();
@@ -1022,23 +774,7 @@ void main() async {
         testableRouteShellWidget(
           child: const DashboardHomeView(),
           locale: locale,
-          overrides: [
-            dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
-            dashboardManagerProvider
-                .overrideWith(() => mockDashboardManagerNotifier),
-            firmwareUpdateProvider
-                .overrideWith(() => mockFirmwareUpdateNotifier),
-            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
-            instantPrivacyProvider
-                .overrideWith(() => mockInstantPrivacyNotifier),
-            instantTopologyProvider
-                .overrideWith(() => mockInstantTopologyNotifier),
-            nodeLightSettingsProvider
-                .overrideWith(() => mockNodeLightSettingsNotifier),
-            geolocationProvider.overrideWith(() => mockGeolocationNotifer),
-            pollingProvider.overrideWith(() => mockPollingNotifier),
-          ],
+          overrides: overrideRegister(withNodeLightSettings: true),
         ),
       );
       await tester.pumpAndSettle();
@@ -1068,26 +804,7 @@ void main() async {
           testableRouteShellWidget(
             child: const DashboardHomeView(),
             locale: locale,
-            overrides: [
-              dashboardHomeProvider
-                  .overrideWith(() => mockDashboardHomeNotifier),
-              dashboardManagerProvider
-                  .overrideWith(() => mockDashboardManagerNotifier),
-              firmwareUpdateProvider
-                  .overrideWith(() => mockFirmwareUpdateNotifier),
-              deviceManagerProvider
-                  .overrideWith(() => mockDeviceManagerNotifier),
-              internetStatusProvider
-                  .overrideWith((ref) => InternetStatus.online),
-              instantPrivacyProvider
-                  .overrideWith(() => mockInstantPrivacyNotifier),
-              instantTopologyProvider
-                  .overrideWith(() => mockInstantTopologyNotifier),
-              nodeLightSettingsProvider
-                  .overrideWith(() => mockNodeLightSettingsNotifier),
-              geolocationProvider.overrideWith(() => mockGeolocationNotifer),
-              pollingProvider.overrideWith(() => mockPollingNotifier),
-            ],
+            overrides: overrideRegister(withNodeLightSettings: true),
           ),
         );
         await tester.pumpAndSettle();
@@ -1128,24 +845,9 @@ void main() async {
         testableRouteShellWidget(
           child: const DashboardHomeView(),
           locale: locale,
-          overrides: [
-            dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
-            dashboardManagerProvider
-                .overrideWith(() => mockDashboardManagerNotifier),
-            firmwareUpdateProvider
-                .overrideWith(() => mockFirmwareUpdateNotifier),
-            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            internetStatusProvider
-                .overrideWith((ref) => InternetStatus.offline),
-            instantPrivacyProvider
-                .overrideWith(() => mockInstantPrivacyNotifier),
-            instantTopologyProvider
-                .overrideWith(() => mockInstantTopologyNotifier),
-            nodeLightSettingsProvider
-                .overrideWith(() => mockNodeLightSettingsNotifier),
-            geolocationProvider.overrideWith(() => mockGeolocationNotifer),
-            pollingProvider.overrideWith(() => mockPollingNotifier),
-          ],
+          overrides: overrideRegister(
+              withNodeLightSettings: true,
+              internetStatus: InternetStatus.offline),
         ),
       );
       await tester.pumpAndSettle();
@@ -1169,23 +871,7 @@ void main() async {
         testableRouteShellWidget(
           child: const DashboardHomeView(),
           locale: locale,
-          overrides: [
-            dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
-            dashboardManagerProvider
-                .overrideWith(() => mockDashboardManagerNotifier),
-            firmwareUpdateProvider
-                .overrideWith(() => mockFirmwareUpdateNotifier),
-            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
-            instantPrivacyProvider
-                .overrideWith(() => mockInstantPrivacyNotifier),
-            instantTopologyProvider
-                .overrideWith(() => mockInstantTopologyNotifier),
-            nodeLightSettingsProvider
-                .overrideWith(() => mockNodeLightSettingsNotifier),
-            geolocationProvider.overrideWith(() => mockGeolocationNotifer),
-            pollingProvider.overrideWith(() => mockPollingNotifier),
-          ],
+          overrides: overrideRegister(withNodeLightSettings: true),
         ),
       );
       await tester.pumpAndSettle();
@@ -1211,21 +897,7 @@ void main() async {
         testableRouteShellWidget(
           child: const DashboardHomeView(),
           locale: locale,
-          overrides: [
-            dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
-            dashboardManagerProvider
-                .overrideWith(() => mockDashboardManagerNotifier),
-            firmwareUpdateProvider
-                .overrideWith(() => mockFirmwareUpdateNotifier),
-            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
-            instantPrivacyProvider
-                .overrideWith(() => mockInstantPrivacyNotifier),
-            instantTopologyProvider
-                .overrideWith(() => mockInstantTopologyNotifier),
-            geolocationProvider.overrideWith(() => mockGeolocationNotifer),
-            pollingProvider.overrideWith(() => mockPollingNotifier),
-          ],
+          overrides: overrideRegister(),
         ),
       );
       await tester.pumpAndSettle();
@@ -1258,22 +930,7 @@ void main() async {
         testableRouteShellWidget(
           child: const DashboardHomeView(),
           locale: locale,
-          overrides: [
-            dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
-            dashboardManagerProvider
-                .overrideWith(() => mockDashboardManagerNotifier),
-            firmwareUpdateProvider
-                .overrideWith(() => mockFirmwareUpdateNotifier),
-            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
-            instantPrivacyProvider
-                .overrideWith(() => mockInstantPrivacyNotifier),
-            instantTopologyProvider
-                .overrideWith(() => mockInstantTopologyNotifier),
-            geolocationProvider.overrideWith(() => mockGeolocationNotifer),
-            vpnProvider.overrideWith(() => mockVPNNotifier),
-            pollingProvider.overrideWith(() => mockPollingNotifier),
-          ],
+          overrides: overrideRegister(withVpn: true),
         ),
       );
       await tester.pumpAndSettle();
@@ -1296,22 +953,7 @@ void main() async {
         testableRouteShellWidget(
           child: const DashboardHomeView(),
           locale: locale,
-          overrides: [
-            dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
-            dashboardManagerProvider
-                .overrideWith(() => mockDashboardManagerNotifier),
-            firmwareUpdateProvider
-                .overrideWith(() => mockFirmwareUpdateNotifier),
-            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
-            instantPrivacyProvider
-                .overrideWith(() => mockInstantPrivacyNotifier),
-            instantTopologyProvider
-                .overrideWith(() => mockInstantTopologyNotifier),
-            geolocationProvider.overrideWith(() => mockGeolocationNotifer),
-            vpnProvider.overrideWith(() => mockVPNNotifier),
-            pollingProvider.overrideWith(() => mockPollingNotifier),
-          ],
+          overrides: overrideRegister(withVpn: true),
         ),
       );
       await tester.pumpAndSettle();

@@ -266,23 +266,29 @@ enum WifiSecurityType {
 }
 
 enum WifiWirelessMode {
+  // Legacy (Max 20MHz)
   a(value: '802.11a'),
   b(value: '802.11b'),
   g(value: '802.11g'),
-  n(value: '802.11n'),
-  ac(value: '802.11ac'),
-  ax(value: '802.11ax'),
-  an(value: '802.11an'),
   bg(value: '802.11bg'),
+  // 802.11n (Max 40MHz)
+  n(value: '802.11n'),
+  an(value: '802.11an'),
   bn(value: '802.11bn'),
   gn(value: '802.11gn'),
-  anac(value: '802.11anac'),
-  anacax(value: '802.11anacax'),
-  anacaxbe(value: '802.11anacaxbe'),
   bgn(value: '802.11bgn'),
+  // 802.11ac (Max 160MHz - Assuming Wave 2 support for the highest option)
+  ac(value: '802.11ac'),
+  anac(value: '802.11anac'),
   bgnac(value: '802.11bgnac'),
+  // 802.11ax (Max 160MHz)
+  ax(value: '802.11ax'),
+  anacax(value: '802.11anacax'),
   bgnax(value: '802.11bgnax'),
+  // 802.11be (Max 320MHz)
+  anacaxbe(value: '802.11anacaxbe'),
   axbe(value: '802.11axbe'),
+  // Special Case
   mixed(value: '802.11mixed');
 
   const WifiWirelessMode({
@@ -297,15 +303,55 @@ enum WifiWirelessMode {
 
   bool get isIncludeBeMixedMode =>
       this == axbe || this == anacaxbe || this == mixed;
+  /// Gets the maximum channel width supported by this wireless mode.
+  WifiChannelWidth get maxSupportedWidth {
+    switch (this) {
+      // 802.11be (Wi-Fi 7) supports 320MHz
+      case WifiWirelessMode.anacaxbe:
+      case WifiWirelessMode.axbe:
+      case WifiWirelessMode.mixed:
+        return WifiChannelWidth.wide320;
+
+      // 802.11ax (Wi-Fi 6/6E) supports up to 160MHz
+      case WifiWirelessMode.ax:
+      case WifiWirelessMode.anacax:
+      case WifiWirelessMode.bgnax:
+        // Includes both contiguous and non-contiguous 160MHz options
+        return WifiChannelWidth.wide160nc;
+
+      // 802.11ac (Wi-Fi 5) supports 80MHz (160MHz is optional, conservatively set to 80MHz)
+      case WifiWirelessMode.ac:
+      case WifiWirelessMode.anac:
+      case WifiWirelessMode.bgnac:
+        return WifiChannelWidth.wide80;
+
+      // 802.11n (Wi-Fi 4) supports 40MHz
+      case WifiWirelessMode.n:
+      case WifiWirelessMode.an:
+      case WifiWirelessMode.bn:
+      case WifiWirelessMode.gn:
+      case WifiWirelessMode.bgn:
+        return WifiChannelWidth.wide40;
+
+      // 802.11a/b/g and other legacy modes only support 20MHz
+      case WifiWirelessMode.a:
+      case WifiWirelessMode.b:
+      case WifiWirelessMode.g:
+      case WifiWirelessMode.bg:
+      default:
+        return WifiChannelWidth.wide20;
+    }
+  }
 }
 
 enum WifiChannelWidth {
   auto(value: 'Auto'),
-  wide20(value: 'Standard'),
-  wide40(value: 'Wide'),
-  wide80(value: 'Wide80'),
-  wide160c(value: 'Wide160c'),
-  wide160nc(value: 'Wide160nc');
+  wide20(value: 'Standard'), // 20 MHz (802.11a/b/g+)
+  wide40(value: 'Wide'), // 40 MHz (802.11n+)
+  wide80(value: 'Wide80'), // 80 MHz (802.11ac+)
+  wide160c(value: 'Wide160c'), // 160 MHz Contiguous (802.11ac/ax+)
+  wide160nc(value: 'Wide160nc'), // 160 MHz Non-Contiguous (802.11ac/ax+)
+  wide320(value: 'Wide320'); // 320 MHz (802.11be/Wi-Fi 7+)
 
   const WifiChannelWidth({
     required this.value,
