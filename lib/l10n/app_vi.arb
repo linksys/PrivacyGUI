@@ -573,7 +573,7 @@
   "provider": "Nhà cung cấp",
   "psk": "PSK",
   "quickSetup": "Thiết lập nhanh",
-  "quickSetupDesc": "Áp dụng cùng một cài đặt WiFi cho tất cả các băng tần đã bật cùng một lúc",
+  "quickSetupDescription": "Áp dụng cùng một cài đặt WiFi cho tất cả các băng tần cùng một lúc",
   "readyForSetup": "Sẵn sàng để thiết lập",
   "rebootChildTitle": "Khởi động lại nút và tất cả các nút con",
   "rebootOk": "Có, Khởi động lại tất cả",

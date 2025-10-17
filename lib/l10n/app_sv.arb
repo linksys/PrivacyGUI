@@ -605,7 +605,7 @@
   "provider": "Leverantör",
   "psk": "PSK",
   "quickSetup": "Snabbinställning",
-  "quickSetupDesc": "Tillämpa samma WiFi-inställningar på alla aktiverade band på en gång",
+  "quickSetupDescription": "Tillämpa samma WiFi-inställningar på alla band samtidigt",
   "readyForSetup": "Redo för konfigurering",
   "rebootChildTitle": "Starta om noden och alla dess undernoder",
   "rebootOk": "Ja, starta om alla",

@@ -573,7 +573,7 @@
   "provider": "Penyedia",
   "psk": "PSK",
   "quickSetup": "Pengaturan Cepat",
-  "quickSetupDesc": "Terapkan pengaturan WiFi yang sama ke semua pita yang diaktifkan sekaligus",
+  "quickSetupDescription": "Terapkan pengaturan WiFi yang sama ke semua pita sekaligus",
   "readyForSetup": "Menanti dipersiapkan",
   "rebootChildTitle": "Nyalakan ulang node dan semua child/nya",
   "rebootOk": "Ya, Mulai Ulang Semua",

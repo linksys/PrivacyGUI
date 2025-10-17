@@ -573,7 +573,7 @@
   "provider": "Palveluntarjoaja",
   "psk": "PSK",
   "quickSetup": "Pika-asetus",
-  "quickSetupDesc": "Ota käyttöön samat WiFi-asetukset kaikille käytössä oleville taajuusalueille kerralla",
+  "quickSetupDescription": "Käytä samoja WiFi-asetuksia kaikille taajuusalueille kerralla",
   "readyForSetup": "Valmis asennukseen",
   "rebootChildTitle": "Käynnistä solmu ja kaikki sen alisolmut uudelleen",
   "rebootOk": "Kyllä, käynnistä kaikki uudelleen",

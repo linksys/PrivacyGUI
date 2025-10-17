@@ -605,7 +605,7 @@
   "provider": "Udbyder",
   "psk": "PSK",
   "quickSetup": "Hurtig opsætning",
-  "quickSetupDesc": "Anvend de samme WiFi-indstillinger på alle aktiverede bånd på én gang",
+  "quickSetupDescription": "Anvend de samme WiFi-indstillinger på alle bånd på én gang",
   "readyForSetup": "Klar til opsætning",
   "rebootChildTitle": "Genstart noden og alle dens underordnede",
   "rebootOk": "Ja, genstart alle",

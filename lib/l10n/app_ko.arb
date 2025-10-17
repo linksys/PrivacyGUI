@@ -573,7 +573,7 @@
   "provider": "제공업체",
   "psk": "PSK",
   "quickSetup": "빠른 설정",
-  "quickSetupDesc": "활성화된 모든 대역에 동일한 WiFi 설정을 한 번에 적용",
+  "quickSetupDescription": "동일한 WiFi 설정을 모든 대역에 한 번에 적용",
   "readyForSetup": "설정 준비",
   "rebootChildTitle": "노드 및 모든 하위 노드 재부팅",
   "rebootOk": "예, 모두 재부팅",

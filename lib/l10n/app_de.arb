@@ -605,7 +605,7 @@
   "provider": "Anbieter",
   "psk": "PSK",
   "quickSetup": "Schnelleinrichtung",
-  "quickSetupDesc": "Die gleichen WLAN-Einstellungen auf einmal auf alle aktivierten Bänder anwenden",
+  "quickSetupDescription": "Wenden Sie dieselben WLAN-Einstellungen gleichzeitig auf alle Bänder an",
   "readyForSetup": "Bereit zum Setup",
   "rebootChildTitle": "Knoten und alle untergeordneten Knoten neu starten",
   "rebootOk": "Ja, alle neu starten",

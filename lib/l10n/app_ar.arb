@@ -606,7 +606,7 @@
   "provider": "مزود",
   "psk": "PSK",
   "quickSetup": "إعداد سريع",
-  "quickSetupDesc": "تطبيق نفس إعدادات شبكة WiFi على جميع النطاقات الممكنة في وقت واحد",
+  "quickSetupDescription": "تطبيق نفس إعدادات WiFi على جميع النطاقات في وقت واحد",
   "readyForSetup": "جاهز للإعداد",
   "rebootChildTitle": "إعادة تشغيل العقدة وجميع العقد التابعة لها",
   "rebootOk": "نعم، إعادة تشغيل الكل",

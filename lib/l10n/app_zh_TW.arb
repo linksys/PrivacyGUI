@@ -607,7 +607,7 @@
   "provider": "供應商",
   "psk": "PSK",
   "quickSetup": "快速設定",
-  "quickSetupDesc": "將相同的 WiFi 設定一次套用到所有啟用的頻段",
+  "quickSetupDescription": "同時將相同的 WiFi 設定應用到所有頻段",
   "readyForSetup": "已就緒可供設定",
   "rebootChildTitle": "重启节点及其所有子节点",
   "rebootOk": "是的，重新啟動所有裝置",

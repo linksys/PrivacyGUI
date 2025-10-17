@@ -573,7 +573,7 @@
   "provider": "Sağlayıcı",
   "psk": "PSK",
   "quickSetup": "Hızlı Kurulum",
-  "quickSetupDesc": "Aynı WiFi ayarlarını tüm etkin bantlara tek seferde uygulayın",
+  "quickSetupDescription": "Aynı WiFi ayarlarını tüm bantlara aynı anda uygulayın",
   "readyForSetup": "Kurulum için hazır",
   "rebootChildTitle": "Düğümü ve tüm alt düğümlerini yeniden başlat",
   "rebootOk": "Evet, Tümünü Yeniden Başlat",

@@ -1068,9 +1068,5 @@
   "endRemoteAssistanceDesc": "End remote assistance session?",
   "wifiModeNotAvailable": "Mode change resets channel width to auto.",
   "quickSetup": "Quick Setup",
-  "quickSetupDesc": "Apply the same WiFi settings to all enabled bands at once",
-  "configureAllBands": "Configure All Bands",
-  "configureAllBandsDesc": "Configure WiFi settings that will be applied to all enabled bands simultaneously.",
-  "settingsWillBeAppliedTo": "These settings will be applied to:",
-  "applyToAllBands": "Apply to All Bands"
+  "quickSetupDescription": "Apply the same WiFi settings to all bands at once"
 }

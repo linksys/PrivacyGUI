@@ -605,7 +605,7 @@
   "provider": "Provider",
   "psk": "PSK",
   "quickSetup": "Snelle installatie",
-  "quickSetupDesc": "Pas dezelfde WiFi-instellingen tegelijkertijd toe op alle ingeschakelde banden",
+  "quickSetupDescription": "Pas dezelfde WiFi-instellingen tegelijkertijd toe op alle banden",
   "readyForSetup": "Gereed voor installatie",
   "rebootChildTitle": "Herstart de node en al zijn kind-/kinderen",
   "rebootOk": "Ja, alles opnieuw opstarten",

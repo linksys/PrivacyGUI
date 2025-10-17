@@ -573,7 +573,7 @@
   "provider": "Dostawca",
   "psk": "PSK",
   "quickSetup": "Szybka konfiguracja",
-  "quickSetupDesc": "Zastosuj te same ustawienia WiFi do wszystkich włączonych pasm jednocześnie",
+  "quickSetupDescription": "Zastosuj te same ustawienia WiFi do wszystkich pasm jednocześnie",
   "readyForSetup": "Gotowy do konfiguracji",
   "rebootChildTitle": "Uruchom ponownie węzeł i wszystkie jego węzły podrzędne",
   "rebootOk": "Tak, uruchom ponownie wszystkie",

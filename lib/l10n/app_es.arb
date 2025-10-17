@@ -605,7 +605,7 @@
   "provider": "Proveedor",
   "psk": "PSK",
   "quickSetup": "Configuración rápida",
-  "quickSetupDesc": "Aplicar la misma configuración de WiFi a todas las bandas habilitadas a la vez",
+  "quickSetupDescription": "Aplicar la misma configuración de WiFi a todas las bandas a la vez",
   "readyForSetup": "Listo para la configuración",
   "rebootChildTitle": "Reiniciar el nodo y todos sus nodos secundarios",
   "rebootOk": "Sí, reiniciar todo",
