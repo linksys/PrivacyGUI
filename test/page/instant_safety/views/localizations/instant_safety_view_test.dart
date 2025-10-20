@@ -23,7 +23,7 @@ void main() {
     mockInstantSafetyNotifier = MockInstantSafetyNotifier();
     when(mockInstantSafetyNotifier.build())
         .thenReturn(InstantSafetyState.fromMap(instantSafetyTestState));
-    when(mockInstantSafetyNotifier.fetchLANSettings())
+    when(mockInstantSafetyNotifier.fetch())
         .thenAnswer((realInvocation) async {
       await Future.delayed(const Duration(seconds: 1));
     });

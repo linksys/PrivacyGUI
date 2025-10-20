@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:equatable/equatable.dart';
 
 /// A generic wrapper for data that needs dirty-checking.
@@ -27,4 +29,34 @@ class Preservable<T extends Equatable> extends Equatable {
 
   @override
   List<Object?> get props => [original, current];
+
+  /// Creates an instance from a map, using a provided function to deserialize [T].
+  factory Preservable.fromMap(
+    Map<String, dynamic> map,
+    T Function(dynamic map) fromMapT,
+  ) {
+    return Preservable<T>(
+      original: fromMapT(map['original']),
+      current: fromMapT(map['current']),
+    );
+  }
+
+  /// Creates an instance from a JSON string, using a provided function to deserialize [T].
+  factory Preservable.fromJson(
+    String source,
+    T Function(dynamic map) fromMapT,
+  ) =>
+      Preservable.fromMap(json.decode(source), fromMapT);
+
+  /// Converts the instance to a map, using a provided function to serialize [T].
+  Map<String, dynamic> toMap(Map<String, dynamic> Function(T value) toMapT) {
+    return {
+      'original': toMapT(original),
+      'current': toMapT(current),
+    };
+  }
+
+  /// Converts the instance to a JSON string, using a provided function to serialize [T].
+  String toJson(Map<String, dynamic> Function(T value) toMapT) =>
+      json.encode(toMap(toMapT));
 }

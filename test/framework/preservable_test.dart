@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/providers/feature_state.dart';
 import 'package:privacy_gui/providers/preservable.dart';
-import 'package:privacy_gui/providers/preservable_notifier.dart';
+import 'package:privacy_gui/providers/preservable_notifier_mixin.dart';
 
 // --- Test Data and Mocks ---
 
@@ -13,12 +13,29 @@ class TestSettings extends Equatable {
 
   @override
   List<Object?> get props => [value];
+
+  Map<String, dynamic> toMap() {
+    return {'value': value};
+  }
+
+  factory TestSettings.fromMap(Map<String, dynamic> map) {
+    return TestSettings(map['value'] as String);
+  }
 }
 
 class TestStatus extends Equatable {
   const TestStatus();
+
   @override
   List<Object?> get props => [];
+
+  Map<String, dynamic> toMap() {
+    return {};
+  }
+
+  factory TestStatus.fromMap(Map<String, dynamic> map) {
+    return const TestStatus();
+  }
 }
 
 class TestState extends FeatureState<TestSettings, TestStatus> {
@@ -32,6 +49,24 @@ class TestState extends FeatureState<TestSettings, TestStatus> {
     return TestState(
       settings: settings ?? this.settings,
       status: status ?? this.status,
+    );
+  }
+
+  @override
+  Map<String, dynamic> toMap() {
+    return {
+      'settings': settings.toMap((value) => value.toMap()),
+      'status': status.toMap(),
+    };
+  }
+
+  factory TestState.fromMap(Map<String, dynamic> map) {
+    return TestState(
+      settings: Preservable.fromMap(
+        map['settings'],
+        (map) => TestSettings.fromMap(map),
+      ),
+      status: TestStatus.fromMap(map['status']),
     );
   }
 }
@@ -50,6 +85,21 @@ class TestNotifier extends Notifier<TestState>
     state = state.copyWith(
       settings: state.settings.update(TestSettings(newValue)),
     );
+  }
+
+  @override
+  Future<(TestSettings?, TestStatus?)> performFetch(
+      {bool forceRemote = false, bool updateStatusOnly = false}) async {
+    if (updateStatusOnly) {
+      return (null, const TestStatus()); // Return a new status object
+    }
+    return (const TestSettings('fetched'), const TestStatus());
+  }
+
+  @override
+  Future<void> performSave() async {
+    // Do nothing, just simulate a successful save.
+    return;
   }
 }
 
@@ -115,6 +165,33 @@ void main() {
 
       expect(notifier.isDirty(), isFalse);
       expect(notifier.state.settings.original.value, 'new value');
+    }, tags: 'dirty-guard-framework');
+
+    test('fetch() calls performFetch and updates state correctly', () async {
+      // isDirty should be false initially
+      expect(notifier.isDirty(), isFalse);
+      // state should be 'initial'
+      expect(notifier.state.settings.current.value, 'initial');
+
+      await notifier.fetch();
+
+      // isDirty should still be false after a fetch
+      expect(notifier.isDirty(), isFalse);
+      // both original and current should be updated to 'fetched'
+      expect(notifier.state.settings.original.value, 'fetched');
+      expect(notifier.state.settings.current.value, 'fetched');
+    }, tags: 'dirty-guard-framework');
+
+    test('save() calls performSave, marks state as saved, and then fetches', () async {
+      notifier.updateValue('new value');
+      expect(notifier.isDirty(), isTrue);
+
+      await notifier.save();
+
+      // isDirty should be false after save + fetch
+      expect(notifier.isDirty(), isFalse);
+      // The final state should be the one from fetch(), not the one from markAsSaved()
+      expect(notifier.state.settings.original.value, 'fetched');
     }, tags: 'dirty-guard-framework');
   });
 }

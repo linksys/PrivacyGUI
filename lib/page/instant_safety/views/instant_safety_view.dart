@@ -138,7 +138,7 @@ class _InstantSafetyViewState extends ConsumerState<InstantSafetyView>
     ).catchError((error, stackTrace) {
       if (error is JNAPSideEffectError) {
         showRouterNotFoundAlert(context, ref, onComplete: () async {
-          await _notifier.fetchLANSettings(fetchRemote: true);
+          await _notifier.fetch(forceRemote: true);
           showChangesSavedSnackBar();
         });
       } else {

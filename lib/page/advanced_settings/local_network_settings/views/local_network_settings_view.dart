@@ -322,7 +322,7 @@ class _LocalNetworkSettingsViewState
       // Update the state
       final state = await _notifier.fetch(fetchRemote: true);
       // Update instant safety
-      await ref.read(instantSafetyProvider.notifier).fetchLANSettings();
+      await ref.read(instantSafetyProvider.notifier).fetch();
       _finishSaveSettings(state);
     });
   }

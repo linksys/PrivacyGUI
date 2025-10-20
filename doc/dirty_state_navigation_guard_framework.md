@@ -21,10 +21,11 @@ The proposed solution is a framework built on a principle of composition and con
 
 ### Part 1: `Preservable<T>` - The Core Data Wrapper
 
-This generic class tracks the state of user-configurable settings. It holds `original` and `current` versions of the data and contains the core `isDirty` logic.
+This generic class tracks the state of user-configurable settings. It holds `original` and `current` versions of the data and contains the core `isDirty` logic. It also includes serialization helpers.
 
 **File:** `lib/providers/preservable.dart`
 ```dart
+import 'dart:convert';
 import 'package:equatable/equatable.dart';
 
 class Preservable<T extends Equatable> extends Equatable {
@@ -45,6 +46,32 @@ class Preservable<T extends Equatable> extends Equatable {
     );
   }
 
+  factory Preservable.fromMap(
+    Map<String, dynamic> map,
+    T Function(dynamic map) fromMapT,
+  ) {
+    return Preservable<T>(
+      original: fromMapT(map['original']),
+      current: fromMapT(map['current']),
+    );
+  }
+
+  Map<String, dynamic> toMap(Map<String, dynamic> Function(T value) toMapT) {
+    return {
+      'original': toMapT(original),
+      'current': toMapT(current),
+    };
+  }
+
+  String toJson(Map<String, dynamic> Function(T value) toMapT) =>
+      json.encode(toMap(toMapT));
+
+  factory Preservable.fromJson(
+    String source,
+    T Function(dynamic map) fromMapT,
+  ) =>
+      Preservable.fromMap(json.decode(source), fromMapT);
+
   @override
   List<Object?> get props => [original, current];
 }
@@ -52,10 +79,11 @@ class Preservable<T extends Equatable> extends Equatable {
 
 ### Part 2: `FeatureState<S, T>` - The State Template
 
-This abstract class provides a standardized structure for a feature's state object, separating `settings` from `status`. We add an abstract `copyWith` method to ensure subclasses can be updated immutably.
+This abstract class provides a standardized structure for a feature's state object, separating `settings` from `status`. It now includes contracts for `copyWith` and serialization.
 
 **File:** `lib/providers/feature_state.dart`
 ```dart
+import 'dart:convert';
 import 'package:equatable/equatable.dart';
 import 'preservable.dart';
 
@@ -67,41 +95,79 @@ abstract class FeatureState<TSettings extends Equatable, TStatus extends Equatab
 
   bool get isDirty => settings.isDirty;
 
-  // Contract to ensure subclasses are copyable.
   FeatureState<TSettings, TStatus> copyWith({
     Preservable<TSettings>? settings,
     TStatus? status,
   });
+
+  Map<String, dynamic> toMap();
+
+  String toJson() => json.encode(toMap());
 
   @override
   List<Object?> get props => [settings, status];
 }
 ```
 
-### Part 3: The Notifier Contract & Implementation (Interface + Mixin)
+### Part 3: The Notifier Contract & Template Method Mixin
 
-To provide reusable logic (`revert`, `isDirty`) while allowing `LinksysRoute` to safely interact with any Notifier, we use a combination of an interface and a mixin.
+To provide reusable logic and a clear contract, we use an interface (`PreservableContract`) and a mixin (`PreservableNotifierMixin`) that implements the Template Method design pattern for `fetch` and `save` operations.
 
-**File:** `lib/providers/preservable_notifier.dart`
+**File:** `lib/providers/preservable_contract.dart`
 ```dart
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:equatable/equatable.dart';
-import 'feature_state.dart';
-import 'preservable.dart';
 
-// The Interface (The "What")
-// This defines the contract that LinksysRoute will check for.
-abstract class PreservableContract {
+abstract class PreservableContract<TSettings extends Equatable, TStatus extends Equatable> {
   void revert();
   bool isDirty();
-}
 
-// The Mixin (The "How")
-// This provides the reusable implementation for any Notifier.
+  // Methods to be implemented by the concrete notifier for the template.
+  Future<(TSettings?, TStatus?)> performFetch({
+    bool forceRemote = false,
+    bool updateStatusOnly = false,
+  });
+  Future<void> performSave();
+}
+```
+
+**File:** `lib/providers/preservable_notifier_mixin.dart`
+```dart
+import 'package:equatable/equatable.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'feature_state.dart';
+import 'preservable.dart';
+import 'preservable_contract.dart';
+
 mixin PreservableNotifierMixin<
     TSettings extends Equatable,
     TStatus extends Equatable,
-    TState extends FeatureState<TSettings, TStatus>> on Notifier<TState> implements PreservableContract {
+    TState extends FeatureState<TSettings, TStatus>> on Notifier<TState> implements PreservableContract<TSettings, TStatus> {
+
+  Future<void> fetch({bool forceRemote = false, bool updateStatusOnly = false}) async {
+    final (newSettings, newStatus) = await performFetch(
+      forceRemote: forceRemote,
+      updateStatusOnly: updateStatusOnly,
+    );
+    if (updateStatusOnly) {
+      if (newStatus != null) {
+        state = state.copyWith(status: newStatus) as TState;
+      }
+    } else {
+      if (newSettings != null) {
+        state = state.copyWith(
+          settings: Preservable(original: newSettings, current: newSettings),
+          status: newStatus ?? state.status,
+        ) as TState;
+      }
+    }
+  }
+
+  Future<void> save() async {
+    await performSave();
+    markAsSaved();
+    await fetch();
+  }
+
   @override
   void revert() {
     state = state.copyWith(
@@ -125,25 +191,23 @@ The custom route class is updated to check for the `PreservableContract` and cal
 **File:** `lib/route/route_model.dart`
 ```dart
 // ... imports ...
-import 'package:privacy_gui/providers/preservable_notifier.dart';
+import 'package:privacy_gui/providers/preservable_contract.dart';
 
 class LinksysRoute extends GoRoute {
   // ... constructor ...
   LinksysRoute({
     // ... other parameters
-    ProviderListenable<FeatureState>? provider,
+    Provider<PreservableContract>? preservableProvider, // The provider is now generic
     bool enableDirtyCheck = false,
   }) : super(
           onExit: (context, state) async {
-            if (enableDirtyCheck && provider != null) {
+            if (enableDirtyCheck && preservableProvider != null) {
               final container = ProviderScope.containerOf(context);
-              final notifier = container.read(provider.notifier);
+              final notifier = container.read(preservableProvider);
 
-              // Check if the notifier follows the contract
-              if (notifier is PreservableContract && notifier.isDirty()) {
+              if (notifier.isDirty()) {
                 final bool? confirmed = await showUnsavedAlert(context);
                 if (confirmed == true) {
-                  // User wants to discard, so revert the state.
                   notifier.revert();
                   return true; // Allow navigation
                 } else {
@@ -162,22 +226,41 @@ class LinksysRoute extends GoRoute {
 
 To apply this framework to a new feature:
 
-1.  **Define Data Classes**: Create `Equatable` classes for your `Settings` and `Status`.
-2.  **Create Feature State**: Extend `FeatureState` and implement the `copyWith` method.
+1.  **Define Data Classes**: Create `Equatable` classes for your `Settings` and `Status`. Implement `toMap` and `fromMap` for each.
+2.  **Create Feature State**: Extend `FeatureState` and implement the `copyWith` and `toMap` methods.
 3.  **Create Notifier**: Create a `Notifier` that `extends Notifier<YourState>` and add `with PreservableNotifierMixin`.
-4.  **Update Route**: Use `LinksysRoute` in your router configuration, passing the `provider` and setting `enableDirtyCheck: true`.
+4.  **Implement Template Methods**: In your Notifier, implement the required `performFetch` and `performSave` methods with your feature-specific logic.
+5.  **Update Route**: Use `LinksysRoute` in your router configuration, passing the `provider` (which should expose the `PreservableContract`) and setting `enableDirtyCheck: true`.
 
 **Example `InstantSafetyNotifier`:**
 ```dart
 class InstantSafetyNotifier extends Notifier<InstantSafetyState>
     with PreservableNotifierMixin<InstantSafetySettings, InstantSafetyStatus, InstantSafetyState> {
   
-  // Implement build, fetch, and save methods...
+  @override
+  InstantSafetyState build() {
+    fetch(); // Call the template method from the mixin
+    return InstantSafetyState.initial();
+  }
 
-  // revert() and isDirty() are now provided automatically by the mixin!
+  @override
+  Future<(InstantSafetySettings?, InstantSafetyStatus?)> performFetch({ ... }) async {
+    // 1. Call your repository to get the raw data (e.g., lanSettings)
+    // 2. Create new settings and status objects from the raw data
+    // 3. Return (newSettings, newStatus)
+  }
+
+  @override
+  Future<void> performSave() async {
+    // 1. Get current settings from state.settings.current
+    // 2. Build the payload for your API call
+    // 3. Call your repository to save the data
+  }
+
+  // ... other UI-specific methods like setSafeBrowsingEnabled()
 }
 ```
 
 ## 5. Conclusion
 
-This framework, combining a data wrapper, a state template, an interface, and a mixin, provides a highly reusable, robust, and developer-friendly solution for managing unsaved changes and navigation guards across the application.
+This framework, combining a data wrapper, a state template, a contract, and a template method mixin, provides a highly reusable, robust, and developer-friendly solution for managing state, persistence, and navigation guards across the application.

@@ -6,7 +6,8 @@ import 'package:equatable/equatable.dart';
 
 import 'package:privacy_gui/providers/feature_state.dart';
 import 'package:privacy_gui/providers/preservable.dart';
-import 'package:privacy_gui/providers/preservable_notifier.dart';
+import 'package:privacy_gui/providers/preservable_contract.dart';
+import 'package:privacy_gui/providers/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
@@ -19,12 +20,28 @@ class TestSettings extends Equatable {
   const TestSettings(this.value);
   @override
   List<Object?> get props => [value];
+
+  Map<String, dynamic> toMap() {
+    return {'value': value};
+  }
+
+  factory TestSettings.fromMap(Map<String, dynamic> map) {
+    return TestSettings(map['value'] as String);
+  }
 }
 
 class TestStatus extends Equatable {
   const TestStatus();
   @override
   List<Object?> get props => [];
+
+  Map<String, dynamic> toMap() {
+    return {};
+  }
+
+  factory TestStatus.fromMap(Map<String, dynamic> map) {
+    return const TestStatus();
+  }
 }
 
 class TestState extends FeatureState<TestSettings, TestStatus> {
@@ -38,6 +55,24 @@ class TestState extends FeatureState<TestSettings, TestStatus> {
     return TestState(
       settings: settings ?? this.settings,
       status: status ?? this.status,
+    );
+  }
+
+  @override
+  Map<String, dynamic> toMap() {
+    return {
+      'settings': settings.toMap((value) => value.toMap()),
+      'status': status.toMap(),
+    };
+  }
+
+  factory TestState.fromMap(Map<String, dynamic> map) {
+    return TestState(
+      settings: Preservable.fromMap(
+        map['settings'],
+        (map) => TestSettings.fromMap(map),
+      ),
+      status: TestStatus.fromMap(map['status']),
     );
   }
 }
@@ -57,6 +92,18 @@ class TestNotifier extends Notifier<TestState>
     state = state.copyWith(
       settings: state.settings.update(const TestSettings('dirty')),
     );
+  }
+
+  @override
+  Future<(TestSettings?, TestStatus?)> performFetch(
+      {bool forceRemote = false, bool updateStatusOnly = false}) async {
+    return (const TestSettings('fetched'), const TestStatus());
+  }
+
+  @override
+  Future<void> performSave() async {
+    // Do nothing, just simulate a successful save.
+    return;
   }
 }
 

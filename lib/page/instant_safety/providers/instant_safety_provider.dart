@@ -12,14 +12,17 @@ import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/page/instant_safety/providers/instant_safety_state.dart';
 import 'package:privacy_gui/providers/preservable.dart';
-
-import 'package:privacy_gui/providers/preservable_notifier.dart';
+import 'package:privacy_gui/providers/preservable_contract.dart';
+import 'package:privacy_gui/providers/preservable_notifier_mixin.dart';
 
 final instantSafetyProvider =
     NotifierProvider<InstantSafetyNotifier, InstantSafetyState>(
         () => InstantSafetyNotifier());
 
-final preservableInstantSafetyProvider = Provider<PreservableContract>((ref) {
+// The provider now needs to be generic to match the contract.
+final preservableInstantSafetyProvider =
+    Provider<PreservableContract<InstantSafetySettings, InstantSafetyStatus>>(
+        (ref) {
   return ref.watch(instantSafetyProvider.notifier);
 });
 
@@ -35,21 +38,26 @@ final DhcpOption openDNSSetting = DhcpOption(
 // Remove all fortinet compatibility map
 final compatibilityMap = [];
 
-class InstantSafetyNotifier extends Notifier<InstantSafetyState> 
-    with PreservableNotifierMixin<InstantSafetySettings, InstantSafetyStatus, InstantSafetyState> {
+class InstantSafetyNotifier extends Notifier<InstantSafetyState>
+    with
+        PreservableNotifierMixin<InstantSafetySettings, InstantSafetyStatus,
+            InstantSafetyState> {
   @override
   InstantSafetyState build() {
-    fetchLANSettings(fetchRemote: true);
+    // The mixin's fetch method is now available.
+    fetch(forceRemote: true);
     return InstantSafetyState.initial();
   }
 
-  Future<void> fetchLANSettings({bool fetchRemote = false}) async {
+  @override
+  Future<(InstantSafetySettings?, InstantSafetyStatus?)> performFetch(
+      {bool forceRemote = false, bool updateStatusOnly = false}) async {
     final repo = ref.read(routerRepositoryProvider);
     try {
       final lanSettings = await repo
           .send(
             JNAPAction.getLANSettings,
-            fetchRemote: fetchRemote,
+            fetchRemote: forceRemote,
             auth: true,
           )
           .then((value) => RouterLANSettings.fromMap(value.output));
@@ -57,19 +65,20 @@ class InstantSafetyNotifier extends Notifier<InstantSafetyState>
       final safeBrowsingType = _getSafeBrowsingType(lanSettings);
       final hasFortinetValue = _hasFortinet();
 
-      final settings = InstantSafetySettings(safeBrowsingType: safeBrowsingType);
-      final status = InstantSafetyStatus(lanSetting: lanSettings, hasFortinet: hasFortinetValue);
+      final settings =
+          InstantSafetySettings(safeBrowsingType: safeBrowsingType);
+      final status = InstantSafetyStatus(
+          lanSetting: lanSettings, hasFortinet: hasFortinetValue);
 
-      state = state.copyWith(
-        settings: Preservable(original: settings, current: settings),
-        status: status,
-      );
+      // Return the raw data for the mixin to handle.
+      return (settings, status);
     } catch (e) {
       rethrow;
     }
   }
 
-  Future<void> save() async {
+  @override
+  Future<void> performSave() async {
     final currentSettings = state.settings.current;
     final lanSetting = state.status.lanSetting;
 
@@ -77,28 +86,24 @@ class InstantSafetyNotifier extends Notifier<InstantSafetyState>
       throw SafeBrowsingError(message: 'Lan settings not available');
     }
 
-    DHCPSettings dhcpSettings;
-    switch (currentSettings.safeBrowsingType) {
-      case InstantSafetyType.fortinet:
-        dhcpSettings = lanSetting.dhcpSettings.copyWith(
+    final DHCPSettings dhcpSettings = switch (currentSettings.safeBrowsingType) {
+      InstantSafetyType.fortinet => lanSetting.dhcpSettings.copyWith(
           dnsServer1: fortinetSetting.dnsServer1,
           dnsServer2: fortinetSetting.dnsServer2,
           dnsServer3: fortinetSetting.dnsServer3,
-        );
-      case InstantSafetyType.openDNS:
-        dhcpSettings = lanSetting.dhcpSettings.copyWith(
+        ),
+      InstantSafetyType.openDNS => lanSetting.dhcpSettings.copyWith(
           dnsServer1: openDNSSetting.dnsServer1,
           dnsServer2: openDNSSetting.dnsServer2,
           dnsServer3: openDNSSetting.dnsServer3,
-        );
-      case InstantSafetyType.off:
-        dhcpSettings = DHCPSettings(
+        ),
+      InstantSafetyType.off => DHCPSettings(
           lastClientIPAddress: lanSetting.dhcpSettings.lastClientIPAddress,
           leaseMinutes: lanSetting.dhcpSettings.leaseMinutes,
           reservations: lanSetting.dhcpSettings.reservations,
           firstClientIPAddress: lanSetting.dhcpSettings.firstClientIPAddress,
-        );
-    }
+        ),
+    };
     final setLanSetting = SetRouterLANSettings(
       ipAddress: lanSetting.ipAddress,
       networkPrefixLength: lanSetting.networkPrefixLength,
@@ -115,7 +120,7 @@ class InstantSafetyNotifier extends Notifier<InstantSafetyState>
         cacheLevel: CacheLevel.noCache,
         data: setLanSetting.toMap(),
       );
-      await fetchLANSettings(fetchRemote: true);
+      // The final fetch is removed. The mixin's save() will call markAsSaved().
     } catch (error) {
       if (error is JNAPSideEffectError) {
         rethrow;
@@ -124,11 +129,14 @@ class InstantSafetyNotifier extends Notifier<InstantSafetyState>
     }
   }
 
+  // These methods are for UI interaction to update the 'current' state.
   void setSafeBrowsingEnabled(bool isEnabled) {
     final newType = isEnabled
-        ? (state.status.hasFortinet ? InstantSafetyType.fortinet : InstantSafetyType.openDNS)
+        ? (state.status.hasFortinet
+            ? InstantSafetyType.fortinet
+            : InstantSafetyType.openDNS)
         : InstantSafetyType.off;
-    
+
     state = state.copyWith(
       settings: state.settings.update(
         state.settings.current.copyWith(safeBrowsingType: newType),
@@ -143,6 +151,8 @@ class InstantSafetyNotifier extends Notifier<InstantSafetyState>
       ),
     );
   }
+
+  // --- Private Helpers ---
 
   InstantSafetyType _getSafeBrowsingType(RouterLANSettings lanSettings) {
     final dnsServer1 = lanSettings.dhcpSettings.dnsServer1;

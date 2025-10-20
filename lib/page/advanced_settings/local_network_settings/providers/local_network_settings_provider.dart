@@ -112,7 +112,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
       // Update the state
       await fetch(fetchRemote: true);
       // Update instant safety
-      await ref.read(instantSafetyProvider.notifier).fetchLANSettings();
+      await ref.read(instantSafetyProvider.notifier).fetch();
     });
   }
 

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:equatable/equatable.dart';
 import 'preservable.dart';
 
@@ -15,11 +17,17 @@ abstract class FeatureState<TSettings extends Equatable, TStatus extends Equatab
   /// Checks if the settings have been modified.
   bool get isDirty => settings.isDirty;
 
-  // Contract to ensure subclasses are copyable.
+  /// Creates a copy of this state but with the given fields replaced with the new values.
   FeatureState<TSettings, TStatus> copyWith({
     Preservable<TSettings>? settings,
     TStatus? status,
   });
+
+  /// Converts this object to a map.
+  Map<String, dynamic> toMap();
+
+  /// Converts this object to a JSON string.
+  String toJson() => json.encode(toMap());
 
   @override
   List<Object?> get props => [settings, status];

@@ -10,16 +10,16 @@ To build and integrate a generic, reusable, and fully tested framework to handle
 This phase focuses on creating the foundational, reusable components of the framework.
 
 *   **Task 1.1: Create `Preservable<T>` Generic Wrapper Class**
-    *   **Description**: Implement the `Preservable<T>` class to track `original` and `current` versions of settings data.
+    *   **Description**: Implement the `Preservable<T>` class to track `original` and `current` versions of settings data. This now includes serialization helpers (`toMap`, `fromMap`, etc.).
     *   **Output**: `lib/providers/preservable.dart`
 
 *   **Task 1.2: Update `FeatureState<S, T>` Abstract Base Class**
-    *   **Description**: Modify the `FeatureState` abstract class to include an abstract `copyWith` method, ensuring all subclasses are mutable in a standardized way.
+    *   **Description**: Modify the `FeatureState` abstract class to include abstract `copyWith` and `toMap` methods, ensuring all subclasses are copyable and serializable.
     *   **Output**: `lib/providers/feature_state.dart`
 
 *   **Task 1.3: Create `PreservableContract` and `PreservableNotifierMixin`**
-    *   **Description**: Create a new file containing the `PreservableContract` interface (which defines the `revert` and `isDirty` methods) and the `PreservableNotifierMixin` (which provides the reusable implementation for those methods).
-    *   **Output**: `lib/providers/preservable_notifier.dart`
+    *   **Description**: Create a `PreservableContract` interface and a `PreservableNotifierMixin`. The mixin uses the Template Method pattern to provide generic `fetch()` and `save()` methods, requiring concrete notifiers to implement `performFetch()` and `performSave()`.
+    *   **Output**: `lib/providers/preservable_contract.dart`, `lib/providers/preservable_notifier_mixin.dart`
 
 *   **Task 1.4: Update the "Smart" `LinksysRoute`**
     *   **Description**: Modify the `LinksysRoute` class in `lib/route/route_model.dart`. The `onExit` logic will be updated to check if a notifier implements `PreservableContract` and, if so, call its `isDirty()` and `revert()` methods.
@@ -37,7 +37,7 @@ This phase ensures the stability and correctness of the core framework through i
     *   **Execution Command**: `flutter test --tags dirty-guard-framework`
 
 *   **Task 2.2: Write Unit Tests**
-    *   **Description**: Create unit tests for `Preservable<T>` and for the logic within `PreservableNotifierMixin` using a mock notifier.
+    *   **Description**: Create unit tests for `Preservable<T>` and for the logic within `PreservableNotifierMixin`, including the new `fetch()` and `save()` template methods.
     *   **Tag**: `'dirty-guard-framework'`
 
 *   **Task 2.3: Write Integration Test for `LinksysRoute`**
@@ -50,10 +50,10 @@ This phase ensures the stability and correctness of the core framework through i
 
 This phase applies the new, tested framework to an existing feature.
 
-*   **Task 3.1**: Refactor `InstantSafetyState` to correctly extend the updated `FeatureState` and implement its `copyWith` method.
-*   **Task 3.2**: Refactor `InstantSafetyNotifier` to use `with PreservableNotifierMixin` and remove any manual `revert` or `isDirty` implementations.
-*   **Task 3.3**: Refactor `InstantSafetyView` to rely on the notifier for dirty state and actions.
-*   **Task 3.4**: Update the `LinksysRoute` in the router configuration for `/instant-safety` to ensure `provider` and `enableDirtyCheck: true` are set.
+*   **Task 3.1**: Refactor `InstantSafetyState` to correctly extend the updated `FeatureState` and implement its `copyWith` and `toMap` methods.
+*   **Task 3.2**: Refactor `InstantSafetyNotifier` to use `with PreservableNotifierMixin` and implement the `performFetch` and `performSave` methods.
+*   **Task 3.3**: Refactor `InstantSafetyView` to rely on the notifier for dirty state and actions, calling the new `fetch()` and `save()` methods.
+*   **Task 3.4**: Update the `LinksysRoute` in the router configuration for `/instant-safety` to ensure `preservableProvider` and `enableDirtyCheck: true` are set.
 
 ---
 
