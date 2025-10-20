@@ -2,37 +2,38 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/vpn/service/vpn_service.dart';
+import 'package:privacy_gui/providers/preservable_contract.dart';
+import 'package:privacy_gui/providers/preservable_notifier_mixin.dart';
 import '../models/vpn_models.dart';
 import 'vpn_state.dart';
 
-class VPNNotifier extends Notifier<VPNState> {
+class VPNNotifier extends Notifier<VPNState>
+    with PreservableNotifierMixin<VPNSettings, VPNStatus, VPNState> {
   @override
   VPNState build() {
     return const VPNState.init();
   }
 
-  Future<VPNState> fetch([bool force = false, bool statusOnly = false]) async {
+  @override
+  Future<void> performFetch({bool statusOnly = false}) async {
     final service = ref.read(vpnServiceProvider);
     try {
-      await service.fetch(force);
+      await service.fetch();
       // Load all VPN data
       final userCredentials = await service.getVPNUser();
       final gatewaySettings = await service.getVPNGateway();
       final serviceSettings = await service.getVPNService();
 
-      // final tunneledUserIP =
-      //     serviceSettings.enabled ? await service.getTunneledUser() : null;
-
-      
       state = state.copyWith(
-        settings: statusOnly ? state.settings : state.settings.copyWith(
-          userCredentials: userCredentials,
-          gatewaySettings: gatewaySettings,
-          serviceSettings: VPNServiceSetSettings(
-              enabled: serviceSettings.enabled,
-              autoConnect: serviceSettings.autoConnect),
-          // tunneledUserIP: tunneledUserIP,
-        ),
+        settings: statusOnly
+            ? state.settings
+            : state.settings.copyWith(
+                userCredentials: userCredentials,
+                gatewaySettings: gatewaySettings,
+                serviceSettings: VPNServiceSetSettings(
+                    enabled: serviceSettings.enabled,
+                    autoConnect: serviceSettings.autoConnect),
+              ),
         status: state.status.copyWith(
           statistics: serviceSettings.statistics,
           tunnelStatus: serviceSettings.tunnelStatus,
@@ -41,14 +42,13 @@ class VPNNotifier extends Notifier<VPNState> {
     } catch (e) {
       rethrow;
     }
-    return state;
   }
 
-  Future<VPNState> save() async {
+  @override
+  Future<void> performSave() async {
     final service = ref.read(vpnServiceProvider);
     await service.save(state.settings);
     await service.applyVPNSettings();
-    return fetch(true);
   }
 
   // State updates
@@ -99,7 +99,7 @@ class VPNNotifier extends Notifier<VPNState> {
   }
 
   // Connection Testing
-  Future<VPNState> testVPNConnection() async {
+  Future<void> testVPNConnection() async {
     final repository = ref.read(vpnServiceProvider);
 
     try {
@@ -109,7 +109,7 @@ class VPNNotifier extends Notifier<VPNState> {
           testResult: result,
         ),
       );
-      return fetch(true);
+      await fetch(true);
     } catch (e) {
       rethrow;
     }
@@ -121,3 +121,8 @@ final vpnServiceProvider = Provider<VPNService>((ref) {
 });
 
 final vpnProvider = NotifierProvider<VPNNotifier, VPNState>(VPNNotifier.new);
+
+final preservableVPNProvider =
+    Provider.autoDispose<PreservableContract<VPNSettings, VPNStatus>>((ref) {
+  return ref.watch(vpnProvider.notifier);
+});

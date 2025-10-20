@@ -41,6 +41,8 @@ final menus = [
   LinksysRoute(
     name: RouteNamed.settingsVPN,
     path: RoutePath.settingsVPN,
+    preservableProvider: preservableVPNProvider,
+    enableDirtyCheck: true,
     config: LinksysRouteConfig(
       column: ColumnGrid(column: 12),
     ),
@@ -90,6 +92,8 @@ final menus = [
         LinksysRoute(
           name: RouteNamed.settingsTimeZone,
           path: RoutePath.settingsTimeZone,
+          preservableProvider: preservableTimezoneProvider,
+          enableDirtyCheck: true,
           config: LinksysRouteConfig(
             column: ColumnGrid(column: 9),
           ),
@@ -110,6 +114,8 @@ final menus = [
   LinksysRoute(
     name: RouteNamed.menuInstantPrivacy,
     path: RoutePath.menuInstantPrivacy,
+    preservableProvider: preservableInstantPrivacyProvider,
+    enableDirtyCheck: true,
     config: LinksysRouteConfig(column: ColumnGrid(column: 12)),
     builder: (context, state) => InstantPrivacyView(
       args: state.extra as Map<String, dynamic>? ?? const {},

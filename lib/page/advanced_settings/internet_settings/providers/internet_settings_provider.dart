@@ -21,6 +21,8 @@ import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
+import 'package:privacy_gui/providers/preservable_contract.dart';
+import 'package:privacy_gui/providers/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/providers/redirection/redirection_provider.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -29,16 +31,22 @@ final internetSettingsProvider =
     NotifierProvider<InternetSettingsNotifier, InternetSettingsState>(
         () => InternetSettingsNotifier());
 
-class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
+class InternetSettingsNotifier extends Notifier<InternetSettingsState>
+    with
+        PreservableNotifierMixin<InternetSettings, InternetStatus,
+            InternetSettingsState> {
   String? _hostname;
   String? get hostname => _hostname;
 
   @override
-  InternetSettingsState build() => InternetSettingsState.init();
+  InternetSettingsState build() {
+    return InternetSettingsState.init();
+  }
 
-  Future<InternetSettingsState> fetch({bool fetchRemote = false}) async {
+  @override
+  Future<void> performFetch() async {
     final repo = ref.read(routerRepositoryProvider);
-    final results = await repo.fetchInternetSettings(fetchRemote: fetchRemote);
+    final results = await repo.fetchInternetSettings();
     // Wan Settings
     final wanSettingsResult = JNAPTransactionSuccessWrap.getResult(
         JNAPAction.getWANSettings, Map.fromEntries(results));
@@ -75,15 +83,15 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
     const defaultMaxIdleMinutes = 15;
     const defaultReconnectAfterSeconds = 30;
 
-    InternetSettingsState newState = InternetSettingsState.init();
+    InternetSettings settings = state.settings;
     switch (WanType.resolve(wanSettings?.wanType ?? '')) {
       case WanType.dhcp:
         break;
       case WanType.pppoe:
         final pppoeSettings = wanSettings?.pppoeSettings;
         if (pppoeSettings != null) {
-          newState = newState.copyWith(
-            ipv4Setting: newState.ipv4Setting.copyWith(
+          settings = settings.copyWith(
+            ipv4Setting: settings.ipv4Setting.copyWith(
               behavior: () =>
                   PPPConnectionBehavior.resolve(pppoeSettings.behavior) ??
                   defaultConnectionBehavior,
@@ -106,8 +114,8 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
       case WanType.pptp:
         final tpSettings = wanSettings?.tpSettings;
         if (tpSettings != null) {
-          newState = newState.copyWith(
-            ipv4Setting: newState.ipv4Setting.copyWith(
+          settings = settings.copyWith(
+            ipv4Setting: settings.ipv4Setting.copyWith(
               behavior: () =>
                   PPPConnectionBehavior.resolve(tpSettings.behavior) ??
                   defaultConnectionBehavior,
@@ -133,8 +141,8 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
       case WanType.l2tp:
         final tpSettings = wanSettings?.tpSettings;
         if (tpSettings != null) {
-          newState = newState.copyWith(
-            ipv4Setting: newState.ipv4Setting.copyWith(
+          settings = settings.copyWith(
+            ipv4Setting: settings.ipv4Setting.copyWith(
               behavior: () =>
                   PPPConnectionBehavior.resolve(tpSettings.behavior) ??
                   defaultConnectionBehavior,
@@ -154,8 +162,8 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
       case WanType.static:
         final staticSettings = wanSettings?.staticSettings;
         if (staticSettings != null) {
-          newState = newState.copyWith(
-            ipv4Setting: newState.ipv4Setting.copyWith(
+          settings = settings.copyWith(
+            ipv4Setting: settings.ipv4Setting.copyWith(
               staticIpAddress: () => staticSettings.ipAddress,
               staticGateway: () => staticSettings.gateway,
               staticDns1: () => staticSettings.dnsServer1,
@@ -170,8 +178,8 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
       case WanType.bridge:
         SharedPreferences.getInstance().then((prefs) {
           final redirection = prefs.getString(pRedirection);
-          newState = newState.copyWith(
-            ipv4Setting: newState.ipv4Setting.copyWith(
+          settings = settings.copyWith(
+            ipv4Setting: settings.ipv4Setting.copyWith(
               redirection: () => redirection,
             ),
           );
@@ -188,93 +196,80 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
       });
     }
 
-    state = newState.copyWith(
-      ipv4Setting: newState.ipv4Setting.copyWith(
-        ipv4ConnectionType: wanSettings?.wanType ?? '',
+    state = state.copyWith(
+      settings: settings.copyWith(
+        ipv4Setting: settings.ipv4Setting.copyWith(
+          ipv4ConnectionType: wanSettings?.wanType ?? '',
+          mtu: wanSettings?.mtu ?? 0,
+        ),
+        ipv6Setting: settings.ipv6Setting.copyWith(
+          ipv6ConnectionType: getIPv6Settings?.wanType ?? '',
+          isIPv6AutomaticEnabled:
+              getIPv6Settings?.ipv6AutomaticSettings?.isIPv6AutomaticEnabled ??
+                  false,
+          ipv6rdTunnelMode: () => IPv6rdTunnelMode.resolve(
+              getIPv6Settings?.ipv6AutomaticSettings?.ipv6rdTunnelMode ?? ''),
+          ipv6Prefix: () =>
+              getIPv6Settings?.ipv6AutomaticSettings?.ipv6rdTunnelSettings?.prefix,
+          ipv6PrefixLength: () => getIPv6Settings
+              ?.ipv6AutomaticSettings?.ipv6rdTunnelSettings?.prefixLength,
+          ipv6BorderRelay: () => getIPv6Settings
+              ?.ipv6AutomaticSettings?.ipv6rdTunnelSettings?.borderRelay,
+          ipv6BorderRelayPrefixLength: () => getIPv6Settings
+              ?.ipv6AutomaticSettings
+              ?.ipv6rdTunnelSettings
+              ?.borderRelayPrefixLength,
+        ),
+        macClone: macAddressCloneSettings?.isMACAddressCloneEnabled ?? false,
+        macCloneAddress: () => macAddressCloneSettings?.macAddress,
+      ),
+      status: InternetStatus(
         supportedIPv4ConnectionType: wanStatus?.supportedWANTypes ?? [],
         supportedWANCombinations: wanStatus?.supportedWANCombinations ?? [],
-        mtu: wanSettings?.mtu ?? 0,
-      ),
-      ipv6Setting: newState.ipv6Setting.copyWith(
-        ipv6ConnectionType: getIPv6Settings?.wanType ?? '',
         supportedIPv6ConnectionType: wanStatus?.supportedIPv6WANTypes ?? [],
         duid: getIPv6Settings?.duid ?? '',
-        isIPv6AutomaticEnabled:
-            getIPv6Settings?.ipv6AutomaticSettings?.isIPv6AutomaticEnabled ??
-                false,
-        ipv6rdTunnelMode: () => IPv6rdTunnelMode.resolve(
-            getIPv6Settings?.ipv6AutomaticSettings?.ipv6rdTunnelMode ?? ''),
-        ipv6Prefix: () => getIPv6Settings
-            ?.ipv6AutomaticSettings?.ipv6rdTunnelSettings?.prefix,
-        ipv6PrefixLength: () => getIPv6Settings
-            ?.ipv6AutomaticSettings?.ipv6rdTunnelSettings?.prefixLength,
-        ipv6BorderRelay: () => getIPv6Settings
-            ?.ipv6AutomaticSettings?.ipv6rdTunnelSettings?.borderRelay,
-        ipv6BorderRelayPrefixLength: () => getIPv6Settings
-            ?.ipv6AutomaticSettings
-            ?.ipv6rdTunnelSettings
-            ?.borderRelayPrefixLength,
       ),
-      macClone: macAddressCloneSettings?.isMACAddressCloneEnabled ?? false,
-      macCloneAddress: () => macAddressCloneSettings?.macAddress,
     );
-    return state;
   }
 
-  Future saveInternetSettings(
-      InternetSettingsState newState, InternetSettingsState? originalState) {
+  @override
+  Future<void> performSave() async {
     List<MapEntry<JNAPAction, Map<String, dynamic>>> transactions = [
       getMacAddressCloneTransaction(
-          newState.macClone, newState.macCloneAddress),
-      ...getSaveIpv4Transactions(newState),
-      ...getSaveIpv6Transactions(newState),
+          state.settings.macClone, state.settings.macCloneAddress),
+      ...getSaveIpv4Transactions(state.settings),
+      ...getSaveIpv6Transactions(state.settings),
     ];
-    return ref
-        .read(routerRepositoryProvider)
-        .transaction(
-          JNAPTransactionBuilder(commands: transactions, auth: true),
-          fetchRemote: true,
-          cacheLevel: CacheLevel.noCache,
-        )
-        .then((successWrap) => successWrap.data)
-        .then((results) async {
-      // Fetch
-      await fetch(fetchRemote: true);
-      // Handle redirection
-      final originalWanType =
-          WanType.resolve(originalState?.ipv4Setting.ipv4ConnectionType ?? '');
-      final redirectionMap = originalWanType == WanType.bridge
-          ? {'hostName': 'www.myrouter', 'domain': 'info'}
-          : _getRedirectionMap(results);
+    try {
+      final successWrap = await ref
+          .read(routerRepositoryProvider)
+          .transaction(
+            JNAPTransactionBuilder(commands: transactions, auth: true),
+            fetchRemote: true,
+            cacheLevel: CacheLevel.noCache,
+          );
+      final redirectionMap = _getRedirectionMap(successWrap.data);
       _handleWebRedirection(redirectionMap);
-    }).catchError(
-      (error) {
-        final sideEffectError = error as JNAPSideEffectError;
-        if (sideEffectError.attach is JNAPTransactionSuccessWrap) {
-          // Handle redirection
-          JNAPTransactionSuccessWrap result =
-              sideEffectError.attach as JNAPTransactionSuccessWrap;
-          final originalWanType = WanType.resolve(
-              originalState?.ipv4Setting.ipv4ConnectionType ?? '');
-          final redirectionMap = originalWanType == WanType.bridge
-              ? {'hostName': 'www.myrouter', 'domain': 'info'}
-              : _getRedirectionMap(result.data);
-          _handleWebRedirection(redirectionMap);
-        } else {
-          throw error;
-        }
-      },
-      test: (error) => error is JNAPSideEffectError,
-    );
+    } on JNAPSideEffectError catch (error) {
+      if (error.attach is JNAPTransactionSuccessWrap) {
+        JNAPTransactionSuccessWrap result =
+            error.attach as JNAPTransactionSuccessWrap;
+        final redirectionMap = _getRedirectionMap(result.data);
+        _handleWebRedirection(redirectionMap);
+      } else {
+        rethrow;
+      }
+    }
   }
 
   List<MapEntry<JNAPAction, Map<String, dynamic>>> getSaveIpv4Transactions(
-      InternetSettingsState newState) {
-    final wanType = WanType.resolve(newState.ipv4Setting.ipv4ConnectionType);
+      InternetSettings settings) {
+    final wanType =
+        WanType.resolve(settings.ipv4Setting.ipv4ConnectionType);
     if (wanType != null) {
       // Create settings
       RouterWANSettings wanSettings =
-          _createIpv4WanSettings(newState.ipv4Setting, wanType);
+          _createIpv4WanSettings(settings.ipv4Setting, wanType);
       MapEntry<JNAPAction, Map<String, dynamic>>? additionalSetting =
           _getIpv4AdditionalSetting(wanType);
       // Create transactions
@@ -294,10 +289,10 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
     }
   }
 
-  Future savePnpIpv4(InternetSettingsState newState) {
+  Future savePnpIpv4(InternetSettings settings) {
     // Create transactions
     List<MapEntry<JNAPAction, Map<String, dynamic>>> transactions =
-        getSaveIpv4Transactions(newState);
+        getSaveIpv4Transactions(settings);
     return ref
         .read(routerRepositoryProvider)
         .transaction(
@@ -305,11 +300,7 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
           fetchRemote: true,
           cacheLevel: CacheLevel.noCache,
         )
-        .then((successWrap) => successWrap.data)
-        .then((results) async {
-      await fetch(fetchRemote: true);
-      return results;
-    });
+        .then((successWrap) => successWrap.data);
   }
 
   Map<String, dynamic>? _getRedirectionMap(
@@ -325,9 +316,9 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
           'https://${redirectionMap["hostName"]}.${redirectionMap["domain"]}';
       // Update state
       updateIpv4Settings(
-          state.ipv4Setting.copyWith(redirection: () => redirectionUrl));
+          state.settings.ipv4Setting.copyWith(redirection: () => redirectionUrl));
       // Save redirectionUrl
-      if (WanType.resolve(state.ipv4Setting.ipv4ConnectionType) ==
+      if (WanType.resolve(state.settings.ipv4Setting.ipv4ConnectionType) ==
           WanType.bridge) {
         SharedPreferences.getInstance().then((prefs) {
           prefs.setString(pRedirection, redirectionUrl);
@@ -456,14 +447,14 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
   }
 
   List<MapEntry<JNAPAction, Map<String, dynamic>>> getSaveIpv6Transactions(
-      InternetSettingsState newState) {
+      InternetSettings settings) {
     final wanType =
-        WanIPv6Type.resolve(newState.ipv6Setting.ipv6ConnectionType);
+        WanIPv6Type.resolve(settings.ipv6Setting.ipv6ConnectionType);
     if (wanType != null) {
       // Create settings
-      SetIPv6Settings settings =
-          _createSetIPv6Settings(newState.ipv6Setting, wanType);
-      return [MapEntry(JNAPAction.setIPv6Settings, settings.toJson())];
+      SetIPv6Settings ipv6Settings =
+          _createSetIPv6Settings(settings.ipv6Setting, wanType);
+      return [MapEntry(JNAPAction.setIPv6Settings, ipv6Settings.toJson())];
     } else {
       throw const JNAPError(
           result: 'Empty ipv6ConnectionType',
@@ -550,27 +541,24 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
     });
   }
 
-  void updateState(InternetSettingsState newState) {
-    state = newState.copyWith();
-  }
-
   void updateMtu(int mtu) {
-    state = state.copyWith(ipv4Setting: state.ipv4Setting.copyWith(mtu: mtu));
+    state = state.copyWith(
+        settings: state.settings
+            .copyWith(ipv4Setting: state.settings.ipv4Setting.copyWith(mtu: mtu)));
   }
 
   void updateMacAddressCloneEnable(bool enable) {
-    state = state.copyWith(macClone: enable);
+    state = state.copyWith(settings: state.settings.copyWith(macClone: enable));
   }
 
   void updateMacAddressClone(String? macAddress) {
-    state = state.copyWith(macCloneAddress: () => macAddress);
+    state = state.copyWith(
+        settings: state.settings.copyWith(macCloneAddress: () => macAddress));
   }
 
   void updateIpv4Settings(Ipv4Setting ipv4Setting) {
     Ipv4Setting newIpv4Setting = Ipv4Setting(
       ipv4ConnectionType: ipv4Setting.ipv4ConnectionType,
-      supportedIPv4ConnectionType: ipv4Setting.supportedIPv4ConnectionType,
-      supportedWANCombinations: ipv4Setting.supportedWANCombinations,
       mtu: ipv4Setting.mtu,
     );
     // Default value
@@ -620,14 +608,13 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
         domainName: () => ipv4Setting.domainName,
       );
     }
-    state = state.copyWith(ipv4Setting: newIpv4Setting);
+    state = state.copyWith(
+        settings: state.settings.copyWith(ipv4Setting: newIpv4Setting));
   }
 
   void updateIpv6Settings(Ipv6Setting ipv6Setting) {
     Ipv6Setting newIpv6Setting = Ipv6Setting(
       ipv6ConnectionType: ipv6Setting.ipv6ConnectionType,
-      supportedIPv6ConnectionType: ipv6Setting.supportedIPv6ConnectionType,
-      duid: ipv6Setting.duid,
       isIPv6AutomaticEnabled: ipv6Setting.isIPv6AutomaticEnabled,
     );
     final wanIpv6Type = WanIPv6Type.resolve(ipv6Setting.ipv6ConnectionType);
@@ -643,6 +630,12 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
         ),
       _ => newIpv6Setting,
     };
-    state = state.copyWith(ipv6Setting: newIpv6Setting);
+    state = state.copyWith(
+        settings: state.settings.copyWith(ipv6Setting: newIpv6Setting));
   }
 }
+
+final preservableInternetSettingsProvider = Provider.autoDispose<
+    PreservableContract<InternetSettings, InternetStatus>>((ref) {
+  return ref.watch(internetSettingsProvider.notifier);
+});

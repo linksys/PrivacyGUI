@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/page/vpn/models/vpn_models.dart';
+import 'package:privacy_gui/providers/feature_state.dart';
 
 class VPNSettings extends Equatable {
   final bool isEditingCredentials;
@@ -128,31 +129,28 @@ class VPNStatus extends Equatable {
       VPNStatus.fromMap(jsonDecode(json));
 }
 
-class VPNState extends Equatable {
-  final VPNStatus status;
-  final VPNSettings settings;
-
+class VPNState extends FeatureState<VPNSettings, VPNStatus> {
   const VPNState({
-    required this.status,
-    required this.settings,
+    required super.status,
+    required super.settings,
   });
 
   const VPNState.init()
-      : status = const VPNStatus(
-          statistics: null,
-          tunnelStatus: IPsecStatus.disconnected,
-          testResult: null,
-        ),
-        settings = const VPNSettings(
-          userCredentials: null,
-          gatewaySettings: null,
-          serviceSettings: VPNServiceSetSettings(enabled: false, autoConnect: false),
-          tunneledUserIP: null,
+      : super(
+          status: const VPNStatus(
+            statistics: null,
+            tunnelStatus: IPsecStatus.disconnected,
+            testResult: null,
+          ),
+          settings: const VPNSettings(
+            userCredentials: null,
+            gatewaySettings: null,
+            serviceSettings: VPNServiceSetSettings(enabled: false, autoConnect: false),
+            tunneledUserIP: null,
+          ),
         );
 
   @override
-  List<Object> get props => [status, settings];
-
   VPNState copyWith({
     VPNStatus? status,
     VPNSettings? settings,
@@ -163,17 +161,11 @@ class VPNState extends Equatable {
     );
   }
 
-  Map<String, dynamic> toMap() => {
-        'status': status.toMap(),
-        'settings': settings.toMap(),
-      };
-
-  factory VPNState.fromMap(Map<String, dynamic> map) => VPNState(
-        status: VPNStatus.fromMap(map['status'] as Map<String, dynamic>),
-        settings: VPNSettings.fromMap(map['settings'] as Map<String, dynamic>),
-      );
-
-  Map<String, dynamic> toJson() => toMap();
-
-  factory VPNState.fromJson(String json) => VPNState.fromMap(jsonDecode(json));
+  @override
+  Map<String, dynamic> toMap() {
+    return {
+      'settings': settings.toMap(),
+      'status': status.toMap(),
+    };
+  }
 }

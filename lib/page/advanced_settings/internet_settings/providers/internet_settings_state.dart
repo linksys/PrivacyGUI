@@ -7,6 +7,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/widgets.dart';
 
 import 'package:privacy_gui/core/jnap/models/wan_status.dart';
+import 'package:privacy_gui/providers/feature_state.dart';
 
 enum WanType {
   dhcp(type: 'DHCP'),
@@ -97,7 +98,7 @@ enum PPPConnectionBehavior {
   }
 }
 
-class InternetSettingsState extends Equatable {
+class InternetSettings extends Equatable {
   final Ipv4Setting ipv4Setting;
   final Ipv6Setting ipv6Setting;
   // MAC Clone
@@ -112,31 +113,12 @@ class InternetSettingsState extends Equatable {
         macCloneAddress,
       ];
 
-  const InternetSettingsState({
+  const InternetSettings({
     required this.ipv4Setting,
     required this.ipv6Setting,
     required this.macClone,
     this.macCloneAddress,
   });
-
-  factory InternetSettingsState.init() {
-    return const InternetSettingsState(
-      ipv4Setting: Ipv4Setting(
-        ipv4ConnectionType: '',
-        supportedIPv4ConnectionType: [],
-        supportedWANCombinations: [],
-        mtu: 0,
-      ),
-      ipv6Setting: Ipv6Setting(
-        ipv6ConnectionType: '',
-        supportedIPv6ConnectionType: [],
-        duid: '',
-        isIPv6AutomaticEnabled: true,
-      ),
-      macClone: false,
-      macCloneAddress: '',
-    );
-  }
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
@@ -147,8 +129,8 @@ class InternetSettingsState extends Equatable {
     }..removeWhere((key, value) => value == null);
   }
 
-  factory InternetSettingsState.fromMap(Map<String, dynamic> map) {
-    return InternetSettingsState(
+  factory InternetSettings.fromMap(Map<String, dynamic> map) {
+    return InternetSettings(
       ipv4Setting:
           Ipv4Setting.fromMap(map['ipv4Setting'] as Map<String, dynamic>),
       ipv6Setting:
@@ -160,34 +142,106 @@ class InternetSettingsState extends Equatable {
     );
   }
 
-  String toJson() => json.encode(toMap());
-
-  factory InternetSettingsState.fromJson(String source) =>
-      InternetSettingsState.fromMap(
-          json.decode(source) as Map<String, dynamic>);
-
-  @override
-  bool get stringify => true;
-
-  InternetSettingsState copyWith({
+  InternetSettings copyWith({
     Ipv4Setting? ipv4Setting,
     Ipv6Setting? ipv6Setting,
     bool? macClone,
     ValueGetter<String?>? macCloneAddress,
   }) {
-    return InternetSettingsState(
+    return InternetSettings(
       ipv4Setting: ipv4Setting ?? this.ipv4Setting,
       ipv6Setting: ipv6Setting ?? this.ipv6Setting,
       macClone: macClone ?? this.macClone,
-      macCloneAddress: macCloneAddress != null ? macCloneAddress() : this.macCloneAddress,
+      macCloneAddress:
+          macCloneAddress != null ? macCloneAddress() : this.macCloneAddress,
     );
+  }
+}
+
+class InternetStatus extends Equatable {
+  final List<String> supportedIPv4ConnectionType;
+  final List<SupportedWANCombination> supportedWANCombinations;
+  final List<String> supportedIPv6ConnectionType;
+  final String duid;
+
+  const InternetStatus({
+    required this.supportedIPv4ConnectionType,
+    required this.supportedWANCombinations,
+    required this.supportedIPv6ConnectionType,
+    required this.duid,
+  });
+
+  @override
+  List<Object?> get props => [
+        supportedIPv4ConnectionType,
+        supportedWANCombinations,
+        supportedIPv6ConnectionType,
+        duid,
+      ];
+
+  Map<String, dynamic> toMap() {
+    return {
+      'supportedIPv4ConnectionType': supportedIPv4ConnectionType,
+      'supportedWANCombinations':
+          supportedWANCombinations.map((x) => x.toMap()).toList(),
+      'supportedIPv6ConnectionType': supportedIPv6ConnectionType,
+      'duid': duid,
+    };
+  }
+}
+
+class InternetSettingsState
+    extends FeatureState<InternetSettings, InternetStatus> {
+  const InternetSettingsState({
+    required super.settings,
+    required super.status,
+  });
+
+  factory InternetSettingsState.init() {
+    return const InternetSettingsState(
+      settings: InternetSettings(
+        ipv4Setting: Ipv4Setting(
+          ipv4ConnectionType: '',
+          mtu: 0,
+        ),
+        ipv6Setting: Ipv6Setting(
+          ipv6ConnectionType: '',
+          isIPv6AutomaticEnabled: true,
+        ),
+        macClone: false,
+        macCloneAddress: '',
+      ),
+      status: InternetStatus(
+        supportedIPv4ConnectionType: [],
+        supportedWANCombinations: [],
+        supportedIPv6ConnectionType: [],
+        duid: '',
+      ),
+    );
+  }
+
+  @override
+  InternetSettingsState copyWith({
+    InternetSettings? settings,
+    InternetStatus? status,
+  }) {
+    return InternetSettingsState(
+      settings: settings ?? this.settings,
+      status: status ?? this.status,
+    );
+  }
+
+  @override
+  Map<String, dynamic> toMap() {
+    return {
+      'settings': settings.toMap(),
+      'status': status.toMap(),
+    };
   }
 }
 
 class Ipv4Setting extends Equatable {
   final String ipv4ConnectionType;
-  final List<String> supportedIPv4ConnectionType;
-  final List<SupportedWANCombination> supportedWANCombinations;
   final int mtu;
   // PPPConnection
   final PPPConnectionBehavior? behavior;
@@ -215,8 +269,6 @@ class Ipv4Setting extends Equatable {
 
   const Ipv4Setting({
     required this.ipv4ConnectionType,
-    required this.supportedIPv4ConnectionType,
-    required this.supportedWANCombinations,
     required this.mtu,
     this.behavior,
     this.maxIdleMinutes,
@@ -242,8 +294,6 @@ class Ipv4Setting extends Equatable {
   List<Object?> get props {
     return [
       ipv4ConnectionType,
-      supportedIPv4ConnectionType,
-      supportedWANCombinations,
       mtu,
       behavior,
       maxIdleMinutes,
@@ -269,9 +319,6 @@ class Ipv4Setting extends Equatable {
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'ipv4ConnectionType': ipv4ConnectionType,
-      'supportedIPv4ConnectionType': supportedIPv4ConnectionType,
-      'supportedWANCombinations':
-          supportedWANCombinations.map((x) => x.toMap()).toList(),
       'mtu': mtu,
       'behavior': behavior?.value,
       'maxIdleMinutes': maxIdleMinutes,
@@ -297,13 +344,6 @@ class Ipv4Setting extends Equatable {
   factory Ipv4Setting.fromMap(Map<String, dynamic> map) {
     return Ipv4Setting(
       ipv4ConnectionType: map['ipv4ConnectionType'],
-      supportedIPv4ConnectionType:
-          List<String>.from(map['supportedIPv4ConnectionType']),
-      supportedWANCombinations: List<SupportedWANCombination>.from(
-        map['supportedWANCombinations'].map(
-          (x) => SupportedWANCombination.fromMap(x),
-        ),
-      ),
       mtu: map['mtu'] as int,
       behavior: PPPConnectionBehavior.resolve(map['behavior']),
       maxIdleMinutes:
@@ -351,8 +391,6 @@ class Ipv4Setting extends Equatable {
 
   Ipv4Setting copyWith({
     String? ipv4ConnectionType,
-    List<String>? supportedIPv4ConnectionType,
-    List<SupportedWANCombination>? supportedWANCombinations,
     int? mtu,
     ValueGetter<PPPConnectionBehavior?>? behavior,
     ValueGetter<int?>? maxIdleMinutes,
@@ -375,10 +413,6 @@ class Ipv4Setting extends Equatable {
   }) {
     return Ipv4Setting(
       ipv4ConnectionType: ipv4ConnectionType ?? this.ipv4ConnectionType,
-      supportedIPv4ConnectionType:
-          supportedIPv4ConnectionType ?? this.supportedIPv4ConnectionType,
-      supportedWANCombinations:
-          supportedWANCombinations ?? this.supportedWANCombinations,
       mtu: mtu ?? this.mtu,
       behavior: behavior != null ? behavior() : this.behavior,
       maxIdleMinutes:
@@ -415,9 +449,7 @@ class Ipv4Setting extends Equatable {
 
 class Ipv6Setting extends Equatable {
   final String ipv6ConnectionType;
-  final List<String> supportedIPv6ConnectionType;
   // IPv6
-  final String duid;
   final bool isIPv6AutomaticEnabled;
   final IPv6rdTunnelMode? ipv6rdTunnelMode;
   final String? ipv6Prefix;
@@ -427,8 +459,6 @@ class Ipv6Setting extends Equatable {
 
   const Ipv6Setting({
     required this.ipv6ConnectionType,
-    required this.supportedIPv6ConnectionType,
-    required this.duid,
     required this.isIPv6AutomaticEnabled,
     this.ipv6rdTunnelMode,
     this.ipv6Prefix,
@@ -440,8 +470,6 @@ class Ipv6Setting extends Equatable {
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'ipv6ConnectionType': ipv6ConnectionType,
-      'supportedIPv6ConnectionType': supportedIPv6ConnectionType,
-      'duid': duid,
       'isIPv6AutomaticEnabled': isIPv6AutomaticEnabled,
       'ipv6rdTunnelMode': ipv6rdTunnelMode?.value,
       'ipv6Prefix': ipv6Prefix,
@@ -454,9 +482,6 @@ class Ipv6Setting extends Equatable {
   factory Ipv6Setting.fromMap(Map<String, dynamic> map) {
     return Ipv6Setting(
       ipv6ConnectionType: map['ipv6ConnectionType'] as String,
-      supportedIPv6ConnectionType:
-          List<String>.from(map['supportedIPv6ConnectionType']),
-      duid: map['duid'] as String,
       isIPv6AutomaticEnabled: map['isIPv6AutomaticEnabled'] as bool,
       ipv6rdTunnelMode: map['ipv6rdTunnelMode'] != null
           ? IPv6rdTunnelMode.resolve(map['ipv6rdTunnelMode'])
@@ -487,8 +512,6 @@ class Ipv6Setting extends Equatable {
   List<Object?> get props {
     return [
       ipv6ConnectionType,
-      supportedIPv6ConnectionType,
-      duid,
       isIPv6AutomaticEnabled,
       ipv6rdTunnelMode,
       ipv6Prefix,
@@ -500,8 +523,6 @@ class Ipv6Setting extends Equatable {
 
   Ipv6Setting copyWith({
     String? ipv6ConnectionType,
-    List<String>? supportedIPv6ConnectionType,
-    String? duid,
     bool? isIPv6AutomaticEnabled,
     ValueGetter<IPv6rdTunnelMode?>? ipv6rdTunnelMode,
     ValueGetter<String?>? ipv6Prefix,
@@ -511,9 +532,6 @@ class Ipv6Setting extends Equatable {
   }) {
     return Ipv6Setting(
       ipv6ConnectionType: ipv6ConnectionType ?? this.ipv6ConnectionType,
-      supportedIPv6ConnectionType:
-          supportedIPv6ConnectionType ?? this.supportedIPv6ConnectionType,
-      duid: duid ?? this.duid,
       isIPv6AutomaticEnabled:
           isIPv6AutomaticEnabled ?? this.isIPv6AutomaticEnabled,
       ipv6rdTunnelMode:

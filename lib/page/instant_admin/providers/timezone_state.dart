@@ -4,42 +4,27 @@ import 'dart:convert';
 import 'package:equatable/equatable.dart';
 
 import 'package:privacy_gui/core/jnap/models/timezone.dart';
+import 'package:privacy_gui/providers/feature_state.dart';
 
-class TimezoneState extends Equatable {
+class TimezoneSettings extends Equatable {
   final bool isDaylightSaving;
   final String timezoneId;
-  final List<SupportedTimezone> supportedTimezones;
-  final String? error;
 
-  @override
-  List<Object?> get props => [isDaylightSaving, timezoneId, error];
-
-  const TimezoneState({
+  const TimezoneSettings({
     required this.isDaylightSaving,
     required this.timezoneId,
-    required this.supportedTimezones,
-    this.error,
   });
 
-  factory TimezoneState.init() {
-    return const TimezoneState(
-      isDaylightSaving: true,
-      timezoneId: 'PST8',
-      supportedTimezones: [],
-      error: null,
-    );
-  }
-  TimezoneState copyWith({
+  @override
+  List<Object?> get props => [isDaylightSaving, timezoneId];
+
+  TimezoneSettings copyWith({
     bool? isDaylightSaving,
     String? timezoneId,
-    List<SupportedTimezone>? supportedTimezones,
-    String? error,
   }) {
-    return TimezoneState(
+    return TimezoneSettings(
       isDaylightSaving: isDaylightSaving ?? this.isDaylightSaving,
       timezoneId: timezoneId ?? this.timezoneId,
-      supportedTimezones: supportedTimezones ?? this.supportedTimezones,
-      error: error ?? this.error,
     );
   }
 
@@ -47,26 +32,65 @@ class TimezoneState extends Equatable {
     return <String, dynamic>{
       'isDaylightSaving': isDaylightSaving,
       'timezoneId': timezoneId,
+    };
+  }
+}
+
+class TimezoneStatus extends Equatable {
+  final List<SupportedTimezone> supportedTimezones;
+  final String? error;
+
+  const TimezoneStatus({
+    required this.supportedTimezones,
+    this.error,
+  });
+
+  @override
+  List<Object?> get props => [supportedTimezones, error];
+
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
       'supportedTimezones': supportedTimezones.map((x) => x.toMap()).toList(),
       'error': error,
     };
   }
+}
 
-  factory TimezoneState.fromMap(Map<String, dynamic> map) {
-    return TimezoneState(
-      isDaylightSaving: map['isDaylightSaving'] as bool,
-      timezoneId: map['timezoneId'] as String,
-      supportedTimezones: List<SupportedTimezone>.from(
-        map['supportedTimezones'].map<SupportedTimezone>(
-          (x) => SupportedTimezone.fromMap(x as Map<String, dynamic>),
-        ),
+class TimezoneState extends FeatureState<TimezoneSettings, TimezoneStatus> {
+  const TimezoneState({
+    required super.settings,
+    required super.status,
+  });
+
+  factory TimezoneState.init() {
+    return const TimezoneState(
+      settings: TimezoneSettings(
+        isDaylightSaving: true,
+        timezoneId: 'PST8',
       ),
-      error: map['error'] != null ? map['error'] as String : null,
+      status: TimezoneStatus(
+        supportedTimezones: [],
+        error: null,
+      ),
     );
   }
 
-  String toJson() => json.encode(toMap());
+  @override
+  TimezoneState copyWith({
+    TimezoneSettings? settings,
+    TimezoneStatus? status,
+  }) {
+    return TimezoneState(
+      settings: settings ?? this.settings,
+      status: status ?? this.status,
+    );
+  }
 
-  factory TimezoneState.fromJson(String source) =>
-      TimezoneState.fromMap(json.decode(source) as Map<String, dynamic>);
+  @override
+  Map<String, dynamic> toMap() {
+    return {
+      'settings': settings.toMap(),
+      'status': status.toMap(),
+    };
+  }
 }

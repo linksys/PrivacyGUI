@@ -22,73 +22,61 @@ class AdministrationSettingsView extends ArgumentsConsumerStatefulView {
 
 class _AdministrationSettingsViewState
     extends ConsumerState<AdministrationSettingsView> {
-  AdministrationSettingsState? _preservedState;
-
   @override
   void initState() {
     super.initState();
-    doSomethingWithSpinner(context,
-            ref.read(administrationSettingsProvider.notifier).fetch(true))
-        .then((value) {
-      setState(() {
-        _preservedState = value;
-      });
-    });
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
+    doSomethingWithSpinner(
+      context,
+      ref.read(administrationSettingsProvider.notifier).fetch(true),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(administrationSettingsProvider);
+    final notifier = ref.watch(administrationSettingsProvider.notifier);
     return StyledAppPageView(
       scrollable: true,
       title: loc(context).administration,
-      onBackTap: _preservedState != state
+      onBackTap: notifier.isDirty
           ? () async {
               final goBack = await showUnsavedAlert(context);
               if (goBack == true) {
-                ref.read(administrationSettingsProvider.notifier).fetch();
+                notifier.restore();
                 context.pop();
               }
             }
           : null,
       bottomBar: PageBottomBar(
-          isPositiveEnabled:
-              _preservedState != null && _preservedState != state,
-          onPositiveTap: () {
-            doSomethingWithSpinner(
-                context,
-                ref
-                    .read(administrationSettingsProvider.notifier)
-                    .save()
-                    .then((value) {
-                  _preservedState = value;
-                  showSuccessSnackBar(context, loc(context).saved);
-                }).onError((error, stackTrace) {
-                  showFailedSnackBar(
-                      context, loc(context).unknownErrorCode(error ?? ''));
-                }));
-          }),
+        isPositiveEnabled: notifier.isDirty,
+        onPositiveTap: () {
+          doSomethingWithSpinner(
+            context,
+            notifier.save().then((value) {
+              showSuccessSnackBar(context, loc(context).saved);
+            }).onError((error, stackTrace) {
+              showFailedSnackBar(
+                  context, loc(context).unknownErrorCode(error ?? ''));
+            }),
+          );
+        },
+      ),
       child: (context, constraints) => AppBasicLayout(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (state.managementSettings.isManageWirelesslySupported &&
-                state.canDisAllowLocalMangementWirelessly) ...[
+            if (state.settings.managementSettings.isManageWirelesslySupported &&
+                state.settings.canDisAllowLocalMangementWirelessly) ...[
               AppCard(
                 child: AppSwitchTriggerTile(
                   semanticLabel: 'allow local management wirelessly',
                   title: AppText.labelLarge(loc(context)
                       .administrationAllowLocalManagementWirelessly),
-                  value: state.managementSettings.canManageWirelessly ?? false,
+                  value:
+                      state.settings.managementSettings.canManageWirelessly ??
+                          false,
                   onChanged: (value) {
-                    ref
-                        .read(administrationSettingsProvider.notifier)
-                        .setManagementSettings(value);
+                    notifier.setManagementSettings(value);
                   },
                 ),
               ),
@@ -101,31 +89,27 @@ class _AdministrationSettingsViewState
                   AppSwitchTriggerTile(
                     semanticLabel: 'upnp',
                     title: AppText.labelLarge(loc(context).upnp),
-                    value: state.isUPnPEnabled,
+                    value: state.settings.isUPnPEnabled,
                     onChanged: (value) {
-                      ref
-                          .read(administrationSettingsProvider.notifier)
-                          .setUPnPEnabled(value);
+                      notifier.setUPnPEnabled(value);
                     },
                   ),
-                  if (state.isUPnPEnabled) ...[
+                  if (state.settings.isUPnPEnabled) ...[
                     const Divider(),
                     AppCheckbox(
-                      value: state.canUsersConfigure,
+                      value: state.settings.canUsersConfigure,
                       semanticLabel: 'upnp allow users configure',
                       text: loc(context).administrationUPnPAllowUsersConfigure,
                       onChanged: (value) {
                         if (value == null) {
                           return;
                         }
-                        ref
-                            .read(administrationSettingsProvider.notifier)
-                            .setCanUsersConfigure(value);
+                        notifier.setCanUsersConfigure(value);
                       },
                     ),
                     const AppGap.small2(),
                     AppCheckbox(
-                      value: state.canUsersDisableWANAccess,
+                      value: state.settings.canUsersDisableWANAccess,
                       semanticLabel: 'upnp allow users disable internet access',
                       text: loc(context)
                           .administrationUPnPAllowUsersDisableInternetAccess,
@@ -133,9 +117,7 @@ class _AdministrationSettingsViewState
                         if (value == null) {
                           return;
                         }
-                        ref
-                            .read(administrationSettingsProvider.notifier)
-                            .setCanUsersDisableWANAccess(value);
+                        notifier.setCanUsersDisableWANAccess(value);
                       },
                     ),
                   ],
@@ -148,29 +130,27 @@ class _AdministrationSettingsViewState
                 semanticLabel: 'application layer gateway',
                 title: AppText.labelLarge(
                     loc(context).administrationApplicationLayerGateway),
-                value: state.enabledALG,
+                value: state.settings.enabledALG,
                 onChanged: (value) {
-                  ref
-                      .read(administrationSettingsProvider.notifier)
-                      .setALGEnabled(value);
+                  notifier.setALGEnabled(value);
                 },
               ),
             ),
             const AppGap.small2(),
-            AppCard(
-              child: AppSwitchTriggerTile(
-                semanticLabel: 'express forwarding',
-                title: AppText.labelLarge(
-                    loc(context).administrationExpressForwarding),
-                value: state.enabledExpressForwarfing,
-                onChanged: (value) {
-                  ref
-                      .read(administrationSettingsProvider.notifier)
-                      .setExpressForwarding(value);
-                },
+            if (state.status.isExpressForwardingSupported) ...[
+              AppCard(
+                child: AppSwitchTriggerTile(
+                  semanticLabel: 'express forwarding',
+                  title: AppText.labelLarge(
+                      loc(context).administrationExpressForwarding),
+                  value: state.settings.enabledExpressForwarfing,
+                  onChanged: (value) {
+                    notifier.setExpressForwarding(value);
+                  },
+                ),
               ),
-            ),
-            const AppGap.small2(),
+              const AppGap.small2(),
+            ]
           ],
         ),
       ),

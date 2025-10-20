@@ -18,7 +18,6 @@ import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
 import 'package:privacy_gui/page/vpn/models/vpn_models.dart';
-import 'package:privacy_gui/page/components/mixin/preserved_state_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 
@@ -30,7 +29,7 @@ class VPNSettingsPage extends ArgumentsConsumerStatefulView {
 }
 
 class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
-    with PageSnackbarMixin, PreservedStateMixin<VPNSettings, VPNSettingsPage> {
+    with PageSnackbarMixin {
   final _formKey = GlobalKey<FormState>();
 
   // Text controllers
@@ -62,11 +61,13 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
     super.initState();
 
     doSomethingWithSpinner(
-        context,
-        ref.read(vpnProvider.notifier).fetch().then((state) {
-          preservedState = state.settings;
+      context,
+      ref.read(vpnProvider.notifier).fetch().then((state) {
+        if (state != null) {
           _initializeControllers(state.settings);
-        }));
+        }
+      }),
+    );
   }
 
   void _initializeControllers(VPNSettings state) {
@@ -139,17 +140,13 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
     final shouldSave = await _confirmSaveDialog();
     if (!shouldSave) return;
     final notifier = ref.read(vpnProvider.notifier);
-    doSomethingWithSpinner(context, notifier.save()).then((state) {
-      if (state == null) {
-        return;
-      }
-      preservedState = state.settings;
-      // _hasChanges = false;
+    doSomethingWithSpinner(context, notifier.save()).then((_) {
+      final state = ref.read(vpnProvider);
       _initializeControllers(state.settings);
       if (mounted) {
         showChangesSavedSnackBar();
       }
-    }).onError((error, stack) {
+    }).catchError((error, stack) {
       if (mounted) {
         showErrorMessageSnackBar(error);
       }
@@ -157,9 +154,11 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
   }
 
   void _onBackTap() {
-    if (isStateChanged(ref.read(vpnProvider).settings)) {
+    final notifier = ref.read(vpnProvider.notifier);
+    if (notifier.isDirty) {
       showUnsavedAlert(context).then((shouldDiscard) {
         if (shouldDiscard == true) {
+          notifier.restore();
           context.pop();
         }
       });
@@ -173,19 +172,12 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
     final state = ref.watch(vpnProvider);
     final notifier = ref.read(vpnProvider.notifier);
 
-    // final changed = isStateChanged(state.settings);
-    // if (_hasChanges != changed) {
-    //   WidgetsBinding.instance.addPostFrameCallback((_) {
-    //     if (mounted) setState(() => _hasChanges = changed);
-    //   });
-    // }
-
     return StyledAppPageView(
       title: loc(context).vpnSettingsTitle,
       onBackTap: _onBackTap,
       scrollable: true,
       bottomBar: PageBottomBar(
-        isPositiveEnabled: !_hasErrors() && isStateChanged(state.settings),
+        isPositiveEnabled: !_hasErrors() && notifier.isDirty,
         positiveLabel: loc(context).save,
         onPositiveTap: _saveChanges,
       ),
@@ -220,7 +212,7 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
             key: ValueKey('testAgain'),
             loc(context).testAgain,
             onTap: () async {
-              bool isChanged = isStateChanged(state.settings);
+              bool isChanged = notifier.isDirty;
               bool hasErrors = _hasErrors();
 
               final shouldGo = !isChanged
@@ -253,11 +245,8 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
               }
 
               doSomethingWithSpinner(context, notifier.testVPNConnection())
-                  .then((state) {
-                if (state == null) {
-                  return;
-                }
-                preservedState = state.settings;
+                  .then((_) {
+                final state = ref.read(vpnProvider);
                 if (state.status.testResult?.success == true) {
                   showSuccessSnackBar(
                     state.status.testResult!.statusMessage,
@@ -343,23 +332,11 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
             : LinksysIcons.edit,
         color: Theme.of(context).colorScheme.primary,
         onTap: () {
-          setState(() {
-            if (state.settings.isEditingCredentials) {
-              // restore user credentials state
-              final preservedUserCredentials =
-                  getPreservedState('userCredentials');
-              if (preservedUserCredentials != null &&
-                  preservedUserCredentials.userCredentials != null) {
-                notifier.setVPNUser(preservedUserCredentials.userCredentials!);
-                _initializeControllers(preservedUserCredentials);
-              }
-            } else {
-              // preserve user credentials state
-              setPreservedState('userCredentials', state.settings);
-            }
-            notifier
-                .setEditingCredentials(!state.settings.isEditingCredentials);
-          });
+          if (state.settings.isEditingCredentials) {
+            notifier.restore();
+          }
+          notifier.setEditingCredentials(!state.settings.isEditingCredentials);
+          _initializeControllers(ref.read(vpnProvider).settings);
         },
       ),
       children: [
@@ -527,7 +504,7 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
   Widget _buildTunneledUserSection(VPNState state, VPNNotifier notifier) {
     return _buildSection(
       title: loc(context).vpnTunneledUserSection,
-      isEnabled: state.settings.serviceSettings?.enabled ?? false,
+      isEnabled: state.settings.serviceSettings.enabled,
       children: [
         AppIPFormField(
           key: ValueKey('tunneledUser'),
@@ -590,14 +567,12 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
     return AppSettingCard(
       title: loc(context).vpnEnabled,
       trailing: AppSwitch(
-        value: state.settings.serviceSettings?.enabled ?? false,
+        value: state.settings.serviceSettings.enabled,
         onChanged: (value) {
-          if (state.settings.serviceSettings != null) {
-            notifier.setVPNService(
-              state.settings.serviceSettings!.copyWith(enabled: value),
-            );
-            setState(() {});
-          }
+          notifier.setVPNService(
+            state.settings.serviceSettings.copyWith(enabled: value),
+          );
+          setState(() {});
         },
       ),
     );
@@ -607,14 +582,12 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
     return AppSettingCard(
       title: loc(context).vpnAutoConnect,
       trailing: AppSwitch(
-        value: state.settings.serviceSettings?.autoConnect ?? false,
+        value: state.settings.serviceSettings.autoConnect,
         onChanged: (value) {
-          if (state.settings.serviceSettings != null) {
-            notifier.setVPNService(
-              state.settings.serviceSettings!.copyWith(autoConnect: value),
-            );
-            setState(() {});
-          }
+          notifier.setVPNService(
+            state.settings.serviceSettings.copyWith(autoConnect: value),
+          );
+          setState(() {});
         },
       ),
     );

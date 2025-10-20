@@ -4,6 +4,8 @@ final advancedSettings = [
   LinksysRoute(
     name: RouteNamed.internetSettings,
     path: RoutePath.internetSettings,
+    preservableProvider: preservableInternetSettingsProvider,
+    enableDirtyCheck: true,
     config: LinksysRouteConfig(
       column: ColumnGrid(column: 12),
     ),
@@ -13,6 +15,8 @@ final advancedSettings = [
   LinksysRoute(
     name: RouteNamed.settingsLocalNetwork,
     path: RoutePath.settingsLocalNetwork,
+    preservableProvider: preservableLocalNetworkSettingsProvider,
+    enableDirtyCheck: true,
     config: LinksysRouteConfig(
       column: ColumnGrid(column: 12),
     ),
@@ -21,6 +25,8 @@ final advancedSettings = [
       LinksysRoute(
         name: RouteNamed.dhcpReservation,
         path: RoutePath.dhcpReservation,
+        preservableProvider: preservableDHCPReservationProvider,
+        enableDirtyCheck: true,
         config: LinksysRouteConfig(
           column: ColumnGrid(column: 12),
         ),
@@ -113,6 +119,8 @@ final advancedSettings = [
   LinksysRoute(
       name: RouteNamed.settingsFirewall,
       path: RoutePath.settingsFirewall,
+      preservableProvider: preservableFirewallProvider,
+      enableDirtyCheck: true,
       config: LinksysRouteConfig(
         column: ColumnGrid(column: 12),
       ),
@@ -145,6 +153,8 @@ final advancedSettings = [
   LinksysRoute(
     name: RouteNamed.settingsDMZ,
     path: RoutePath.settingsDMZ,
+    preservableProvider: preservableDMZSettingsProvider,
+    enableDirtyCheck: true,
     config: LinksysRouteConfig(
       column: ColumnGrid(column: 9),
     ),
@@ -155,6 +165,8 @@ final advancedSettings = [
   LinksysRoute(
     name: RouteNamed.settingsAdministration,
     path: RoutePath.settingsAdministration,
+    preservableProvider: preservableAdministrationSettingsProvider,
+    enableDirtyCheck: true,
     config: LinksysRouteConfig(
       column: ColumnGrid(column: 9),
     ),
@@ -165,6 +177,8 @@ final advancedSettings = [
   LinksysRoute(
     name: RouteNamed.settingsStaticRouting,
     path: RoutePath.settingsStaticRouting,
+    preservableProvider: preservableStaticRoutingProvider,
+    enableDirtyCheck: true,
     config: LinksysRouteConfig(
       column: ColumnGrid(column: 12),
     ),

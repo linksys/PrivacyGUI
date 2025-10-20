@@ -3,20 +3,21 @@ import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
 
-import 'package:privacy_gui/core/jnap/models/firewall_settings.dart';
+import 'package:privacy_gui/core/jnap/models/firewall_settings.dart' as model;
+import 'package:privacy_gui/providers/feature_state.dart';
 
-class FirewallState extends Equatable {
-  const FirewallState({
-    required this.settings,
-  });
+class FirewallSettings extends Equatable {
+  final model.FirewallSettings settings;
 
-  final FirewallSettings settings;
+  const FirewallSettings({required this.settings});
 
+  @override
+  List<Object> get props => [settings];
 
-  FirewallState copyWith({
-    FirewallSettings? settings,
+  FirewallSettings copyWith({
+    model.FirewallSettings? settings,
   }) {
-    return FirewallState(
+    return FirewallSettings(
       settings: settings ?? this.settings,
     );
   }
@@ -26,20 +27,41 @@ class FirewallState extends Equatable {
       'settings': settings.toMap(),
     };
   }
+}
 
-  factory FirewallState.fromMap(Map<String, dynamic> map) {
+class FirewallStatus extends Equatable {
+  const FirewallStatus();
+
+  @override
+  List<Object> get props => [];
+
+  Map<String, dynamic> toMap() {
+    return {};
+  }
+}
+
+class FirewallState extends FeatureState<FirewallSettings, FirewallStatus> {
+  const FirewallState({
+    required super.settings,
+    required super.status,
+  });
+
+  @override
+  FirewallState copyWith({
+    FirewallSettings? settings,
+    FirewallStatus? status,
+  }) {
     return FirewallState(
-      settings: FirewallSettings.fromMap(map['settings'] as Map<String,dynamic>),
+      settings: settings ?? this.settings,
+      status: status ?? this.status,
     );
   }
 
-  String toJson() => json.encode(toMap());
-
-  factory FirewallState.fromJson(String source) => FirewallState.fromMap(json.decode(source) as Map<String, dynamic>);
-
   @override
-  bool get stringify => true;
-
-  @override
-  List<Object> get props => [settings];
+  Map<String, dynamic> toMap() {
+    return {
+      'settings': settings.toMap(),
+      'status': status.toMap(),
+    };
+  }
 }

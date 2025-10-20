@@ -1,24 +1,21 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
-
 import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
-
 import 'package:privacy_gui/core/jnap/models/management_settings.dart';
+import 'package:privacy_gui/providers/feature_state.dart';
 
-class AdministrationSettingsState extends Equatable {
+class AdministrationSettings extends Equatable {
   final ManagementSettings managementSettings;
   final bool enabledALG;
-  final bool isExpressForwardingSupported;
   final bool enabledExpressForwarfing;
   final bool isUPnPEnabled;
   final bool canUsersConfigure;
   final bool canUsersDisableWANAccess;
   final bool canDisAllowLocalMangementWirelessly;
-  const AdministrationSettingsState({
+
+  const AdministrationSettings({
     required this.managementSettings,
     required this.enabledALG,
-    required this.isExpressForwardingSupported,
     required this.enabledExpressForwarfing,
     required this.isUPnPEnabled,
     required this.canUsersConfigure,
@@ -26,21 +23,29 @@ class AdministrationSettingsState extends Equatable {
     this.canDisAllowLocalMangementWirelessly = true,
   });
 
-  AdministrationSettingsState copyWith({
+  @override
+  List<Object> get props => [
+        managementSettings,
+        enabledALG,
+        enabledExpressForwarfing,
+        isUPnPEnabled,
+        canUsersConfigure,
+        canUsersDisableWANAccess,
+        canDisAllowLocalMangementWirelessly,
+      ];
+
+  AdministrationSettings copyWith({
     ManagementSettings? managementSettings,
     bool? enabledALG,
-    bool? isExpressForwardingSupported,
     bool? enabledExpressForwarfing,
     bool? isUPnPEnabled,
     bool? canUsersConfigure,
     bool? canUsersDisableWANAccess,
     bool? canDisAllowLocalMangementWirelessly,
   }) {
-    return AdministrationSettingsState(
+    return AdministrationSettings(
       managementSettings: managementSettings ?? this.managementSettings,
       enabledALG: enabledALG ?? this.enabledALG,
-      isExpressForwardingSupported:
-          isExpressForwardingSupported ?? this.isExpressForwardingSupported,
       enabledExpressForwarfing:
           enabledExpressForwarfing ?? this.enabledExpressForwarfing,
       isUPnPEnabled: isUPnPEnabled ?? this.isUPnPEnabled,
@@ -54,54 +59,56 @@ class AdministrationSettingsState extends Equatable {
   }
 
   Map<String, dynamic> toMap() {
-    return <String, dynamic>{
+    return {
       'managementSettings': managementSettings.toMap(),
       'enabledALG': enabledALG,
-      'isExpressForwardingSupported': isExpressForwardingSupported,
       'enabledExpressForwarfing': enabledExpressForwarfing,
       'isUPnPEnabled': isUPnPEnabled,
       'canUsersConfigure': canUsersConfigure,
       'canUsersDisableWANAccess': canUsersDisableWANAccess,
-      'canDisAllowLocalMangementWirelessly':
-          canDisAllowLocalMangementWirelessly,
+      'canDisAllowLocalMangementWirelessly': canDisAllowLocalMangementWirelessly,
     };
   }
+}
 
-  factory AdministrationSettingsState.fromMap(Map<String, dynamic> map) {
+class AdministrationStatus extends Equatable {
+  final bool isExpressForwardingSupported;
+
+  const AdministrationStatus({required this.isExpressForwardingSupported});
+
+  @override
+  List<Object> get props => [isExpressForwardingSupported];
+
+  Map<String, dynamic> toMap() {
+    return {
+      'isExpressForwardingSupported': isExpressForwardingSupported,
+    };
+  }
+}
+
+class AdministrationSettingsState
+    extends FeatureState<AdministrationSettings, AdministrationStatus> {
+  const AdministrationSettingsState({
+    required super.settings,
+    required super.status,
+  });
+
+  @override
+  AdministrationSettingsState copyWith({
+    AdministrationSettings? settings,
+    AdministrationStatus? status,
+  }) {
     return AdministrationSettingsState(
-      managementSettings: ManagementSettings.fromMap(
-          map['managementSettings'] as Map<String, dynamic>),
-      enabledALG: map['enabledALG'] as bool,
-      isExpressForwardingSupported: map['isExpressForwardingSupported'] as bool,
-      enabledExpressForwarfing: map['enabledExpressForwarfing'] as bool,
-      isUPnPEnabled: map['isUPnPEnabled'] as bool,
-      canUsersConfigure: map['canUsersConfigure'] as bool,
-      canUsersDisableWANAccess: map['canUsersDisableWANAccess'] as bool,
-      canDisAllowLocalMangementWirelessly:
-          map['canDisAllowLocalMangementWirelessly'] as bool? ?? true,
+      settings: settings ?? this.settings,
+      status: status ?? this.status,
     );
   }
 
-  String toJson() => json.encode(toMap());
-
-  factory AdministrationSettingsState.fromJson(String source) =>
-      AdministrationSettingsState.fromMap(
-          json.decode(source) as Map<String, dynamic>);
-
   @override
-  bool get stringify => true;
-
-  @override
-  List<Object> get props {
-    return [
-      managementSettings,
-      enabledALG,
-      isExpressForwardingSupported,
-      enabledExpressForwarfing,
-      isUPnPEnabled,
-      canUsersConfigure,
-      canUsersDisableWANAccess,
-      canDisAllowLocalMangementWirelessly,
-    ];
+  Map<String, dynamic> toMap() {
+    return {
+      'settings': settings.toMap(),
+      'status': status.toMap(),
+    };
   }
 }

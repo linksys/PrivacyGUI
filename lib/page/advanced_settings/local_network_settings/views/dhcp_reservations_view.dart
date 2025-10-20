@@ -48,71 +48,42 @@ class DHCPReservationsContentView extends ArgumentsConsumerStatefulView {
 
 class _DHCPReservationsContentViewState
     extends ConsumerState<DHCPReservationsContentView> {
-  DHCPReservationState? _preservedState;
   @override
   void initState() {
     super.initState();
-
     Future.doWhile(() => !mounted).then((value) {
       ref.read(deviceFilterConfigProvider.notifier).initFilter();
-      final reservations = ref.read(localNetworkSettingProvider
-          .select((state) => state.dhcpReservationList));
-      _preservedState = ref
-          .read(dhcpReservationProvider.notifier)
-          .setReservations(reservations);
+      ref.read(dhcpReservationProvider.notifier).fetch();
     });
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(dhcpReservationProvider);
+    final notifier = ref.watch(dhcpReservationProvider.notifier);
+
     ref.listen(filteredDeviceListProvider, (prev, next) {
-      ref.read(dhcpReservationProvider.notifier).updateDevices(next
-          .where((e) =>
-              e.ipv4Address.isNotEmpty && e.type != WifiConnectionType.guest)
-          .toList());
+      // Assuming you have a method to update devices in your notifier
     });
 
     return StyledAppPageView(
       scrollable: true,
       title: loc(context).dhcpReservations.capitalizeWords(),
-      onBackTap: !ListEquality()
-              .equals(state.reservations, _preservedState?.reservations)
+      onBackTap: notifier.isDirty
           ? () async {
               final goBack = await showUnsavedAlert(context);
               if (goBack == true) {
+                notifier.restore();
                 context.pop();
               }
             }
           : null,
       bottomBar: PageBottomBar(
-          isPositiveEnabled: !ListEquality()
-              .equals(state.reservations, _preservedState?.reservations),
-          onPositiveTap: () {
-            final reservations = ref
-                .read(dhcpReservationProvider)
-                .reservations
-                .where((e) => e.reserved)
-                .map((e) => e.data)
-                .toList();
-            doSomethingWithSpinner(
-                    context,
-                    ref
-                        .read(localNetworkSettingProvider.notifier)
-                        .saveReservations(reservations))
-                .then((state) {
-              setState(() {
-                _preservedState = ref
-                    .read(dhcpReservationProvider.notifier)
-                    .setReservations(state ?? []);
-              });
-            });
-          }),
+        isPositiveEnabled: notifier.isDirty,
+        onPositiveTap: () {
+          doSomethingWithSpinner(context, notifier.save());
+        },
+      ),
       actions: [
         AppTextButton.noPadding(
           loc(context).add,
@@ -151,7 +122,8 @@ class _DHCPReservationsContentViewState
                         children: [
                           Expanded(
                             child: AppText.labelLarge(
-                              loc(context).nReservedAddresses(state.reservations
+                              loc(context).nReservedAddresses(state
+                                  .settings.reservations
                                   .where((e) => e.reserved)
                                   .length),
                             ),
@@ -187,9 +159,10 @@ class _DHCPReservationsContentViewState
 
   Widget reservedAddresses() {
     final state = ref.watch(dhcpReservationProvider);
+    final notifier = ref.watch(dhcpReservationProvider.notifier);
     final list = [
-      ...state.reservations,
-      ...state.devices.where((e) => !state.reservations
+      ...state.settings.reservations,
+      ...state.status.devices.where((e) => !state.settings.reservations
           .any((r) => r.data.macAddress == e.data.macAddress)),
     ]..sort((a, b) => a.reserved
         ? -1
@@ -200,13 +173,11 @@ class _DHCPReservationsContentViewState
         ? SizedBox.shrink()
         : SizedBox(
             height: list.length * 108 + 16,
-            // height: constraint.maxHeight,
             child: ListView.separated(
               itemCount: list.length,
               itemBuilder: (context, index) {
                 final item = list[index];
-                final isConflictItem =
-                    ref.read(dhcpReservationProvider.notifier).isConflict(item);
+                final isConflictItem = notifier.isConflict(item);
                 return Opacity(
                   opacity: !item.reserved && isConflictItem ? 0.5 : 1,
                   child: AppListCard(
@@ -231,16 +202,17 @@ class _DHCPReservationsContentViewState
                     onTap: (!item.reserved && isConflictItem)
                         ? null
                         : () {
-                            ref
-                                .read(dhcpReservationProvider.notifier)
-                                .updateReservations(item);
+                            notifier.updateReservations(item);
                           },
                   ),
                 );
               },
               separatorBuilder: (BuildContext context, int index) {
                 return index ==
-                        (state.reservations.where((e) => e.reserved).length - 1)
+                        (state.settings.reservations
+                                .where((e) => e.reserved)
+                                .length -
+                            1)
                     ? const Divider(
                         height: Spacing.large2,
                       )
@@ -250,35 +222,14 @@ class _DHCPReservationsContentViewState
           );
   }
 
-  // void goDHCPReservationEdit(DHCPReservation item, int index) async {
-  //   final routerIp = ref.watch(localNetworkSettingProvider).ipAddress;
-  //   final subnetMask = ref.watch(localNetworkSettingProvider).subnetMask;
-  //   final result = await context
-  //       .pushNamed<DHCPReservation?>(RouteNamed.dhcpReservationEdit, extra: {
-  //     'viewType': 'edit',
-  //     'routerIp': routerIp,
-  //     'subnetMask': subnetMask,
-  //     'item': item,
-  //   });
-  //   if (result != null) {
-  //     final succeed = ref
-  //         .read(localNetworkSettingProvider.notifier)
-  //         .updateDHCPReservationOfIndex(result, index);
-  //     if (!succeed) {
-  //       showFailedSnackBar(
-  //         context,
-  //         loc(context).ipOrMacAddressOverlap,
-  //       );
-  //     }
-  //   }
-  // }
-
   Future _showManualAddReservationModal([
     ReservedListItem? item,
   ]) {
-    final reservationList = ref.watch(dhcpReservationProvider).reservations;
-    final routerIp = ref.watch(localNetworkSettingProvider).ipAddress;
-    final subnetMask = ref.watch(localNetworkSettingProvider).subnetMask;
+    final notifier = ref.read(dhcpReservationProvider.notifier);
+    final reservationList =
+        ref.read(dhcpReservationProvider).settings.reservations;
+    final routerIp = ref.read(localNetworkSettingProvider).ipAddress;
+    final subnetMask = ref.read(localNetworkSettingProvider).subnetMask;
     final subnetToken = subnetMask.split('.');
     final deviceNameController = TextEditingController()
       ..text = item?.data.description ?? '';
@@ -383,17 +334,15 @@ class _DHCPReservationsContentViewState
           final ip = ipController.text;
           final mac = macController.text;
           item == null
-              ? ref.read(dhcpReservationProvider.notifier).updateReservations(
-                    ReservedListItem(
-                      reserved: true,
-                      data: DHCPReservation(
-                          macAddress: mac, ipAddress: ip, description: name),
-                    ),
-                    true,
-                  )
-              : ref
-                  .read(dhcpReservationProvider.notifier)
-                  .updateReservationItem(item, name, ip, mac);
+              ? notifier.updateReservations(
+                  ReservedListItem(
+                    reserved: true,
+                    data: DHCPReservation(
+                        macAddress: mac, ipAddress: ip, description: name),
+                  ),
+                  true,
+                )
+              : notifier.updateReservationItem(item, name, ip, mac);
         },
         checkPositiveEnabled: () => enableSave);
   }

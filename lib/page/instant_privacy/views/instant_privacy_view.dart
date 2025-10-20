@@ -6,7 +6,6 @@ import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/customs/animated_refresh_container.dart';
 import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
-import 'package:privacy_gui/page/components/mixin/preserved_state_mixin.dart';
 import 'package:privacy_gui/page/components/shared_widgets.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
@@ -36,9 +35,7 @@ class InstantPrivacyView extends ArgumentsConsumerStatefulView {
 }
 
 class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
-    with
-        PreservedStateMixin<InstantPrivacyState, InstantPrivacyView>,
-        PageSnackbarMixin {
+    with PageSnackbarMixin {
   late final InstantPrivacyNotifier _notifier;
   bool _isRefreshing = false;
 
@@ -47,25 +44,15 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
     _notifier = ref.read(instantPrivacyProvider.notifier);
     doSomethingWithSpinner(
       context,
-      _notifier.fetch().then((value) {
-        if (!mounted) {
-          return;
-        }
-        preservedState = value;
-        _notifier.doPolling();
-      }),
+      _notifier.fetch(),
     );
     super.initState();
   }
 
   @override
-  void dispose() {
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final state = ref.watch(instantPrivacyProvider);
+    final notifier = ref.watch(instantPrivacyProvider.notifier);
     final displayDevices = ref.watch(instantPrivacyDeviceListProvider);
     return StyledAppPageView(
       scrollable: true,
@@ -75,6 +62,28 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
         desktop: _desktopLayout(state, displayDevices),
         mobile: _mobileLayout(state, displayDevices),
       ),
+      bottomBar: PageBottomBar(
+        isPositiveEnabled: notifier.isDirty,
+        onPositiveTap: () {
+          doSomethingWithSpinner(
+            context,
+            notifier.save(),
+          ).then((_) {
+            showChangesSavedSnackBar();
+          }).catchError((error) {
+            showErrorMessageSnackBar(error);
+          });
+        },
+      ),
+      onBackTap: notifier.isDirty
+          ? () async {
+              final goBack = await showUnsavedAlert(context);
+              if (goBack == true) {
+                notifier.restore();
+                context.pop();
+              }
+            }
+          : null,
     );
   }
 
@@ -87,7 +96,7 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
         children: [
           AppText.bodyLarge(loc(context).instantPrivacyDescription),
           const AppGap.large4(),
-          if (preservedState?.settings.mode == MacFilterMode.deny) ...[
+          if (state.settings.mode == MacFilterMode.deny) ...[
             _warningCard(),
             const AppGap.small2(),
           ],
@@ -124,7 +133,7 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (preservedState?.settings.mode == MacFilterMode.deny) ...[
+          if (state.settings.mode == MacFilterMode.deny) ...[
             _warningCard(),
             const AppGap.small2(),
           ],
@@ -377,10 +386,9 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
       doSomethingWithSpinner(
         context,
         _notifier.save(),
-      ).then((state) {
-        preservedState = state;
+      ).then((_) {
         showChangesSavedSnackBar();
-      }).onError((error, stackTrace) {
+      }).catchError((error) {
         showErrorMessageSnackBar(error);
       });
     });

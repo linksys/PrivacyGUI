@@ -8,6 +8,8 @@ import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_state.dart';
 import 'package:privacy_gui/page/instant_safety/providers/instant_safety_provider.dart';
+import 'package:privacy_gui/providers/preservable_contract.dart';
+import 'package:privacy_gui/providers/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacy_gui/validator_rules/input_validators.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
@@ -16,7 +18,10 @@ final localNetworkSettingProvider =
     NotifierProvider<LocalNetworkSettingsNotifier, LocalNetworkSettingsState>(
         () => LocalNetworkSettingsNotifier());
 
-class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
+class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState>
+    with
+        PreservableNotifierMixin<LocalNetworkSettings, LocalNetworkStatus,
+            LocalNetworkSettingsState> {
   late InputValidator _routerIpAddressValidator;
   late InputValidator _startIpAddressValidator;
   late InputValidator _subnetMaskValidator;
@@ -25,14 +30,16 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
   late InputValidator _serverIpAddressValidator;
 
   @override
-  LocalNetworkSettingsState build() => LocalNetworkSettingsState.init();
+  LocalNetworkSettingsState build() {
+    return LocalNetworkSettingsState.init();
+  }
 
-  Future<LocalNetworkSettingsState> fetch({bool fetchRemote = false}) async {
+  @override
+  Future<void> performFetch() async {
     final repo = ref.read(routerRepositoryProvider);
     final lanSettings = await repo
         .send(
           JNAPAction.getLANSettings,
-          fetchRemote: fetchRemote,
           auth: true,
         )
         .then((value) => RouterLANSettings.fromMap(value.output));
@@ -52,34 +59,37 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
       maxUserAllowed,
     );
 
-    state = LocalNetworkSettingsState.init().copyWith(
-      hostName: lanSettings.hostName,
-      ipAddress: lanSettings.ipAddress,
-      subnetMask: subnetMaskString,
-      isDHCPEnabled: lanSettings.isDHCPEnabled,
-      firstIPAddress: lanSettings.dhcpSettings.firstClientIPAddress,
-      lastIPAddress: lanSettings.dhcpSettings.lastClientIPAddress,
-      maxUserAllowed: maxUserAllowed,
-      maxUserLimit: maxUserLimit,
-      minNetworkPrefixLength: lanSettings.minNetworkPrefixLength,
-      maxNetworkPrefixLength: lanSettings.maxNetworkPrefixLength,
-      clientLeaseTime: lanSettings.dhcpSettings.leaseMinutes,
-      minAllowDHCPLeaseMinutes: lanSettings.minAllowedDHCPLeaseMinutes,
-      maxAllowDHCPLeaseMinutes: lanSettings.maxAllowedDHCPLeaseMinutes,
-      dns1: () => lanSettings.dhcpSettings.dnsServer1,
-      dns2: () => lanSettings.dhcpSettings.dnsServer2,
-      dns3: () => lanSettings.dhcpSettings.dnsServer3,
-      wins: () => lanSettings.dhcpSettings.winsServer,
-      dhcpReservationList: lanSettings.dhcpSettings.reservations,
+    state = state.copyWith(
+      settings: state.settings.copyWith(
+        hostName: lanSettings.hostName,
+        ipAddress: lanSettings.ipAddress,
+        subnetMask: subnetMaskString,
+        isDHCPEnabled: lanSettings.isDHCPEnabled,
+        firstIPAddress: lanSettings.dhcpSettings.firstClientIPAddress,
+        lastIPAddress: lanSettings.dhcpSettings.lastClientIPAddress,
+        maxUserAllowed: maxUserAllowed,
+        clientLeaseTime: lanSettings.dhcpSettings.leaseMinutes,
+        dns1: () => lanSettings.dhcpSettings.dnsServer1,
+        dns2: () => lanSettings.dhcpSettings.dnsServer2,
+        dns3: () => lanSettings.dhcpSettings.dnsServer3,
+        wins: () => lanSettings.dhcpSettings.winsServer,
+        dhcpReservationList: lanSettings.dhcpSettings.reservations,
+      ),
+      status: LocalNetworkStatus(
+        maxUserLimit: maxUserLimit,
+        minNetworkPrefixLength: lanSettings.minNetworkPrefixLength,
+        maxNetworkPrefixLength: lanSettings.maxNetworkPrefixLength,
+        minAllowDHCPLeaseMinutes: lanSettings.minAllowedDHCPLeaseMinutes,
+        maxAllowDHCPLeaseMinutes: lanSettings.maxAllowedDHCPLeaseMinutes,
+      ),
     );
-    // Update all necessary validators by the current settings
     _updateValidators(state);
     logger.d('[State]:[LocalNetworkSettings]:${state.toJson()}');
-    return state;
   }
 
-  Future<void> saveSettings(LocalNetworkSettingsState settings,
-      {String? previousIPAddress}) {
+  @override
+  Future<void> performSave() async {
+    final settings = state.settings;
     final newSettings = SetRouterLANSettings(
       ipAddress: settings.ipAddress,
       networkPrefixLength:
@@ -94,14 +104,11 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
         dnsServer2: settings.dns2?.isEmpty == true ? null : settings.dns2,
         dnsServer3: settings.dns3?.isEmpty == true ? null : settings.dns3,
         winsServer: settings.wins?.isEmpty == true ? null : settings.wins,
-        reservations: (previousIPAddress != null &&
-                previousIPAddress != settings.ipAddress)
-            ? []
-            : settings.dhcpReservationList,
+        reservations: settings.dhcpReservationList,
       ),
     );
     final routerRepository = ref.read(routerRepositoryProvider);
-    return routerRepository
+    await routerRepository
         .send(
       JNAPAction.setLANSettings,
       auth: true,
@@ -109,25 +116,24 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
       sideEffectOverrides: const JNAPSideEffectOverrides(maxRetry: 5),
     )
         .then((result) async {
-      // Update the state
-      await fetch(fetchRemote: true);
-      // Update instant safety
       await ref.read(instantSafetyProvider.notifier).fetch();
     });
   }
 
   Future<List<DHCPReservation>> saveReservations(
       List<DHCPReservation> list) async {
-    await saveSettings(state.copyWith(dhcpReservationList: list));
-    return fetch(fetchRemote: true).then((state) => state.dhcpReservationList);
+    await performSave();
+    await performFetch();
+    return state.settings.dhcpReservationList;
   }
 
   void updateHostName(String hostName) {
-    state = state.copyWith(hostName: hostName);
+    state = state.copyWith(
+        settings: state.settings.copyWith(hostName: hostName));
     String? error;
     if (hostName.isEmpty) {
       error = LocalNetworkErrorPrompt.hostName.name;
-    } else if (!LengthRule(min:1, max: 15).validate(hostName)) {
+    } else if (!LengthRule(min: 1, max: 15).validate(hostName)) {
       error = LocalNetworkErrorPrompt.hostNameInvalid.name;
     } else if (HostNameRule().validate(hostName)) {
       error = LocalNetworkErrorPrompt.hostNameInvalid.name;
@@ -139,13 +145,15 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
   }
 
   void updateErrorPrompts(String key, String? value) {
-    Map<String, String> errorTextMap = Map.from(state.errorTextMap);
+    Map<String, String> errorTextMap =
+        Map.from(state.settings.errorTextMap);
     if (value != null) {
       errorTextMap[key] = value;
     } else {
       errorTextMap.remove(key);
     }
-    state = state.copyWith(errorTextMap: errorTextMap);
+    state = state.copyWith(
+        settings: state.settings.copyWith(errorTextMap: errorTextMap));
     updateHasErrorOnTabs();
   }
 
@@ -153,7 +161,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     bool hasErrorOnHostNameTab = false;
     bool hasErrorOnIPAddressTab = false;
     bool hasErrorOnDhcpServerTab = false;
-    for (String errorKey in state.errorTextMap.keys) {
+    for (String errorKey in state.settings.errorTextMap.keys) {
       final key = LocalNetworkErrorPrompt.resolve(errorKey);
       switch (key) {
         case LocalNetworkErrorPrompt.hostName:
@@ -177,9 +185,11 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
       }
     }
     state = state.copyWith(
-      hasErrorOnHostNameTab: hasErrorOnHostNameTab,
-      hasErrorOnIPAddressTab: hasErrorOnIPAddressTab,
-      hasErrorOnDhcpServerTab: hasErrorOnDhcpServerTab,
+      settings: state.settings.copyWith(
+        hasErrorOnHostNameTab: hasErrorOnHostNameTab,
+        hasErrorOnIPAddressTab: hasErrorOnIPAddressTab,
+        hasErrorOnDhcpServerTab: hasErrorOnDhcpServerTab,
+      ),
     );
   }
 
@@ -188,14 +198,16 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     final filteredList = addedDHCPReservationList
         .where((element) => !isReservationOverlap(item: element));
     final List<DHCPReservation> newList = [
-      ...state.dhcpReservationList,
+      ...state.settings.dhcpReservationList,
       ...filteredList
     ];
-    state = state.copyWith(dhcpReservationList: newList);
+    state = state.copyWith(
+        settings: state.settings.copyWith(dhcpReservationList: newList));
   }
 
   bool updateDHCPReservationOfIndex(DHCPReservation item, int index) {
-    List<DHCPReservation> newList = List.from(state.dhcpReservationList);
+    List<DHCPReservation> newList =
+        List.from(state.settings.dhcpReservationList);
     bool succeed = false;
     if (item.ipAddress == 'DELETE') {
       newList.removeAt(index);
@@ -205,16 +217,17 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
       succeed = true;
     }
     if (succeed) {
-      state = state.copyWith(dhcpReservationList: newList);
+      state = state.copyWith(
+          settings: state.settings.copyWith(dhcpReservationList: newList));
     }
     return succeed;
   }
 
   bool isReservationOverlap({required DHCPReservation item, int? index}) {
-    final overlap = state.dhcpReservationList.where((element) {
+    final overlap = state.settings.dhcpReservationList.where((element) {
       // Not compare with self if on editing
       if (index != null &&
-          state.dhcpReservationList.indexOf(element) == index) {
+          state.settings.dhcpReservationList.indexOf(element) == index) {
         return false;
       }
       return element.ipAddress == item.ipAddress ||
@@ -223,24 +236,25 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     return overlap.isNotEmpty;
   }
 
-  void updateState(LocalNetworkSettingsState newState) {
-    state = newState.copyWith();
+  void updateState(LocalNetworkSettings newState) {
+    state = state.copyWith(settings: newState);
   }
 
   void _updateValidators(LocalNetworkSettingsState currentSettings) {
     _routerIpAddressValidator = IpAddressRequiredValidator();
     _subnetMaskValidator = SubnetMaskValidator(
-      min: currentSettings.minNetworkPrefixLength,
-      max: currentSettings.maxNetworkPrefixLength,
+      min: currentSettings.status.minNetworkPrefixLength,
+      max: currentSettings.status.maxNetworkPrefixLength,
     );
     _startIpAddressValidator = IpAddressAsLocalIpValidator(
-      currentSettings.ipAddress,
-      currentSettings.subnetMask,
+      currentSettings.settings.ipAddress,
+      currentSettings.settings.subnetMask,
     );
-    _maxUserAllowedValidator = MaxUsersValidator(currentSettings.maxUserLimit);
+    _maxUserAllowedValidator =
+        MaxUsersValidator(currentSettings.status.maxUserLimit);
     _clientLeaseTimeValidator = DhcpClientLeaseTimeValidator(
-      currentSettings.minAllowDHCPLeaseMinutes,
-      currentSettings.maxAllowDHCPLeaseMinutes,
+      currentSettings.status.minAllowDHCPLeaseMinutes,
+      currentSettings.status.maxAllowDHCPLeaseMinutes,
     );
     _serverIpAddressValidator = IpAddressValidator();
   }
@@ -248,7 +262,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
   void routerIpAddressChanged(
     BuildContext context,
     String newRouterIpAddress,
-    LocalNetworkSettingsState settings,
+    LocalNetworkSettings settings,
   ) {
     // Verify router ip
     final routerIpAddressResult =
@@ -286,15 +300,15 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
   void subnetMaskChanged(
     BuildContext context,
     String subnetMask,
-    LocalNetworkSettingsState settings,
+    LocalNetworkSettings settings,
   ) {
     // Verify subnet mask
     final subnetMaskResult = subnetMaskFinished(subnetMask, settings);
     updateState(subnetMaskResult.$2);
     if (subnetMaskResult.$1 == true) {
       // Verify start ip
-      final startIpResult = startIpFinished(
-          subnetMaskResult.$2.firstIPAddress, subnetMaskResult.$2);
+      final startIpResult =
+          startIpFinished(subnetMaskResult.$2.firstIPAddress, subnetMaskResult.$2);
       updateState(startIpResult.$2);
       // Verify max user allowed
       final maxUserAllowedResult = maxUserAllowedFinished(
@@ -326,7 +340,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
   void startIpChanged(
     BuildContext context,
     String startIpAddress,
-    LocalNetworkSettingsState settings,
+    LocalNetworkSettings settings,
   ) {
     // Verify start ip
     final startIpResult = startIpFinished(startIpAddress, settings);
@@ -355,7 +369,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
   void maxUserAllowedChanged(
     BuildContext context,
     String maxUserAllowed,
-    LocalNetworkSettingsState settings,
+    LocalNetworkSettings settings,
   ) {
     // Verify max user allowed
     final maxUserAllowedResult =
@@ -370,9 +384,9 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     );
   }
 
-  (bool, LocalNetworkSettingsState) routerIpAddressFinished(
+  (bool, LocalNetworkSettings) routerIpAddressFinished(
     String newRouterIpAddress,
-    LocalNetworkSettingsState settings,
+    LocalNetworkSettings settings,
   ) {
     final isValid = _routerIpAddressValidator.validate(newRouterIpAddress);
     if (isValid) {
@@ -393,7 +407,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
         lastIPAddress: newLastIp,
       );
       // Update all necessary validators by the updated settings
-      _updateValidators(settings);
+      _updateValidators(state);
     } else {
       settings = settings.copyWith(
         ipAddress: newRouterIpAddress,
@@ -402,9 +416,9 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     return (isValid, settings);
   }
 
-  (bool, LocalNetworkSettingsState) subnetMaskFinished(
+  (bool, LocalNetworkSettings) subnetMaskFinished(
     String subnetMask,
-    LocalNetworkSettingsState settings,
+    LocalNetworkSettings settings,
   ) {
     final isMaskValid = _subnetMaskValidator.validate(subnetMask);
     if (isMaskValid) {
@@ -415,13 +429,18 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
         subnetMask,
         settings.maxUserAllowed,
       );
+      state = state.copyWith(status: LocalNetworkStatus(
+        maxUserLimit: maxUserLimit,
+        minAllowDHCPLeaseMinutes: state.status.minAllowDHCPLeaseMinutes,
+        maxAllowDHCPLeaseMinutes: state.status.maxAllowDHCPLeaseMinutes,
+        minNetworkPrefixLength: state.status.minNetworkPrefixLength,
+        maxNetworkPrefixLength: state.status.maxNetworkPrefixLength,
+      ));
       settings = settings.copyWith(
         subnetMask: subnetMask,
-        maxUserLimit: maxUserLimit,
       );
-
       // Update validators (it is mainly for maxUserAllowedValidator)
-      _updateValidators(settings);
+      _updateValidators(state);
       // Check if the current max user allowed is still valid
       final isMaxUserAllowedValid =
           _maxUserAllowedValidator.validate('${settings.maxUserAllowed}');
@@ -447,9 +466,9 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     return (isMaskValid, settings);
   }
 
-  (bool, LocalNetworkSettingsState) startIpFinished(
+  (bool, LocalNetworkSettings) startIpFinished(
     String startIpAddress,
-    LocalNetworkSettingsState settings,
+    LocalNetworkSettings settings,
   ) {
     final isValid = _startIpAddressValidator.validate(startIpAddress);
     if (isValid) {
@@ -461,11 +480,15 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
         settings.maxUserAllowed,
       );
       // Firstly, update the max user limit only
-      settings = settings.copyWith(
+      state = state.copyWith(status: LocalNetworkStatus(
         maxUserLimit: maxUserLimit,
-      );
+        minAllowDHCPLeaseMinutes: state.status.minAllowDHCPLeaseMinutes,
+        maxAllowDHCPLeaseMinutes: state.status.maxAllowDHCPLeaseMinutes,
+        minNetworkPrefixLength: state.status.minNetworkPrefixLength,
+        maxNetworkPrefixLength: state.status.maxNetworkPrefixLength,
+      ));
       // Update validators (it is mainly for maxUserAllowedValidator)
-      _updateValidators(settings);
+      _updateValidators(state);
       // Check if the current max user allowed is still valid
       final isMaxUserAllowedValid =
           _maxUserAllowedValidator.validate('${settings.maxUserAllowed}');
@@ -493,9 +516,9 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     return (isValid, settings);
   }
 
-  (bool, LocalNetworkSettingsState) maxUserAllowedFinished(
+  (bool, LocalNetworkSettings) maxUserAllowedFinished(
     String maxUserAllowed,
-    LocalNetworkSettingsState settings,
+    LocalNetworkSettings settings,
   ) {
     // Due to the UI limit, the value input from users should always be valid
     final isValid = _maxUserAllowedValidator.validate(maxUserAllowed);
@@ -519,9 +542,9 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     return (isValid, settings);
   }
 
-  (bool, LocalNetworkSettingsState) clientLeaseFinished(
+  (bool, LocalNetworkSettings) clientLeaseFinished(
     String leaseTime,
-    LocalNetworkSettingsState settings,
+    LocalNetworkSettings settings,
   ) {
     // Due to the UI limit, the value input from users should always be valid
     final isValid = _clientLeaseTimeValidator.validate(leaseTime);
@@ -533,9 +556,9 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     return (isValid, settings);
   }
 
-  (bool, LocalNetworkSettingsState) staticDns1Finished(
+  (bool, LocalNetworkSettings) staticDns1Finished(
     String dnsIp,
-    LocalNetworkSettingsState settings,
+    LocalNetworkSettings settings,
   ) {
     // Due to the UI limit, the value input from users should always be valid
     final isValid = _serverIpAddressValidator.validate(dnsIp);
@@ -551,9 +574,9 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     return (isValid, settings);
   }
 
-  (bool, LocalNetworkSettingsState) staticDns2Finished(
+  (bool, LocalNetworkSettings) staticDns2Finished(
     String dnsIp,
-    LocalNetworkSettingsState settings,
+    LocalNetworkSettings settings,
   ) {
     // Due to the UI limit, the value input from users should always be valid
     final isValid = _serverIpAddressValidator.validate(dnsIp);
@@ -570,9 +593,9 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     return (isValid, settings);
   }
 
-  (bool, LocalNetworkSettingsState) staticDns3Finished(
+  (bool, LocalNetworkSettings) staticDns3Finished(
     String dnsIp,
-    LocalNetworkSettingsState settings,
+    LocalNetworkSettings settings,
   ) {
     // Due to the UI limit, the value input from users should always be valid
     final isValid = _serverIpAddressValidator.validate(dnsIp);
@@ -588,9 +611,9 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     return (isValid, settings);
   }
 
-  (bool, LocalNetworkSettingsState) winsServerFinished(
+  (bool, LocalNetworkSettings) winsServerFinished(
     String winsIp,
-    LocalNetworkSettingsState settings,
+    LocalNetworkSettings settings,
   ) {
     // Due to the UI limit, the value input from users should always be valid
     final isValid = _serverIpAddressValidator.validate(winsIp);
@@ -606,3 +629,8 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     return (isValid, settings);
   }
 }
+
+final preservableLocalNetworkSettingsProvider = Provider.autoDispose<
+    PreservableContract<LocalNetworkSettings, LocalNetworkStatus>>((ref) {
+  return ref.watch(localNetworkSettingProvider.notifier);
+});

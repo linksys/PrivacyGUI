@@ -8,6 +8,8 @@ import 'package:privacy_gui/core/jnap/models/unpn_settings.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
+import 'package:privacy_gui/providers/preservable_contract.dart';
+import 'package:privacy_gui/providers/preservable_notifier_mixin.dart';
 
 import 'administration_settings_state.dart';
 
@@ -16,23 +18,32 @@ final administrationSettingsProvider = NotifierProvider<
     AdministrationSettingsState>(() => AdministrationSettingsNotifier());
 
 class AdministrationSettingsNotifier
-    extends Notifier<AdministrationSettingsState> {
+    extends Notifier<AdministrationSettingsState>
+    with
+        PreservableNotifierMixin<AdministrationSettings, AdministrationStatus,
+            AdministrationSettingsState> {
   @override
-  AdministrationSettingsState build() => const AdministrationSettingsState(
-      managementSettings: ManagementSettings(
-        canManageUsingHTTP: false,
-        canManageUsingHTTPS: false,
-        isManageWirelesslySupported: false,
-        canManageRemotely: false,
+  AdministrationSettingsState build() {
+    return const AdministrationSettingsState(
+      settings: AdministrationSettings(
+        managementSettings: ManagementSettings(
+          canManageUsingHTTP: false,
+          canManageUsingHTTPS: false,
+          isManageWirelesslySupported: false,
+          canManageRemotely: false,
+        ),
+        enabledALG: false,
+        enabledExpressForwarfing: false,
+        isUPnPEnabled: false,
+        canUsersConfigure: false,
+        canUsersDisableWANAccess: false,
       ),
-      enabledALG: false,
-      isExpressForwardingSupported: false,
-      enabledExpressForwarfing: false,
-      isUPnPEnabled: false,
-      canUsersConfigure: false,
-      canUsersDisableWANAccess: false);
+      status: AdministrationStatus(isExpressForwardingSupported: false),
+    );
+  }
 
-  Future<AdministrationSettingsState> fetch([bool force = false]) async {
+  @override
+  Future<void> performFetch() async {
     final repo = ref.read(routerRepositoryProvider);
     final result = await repo.transaction(
       JNAPTransactionBuilder(commands: [
@@ -53,7 +64,6 @@ class AdministrationSettingsNotifier
           {},
         ),
       ], auth: true),
-      fetchRemote: force,
     );
     final resultMap = Map.fromEntries(result.data);
     final managementSettingsResult = JNAPTransactionSuccessWrap.getResult(
@@ -86,75 +96,94 @@ class AdministrationSettingsNotifier
 
     final hasLanPort =
         ref.read(dashboardHomeProvider).lanPortConnections.isNotEmpty;
+
     state = state.copyWith(
-      managementSettings: managementSettings,
-      isUPnPEnabled: upnpSettings?.isUPnPEnabled,
-      canUsersConfigure: upnpSettings?.canUsersConfigure,
-      canUsersDisableWANAccess: upnpSettings?.canUsersDisableWANAccess,
-      enabledALG: algSettings?.isSIPEnabled,
-      isExpressForwardingSupported:
-          expressForwardingSettings?.isExpressForwardingSupported,
-      enabledExpressForwarfing:
-          expressForwardingSettings?.isExpressForwardingEnabled,
-      canDisAllowLocalMangementWirelessly: hasLanPort,
+      settings: state.settings.copyWith(
+        managementSettings: managementSettings,
+        isUPnPEnabled: upnpSettings?.isUPnPEnabled,
+        canUsersConfigure: upnpSettings?.canUsersConfigure,
+        canUsersDisableWANAccess: upnpSettings?.canUsersDisableWANAccess,
+        enabledALG: algSettings?.isSIPEnabled,
+        enabledExpressForwarfing:
+            expressForwardingSettings?.isExpressForwardingEnabled,
+        canDisAllowLocalMangementWirelessly: hasLanPort,
+      ),
+      status: AdministrationStatus(
+        isExpressForwardingSupported:
+            expressForwardingSettings?.isExpressForwardingSupported ?? false,
+      ),
     );
-    return state;
   }
 
-  Future<AdministrationSettingsState> save() async {
+  @override
+  Future<void> performSave() async {
     final repo = ref.read(routerRepositoryProvider);
     await repo.transaction(
       JNAPTransactionBuilder(commands: [
         MapEntry(
           JNAPAction.setManagementSettings,
-          state.managementSettings.toMap()
+          state.settings.managementSettings.toMap()
             ..remove('isManageWirelesslySupported'),
         ),
         MapEntry(
           JNAPAction.setUPnPSettings,
           {
-            'isUPnPEnabled': state.isUPnPEnabled,
-            'canUsersConfigure': state.canUsersConfigure,
-            'canUsersDisableWANAccess': state.canUsersDisableWANAccess,
+            'isUPnPEnabled': state.settings.isUPnPEnabled,
+            'canUsersConfigure': state.settings.canUsersConfigure,
+            'canUsersDisableWANAccess': state.settings.canUsersDisableWANAccess,
           },
         ),
         MapEntry(
           JNAPAction.setALGSettings,
-          {'isSIPEnabled': state.enabledALG},
+          {'isSIPEnabled': state.settings.enabledALG},
         ),
         MapEntry(
           JNAPAction.setExpressForwardingSettings,
-          {'isExpressForwardingEnabled': state.enabledExpressForwarfing},
+          {
+            'isExpressForwardingEnabled':
+                state.settings.enabledExpressForwarfing
+          },
         ),
       ], auth: true),
     );
-    await fetch(true);
-    return state;
   }
 
   void setManagementSettings(bool value) {
     state = state.copyWith(
-        managementSettings:
-            state.managementSettings.copyWith(canManageWirelessly: value));
+        settings: state.settings.copyWith(
+            managementSettings: state.settings.managementSettings
+                .copyWith(canManageWirelessly: value)));
   }
 
   void setUPnPEnabled(bool value) {
-    state = state.copyWith(isUPnPEnabled: value);
+    state =
+        state.copyWith(settings: state.settings.copyWith(isUPnPEnabled: value));
   }
 
   void setCanUsersConfigure(bool value) {
-    state = state.copyWith(canUsersConfigure: value);
+    state = state.copyWith(
+        settings: state.settings.copyWith(canUsersConfigure: value));
   }
 
+
+
   void setCanUsersDisableWANAccess(bool value) {
-    state = state.copyWith(canUsersDisableWANAccess: value);
+    state = state.copyWith(
+        settings: state.settings.copyWith(canUsersDisableWANAccess: value));
   }
 
   void setALGEnabled(bool value) {
-    state = state.copyWith(enabledALG: value);
+    state = state.copyWith(settings: state.settings.copyWith(enabledALG: value));
   }
 
   void setExpressForwarding(bool value) {
-    state = state.copyWith(enabledExpressForwarfing: value);
+    state = state.copyWith(
+        settings: state.settings.copyWith(enabledExpressForwarfing: value));
   }
 }
+
+final preservableAdministrationSettingsProvider = Provider.autoDispose<
+    PreservableContract<AdministrationSettings,
+        AdministrationStatus>>((ref) {
+  return ref.watch(administrationSettingsProvider.notifier);
+});

@@ -11,49 +11,50 @@ import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
+import 'package:privacy_gui/providers/preservable_contract.dart';
+import 'package:privacy_gui/providers/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/util/extensions.dart';
 
 final instantPrivacyProvider =
     NotifierProvider<InstantPrivacyNotifier, InstantPrivacyState>(
         () => InstantPrivacyNotifier());
 
-class InstantPrivacyNotifier extends Notifier<InstantPrivacyState> {
+class InstantPrivacyNotifier extends Notifier<InstantPrivacyState>
+    with
+        PreservableNotifierMixin<InstantPrivacySettings, InstantPrivacyStatus,
+            InstantPrivacyState> {
   @override
   InstantPrivacyState build() {
-    fetch(fetchRemote: true);
     return InstantPrivacyState.init();
   }
 
-  Future<InstantPrivacyState> fetch(
-      {bool fetchRemote = false, bool statusOnly = false}) async {
+  @override
+  Future<void> performFetch({bool statusOnly = false}) async {
     final settings = await ref
         .read(routerRepositoryProvider)
         .send(
           JNAPAction.getMACFilterSettings,
-          fetchRemote: fetchRemote,
           auth: true,
         )
         .then((result) => MACFilterSettings.fromMap(result.output));
 
-    // update status only
     if (statusOnly) {
       state = state.copyWith(
         status: InstantPrivacyStatus(
             mode: MacFilterMode.reslove(settings.macFilterMode)),
       );
-      return state;
+      return;
     }
     final List<String> staBSSIDS = serviceHelper.isSupportGetSTABSSID()
         ? await ref
             .read(routerRepositoryProvider)
             .send(
               JNAPAction.getSTABSSIDs,
-              fetchRemote: true,
               auth: true,
             )
             .then((result) {
             return List<String>.from(result.output['staBSSIDS']);
-          }).onError((error, _) {
+          }).catchError((error, _) {
             logger.d('Not able to get STA BSSIDs');
             return [];
           })
@@ -79,15 +80,11 @@ class InstantPrivacyNotifier extends Notifier<InstantPrivacyState> {
       status: newStatus,
     );
     logger.d('[State]:[instantPrivacy]: ${state.toJson()}');
-    return state;
   }
 
-  Future doPolling() {
-    return ref.read(pollingProvider.notifier).forcePolling();
-  }
-
-  Future<InstantPrivacyState> save() async {
-    var macAddresses = [];
+  @override
+  Future<void> performSave() async {
+    var macAddresses = <String>[];
     if (state.settings.mode == MacFilterMode.allow) {
       final nodesMacAddresses = ref
           .read(deviceManagerProvider)
@@ -114,7 +111,6 @@ class InstantPrivacyNotifier extends Notifier<InstantPrivacyState> {
           fetchRemote: true,
           cacheLevel: CacheLevel.noCache,
         );
-    return fetch(fetchRemote: true);
   }
 
   Future<String?> getMyMACAddress() {
@@ -128,22 +124,22 @@ class InstantPrivacyNotifier extends Notifier<InstantPrivacyState> {
           .deviceList
           .firstWhereOrNull((device) => device.deviceID == deviceID)
           ?.getMacAddress();
-    }).onError((_, __) {
+    }).catchError((_, __) {
       return null;
     });
   }
 
-  setEnable(bool isEnabled) {
+  void setEnable(bool isEnabled) {
     state = state.copyWith(
         settings: state.settings.copyWith(
             mode: isEnabled ? MacFilterMode.allow : MacFilterMode.disabled));
   }
 
-  setAccess(MacFilterMode value) {
+  void setAccess(MacFilterMode value) {
     state = state.copyWith(settings: state.settings.copyWith(mode: value));
   }
 
-  setSelection(List<String> selections, [bool isDeny = false]) {
+  void setSelection(List<String> selections, [bool isDeny = false]) {
     selections = selections.map((e) => e.toUpperCase()).toList();
     final List<String> unique = List.from(
         isDeny ? state.settings.denyMacAddresses : state.settings.macAddresses)
@@ -157,7 +153,7 @@ class InstantPrivacyNotifier extends Notifier<InstantPrivacyState> {
     );
   }
 
-  removeSelection(List<String> selection, [bool isDeny = false]) {
+  void removeSelection(List<String> selection, [bool isDeny = false]) {
     selection = selection.map((e) => e.toUpperCase()).toList();
     final list = List<String>.from(
         isDeny ? state.settings.denyMacAddresses : state.settings.macAddresses)
@@ -170,9 +166,14 @@ class InstantPrivacyNotifier extends Notifier<InstantPrivacyState> {
     );
   }
 
-  setMacAddressList(List<String> macAddressList) {
+  void setMacAddressList(List<String> macAddressList) {
     macAddressList = macAddressList.map((e) => e.toUpperCase()).toList();
     state = state.copyWith(
         settings: state.settings.copyWith(macAddresses: macAddressList));
   }
 }
+
+final preservableInstantPrivacyProvider = Provider.autoDispose<
+    PreservableContract<InstantPrivacySettings, InstantPrivacyStatus>>((ref) {
+  return ref.watch(instantPrivacyProvider.notifier);
+});

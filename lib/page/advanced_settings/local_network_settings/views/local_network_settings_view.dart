@@ -48,7 +48,6 @@ class _LocalNetworkSettingsViewState
     with PageSnackbarMixin, SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  late LocalNetworkSettingsState originalSettings;
   late LocalNetworkSettingsNotifier _notifier;
   final hostNameController = TextEditingController();
   final ipAddressController = TextEditingController();
@@ -61,19 +60,16 @@ class _LocalNetworkSettingsViewState
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _notifier = ref.read(localNetworkSettingProvider.notifier);
-    originalSettings = ref.read(localNetworkSettingProvider);
     doSomethingWithSpinner(
       context,
-      _notifier.fetch(fetchRemote: true).then(
+      _notifier.fetch(true).then(
         (value) {
-          setState(
-            () {
-              originalSettings = value;
-              hostNameController.text = originalSettings.hostName;
-              ipAddressController.text = originalSettings.ipAddress;
-              subnetMaskController.text = originalSettings.subnetMask;
-            },
-          );
+          if (mounted) {
+            final state = ref.read(localNetworkSettingProvider);
+            hostNameController.text = state.settings.hostName;
+            ipAddressController.text = state.settings.ipAddress;
+            subnetMaskController.text = state.settings.subnetMask;
+          }
         },
       ),
     );
@@ -81,26 +77,26 @@ class _LocalNetworkSettingsViewState
 
   @override
   void dispose() {
-    super.dispose();
     _tabController.dispose();
     hostNameController.dispose();
     ipAddressController.dispose();
     subnetMaskController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     if (!BuildConfig.isRemote()) {
       ref.listen(redirectionProvider, (previous, next) {
-        if (kIsWeb &&
-            next != null &&
-            '$_https${originalSettings.ipAddress}' != next) {
+        final state = ref.read(localNetworkSettingProvider);
+        if (kIsWeb && next != null && '$_https${state.settings.ipAddress}' != next) {
           logger.d('Redirect to $next');
           assignWebLocation(next);
         }
       });
     }
     final state = ref.watch(localNetworkSettingProvider);
+    final notifier = ref.watch(localNetworkSettingProvider.notifier);
     final tabContents = [
       _hostNameView(state),
       _ipAddressView(state),
@@ -111,15 +107,15 @@ class _LocalNetworkSettingsViewState
       useMainPadding: false,
       tabController: _tabController,
       bottomBar: PageBottomBar(
-        isPositiveEnabled: _isEdited(state) && !_hasError(state),
+        isPositiveEnabled: notifier.isDirty && !_hasError(state),
         onPositiveTap: _saveSettings,
       ),
       title: loc(context).localNetwork,
-      onBackTap: _isEdited(state)
+      onBackTap: notifier.isDirty
           ? () async {
               final goBack = await showUnsavedAlert(context);
               if (goBack == true) {
-                _notifier.fetch();
+                notifier.restore();
                 context.pop();
               }
             }
@@ -128,17 +124,17 @@ class _LocalNetworkSettingsViewState
         tab(
           loc(context).hostName,
           selected: _selectedTabIndex == 0,
-          hasError: state.hasErrorOnHostNameTab,
+          hasError: state.settings.hasErrorOnHostNameTab,
         ),
         tab(
           loc(context).lanIPAddress,
           selected: _selectedTabIndex == 1,
-          hasError: state.hasErrorOnIPAddressTab,
+          hasError: state.settings.hasErrorOnIPAddressTab,
         ),
         tab(
           loc(context).dhcpServer,
           selected: _selectedTabIndex == 2,
-          hasError: state.hasErrorOnDhcpServerTab,
+          hasError: state.settings.hasErrorOnDhcpServerTab,
         ),
       ],
       tabContentViews: tabContents,
@@ -161,8 +157,8 @@ class _LocalNetworkSettingsViewState
           controller: hostNameController,
           errorText: LocalNetworkErrorPrompt.getErrorText(
               context: context,
-              error: LocalNetworkErrorPrompt.resolve(
-                  state.errorTextMap[LocalNetworkErrorPrompt.hostName.name])),
+              error: LocalNetworkErrorPrompt.resolve(state
+                  .settings.errorTextMap[LocalNetworkErrorPrompt.hostName.name])),
           border: const OutlineInputBorder(),
           focusNode: FocusNode()..requestFocus(),
           onChanged: (value) {
@@ -190,12 +186,13 @@ class _LocalNetworkSettingsViewState
               controller: ipAddressController,
               errorText: LocalNetworkErrorPrompt.getErrorText(
                   context: context,
-                  error: LocalNetworkErrorPrompt.resolve(state
+                  error: LocalNetworkErrorPrompt.resolve(state.settings
                       .errorTextMap[LocalNetworkErrorPrompt.ipAddress.name])),
               border: const OutlineInputBorder(),
               autoFocus: true,
               onChanged: (value) {
-                _notifier.routerIpAddressChanged(context, value, state);
+                _notifier.routerIpAddressChanged(
+                    context, value, state.settings);
               },
             ),
             const AppGap.large2(),
@@ -208,11 +205,11 @@ class _LocalNetworkSettingsViewState
               controller: subnetMaskController,
               errorText: LocalNetworkErrorPrompt.getErrorText(
                   context: context,
-                  error: LocalNetworkErrorPrompt.resolve(state
+                  error: LocalNetworkErrorPrompt.resolve(state.settings
                       .errorTextMap[LocalNetworkErrorPrompt.subnetMask.name])),
               border: const OutlineInputBorder(),
               onChanged: (value) {
-                _notifier.subnetMaskChanged(context, value, state);
+                _notifier.subnetMaskChanged(context, value, state.settings);
               },
             ),
           ],
@@ -224,7 +221,7 @@ class _LocalNetworkSettingsViewState
   Widget _dhcpServerView(LocalNetworkSettingsState state) {
     return _viewLayout(
       child: DHCPServerView(
-        isEdited: () => _isEdited(state),
+        isEdited: () => ref.read(localNetworkSettingProvider.notifier).isDirty,
         onSaveSettings: () async {
           _saveSettings();
         },
@@ -273,43 +270,31 @@ class _LocalNetworkSettingsViewState
     );
   }
 
-  bool _isEdited(LocalNetworkSettingsState state) {
-    return !originalSettings.isEqualStateWithoutDhcpReservationList(state);
-  }
-
   bool _hasError(LocalNetworkSettingsState state) {
-    return state.errorTextMap.isNotEmpty;
+    return state.settings.errorTextMap.isNotEmpty;
   }
 
   void _saveSettings() {
-    final state = ref.read(localNetworkSettingProvider);
     doSomethingWithSpinner(
       context,
-      _notifier.saveSettings(state,
-          previousIPAddress: originalSettings.ipAddress),
+      _notifier.save(),
     ).then(
       (value) {
-        ///
-        /// Default success case only if
-        /// 1) Wired connection and host using myrouter.info
-        /// 2) Wireless connection and didn't swap to another WiFi and using myrouter.info
-        ///
-        _finishSaveSettings(state);
+        _finishSaveSettings();
       },
     ).catchError((error) {
       final currentUrl = ref.read(routerRepositoryProvider).getLocalIP();
       final regex = RegExp(r'(www\.)?myrouter\.info');
 
-      // check is url start with www.myrouter.info or myrouter.info
       if (regex.hasMatch(currentUrl)) {
-        // url start with myrouter.info, show router not found and wait for connect back
         _showRouterNotFoundModal();
-      } else if (currentUrl != state.ipAddress) {
-        // ip is changed, show redirect alert to warn user make sure connect back to the router
-        showRedirectNewIpAlert(context, ref, state.ipAddress);
       } else {
-        // ip is not changed, finish settings
-        _finishSaveSettings(state);
+        final state = ref.read(localNetworkSettingProvider);
+        if (currentUrl != state.settings.ipAddress) {
+          showRedirectNewIpAlert(context, ref, state.settings.ipAddress);
+        } else {
+          _finishSaveSettings();
+        }
       }
     }, test: (error) => error is JNAPSideEffectError).onError(
         (error, stackTrace) {
@@ -319,32 +304,25 @@ class _LocalNetworkSettingsViewState
 
   void _showRouterNotFoundModal() {
     showRouterNotFoundAlert(context, ref, onComplete: () async {
-      // Update the state
-      final state = await _notifier.fetch(fetchRemote: true);
-      // Update instant safety
+      await _notifier.fetch();
       await ref.read(instantSafetyProvider.notifier).fetch();
-      _finishSaveSettings(state);
+      _finishSaveSettings();
     });
   }
 
-  void _finishSaveSettings(LocalNetworkSettingsState state) {
-    setState(() {
-      originalSettings = state;
-    });
+  void _finishSaveSettings() {
     showChangesSavedSnackBar();
-    // handle redirect
     if (!kIsWeb) {
       return;
     }
+    final state = ref.read(localNetworkSettingProvider);
     final currentUrl = ref.read(routerRepositoryProvider).getLocalIP();
     final regex = RegExp(r'(www\.)?myrouter\.info');
-    // check is url start with www.myrouter.info or myrouter.info
     if (regex.hasMatch(currentUrl)) {
       return;
     }
-    // ip case
-    if (state.ipAddress != currentUrl && !BuildConfig.isRemote()) {
-      _doRedirect(state.ipAddress);
+    if (state.settings.ipAddress != currentUrl && !BuildConfig.isRemote()) {
+      _doRedirect(state.settings.ipAddress);
     }
   }
 

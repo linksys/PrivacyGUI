@@ -6,6 +6,8 @@ import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
 import 'package:privacy_gui/core/jnap/models/set_routing_settings.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_state.dart';
+import 'package:privacy_gui/providers/preservable_contract.dart';
+import 'package:privacy_gui/providers/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/utils.dart';
 
 final staticRoutingProvider =
@@ -13,11 +15,17 @@ final staticRoutingProvider =
   () => StaticRoutingNotifier(),
 );
 
-class StaticRoutingNotifier extends Notifier<StaticRoutingState> {
+class StaticRoutingNotifier extends Notifier<StaticRoutingState>
+    with
+        PreservableNotifierMixin<StaticRoutingSettings, StaticRoutingStatus,
+            StaticRoutingState> {
   @override
-  StaticRoutingState build() => StaticRoutingState.empty();
+  StaticRoutingState build() {
+    return StaticRoutingState.empty();
+  }
 
-  Future<StaticRoutingState> fetch([bool force = false]) async {
+  @override
+  Future<void> performFetch() async {
     final repo = ref.read(routerRepositoryProvider);
     final lanSettings = await repo
         .send(
@@ -29,73 +37,86 @@ class StaticRoutingNotifier extends Notifier<StaticRoutingState> {
     final subnetMask =
         NetworkUtils.prefixLengthToSubnetMask(lanSettings.networkPrefixLength);
 
-    await ref
+    final value = await ref
         .read(routerRepositoryProvider)
-        .send(JNAPAction.getRoutingSettings, auth: true, fetchRemote: true)
-        .then((value) {
-      final getRoutingSettings = GetRoutingSettings.fromMap(value.output);
-      state = state.copyWith(
-        setting: getRoutingSettings,
+        .send(JNAPAction.getRoutingSettings, auth: true, fetchRemote: true);
+
+    final getRoutingSettings = GetRoutingSettings.fromMap(value.output);
+    state = state.copyWith(
+      settings: state.settings.copyWith(setting: getRoutingSettings),
+      status: state.status.copyWith(
         routerIp: ipAddress,
         subnetMask: subnetMask,
-      );
-    });
-
-    return state;
-  }
-
-  void updateSettingNetwork(RoutingSettingNetwork option) {
-    state = state.copyWith(
-      setting: state.setting.copyWith(
-        isNATEnabled: option == RoutingSettingNetwork.nat,
-        isDynamicRoutingEnabled: option == RoutingSettingNetwork.dynamicRouting,
       ),
     );
   }
 
-  Future<StaticRoutingState> save() {
-    return ref
-        .read(routerRepositoryProvider)
-        .send(
+  void updateSettingNetwork(RoutingSettingNetwork option) {
+    state = state.copyWith(
+      settings: state.settings.copyWith(
+        setting: state.settings.setting.copyWith(
+          isNATEnabled: option == RoutingSettingNetwork.nat,
+          isDynamicRoutingEnabled:
+              option == RoutingSettingNetwork.dynamicRouting,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Future<void> performSave() async {
+    await ref.read(routerRepositoryProvider).send(
           JNAPAction.setRoutingSettings,
           auth: true,
           fetchRemote: true,
           cacheLevel: CacheLevel.noCache,
           data: SetRoutingSettings(
-            isDynamicRoutingEnabled: state.setting.isDynamicRoutingEnabled,
-            isNATEnabled: state.setting.isNATEnabled,
-            entries: state.setting.entries,
+            isDynamicRoutingEnabled:
+                state.settings.setting.isDynamicRoutingEnabled,
+            isNATEnabled: state.settings.setting.isNATEnabled,
+            entries: state.settings.setting.entries,
           ).toMap(),
-        )
-        .then((_) => fetch(true));
+        );
   }
 
   bool isExceedMax() {
-    return state.setting.maxStaticRouteEntries == state.setting.entries.length;
+    return state.settings.setting.maxStaticRouteEntries ==
+        state.settings.setting.entries.length;
   }
 
   void addRule(NamedStaticRouteEntry rule) {
     state = state.copyWith(
-      setting: state.setting.copyWith(
-        entries: List.from(state.setting.entries)..add(rule),
+      settings: state.settings.copyWith(
+        setting: state.settings.setting.copyWith(
+          entries: List.from(state.settings.setting.entries)..add(rule),
+        ),
       ),
     );
   }
 
   void editRule(int index, NamedStaticRouteEntry rule) {
     state = state.copyWith(
-      setting: state.setting.copyWith(
-        entries: List.from(state.setting.entries)
-          ..replaceRange(index, index + 1, [rule]),
+      settings: state.settings.copyWith(
+        setting: state.settings.setting.copyWith(
+          entries: List.from(state.settings.setting.entries)
+            ..replaceRange(index, index + 1, [rule]),
+        ),
       ),
     );
   }
 
   void deleteRule(NamedStaticRouteEntry rule) {
     state = state.copyWith(
-      setting: state.setting.copyWith(
-        entries: List.from(state.setting.entries)..remove(rule),
+      settings: state.settings.copyWith(
+        setting: state.settings.setting.copyWith(
+          entries: List.from(state.settings.setting.entries)..remove(rule),
+        ),
       ),
     );
   }
 }
+
+final preservableStaticRoutingProvider = Provider.autoDispose<
+    PreservableContract<StaticRoutingSettings, StaticRoutingStatus>>((ref) {
+  return ref.watch(staticRoutingProvider.notifier);
+});

@@ -1,9 +1,12 @@
 import 'package:collection/collection.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod';
 import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
+import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_provider.dart';
 
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/dhcp_reservations_state.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
+import 'package:privacy_gui/providers/preservable_contract.dart';
+import 'package:privacy_gui/providers/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
 
 final dhcpReservationProvider = NotifierProvider.autoDispose<
@@ -11,45 +14,62 @@ final dhcpReservationProvider = NotifierProvider.autoDispose<
     DHCPReservationState>(() => DHCPReservationsNotifier());
 
 class DHCPReservationsNotifier
-    extends AutoDisposeNotifier<DHCPReservationState> {
+    extends AutoDisposeNotifier<DHCPReservationState>
+    with
+        PreservableNotifierMixin<DHCPReservationsSettings,
+            DHCPReservationsStatus, DHCPReservationState> {
   @override
-  build() => DHCPReservationState(
-      reservations: const [],
-      additionalReservations: const [],
-      devices: const []);
-
-  DHCPReservationState setReservations(List<DHCPReservation> reservedList) {
-    state = state.copyWith(
-      reservations: reservedList
-          .map((e) => ReservedListItem(
-              reserved: state.reservations
-                      .firstWhereOrNull(
-                          (r) => r.data.macAddress == e.macAddress)
-                      ?.reserved ??
-                  true,
-              data: e))
-          .toList(),
+  DHCPReservationState build() {
+    return const DHCPReservationState(
+      settings: DHCPReservationsSettings(
+        reservations: [],
+        additionalReservations: [],
+      ),
+      status: DHCPReservationsStatus(devices: []),
     );
-    return state;
   }
 
-  DHCPReservationState updateDevices(
-      [List<DeviceListItem> deviceList = const []]) {
+  @override
+  Future<void> performFetch() async {
+    final localNetworkSettings =
+        await ref.read(localNetworkSettingProvider.notifier).fetch();
+    final deviceList = ref.read(instantDeviceProvider).devices;
+
     state = state.copyWith(
+      settings: state.settings.copyWith(
+        reservations: localNetworkSettings.dhcpReservationList
+            .map((e) => ReservedListItem(reserved: true, data: e))
+            .toList(),
+        additionalReservations: [],
+      ),
+      status: DHCPReservationsStatus(
         devices: deviceList
             .map((e) => ReservedListItem(
-                reserved: false,
-                data: DHCPReservation(
+                  reserved: false,
+                  data: DHCPReservation(
                     macAddress: e.macAddress,
                     ipAddress: e.ipv4Address,
-                    description: e.name)))
+                    description: e.name,
+                  ),
+                ))
             .toList(),
-        additionalReservations: []);
-    return state;
+      ),
+    );
+  }
+
+  @override
+  Future<void> performSave() async {
+    final reservations = state.settings.reservations
+        .where((e) => e.reserved)
+        .map((e) => e.data)
+        .toList();
+    await ref
+        .read(localNetworkSettingProvider.notifier)
+        .saveReservations(reservations);
   }
 
   bool isConflict(ReservedListItem item) {
-    return state.reservations.any((e) =>
+    return state.settings.reservations.any((e) =>
         e.reserved &&
         (e.data.macAddress == item.data.macAddress ||
             e.data.ipAddress == item.data.ipAddress));
@@ -57,7 +77,7 @@ class DHCPReservationsNotifier
 
   void updateReservationItem(
       ReservedListItem editedItem, String? name, String? ip, String? mac) {
-    final rList = state.reservations;
+    final rList = state.settings.reservations;
     final index = rList.indexOf(editedItem);
     if (index >= 0) {
       final newRList = (List<ReservedListItem>.from(rList)
@@ -74,18 +94,14 @@ class DHCPReservationsNotifier
           ],
         ));
       state = state.copyWith(
-        reservations: newRList,
-        // devices: dList
-        //     .where((e) =>
-        //         !newRList.any((r) => r.data.macAddress == e.data.macAddress))
-        //     .toList(),
+        settings: state.settings.copyWith(reservations: newRList),
       );
     }
   }
 
   void updateReservations(ReservedListItem item, [bool isNew = false]) {
-    final rList = state.reservations;
-    final dList = state.devices;
+    final rList = state.settings.reservations;
+    final dList = state.status.devices;
     var hit = rList
         .firstWhereOrNull((e) => e.data.macAddress == item.data.macAddress);
     final index = rList.indexOf(item);
@@ -102,11 +118,7 @@ class DHCPReservationsNotifier
               [item.copyWith(reserved: !item.reserved)],
             ));
       state = state.copyWith(
-        reservations: newRList,
-        // devices: dList
-        //     .where((e) =>
-        //         !newRList.any((r) => r.data.macAddress == e.data.macAddress))
-        //     .toList(),
+        settings: state.settings.copyWith(reservations: newRList),
       );
       return;
     }
@@ -124,17 +136,20 @@ class DHCPReservationsNotifier
                 description: item.data.description
                     .replaceAll(HostNameRule().rule, ''))));
       state = state.copyWith(
-        reservations: newRList,
-        // devices: dList
-        //     .where((e) =>
-        //         !newRList.any((r) => r.data.macAddress == e.data.macAddress))
-        //     .toList(),
+        settings: state.settings.copyWith(reservations: newRList),
       );
       return;
     }
 
     // new add
     final newRList = List<ReservedListItem>.from(rList)..add(item);
-    state = state.copyWith(reservations: newRList);
+    state =
+        state.copyWith(settings: state.settings.copyWith(reservations: newRList));
   }
 }
+
+final preservableDHCPReservationProvider = Provider.autoDispose<
+    PreservableContract<DHCPReservationsSettings,
+        DHCPReservationsStatus>>((ref) {
+  return ref.watch(dhcpReservationProvider.notifier);
+});

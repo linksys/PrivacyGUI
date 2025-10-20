@@ -3,7 +3,8 @@ import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
 
-import 'package:privacy_gui/core/jnap/models/dmz_settings.dart';
+import 'package:privacy_gui/core/jnap/models/dmz_settings.dart' as model;
+import 'package:privacy_gui/providers/feature_state.dart';
 
 enum DMZSourceType {
   auto,
@@ -23,22 +24,25 @@ enum DMZDestinationType {
       values.firstWhere((element) => element.name == value);
 }
 
-class DMZSettingsState extends Equatable {
-  final DMZSettings settings;
+class DMZSettings extends Equatable {
+  final model.DMZSettings settings;
   final DMZSourceType sourceType;
   final DMZDestinationType destinationType;
-  const DMZSettingsState({
+  const DMZSettings({
     required this.settings,
     required this.sourceType,
     required this.destinationType,
   });
 
-  DMZSettingsState copyWith({
-    DMZSettings? settings,
+  @override
+  List<Object> get props => [settings, sourceType, destinationType];
+
+  DMZSettings copyWith({
+    model.DMZSettings? settings,
     DMZSourceType? sourceType,
     DMZDestinationType? destinationType,
   }) {
-    return DMZSettingsState(
+    return DMZSettings(
       settings: settings ?? this.settings,
       sourceType: sourceType ?? this.sourceType,
       destinationType: destinationType ?? this.destinationType,
@@ -52,23 +56,41 @@ class DMZSettingsState extends Equatable {
       'destinationType': destinationType.name,
     };
   }
+}
 
-  factory DMZSettingsState.fromMap(Map<String, dynamic> map) {
+class DMZStatus extends Equatable {
+  const DMZStatus();
+
+  @override
+  List<Object> get props => [];
+
+  Map<String, dynamic> toMap() {
+    return {};
+  }
+}
+
+class DMZSettingsState extends FeatureState<DMZSettings, DMZStatus> {
+  const DMZSettingsState({
+    required super.settings,
+    required super.status,
+  });
+
+  @override
+  DMZSettingsState copyWith({
+    DMZSettings? settings,
+    DMZStatus? status,
+  }) {
     return DMZSettingsState(
-      settings: DMZSettings.fromMap(map['settings'] as Map<String, dynamic>),
-      sourceType: DMZSourceType.resolve(map['sourceType']),
-      destinationType: DMZDestinationType.resolve(map['destinationType']),
+      settings: settings ?? this.settings,
+      status: status ?? this.status,
     );
   }
 
-  String toJson() => json.encode(toMap());
-
-  factory DMZSettingsState.fromJson(String source) =>
-      DMZSettingsState.fromMap(json.decode(source) as Map<String, dynamic>);
-
   @override
-  bool get stringify => true;
-
-  @override
-  List<Object> get props => [settings, sourceType, destinationType];
+  Map<String, dynamic> toMap() {
+    return {
+      'settings': settings.toMap(),
+      'status': status.toMap(),
+    };
+  }
 }

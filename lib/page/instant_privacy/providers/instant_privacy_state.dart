@@ -3,6 +3,7 @@
 import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/providers/feature_state.dart';
 
 enum MacFilterMode {
   disabled,
@@ -138,16 +139,11 @@ class InstantPrivacySettings extends Equatable {
   bool get stringify => true;
 }
 
-class InstantPrivacyState extends Equatable {
-  final InstantPrivacyStatus status;
-  final InstantPrivacySettings settings;
-
-  @override
-  List<Object?> get props => [status, settings];
-
+class InstantPrivacyState
+    extends FeatureState<InstantPrivacySettings, InstantPrivacyStatus> {
   const InstantPrivacyState({
-    required this.status,
-    required this.settings,
+    required super.settings,
+    required super.status,
   });
 
   factory InstantPrivacyState.init() {
@@ -157,35 +153,22 @@ class InstantPrivacyState extends Equatable {
     );
   }
 
+  @override
   InstantPrivacyState copyWith({
-    InstantPrivacyStatus? status,
     InstantPrivacySettings? settings,
+    InstantPrivacyStatus? status,
   }) {
     return InstantPrivacyState(
-      status: status ?? this.status,
       settings: settings ?? this.settings,
+      status: status ?? this.status,
     );
   }
-
-  Map<String, dynamic> toMap() {
-    return <String, dynamic>{
-      'status': status.mode.name,
-      'settings': settings.toMap(),
-    };
-  }
-
-  factory InstantPrivacyState.fromMap(Map<String, dynamic> map) {
-    return InstantPrivacyState(
-      status: InstantPrivacyStatus.fromMap(map['status']),
-      settings: InstantPrivacySettings.fromMap(map['settings']),
-    );
-  }
-
-  String toJson() => json.encode(toMap());
-
-  factory InstantPrivacyState.fromJson(String source) =>
-      InstantPrivacyState.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
-  bool get stringify => true;
+  Map<String, dynamic> toMap() {
+    return {
+      'settings': settings.toMap(),
+      'status': status.toMap(),
+    };
+  }
 }

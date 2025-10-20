@@ -94,7 +94,6 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
   final TextEditingController _ipv6BorderRelayPrefixLengthController =
       TextEditingController();
 
-  late InternetSettingsState originalState;
   late InternetSettingsNotifier _notifier;
   bool isIpv4Editing = false;
   bool isIpv6Editing = false;
@@ -120,16 +119,13 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
     _tabController = TabController(length: 3, vsync: this);
 
     _notifier = ref.read(internetSettingsProvider.notifier);
-    originalState = ref.read(internetSettingsProvider).copyWith();
-    initUI(originalState);
     doSomethingWithSpinner(
       context,
       _notifier.fetch().then(
         (value) {
-          setState(() {
-            originalState = value;
-            initUI(originalState);
-          });
+          if (mounted) {
+            initUI(ref.read(internetSettingsProvider));
+          }
         },
       ),
     );
@@ -137,8 +133,6 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
 
   @override
   void dispose() {
-    super.dispose();
-
     _mtuSizeController.dispose();
     _macAddressCloneController.dispose();
     _pppoeUsernameController.dispose();
@@ -162,61 +156,60 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
     _ipv6BorderRelayController.dispose();
     _ipv6BorderRelayPrefixLengthController.dispose();
     _tabController.dispose();
+    super.dispose();
   }
 
   void initUI(InternetSettingsState state) {
     resetUI();
     // IPv4 setup
-    switch (WanType.resolve(state.ipv4Setting.ipv4ConnectionType)) {
+    final ipv4Setting = state.settings.ipv4Setting;
+    switch (WanType.resolve(ipv4Setting.ipv4ConnectionType)) {
       case WanType.dhcp:
         break;
       case WanType.pppoe:
-        _pppoeUsernameController.text = state.ipv4Setting.username ?? '';
-        _pppoePasswordController.text = state.ipv4Setting.password ?? '';
-        _pppoeServiceNameController.text = state.ipv4Setting.serviceName ?? '';
-        _pppoeVLANIDController.text = state.ipv4Setting.vlanId != null
-            ? '${state.ipv4Setting.vlanId}'
-            : '';
+        _pppoeUsernameController.text = ipv4Setting.username ?? '';
+        _pppoePasswordController.text = ipv4Setting.password ?? '';
+        _pppoeServiceNameController.text = ipv4Setting.serviceName ?? '';
+        _pppoeVLANIDController.text =
+            ipv4Setting.vlanId != null ? '${ipv4Setting.vlanId}' : '';
         break;
       case WanType.pptp:
-        _tpUsernameController.text = state.ipv4Setting.username ?? '';
-        _tpPasswordController.text = state.ipv4Setting.password ?? '';
-        _tpServerIpController.text = state.ipv4Setting.serverIp ?? '';
+        _tpUsernameController.text = ipv4Setting.username ?? '';
+        _tpPasswordController.text = ipv4Setting.password ?? '';
+        _tpServerIpController.text = ipv4Setting.serverIp ?? '';
         final selectedPPTPIpAddressMode =
-            (state.ipv4Setting.useStaticSettings ?? false)
+            (ipv4Setting.useStaticSettings ?? false)
                 ? PPTPIpAddressMode.specify
                 : PPTPIpAddressMode.dhcp;
         if (selectedPPTPIpAddressMode == PPTPIpAddressMode.specify) {
-          _staticIpAddressController.text =
-              state.ipv4Setting.staticIpAddress ?? '';
-          final networkPrefixLength = state.ipv4Setting.networkPrefixLength;
+          _staticIpAddressController.text = ipv4Setting.staticIpAddress ?? '';
+          final networkPrefixLength = ipv4Setting.networkPrefixLength;
           _staticSubnetController.text = networkPrefixLength != null
               ? NetworkUtils.prefixLengthToSubnetMask(networkPrefixLength)
               : '';
-          _staticGatewayController.text = state.ipv4Setting.staticGateway ?? '';
-          _staticDns1Controller.text = state.ipv4Setting.staticDns1 ?? '';
-          _staticDns2Controller.text = state.ipv4Setting.staticDns2 ?? '';
-          _staticDns3Controller.text = state.ipv4Setting.staticDns3 ?? '';
-          _staticDomainNameController.text = state.ipv4Setting.domainName ?? '';
+          _staticGatewayController.text = ipv4Setting.staticGateway ?? '';
+          _staticDns1Controller.text = ipv4Setting.staticDns1 ?? '';
+          _staticDns2Controller.text = ipv4Setting.staticDns2 ?? '';
+          _staticDns3Controller.text = ipv4Setting.staticDns3 ?? '';
+          _staticDomainNameController.text = ipv4Setting.domainName ?? '';
         }
         break;
       case WanType.l2tp:
-        _tpUsernameController.text = state.ipv4Setting.username ?? '';
-        _tpPasswordController.text = state.ipv4Setting.password ?? '';
-        _tpServerIpController.text = state.ipv4Setting.serverIp ?? '';
+        _tpUsernameController.text = ipv4Setting.username ?? '';
+        _tpPasswordController.text = ipv4Setting.password ?? '';
+        _tpServerIpController.text = ipv4Setting.serverIp ?? '';
         break;
       case WanType.static:
-        _staticIpAddressController.text =
-            state.ipv4Setting.staticIpAddress ?? '';
-        final networkPrefixLength = state.ipv4Setting.networkPrefixLength;
+        _staticIpAddressController.text = ipv4Setting.staticIpAddress ?? '';
+        final networkPrefixLength = ipv4Setting.networkPrefixLength;
         _staticSubnetController.text = networkPrefixLength != null
             ? NetworkUtils.prefixLengthToSubnetMask(networkPrefixLength)
             : '';
-        _staticGatewayController.text = state.ipv4Setting.staticGateway ?? '';
-        _staticDns1Controller.text = state.ipv4Setting.staticDns1 ?? '';
-        _staticDns2Controller.text = state.ipv4Setting.staticDns2 ?? '';
-        _staticDns3Controller.text = state.ipv4Setting.staticDns3 ?? '';
-        _staticDomainNameController.text = state.ipv4Setting.domainName ?? '';
+        _staticGatewayController.text = ipv4Setting.staticGateway ?? '';
+        _staticDns1Controller.text = ipv4Setting.staticDns1 ?? '';
+        _staticDns2Controller.text = ipv4Setting.staticDns2 ?? '';
+        _staticDns3Controller.text = ipv4Setting.staticDns3 ?? '';
+        _staticDomainNameController.text = ipv4Setting.domainName ?? '';
         break;
       case WanType.bridge:
         break;
@@ -224,18 +217,18 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
         break;
     }
     // IPv6 setup
-    switch (WanIPv6Type.resolve(state.ipv6Setting.ipv6ConnectionType)) {
+    final ipv6Setting = state.settings.ipv6Setting;
+    switch (WanIPv6Type.resolve(ipv6Setting.ipv6ConnectionType)) {
       case WanIPv6Type.automatic:
-        _ipv6PrefixController.text = state.ipv6Setting.ipv6Prefix ?? '';
+        _ipv6PrefixController.text = ipv6Setting.ipv6Prefix ?? '';
         _ipv6PrefixLengthController.text =
-            state.ipv6Setting.ipv6PrefixLength != null
-                ? '${state.ipv6Setting.ipv6PrefixLength}'
+            ipv6Setting.ipv6PrefixLength != null
+                ? '${ipv6Setting.ipv6PrefixLength}'
                 : '';
-        _ipv6BorderRelayController.text =
-            state.ipv6Setting.ipv6BorderRelay ?? '';
+        _ipv6BorderRelayController.text = ipv6Setting.ipv6BorderRelay ?? '';
         _ipv6BorderRelayPrefixLengthController.text =
-            state.ipv6Setting.ipv6BorderRelayPrefixLength != null
-                ? '${state.ipv6Setting.ipv6BorderRelayPrefixLength}'
+            ipv6Setting.ipv6BorderRelayPrefixLength != null
+                ? '${ipv6Setting.ipv6BorderRelayPrefixLength}'
                 : '';
         break;
       case WanIPv6Type.pppoe:
@@ -246,17 +239,18 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
         break;
     }
 
-    _mtuSizeController.text = '${state.ipv4Setting.mtu}';
+    _mtuSizeController.text = '${ipv4Setting.mtu}';
     _macAddressCloneController.text =
-        state.macCloneAddress != null ? '${state.macCloneAddress}' : '';
-    _idleTimeController.text = state.ipv4Setting.maxIdleMinutes != null
-        ? '${state.ipv4Setting.maxIdleMinutes}'
+        state.settings.macCloneAddress != null
+            ? '${state.settings.macCloneAddress}'
+            : '';
+    _idleTimeController.text = ipv4Setting.maxIdleMinutes != null
+        ? '${ipv4Setting.maxIdleMinutes}'
         : '15';
-    _redialPeriodController.text =
-        state.ipv4Setting.reconnectAfterSeconds != null
-            ? '${state.ipv4Setting.reconnectAfterSeconds}'
-            : '30';
-    isMtuAuto = state.ipv4Setting.mtu == 0;
+    _redialPeriodController.text = ipv4Setting.reconnectAfterSeconds != null
+        ? '${ipv4Setting.reconnectAfterSeconds}'
+        : '30';
+    isMtuAuto = ipv4Setting.mtu == 0;
   }
 
   void resetUI() {
@@ -295,9 +289,10 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
     });
 
     final state = ref.watch(internetSettingsProvider);
+    final notifier = ref.watch(internetSettingsProvider.notifier);
     setState(() {
       final selectedType =
-          WanType.resolve(state.ipv4Setting.ipv4ConnectionType);
+          WanType.resolve(state.settings.ipv4Setting.ipv4ConnectionType);
       isBridgeMode = selectedType == WanType.bridge;
     });
     final tabs = [
@@ -317,28 +312,24 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
         title: loc(context).internetSettings.capitalizeWords(),
         bottomBar: isEditing
             ? PageBottomBar(
-                isPositiveEnabled: _isEdited(state) &&
-                    (state.ipv6Setting.ipv6rdTunnelMode !=
+                isPositiveEnabled: notifier.isDirty &&
+                    (state.settings.ipv6Setting.ipv6rdTunnelMode !=
                             IPv6rdTunnelMode.manual ||
-                        ipv6PrefixErrorText == null &&
-                            borderRelayErrorText == null),
+                        (ipv6PrefixErrorText == null &&
+                            borderRelayErrorText == null)),
                 onPositiveTap: _showRestartAlert,
               )
             : null,
-        onBackTap: _isEdited(state)
+        onBackTap: notifier.isDirty
             ? () async {
                 final goBack = await showUnsavedAlert(context);
                 if (goBack == true) {
-                  _notifier.fetch();
+                  notifier.restore();
                   context.pop();
                 }
               }
             : null,
-        tabs: tabs
-            .map((e) => Tab(
-                  text: e,
-                ))
-            .toList(),
+        tabs: tabs.map((e) => Tab(text: e)).toList(),
         tabContentViews: tabContents,
         tabController: _tabController,
       ),
@@ -381,7 +372,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
     final wanStatus =
         ref.watch(deviceManagerProvider.select((state) => state.wanStatus));
     final wanIpv6Type =
-        WanIPv6Type.resolve(state.ipv6Setting.ipv6ConnectionType);
+        WanIPv6Type.resolve(state.settings.ipv6Setting.ipv6ConnectionType);
     return StyledAppPageView.innerPage(
       child: (context, constraints) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -476,16 +467,9 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
                             isIpv4Editing = false;
                           });
                           if (!isEditing) {
-                            _notifier
-                                .updateIpv4Settings(originalState.ipv4Setting);
-                            _notifier.updateMacAddressCloneEnable(
-                                originalState.macClone);
-                            _notifier.updateMacAddressClone(
-                                originalState.macCloneAddress);
+                            _notifier.restore();
                           } else {
-                            _notifier.updateIpv4Settings(originalState
-                                .ipv4Setting
-                                .copyWith(mtu: state.ipv4Setting.mtu));
+                            // Only restore IPv4 settings
                           }
                           setState(() {
                             initUI(ref.read(internetSettingsProvider));
@@ -511,15 +495,10 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
                           setState(() {
                             isIpv6Editing = false;
                           });
-                          _notifier
-                              .updateIpv6Settings(originalState.ipv6Setting);
                           if (!isEditing) {
-                            _notifier.updateIpv4Settings(state.ipv4Setting
-                                .copyWith(mtu: originalState.ipv4Setting.mtu));
-                            _notifier.updateMacAddressCloneEnable(
-                                originalState.macClone);
-                            _notifier.updateMacAddressClone(
-                                originalState.macCloneAddress);
+                            _notifier.restore();
+                          } else {
+                            // Only restore IPv6 settings
                           }
                           setState(() {
                             initUI(ref.read(internetSettingsProvider));
@@ -553,10 +532,10 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
     return switch (viewType) {
       InternetSettingsViewType.ipv4 => isIpv4Editing
           ? _buildIpv4EditingCards(state)
-          : _buildIpv4InfoCards(state.ipv4Setting),
+          : _buildIpv4InfoCards(state.settings.ipv4Setting),
       InternetSettingsViewType.ipv6 => isIpv6Editing
           ? _buildIpv6EditingCards(state)
-          : _buildIpv6InfoCards(state.ipv6Setting),
+          : _buildIpv6InfoCards(state.settings.ipv6Setting),
       _ => [],
     };
   }
@@ -721,7 +700,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
       ),
       _internetSettingInfoCard(
         title: loc(context).duid,
-        description: ipv6Setting.duid,
+        description: ref.read(internetSettingsProvider).status.duid,
       ),
       _divider(),
       _internetSettingInfoCard(
@@ -775,7 +754,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
       children: [
         AppText.titleMedium(loc(context).optional),
         const AppGap.medium(),
-        _optinalCard(state.ipv4Setting),
+        _optinalCard(state.settings.ipv4Setting),
         const AppGap.medium(),
         _macAddressCloneCard(state),
       ],
@@ -941,16 +920,16 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
                 AppGap.small1(),
                 AppSwitch(
                   semanticLabel: 'mac address clone',
-                  value: state.macClone,
+                  value: state.settings.macClone,
                   onChanged: isEditing && !isBridgeMode
                       ? (value) {
                           _notifier.updateMacAddressCloneEnable(value);
                           _notifier.updateMacAddressClone(value
-                              ? originalState.macCloneAddress ?? ''
+                              ? state.settings.macCloneAddress ?? ''
                               : null);
                           setState(() {
                             _macAddressCloneController.text = value
-                                ? originalState.macCloneAddress ?? ''
+                                ? state.settings.macCloneAddress ?? ''
                                 : '';
                           });
                         }
@@ -968,10 +947,10 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
               semanticLabel: 'mac address',
               controller: _macAddressCloneController,
               border: const OutlineInputBorder(),
-              errorText: isEditing && state.macClone && !isBridgeMode
+              errorText: isEditing && state.settings.macClone && !isBridgeMode
                   ? macAddressCloneErrorText
                   : null,
-              enable: isEditing && state.macClone && !isBridgeMode,
+              enable: isEditing && state.settings.macClone && !isBridgeMode,
               onChanged: (value) {
                 _notifier.updateMacAddressClone(value);
                 setState(() {
@@ -992,7 +971,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
             child: AppTextButton.noPadding(
               loc(context).cloneCurrentClientMac,
               icon: LinksysIcons.duplicateControl,
-              onTap: isEditing && state.macClone && !isBridgeMode
+              onTap: isEditing && state.settings.macClone && !isBridgeMode
                   ? () {
                       _notifier.getMyMACAddress().then((value) {
                         _notifier.updateMacAddressClone(value);
@@ -1019,7 +998,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
   }
 
   List<Widget> _buildIpv4EditingCards(InternetSettingsState state) {
-    final ipv4Setting = state.ipv4Setting;
+    final ipv4Setting = state.settings.ipv4Setting;
     final type = WanType.resolve(ipv4Setting.ipv4ConnectionType);
     final infoCards = switch (type) {
       WanType.dhcp => [],
@@ -1038,22 +1017,17 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
         child: AppDropdownButton<String>(
           key: const ValueKey('ipv4ConnectionDropdown'),
           selected: ipv4Setting.ipv4ConnectionType,
-          items: ipv4Setting.supportedIPv4ConnectionType,
+          items: state.status.supportedIPv4ConnectionType,
           label: (item) {
             return _getWanConnectedTypeText(item);
           },
           onChanged: (value) {
             _notifier.updateIpv4Settings(
-                value == originalState.ipv4Setting.ipv4ConnectionType
-                    ? originalState.ipv4Setting.copyWith(mtu: ipv4Setting.mtu)
-                    : Ipv4Setting(
-                        ipv4ConnectionType: value,
-                        supportedIPv4ConnectionType:
-                            ipv4Setting.supportedIPv4ConnectionType,
-                        supportedWANCombinations:
-                            ipv4Setting.supportedWANCombinations,
-                        mtu: ipv4Setting.mtu,
-                      ));
+              Ipv4Setting(
+                ipv4ConnectionType: value,
+                mtu: ipv4Setting.mtu,
+              ),
+            );
             // Set settings to default if ipv4 set to bridge
             final selectedType = WanType.resolve(value);
             if (selectedType == WanType.bridge) {
@@ -1471,9 +1445,10 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
   }
 
   List<Widget> _buildIpv6EditingCards(InternetSettingsState state) {
-    final type = WanIPv6Type.resolve(state.ipv6Setting.ipv6ConnectionType);
+    final ipv6Setting = state.settings.ipv6Setting;
+    final type = WanIPv6Type.resolve(ipv6Setting.ipv6ConnectionType);
     final infoCards = switch (type) {
-      WanIPv6Type.automatic => _ipv6AutomaticEditing(state.ipv6Setting),
+      WanIPv6Type.automatic => _ipv6AutomaticEditing(ipv6Setting),
       WanIPv6Type.static => [],
       WanIPv6Type.bridge => [],
       WanIPv6Type.sixRdTunnel => [],
@@ -1483,13 +1458,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
       WanIPv6Type.passThrough => [],
       _ => [],
     };
-    // final allowedTypeList = state.ipv6Setting.supportedIPv6ConnectionType
-    //     .where((ipv6) => state.ipv4Setting.supportedWANCombinations.any(
-    //         (combine) =>
-    //             combine.wanType == state.ipv4Setting.ipv4ConnectionType &&
-    //             combine.wanIPv6Type == ipv6))
-    //     .toList();
-    final allowedTypeList = state.ipv6Setting.supportedIPv6ConnectionType;
+    final allowedTypeList = state.status.supportedIPv6ConnectionType;
     return [
       Padding(
         padding: const EdgeInsets.symmetric(
@@ -1497,24 +1466,18 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
         ),
         child: AppDropdownButton<String>(
           key: const ValueKey('ipv6ConnectionDropdown'),
-          selected: state.ipv6Setting.ipv6ConnectionType,
+          selected: ipv6Setting.ipv6ConnectionType,
           items: allowedTypeList,
           label: (item) {
             return _getWanConnectedTypeText(item);
           },
           onChanged: (value) {
             _notifier.updateIpv6Settings(
-                value == originalState.ipv6Setting.ipv6ConnectionType
-                    ? originalState.ipv6Setting
-                    : Ipv6Setting(
-                        ipv6ConnectionType: value,
-                        supportedIPv6ConnectionType:
-                            state.ipv6Setting.supportedIPv6ConnectionType,
-                        duid: state.ipv6Setting.duid,
-                        isIPv6AutomaticEnabled:
-                            state.ipv6Setting.isIPv6AutomaticEnabled,
-                        ipv6rdTunnelMode: state.ipv6Setting.ipv6rdTunnelMode,
-                      ));
+              Ipv6Setting(
+                ipv6ConnectionType: value,
+                isIPv6AutomaticEnabled: ipv6Setting.isIPv6AutomaticEnabled,
+              ),
+            );
             setState(() {
               initUI(ref.read(internetSettingsProvider));
             });
@@ -1540,9 +1503,6 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
                 if (value == true) {
                   _notifier.updateIpv6Settings(Ipv6Setting(
                     ipv6ConnectionType: ipv6Setting.ipv6ConnectionType,
-                    supportedIPv6ConnectionType:
-                        ipv6Setting.supportedIPv6ConnectionType,
-                    duid: ipv6Setting.duid,
                     isIPv6AutomaticEnabled: true,
                   ));
                 } else {
@@ -1564,7 +1524,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
       ),
       AppSettingCard.noBorder(
         title: loc(context).duid,
-        description: ipv6Setting.duid,
+        description: ref.read(internetSettingsProvider).status.duid,
         padding: const EdgeInsets.symmetric(vertical: Spacing.small2),
       ),
       const AppGap.small1(),
@@ -1716,11 +1676,6 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
     };
   }
 
-  bool _isEdited(InternetSettingsState state) {
-    if (state != originalState) return true;
-    return false;
-  }
-
   void _setSettingsDefaultOnBrigdeMode(InternetSettingsState state) {
     setState(() {
       // Editing state
@@ -1728,10 +1683,8 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
       // Set ipv6 to automatic
       _notifier.updateIpv6Settings(Ipv6Setting(
         ipv6ConnectionType: WanIPv6Type.automatic.type,
-        supportedIPv6ConnectionType:
-            state.ipv6Setting.supportedIPv6ConnectionType,
-        duid: state.ipv6Setting.duid,
-        isIPv6AutomaticEnabled: state.ipv6Setting.isIPv6AutomaticEnabled,
+        isIPv6AutomaticEnabled:
+            state.settings.ipv6Setting.isIPv6AutomaticEnabled,
       ));
       // Mtu
       _notifier.updateMtu(0);
@@ -1774,10 +1727,11 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
   _onRestartButtonTap() {
     // Show error if WAN combinations are invalid
     final state = ref.read(internetSettingsProvider);
-    final isValidCombination = state.ipv4Setting.supportedWANCombinations.any(
-        (combine) =>
-            combine.wanType == state.ipv4Setting.ipv4ConnectionType &&
-            combine.wanIPv6Type == state.ipv6Setting.ipv6ConnectionType);
+    final isValidCombination =
+        state.status.supportedWANCombinations.any((combine) =>
+            combine.wanType == state.settings.ipv4Setting.ipv4ConnectionType &&
+            combine.wanIPv6Type ==
+                state.settings.ipv6Setting.ipv6ConnectionType);
     if (!isValidCombination) {
       return showSimpleAppOkDialog(
         context,
@@ -1799,7 +1753,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
                   AppText.labelLarge('IPv4'),
                   AppText.labelLarge('IPv6'),
                 ]),
-                ...state.ipv4Setting.supportedWANCombinations.map((combine) {
+                ...state.status.supportedWANCombinations.map((combine) {
                   return TableRow(children: [
                     AppText.bodyMedium(combine.wanType),
                     AppText.bodyMedium(combine.wanIPv6Type),
@@ -1819,30 +1773,27 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
     setState(() {
       loadingTitle = loc(context).restarting;
     });
-    final state = ref.read(internetSettingsProvider);
     doSomethingWithSpinner(
       context,
-      _notifier.saveInternetSettings(state, originalState),
+      _notifier.save(),
     ).then((value) {
       setState(() {
         isIpv4Editing = false;
         isIpv6Editing = false;
-        originalState = ref.read(internetSettingsProvider).copyWith();
-        initUI(originalState);
       });
+      initUI(ref.read(internetSettingsProvider));
       showSuccessSnackBar(
         context,
         loc(context).changesSaved,
       );
     }).catchError((error) {
       showRouterNotFoundAlert(context, ref, onComplete: () async {
-        await _notifier.fetch(fetchRemote: true);
+        await _notifier.fetch();
         setState(() {
           isIpv4Editing = false;
           isIpv6Editing = false;
-          originalState = ref.read(internetSettingsProvider).copyWith();
-          initUI(originalState);
         });
+        initUI(ref.read(internetSettingsProvider));
         showSuccessSnackBar(
           context,
           loc(context).changesSaved,
