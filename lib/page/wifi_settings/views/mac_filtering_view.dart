@@ -3,17 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
-import 'package:privacy_gui/page/components/mixin/preserved_state_mixin.dart';
-import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
-import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/displayed_mac_filtering_devices_provider.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/wifi_view_provider.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
@@ -26,80 +22,38 @@ import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
-class MacFilteringView extends ArgumentsConsumerStatefulView {
+class MacFilteringView extends ConsumerWidget {
   const MacFilteringView({
     super.key,
-    super.args,
+    this.args,
   });
 
-  @override
-  ConsumerState<MacFilteringView> createState() => _MacFilteringViewState();
-}
-
-class _MacFilteringViewState extends ConsumerState<MacFilteringView>
-    with
-        PreservedStateMixin<InstantPrivacyState, MacFilteringView>,
-        PageSnackbarMixin {
-  late final InstantPrivacyNotifier _notifier;
+  final Map<String, dynamic>? args;
 
   @override
-  void initState() {
-    _notifier = ref.read(instantPrivacyProvider.notifier);
-    doSomethingWithSpinner(
-      context,
-      _notifier.fetch().then((value) async {
-        await _notifier.doPolling();
-        // @Defect - it is possible to set state but this page is not mounted
-        // To revisit if there has better way to handle this
-        if (!mounted) {
-          return;
-        }
-        preservedState = value;
-        ref
-            .read(wifiViewProvider.notifier)
-            .setMacFilteringViewChanged(value != preservedState);
-      }),
-    );
-    super.initState();
-  }
+  Widget build(BuildContext context, WidgetRef ref) {
+    final privacyState = ref.watch(
+        wifiBundleProvider.select((state) => state.settings.current.privacy));
+    final originalPrivacyState = ref.watch(
+        wifiBundleProvider.select((state) => state.settings.original.privacy));
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final state = ref.watch(instantPrivacyProvider);
     final displayDevices = ref.watch(macFilteringDeviceListProvider);
-    ref.listen(instantPrivacyProvider, (prev, next) {
-      if (preservedState != null) {
-        ref
-            .read(wifiViewProvider.notifier)
-            .setMacFilteringViewChanged(next != preservedState);
-      }
-    });
+
     return StyledAppPageView(
       scrollable: true,
       hideTopbar: true,
       appBarStyle: AppBarStyle.none,
       useMainPadding: true,
-      bottomBar: PageBottomBar(
-          isPositiveEnabled: state.settings.mode == MacFilterMode.deny
-              ? isStateChanged(state)
-              : state.settings.mode != preservedState?.settings.mode,
-          onPositiveTap: () {
-            _showEnableDialog(state.settings.mode != MacFilterMode.disabled);
-          }),
+      // The bottom bar is now handled by the parent WiFiMainView.
       child: (context, constraints) => ResponsiveLayout(
-        desktop: _desktopLayout(state, displayDevices),
-        mobile: _mobileLayout(state, displayDevices),
+        desktop: _desktopLayout(context, ref, privacyState, originalPrivacyState, displayDevices),
+        mobile: _mobileLayout(context, ref, privacyState, originalPrivacyState, displayDevices),
       ),
     );
   }
 
   Widget _desktopLayout(
-      InstantPrivacyState state, List<DeviceListItem> deviceList) {
+      BuildContext context, WidgetRef ref, InstantPrivacySettings state, InstantPrivacySettings originalState, List<DeviceListItem> deviceList) {
     return AppBasicLayout(
       content: SizedBox(
         width: 9.col,
@@ -107,8 +61,8 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView>
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (preservedState?.settings.mode == MacFilterMode.allow) ...[
-              _warningCard(),
+            if (originalState.mode == MacFilterMode.allow) ...[
+              _warningCard(context),
               const AppGap.small2(),
             ],
             Row(
@@ -118,9 +72,9 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _enableTile(state),
+                      _enableTile(context, ref, state),
                       const AppGap.small2(),
-                      _infoCard(state.settings.mode == MacFilterMode.deny,
+                      _infoCard(context, state.mode == MacFilterMode.deny,
                           deviceList.length),
                     ],
                   ),
@@ -134,27 +88,27 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView>
   }
 
   Widget _mobileLayout(
-      InstantPrivacyState state, List<DeviceListItem> deviceList) {
+      BuildContext context, WidgetRef ref, InstantPrivacySettings state, InstantPrivacySettings originalState, List<DeviceListItem> deviceList) {
     return AppBasicLayout(
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (preservedState?.settings.mode == MacFilterMode.allow) ...[
-            _warningCard(),
+          if (originalState.mode == MacFilterMode.allow) ...[
+            _warningCard(context),
             const AppGap.small2(),
           ],
-          _enableTile(state),
+          _enableTile(context, ref, state),
           const AppGap.small2(),
           _infoCard(
-              state.settings.mode == MacFilterMode.deny, deviceList.length),
+              context, state.mode == MacFilterMode.deny, deviceList.length),
           const AppGap.large2(),
         ],
       ),
     );
   }
 
-  Widget _warningCard() {
+  Widget _warningCard(BuildContext context) {
     return AppSettingCard(
       title: loc(context).instantPrivacyDisableWarning,
       leading: Icon(
@@ -165,7 +119,7 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView>
     );
   }
 
-  Widget _infoCard(bool enabled, int length) {
+  Widget _infoCard(BuildContext context, bool enabled, int length) {
     return Opacity(
       opacity: enabled ? 1 : .5,
       child: AppInfoCard(
@@ -182,50 +136,22 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView>
     );
   }
 
-  Widget _enableTile(InstantPrivacyState state) {
+  Widget _enableTile(BuildContext context, WidgetRef ref, InstantPrivacySettings state) {
+    final notifier = ref.read(wifiBundleProvider.notifier);
     return AppCard(
         child: Row(
       children: [
         Expanded(child: AppText.labelLarge(loc(context).wifiMacFiltering)),
         AppSwitch(
           semanticLabel: 'wifi mac filtering',
-          value: state.settings.mode == MacFilterMode.deny,
+          value: state.mode == MacFilterMode.deny,
           onChanged: (value) {
-            _notifier.setAccess(value
+            notifier.setMacFilterMode(value
                 ? MacFilterMode.deny
-                : preservedState?.settings.mode == MacFilterMode.deny
-                    ? MacFilterMode.disabled
-                    : preservedState?.settings.mode ?? MacFilterMode.disabled);
+                : MacFilterMode.disabled);
           },
         )
       ],
     ));
-  }
-
-  void _showEnableDialog(bool enable) {
-    showMacFilteringConfirmDialog(context, enable).then((value) {
-      if (value != true) {
-        return;
-      }
-      if (enable) {
-        final macAddressList = ref
-            .read(macFilteringDeviceListProvider)
-            .map((e) => e.macAddress.toUpperCase())
-            .toList();
-        _notifier.setMacAddressList(macAddressList);
-      }
-      doSomethingWithSpinner(
-        context,
-        _notifier.save().then((state) {
-          preservedState = state;
-          ref.read(wifiViewProvider.notifier).setMacFilteringViewChanged(false);
-          return state;
-        }),
-      ).then((state) {
-        showChangesSavedSnackBar();
-      }).onError((error, stackTrace) {
-        showErrorMessageSnackBar(error);
-      });
-    });
   }
 }

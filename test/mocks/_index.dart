@@ -33,5 +33,4 @@ export 'single_port_forwarding_rule_notifier_mocks.dart';
 export 'static_routing_notifier_mocks.dart';
 export 'timezone_notifier_mocks.dart';
 export 'instant_topology_notifier_mocks.dart';
-export 'wifi_advanced_settings_notifier_mocks.dart';
-export 'wifi_list_notifier_mocks.dart';
+

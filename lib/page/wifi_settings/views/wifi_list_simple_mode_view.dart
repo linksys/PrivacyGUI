@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_item.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/wifi_list_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/views/widgets/wifi_setting_modal_mixin.dart';
 import 'package:privacy_gui/page/wifi_settings/views/wifi_term_titles.dart';
 import 'package:privacy_gui/page/wifi_settings/views/widgets/guest_wifi_card.dart';
@@ -40,10 +40,10 @@ class _SimpleModeViewState extends ConsumerState<SimpleModeView>
     with WifiSettingModalMixin {
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(wifiListProvider);
+    final state = ref.watch(wifiBundleProvider);
     Set<WifiSecurityType> securityTypeSet =
-        state.mainWiFi.first.availableSecurityTypes.toSet();
-    for (var e in state.mainWiFi) {
+        state.settings.current.wifiList.mainWiFi.first.availableSecurityTypes.toSet();
+    for (var e in state.settings.current.wifiList.mainWiFi) {
       final availableSecurityTypesSet = e.availableSecurityTypes.toSet();
       securityTypeSet = securityTypeSet.intersection(availableSecurityTypesSet);
     }
@@ -66,7 +66,7 @@ class _SimpleModeViewState extends ConsumerState<SimpleModeView>
           children: [
             Padding(
               padding: const EdgeInsets.only(top: 16),
-              child: GuestWiFiCard(state: state.guestWiFi, lastInRow: true),
+              child: GuestWiFiCard(state: state.settings.current.wifiList.guestWiFi, lastInRow: true),
             ),
           ],
         ),
@@ -82,7 +82,7 @@ class _SimpleModeViewState extends ConsumerState<SimpleModeView>
           children: [
             _settingsView(securityTypeList),
             const AppGap.medium(),
-            GuestWiFiCard(state: state.guestWiFi, lastInRow: true),
+            GuestWiFiCard(state: state.settings.current.wifiList.guestWiFi, lastInRow: true),
           ],
         ),
       ];

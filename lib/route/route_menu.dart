@@ -99,6 +99,8 @@ final menus = [
   LinksysRoute(
     name: RouteNamed.menuIncredibleWiFi,
     path: RoutePath.menuIncredibleWiFi,
+    preservableProvider: preservableWifiSettingsProvider,
+    enableDirtyCheck: true,
     config:
         LinksysRouteConfig(column: ColumnGrid(column: 12), noNaviRail: false),
     builder: (context, state) => WiFiMainView(

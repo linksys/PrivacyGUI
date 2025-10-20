@@ -1,8 +1,8 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/wifi_state.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_state.dart';
 import 'package:privacy_gui/page/wifi_settings/views/widgets/guest_wifi_card.dart';
 import 'package:privacy_gui/page/wifi_settings/views/widgets/main_wifi_card.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
@@ -21,12 +21,12 @@ class AdvancedModeView extends ConsumerStatefulWidget {
 class _AdvancedModeViewState extends ConsumerState<AdvancedModeView> {
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(wifiListProvider);
+    final state = ref.watch(wifiBundleProvider);
 
     return _wifiContentView(state);
   }
 
-  Widget _wifiContentView(WiFiState state) {
+  Widget _wifiContentView(WifiBundleState state) {
     final columnCount = ResponsiveLayout.isOverExtraLargeLayout(context)
         ? 4
         : ResponsiveLayout.isOverLargeLayout(context)
@@ -52,21 +52,21 @@ class _AdvancedModeViewState extends ConsumerState<AdvancedModeView> {
                 FixedColumnWidth(
                     fixedWidth + ResponsiveLayout.columnPadding(context)))));
 
-    final enabledWiFiCount = state.mainWiFi.where((e) => e.isEnabled).length;
-    final canDisableAllMainWiFi = state.canDisableMainWiFi;
+    final enabledWiFiCount = state.settings.current.wifiList.mainWiFi.where((e) => e.isEnabled).length;
+    final canDisableAllMainWiFi = state.status.wifiList.canDisableMainWiFi;
     final canBeDisabled = enabledWiFiCount > 1 || canDisableAllMainWiFi;
     final children = [
-      columnCount > state.mainWiFi.length
+      columnCount > state.settings.current.wifiList.mainWiFi.length
           ? TableRow(children: [
-              ...state.mainWiFi
+              ...state.settings.current.wifiList.mainWiFi
                   .mapIndexed((index, e) => MainWiFiCard(
                       radio: e, canBeDisable: canBeDisabled, lastInRow: false))
                   .toList(),
-              GuestWiFiCard(state: state.guestWiFi, lastInRow: true),
+              GuestWiFiCard(state: state.settings.current.wifiList.guestWiFi, lastInRow: true),
             ])
-          : columnCount == state.mainWiFi.length
+          : columnCount == state.settings.current.wifiList.mainWiFi.length
               ? TableRow(children: [
-                  ...state.mainWiFi
+                  ...state.settings.current.wifiList.mainWiFi
                       .mapIndexed((index, e) => MainWiFiCard(
                           radio: e,
                           canBeDisable: canBeDisabled,
@@ -74,7 +74,7 @@ class _AdvancedModeViewState extends ConsumerState<AdvancedModeView> {
                       .toList(),
                 ])
               : TableRow(children: [
-                  ...state.mainWiFi
+                  ...state.settings.current.wifiList.mainWiFi
                       .take(columnCount)
                       .mapIndexed((index, e) => MainWiFiCard(
                           radio: e,
@@ -82,23 +82,23 @@ class _AdvancedModeViewState extends ConsumerState<AdvancedModeView> {
                           lastInRow: index == columnCount - 1))
                       .toList(),
                 ]),
-      if (columnCount <= state.mainWiFi.length)
-        columnCount == state.mainWiFi.length
+      if (columnCount <= state.settings.current.wifiList.mainWiFi.length)
+        columnCount == state.settings.current.wifiList.mainWiFi.length
             ? TableRow(children: [
-                GuestWiFiCard(state: state.guestWiFi, lastInRow: false),
+                GuestWiFiCard(state: state.settings.current.wifiList.guestWiFi, lastInRow: false),
                 ...List.filled(columnCount - 1, 0).map(
                   (_) => const SizedBox.shrink(),
                 ),
               ])
             : TableRow(children: [
-                ...state.mainWiFi
-                    .getRange(columnCount, state.mainWiFi.length)
+                ...state.settings.current.wifiList.mainWiFi
+                    .getRange(columnCount, state.settings.current.wifiList.mainWiFi.length)
                     .mapIndexed((index, e) => MainWiFiCard(
                         radio: e,
                         canBeDisable: canBeDisabled,
                         lastInRow: false))
                     .toList(),
-                GuestWiFiCard(state: state.guestWiFi, lastInRow: true),
+                GuestWiFiCard(state: state.settings.current.wifiList.guestWiFi, lastInRow: true),
               ])
     ];
 

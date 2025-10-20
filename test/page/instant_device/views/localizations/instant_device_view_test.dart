@@ -1,4 +1,3 @@
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,12 +11,12 @@ import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_filtered_list_state.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/wifi_list_provider.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/wifi_state.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_state.dart';
+import 'package:privacy_gui/providers/preservable.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/device_list_card.dart';
-import 'package:privacygui_widgets/widgets/check_box/check_box.dart';
 
 import '../../../../common/config.dart';
 import '../../../../common/di.dart';
@@ -25,16 +24,16 @@ import '../../../../common/test_responsive_widget.dart';
 import '../../../../common/testable_router.dart';
 import '../../../../mocks/dashboard_manager_notifier_mocks.dart';
 import '../../../../mocks/device_manager_notifier_mocks.dart';
-import '../../../../mocks/jnap_service_supported_mocks.dart';
-import '../../../../mocks/wifi_list_notifier_mocks.dart';
+import '../../../../mocks/wifi_bundle_notifier_mocks.dart';
 import '../../../../test_data/_index.dart';
 import '../../../../mocks/device_filter_config_notifier_mocks.dart';
+import '../../../../test_data/wifi_bundle_test_state.dart';
 
 void main() {
   late DeviceFilterConfigNotifier mockDeviceFilterConfigNotifier;
   late MockDeviceManagerNotifier mockDeviceManagerNotifier;
-  late WifiListNotifier mockWifiListNotifier;
-  late DashboardManagerNotifier mockDashboardManagerNotifier;
+  late MockWifiBundleNotifier mockWifiBundleNotifier;
+  late MockDashboardManagerNotifier mockDashboardManagerNotifier;
 
   mockDependencyRegister();
   ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
@@ -42,16 +41,22 @@ void main() {
   setUp(() {
     mockDeviceFilterConfigNotifier = MockDeviceFilterConfigNotifier();
     mockDeviceManagerNotifier = MockDeviceManagerNotifier();
-    mockWifiListNotifier = MockWifiListNotifier();
+    mockWifiBundleNotifier = MockWifiBundleNotifier();
     mockDashboardManagerNotifier = MockDashboardManagerNotifier();
+
+    final settings = WifiBundleSettings.fromMap(wifiBundleTestState['settings'] as Map<String, dynamic>);
+    final status = WifiBundleStatus.fromMap(wifiBundleTestState['status'] as Map<String, dynamic>);
+    final wifiInitialState = WifiBundleState(
+      settings: Preservable(original: settings, current: settings),
+      status: status,
+    );
+    when(mockWifiBundleNotifier.build()).thenReturn(wifiInitialState);
 
     when(mockDeviceFilterConfigNotifier.build()).thenReturn(
         DeviceFilterConfigState.fromMap(deviceFilterConfigTestState));
     when(mockDeviceManagerNotifier.build())
         .thenReturn(DeviceManagerState.fromMap(deviceManagerCherry7TestState));
     when(mockServiceHelper.isSupportClientDeauth()).thenReturn(true);
-    when(mockWifiListNotifier.build())
-        .thenReturn(WiFiState.fromMap(wifiListTestState));
     when(mockDashboardManagerNotifier.build()).thenReturn(
         DashboardManagerState.fromMap(dashboardManagerChrry7TestState));
 
@@ -70,7 +75,7 @@ void main() {
                 deviceFilteredTestData
                     .map((e) => DeviceListItem.fromMap(e))
                     .toList()),
-            wifiListProvider.overrideWith(() => mockWifiListNotifier),
+            wifiBundleProvider.overrideWith(() => mockWifiBundleNotifier),
             dashboardManagerProvider
                 .overrideWith(() => mockDashboardManagerNotifier),
           ],
@@ -92,7 +97,7 @@ void main() {
           .map((e) => DeviceListItem.fromMap(e))
           .take(1)
           .toList()),
-      wifiListProvider.overrideWith(() => mockWifiListNotifier),
+      wifiBundleProvider.overrideWith(() => mockWifiBundleNotifier),
       dashboardManagerProvider.overrideWith(() => mockDashboardManagerNotifier),
     ]);
     await tester.pumpWidget(widget);
@@ -108,7 +113,7 @@ void main() {
           .map((e) => DeviceListItem.fromMap(e))
           .take(0)
           .toList()),
-      wifiListProvider.overrideWith(() => mockWifiListNotifier),
+      wifiBundleProvider.overrideWith(() => mockWifiBundleNotifier),
       dashboardManagerProvider.overrideWith(() => mockDashboardManagerNotifier),
     ]);
     await tester.pumpWidget(widget);
@@ -147,7 +152,7 @@ void main() {
           deviceFilteredOfflineTestData
               .map((e) => DeviceListItem.fromMap(e))
               .toList()),
-      wifiListProvider.overrideWith(() => mockWifiListNotifier),
+      wifiBundleProvider.overrideWith(() => mockWifiBundleNotifier),
       dashboardManagerProvider.overrideWith(() => mockDashboardManagerNotifier),
     ]);
     await tester.pumpWidget(widget);
@@ -173,7 +178,7 @@ void main() {
           deviceFilteredOfflineTestData
               .map((e) => DeviceListItem.fromMap(e))
               .toList()),
-      wifiListProvider.overrideWith(() => mockWifiListNotifier),
+      wifiBundleProvider.overrideWith(() => mockWifiBundleNotifier),
       dashboardManagerProvider.overrideWith(() => mockDashboardManagerNotifier),
     ]);
     await tester.pumpWidget(widget);

@@ -1,0 +1,10 @@
+{
+	"recoveryCode": "45984",
+	"password": "7uGq6vjp2@",
+    "serialNumber": "65G10M27E03053",
+	"defaultWiFi": {
+		"ssid": "Linksys03053",
+		"password": "7uGq6vjp2@"
+	},
+	"wifiBands": "2.4,5,guest"
+}
