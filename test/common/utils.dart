@@ -34,3 +34,21 @@ void fireOnTap(Finder finder, String text) {
     return false; // stop iterating, we found the one.
   });
 }
+
+Future<void> scrollUntil(WidgetTester tester, Finder finder) async {
+    await tester.scrollUntilVisible(
+      finder,
+      100,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> scrollAndTap(WidgetTester tester, Finder finder) async {
+    // Scroll to the finder if it is not visible
+    if (!tester.any(finder.hitTestable())) {
+      await scrollUntil(tester, finder);
+    }
+    await tester.tap(finder);
+    await tester.pumpAndSettle();
+  }

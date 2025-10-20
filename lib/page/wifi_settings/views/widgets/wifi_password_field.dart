@@ -33,7 +33,7 @@ class _WifiPasswordFieldState extends State<WifiPasswordField> {
   @override
   Widget build(BuildContext context) {
     return AppPasswordField.withValidator(
-      semanticLabel: '${widget.semanticLabel} wifi password',
+      semanticLabel: widget.semanticLabel,
       autofocus: true,
       controller: widget.controller,
       border: const OutlineInputBorder(),
