@@ -4,8 +4,10 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:privacy_gui/core/jnap/models/dual_wan_settings.dart';
 import 'package:privacy_gui/core/jnap/models/wan_settings.dart';
-import 'package:privacy_gui/core/jnap/models/wan_status.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
+
+const defaultMaxIdleMinutes = 15;
+const defaultReconnectAfterSeconds = 30;
 
 // TODO Clone from [#InternetSettingsState], revisit when spec confirmed
 class DualWANConfiguration extends Equatable {
@@ -239,7 +241,8 @@ class DualWANConfiguration extends Equatable {
           staticDns1: data.tpSettings?.staticSettings?.dnsServer1,
           staticDns2: data.tpSettings?.staticSettings?.dnsServer2,
           staticDns3: data.tpSettings?.staticSettings?.dnsServer3,
-          networkPrefixLength: data.tpSettings?.staticSettings?.networkPrefixLength,
+          networkPrefixLength:
+              data.tpSettings?.staticSettings?.networkPrefixLength,
         ),
       _ => DualWANConfiguration(
           wanType: wanType,
@@ -258,8 +261,10 @@ class DualWANConfiguration extends Equatable {
           mtu: mtu,
           pppoeSettings: PPPoESettings(
             behavior: behavior?.value ?? PPPConnectionBehavior.keepAlive.value,
-            maxIdleMinutes: maxIdleMinutes,
-            reconnectAfterSeconds: reconnectAfterSeconds,
+            maxIdleMinutes:
+                maxIdleMinutes ?? getDefaultMaxIdleMinutes(behavior),
+            reconnectAfterSeconds: reconnectAfterSeconds ??
+                getDefaultReconnectAfterSeconds(behavior),
             username: username ?? '',
             password: password ?? '',
             serviceName: serviceName ?? '',
@@ -279,11 +284,13 @@ class DualWANConfiguration extends Equatable {
         ),
       'PPTP' => DualWANSettingsData(
           wanType: wanType,
-          mtu: mtu, 
+          mtu: mtu,
           tpSettings: TPSettings(
             behavior: behavior?.value ?? PPPConnectionBehavior.keepAlive.value,
-            maxIdleMinutes: maxIdleMinutes,
-            reconnectAfterSeconds: reconnectAfterSeconds,
+            maxIdleMinutes:
+                maxIdleMinutes ?? getDefaultMaxIdleMinutes(behavior),
+            reconnectAfterSeconds: reconnectAfterSeconds ??
+                getDefaultReconnectAfterSeconds(behavior),
             username: username ?? '',
             password: password ?? '',
             server: serverIp ?? '',
@@ -295,8 +302,10 @@ class DualWANConfiguration extends Equatable {
           mtu: mtu,
           tpSettings: TPSettings(
             behavior: behavior?.value ?? PPPConnectionBehavior.keepAlive.value,
-            maxIdleMinutes: maxIdleMinutes,
-            reconnectAfterSeconds: reconnectAfterSeconds,
+            maxIdleMinutes:
+                maxIdleMinutes ?? getDefaultMaxIdleMinutes(behavior),
+            reconnectAfterSeconds: reconnectAfterSeconds ??
+                getDefaultReconnectAfterSeconds(behavior),
             username: username ?? '',
             password: password ?? '',
             server: serverIp ?? '',
@@ -316,6 +325,20 @@ class DualWANConfiguration extends Equatable {
           wanType: wanType,
           mtu: mtu,
         ),
+    };
+  }
+
+  int? getDefaultMaxIdleMinutes(PPPConnectionBehavior? behavior) {
+    return switch (behavior ?? PPPConnectionBehavior.keepAlive) {
+      PPPConnectionBehavior.keepAlive => null,
+      PPPConnectionBehavior.connectOnDemand => defaultMaxIdleMinutes,
+    };
+  }
+
+  int? getDefaultReconnectAfterSeconds(PPPConnectionBehavior? behavior) {
+    return switch (behavior ?? PPPConnectionBehavior.keepAlive) {
+      PPPConnectionBehavior.keepAlive => defaultReconnectAfterSeconds,
+      PPPConnectionBehavior.connectOnDemand => null,
     };
   }
 }
