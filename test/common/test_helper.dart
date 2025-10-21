@@ -101,7 +101,6 @@ class TestHelper {
     mockWiFiAdvancedSettingsNotifier = MockWifiAdvancedSettingsNotifier();
     mockWiFiViewNotifier = MockWiFiViewNotifier();
     mockDeviceListNotifier = MockDeviceListNotifier();
-    mockServiceHelper = MockServiceHelper();
     mockHealthCheckProvider = MockHealthCheckProvider();
 
     SharedPreferences.setMockInitialValues({});
@@ -110,15 +109,9 @@ class TestHelper {
     _setupDefaultData();
   }
 
-  void tearDown() {
-    GetIt.I.unregister<ServiceHelper>();
-  }
-
   void _setupServiceHelper() {
-    if (!GetIt.I.isRegistered<ServiceHelper>()) {
-      GetIt.I.registerSingleton<ServiceHelper>(mockServiceHelper);
-    }
     mockDependencyRegister();
+    mockServiceHelper = getIt.get<ServiceHelper>();
     when(mockServiceHelper.isSupportGuestNetwork()).thenReturn(true);
     when(mockServiceHelper.isSupportLedMode()).thenReturn(true);
     when(mockServiceHelper.isSupportLedBlinking()).thenReturn(true);

@@ -1,7 +1,6 @@
 import 'dart:ui';
 
 import 'package:flutter/widgets.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_state.dart';
@@ -26,8 +25,6 @@ import '../../../common/config.dart';
 import '../../../common/test_helper.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../test_data/_index.dart';
-import '../../../test_data/geolocation_test_state.dart';
-import '../../../test_data/vpn_test_state.dart';
 
 void main() async {
   late TopologyTestData topologyTestData;
@@ -215,7 +212,6 @@ void main() async {
       testHelper = TestHelper();
       testHelper.setup();
     });
-
     tearDown(() {
       topologyTestData.cleanup();
     });
