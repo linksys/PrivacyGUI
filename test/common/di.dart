@@ -5,7 +5,15 @@ import '../mocks/jnap_service_supported_mocks.dart';
 import 'theme_data.dart';
 
 void mockDependencyRegister() {
-  getIt.registerSingleton<ServiceHelper>(MockServiceHelper());
-  getIt.registerSingleton<ThemeData>(mockLightThemeData, instanceName: 'lightThemeData');
-  getIt.registerSingleton<ThemeData>(mockDarkThemeData, instanceName: 'darkThemeData');
+  if (!getIt.isRegistered<ServiceHelper>()) {
+    getIt.registerSingleton<ServiceHelper>(MockServiceHelper());
+  }
+  if (!getIt.isRegistered<ThemeData>(instanceName: 'lightThemeData')) {
+    getIt.registerSingleton<ThemeData>(mockLightThemeData,
+        instanceName: 'lightThemeData');
+  }
+  if (!getIt.isRegistered<ThemeData>(instanceName: 'darkThemeData')) {
+    getIt.registerSingleton<ThemeData>(mockDarkThemeData,
+        instanceName: 'darkThemeData');
+  }
 }

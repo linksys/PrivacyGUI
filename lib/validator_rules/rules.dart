@@ -182,6 +182,7 @@ class IPv6Rule extends RegExValidationRule {
 
   @override
   bool validate(String input) {
+    // Unspecified Address
     if (input == '::') {
       return false;
     }

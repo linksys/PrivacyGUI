@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
@@ -23,7 +22,6 @@ import '../../../common/di.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
 import '../../../mocks/_index.dart';
-import '../../../mocks/jnap_service_supported_mocks.dart';
 import '../../../test_data/device_filter_config_test_state.dart';
 import '../../../test_data/device_filtered_list_test_data.dart';
 import '../../../test_data/device_manager_test_state.dart';
@@ -57,7 +55,7 @@ void main() {
         .thenReturn('2.4GHz');
   });
   testLocalizations(
-    'Instant-Topology - Node details view - master node',
+    'Node details view - master node',
     (tester, locale) async {
       when(mockNodeDetailNotifier.build())
           .thenReturn(NodeDetailState.fromMap(nodeDetailsCherry7TestState));
@@ -95,7 +93,7 @@ void main() {
     },
   );
   testLocalizations(
-    'Instant-Topology - Node details view - master node without devices',
+    'Node details view - master node without devices',
     (tester, locale) async {
       when(mockNodeDetailNotifier.build())
           .thenReturn(NodeDetailState.fromMap(nodeDetailsCherry7TestState));
@@ -132,7 +130,7 @@ void main() {
   );
 
   testLocalizations(
-    'Instant-Topology - Node details view - master node with one device',
+    'Node details view - master node with one device',
     (tester, locale) async {
       when(mockNodeDetailNotifier.build())
           .thenReturn(NodeDetailState.fromMap(nodeDetailsCherry7TestState));
@@ -173,7 +171,7 @@ void main() {
   );
 
   testLocalizations(
-    'Instant-Topology - Node details view - master node with filter',
+    'Node details view - master node with filter',
     (tester, locale) async {
       when(mockNodeDetailNotifier.build())
           .thenReturn(NodeDetailState.fromMap(nodeDetailsCherry7TestState));
@@ -216,7 +214,7 @@ void main() {
   );
 
   testLocalizations(
-    'Instant-Topology - Node details view - master node',
+    'Node details view - master node',
     (tester, locale) async {
       when(mockNodeDetailNotifier.build())
           .thenReturn(NodeDetailState.fromMap(nodeDetailsCherry7TestState));
@@ -259,7 +257,7 @@ void main() {
     screens: responsiveMobileScreens,
   );
   testLocalizations(
-    'Instant-Topology - Node details view - master node without devices',
+    'Node details view - master node without devices',
     (tester, locale) async {
       when(mockNodeDetailNotifier.build())
           .thenReturn(NodeDetailState.fromMap(nodeDetailsCherry7TestState));
@@ -300,7 +298,7 @@ void main() {
   );
 
   testLocalizations(
-    'Instant-Topology - Node details view - master node with one device',
+    'Node details view - master node with one device',
     (tester, locale) async {
       when(mockNodeDetailNotifier.build())
           .thenReturn(NodeDetailState.fromMap(nodeDetailsCherry7TestState));
@@ -344,7 +342,7 @@ void main() {
   );
 
   testLocalizations(
-    'Instant-Topology - Node details view - master node with filter',
+    'Node details view - master node with filter',
     (tester, locale) async {
       when(mockNodeDetailNotifier.build())
           .thenReturn(NodeDetailState.fromMap(nodeDetailsCherry7TestState));
@@ -391,7 +389,7 @@ void main() {
   );
 
   testLocalizations(
-    'Instant-Topology - Node details view - slave node',
+    'Node details view - slave node',
     (tester, locale) async {
       when(mockNodeDetailNotifier.build())
           .thenReturn(NodeDetailState.fromMap(fakeNodeDetailsState2));
@@ -428,7 +426,7 @@ void main() {
   );
 
   testLocalizations(
-    'Instant-Topology - Node details view - slave node with MLO label',
+    'Node details view - slave node with MLO label',
     (tester, locale) async {
       when(mockNodeDetailNotifier.build()).thenReturn(
           NodeDetailState.fromMap(fakeNodeDetailsState2).copyWith(isMLO: true));
@@ -465,7 +463,7 @@ void main() {
   );
 
   testLocalizations(
-    'Instant-Topology - Node details view - MLO modal',
+    'Node details view - MLO modal',
     (tester, locale) async {
       when(mockNodeDetailNotifier.build()).thenReturn(
           NodeDetailState.fromMap(fakeNodeDetailsState2).copyWith(isMLO: true));
@@ -506,7 +504,7 @@ void main() {
   );
 
   testLocalizations(
-    'Instant-Topology - Node details view - firmware update avaliable',
+    'Node details view - firmware update avaliable',
     (tester, locale) async {
       when(mockNodeDetailNotifier.build())
           .thenReturn(NodeDetailState.fromMap(nodeDetailsCherry7TestState));
@@ -543,7 +541,7 @@ void main() {
   );
 
   testLocalizations(
-    'Instant-Topology - Node details view - edit name modal',
+    'Node details view - edit name modal',
     (tester, locale) async {
       when(mockNodeDetailNotifier.build())
           .thenReturn(NodeDetailState.fromMap(nodeDetailsCherry7TestState));
@@ -586,7 +584,7 @@ void main() {
   );
 
   testLocalizations(
-    'Instant-Topology - Node details view - edit name modal - empty error',
+    'Node details view - edit name modal - empty error',
     (tester, locale) async {
       when(mockNodeDetailNotifier.build())
           .thenReturn(NodeDetailState.fromMap(nodeDetailsCherry7TestState));
@@ -634,7 +632,7 @@ void main() {
   );
 
   testLocalizations(
-    'Instant-Topology - Node details view - edit name modal - over name size error',
+    'Node details view - edit name modal - over name size error',
     (tester, locale) async {
       when(mockNodeDetailNotifier.build())
           .thenReturn(NodeDetailState.fromMap(nodeDetailsCherry7TestState));
@@ -683,7 +681,7 @@ void main() {
   );
 
   testLocalizations(
-    'Instant-Topology - Node details view - edit name modal, blink node',
+    'Node details view - edit name modal, blink node',
     (tester, locale) async {
       when(mockNodeDetailNotifier.build())
           .thenReturn(NodeDetailState.fromMap(nodeDetailsCherry7TestState));
@@ -729,7 +727,7 @@ void main() {
   );
 
   testLocalizations(
-    'Instant-Topology - Node details view - node light settings',
+    'Node details view - node light settings',
     (tester, locale) async {
       when(mockNodeDetailNotifier.build())
           .thenReturn(NodeDetailState.fromMap(nodeDetailsCherry7TestState));
@@ -770,7 +768,7 @@ void main() {
   );
 
   testLocalizations(
-      'Instant-Topology - Node details view - devices tab for mobile layout',
+      'Node details view - devices tab for mobile layout',
       (tester, locale) async {
     when(mockNodeDetailNotifier.build())
         .thenReturn(NodeDetailState.fromMap(nodeDetailsCherry7TestState));

@@ -2,7 +2,14 @@ import 'package:collection/collection.dart';
 import 'package:privacy_gui/core/jnap/models/device.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 
+/// An extension on [RawDevice] providing utility methods for accessing device information.
 extension DeviceUtil on RawDevice {
+  /// Retrieves the user-defined location of the device.
+  ///
+  /// This method first checks for a 'userDeviceLocation' property. If not found
+  /// or empty, it falls back to returning the device name via [getDeviceName].
+  ///
+  /// Returns the device location as a `String`.
   String getDeviceLocation() {
     for (final property in properties) {
       if (property.name == 'userDeviceLocation' && property.value.isNotEmpty) {
@@ -12,6 +19,16 @@ extension DeviceUtil on RawDevice {
     return getDeviceName();
   }
 
+  /// Determines the most appropriate display name for the device.
+  ///
+  /// The method follows a priority order:
+  /// 1. A user-defined device name ('userDeviceName' property).
+  /// 2. A constructed name for Android devices (e.g., 'Samsung Galaxy S8').
+  /// 3. The `friendlyName` provided by the device.
+  /// 4. The `modelNumber` from the device model.
+  /// 5. A generic name like 'Guest Network Device' or 'Network Device' as a last resort.
+  ///
+  /// Returns the determined device name as a `String`.
   String getDeviceName() {
     for (final property in properties) {
       if (property.name == 'userDeviceName' && property.value.isNotEmpty) {
@@ -58,6 +75,12 @@ extension DeviceUtil on RawDevice {
     }
   }
 
+  /// Extracts the primary MAC address of the device.
+  ///
+  /// It prioritizes finding a MAC address from a known, active interface.
+  /// For older routers, it may fall back to using `knownMACAddresses`.
+  ///
+  /// Returns the MAC address as a `String`, or an empty string if none is found.
   String getMacAddress() {
     var macAddress = '';
     if (knownInterfaces != null) {
@@ -71,6 +94,11 @@ extension DeviceUtil on RawDevice {
     return macAddress;
   }
 
+  /// Checks if the device's known interfaces include the given MAC address.
+  ///
+  /// [mac] The MAC address to search for.
+  ///
+  /// Returns `true` if the MAC address is found, `false` otherwise.
   bool containsMacAddress(String mac) {
     if (knownInterfaces != null) {
       return knownInterfaces!.any((element) => element.macAddress == mac);
@@ -81,16 +109,34 @@ extension DeviceUtil on RawDevice {
     }
   }
 
+  /// Checks if the device's active connections include the given IP address.
+  ///
+  /// [ip] The IPv4 address to search for.
+  ///
+  /// Returns `true` if the IP address is found, `false` otherwise.
   bool containsIpAddress(String ip) {
     return connections.any((element) => element.ipAddress == ip);
   }
 
+  /// Checks if the device's active connections include the given IPv6 address.
+  ///
+  /// [ip] The IPv6 address to search for.
+  ///
+  /// Returns `true` if the IPv6 address is found, `false` otherwise.
   bool containsIpv6Address(String ip) {
     return connections.any((element) => element.ipv6Address == ip);
   }
 }
 
+/// An extension on [LinksysDevice] providing high-level status information.
 extension LinksysDeviceExt on LinksysDevice {
+  /// Determines the connection type of the device (wired, wireless, or none).
+  ///
+  /// If the device is not online, it returns [DeviceConnectionType.none].
+  /// For slave nodes, it checks the `connectionType` property. For other nodes,
+  /// it inspects the `knownInterfaces` to determine if the connection is wireless.
+  ///
+  /// Returns a [DeviceConnectionType] enum value.
   DeviceConnectionType getConnectionType() {
     bool ret = isOnline();
     if (!ret) {
@@ -108,6 +154,11 @@ extension LinksysDeviceExt on LinksysDevice {
         : DeviceConnectionType.wired;
   }
 
+  /// Checks if the device is currently online.
+  ///
+  /// A device is considered online if it has at least one active connection.
+  ///
+  /// Returns `true` if the device is online, `false` otherwise.
   bool isOnline() {
     // return nodeType == 'Master'
     //     ? connections.isNotEmpty
@@ -120,8 +171,14 @@ extension LinksysDeviceExt on LinksysDevice {
   }
 }
 
+/// Represents the physical connection type of a device on the network.
 enum DeviceConnectionType {
+  /// The device is connected via an Ethernet cable.
   wired,
+
+  /// The device is connected via Wi-Fi.
   wireless,
+
+  /// The device is not currently connected.
   none;
 }
