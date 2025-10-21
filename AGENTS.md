@@ -13,6 +13,10 @@ Use `@/openspec/AGENTS.md` to learn:
 - Spec format and conventions
 - Project structure and guidelines
 
+Use `@/openspec/SCREENSHOT_TESTING.md` to learn:
+- How to create and run screenshot tests
+- How to define mock spec files and modify mock notifiers
+
 Keep this managed block so 'openspec update' can refresh the instructions.
 
 <!-- OPENSPEC:END -->

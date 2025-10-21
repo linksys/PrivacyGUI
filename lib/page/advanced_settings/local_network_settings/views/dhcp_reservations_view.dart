@@ -1,10 +1,9 @@
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/dhcp_reservations_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/dhcp_reservations_state.dart';
+import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -47,8 +46,7 @@ class DHCPReservationsContentView extends ArgumentsConsumerStatefulView {
 }
 
 class _DHCPReservationsContentViewState
-    extends ConsumerState<DHCPReservationsContentView> {
-  DHCPReservationState? _preservedState;
+    extends ConsumerState<DHCPReservationsContentView> with PageSnackbarMixin {
   @override
   void initState() {
     super.initState();
@@ -56,10 +54,10 @@ class _DHCPReservationsContentViewState
     Future.doWhile(() => !mounted).then((value) {
       ref.read(deviceFilterConfigProvider.notifier).initFilter();
       final reservations = ref.read(localNetworkSettingProvider
-          .select((state) => state.dhcpReservationList));
-      _preservedState = ref
+          .select((state) => state.status.dhcpReservationList));
+      ref
           .read(dhcpReservationProvider.notifier)
-          .setReservations(reservations);
+          .setInitialReservations(reservations);
     });
   }
 
@@ -71,6 +69,7 @@ class _DHCPReservationsContentViewState
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(dhcpReservationProvider);
+    final notifier = ref.read(dhcpReservationProvider.notifier);
     ref.listen(filteredDeviceListProvider, (prev, next) {
       ref.read(dhcpReservationProvider.notifier).updateDevices(next
           .where((e) =>
@@ -81,36 +80,15 @@ class _DHCPReservationsContentViewState
     return StyledAppPageView(
       scrollable: true,
       title: loc(context).dhcpReservations.capitalizeWords(),
-      onBackTap: !ListEquality()
-              .equals(state.reservations, _preservedState?.reservations)
-          ? () async {
-              final goBack = await showUnsavedAlert(context);
-              if (goBack == true) {
-                context.pop();
-              }
-            }
-          : null,
       bottomBar: PageBottomBar(
-          isPositiveEnabled: !ListEquality()
-              .equals(state.reservations, _preservedState?.reservations),
+          isPositiveEnabled: notifier.isDirty(),
           onPositiveTap: () {
-            final reservations = ref
-                .read(dhcpReservationProvider)
-                .reservations
-                .where((e) => e.reserved)
-                .map((e) => e.data)
-                .toList();
             doSomethingWithSpinner(
-                    context,
-                    ref
-                        .read(localNetworkSettingProvider.notifier)
-                        .saveReservations(reservations))
-                .then((state) {
-              setState(() {
-                _preservedState = ref
-                    .read(dhcpReservationProvider.notifier)
-                    .setReservations(state ?? []);
-              });
+                context,
+                notifier.save().then((_) {
+                  showChangesSavedSnackBar();
+                })).then((_) {
+              ref.read(dhcpReservationProvider.notifier).revert();
             });
           }),
       actions: [
@@ -151,7 +129,8 @@ class _DHCPReservationsContentViewState
                         children: [
                           Expanded(
                             child: AppText.labelLarge(
-                              loc(context).nReservedAddresses(state.reservations
+                              loc(context).nReservedAddresses(state
+                                  .settings.current.reservations
                                   .where((e) => e.reserved)
                                   .length),
                             ),
@@ -188,8 +167,8 @@ class _DHCPReservationsContentViewState
   Widget reservedAddresses() {
     final state = ref.watch(dhcpReservationProvider);
     final list = [
-      ...state.reservations,
-      ...state.devices.where((e) => !state.reservations
+      ...state.settings.current.reservations,
+      ...state.status.devices.where((e) => !state.settings.current.reservations
           .any((r) => r.data.macAddress == e.data.macAddress)),
     ]..sort((a, b) => a.reserved
         ? -1
@@ -240,7 +219,10 @@ class _DHCPReservationsContentViewState
               },
               separatorBuilder: (BuildContext context, int index) {
                 return index ==
-                        (state.reservations.where((e) => e.reserved).length - 1)
+                        (state.settings.current.reservations
+                                .where((e) => e.reserved)
+                                .length -
+                            1)
                     ? const Divider(
                         height: Spacing.large2,
                       )
@@ -250,35 +232,15 @@ class _DHCPReservationsContentViewState
           );
   }
 
-  // void goDHCPReservationEdit(DHCPReservation item, int index) async {
-  //   final routerIp = ref.watch(localNetworkSettingProvider).ipAddress;
-  //   final subnetMask = ref.watch(localNetworkSettingProvider).subnetMask;
-  //   final result = await context
-  //       .pushNamed<DHCPReservation?>(RouteNamed.dhcpReservationEdit, extra: {
-  //     'viewType': 'edit',
-  //     'routerIp': routerIp,
-  //     'subnetMask': subnetMask,
-  //     'item': item,
-  //   });
-  //   if (result != null) {
-  //     final succeed = ref
-  //         .read(localNetworkSettingProvider.notifier)
-  //         .updateDHCPReservationOfIndex(result, index);
-  //     if (!succeed) {
-  //       showFailedSnackBar(
-  //         context,
-  //         loc(context).ipOrMacAddressOverlap,
-  //       );
-  //     }
-  //   }
-  // }
-
   Future _showManualAddReservationModal([
     ReservedListItem? item,
   ]) {
-    final reservationList = ref.watch(dhcpReservationProvider).reservations;
-    final routerIp = ref.watch(localNetworkSettingProvider).ipAddress;
-    final subnetMask = ref.watch(localNetworkSettingProvider).subnetMask;
+    final reservationList =
+        ref.watch(dhcpReservationProvider).settings.current.reservations;
+    final routerIp =
+        ref.watch(localNetworkSettingProvider).settings.current.ipAddress;
+    final subnetMask =
+        ref.watch(localNetworkSettingProvider).settings.current.subnetMask;
     final subnetToken = subnetMask.split('.');
     final deviceNameController = TextEditingController()
       ..text = item?.data.description ?? '';

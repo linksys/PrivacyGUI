@@ -51,8 +51,7 @@ class _FakeInstantSafetyState_1 extends _i1.SmartFake
 /// A class which mocks [InstantSafetyNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockInstantSafetyNotifier extends _i2.Notifier<_i3.InstantSafetyState>
-    with _i1.Mock
+class MockInstantSafetyNotifier extends _i2.Notifier<_i3.InstantSafetyState> with _i1.Mock
     implements _i4.InstantSafetyNotifier {
   @override
   _i2.NotifierProviderRef<_i3.InstantSafetyState> get ref =>
@@ -208,7 +207,7 @@ class MockInstantSafetyNotifier extends _i2.Notifier<_i3.InstantSafetyState>
       ) as bool);
 
   @override
-  _i5.Future<void> fetch({
+  _i5.Future<_i3.InstantSafetyState> fetch({
     bool? forceRemote = false,
     bool? updateStatusOnly = false,
   }) =>
@@ -221,19 +220,55 @@ class MockInstantSafetyNotifier extends _i2.Notifier<_i3.InstantSafetyState>
             #updateStatusOnly: updateStatusOnly,
           },
         ),
-        returnValue: _i5.Future<void>.value(),
-        returnValueForMissingStub: _i5.Future<void>.value(),
-      ) as _i5.Future<void>);
+        returnValue:
+            _i5.Future<_i3.InstantSafetyState>.value(_FakeInstantSafetyState_1(
+          this,
+          Invocation.method(
+            #fetch,
+            [],
+            {
+              #forceRemote: forceRemote,
+              #updateStatusOnly: updateStatusOnly,
+            },
+          ),
+        )),
+        returnValueForMissingStub:
+            _i5.Future<_i3.InstantSafetyState>.value(_FakeInstantSafetyState_1(
+          this,
+          Invocation.method(
+            #fetch,
+            [],
+            {
+              #forceRemote: forceRemote,
+              #updateStatusOnly: updateStatusOnly,
+            },
+          ),
+        )),
+      ) as _i5.Future<_i3.InstantSafetyState>);
 
   @override
-  _i5.Future<void> save() => (super.noSuchMethod(
+  _i5.Future<_i3.InstantSafetyState> save() => (super.noSuchMethod(
         Invocation.method(
           #save,
           [],
         ),
-        returnValue: _i5.Future<void>.value(),
-        returnValueForMissingStub: _i5.Future<void>.value(),
-      ) as _i5.Future<void>);
+        returnValue:
+            _i5.Future<_i3.InstantSafetyState>.value(_FakeInstantSafetyState_1(
+          this,
+          Invocation.method(
+            #save,
+            [],
+          ),
+        )),
+        returnValueForMissingStub:
+            _i5.Future<_i3.InstantSafetyState>.value(_FakeInstantSafetyState_1(
+          this,
+          Invocation.method(
+            #save,
+            [],
+          ),
+        )),
+      ) as _i5.Future<_i3.InstantSafetyState>);
 
   @override
   void revert() => super.noSuchMethod(

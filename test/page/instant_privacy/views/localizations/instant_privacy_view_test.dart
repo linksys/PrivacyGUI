@@ -17,9 +17,7 @@ import '../../../../common/di.dart';
 import '../../../../common/test_responsive_widget.dart';
 import '../../../../common/testable_router.dart';
 import '../../../../mocks/_index.dart';
-import '../../../../mocks/jnap_service_supported_mocks.dart';
 import '../../../../test_data/_index.dart';
-import '../../../../test_data/instant_privacy_test_data.dart';
 
 void main() {
   late MockInstantPrivacyNotifier mockInstantPrivacyNotifier;
@@ -29,19 +27,17 @@ void main() {
   ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
 
   setUp(() {
-    // Mock InstantPrivacyNotifier
     mockInstantPrivacyNotifier = MockInstantPrivacyNotifier();
-    when(mockInstantPrivacyNotifier.build())
-        .thenReturn(InstantPrivacyState.fromMap(instantPrivacyInitState));
-    when(mockInstantPrivacyNotifier.fetch()).thenAnswer((realInvocation) async {
-      await Future.delayed(const Duration(seconds: 1));
-      return InstantPrivacyState.fromMap(instantPrivacyInitState);
-    });
-    // Mock DeviceListNotifier
     mockDeviceListNotifier = MockDeviceListNotifier();
+    // Mock InstantPrivacyNotifier
+    when(mockInstantPrivacyNotifier.build())
+        .thenReturn(InstantPrivacyState.fromMap(instantPrivacyTestState));
+    // Mock DeviceListNotifier
     when(mockDeviceListNotifier.build())
         .thenReturn(DeviceListState.fromMap(deviceListTestState));
   });
+
+  tearDown(() {});
 
   testLocalizations(
     'Instant-Privacy view - disabled state',
@@ -74,10 +70,8 @@ void main() {
       when(mockDeviceListNotifier.build()).thenReturn(
           DeviceListState.fromMap(instantPrivacyDeviceListTestState));
 
-      when(mockInstantPrivacyNotifier.build())
-          .thenReturn(InstantPrivacyState.fromMap(instantPrivacyDenyTestState));
       when(mockInstantPrivacyNotifier.fetch(
-              fetchRemote: anyNamed('fetchRemote')))
+              forceRemote: anyNamed('forceRemote')))
           .thenAnswer((_) {
         return Future.delayed(Durations.extralong1, () {
           return InstantPrivacyState.fromMap(instantPrivacyDenyTestState);
@@ -105,8 +99,6 @@ void main() {
   testLocalizations(
     'Instant-Privacy view - enabled state',
     (tester, locale) async {
-      when(mockInstantPrivacyNotifier.build())
-          .thenReturn(InstantPrivacyState.fromMap(instantPrivacyOnState));
       when(mockDeviceListNotifier.build()).thenReturn(
           DeviceListState.fromMap(instantPrivacyDeviceListTestState));
 
@@ -153,8 +145,6 @@ void main() {
 
   testLocalizations('Instant-Privacy view - disabling modal',
       (tester, locale) async {
-    when(mockInstantPrivacyNotifier.build())
-        .thenReturn(InstantPrivacyState.fromMap(instantPrivacyOnState));
     when(mockDeviceListNotifier.build())
         .thenReturn(DeviceListState.fromMap(instantPrivacyDeviceListTestState));
 
@@ -177,8 +167,8 @@ void main() {
 
   testLocalizations('Instant-Privacy view - delete confirm modal',
       (tester, locale) async {
-    when(mockInstantPrivacyNotifier.build())
-        .thenReturn(InstantPrivacyState.fromMap(instantPrivacyOnState));
+    when(mockInstantPrivacyNotifier.build()).thenReturn(
+        InstantPrivacyState.fromMap(instantPrivacyEnabledTestState));
     when(mockDeviceListNotifier.build())
         .thenReturn(DeviceListState.fromMap(instantPrivacyDeviceListTestState));
 
@@ -201,8 +191,8 @@ void main() {
 
   testLocalizations('Instant-Privacy view - delete self alert modal',
       (tester, locale) async {
-    when(mockInstantPrivacyNotifier.build())
-        .thenReturn(InstantPrivacyState.fromMap(instantPrivacyOnState));
+    when(mockInstantPrivacyNotifier.build()).thenReturn(
+        InstantPrivacyState.fromMap(instantPrivacyEnabledTestState));
     when(mockDeviceListNotifier.build())
         .thenReturn(DeviceListState.fromMap(instantPrivacyDeviceListTestState));
 
@@ -219,6 +209,9 @@ void main() {
     await tester.pumpAndSettle();
     final myCardFinder = find.ancestor(
         of: find.text('3C:22:FB:E4:4F:18'), matching: find.byType(AppCard));
+    await tester.scrollUntilVisible(myCardFinder, 100,
+        scrollable: find.byType(Scrollable).last);
+    expect(myCardFinder, findsOneWidget);
     final deleteFinder = find.descendant(
         of: myCardFinder, matching: find.byIcon(LinksysIcons.delete));
     await tester.tap(deleteFinder.first);

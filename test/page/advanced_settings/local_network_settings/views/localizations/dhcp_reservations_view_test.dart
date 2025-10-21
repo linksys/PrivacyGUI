@@ -1,4 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
@@ -24,7 +23,7 @@ import '../../../../../mocks/dashboard_manager_notifier_mocks.dart';
 import '../../../../../mocks/device_filter_config_notifier_mocks.dart';
 import '../../../../../mocks/device_manager_notifier_mocks.dart';
 import '../../../../../mocks/dhcp_reservations_notifier_mocks.dart';
-import '../../../../../mocks/wifi_bundle_notifier_mocks.dart';
+import '../../../../../mocks/wifi_bundle_settings_notifier_mocks.dart';
 import '../../../../../test_data/dashboard_manager_test_state.dart';
 import '../../../../../test_data/device_filter_config_test_state.dart';
 import '../../../../../test_data/device_manager_test_state.dart';
@@ -52,8 +51,10 @@ void main() {
     mockWifiBundleNotifier = MockWifiBundleNotifier();
     mockDashboardManagerNotifier = MockDashboardManagerNotifier();
 
-    final settings = WifiBundleSettings.fromMap(wifiBundleTestState['settings'] as Map<String, dynamic>);
-    final status = WifiBundleStatus.fromMap(wifiBundleTestState['status'] as Map<String, dynamic>);
+    final settings = WifiBundleSettings.fromMap(
+        wifiBundleTestState['settings'] as Map<String, dynamic>);
+    final status = WifiBundleStatus.fromMap(
+        wifiBundleTestState['status'] as Map<String, dynamic>);
     final wifiInitialState = WifiBundleState(
       settings: Preservable(original: settings, current: settings),
       status: status,
@@ -79,8 +80,7 @@ void main() {
         .overrideWith(() => mockDeviceFilterConfigNotifier),
     deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
     wifiBundleProvider.overrideWith(() => mockWifiBundleNotifier),
-    dashboardManagerProvider
-        .overrideWith(() => mockDashboardManagerNotifier),
+    dashboardManagerProvider.overrideWith(() => mockDashboardManagerNotifier),
   ];
 
   testLocalizations(
@@ -125,12 +125,12 @@ void main() {
   testLocalizations(
     'DHCP reservations - 1 reserved',
     (tester, locale) async {
-      DHCPReservationState dhcpReservationState =
-          DHCPReservationState.fromMap(dhcpReservationTestState);
-      when(mockDHCPReservationsNotifier.build()).thenReturn(dhcpReservationState
-          .copyWith(reservations: [
-        dhcpReservationState.devices.first.copyWith(reserved: true)
-      ]));
+      final state = DHCPReservationState.fromMap(dhcpReservationTestState);
+      final settings = state.settings.current.copyWith(reservations: [
+        state.settings.current.reservations.first.copyWith(reserved: true)
+      ]);
+      when(mockDHCPReservationsNotifier.build()).thenReturn(state.copyWith(
+          settings: Preservable(original: settings, current: settings)));
 
       final widget = testableSingleRoute(
         overrides: [
@@ -152,13 +152,13 @@ void main() {
   testLocalizations(
     'DHCP reservations - 2 reserved',
     (tester, locale) async {
-      DHCPReservationState dhcpReservationState =
-          DHCPReservationState.fromMap(dhcpReservationTestState);
-      when(mockDHCPReservationsNotifier.build())
-          .thenReturn(dhcpReservationState.copyWith(reservations: [
-        dhcpReservationState.devices[0].copyWith(reserved: true),
-        dhcpReservationState.devices[1].copyWith(reserved: true)
-      ]));
+      final state = DHCPReservationState.fromMap(dhcpReservationTestState);
+      final settings = state.settings.current.copyWith(reservations: [
+        state.settings.current.reservations.first.copyWith(reserved: true),
+        state.settings.current.reservations[1].copyWith(reserved: true),
+      ]);
+      when(mockDHCPReservationsNotifier.build()).thenReturn(state.copyWith(
+          settings: Preservable(original: settings, current: settings)));
 
       final widget = testableSingleRoute(
         overrides: [
@@ -180,13 +180,13 @@ void main() {
   testLocalizations(
     'DHCP reservations - all reserved',
     (tester, locale) async {
-      DHCPReservationState dhcpReservationState =
-          DHCPReservationState.fromMap(dhcpReservationTestState);
-      when(mockDHCPReservationsNotifier.build()).thenReturn(
-          dhcpReservationState.copyWith(
-              reservations: dhcpReservationState.devices
-                  .map((e) => e.copyWith(reserved: true))
-                  .toList()));
+      final state = DHCPReservationState.fromMap(dhcpReservationTestState);
+      final settings = state.settings.current.copyWith(reservations: [
+        ...state.settings.current.reservations
+            .map((e) => e.copyWith(reserved: true)),
+      ]);
+      when(mockDHCPReservationsNotifier.build()).thenReturn(state.copyWith(
+          settings: Preservable(original: settings, current: settings)));
 
       final widget = testableSingleRoute(
         overrides: [
@@ -261,12 +261,12 @@ void main() {
   testLocalizations(
     'DHCP reservations - edit reservation',
     (tester, locale) async {
-      DHCPReservationState dhcpReservationState =
-          DHCPReservationState.fromMap(dhcpReservationTestState);
-      when(mockDHCPReservationsNotifier.build()).thenReturn(dhcpReservationState
-          .copyWith(reservations: [
-        dhcpReservationState.devices.first.copyWith(reserved: true)
-      ]));
+      final state = DHCPReservationState.fromMap(dhcpReservationTestState);
+      final settings = state.settings.current.copyWith(reservations: [
+        state.settings.current.reservations.first.copyWith(reserved: true)
+      ]);
+      when(mockDHCPReservationsNotifier.build()).thenReturn(state.copyWith(
+          settings: Preservable(original: settings, current: settings)));
 
       final widget = testableSingleRoute(
         overrides: [
@@ -292,21 +292,52 @@ void main() {
   testLocalizations(
     'DHCP reservations - can not be added state',
     (tester, locale) async {
-      DHCPReservationState dhcpReservationState =
-          DHCPReservationState.fromMap(dhcpReservationTestState);
+      final state = DHCPReservationState.fromMap(dhcpReservationTestState);
+      final settings = state.settings.current.copyWith(reservations: [
+        state.settings.current.reservations.first.copyWith(reserved: true)
+      ]);
+      when(mockDHCPReservationsNotifier.build()).thenReturn(state.copyWith(
+          settings: Preservable(original: settings, current: settings)));
 
-      when(mockDHCPReservationsNotifier.build())
-          .thenReturn(dhcpReservationState.copyWith(reservations: [
-        dhcpReservationState.devices.first.copyWith(
+      final widget = testableSingleRoute(
+        overrides: [
+          ...baseOverrides,
+          dhcpReservationProvider
+              .overrideWith(() => mockDHCPReservationsNotifier),
+        ],
+        locale: locale,
+        child: const DHCPReservationsView(),
+      );
+      await tester.pumpWidget(widget);
+
+      final editBtnFinder = find.byIcon(LinksysIcons.edit);
+      await tester.tap(editBtnFinder.first);
+      await tester.pumpAndSettle();
+    },
+    screens: [
+      ...responsiveMobileScreens.map((e) => e).toList(),
+      ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1240)).toList()
+    ],
+  );
+
+  testLocalizations(
+    'DHCP reservations - can not be added state',
+    (tester, locale) async {
+      final state = DHCPReservationState.fromMap(dhcpReservationTestState);
+
+      when(mockDHCPReservationsNotifier.build()).thenReturn(state.copyWith(
+          settings: Preservable(original: state.settings.current,
+              current: state.settings.current.copyWith(reservations: [
+        state.settings.current.reservations.first.copyWith(
           reserved: true,
-          data: dhcpReservationState.devices.first.data
+          data: state.settings.current.reservations.first.data
               .copyWith(ipAddress: "10.175.1.144"),
         ),
-        dhcpReservationState.devices[1],
-      ]));
+        state.settings.current.reservations[1],
+      ]))));
 
       when(mockDHCPReservationsNotifier
-              .isConflict(dhcpReservationState.devices[1]))
+              .isConflict(state.settings.current.reservations[1]))
           .thenAnswer((invocation) => true);
 
       final widget = testableSingleRoute(

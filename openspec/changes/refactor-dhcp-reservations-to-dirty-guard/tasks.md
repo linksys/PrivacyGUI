@@ -1,7 +1,8 @@
 ## Implementation Tasks for DHCP Reservations Refactoring
 
-- [ ] 1.1: Refactor `DHCPReservationsState` to extend `FeatureState<DHCPReservationsSettings, DHCPReservationsStatus>`. (Note: `DHCPReservationsState` currently holds both settings and status, will need to split if not already done).
-- [ ] 1.2: Refactor `DHCPReservationsNotifier` to use `with PreservableNotifierMixin` and implement `performFetch` and `performSave`.
-- [ ] 1.3: Refactor `DHCPReservationsView` to remove custom `_preservedState` logic and rely on `DHCPReservationsNotifier` for dirty state and actions.
-- [ ] 1.4: Update the `LinksysRoute` for `/dhcp-reservations` in `lib/route/route_menu.dart` to set `preservableProvider` and `enableDirtyCheck: true`.
-- [ ] 1.5: Run relevant tests to verify the refactoring.
+- [x] 1.1: Refactor `DHCPReservationsState` to extend `FeatureState<DHCPReservationsSettings, DHCPReservationsStatus>`. (Note: `DHCPReservationsState` currently holds both settings and status, will need to split if not already done).
+- [x] 1.2: Refactor `DHCPReservationsNotifier` to use `with PreservableNotifierMixin` and implement `performFetch` and `performSave`.
+- [x] 1.3: Refactor `DHCPReservationsView` to remove custom `_preservedState` logic and rely on `DHCPReservationsNotifier` for dirty state and actions.
+- [x] 1.4: Use `doSomethingWithSpinner` for `save` and `fetch` operations in `DHCPReservationsView`.
+- [x] 1.5: Update the `LinksysRoute` for `/dhcp-reservations` in `lib/route/route_menu.dart` to set `preservableProvider` and `enableDirtyCheck: true`.
+- [x] 1.6: sh run_generate_loc_snapshots.sh -c true -f test/page/advanced_settings/local_network_settings/views/localizations/dhcp_reservations_view_test.dart

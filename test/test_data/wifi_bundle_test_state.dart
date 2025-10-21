@@ -13,7 +13,7 @@ final wifiBundleTestState = {
   'settings': {
     'wifiList': WiFiListSettings.fromMap(wifiListTestState).toMap(),
     'advanced': WifiAdvancedSettingsState.fromMap(wifiAdvancedSettingsTestState).toMap(),
-    'privacy': InstantPrivacySettings.fromMap(instantPrivacyTestState['settings'] as Map<String, dynamic>).toMap(),
+    'privacy': InstantPrivacySettings.fromMap(instantPrivacyTestState['settings']?['original'] as Map<String, dynamic>).toMap(),
   },
   'status': {
     'wifiList': WiFiListStatus.fromMap({'canDisableMainWiFi': wifiListTestState['canDisableMainWiFi']}).toMap(),

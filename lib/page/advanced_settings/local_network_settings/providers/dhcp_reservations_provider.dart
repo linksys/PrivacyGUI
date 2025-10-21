@@ -1,55 +1,92 @@
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
-
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/dhcp_reservations_state.dart';
+import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_provider.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
+import 'package:privacy_gui/providers/preservable.dart';
+import 'package:privacy_gui/providers/preservable_contract.dart';
+import 'package:privacy_gui/providers/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
 
-final dhcpReservationProvider = NotifierProvider.autoDispose<
-    DHCPReservationsNotifier,
-    DHCPReservationState>(() => DHCPReservationsNotifier());
+final dhcpReservationProvider =
+    NotifierProvider.autoDispose<DHCPReservationsNotifier, DHCPReservationState>(
+        () => DHCPReservationsNotifier());
 
-class DHCPReservationsNotifier
-    extends AutoDisposeNotifier<DHCPReservationState> {
+// The provider now needs to be generic to match the contract.
+final preservableDHCPReservationsProvider =
+    Provider.autoDispose<PreservableContract<DHCPReservationsSettings, DHCPReservationsStatus>>(
+        (ref) {
+  return ref.watch(dhcpReservationProvider.notifier);
+});
+
+class DHCPReservationsNotifier extends AutoDisposeNotifier<DHCPReservationState>
+    with
+        PreservableAutoDisposeNotifierMixin<DHCPReservationsSettings,
+            DHCPReservationsStatus, DHCPReservationState> {
   @override
-  build() => DHCPReservationState(
-      reservations: const [],
-      additionalReservations: const [],
-      devices: const []);
+  DHCPReservationState build() => DHCPReservationState.init();
 
-  DHCPReservationState setReservations(List<DHCPReservation> reservedList) {
-    state = state.copyWith(
-      reservations: reservedList
-          .map((e) => ReservedListItem(
-              reserved: state.reservations
-                      .firstWhereOrNull(
-                          (r) => r.data.macAddress == e.macAddress)
-                      ?.reserved ??
-                  true,
-              data: e))
-          .toList(),
-    );
-    return state;
+  @override
+  bool updateShouldNotify(DHCPReservationState previous, DHCPReservationState next) {
+    return previous != next;
   }
 
-  DHCPReservationState updateDevices(
-      [List<DeviceListItem> deviceList = const []]) {
+  @override
+  set state(DHCPReservationState newState) {
+    super.state = newState;
+  }
+
+  @override
+  Future<(DHCPReservationsSettings?, DHCPReservationsStatus?)> performFetch(
+      {bool forceRemote = false, bool updateStatusOnly = false}) async {
+    // The initial state is set from the LocalNetworkSettingsNotifier, so this should not be called directly.
+    // However, to comply with the mixin, we must implement it.
+    return (state.settings.current, null);
+  }
+
+  @override
+  Future<void> performSave() async {
+    final settings = state.settings.current;
+    final reservations =
+        settings.reservations.where((e) => e.reserved).map((e) => e.data).toList();
+    await ref
+        .read(localNetworkSettingProvider.notifier)
+        .saveReservations(reservations);
+  }
+
+  void setInitialReservations(List<DHCPReservation> reservedList) {
+    final initialSettings = DHCPReservationsSettings(
+        reservations: reservedList
+            .map((e) => ReservedListItem(reserved: true, data: e))
+            .toList());
     state = state.copyWith(
-        devices: deviceList
-            .map((e) => ReservedListItem(
-                reserved: false,
-                data: DHCPReservation(
-                    macAddress: e.macAddress,
-                    ipAddress: e.ipv4Address,
-                    description: e.name)))
-            .toList(),
-        additionalReservations: []);
-    return state;
+        settings: Preservable(
+            original: initialSettings, current: initialSettings));
+  }
+
+  void updateSettings(DHCPReservationsSettings newSettings) {
+    state = state.copyWith(
+      settings: state.settings.copyWith(current: newSettings),
+    );
+  }
+
+  void updateDevices([List<DeviceListItem> deviceList = const []]) {
+    state = state.copyWith(
+        status: state.status.copyWith(
+            devices: deviceList
+                .map((e) => ReservedListItem(
+                    reserved: false,
+                    data: DHCPReservation(
+                        macAddress: e.macAddress,
+                        ipAddress: e.ipv4Address,
+                        description: e.name)))
+                .toList(),
+            additionalReservations: []));
   }
 
   bool isConflict(ReservedListItem item) {
-    return state.reservations.any((e) =>
+    return state.settings.current.reservations.any((e) =>
         e.reserved &&
         (e.data.macAddress == item.data.macAddress ||
             e.data.ipAddress == item.data.ipAddress));
@@ -57,7 +94,7 @@ class DHCPReservationsNotifier
 
   void updateReservationItem(
       ReservedListItem editedItem, String? name, String? ip, String? mac) {
-    final rList = state.reservations;
+    final rList = state.settings.current.reservations;
     final index = rList.indexOf(editedItem);
     if (index >= 0) {
       final newRList = (List<ReservedListItem>.from(rList)
@@ -73,21 +110,15 @@ class DHCPReservationsNotifier
             ))
           ],
         ));
-      state = state.copyWith(
-        reservations: newRList,
-        // devices: dList
-        //     .where((e) =>
-        //         !newRList.any((r) => r.data.macAddress == e.data.macAddress))
-        //     .toList(),
-      );
+      updateSettings(state.settings.current.copyWith(reservations: newRList));
     }
   }
 
   void updateReservations(ReservedListItem item, [bool isNew = false]) {
-    final rList = state.reservations;
-    final dList = state.devices;
-    var hit = rList
-        .firstWhereOrNull((e) => e.data.macAddress == item.data.macAddress);
+    final rList = state.settings.current.reservations;
+    final dList = state.status.devices;
+    var hit =
+        rList.firstWhereOrNull((e) => e.data.macAddress == item.data.macAddress);
     final index = rList.indexOf(item);
     if (hit != null && index >= 0) {
       // This item is found on reservations list, so it is reserved.
@@ -101,13 +132,7 @@ class DHCPReservationsNotifier
               index + 1,
               [item.copyWith(reserved: !item.reserved)],
             ));
-      state = state.copyWith(
-        reservations: newRList,
-        // devices: dList
-        //     .where((e) =>
-        //         !newRList.any((r) => r.data.macAddress == e.data.macAddress))
-        //     .toList(),
-      );
+      updateSettings(state.settings.current.copyWith(reservations: newRList));
       return;
     }
 
@@ -123,18 +148,12 @@ class DHCPReservationsNotifier
             data: item.data.copyWith(
                 description: item.data.description
                     .replaceAll(HostNameRule().rule, ''))));
-      state = state.copyWith(
-        reservations: newRList,
-        // devices: dList
-        //     .where((e) =>
-        //         !newRList.any((r) => r.data.macAddress == e.data.macAddress))
-        //     .toList(),
-      );
+      updateSettings(state.settings.current.copyWith(reservations: newRList));
       return;
     }
 
     // new add
     final newRList = List<ReservedListItem>.from(rList)..add(item);
-    state = state.copyWith(reservations: newRList);
+    updateSettings(state.settings.current.copyWith(reservations: newRList));
   }
 }

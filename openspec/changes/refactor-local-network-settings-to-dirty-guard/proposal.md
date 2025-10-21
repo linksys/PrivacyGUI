@@ -6,8 +6,10 @@ This proposal outlines the refactoring of the Local Network Settings feature to 
 
 The core changes are:
 - **Migrate State Management:** Refactor `LocalNetworkSettingsNotifier` to fully leverage `PreservableNotifierMixin`.
-- **Remove Custom Dirty Checking:** Eliminate the custom `_preservedState` usage from `LocalNetworkSettingsView`.
+- **Remove Custom Dirty Checking:** Eliminate the custom `_preservedState` usage from `LocalNetworkSettingsView` and its sub-views.
 - **Integrate with Framework:** Configure the `LinksysRoute` for `/local-network-settings` to enable the dirty-guard.
+- **Exclude DHCP Reservation List from Dirty Check:** The `isDirty` check for `LocalNetworkSettingsState` will explicitly exclude changes to the DHCP reservation list, as these are managed in a separate view.
+- **Handle TextEditingControllers:** Ensure `TextEditingController`s are properly updated on `fetch`, `save`, and `revert` operations.
 
 ## Impact
 - **Affected Specs:** `local-network-settings` (delta spec for this change).

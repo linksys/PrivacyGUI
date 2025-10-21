@@ -16,6 +16,8 @@ abstract class FeatureState<TSettings extends Equatable, TStatus extends Equatab
 
   /// Checks if the settings have been modified.
   bool get isDirty => settings.isDirty;
+  
+  TSettings get current => settings.current;
 
   /// Creates a copy of this state but with the given fields replaced with the new values.
   FeatureState<TSettings, TStatus> copyWith({

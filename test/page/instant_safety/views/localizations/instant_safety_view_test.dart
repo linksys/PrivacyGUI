@@ -26,6 +26,7 @@ void main() {
     when(mockInstantSafetyNotifier.fetch())
         .thenAnswer((realInvocation) async {
       await Future.delayed(const Duration(seconds: 1));
+      return InstantSafetyState.fromMap(instantSafetyTestState);
     });
   });
 

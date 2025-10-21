@@ -13,6 +13,8 @@ final advancedSettings = [
   LinksysRoute(
     name: RouteNamed.settingsLocalNetwork,
     path: RoutePath.settingsLocalNetwork,
+    preservableProvider: preservableLocalNetworkSettingsProvider,
+    enableDirtyCheck: true,
     config: LinksysRouteConfig(
       column: ColumnGrid(column: 12),
     ),
@@ -21,20 +23,12 @@ final advancedSettings = [
       LinksysRoute(
         name: RouteNamed.dhcpReservation,
         path: RoutePath.dhcpReservation,
+        preservableProvider: preservableDHCPReservationsProvider,
+        enableDirtyCheck: true,
         config: LinksysRouteConfig(
           column: ColumnGrid(column: 12),
         ),
         builder: (context, state) => DHCPReservationsView(
-          args: state.extra as Map<String, dynamic>? ?? {},
-        ),
-      ),
-      LinksysRoute(
-        name: RouteNamed.dhcpReservationEdit,
-        path: RoutePath.dhcpReservationEdit,
-        config: LinksysRouteConfig(
-          column: ColumnGrid(column: 9),
-        ),
-        builder: (context, state) => DHCPReservationsEditView(
           args: state.extra as Map<String, dynamic>? ?? {},
         ),
       ),

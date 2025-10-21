@@ -154,24 +154,30 @@ class WiFiItem extends Equatable {
   }
 
   factory WiFiItem.fromMap(Map<String, dynamic> map) {
-    final availableChannels = (map['availableChannels'] as Map).map(
-      (key, value) =>
-          MapEntry(WifiChannelWidth.getByValue(key), List<int>.from(value)),
-    );
-    final availableWirelessModes = (map['availableWirelessModes'] as List)
-        .map<WifiWirelessMode>((x) => WifiWirelessMode.getByValue(x))
-        .toList();
-    final availableSecurityTypes = (map['availableSecurityTypes'] as List)
-        .map<WifiSecurityType>(
-          (x) => WifiSecurityType.getByValue(x),
-        )
-        .toList();
+    final availableChannels = map['availableChannels'] != null
+        ? (map['availableChannels'] as Map).map(
+            (key, value) => MapEntry(
+                WifiChannelWidth.getByValue(key), List<int>.from(value)),
+          )
+        : <WifiChannelWidth, List<int>>{};
+    final availableWirelessModes = map['availableWirelessModes'] != null
+        ? (map['availableWirelessModes'] as List)
+            .map<WifiWirelessMode>((x) => WifiWirelessMode.getByValue(x))
+            .toList()
+        : <WifiWirelessMode>[];
+    final availableSecurityTypes = map['availableSecurityTypes'] != null
+        ? (map['availableSecurityTypes'] as List)
+            .map<WifiSecurityType>(
+              (x) => WifiSecurityType.getByValue(x),
+            )
+            .toList()
+        : <WifiSecurityType>[];
     return WiFiItem(
-      radioID: WifiRadioBand.getByValue(map['radioID'] as String),
+      radioID: map['radioID'] != null ? WifiRadioBand.getByValue(map['radioID'] as String) : WifiRadioBand.radio_24,
       ssid: map['ssid'] as String,
       password: map['password'] as String,
-      securityType: WifiSecurityType.getByValue(map['securityType']),
-      wirelessMode: WifiWirelessMode.getByValue(map['wirelessMode']),
+      securityType: map['securityType'] != null ? WifiSecurityType.getByValue(map['securityType']) : WifiSecurityType.open,
+      wirelessMode: map['wirelessMode'] != null ? WifiWirelessMode.getByValue(map['wirelessMode']) : WifiWirelessMode.axbe,
       defaultMixedMode: map['defaultMixedMode'] != null
           ? WifiWirelessMode.getByValue(map['defaultMixedMode'])
           : null,
@@ -303,6 +309,7 @@ enum WifiWirelessMode {
 
   bool get isIncludeBeMixedMode =>
       this == axbe || this == anacaxbe || this == mixed;
+
   /// Gets the maximum channel width supported by this wireless mode.
   WifiChannelWidth get maxSupportedWidth {
     switch (this) {

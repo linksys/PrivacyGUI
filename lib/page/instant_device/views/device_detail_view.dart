@@ -71,7 +71,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
   Widget build(BuildContext context) {
     final state = ref.watch(externalDeviceDetailProvider);
     final dhcpReservationList = ref.watch(localNetworkSettingProvider
-        .select((value) => value.dhcpReservationList));
+        .select((value) => value.status.dhcpReservationList));
 
     setState(() {
       isReservedIp = dhcpReservationList.any((e) =>
@@ -460,7 +460,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
       if (delete) {
         controller.showSpinner();
         final dhcpReservationList =
-            ref.read(localNetworkSettingProvider).dhcpReservationList;
+            ref.read(localNetworkSettingProvider).status.dhcpReservationList;
         final hit = dhcpReservationList.firstWhereOrNull((e) =>
             e.ipAddress == dhcpReservationItem.ipAddress ||
             e.macAddress == dhcpReservationItem.macAddress);
@@ -522,11 +522,12 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
     );
   }
 
+  // !TODO
   Future _saveDhcpResevervationSetting() async {
     final state = ref.read(localNetworkSettingProvider);
     await ref
         .read(localNetworkSettingProvider.notifier)
-        .saveSettings(state)
+        .saveReservations(state.status.dhcpReservationList)
         .then((_) {
       // show succeed
       showSuccessSnackBar(

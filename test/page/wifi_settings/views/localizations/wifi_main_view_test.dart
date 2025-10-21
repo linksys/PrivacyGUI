@@ -11,7 +11,7 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 import '../../../../common/_index.dart';
 import '../../../../common/di.dart';
-import '../../../../mocks/wifi_bundle_notifier_mocks.dart';
+import '../../../../mocks/wifi_bundle_settings_notifier_mocks.dart';
 import '../../../../test_data/wifi_bundle_test_state.dart';
 
 void main() {
@@ -23,8 +23,10 @@ void main() {
   setUp(() {
     mockWifiBundleNotifier = MockWifiBundleNotifier();
 
-    final settings = WifiBundleSettings.fromMap(wifiBundleTestState['settings'] as Map<String, dynamic>);
-    final status = WifiBundleStatus.fromMap(wifiBundleTestState['status'] as Map<String, dynamic>); 
+    final settings = WifiBundleSettings.fromMap(
+        wifiBundleTestState['settings'] as Map<String, dynamic>);
+    final status = WifiBundleStatus.fromMap(
+        wifiBundleTestState['status'] as Map<String, dynamic>);
 
     final initialState = WifiBundleState(
       settings: Preservable(original: settings, current: settings),
@@ -32,7 +34,6 @@ void main() {
     );
 
     when(mockWifiBundleNotifier.build()).thenReturn(initialState);
-    when(mockWifiBundleNotifier.state).thenReturn(initialState);
     when(mockWifiBundleNotifier.isDirty()).thenReturn(false);
   });
 
@@ -57,15 +58,16 @@ void main() {
       ...responsiveDesktopScreens
     ]);
 
-    testLocalizations('Incredible-WiFi - Editing a setting marks state as dirty',
+    testLocalizations(
+        'Incredible-WiFi - Editing a setting marks state as dirty',
         (tester, locale) async {
-
-      final settings = WifiBundleSettings.fromMap(wifiBundleTestState['settings'] as Map<String, dynamic>);
-      final status = WifiBundleStatus.fromMap(wifiBundleTestState['status'] as Map<String, dynamic>); 
+      final settings = WifiBundleSettings.fromMap(
+          wifiBundleTestState['settings'] as Map<String, dynamic>);
+      final status = WifiBundleStatus.fromMap(
+          wifiBundleTestState['status'] as Map<String, dynamic>);
 
       final dirtySettings = settings.copyWith(
-        wifiList: settings.wifiList.copyWith(isSimpleMode: false)
-      );
+          wifiList: settings.wifiList.copyWith(isSimpleMode: false));
       final dirtyState = WifiBundleState(
         settings: Preservable(original: settings, current: dirtySettings),
         status: status,
@@ -91,6 +93,5 @@ void main() {
       final AppFilledButton button = tester.widget(saveButtonFinder);
       expect(button.onTap, isNotNull);
     });
-
   });
 }

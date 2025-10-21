@@ -23,7 +23,7 @@ import '../../../common/di.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
 import '../../../mocks/_index.dart';
-import '../../../mocks/wifi_bundle_notifier_mocks.dart';
+import '../../../mocks/wifi_bundle_settings_notifier_mocks.dart';
 import '../../../test_data/device_filter_config_test_state.dart';
 import '../../../test_data/device_filtered_list_test_data.dart';
 import '../../../test_data/device_manager_test_state.dart';

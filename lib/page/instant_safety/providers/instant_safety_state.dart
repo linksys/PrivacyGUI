@@ -88,6 +88,7 @@ class InstantSafetyState
     );
   }
 
+  @override
   InstantSafetyState copyWith({
     Preservable<InstantSafetySettings>? settings,
     InstantSafetyStatus? status,
@@ -118,6 +119,7 @@ class InstantSafetyState
     );
   }
 
+  @override
   Map<String, dynamic> toMap() {
     return {
       ...settings.current.toMap(),
@@ -125,6 +127,7 @@ class InstantSafetyState
     };
   }
 
+  @override
   String toJson() => json.encode(toMap());
 
   factory InstantSafetyState.fromJson(String source) =>

@@ -56,7 +56,7 @@ class LinksysRoute extends GoRoute {
     this.config,
     super.routes = const <RouteBase>[],
     // New parameters for dirty checking
-    Provider<PreservableContract>? preservableProvider,
+    ProviderBase<PreservableContract>? preservableProvider,
     bool enableDirtyCheck = false,
     Future<bool?> Function(BuildContext)? showAlertForTest,
   }) : super(

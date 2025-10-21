@@ -11,7 +11,7 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 import '../../../common/_index.dart';
 import '../../../common/di.dart';
-import '../../../mocks/wifi_bundle_notifier_mocks.dart';
+import '../../../mocks/wifi_bundle_settings_notifier_mocks.dart';
 import '../../../test_data/wifi_bundle_test_state.dart';
 
 void main() {
