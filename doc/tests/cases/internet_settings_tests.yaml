@@ -1,0 +1,154 @@
+- id: 35
+  symbolic_id: "IPV4_DHCP_MANUAL_MTU"
+  tags:
+    - "internet_settings"
+    - "advanced_settings"
+    - "menu"
+  name: "IPv4 - DHCP with Manual MTU operations"
+  objective: "Test the configuration of IPv4 with DHCP and Manual MTU"
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to \"Menu\" -> \"Advanced Settings\" -> \"Internet Settings\"."
+    - action: "Go to the \"IPv4\" tab."
+    - action: "Click the \"Edit\" button."
+    - action: "Select \"Automatic Configuration - DHCP\" as the connection type."
+    - action: "Select \"Manual\" for MTU."
+    - action: "Input an MTU size."
+    - action: "Enable \"MAC Address Clone\"."
+    - action: "Click \"Clone current client's MAC\"."
+    - action: "Click the \"Save\" button."
+      verify: "A confirmation dialog appears."
+    - action: "Click \"Restart\" in the dialog."
+  expected_result: "The IPv4 DHCP settings with manual MTU and MAC clone are successfully configured and applied after a restart."
+
+- id: 36
+  symbolic_id: "IPV4_STATIC_OPERATIONS"
+  tags:
+    - "internet_settings"
+    - "advanced_settings"
+    - "menu"
+  name: "IPv4 - Static operations"
+  objective: "Test the configuration of IPv4 with a Static IP"
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to \"Menu\" -> \"Advanced Settings\" -> \"Internet Settings\"."
+    - action: "Go to the \"IPv4\" tab."
+    - action: "Click the \"Edit\" button."
+    - action: "Select \"Static IP\" as the connection type."
+    - action: "Enter the static IP address, subnet mask, and default gateway."
+    - action: "Enter DNS 1, DNS 2, and DNS 3 addresses."
+    - action: "Click the \"Save\" button."
+      verify: "A confirmation dialog appears."
+    - action: "Click \"Restart\" in the dialog."
+  expected_result: "The IPv4 Static IP settings are successfully configured and applied after a restart."
+
+- id: 37
+  symbolic_id: "IPV4_PPPOE_OPERATIONS"
+  tags:
+    - "internet_settings"
+    - "advanced_settings"
+    - "menu"
+  name: "IPv4 - PPPoE operations"
+  objective: "Test the configuration of IPv4 with PPPoE"
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to \"Menu\" -> \"Advanced Settings\" -> \"Internet Settings\"."
+    - action: "Go to the \"IPv4\" tab."
+    - action: "Click the \"Edit\" button."
+    - action: "Select \"PPPoE\" as the connection type."
+    - action: "Enter a username and password."
+    - action: "Enter a VLAN ID and service name."
+    - action: "Select \"Keep alive\" and enter a redial period."
+    - action: "Select \"Connect on demand\" and enter a max idle time."
+    - action: "Click the \"Save\" button."
+      verify: "A confirmation dialog appears."
+    - action: "Click \"Restart\" in the dialog."
+  expected_result: "The IPv4 PPPoE settings are successfully configured and applied after a restart."
+
+- id: 38
+  symbolic_id: "IPV4_BRIDGE_MODE_OPERATIONS"
+  tags:
+    - "internet_settings"
+    - "advanced_settings"
+    - "menu"
+  name: "IPv4 - Bridge mode operations"
+  objective: "Test the configuration of IPv4 with Bridge mode"
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to \"Menu\" -> \"Advanced Settings\" -> \"Internet Settings\"."
+    - action: "Go to the \"IPv4\" tab."
+    - action: "Click the \"Edit\" button."
+    - action: "Select \"Bridge Mode\" as the connection type."
+      verify: "The UI updates to show Bridge mode options."
+  expected_result: "The connection type is successfully changed to Bridge Mode in the UI."
+
+- id: 39
+  symbolic_id: "IPV6_AUTOMATIC_OPERATIONS"
+  tags:
+    - "internet_settings"
+    - "advanced_settings"
+    - "menu"
+  name: "IPv6 - Automatic operations"
+  objective: "Test the configuration of IPv6 with Automatic settings"
+  preconditions:
+    - "User is successfully logged in to the web UI."
+    - "IPv4 is configured as DHCP."
+  steps:
+    - action: "Navigate to \"Menu\" -> \"Advanced Settings\" -> \"Internet Settings\"."
+    - action: "Go to the \"IPv6\" tab."
+    - action: "Click the \"Edit\" button."
+    - action: "Select \"Automatic\" as the connection type."
+    - action: "Toggle the \"Use IPv6 for internet connection\" checkbox."
+    - action: "Select \"Disabled\", \"Automatic\", and \"Manual\" for the tunnel."
+    - action: "For the manual tunnel, enter a prefix, prefix length, border relay IP, and border relay length."
+    - action: "Click the \"Save\" button."
+      verify: "A confirmation dialog appears."
+    - action: "Click \"Restart\" in the dialog."
+  expected_result: "The IPv6 automatic settings are successfully configured and applied after a restart."
+
+- id: 40
+  symbolic_id: "IPV6_PPPOE_OPERATIONS"
+  tags:
+    - "internet_settings"
+    - "advanced_settings"
+    - "menu"
+  name: "IPv6 - PPPoE operations"
+  objective: "Test the configuration of IPv6 with PPPoE"
+  preconditions:
+    - "User is successfully logged in to the web UI."
+    - "IPv4 is configured as DHCP."
+  steps:
+    - action: "Navigate to \"Menu\" -> \"Advanced Settings\" -> \"Internet Settings\"."
+    - action: "Go to the \"IPv6\" tab."
+    - action: "Click the \"Edit\" button."
+    - action: "Select \"PPPoE\" as the connection type."
+    - action: "Click the \"Save\" button."
+      verify: "A confirmation dialog appears."
+    - action: "Click \"Restart\" in the dialog."
+      verify: "An error prompt is displayed."
+  expected_result: "An error is displayed when trying to set IPv6 to PPPoE while IPv4 is DHCP."
+
+- id: 41
+  symbolic_id: "IPV6_RELEASE_RENEW_OPERATIONS"
+  tags:
+    - "internet_settings"
+    - "advanced_settings"
+    - "menu"
+  name: "IPv6 - Release & Renew operations"
+  objective: "Test the Release & Renew functionality for IPv4 and IPv6"
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to \"Menu\" -> \"Advanced Settings\" -> \"Internet Settings\"."
+    - action: "Go to the \"Release & Renew\" tab."
+    - action: "Click the \"Release and Renew\" button for IPv6."
+      verify: "A confirmation dialog appears."
+    - action: "Click \"Cancel\" in the dialog."
+    - action: "Click the \"Release and Renew\" button for IPv4."
+      verify: "A confirmation dialog appears."
+    - action: "Click \"Release\" in the dialog."
+  expected_result: "The release and renew functionality is interactive and the confirmation dialogs work as expected."

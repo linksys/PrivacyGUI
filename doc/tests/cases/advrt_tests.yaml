@@ -1,0 +1,80 @@
+- id: 5
+  symbolic_id: "ADVRT_STATIC_ROUTE_ADD_POSITIVE"
+  tags:
+    - "advanced_routing"
+    - "advanced_settings"
+    - "menu"
+  name: "Advanced Routing - Add Static Route"
+  objective: "Verify that a valid static route can be added and saved successfully."
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to \"Menu\" -> \"Advanced Settings\" -> \"Advanced Routing\"."
+    - action: "If \"Advanced Routing\" is not supported, skip the test."
+    - action: "Click \"Add a new static routing\"."
+      verify: "A new, empty row appears in the routing table for data entry."
+    - action: "Enter valid data for routing name, destination IP, gateway, and interface."
+    - action: "Click the checkmark icon to add the route to the list."
+      verify: "The new route appears in the list with the correct details, and the input fields are cleared or hidden."
+    - action: "Click the \"Save\" button on the page."
+      verify: "A success toast (e.g., \"Saved\") is displayed."
+    - action: "Wait for the confirmation to disappear."
+  expected_result: "The new static route is added to the list, saved, and persists after reloading the page."
+
+- id: 6
+  symbolic_id: "ADVRT_STATIC_ROUTE_DELETE"
+  tags:
+    - "advanced_routing"
+    - "advanced_settings"
+    - "menu"
+  name: "Advanced Routing - Delete Static Route"
+  objective: "Verify that an existing static route can be deleted."
+  preconditions:
+    - "A static route has been previously added."
+  steps:
+    - action: "Navigate to \"Menu\" -> \"Advanced Settings\" -> \"Advanced Routing\"."
+    - action: "Locate the static route to be deleted and click its delete (trash) icon."
+      verify: "The route is immediately removed from the list in the UI."
+    - action: "Click the \"Save\" button on the page."
+      verify: "A success toast (e.g., \"Saved\") is displayed."
+    - action: "Wait for the confirmation to disappear."
+  expected_result: "The static route is successfully removed from the configuration and is no longer present after a page reload."
+
+- id: 7
+  symbolic_id: "ADVRT_STATIC_ROUTE_PERSISTENCE"
+  tags:
+    - "advanced_routing"
+    - "advanced_settings"
+    - "menu"
+  name: "Advanced Routing - Static Route Persistence Check"
+  objective: "Verify that a saved static route persists after navigating away and returning."
+  preconditions:
+    - "A static route has been previously saved."
+  steps:
+    - action: "Navigate to \"Menu\" -> \"Advanced Settings\" -> \"Advanced Routing\"."
+    - action: "Verify that the expected static route is present in the list."
+    - action: "Navigate away from the page and then return."
+      verify: "The page loads correctly."
+    - action: "Verify that the static route is still present in the list with the correct details."
+  expected_result: "The saved static route persists correctly across sessions."
+
+- id: 8
+  symbolic_id: "ADVRT_INVALID_INPUT_CHECK"
+  tags:
+    - "advanced_routing"
+    - "advanced_settings"
+    - "menu"
+  name: "Advanced Routing - Invalid Input Validation"
+  objective: "Verify that the system displays appropriate error messages for invalid inputs in the static route fields."
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to \"Menu\" -> \"Advanced Settings\" -> \"Advanced Routing\"."
+    - action: "Click \"Add a new static routing\"."
+    - action: "Leave all fields empty and click the checkmark icon to save."
+      verify: "Error messages (e.g., \"Field cannot be empty\") appear below each mandatory field."
+    - action: "Enter an invalid destination IP address (e.g., \"999.999.999.999\")."
+      verify: "An \"Invalid IP address format\" error is displayed for the field."
+    - action: "Enter an IP address with letters (e.g., \"192.168.1.abc\")."
+      verify: "An \"Invalid IP address format\" error is displayed for the field."
+  expected_result: "The system prevents saving and displays clear, specific error messages for empty mandatory fields and incorrectly formatted IP addresses."

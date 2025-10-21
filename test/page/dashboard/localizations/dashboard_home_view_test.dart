@@ -3,11 +3,13 @@ import 'dart:ui';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
+import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_state.dart';
 import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_state.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/dashboard/views/components/quick_panel.dart';
 import 'package:privacy_gui/page/dashboard/views/components/wifi_grid.dart';
@@ -40,16 +42,16 @@ void main() async {
     setUp(() {
       testHelper = TestHelper();
       testHelper.setup();
-
       when(testHelper.mockDashboardHomeNotifier.build()).thenReturn(
           DashboardHomeState.fromMap(dashboardHomeCherry7TestState));
       when(testHelper.mockDeviceManagerNotifier.build()).thenReturn(
           DeviceManagerState.fromMap(deviceManagerCherry7TestState));
-      when(testHelper.mockFirmwareUpdateNotifier.build())
-          .thenReturn(FirmwareUpdateState.fromMap(firmwareUpdateTestData));
+      when(testHelper.mockFirmwareUpdateNotifier.build()).thenReturn(
+          FirmwareUpdateState.fromMap(firmwareUpdateTestData));
     });
 
     tearDown(() {
+      testHelper.tearDown();
       topologyTestData.cleanup();
     });
 
