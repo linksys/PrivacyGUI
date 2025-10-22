@@ -277,27 +277,12 @@ class DualWANConfiguration extends Equatable {
             ipAddress: staticIpAddress ?? '',
             gateway: staticGateway ?? '',
             dnsServer1: staticDns1 ?? '',
-            dnsServer2: staticDns2 ?? '',
-            dnsServer3: staticDns3 ?? '',
+            dnsServer2: staticDns2,
+            dnsServer3: staticDns3,
             networkPrefixLength: networkPrefixLength ?? 24,
           ),
         ),
       'PPTP' => DualWANSettingsData(
-          wanType: wanType,
-          mtu: mtu,
-          tpSettings: TPSettings(
-            behavior: behavior?.value ?? PPPConnectionBehavior.keepAlive.value,
-            maxIdleMinutes:
-                maxIdleMinutes ?? getDefaultMaxIdleMinutes(behavior),
-            reconnectAfterSeconds: reconnectAfterSeconds ??
-                getDefaultReconnectAfterSeconds(behavior),
-            username: username ?? '',
-            password: password ?? '',
-            server: serverIp ?? '',
-            useStaticSettings: useStaticSettings ?? false,
-          ),
-        ),
-      'L2TP' => DualWANSettingsData(
           wanType: wanType,
           mtu: mtu,
           tpSettings: TPSettings(
@@ -319,6 +304,21 @@ class DualWANConfiguration extends Equatable {
               dnsServer3: staticDns3,
               domainName: domainName,
             ),
+          ),
+        ),
+      'L2TP' => DualWANSettingsData(
+          wanType: wanType,
+          mtu: mtu,
+          tpSettings: TPSettings(
+            behavior: behavior?.value ?? PPPConnectionBehavior.keepAlive.value,
+            maxIdleMinutes:
+                maxIdleMinutes ?? getDefaultMaxIdleMinutes(behavior),
+            reconnectAfterSeconds: reconnectAfterSeconds ??
+                getDefaultReconnectAfterSeconds(behavior),
+            username: username ?? '',
+            password: password ?? '',
+            server: serverIp ?? '',
+            useStaticSettings: useStaticSettings ?? false,
           ),
         ),
       _ => DualWANSettingsData(

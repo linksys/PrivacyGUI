@@ -621,6 +621,128 @@ class IpAddressNoReservedRule extends ValidationRule {
   }
 }
 
+/// Validation rule for L2TP Server IP addresses.
+/// Checks if the input is a valid IPv4 format and does not fall within
+/// reserved ranges restricted for L2TP server addresses.
+class IpAddressL2TPServerRule extends ValidationRule {
+  @override
+  String get name => 'IpAddressL2TPServerRule';
+
+  /// Validates an IPv4 address string against specified rules for an L2TP server:
+  /// 1. Must be a correct IPv4 format.
+  /// 2. Must not be from the following reserved or special-use ranges (RFC 5735/other RFCs):
+  ///    - 0.0.0.0/8 (This Network / Unspecified)
+  ///    - 127.0.0.0/8 (Loopback)
+  ///    - 169.254.0.0/16 (Link Local)
+  ///    - 224.0.0.0/4 (Multicast)
+  ///    - 240.0.0.0/4 (Reserved for Future Use)
+  ///    - 255.255.255.255/32 (Limited Broadcast)
+  @override
+  bool validate(String input) {
+    if (input.isEmpty) return false;
+
+    try {
+      final List<int> rawAddress = _parseIpv4ToBytes(input);
+
+      // Check if parsing failed or the address is not 4 bytes.
+      if (rawAddress.length != 4) {
+        return false;
+      }
+
+      // --- Rule Checks based on IPv4 Address Bytes ---
+
+      final int octet1 = rawAddress[0];
+      final int octet2 = rawAddress[1];
+
+      // 1. Check for 0.0.0.0/8 (This Network / Unspecified)
+      // First octet is 0 (0x00).
+      if (octet1 == 0x00) {
+        return false;
+      }
+
+      // 2. Check for 127.0.0.0/8 (Loopback)
+      // First octet is 127 (0x7F).
+      if (octet1 == 0x7F) {
+        return false;
+      }
+
+      // 3. Check for 169.254.0.0/16 (Link Local)
+      // First octet is 169 (0xA9) AND second octet is 254 (0xFE).
+      if (octet1 == 0xA9 && octet2 == 0xFE) {
+        return false;
+      }
+
+      // 4. Check for 224.0.0.0/4 (Multicast)
+      // First octet is between 224 (0xE0) and 239 (0xEF).
+      if (octet1 >= 0xE0 && octet1 <= 0xEF) {
+        return false;
+      }
+
+      // 5. & 6. Check for 240.0.0.0/4 (Future Use) AND 255.255.255.255/32 (Broadcast)
+      // Both start with an octet >= 240 (0xF0).
+      if (octet1 >= 0xF0) {
+        
+        // 6. Check for 255.255.255.255 (Limited Broadcast)
+        // Explicitly check if all four bytes are 255 (0xFF).
+        if (rawAddress[0] == 0xFF &&
+            rawAddress[1] == 0xFF &&
+            rawAddress[2] == 0xFF &&
+            rawAddress[3] == 0xFF) {
+          return false;
+        }
+
+        // 5. If it starts with >= 240 and is NOT the Limited Broadcast, 
+        // it falls into the 240.0.0.0/4 Reserved for Future Use range.
+        return false;
+      }
+
+      // If all checks pass, the address is considered valid.
+      return true;
+    } catch (e) {
+      // Catch unexpected errors during the process.
+      return false;
+    }
+  }
+
+  /// Helper function: Parses an IPv4 string into a list of 4 bytes (octets).
+  /// Returns a list of 4 integers (0-255), or an empty list if parsing fails.
+  static List<int> _parseIpv4ToBytes(String ipv4String) {
+    List<String> octets = ipv4String.split('.');
+
+    // An IPv4 address must have exactly 4 octets.
+    if (octets.length != 4) {
+      return []; // Invalid format: incorrect number of octets.
+    }
+
+    List<int> bytes = [];
+    for (String octet in octets) {
+      // Each octet must not be empty.
+      if (octet.isEmpty) {
+        return []; // Invalid format: empty octet.
+      }
+      try {
+        int value = int.parse(octet);
+        // Each octet must be between 0 and 255.
+        if (value < 0 || value > 255) {
+          return []; // Invalid format: octet out of range.
+        }
+        
+        // Reject octets with leading zeros that are not "0" (e.g., "010" or "07") 
+        // to enforce strict IPv4 representation.
+        if (octet.length > 1 && octet.startsWith('0') && octet != '0') {
+          return [];
+        }
+
+        bytes.add(value);
+      } on FormatException {
+        return []; // Invalid format: octet is not a valid integer.
+      }
+    }
+
+    return bytes;
+  }
+}
+
 class HostValidForGivenRouterIPAddressAndSubnetMaskRule extends ValidationRule {
   @override
   String get name => 'HostValidForGivenRouterIPAddressAndSubnetMaskRule';

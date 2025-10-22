@@ -391,7 +391,7 @@ class TPSettings extends Equatable {
   Map<String, dynamic> toMap() {
     return {
       'useStaticSettings': useStaticSettings,
-      'staticSettings': staticSettings,
+      'staticSettings': staticSettings?.toMap(),
       'server': server,
       'username': username,
       'password': password,
