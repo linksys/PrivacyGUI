@@ -3,8 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
+import 'package:privacy_gui/core/jnap/models/ipv6_firewall_rule.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/providers/preservable.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -135,7 +137,7 @@ void main() {
   testLocalizations('Firewall settings view - IPv6 port service - empty state',
       (tester, locale) async {
     final state = Ipv6PortServiceListState.fromMap(ipv6PortServiceListTestState)
-        .copyWith(rules: const []);
+        .copyWith(settings: const Preservable(original: IPv6FirewallRuleList(rules: []), current: IPv6FirewallRuleList(rules: [])));
     when(mockIpv6PortServiceListNotifier.build()).thenReturn(state);
     when(mockIpv6PortServiceListNotifier.fetch())
         .thenAnswer((realInvocation) async {
@@ -193,7 +195,7 @@ void main() {
     await tester.pumpWidget(
       testableSingleRoute(
         child: Ipv6PortServiceRuleView(
-          args: {'items': state.rules},
+          args: {'items': state.current.rules},
         ),
         locale: locale,
         overrides: [
@@ -244,7 +246,7 @@ void main() {
     await tester.pumpWidget(
       testableSingleRoute(
         child: Ipv6PortServiceRuleView(
-          args: {'items': state.rules},
+          args: {'items': state.current.rules},
         ),
         locale: locale,
         overrides: [
@@ -298,7 +300,7 @@ void main() {
     await tester.pumpWidget(
       testableSingleRoute(
         child: Ipv6PortServiceRuleView(
-          args: {'items': state.rules},
+          args: {'items': state.current.rules},
         ),
         locale: locale,
         overrides: [

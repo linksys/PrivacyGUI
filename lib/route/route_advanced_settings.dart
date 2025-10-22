@@ -107,6 +107,8 @@ final advancedSettings = [
   LinksysRoute(
       name: RouteNamed.settingsFirewall,
       path: RoutePath.settingsFirewall,
+      preservableProvider: preservableFirewallProvider,
+      enableDirtyCheck: true,
       config: LinksysRouteConfig(
         column: ColumnGrid(column: 12),
       ),
