@@ -275,6 +275,8 @@ void main() {
       await tester.pumpWidget(widget);
       await tester.pumpAndSettle();
       final editIconFinder = find.byIcon(LinksysIcons.edit);
+      await tester.scrollUntilVisible(editIconFinder.at(2), 100,
+          scrollable: find.byType(Scrollable).last);
       await tester.tap(editIconFinder.at(2));
       await tester.pumpAndSettle();
     });
@@ -403,6 +405,8 @@ void main() {
       await tester.pumpWidget(widget);
       await tester.pumpAndSettle();
       final editIconFinder = find.byIcon(LinksysIcons.edit);
+      await tester.scrollUntilVisible(editIconFinder.at(5), 100,
+          scrollable: find.byType(Scrollable).last);
       await tester.tap(editIconFinder.at(5));
       await tester.pumpAndSettle();
     });

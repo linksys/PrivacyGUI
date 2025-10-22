@@ -1,6 +1,17 @@
 import 'package:flutter/cupertino.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 
+/// Maps a timezone identifier to a localized, human-readable region name.
+///
+/// This function uses a `switch` statement to find the corresponding localized
+/// string for a given [timezoneId]. The names typically represent major cities
+/// or regions within that timezone.
+///
+/// [context] The `BuildContext` for accessing localized strings.
+/// [timezoneId] The identifier for the timezone (e.g., 'GMT0-NO-DST', 'PST8').
+///
+/// Returns the localized region name as a `String`, or an empty string if the
+/// identifier is not recognized.
 String getTimeZoneRegionName(BuildContext context, timezoneId) {
   switch (timezoneId) {
     case 'GMT0-NO-DST':
@@ -88,6 +99,16 @@ String getTimeZoneRegionName(BuildContext context, timezoneId) {
   }
 }
 
+/// Extracts the GMT offset string from a full timezone description.
+///
+/// This function uses a regular expression to find and return the content
+/// within the first pair of parentheses in the [description] string. It is
+/// expected that the description is formatted like "(GMT-XX:XX) Region Name".
+///
+/// [description] The full timezone description string.
+///
+/// Returns the GMT offset string (e.g., 'GMT-08:00'), or an empty string if
+/// no match is found.
 String getTimezoneGMT(String description) {
   return RegExp(r'\(([^)]+)\)').matchAsPrefix(description)?.group(1) ?? '';
 }

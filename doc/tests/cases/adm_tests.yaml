@@ -1,0 +1,78 @@
+- id: 1
+  symbolic_id: "ADM_UPNP_TOGGLE_AND_SAVE"
+  tags:
+    - "administration"
+    - "advanced_settings"
+    - "menu"
+  name: "Administration - UPnP Toggle and Save"
+  objective: "Verify that the UPnP setting can be toggled and saved successfully."
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to \"Menu\" -> \"Advanced Settings\" -> \"Administration\"."
+    - action: "Record the initial state of the \"UPnP\" switch (On/Off)."
+    - action: "Toggle the \"UPnP\" switch to the opposite state."
+      verify: "The switch in the UI reflects the new state immediately."
+    - action: "Click the \"Save\" button to apply the changes."
+      verify: "A success toast (e.g., \"Saved\") is displayed."
+    - action: "Wait for the confirmation to disappear."
+  expected_result: "The \"Save\" operation completes successfully, and the new UPnP state persists after a page reload."
+
+- id: 2
+  symbolic_id: "ADM_UPNP_DEPENDENCY_CHECK"
+  tags:
+    - "administration"
+    - "advanced_settings"
+    - "menu"
+  name: "Administration - UPnP Dependency Verification"
+  objective: "Verify that UPnP-dependent options are disabled when UPnP is turned off."
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to \"Menu\" -> \"Advanced Settings\" -> \"Administration\"."
+    - action: "Toggle the \"UPnP\" switch to the 'Off' position."
+      verify: "The switch in the UI shows 'Off'."
+    - action: "Verify the \"Allow devices to configure\" and \"Allow users to disable Internet access\" checkboxes are hidden or have a `disabled` attribute, making them non-interactive."
+  expected_result: "The dependent checkboxes are not interactive, confirming their state is controlled by the main UPnP setting."
+
+- id: 3
+  symbolic_id: "ADM_OTHER_SETTINGS_TOGGLE_AND_SAVE"
+  tags:
+    - "administration"
+    - "advanced_settings"
+    - "menu"
+  name: "Administration - Toggle and Save Various Settings"
+  objective: "Verify that individual settings (Local Management, SIP, Express Forwarding) can be toggled and saved."
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to \"Menu\" -> \"Advanced Settings\" -> \"Administration\"."
+    - action: "If \"Allow local management wirelessly\" is supported, toggle its switch."
+      verify: "The switch state changes in the UI."
+    - action: "Toggle the \"Application Layer Gateway (SIP)\" switch."
+      verify: "The switch state changes in the UI."
+    - action: "Toggle the \"Express Forwarding\" switch."
+      verify: "The switch state changes in the UI."
+    - action: "Click the \"Save\" button to apply the changes."
+      verify: "A success toast (e.g., \"Saved\") is displayed."
+    - action: "Wait for the confirmation to disappear."
+  expected_result: "The \"Save\" operation completes successfully for all toggled settings."
+
+- id: 4
+  symbolic_id: "ADM_SETTINGS_PERSISTENCE"
+  tags:
+    - "administration"
+    - "advanced_settings"
+    - "menu"
+  name: "Administration - Settings Persistence Check"
+  objective: "Verify that all saved settings on the Administration page persist after navigating away and returning."
+  preconditions:
+    - "A set of known changes has been previously saved on the \"Administration\" page."
+  steps:
+    - action: "Navigate to \"Menu\" -> \"Advanced Settings\" -> \"Administration\"."
+    - action: "Record the current state of all switches and checkboxes on the page."
+    - action: "Navigate away from the page (e.g., back to \"Advanced Settings\")."
+    - action: "Re-enter the \"Administration\" page."
+      verify: "The page loads successfully."
+    - action: "Compare the current state of all switches and checkboxes with the states recorded in the previous step."
+  expected_result: "The state of all settings on the Administration page must be identical to the states recorded before navigating away."
