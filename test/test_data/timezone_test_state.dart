@@ -1,6 +1,9 @@
-const timezoneTestState = {
+const _timezoneSettings = {
   "isDaylightSaving": false,
   "timezoneId": "SGT-8-NO-DST",
+};
+
+const _timezoneStatus = {
   "supportedTimezones": [
     {
       "observesDST": false,
@@ -239,4 +242,12 @@ const timezoneTestState = {
     }
   ],
   "error": null
+};
+
+const timezoneTestState = {
+  "settings": {
+    "original": _timezoneSettings,
+    "current": _timezoneSettings,
+  },
+  "status": _timezoneStatus,
 };

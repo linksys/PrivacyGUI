@@ -4,32 +4,39 @@ import 'dart:convert';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/widgets.dart';
 
+enum DMZSourceType {
+  auto,
+  range,
+  ;
+
+  static DMZSourceType resolve(String value) =>
+      values.firstWhere((element) => element.name == value);
+}
+
+enum DMZDestinationType {
+  ip,
+  mac,
+  ;
+
+  static DMZDestinationType resolve(String value) =>
+      values.firstWhere((element) => element.name == value);
+}
+
 class DMZSettings extends Equatable {
   final bool isDMZEnabled;
   final DMZSourceRestriction? sourceRestriction;
   final String? destinationIPAddress;
   final String? destinationMACAddress;
+  final DMZSourceType sourceType;
+  final DMZDestinationType destinationType;
   const DMZSettings({
     required this.isDMZEnabled,
     this.sourceRestriction,
     this.destinationIPAddress,
     this.destinationMACAddress,
+    this.sourceType = DMZSourceType.auto,
+    this.destinationType = DMZDestinationType.ip,
   });
-
-  // DMZSettings copyWith({
-  //   bool? isDMZEnabled,
-  //   DMZSourceRestriction? sourceRestriction,
-  //   String? destinationIPAddress,
-  //   String? destinationMACAddress,
-  // }) {
-  //   return DMZSettings(
-  //     isDMZEnabled: isDMZEnabled ?? this.isDMZEnabled,
-  //     sourceRestriction: sourceRestriction ?? this.sourceRestriction,
-  //     destinationIPAddress: destinationIPAddress ?? this.destinationIPAddress,
-  //     destinationMACAddress:
-  //         destinationMACAddress ?? this.destinationMACAddress,
-  //   );
-  // }
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
@@ -37,6 +44,8 @@ class DMZSettings extends Equatable {
       'sourceRestriction': sourceRestriction?.toMap(),
       'destinationIPAddress': destinationIPAddress,
       'destinationMACAddress': destinationMACAddress,
+      'sourceType': sourceType.name,
+      'destinationType': destinationType.name,
     };
   }
 
@@ -53,6 +62,12 @@ class DMZSettings extends Equatable {
       destinationMACAddress: map['destinationMACAddress'] != null
           ? map['destinationMACAddress'] as String
           : null,
+      sourceType: map['sourceType'] != null
+          ? DMZSourceType.resolve(map['sourceType'])
+          : DMZSourceType.auto,
+      destinationType: map['destinationType'] != null
+          ? DMZDestinationType.resolve(map['destinationType'])
+          : DMZDestinationType.ip,
     );
   }
 
@@ -70,6 +85,8 @@ class DMZSettings extends Equatable {
         sourceRestriction,
         destinationIPAddress,
         destinationMACAddress,
+        sourceType,
+        destinationType,
       ];
 
   DMZSettings copyWith({
@@ -77,12 +94,21 @@ class DMZSettings extends Equatable {
     ValueGetter<DMZSourceRestriction?>? sourceRestriction,
     ValueGetter<String?>? destinationIPAddress,
     ValueGetter<String?>? destinationMACAddress,
+    DMZSourceType? sourceType,
+    DMZDestinationType? destinationType,
   }) {
     return DMZSettings(
       isDMZEnabled: isDMZEnabled ?? this.isDMZEnabled,
-      sourceRestriction: sourceRestriction != null ? sourceRestriction() : this.sourceRestriction,
-      destinationIPAddress: destinationIPAddress != null ? destinationIPAddress() : this.destinationIPAddress,
-      destinationMACAddress: destinationMACAddress != null ? destinationMACAddress() : this.destinationMACAddress,
+      sourceRestriction:
+          sourceRestriction != null ? sourceRestriction() : this.sourceRestriction,
+      destinationIPAddress: destinationIPAddress != null
+          ? destinationIPAddress()
+          : this.destinationIPAddress,
+      destinationMACAddress: destinationMACAddress != null
+          ? destinationMACAddress()
+          : this.destinationMACAddress,
+      sourceType: sourceType ?? this.sourceType,
+      destinationType: destinationType ?? this.destinationType,
     );
   }
 }

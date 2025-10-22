@@ -139,6 +139,8 @@ final advancedSettings = [
   LinksysRoute(
     name: RouteNamed.settingsDMZ,
     path: RoutePath.settingsDMZ,
+    preservableProvider: preservableDMZSettingsProvider,
+    enableDirtyCheck: true,
     config: LinksysRouteConfig(
       column: ColumnGrid(column: 9),
     ),
@@ -149,6 +151,8 @@ final advancedSettings = [
   LinksysRoute(
     name: RouteNamed.settingsAdministration,
     path: RoutePath.settingsAdministration,
+    preservableProvider: preservableAdministrationSettingsProvider,
+    enableDirtyCheck: true,
     config: LinksysRouteConfig(
       column: ColumnGrid(column: 9),
     ),

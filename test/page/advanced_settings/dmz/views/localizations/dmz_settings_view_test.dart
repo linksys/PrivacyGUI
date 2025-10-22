@@ -10,6 +10,7 @@ import 'package:privacy_gui/page/advanced_settings/dmz/views/dmz_settings_view.d
 import 'package:privacy_gui/page/instant_device/providers/device_list_provider.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
 import 'package:privacy_gui/page/instant_device/views/select_device_view.dart';
+import 'package:privacy_gui/providers/preservable.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
@@ -28,26 +29,28 @@ import '../../../../../mocks/device_list_notifier_mock.dart';
 import '../../../../../mocks/dmz_setting_notifier_mocks.dart';
 
 void main() {
-  late MockDMZSettingNotifier mockDMZSettingNotifier;
+  late MockDMZSettingsNotifier mockDMZSettingsNotifier;
 
   mockDependencyRegister();
   ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
   setUp(() {
-    mockDMZSettingNotifier = MockDMZSettingNotifier();
-    when(mockDMZSettingNotifier.build())
-        .thenReturn(DMZSettingsState.fromMap(dmzSettingsTestState));
-    when(mockDMZSettingNotifier.fetch(any)).thenAnswer((_) async {
+    mockDMZSettingsNotifier = MockDMZSettingsNotifier();
+    final state = DMZSettingsState.fromMap(dmzSettingsTestState);
+    when(mockDMZSettingsNotifier.build()).thenReturn(state);
+    when(mockDMZSettingsNotifier.fetch()).thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 1));
-      return DMZSettingsState.fromMap(dmzSettingsTestState);
+      return state;
     });
-    when(mockDMZSettingNotifier.subnetMask).thenReturn('255.255.0.0');
-    when(mockDMZSettingNotifier.ipAddress).thenReturn('192.168.1.1');
+    when(mockDMZSettingsNotifier.subnetMask).thenReturn('255.255.0.0');
+    when(mockDMZSettingsNotifier.ipAddress).thenReturn('192.168.1.1');
   });
   testLocalizations('DMZ settings view - disabled', (tester, locale) async {
+    final settings = DMZSettings(isDMZEnabled: false);
     final state = DMZSettingsState.fromMap(dmzSettingsTestState)
-        .copyWith(settings: const DMZSettings(isDMZEnabled: false));
-    when(mockDMZSettingNotifier.build()).thenReturn(state);
-    when(mockDMZSettingNotifier.fetch()).thenAnswer((_) async {
+        .copyWith(settings: Preservable(original: settings, current: settings));
+    when(mockDMZSettingsNotifier.build()).thenReturn(state);
+    when(mockDMZSettingsNotifier.fetch(forceRemote: anyNamed('forceRemote')))
+        .thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 1));
       return state;
     });
@@ -59,7 +62,7 @@ void main() {
         ),
         locale: locale,
         overrides: [
-          dmzSettingsProvider.overrideWith(() => mockDMZSettingNotifier),
+          dmzSettingsProvider.overrideWith(() => mockDMZSettingsNotifier),
         ],
       ),
     );
@@ -69,6 +72,15 @@ void main() {
     ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1024)),
   ]);
   testLocalizations('DMZ settings view - enabled', (tester, locale) async {
+    final settings = DMZSettings(isDMZEnabled: true);
+    final state = DMZSettingsState.fromMap(dmzSettingsTestState)
+        .copyWith(settings: Preservable(original: settings, current: settings));
+    when(mockDMZSettingsNotifier.build()).thenReturn(state);
+    when(mockDMZSettingsNotifier.fetch(forceRemote: anyNamed('forceRemote')))
+        .thenAnswer((_) async {
+      await Future.delayed(const Duration(seconds: 1));
+      return state;
+    });
     await tester.pumpWidget(
       testableRouteShellWidget(
         child: const DMZSettingsView(),
@@ -77,7 +89,7 @@ void main() {
         ),
         locale: locale,
         overrides: [
-          dmzSettingsProvider.overrideWith(() => mockDMZSettingNotifier),
+          dmzSettingsProvider.overrideWith(() => mockDMZSettingsNotifier),
         ],
       ),
     );
@@ -89,18 +101,17 @@ void main() {
 
   testLocalizations('DMZ settings view - enabled with specific range source',
       (tester, locale) async {
-    var state = DMZSettingsState.fromMap(dmzSettingsTestState);
-    state = state.copyWith(
-      sourceType: DMZSourceType.range,
-      settings: state.settings.copyWith(
-        sourceRestriction: () => DMZSourceRestriction(
-          firstIPAddress: '192.168.1.23',
-          lastIPAddress: '192.168.1.78',
-        ),
-      ),
-    );
-    when(mockDMZSettingNotifier.build()).thenReturn(state);
-    when(mockDMZSettingNotifier.fetch(any)).thenAnswer((_) async {
+    final settings = DMZSettings(
+        isDMZEnabled: true,
+        sourceType: DMZSourceType.range,
+        sourceRestriction: DMZSourceRestriction(
+            firstIPAddress: '192.168.1.23', lastIPAddress: '192.168.1.78'));
+    final state = DMZSettingsState.fromMap(dmzSettingsTestState)
+        .copyWith(settings: Preservable(original: settings, current: settings));
+
+    when(mockDMZSettingsNotifier.build()).thenReturn(state);
+    when(mockDMZSettingsNotifier.fetch(forceRemote: anyNamed('forceRemote')))
+        .thenAnswer((_) async {
       return state;
     });
     await tester.pumpWidget(
@@ -111,7 +122,7 @@ void main() {
         ),
         locale: locale,
         overrides: [
-          dmzSettingsProvider.overrideWith(() => mockDMZSettingNotifier),
+          dmzSettingsProvider.overrideWith(() => mockDMZSettingsNotifier),
         ],
       ),
     );
@@ -124,18 +135,17 @@ void main() {
   testLocalizations(
       'DMZ settings view - enabled with specific range source - error state',
       (tester, locale) async {
-    var state = DMZSettingsState.fromMap(dmzSettingsTestState);
-    state = state.copyWith(
-      sourceType: DMZSourceType.range,
-      settings: state.settings.copyWith(
-        sourceRestriction: () => DMZSourceRestriction(
-          firstIPAddress: '192.168.1.23',
-          lastIPAddress: '192.168.1.78',
-        ),
-      ),
-    );
-    when(mockDMZSettingNotifier.build()).thenReturn(state);
-    when(mockDMZSettingNotifier.fetch(any)).thenAnswer((_) async {
+    final settings = DMZSettings(
+        isDMZEnabled: true,
+        sourceType: DMZSourceType.range,
+        sourceRestriction: DMZSourceRestriction(
+            firstIPAddress: '192.168.1.23', lastIPAddress: '192.168.1.78'));
+    var state = DMZSettingsState.fromMap(dmzSettingsTestState)
+        .copyWith(settings: Preservable(original: settings, current: settings));
+
+    when(mockDMZSettingsNotifier.build()).thenReturn(state);
+    when(mockDMZSettingsNotifier.fetch(forceRemote: anyNamed('forceRemote')))
+        .thenAnswer((_) async {
       return state;
     });
     await tester.pumpWidget(
@@ -146,7 +156,7 @@ void main() {
         ),
         locale: locale,
         overrides: [
-          dmzSettingsProvider.overrideWith(() => mockDMZSettingNotifier),
+          dmzSettingsProvider.overrideWith(() => mockDMZSettingsNotifier),
         ],
       ),
     );
@@ -167,10 +177,15 @@ void main() {
   testLocalizations(
       'DMZ settings view - enabled with IP address destination - error state',
       (tester, locale) async {
-    var state = DMZSettingsState.fromMap(dmzSettingsTestState);
-    state = state.copyWith(destinationType: DMZDestinationType.ip);
-    when(mockDMZSettingNotifier.build()).thenReturn(state);
-    when(mockDMZSettingNotifier.fetch()).thenAnswer((_) async {
+    final settings = DMZSettings(
+        isDMZEnabled: true,
+        destinationType: DMZDestinationType.ip,
+        destinationIPAddress: '192.168.1.1');
+    var state = DMZSettingsState.fromMap(dmzSettingsTestState)
+        .copyWith(settings: Preservable(original: settings, current: settings));
+    when(mockDMZSettingsNotifier.build()).thenReturn(state);
+    when(mockDMZSettingsNotifier.fetch(forceRemote: anyNamed('forceRemote')))
+        .thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 1));
       return state;
     });
@@ -182,7 +197,7 @@ void main() {
         ),
         locale: locale,
         overrides: [
-          dmzSettingsProvider.overrideWith(() => mockDMZSettingNotifier),
+          dmzSettingsProvider.overrideWith(() => mockDMZSettingsNotifier),
         ],
       ),
     );
@@ -203,10 +218,15 @@ void main() {
 
   testLocalizations('DMZ settings view - enabled with mac address destination',
       (tester, locale) async {
-    var state = DMZSettingsState.fromMap(dmzSettingsTestState);
-    state = state.copyWith(destinationType: DMZDestinationType.mac);
-    when(mockDMZSettingNotifier.build()).thenReturn(state);
-    when(mockDMZSettingNotifier.fetch()).thenAnswer((_) async {
+    final settings = DMZSettings(
+        isDMZEnabled: true,
+        destinationType: DMZDestinationType.mac,
+        destinationMACAddress: '00:11:22:33:44:55');
+    var state = DMZSettingsState.fromMap(dmzSettingsTestState)
+        .copyWith(settings: Preservable(original: settings, current: settings));
+    when(mockDMZSettingsNotifier.build()).thenReturn(state);
+    when(mockDMZSettingsNotifier.fetch(forceRemote: anyNamed('forceRemote')))
+        .thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 1));
       return state;
     });
@@ -218,7 +238,7 @@ void main() {
         ),
         locale: locale,
         overrides: [
-          dmzSettingsProvider.overrideWith(() => mockDMZSettingNotifier),
+          dmzSettingsProvider.overrideWith(() => mockDMZSettingsNotifier),
         ],
       ),
     );
@@ -231,10 +251,15 @@ void main() {
   testLocalizations(
       'DMZ settings view - enabled with mac address destination - error state',
       (tester, locale) async {
-    var state = DMZSettingsState.fromMap(dmzSettingsTestState);
-    state = state.copyWith(destinationType: DMZDestinationType.mac);
-    when(mockDMZSettingNotifier.build()).thenReturn(state);
-    when(mockDMZSettingNotifier.fetch()).thenAnswer((_) async {
+    final settings = DMZSettings(
+        isDMZEnabled: true,
+        destinationType: DMZDestinationType.mac,
+        destinationMACAddress: '00:11:22:33:44:55');
+    var state = DMZSettingsState.fromMap(dmzSettingsTestState)
+        .copyWith(settings: Preservable(original: settings, current: settings));
+    when(mockDMZSettingsNotifier.build()).thenReturn(state);
+    when(mockDMZSettingsNotifier.fetch(forceRemote: anyNamed('forceRemote')))
+        .thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 1));
       return state;
     });
@@ -246,7 +271,7 @@ void main() {
         ),
         locale: locale,
         overrides: [
-          dmzSettingsProvider.overrideWith(() => mockDMZSettingNotifier),
+          dmzSettingsProvider.overrideWith(() => mockDMZSettingsNotifier),
         ],
       ),
     );
@@ -275,7 +300,7 @@ void main() {
         }),
         locale: locale,
         overrides: [
-          dmzSettingsProvider.overrideWith(() => mockDMZSettingNotifier),
+          dmzSettingsProvider.overrideWith(() => mockDMZSettingsNotifier),
           deviceListProvider.overrideWith(() => mockDeviceListNotifier),
         ],
       ),
@@ -287,14 +312,16 @@ void main() {
   ]);
 
   testLocalizations('DMZ settings view - Saved', (tester, locale) async {
+    final settings = DMZSettings(isDMZEnabled: true);
     final state = DMZSettingsState.fromMap(dmzSettingsTestState)
-        .copyWith(settings: const DMZSettings(isDMZEnabled: true));
-    when(mockDMZSettingNotifier.build()).thenReturn(state);
-    when(mockDMZSettingNotifier.fetch()).thenAnswer((_) async {
+        .copyWith(settings: Preservable(original: settings, current: settings));
+    when(mockDMZSettingsNotifier.build()).thenReturn(state);
+    when(mockDMZSettingsNotifier.fetch(forceRemote: anyNamed('forceRemote')))
+        .thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 1));
       return state;
     });
-    when(mockDMZSettingNotifier.save()).thenAnswer((_) async {
+    when(mockDMZSettingsNotifier.save()).thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 1));
       return state;
     });
@@ -306,7 +333,7 @@ void main() {
         ),
         locale: locale,
         overrides: [
-          dmzSettingsProvider.overrideWith(() => mockDMZSettingNotifier),
+          dmzSettingsProvider.overrideWith(() => mockDMZSettingsNotifier),
         ],
       ),
     );
@@ -321,14 +348,16 @@ void main() {
   ]);
 
   testLocalizations('DMZ settings view - Save failed', (tester, locale) async {
+    final settings = DMZSettings(isDMZEnabled: true);
     final state = DMZSettingsState.fromMap(dmzSettingsTestState)
-        .copyWith(settings: const DMZSettings(isDMZEnabled: true));
-    when(mockDMZSettingNotifier.build()).thenReturn(state);
-    when(mockDMZSettingNotifier.fetch()).thenAnswer((_) async {
+        .copyWith(settings: Preservable(original: settings, current: settings));
+    when(mockDMZSettingsNotifier.build()).thenReturn(state);
+    when(mockDMZSettingsNotifier.fetch(forceRemote: anyNamed('forceRemote')))
+        .thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 1));
       return state;
     });
-    when(mockDMZSettingNotifier.save()).thenAnswer((_) async {
+    when(mockDMZSettingsNotifier.save()).thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 1));
       throw const JNAPError(result: 'ErrorMissingDestination');
     });
@@ -340,7 +369,7 @@ void main() {
         ),
         locale: locale,
         overrides: [
-          dmzSettingsProvider.overrideWith(() => mockDMZSettingNotifier),
+          dmzSettingsProvider.overrideWith(() => mockDMZSettingsNotifier),
         ],
       ),
     );

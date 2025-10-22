@@ -90,6 +90,8 @@ final menus = [
         LinksysRoute(
           name: RouteNamed.settingsTimeZone,
           path: RoutePath.settingsTimeZone,
+          preservableProvider: preservableTimezoneProvider,
+          enableDirtyCheck: true,
           config: LinksysRouteConfig(
             column: ColumnGrid(column: 9),
           ),

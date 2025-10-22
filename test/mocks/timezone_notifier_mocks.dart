@@ -47,6 +47,28 @@ class _FakeTimezoneState_1 extends _i1.SmartFake implements _i3.TimezoneState {
         );
 }
 
+class _FakeTimezoneSettings_2 extends _i1.SmartFake
+    implements _i3.TimezoneSettings {
+  _FakeTimezoneSettings_2(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
+class _FakeTimezoneStatus_3 extends _i1.SmartFake
+    implements _i3.TimezoneStatus {
+  _FakeTimezoneStatus_3(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
 /// A class which mocks [TimezoneNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
@@ -110,25 +132,80 @@ class MockTimezoneNotifier extends _i2.Notifier<_i3.TimezoneState> with _i1.Mock
       ) as _i3.TimezoneState);
 
   @override
-  _i5.Future<dynamic> fetch({bool? fetchRemote = false}) => (super.noSuchMethod(
+  _i5.Future<(_i3.TimezoneSettings, _i3.TimezoneStatus)> performFetch({
+    bool? forceRemote = false,
+    bool? updateStatusOnly = false,
+  }) =>
+      (super.noSuchMethod(
         Invocation.method(
-          #fetch,
+          #performFetch,
           [],
-          {#fetchRemote: fetchRemote},
+          {
+            #forceRemote: forceRemote,
+            #updateStatusOnly: updateStatusOnly,
+          },
         ),
-        returnValue: _i5.Future<dynamic>.value(),
-        returnValueForMissingStub: _i5.Future<dynamic>.value(),
-      ) as _i5.Future<dynamic>);
+        returnValue:
+            _i5.Future<(_i3.TimezoneSettings, _i3.TimezoneStatus)>.value((
+          _FakeTimezoneSettings_2(
+            this,
+            Invocation.method(
+              #performFetch,
+              [],
+              {
+                #forceRemote: forceRemote,
+                #updateStatusOnly: updateStatusOnly,
+              },
+            ),
+          ),
+          _FakeTimezoneStatus_3(
+            this,
+            Invocation.method(
+              #performFetch,
+              [],
+              {
+                #forceRemote: forceRemote,
+                #updateStatusOnly: updateStatusOnly,
+              },
+            ),
+          )
+        )),
+        returnValueForMissingStub:
+            _i5.Future<(_i3.TimezoneSettings, _i3.TimezoneStatus)>.value((
+          _FakeTimezoneSettings_2(
+            this,
+            Invocation.method(
+              #performFetch,
+              [],
+              {
+                #forceRemote: forceRemote,
+                #updateStatusOnly: updateStatusOnly,
+              },
+            ),
+          ),
+          _FakeTimezoneStatus_3(
+            this,
+            Invocation.method(
+              #performFetch,
+              [],
+              {
+                #forceRemote: forceRemote,
+                #updateStatusOnly: updateStatusOnly,
+              },
+            ),
+          )
+        )),
+      ) as _i5.Future<(_i3.TimezoneSettings, _i3.TimezoneStatus)>);
 
   @override
-  _i5.Future<dynamic> save() => (super.noSuchMethod(
+  _i5.Future<void> performSave() => (super.noSuchMethod(
         Invocation.method(
-          #save,
+          #performSave,
           [],
         ),
-        returnValue: _i5.Future<dynamic>.value(),
-        returnValueForMissingStub: _i5.Future<dynamic>.value(),
-      ) as _i5.Future<dynamic>);
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
 
   @override
   bool isSelectedTimezone(int? index) => (super.noSuchMethod(
@@ -204,4 +281,94 @@ class MockTimezoneNotifier extends _i2.Notifier<_i3.TimezoneState> with _i1.Mock
         returnValue: false,
         returnValueForMissingStub: false,
       ) as bool);
+
+  @override
+  _i5.Future<_i3.TimezoneState> fetch({
+    bool? forceRemote = false,
+    bool? updateStatusOnly = false,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #fetch,
+          [],
+          {
+            #forceRemote: forceRemote,
+            #updateStatusOnly: updateStatusOnly,
+          },
+        ),
+        returnValue: _i5.Future<_i3.TimezoneState>.value(_FakeTimezoneState_1(
+          this,
+          Invocation.method(
+            #fetch,
+            [],
+            {
+              #forceRemote: forceRemote,
+              #updateStatusOnly: updateStatusOnly,
+            },
+          ),
+        )),
+        returnValueForMissingStub:
+            _i5.Future<_i3.TimezoneState>.value(_FakeTimezoneState_1(
+          this,
+          Invocation.method(
+            #fetch,
+            [],
+            {
+              #forceRemote: forceRemote,
+              #updateStatusOnly: updateStatusOnly,
+            },
+          ),
+        )),
+      ) as _i5.Future<_i3.TimezoneState>);
+
+  @override
+  _i5.Future<_i3.TimezoneState> save() => (super.noSuchMethod(
+        Invocation.method(
+          #save,
+          [],
+        ),
+        returnValue: _i5.Future<_i3.TimezoneState>.value(_FakeTimezoneState_1(
+          this,
+          Invocation.method(
+            #save,
+            [],
+          ),
+        )),
+        returnValueForMissingStub:
+            _i5.Future<_i3.TimezoneState>.value(_FakeTimezoneState_1(
+          this,
+          Invocation.method(
+            #save,
+            [],
+          ),
+        )),
+      ) as _i5.Future<_i3.TimezoneState>);
+
+  @override
+  void revert() => super.noSuchMethod(
+        Invocation.method(
+          #revert,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  bool isDirty() => (super.noSuchMethod(
+        Invocation.method(
+          #isDirty,
+          [],
+        ),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  void markAsSaved() => super.noSuchMethod(
+        Invocation.method(
+          #markAsSaved,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
 }

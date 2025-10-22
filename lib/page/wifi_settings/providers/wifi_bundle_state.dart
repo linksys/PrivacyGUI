@@ -80,6 +80,23 @@ class WifiBundleState extends FeatureState<WifiBundleSettings, WifiBundleStatus>
     required super.status,
   });
 
+    @override
+  bool get isDirty {
+    // Create temporary copies of wifiList settings with isSimpleMode set to true
+    // to exclude it from the dirty check.
+    final originalWifiListForComparison = settings.original.wifiList.copyWith(isSimpleMode: true);
+    final currentWifiListForComparison = settings.current.wifiList.copyWith(isSimpleMode: true);
+
+    // Compare other settings directly
+    final advancedDirty = settings.original.advanced != settings.current.advanced;
+    final privacyDirty = settings.original.privacy != settings.current.privacy;
+
+    // Compare wifiList settings with isSimpleMode excluded
+    final wifiListDirty = originalWifiListForComparison != currentWifiListForComparison;
+
+    return advancedDirty || privacyDirty || wifiListDirty;
+  }
+
   @override
   WifiBundleState copyWith({
     Preservable<WifiBundleSettings>? settings,

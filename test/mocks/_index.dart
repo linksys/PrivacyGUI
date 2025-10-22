@@ -1,5 +1,5 @@
 export 'add_nodes_notifier_mocks.dart';
-export 'administration_setting_notifier_mocks.dart';
+export 'administration_settings_notifier_mocks.dart';
 export 'dashboard_home_notifier_mocks.dart';
 export 'dashboard_manager_notifier_mocks.dart';
 export 'device_filter_config_notifier_mocks.dart';

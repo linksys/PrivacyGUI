@@ -8,4 +8,5 @@
 - [x] 1.6: Ensure `TextEditingController`s in `LocalNetworkSettingsView` and its sub-views are properly updated on `fetch`, `save`, and `revert` operations.
 - [x] 1.7: Override `isDirty` in `LocalNetworkSettingsState` to exclude the DHCP reservation list from the dirty check.
 - [x] 1.8: Update the `LinksysRoute` for `/local-network-settings` in `lib/route/route_menu.dart` to set `preservableProvider` and `enableDirtyCheck: true`.
-- [x] 1.9: sh run_generate_loc_snapshots.sh -c true -f test/page/advanced_settings/local_network_settings/views/localizations/local_network_settings_view_test.dart
+- [x] 1.9: Verify that test states in `test/test_data/**` are correctly modified to correspond to the latest `FeatureState`, and add `fromMap` constructors if missing, by checking their usage in relevant test files.
+- [x] 1.10: sh run_generate_loc_snapshots.sh -c true -f test/page/advanced_settings/local_network_settings/views/localizations/local_network_settings_view_test.dart

@@ -1,5 +1,6 @@
 ## Implementation Tasks for VPN Settings Refactoring
 
+- [ ] 1.0: Verify that test states in `test/test_data/**` are correctly modified to correspond to the latest `FeatureState`, and add `fromMap` constructors if missing, by checking their usage in relevant test files.
 - [ ] 1.1: Refactor `VPNState` to extend `FeatureState<VPNSettings, VPNStatus>`.
 - [ ] 1.2: Refactor `VPNNotifier` to use `with PreservableNotifierMixin` and implement `performFetch` and `performSave`.
 - [ ] 1.3: Refactor `VPNSettingsPage` to remove `PreservedStateMixin` and rely on `VPNNotifier` for dirty state and actions.

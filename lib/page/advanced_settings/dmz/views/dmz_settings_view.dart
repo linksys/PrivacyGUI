@@ -6,7 +6,6 @@ import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/dmz/providers/dmz_settings_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/dmz/providers/dmz_settings_state.dart';
-import 'package:privacy_gui/page/components/mixin/preserved_state_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
@@ -31,8 +30,7 @@ class DMZSettingsView extends ArgumentsConsumerStatefulView {
   ConsumerState<DMZSettingsView> createState() => _DMZSettingsViewState();
 }
 
-class _DMZSettingsViewState extends ConsumerState<DMZSettingsView>
-    with PreservedStateMixin<DMZSettingsState, DMZSettingsView> {
+class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
   late TextEditingController _sourceFirstIPController;
   late TextEditingController _sourceLastIPController;
   late TextEditingController _destinationIPController;
@@ -50,23 +48,12 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView>
     _destinationMACController = TextEditingController();
 
     doSomethingWithSpinner(
-        context,
-        ref.read(dmzSettingsProvider.notifier).fetch(true).then((value) {
-          preservedState = value;
-          _sourceFirstIPController.text =
-              value.settings.sourceRestriction?.firstIPAddress ?? '';
-          _sourceLastIPController.text =
-              value.settings.sourceRestriction?.lastIPAddress ?? '';
-          _destinationIPController.text = value.settings.destinationIPAddress ??
-              ref
-                  .read(dmzSettingsProvider.notifier)
-                  .ipAddress
-                  .replaceAll('.0', '');
-          _destinationMACController.text =
-              value.settings.destinationMACAddress ?? '';
-          return value;
-        })).then((state) {
-      if (state?.destinationType == DMZDestinationType.ip) {
+      context,
+      ref.read(dmzSettingsProvider.notifier).fetch(forceRemote: true),
+    ).then((state) {
+      if (state == null) return;
+      _updateControllers(state);
+      if (state.current.destinationType == DMZDestinationType.ip) {
         _checkDestinationIPAdress();
       } else {
         _checkDestinationMACAddress();
@@ -74,41 +61,31 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView>
     });
   }
 
+  void _updateControllers(DMZSettingsState state) {
+    _sourceFirstIPController.text =
+        state.settings.current.sourceRestriction?.firstIPAddress ?? '';
+    _sourceLastIPController.text =
+        state.settings.current.sourceRestriction?.lastIPAddress ?? '';
+    _destinationIPController.text = state
+            .settings.current.destinationIPAddress ??
+        ref.read(dmzSettingsProvider.notifier).ipAddress.replaceAll('.0', '');
+    _destinationMACController.text =
+        state.settings.current.destinationMACAddress ?? '';
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(dmzSettingsProvider);
     return StyledAppPageView(
         title: loc(context).dmz,
-        onBackTap: isStateChanged(state)
-            ? () {
-                showUnsavedAlert(context).then((value) {
-                  if (value == true) {
-                    ref.read(dmzSettingsProvider.notifier).fetch();
-                    context.pop();
-                  }
-                });
-              }
-            : null,
         bottomBar: PageBottomBar(
-            isPositiveEnabled: isStateChanged(state) &&
+            isPositiveEnabled: state.isDirty &&
                 (_sourceError == null && _destinationError == null),
             onPositiveTap: () {
               doSomethingWithSpinner(
                   context,
                   ref.read(dmzSettingsProvider.notifier).save().then((value) {
-                    preservedState = value;
-                    _sourceFirstIPController.text =
-                        value.settings.sourceRestriction?.firstIPAddress ?? '';
-                    _sourceLastIPController.text =
-                        value.settings.sourceRestriction?.lastIPAddress ?? '';
-                    _destinationIPController.text =
-                        value.settings.destinationIPAddress ??
-                            ref
-                                .read(dmzSettingsProvider.notifier)
-                                .ipAddress
-                                .replaceAll('.0', '');
-                    _destinationMACController.text =
-                        value.settings.destinationMACAddress ?? '';
+                    _updateControllers(value);
                     showSuccessSnackBar(context, loc(context).saved);
                   }).onError((error, stackTrace) {
                     final errorMsg = errorCodeHelper(
@@ -130,15 +107,16 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView>
                       padding: const EdgeInsets.only(left: Spacing.medium),
                       child: AppSwitch(
                         semanticLabel: 'dmz',
-                        value: state.settings.isDMZEnabled,
+                        value: state.settings.current.isDMZEnabled,
                         onChanged: (value) {
                           ref.read(dmzSettingsProvider.notifier).setSettings(
-                              state.settings.copyWith(isDMZEnabled: value));
+                              state.settings.current
+                                  .copyWith(isDMZEnabled: value));
                         },
                       ),
                     ),
                   ),
-                  if (state.settings.isDMZEnabled) ...[
+                  if (state.settings.current.isDMZEnabled) ...[
                     const AppGap.medium(),
                     AppCard(
                       child: Column(
@@ -165,14 +143,14 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView>
         padding: EdgeInsets.zero,
         title: AppText.labelLarge(loc(context).dmzSourceIPAddress),
         description: AppRadioList(
-          selected: state.sourceType,
+          selected: state.current.sourceType,
           itemHeight: 56,
           items: [
             AppRadioListItem(
                 title: loc(context).automatic, value: DMZSourceType.auto),
             AppRadioListItem(
                 title: loc(context).specifiedRange,
-                expandedWidget: state.sourceType == DMZSourceType.range
+                expandedWidget: state.current.sourceType == DMZSourceType.range
                     ? Container(
                         constraints: const BoxConstraints(maxWidth: 429),
                         child: Column(
@@ -184,15 +162,17 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView>
                               controller: _sourceFirstIPController,
                               onChanged: (value) {
                                 final sourceSettings =
-                                    state.settings.sourceRestriction ??
+                                    state.settings.current.sourceRestriction ??
                                         const DMZSourceRestriction(
                                             firstIPAddress: '',
                                             lastIPAddress: '');
                                 ref
                                     .read(dmzSettingsProvider.notifier)
-                                    .setSettings(state.settings.copyWith(
-                                        sourceRestriction: () => sourceSettings
-                                            .copyWith(firstIPAddress: value)));
+                                    .setSettings(state.settings.current
+                                        .copyWith(
+                                            sourceRestriction: () =>
+                                                sourceSettings.copyWith(
+                                                    firstIPAddress: value)));
                               },
                               onFocusChanged: (value) {
                                 if (!value) {
@@ -220,15 +200,17 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView>
                               controller: _sourceLastIPController,
                               onChanged: (value) {
                                 final sourceSettings =
-                                    state.settings.sourceRestriction ??
+                                    state.settings.current.sourceRestriction ??
                                         const DMZSourceRestriction(
                                             firstIPAddress: '',
                                             lastIPAddress: '');
                                 ref
                                     .read(dmzSettingsProvider.notifier)
-                                    .setSettings(state.settings.copyWith(
-                                        sourceRestriction: () => sourceSettings
-                                            .copyWith(lastIPAddress: value)));
+                                    .setSettings(state.settings.current
+                                        .copyWith(
+                                            sourceRestriction: () =>
+                                                sourceSettings.copyWith(
+                                                    lastIPAddress: value)));
                               },
                               onFocusChanged: (value) {
                                 if (!value) {
@@ -244,7 +226,7 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView>
                 value: DMZSourceType.range),
           ],
           onChanged: (index, value) {
-            if (value == state.sourceType) {
+            if (value == state.current.sourceType) {
               return;
             }
             if (value != null) {
@@ -257,24 +239,28 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView>
                 _sourceError = null;
               });
               ref.read(dmzSettingsProvider.notifier).setSettings(DMZSettings(
-                    isDMZEnabled: state.settings.isDMZEnabled,
-                    destinationIPAddress: state.settings.destinationIPAddress,
-                    destinationMACAddress: state.settings.destinationMACAddress,
+                    isDMZEnabled: state.settings.current.isDMZEnabled,
+                    destinationIPAddress:
+                        state.settings.current.destinationIPAddress,
+                    destinationMACAddress:
+                        state.settings.current.destinationMACAddress,
                   ));
             } else {
               _sourceFirstIPController.text =
-                  preservedState?.settings.sourceRestriction?.firstIPAddress ??
+                  state.settings.original.sourceRestriction?.firstIPAddress ??
                       '';
               _sourceLastIPController.text =
-                  preservedState?.settings.sourceRestriction?.lastIPAddress ??
+                  state.settings.original.sourceRestriction?.lastIPAddress ??
                       '';
               ref.read(dmzSettingsProvider.notifier).setSettings(DMZSettings(
-                    isDMZEnabled: state.settings.isDMZEnabled,
+                    isDMZEnabled: state.settings.current.isDMZEnabled,
                     sourceRestriction: DMZSourceRestriction(
                         firstIPAddress: _sourceFirstIPController.text,
                         lastIPAddress: _sourceLastIPController.text),
-                    destinationIPAddress: state.settings.destinationIPAddress,
-                    destinationMACAddress: state.settings.destinationMACAddress,
+                    destinationIPAddress:
+                        state.settings.current.destinationIPAddress,
+                    destinationMACAddress:
+                        state.settings.current.destinationMACAddress,
                   ));
               _checkSourceIPRange();
             }
@@ -294,12 +280,13 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppRadioList(
-            initial: state.destinationType,
+            initial: state.current.destinationType,
             itemHeight: 56,
             items: [
               AppRadioListItem(
                   title: loc(context).ipAddress,
-                  expandedWidget: state.destinationType == DMZDestinationType.ip
+                  expandedWidget: state.current.destinationType ==
+                          DMZDestinationType.ip
                       ? Container(
                           constraints: const BoxConstraints(maxWidth: 429),
                           child: AppIPFormField(
@@ -313,7 +300,7 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView>
                             onChanged: (value) {
                               ref
                                   .read(dmzSettingsProvider.notifier)
-                                  .setSettings(state.settings.copyWith(
+                                  .setSettings(state.settings.current.copyWith(
                                       destinationIPAddress: () => value));
                             },
                             onFocusChanged: (value) {
@@ -328,32 +315,32 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView>
                   value: DMZDestinationType.ip),
               AppRadioListItem(
                   title: loc(context).macAddress,
-                  expandedWidget:
-                      state.destinationType == DMZDestinationType.mac
-                          ? Container(
-                              constraints: const BoxConstraints(maxWidth: 429),
-                              child: AppTextField.macAddress(
-                                border: const OutlineInputBorder(),
-                                controller: _destinationMACController,
-                                onChanged: (value) {
-                                  ref
-                                      .read(dmzSettingsProvider.notifier)
-                                      .setSettings(state.settings.copyWith(
-                                          destinationMACAddress: () => value));
-                                },
-                                onFocusChanged: (value) {
-                                  if (!value) {
-                                    _checkDestinationMACAddress();
-                                  }
-                                },
-                                errorText: _destinationError,
-                              ),
-                            )
-                          : null,
+                  expandedWidget: state.current.destinationType ==
+                          DMZDestinationType.mac
+                      ? Container(
+                          constraints: const BoxConstraints(maxWidth: 429),
+                          child: AppTextField.macAddress(
+                            border: const OutlineInputBorder(),
+                            controller: _destinationMACController,
+                            onChanged: (value) {
+                              ref
+                                  .read(dmzSettingsProvider.notifier)
+                                  .setSettings(state.settings.current.copyWith(
+                                      destinationMACAddress: () => value));
+                            },
+                            onFocusChanged: (value) {
+                              if (!value) {
+                                _checkDestinationMACAddress();
+                              }
+                            },
+                            errorText: _destinationError,
+                          ),
+                        )
+                      : null,
                   value: DMZDestinationType.mac),
             ],
             onChanged: (index, value) {
-              if (value == state.destinationType) {
+              if (value == state.current.destinationType) {
                 return;
               }
               if (value != null) {
@@ -365,13 +352,13 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView>
                 _destinationError = null;
                 _destinationMACController.text = '';
                 _destinationIPController.text =
-                    state.settings.destinationIPAddress ??
+                    state.settings.current.destinationIPAddress ??
                         ref
                             .read(dmzSettingsProvider.notifier)
                             .ipAddress
                             .replaceAll('.0', '');
                 ref.read(dmzSettingsProvider.notifier).setSettings(
-                    state.settings.copyWith(
+                    state.settings.current.copyWith(
                         destinationIPAddress: () =>
                             _destinationIPController.text,
                         destinationMACAddress: () => null));
@@ -380,9 +367,9 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView>
                 _destinationError = null;
                 _destinationIPController.text = '';
                 _destinationMACController.text =
-                    state.settings.destinationMACAddress ?? '';
+                    state.settings.current.destinationMACAddress ?? '';
                 ref.read(dmzSettingsProvider.notifier).setSettings(
-                    state.settings.copyWith(
+                    state.settings.current.copyWith(
                         destinationMACAddress: () =>
                             _destinationMACController.text,
                         destinationIPAddress: () => null));
@@ -402,17 +389,17 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView>
                     'onlineOnly': true,
                   });
               if (result != null) {
-                if (state.destinationType == DMZDestinationType.ip) {
+                if (state.current.destinationType == DMZDestinationType.ip) {
                   _destinationIPController.text = result.first.ipv4Address;
                   ref.read(dmzSettingsProvider.notifier).setSettings(
-                      state.settings.copyWith(
+                      state.settings.current.copyWith(
                           destinationIPAddress: () => result.first.ipv4Address,
                           destinationMACAddress: () => null));
                   _checkDestinationIPAdress();
                 } else {
                   _destinationMACController.text = result.first.macAddress;
                   ref.read(dmzSettingsProvider.notifier).setSettings(
-                      state.settings.copyWith(
+                      state.settings.current.copyWith(
                           destinationMACAddress: () => result.first.macAddress,
                           destinationIPAddress: () => null));
                   _checkDestinationMACAddress();
