@@ -57,8 +57,8 @@ class _AddRuleContentViewState
   void initState() {
     _notifier = ref.read(singlePortForwardingRuleProvider.notifier);
     final state = ref.read(singlePortForwardingListProvider);
-    final routerIp = state.routerIp;
-    final subnetMask = state.subnetMask;
+    final routerIp = state.status.routerIp;
+    final subnetMask = state.status.subnetMask;
     final rules = widget.args['items'] as List<SinglePortForwardingRule>? ?? [];
     var rule = widget.args['edit'] as SinglePortForwardingRule?;
     int? index;
@@ -74,7 +74,7 @@ class _AddRuleContentViewState
       _isEdit = false;
 
       final prefixIp =
-          NetworkUtils.getIpPrefix(state.routerIp, state.subnetMask);
+          NetworkUtils.getIpPrefix(state.status.routerIp, state.status.subnetMask);
       _deviceIpAddressController.text = prefixIp.replaceAll('.0', '');
       rule = SinglePortForwardingRule(
           isEnabled: true,

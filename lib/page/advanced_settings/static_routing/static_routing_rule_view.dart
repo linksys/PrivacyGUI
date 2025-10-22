@@ -46,8 +46,8 @@ class _StaticRoutingDetailViewState
   void initState() {
     _notifier = ref.read(staticRoutingRuleProvider.notifier);
     final state = ref.read(staticRoutingProvider);
-    final routerIp = state.routerIp;
-    final subnetMask = state.subnetMask;
+    final routerIp = state.status.routerIp;
+    final subnetMask = state.status.subnetMask;
     final rules = widget.args['items'] as List<NamedStaticRouteEntry>? ?? [];
     var rule = widget.args['edit'] as NamedStaticRouteEntry?;
     int? index;

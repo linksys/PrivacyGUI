@@ -168,7 +168,7 @@ class _PortRangeTriggeringContentViewState
               ),
             ),
         editRoute: RouteNamed.portRangeTriggeringRule,
-        dataList: state.rules,
+        dataList: state.current.rules,
         onSave: (index, rule) {
           if (index >= 0) {
             _notifier.editRule(index, rule);
@@ -189,7 +189,7 @@ class _PortRangeTriggeringContentViewState
       onStartEdit: (index, rule) {
         ref
             .read(portRangeTriggeringRuleProvider.notifier)
-            .init(state.rules, rule, index);
+            .init(state.current.rules, rule, index);
         // Edit
         applicationTextController.text = rule?.description ?? '';
         firstTriggerPortController.text = '${rule?.firstTriggerPort ?? 0}';
@@ -217,7 +217,7 @@ class _PortRangeTriggeringContentViewState
               1: FractionColumnWidth(.25),
               2: FractionColumnWidth(.25),
             },
-      dataList: [...state.rules],
+      dataList: [...state.current.rules],
       editRowIndex: 0,
       cellBuilder: (context, ref, index, rule) {
         return switch (index) {

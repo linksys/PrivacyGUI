@@ -4,28 +4,26 @@ import 'dart:convert';
 import 'package:equatable/equatable.dart';
 
 import 'package:privacy_gui/core/jnap/models/port_range_triggering_rule.dart';
+import 'package:privacy_gui/providers/feature_state.dart';
+import 'package:privacy_gui/providers/preservable.dart';
 
-class PortRangeTriggeringListState extends Equatable {
-  const PortRangeTriggeringListState({
-    this.rules = const [],
+class PortRangeTriggeringListStatus extends Equatable {
+  final int maxRules;
+  final int maxDescriptionLength;
+
+  const PortRangeTriggeringListStatus({
     this.maxRules = 50,
     this.maxDescriptionLength = 32,
   });
 
-  final List<PortRangeTriggeringRule> rules;
-  final int maxRules;
-  final int maxDescriptionLength;
-
   @override
-  List<Object> get props => [rules, maxRules, maxDescriptionLength];
+  List<Object> get props => [maxRules, maxDescriptionLength];
 
-  PortRangeTriggeringListState copyWith({
-    List<PortRangeTriggeringRule>? rules,
+  PortRangeTriggeringListStatus copyWith({
     int? maxRules,
     int? maxDescriptionLength,
   }) {
-    return PortRangeTriggeringListState(
-      rules: rules ?? this.rules,
+    return PortRangeTriggeringListStatus(
       maxRules: maxRules ?? this.maxRules,
       maxDescriptionLength: maxDescriptionLength ?? this.maxDescriptionLength,
     );
@@ -33,27 +31,63 @@ class PortRangeTriggeringListState extends Equatable {
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
-      'rules': rules.map((x) => x.toMap()).toList(),
       'maxRules': maxRules,
       'maxDescriptionLength': maxDescriptionLength,
     };
   }
 
-  factory PortRangeTriggeringListState.fromMap(Map<String, dynamic> map) {
-    return PortRangeTriggeringListState(
-      rules: List<PortRangeTriggeringRule>.from(
-        map['rules'].map<PortRangeTriggeringRule>(
-          (x) => PortRangeTriggeringRule.fromMap(x as Map<String, dynamic>),
-        ),
-      ),
-      maxRules: map['maxRules'] != null ? map['maxRules'] as int : 50,
-      maxDescriptionLength: map['maxDescriptionLength'] != null
-          ? map['maxDescriptionLength'] as int
-          : 32,
+  factory PortRangeTriggeringListStatus.fromMap(Map<String, dynamic> map) {
+    return PortRangeTriggeringListStatus(
+      maxRules: map['maxRules']?.toInt() ?? 50,
+      maxDescriptionLength: map['maxDescriptionLength']?.toInt() ?? 32,
     );
   }
 
   String toJson() => json.encode(toMap());
+
+  factory PortRangeTriggeringListStatus.fromJson(String source) =>
+      PortRangeTriggeringListStatus.fromMap(
+          json.decode(source) as Map<String, dynamic>);
+}
+
+class PortRangeTriggeringListState extends FeatureState<
+    PortRangeTriggeringRuleList,
+    PortRangeTriggeringListStatus> {
+  const PortRangeTriggeringListState({
+    required super.settings,
+    required super.status,
+  });
+
+  @override
+  PortRangeTriggeringListState copyWith({
+    Preservable<PortRangeTriggeringRuleList>? settings,
+    PortRangeTriggeringListStatus? status,
+  }) {
+    return PortRangeTriggeringListState(
+      settings: settings ?? this.settings,
+      status: status ?? this.status,
+    );
+  }
+
+  @override
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'settings': settings.toMap((s) => s.toMap()),
+      'status': status.toMap(),
+    };
+  }
+
+  factory PortRangeTriggeringListState.fromMap(Map<String, dynamic> map) {
+    return PortRangeTriggeringListState(
+      settings: Preservable.fromMap(
+        map['settings'] as Map<String, dynamic>,
+        (valueMap) => PortRangeTriggeringRuleList.fromMap(
+            valueMap as Map<String, dynamic>),
+      ),
+      status: PortRangeTriggeringListStatus.fromMap(
+          map['status'] as Map<String, dynamic>),
+    );
+  }
 
   factory PortRangeTriggeringListState.fromJson(String source) =>
       PortRangeTriggeringListState.fromMap(
@@ -61,4 +95,7 @@ class PortRangeTriggeringListState extends Equatable {
 
   @override
   bool get stringify => true;
+
+  @override
+  List<Object> get props => [settings, status];
 }

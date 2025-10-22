@@ -84,8 +84,8 @@ class _SinglePortForwardingContentViewState
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(singlePortForwardingListProvider);
-    final submaskToken = state.subnetMask.split('.');
-    final prefixIP = state.routerIp;
+    final submaskToken = state.status.subnetMask.split('.');
+    final prefixIP = state.status.routerIp;
     // ref.listen(singlePortForwardingListProvider, (previous, next) {
     //   ref
     //       .read(appsAndGamingProvider.notifier)
@@ -166,7 +166,7 @@ class _SinglePortForwardingContentViewState
               ),
             ),
         editRoute: RouteNamed.singlePortForwardingRule,
-        dataList: state.rules,
+        dataList: state.current.rules,
         onSave: (index, rule) {
           if (index >= 0) {
             _notifier.editRule(index, rule);
@@ -188,7 +188,7 @@ class _SinglePortForwardingContentViewState
       onStartEdit: (index, rule) {
         ref
             .read(singlePortForwardingRuleProvider.notifier)
-            .init(state.rules, rule, index, state.routerIp, state.subnetMask);
+            .init(state.current.rules, rule, index, state.status.routerIp, state.status.subnetMask);
         // Edit
         applicationTextController.text = rule?.description ?? '';
         internalPortTextController.text = '${rule?.internalPort ?? 0}';
@@ -221,7 +221,7 @@ class _SinglePortForwardingContentViewState
               3: FractionColumnWidth(.2),
               4: FractionColumnWidth(.22),
             },
-      dataList: [...state.rules],
+      dataList: [...state.current.rules],
       editRowIndex: 0,
       cellBuilder: (context, ref, index, rule) {
         return switch (index) {

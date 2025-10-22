@@ -57,8 +57,8 @@ class _AddRuleContentViewState
   void initState() {
     _notifier = ref.read(portRangeForwardingRuleProvider.notifier);
     final state = ref.read(portRangeForwardingListProvider);
-    final routerIp = state.routerIp;
-    final subnetMask = state.subnetMask;
+    final routerIp = state.status.routerIp;
+    final subnetMask = state.status.subnetMask;
     final List<PortRangeForwardingRule> rules = widget.args['items'] ?? [];
     var rule = widget.args['edit'] as PortRangeForwardingRule?;
     int? index;
@@ -74,8 +74,8 @@ class _AddRuleContentViewState
     } else {
       _isEdit = false;
 
-      final prefixIp =
-          NetworkUtils.getIpPrefix(state.routerIp, state.subnetMask);
+      final prefixIp = NetworkUtils.getIpPrefix(
+          state.status.routerIp, state.status.subnetMask);
       _deviceIpAddressController.text = prefixIp.replaceAll('.0', '');
       rule = PortRangeForwardingRule(
         isEnabled: true,

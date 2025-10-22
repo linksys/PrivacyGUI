@@ -21,24 +21,27 @@ class Ipv6PortServiceListNotifier extends Notifier<Ipv6PortServiceListState>
             Ipv6PortServiceListStatus, Ipv6PortServiceListState> {
   @override
   Ipv6PortServiceListState build() => const Ipv6PortServiceListState(
-        settings: Preservable(original: IPv6FirewallRuleList(rules: []), current: IPv6FirewallRuleList(rules: [])),
+        settings: Preservable(
+            original: IPv6FirewallRuleList(rules: []),
+            current: IPv6FirewallRuleList(rules: [])),
         status: Ipv6PortServiceListStatus(),
       );
 
   @override
-  Future<
-      (IPv6FirewallRuleList?,
-       Ipv6PortServiceListStatus?)> performFetch(
+  Future<(IPv6FirewallRuleList?, Ipv6PortServiceListStatus?)> performFetch(
       {bool forceRemote = false, bool updateStatusOnly = false}) async {
-    final value = await ref
-        .read(routerRepositoryProvider)
-        .send(JNAPAction.getIPv6FirewallRules, auth: true, fetchRemote: forceRemote);
-    final rules = IPv6FirewallRuleList.fromMap(value.output['rules']);
+    final value = await ref.read(routerRepositoryProvider).send(
+        JNAPAction.getIPv6FirewallRules,
+        auth: true,
+        fetchRemote: forceRemote);
+    final rules = List.from(value.output['rules'])
+        .map((e) => IPv6FirewallRule.fromMap(e))
+        .toList();
     final int maxRules = value.output['maxRules'] ?? 50;
     final int maxDesc = value.output['maxDescriptionLength'] ?? 32;
     final status = Ipv6PortServiceListStatus(
         maxRules: maxRules, maxDescriptionLength: maxDesc);
-    return (rules, status);
+    return (IPv6FirewallRuleList(rules: rules), status);
   }
 
   @override
@@ -46,12 +49,12 @@ class Ipv6PortServiceListNotifier extends Notifier<Ipv6PortServiceListState>
     final rules = state.settings.current;
 
     await ref.read(routerRepositoryProvider).send(
-          JNAPAction.setIPv6FirewallRules,
-          auth: true,
-          data: {
-            'rules': rules.rules.map((e) => e.toMap()).toList(),
-          },
-        );
+      JNAPAction.setIPv6FirewallRules,
+      auth: true,
+      data: {
+        'rules': rules.rules.map((e) => e.toMap()).toList(),
+      },
+    );
   }
 
   bool isExceedMax() {
@@ -61,20 +64,22 @@ class Ipv6PortServiceListNotifier extends Notifier<Ipv6PortServiceListState>
   void addRule(IPv6FirewallRule rule) {
     state = state.copyWith(
         settings: state.settings.copyWith(
-            current: IPv6FirewallRuleList(rules: List.from(state.settings.current.rules)..add(rule))));
+            current: IPv6FirewallRuleList(
+                rules: List.from(state.settings.current.rules)..add(rule))));
   }
 
   void editRule(int index, IPv6FirewallRule rule) {
     state = state.copyWith(
         settings: state.settings.copyWith(
-            current: IPv6FirewallRuleList(rules: List.from(state.settings.current.rules)
-              ..replaceRange(index, index + 1, [rule]))))
-    ;
+            current: IPv6FirewallRuleList(
+                rules: List.from(state.settings.current.rules)
+                  ..replaceRange(index, index + 1, [rule]))));
   }
 
   void deleteRule(IPv6FirewallRule rule) {
     state = state.copyWith(
         settings: state.settings.copyWith(
-            current: IPv6FirewallRuleList(rules: List.from(state.settings.current.rules)..remove(rule))));
+            current: IPv6FirewallRuleList(
+                rules: List.from(state.settings.current.rules)..remove(rule))));
   }
 }

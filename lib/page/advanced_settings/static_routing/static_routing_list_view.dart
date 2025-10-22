@@ -57,8 +57,8 @@ class _StaticRoutingListViewState extends ConsumerState<StaticRoutingListView> {
             children: [
               AppText.labelLarge(loc(context).staticRoute),
               const AppGap.medium(),
-              if (state.setting.entries.isNotEmpty)
-                ...state.setting.entries.map(
+              if (state.current.entries.entries.isNotEmpty)
+                ...state.current.entries.entries.map(
                   (entry) => buildStaticRouteCard(entry),
                 )
               else

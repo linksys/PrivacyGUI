@@ -4,10 +4,8 @@ import 'package:privacy_gui/core/jnap/models/port_range_forwarding_rule.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/_ports.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/views/widgets/_widgets.dart';
-import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/providers/apps_and_gaming_provider.dart';
 import 'package:privacy_gui/page/components/settings_view/editable_card_list_settings_view.dart';
 import 'package:privacy_gui/page/components/settings_view/editable_table_settings_view.dart';
-import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
@@ -78,8 +76,8 @@ class _PortRangeForwardingContentViewState
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(portRangeForwardingListProvider);
-    final submaskToken = state.subnetMask.split('.');
-    final prefixIP = state.routerIp;
+    final submaskToken = state.status.subnetMask.split('.');
+    final prefixIP = state.status.routerIp;
     // ref.listen(portRangeForwardingListProvider, (previous, next) {
     //   ref
     //       .read(appsAndGamingProvider.notifier)
@@ -166,7 +164,7 @@ class _PortRangeForwardingContentViewState
               ),
             ),
         editRoute: RouteNamed.portRangeForwardingRule,
-        dataList: state.rules,
+        dataList: state.current.rules,
         onSave: (index, rule) {
           if (index >= 0) {
             _notifier.editRule(index, rule);
@@ -186,9 +184,12 @@ class _PortRangeForwardingContentViewState
       addEnabled: !_notifier.isExceedMax(),
       emptyMessage: loc(context).noPortRangeForwarding,
       onStartEdit: (index, rule) {
-        ref
-            .read(portRangeForwardingRuleProvider.notifier)
-            .init(state.rules, rule, index, state.routerIp, state.subnetMask);
+        ref.read(portRangeForwardingRuleProvider.notifier).init(
+            state.current.rules,
+            rule,
+            index,
+            state.status.routerIp,
+            state.status.subnetMask);
         // Edit
         applicationTextController.text = rule?.description ?? '';
         internalPortTextController.text = '${rule?.firstExternalPort ?? 0}';
@@ -218,7 +219,7 @@ class _PortRangeForwardingContentViewState
               2: FractionColumnWidth(.2),
               3: FractionColumnWidth(.3),
             },
-      dataList: [...state.rules],
+      dataList: [...state.current.rules],
       editRowIndex: 0,
       cellBuilder: (context, ref, index, rule) {
         return switch (index) {

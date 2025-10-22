@@ -37,6 +37,8 @@ final advancedSettings = [
   LinksysRoute(
     name: RouteNamed.settingsAppsGaming,
     path: RoutePath.settingsAppsGaming,
+    preservableProvider: preservableAppsAndGamingSettingsProvider,
+    enableDirtyCheck: true,
     config: LinksysRouteConfig(
       column: ColumnGrid(column: 12),
     ),
@@ -165,6 +167,8 @@ final advancedSettings = [
   LinksysRoute(
     name: RouteNamed.settingsStaticRouting,
     path: RoutePath.settingsStaticRouting,
+    preservableProvider: preservableStaticRoutingProvider,
+    enableDirtyCheck: true,
     config: LinksysRouteConfig(
       column: ColumnGrid(column: 12),
     ),
