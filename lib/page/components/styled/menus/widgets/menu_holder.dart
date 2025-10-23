@@ -23,11 +23,38 @@ class MenuHolder extends ConsumerStatefulWidget {
 
 class MenuHolderState extends ConsumerState<MenuHolder> {
   late final MenuController _controller;
+  GoRouterDelegate? _routerDelegate;
 
   @override
   void initState() {
     super.initState();
     _controller = ref.read(menuController);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final newRouterDelegate = GoRouter.of(context).routerDelegate;
+    if (newRouterDelegate != _routerDelegate) {
+      _routerDelegate?.removeListener(_updateMenuSelection);
+      _routerDelegate = newRouterDelegate;
+      _routerDelegate?.addListener(_updateMenuSelection);
+      _updateMenuSelection();
+    }
+  }
+
+  @override
+  void dispose() {
+    _routerDelegate?.removeListener(_updateMenuSelection);
+    super.dispose();
+  }
+
+  void _updateMenuSelection() {
+    if (_routerDelegate == null) return;
+    final extra = _routerDelegate!.currentConfiguration.extra;
+    if (extra is NaviType) {
+      _controller.setTo(extra);
+    }
   }
 
   @override
@@ -93,12 +120,15 @@ class MenuController {
   }
 
   void setTo(NaviType type) {
+    if (_menuNotifier.value.selected == type) return;
     _menuNotifier.value = _menuNotifier.value.copyWith(selected: type);
   }
 
   void select(NaviType type) {
-    shellNavigatorKey.currentContext!.goNamed(type.resolvePath());
-    _menuNotifier.value = _menuNotifier.value.copyWith(selected: type);
+    shellNavigatorKey.currentContext!.goNamed(
+      type.resolvePath(),
+      extra: type,
+    );
   }
 
   void setDisplayType(MenuDisplay type) {

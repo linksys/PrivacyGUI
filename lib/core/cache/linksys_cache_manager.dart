@@ -72,7 +72,7 @@ class LinksysCacheManager {
       _data = allCaches[serialNumber];
       lastSerialNumber = serialNumber;
       logger.d(
-          "[CacheManager] Load cache success for $serialNumber : ${data.toString()}");
+          "[CacheManager] Load cache success for $serialNumber");
     }
     if (data.isEmpty) {
       return false;

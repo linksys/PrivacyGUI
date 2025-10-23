@@ -6,18 +6,19 @@ import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/_internet_settings.dart';
+import 'package:privacy_gui/page/advanced_settings/internet_settings/models/internet_settings_enums.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_isp_save_settings_view.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_pppoe_view.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_state.dart';
+import 'package:privacy_gui/providers/preservable.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:get_it/get_it.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:privacy_gui/di.dart';
 
 import '../../../../../../common/test_responsive_widget.dart';
 import '../../../../../../common/testable_router.dart';
@@ -99,12 +100,16 @@ void main() async {
       (tester, locale) async {
     final mockInternetSettingsState =
         InternetSettingsState.fromJson(internetSettingsStateData);
-
-    final pppoeSetting = mockInternetSettingsState.ipv4Setting.copyWith(
+    final mockInternetSettings = mockInternetSettingsState.settings.current;
+    final pppoeSetting = mockInternetSettings.ipv4Setting.copyWith(
       ipv4ConnectionType: WanType.pppoe.name,
     );
     when(mockInternetSettingsNotifier.build()).thenReturn(
-        mockInternetSettingsState.copyWith(ipv4Setting: pppoeSetting));
+        mockInternetSettingsState.copyWith(
+            settings: Preservable(
+                original: mockInternetSettings,
+                current:
+                    mockInternetSettings.copyWith(ipv4Setting: pppoeSetting))));
     when(mockInternetSettingsNotifier.savePnpIpv4(any)).thenAnswer((_) async {
       throw JNAPError(result: '', error: 'error');
     });

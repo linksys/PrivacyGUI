@@ -4,6 +4,8 @@ final advancedSettings = [
   LinksysRoute(
     name: RouteNamed.internetSettings,
     path: RoutePath.internetSettings,
+    preservableProvider: preservableInternetSettingsProvider,
+    enableDirtyCheck: true,
     config: LinksysRouteConfig(
       column: ColumnGrid(column: 12),
     ),

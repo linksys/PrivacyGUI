@@ -1,7 +1,32 @@
 const internetSettingsStateData = '''
 {
-  "ipv4Setting": {
-    "ipv4ConnectionType": "DHCP",
+  "settings": {
+    "original": {
+      "ipv4Setting": {
+        "ipv4ConnectionType": "DHCP",
+        "mtu": 0
+      },
+      "ipv6Setting": {
+        "ipv6ConnectionType": "Automatic",
+        "isIPv6AutomaticEnabled": true
+      },
+      "macClone": false,
+      "macCloneAddress": ""
+    },
+    "current": {
+      "ipv4Setting": {
+        "ipv4ConnectionType": "DHCP",
+        "mtu": 0
+      },
+      "ipv6Setting": {
+        "ipv6ConnectionType": "Automatic",
+        "isIPv6AutomaticEnabled": true
+      },
+      "macClone": false,
+      "macCloneAddress": ""
+    }
+  },
+  "status": {
     "supportedIPv4ConnectionType": [
       "DHCP",
       "Static",
@@ -44,27 +69,47 @@ const internetSettingsStateData = '''
         "wanIPv6Type": "PPPoE"
       }
     ],
-    "mtu": 0
-  },
-  "ipv6Setting": {
-    "ipv6ConnectionType": "Automatic",
     "supportedIPv6ConnectionType": [
       "Automatic",
       "PPPoE",
       "Pass-through"
     ],
     "duid": "00:02:03:09:05:05:80:69:1A:13:16:0E",
-    "isIPv6AutomaticEnabled": true
-  },
-  "macClone": false,
-  "macCloneAddress": ""
+    "redirection": null,
+    "hostname": null
+  }
 }
 ''';
 
 const internetSettingsStateData2 = '''
 {
-  "ipv4Setting": {
-    "ipv4ConnectionType": "PPPoE",
+  "settings": {
+    "original": {
+      "ipv4Setting": {
+        "ipv4ConnectionType": "PPPoE",
+        "mtu": 0
+      },
+      "ipv6Setting": {
+        "ipv6ConnectionType": "Automatic",
+        "isIPv6AutomaticEnabled": true
+      },
+      "macClone": false,
+      "macCloneAddress": ""
+    },
+    "current": {
+      "ipv4Setting": {
+        "ipv4ConnectionType": "PPPoE",
+        "mtu": 0
+      },
+      "ipv6Setting": {
+        "ipv6ConnectionType": "Automatic",
+        "isIPv6AutomaticEnabled": true
+      },
+      "macClone": false,
+      "macCloneAddress": ""
+    }
+  },
+  "status": {
     "supportedIPv4ConnectionType": [
       "DHCP",
       "Static",
@@ -107,26 +152,40 @@ const internetSettingsStateData2 = '''
         "wanIPv6Type": "PPPoE"
       }
     ],
-    "mtu": 0
-  },
-  "ipv6Setting": {
-    "ipv6ConnectionType": "Automatic",
     "supportedIPv6ConnectionType": [
       "Automatic",
       "PPPoE",
       "Pass-through"
     ],
     "duid": "00:02:03:09:05:05:80:69:1A:13:16:0E",
-    "isIPv6AutomaticEnabled": true
-  },
-  "macClone": false,
-  "macCloneAddress": ""
+    "redirection": null,
+    "hostname": null
+  }
 }
 ''';
 
 const internetSettingsStateDHCP = {
-  "ipv4Setting": {
-    "ipv4ConnectionType": "DHCP",
+  "settings": {
+    "original": {
+      "ipv4Setting": {"ipv4ConnectionType": "DHCP", "mtu": 0},
+      "ipv6Setting": {
+        "ipv6ConnectionType": "Automatic",
+        "isIPv6AutomaticEnabled": true
+      },
+      "macClone": false,
+      "macCloneAddress": ""
+    },
+    "current": {
+      "ipv4Setting": {"ipv4ConnectionType": "DHCP", "mtu": 0},
+      "ipv6Setting": {
+        "ipv6ConnectionType": "Automatic",
+        "isIPv6AutomaticEnabled": true
+      },
+      "macClone": false,
+      "macCloneAddress": ""
+    }
+  },
+  "status": {
     "supportedIPv4ConnectionType": [
       "DHCP",
       "Static",
@@ -145,21 +204,53 @@ const internetSettingsStateDHCP = {
       {"wanType": "DHCP", "wanIPv6Type": "Pass-through"},
       {"wanType": "PPPoE", "wanIPv6Type": "PPPoE"}
     ],
-    "mtu": 0
-  },
-  "ipv6Setting": {
-    "ipv6ConnectionType": "Automatic",
     "supportedIPv6ConnectionType": ["Automatic", "PPPoE", "Pass-through"],
     "duid": "00:02:03:09:05:05:80:69:1A:A7:14:FF",
-    "isIPv6AutomaticEnabled": true
-  },
-  "macClone": false,
-  "macCloneAddress": ""
+    "redirection": null,
+    "hostname": null
+  }
 };
 
 const internetSettingsStateStatic = {
-  "ipv4Setting": {
-    "ipv4ConnectionType": "Static",
+  "settings": {
+    "original": {
+      "ipv4Setting": {
+        "ipv4ConnectionType": "Static",
+        "mtu": 1500,
+        "staticIpAddress": "111.222.111.123",
+        "staticGateway": "111.222.111.1",
+        "staticDns1": "8.8.8.8",
+        "staticDns2": "8.8.4.4",
+        "networkPrefixLength": 24,
+        "domainName": "linksys.com"
+      },
+      "ipv6Setting": {
+        "ipv6ConnectionType": "Automatic",
+        "isIPv6AutomaticEnabled": true
+      },
+      "macClone": true,
+      "macCloneAddress": "aa:bb:cc:11:22:33"
+    },
+    "current": {
+      "ipv4Setting": {
+        "ipv4ConnectionType": "Static",
+        "mtu": 1500,
+        "staticIpAddress": "111.222.111.123",
+        "staticGateway": "111.222.111.1",
+        "staticDns1": "8.8.8.8",
+        "staticDns2": "8.8.4.4",
+        "networkPrefixLength": 24,
+        "domainName": "linksys.com"
+      },
+      "ipv6Setting": {
+        "ipv6ConnectionType": "Automatic",
+        "isIPv6AutomaticEnabled": true
+      },
+      "macClone": true,
+      "macCloneAddress": "aa:bb:cc:11:22:33"
+    }
+  },
+  "status": {
     "supportedIPv4ConnectionType": [
       "DHCP",
       "Static",
@@ -178,27 +269,70 @@ const internetSettingsStateStatic = {
       {"wanType": "DHCP", "wanIPv6Type": "Pass-through"},
       {"wanType": "PPPoE", "wanIPv6Type": "PPPoE"}
     ],
-    "mtu": 1500,
-    "staticIpAddress": "111.222.111.123",
-    "staticGateway": "111.222.111.1",
-    "staticDns1": "8.8.8.8",
-    "staticDns2": "8.8.4.4",
-    "networkPrefixLength": 24,
-    "domainName": "linksys.com"
-  },
-  "ipv6Setting": {
-    "ipv6ConnectionType": "Automatic",
     "supportedIPv6ConnectionType": ["Automatic", "PPPoE", "Pass-through"],
     "duid": "00:02:03:09:05:05:80:69:1A:A7:14:FF",
-    "isIPv6AutomaticEnabled": true
-  },
-  "macClone": true,
-  "macCloneAddress": "aa:bb:cc:11:22:33"
+    "redirection": null,
+    "hostname": null
+  }
 };
 
 const internetSettingsStatePppoe = {
-  "ipv4Setting": {
-    "ipv4ConnectionType": "PPPoE",
+  "settings": {
+    "original": {
+      "ipv4Setting": {
+        "ipv4ConnectionType": "PPPoE",
+        "mtu": 0,
+        "behavior": "KeepAlive",
+        "maxIdleMinutes": 15,
+        "reconnectAfterSeconds": 30,
+        "staticIpAddress": "111.222.111.123",
+        "staticGateway": "111.222.111.1",
+        "staticDns1": "8.8.8.8",
+        "staticDns2": "8.8.4.4",
+        "networkPrefixLength": 24,
+        "username": "user",
+        "password": "pass",
+        "serviceName": "",
+        "serverIp": null,
+        "wanTaggingSettingsEnable": false,
+        "vlanId": 0
+      },
+      "ipv6Setting": {
+        "ipv6ConnectionType": "Automatic",
+        "isIPv6AutomaticEnabled": true
+      },
+      "macClone": false,
+      "macCloneAddress": ""
+    },
+    "current": {
+      "ipv4Setting": {
+        "ipv4ConnectionType": "PPPoE",
+        "mtu": 0,
+        "behavior": "KeepAlive",
+        "maxIdleMinutes": 15,
+        "reconnectAfterSeconds": 30,
+        "staticIpAddress": "111.222.111.123",
+        "staticGateway": "111.222.111.1",
+        "staticDns1": "8.8.8.8",
+        "staticDns2": "8.8.4.4",
+        "networkPrefixLength": 24,
+        "domainName": null,
+        "username": "user",
+        "password": "pass",
+        "serviceName": "",
+        "serverIp": null,
+        "wanTaggingSettingsEnable": false,
+        "vlanId": 0
+      },
+      "ipv6Setting": {
+        "ipv6ConnectionType": "Automatic",
+        "isIPv6AutomaticEnabled": true
+      },
+      "macClone": false,
+      "macCloneAddress": ""
+    }
+  },
+  "status": {
     "supportedIPv4ConnectionType": [
       "DHCP",
       "Static",
@@ -217,34 +351,72 @@ const internetSettingsStatePppoe = {
       {"wanType": "DHCP", "wanIPv6Type": "Pass-through"},
       {"wanType": "PPPoE", "wanIPv6Type": "PPPoE"}
     ],
-    "mtu": 0,
-    "behavior": "KeepAlive",
-    "maxIdleMinutes": 15,
-    "reconnectAfterSeconds": 30,
-    "staticIpAddress": "111.222.111.123",
-    "staticGateway": "111.222.111.1",
-    "staticDns1": "8.8.8.8",
-    "staticDns2": "8.8.4.4",
-    "networkPrefixLength": 24,
-    "username": "user",
-    "password": "pass",
-    "serviceName": "",
-    "wanTaggingSettingsEnable": false,
-    "vlanId": 0
-  },
-  "ipv6Setting": {
-    "ipv6ConnectionType": "Automatic",
     "supportedIPv6ConnectionType": ["Automatic", "PPPoE", "Pass-through"],
     "duid": "00:02:03:09:05:05:80:69:1A:A7:14:FF",
-    "isIPv6AutomaticEnabled": true
-  },
-  "macClone": false,
-  "macCloneAddress": ""
+    "redirection": null,
+    "hostname": null
+  }
 };
 
 const internetSettingsStatePptp = {
-  "ipv4Setting": {
-    "ipv4ConnectionType": "PPTP",
+  "settings": {
+    "original": {
+      "ipv4Setting": {
+        "ipv4ConnectionType": "PPTP",
+        "mtu": 0,
+        "behavior": "KeepAlive",
+        "maxIdleMinutes": 15,
+        "reconnectAfterSeconds": 30,
+        "staticIpAddress": "111.222.111.123",
+        "staticGateway": "111.222.111.1",
+        "staticDns1": "8.8.8.8",
+        "staticDns2": "8.8.4.4",
+        "networkPrefixLength": 24,
+        "username": "user",
+        "password": "pass",
+        "serviceName": "",
+        "serverIp": "111.222.111.1",
+        "useStaticSettings": false,
+        "wanTaggingSettingsEnable": false,
+        "vlanId": 0
+      },
+      "ipv6Setting": {
+        "ipv6ConnectionType": "Automatic",
+        "isIPv6AutomaticEnabled": true
+      },
+      "macClone": false,
+      "macCloneAddress": ""
+    },
+    "current": {
+      "ipv4Setting": {
+        "ipv4ConnectionType": "PPTP",
+        "mtu": 0,
+        "behavior": "KeepAlive",
+        "maxIdleMinutes": 15,
+        "reconnectAfterSeconds": 30,
+        "staticIpAddress": "111.222.111.123",
+        "staticGateway": "111.222.111.1",
+        "staticDns1": "8.8.8.8",
+        "staticDns2": "8.8.4.4",
+        "networkPrefixLength": 24,
+        "domainName": null,
+        "username": "user",
+        "password": "pass",
+        "serviceName": "",
+        "serverIp": "111.222.111.1",
+        "useStaticSettings": false,
+        "wanTaggingSettingsEnable": false,
+        "vlanId": 0
+      },
+      "ipv6Setting": {
+        "ipv6ConnectionType": "Automatic",
+        "isIPv6AutomaticEnabled": true
+      },
+      "macClone": false,
+      "macCloneAddress": ""
+    }
+  },
+  "status": {
     "supportedIPv4ConnectionType": [
       "DHCP",
       "Static",
@@ -263,36 +435,72 @@ const internetSettingsStatePptp = {
       {"wanType": "DHCP", "wanIPv6Type": "Pass-through"},
       {"wanType": "PPPoE", "wanIPv6Type": "PPPoE"}
     ],
-    "mtu": 0,
-    "behavior": "KeepAlive",
-    "maxIdleMinutes": 15,
-    "reconnectAfterSeconds": 30,
-    "staticIpAddress": "111.222.111.123",
-    "staticGateway": "111.222.111.1",
-    "staticDns1": "8.8.8.8",
-    "staticDns2": "8.8.4.4",
-    "networkPrefixLength": 24,
-    "username": "user",
-    "password": "pass",
-    "serviceName": "",
-    "serverIp": "111.222.111.1",
-    "useStaticSettings": false,
-    "wanTaggingSettingsEnable": false,
-    "vlanId": 0
-  },
-  "ipv6Setting": {
-    "ipv6ConnectionType": "Automatic",
     "supportedIPv6ConnectionType": ["Automatic", "PPPoE", "Pass-through"],
     "duid": "00:02:03:09:05:05:80:69:1A:A7:14:FF",
-    "isIPv6AutomaticEnabled": true
-  },
-  "macClone": false,
-  "macCloneAddress": ""
+    "redirection": null,
+    "hostname": null
+  }
 };
 
 const internetSettingsStatePptpWithStaticIp = {
-  "ipv4Setting": {
-    "ipv4ConnectionType": "PPTP",
+  "settings": {
+    "original": {
+      "ipv4Setting": {
+        "ipv4ConnectionType": "PPTP",
+        "mtu": 0,
+        "behavior": "KeepAlive",
+        "maxIdleMinutes": 15,
+        "reconnectAfterSeconds": 30,
+        "staticIpAddress": "111.111.111.123",
+        "staticGateway": "111.111.111.1",
+        "staticDns1": "8.8.8.8",
+        "staticDns2": "8.8.4.4",
+        "networkPrefixLength": 24,
+        "username": "user",
+        "password": "pass",
+        "serviceName": "",
+        "serverIp": "111.222.111.1",
+        "useStaticSettings": true,
+        "wanTaggingSettingsEnable": false,
+        "vlanId": 0
+      },
+      "ipv6Setting": {
+        "ipv6ConnectionType": "Automatic",
+        "isIPv6AutomaticEnabled": true
+      },
+      "macClone": false,
+      "macCloneAddress": ""
+    },
+    "current": {
+      "ipv4Setting": {
+        "ipv4ConnectionType": "PPTP",
+        "mtu": 0,
+        "behavior": "KeepAlive",
+        "maxIdleMinutes": 15,
+        "reconnectAfterSeconds": 30,
+        "staticIpAddress": "111.111.111.123",
+        "staticGateway": "111.111.111.1",
+        "staticDns1": "8.8.8.8",
+        "staticDns2": "8.8.4.4",
+        "networkPrefixLength": 24,
+        "domainName": null,
+        "username": "user",
+        "password": "pass",
+        "serviceName": "",
+        "serverIp": "111.222.111.1",
+        "useStaticSettings": true,
+        "wanTaggingSettingsEnable": false,
+        "vlanId": 0
+      },
+      "ipv6Setting": {
+        "ipv6ConnectionType": "Automatic",
+        "isIPv6AutomaticEnabled": true
+      },
+      "macClone": false,
+      "macCloneAddress": ""
+    }
+  },
+  "status": {
     "supportedIPv4ConnectionType": [
       "DHCP",
       "Static",
@@ -311,36 +519,72 @@ const internetSettingsStatePptpWithStaticIp = {
       {"wanType": "DHCP", "wanIPv6Type": "Pass-through"},
       {"wanType": "PPPoE", "wanIPv6Type": "PPPoE"}
     ],
-    "mtu": 0,
-    "behavior": "KeepAlive",
-    "maxIdleMinutes": 15,
-    "reconnectAfterSeconds": 30,
-    "staticIpAddress": "111.111.111.123",
-    "staticGateway": "111.111.111.1",
-    "staticDns1": "8.8.8.8",
-    "staticDns2": "8.8.4.4",
-    "networkPrefixLength": 24,
-    "username": "user",
-    "password": "pass",
-    "serviceName": "",
-    "serverIp": "111.222.111.1",
-    "useStaticSettings": true,
-    "wanTaggingSettingsEnable": false,
-    "vlanId": 0
-  },
-  "ipv6Setting": {
-    "ipv6ConnectionType": "Automatic",
     "supportedIPv6ConnectionType": ["Automatic", "PPPoE", "Pass-through"],
     "duid": "00:02:03:09:05:05:80:69:1A:A7:14:FF",
-    "isIPv6AutomaticEnabled": true
-  },
-  "macClone": false,
-  "macCloneAddress": ""
+    "redirection": null,
+    "hostname": null
+  }
 };
 
 const internetSettingsStateL2tp = {
-  "ipv4Setting": {
-    "ipv4ConnectionType": "L2TP",
+  "settings": {
+    "original": {
+      "ipv4Setting": {
+        "ipv4ConnectionType": "L2TP",
+        "mtu": 0,
+        "behavior": "KeepAlive",
+        "maxIdleMinutes": 15,
+        "reconnectAfterSeconds": 30,
+        "staticIpAddress": "111.111.111.123",
+        "staticGateway": "111.111.111.1",
+        "staticDns1": "8.8.8.8",
+        "staticDns2": "8.8.4.4",
+        "networkPrefixLength": 24,
+        "username": "user",
+        "password": "pass",
+        "serviceName": "",
+        "serverIp": "111.222.111.1",
+        "useStaticSettings": false,
+        "wanTaggingSettingsEnable": false,
+        "vlanId": 0
+      },
+      "ipv6Setting": {
+        "ipv6ConnectionType": "Automatic",
+        "isIPv6AutomaticEnabled": true
+      },
+      "macClone": false,
+      "macCloneAddress": ""
+    },
+    "current": {
+      "ipv4Setting": {
+        "ipv4ConnectionType": "L2TP",
+        "mtu": 0,
+        "behavior": "KeepAlive",
+        "maxIdleMinutes": 15,
+        "reconnectAfterSeconds": 30,
+        "staticIpAddress": "111.111.111.123",
+        "staticGateway": "111.111.111.1",
+        "staticDns1": "8.8.8.8",
+        "staticDns2": "8.8.4.4",
+        "networkPrefixLength": 24,
+        "domainName": null,
+        "username": "user",
+        "password": "pass",
+        "serviceName": "",
+        "serverIp": "111.222.111.1",
+        "useStaticSettings": false,
+        "wanTaggingSettingsEnable": false,
+        "vlanId": 0
+      },
+      "ipv6Setting": {
+        "ipv6ConnectionType": "Automatic",
+        "isIPv6AutomaticEnabled": true
+      },
+      "macClone": false,
+      "macCloneAddress": ""
+    }
+  },
+  "status": {
     "supportedIPv4ConnectionType": [
       "DHCP",
       "Static",
@@ -359,36 +603,35 @@ const internetSettingsStateL2tp = {
       {"wanType": "DHCP", "wanIPv6Type": "Pass-through"},
       {"wanType": "PPPoE", "wanIPv6Type": "PPPoE"}
     ],
-    "mtu": 0,
-    "behavior": "KeepAlive",
-    "maxIdleMinutes": 15,
-    "reconnectAfterSeconds": 30,
-    "staticIpAddress": "111.111.111.123",
-    "staticGateway": "111.111.111.1",
-    "staticDns1": "8.8.8.8",
-    "staticDns2": "8.8.4.4",
-    "networkPrefixLength": 24,
-    "username": "user",
-    "password": "pass",
-    "serviceName": "",
-    "serverIp": "111.222.111.1",
-    "useStaticSettings": false,
-    "wanTaggingSettingsEnable": false,
-    "vlanId": 0
-  },
-  "ipv6Setting": {
-    "ipv6ConnectionType": "Automatic",
     "supportedIPv6ConnectionType": ["Automatic", "PPPoE", "Pass-through"],
     "duid": "00:02:03:09:05:05:80:69:1A:A7:14:FF",
-    "isIPv6AutomaticEnabled": true
-  },
-  "macClone": false,
-  "macCloneAddress": ""
+    "redirection": null,
+    "hostname": null
+  }
 };
 
 const internetSettingsStateBridge = {
-  "ipv4Setting": {
-    "ipv4ConnectionType": "Bridge",
+  "settings": {
+    "original": {
+      "ipv4Setting": {"ipv4ConnectionType": "Bridge", "mtu": 0},
+      "ipv6Setting": {
+        "ipv6ConnectionType": "Automatic",
+        "isIPv6AutomaticEnabled": true
+      },
+      "macClone": false,
+      "macCloneAddress": ""
+    },
+    "current": {
+      "ipv4Setting": {"ipv4ConnectionType": "Bridge", "mtu": 0},
+      "ipv6Setting": {
+        "ipv6ConnectionType": "Automatic",
+        "isIPv6AutomaticEnabled": true
+      },
+      "macClone": false,
+      "macCloneAddress": ""
+    }
+  },
+  "status": {
     "supportedIPv4ConnectionType": [
       "DHCP",
       "Static",
@@ -407,21 +650,35 @@ const internetSettingsStateBridge = {
       {"wanType": "DHCP", "wanIPv6Type": "Pass-through"},
       {"wanType": "PPPoE", "wanIPv6Type": "PPPoE"}
     ],
-    "mtu": 0
-  },
-  "ipv6Setting": {
-    "ipv6ConnectionType": "Automatic",
     "supportedIPv6ConnectionType": ["Automatic", "PPPoE", "Pass-through"],
     "duid": "00:02:03:09:05:05:80:69:1A:A7:14:FF",
-    "isIPv6AutomaticEnabled": true
-  },
-  "macClone": false,
-  "macCloneAddress": ""
+    "redirection": null,
+    "hostname": null
+  }
 };
 
 const internetSettingsStateIpv6Automatic = {
-  "ipv4Setting": {
-    "ipv4ConnectionType": "DHCP",
+  "settings": {
+    "original": {
+      "ipv4Setting": {"ipv4ConnectionType": "DHCP", "mtu": 0},
+      "ipv6Setting": {
+        "ipv6ConnectionType": "Automatic",
+        "isIPv6AutomaticEnabled": true
+      },
+      "macClone": false,
+      "macCloneAddress": ""
+    },
+    "current": {
+      "ipv4Setting": {"ipv4ConnectionType": "DHCP", "mtu": 0},
+      "ipv6Setting": {
+        "ipv6ConnectionType": "Automatic",
+        "isIPv6AutomaticEnabled": true
+      },
+      "macClone": false,
+      "macCloneAddress": ""
+    }
+  },
+  "status": {
     "supportedIPv4ConnectionType": [
       "DHCP",
       "Static",
@@ -440,21 +697,35 @@ const internetSettingsStateIpv6Automatic = {
       {"wanType": "DHCP", "wanIPv6Type": "Pass-through"},
       {"wanType": "PPPoE", "wanIPv6Type": "PPPoE"}
     ],
-    "mtu": 0
-  },
-  "ipv6Setting": {
-    "ipv6ConnectionType": "Automatic",
     "supportedIPv6ConnectionType": ["Automatic", "PPPoE", "Pass-through"],
     "duid": "00:02:03:09:05:05:80:69:1A:A7:14:FF",
-    "isIPv6AutomaticEnabled": true
-  },
-  "macClone": false,
-  "macCloneAddress": ""
+    "redirection": null,
+    "hostname": null
+  }
 };
 
 const internetSettingsStateIpv6PassThrough = {
-  "ipv4Setting": {
-    "ipv4ConnectionType": "DHCP",
+  "settings": {
+    "original": {
+      "ipv4Setting": {"ipv4ConnectionType": "DHCP", "mtu": 0},
+      "ipv6Setting": {
+        "ipv6ConnectionType": "Pass-through",
+        "isIPv6AutomaticEnabled": false
+      },
+      "macClone": false,
+      "macCloneAddress": null
+    },
+    "current": {
+      "ipv4Setting": {"ipv4ConnectionType": "DHCP", "mtu": 0},
+      "ipv6Setting": {
+        "ipv6ConnectionType": "Pass-through",
+        "isIPv6AutomaticEnabled": false
+      },
+      "macClone": false,
+      "macCloneAddress": null
+    }
+  },
+  "status": {
     "supportedIPv4ConnectionType": [
       "DHCP",
       "Static",
@@ -473,20 +744,35 @@ const internetSettingsStateIpv6PassThrough = {
       {"wanType": "DHCP", "wanIPv6Type": "Pass-through"},
       {"wanType": "PPPoE", "wanIPv6Type": "PPPoE"}
     ],
-    "mtu": 0
-  },
-  "ipv6Setting": {
-    "ipv6ConnectionType": "Pass-through",
     "supportedIPv6ConnectionType": ["Automatic", "PPPoE", "Pass-through"],
     "duid": "00:02:03:09:05:05:80:69:1A:BB:46:FC",
-    "isIPv6AutomaticEnabled": false
-  },
-  "macClone": false
+    "redirection": null,
+    "hostname": null
+  }
 };
 
 const internetSettingsStateIpv6PPPoE = {
-  "ipv4Setting": {
-    "ipv4ConnectionType": "DHCP",
+  "settings": {
+    "original": {
+      "ipv4Setting": {"ipv4ConnectionType": "DHCP", "mtu": 0},
+      "ipv6Setting": {
+        "ipv6ConnectionType": "PPPoE",
+        "isIPv6AutomaticEnabled": false
+      },
+      "macClone": false,
+      "macCloneAddress": null
+    },
+    "current": {
+      "ipv4Setting": {"ipv4ConnectionType": "DHCP", "mtu": 0},
+      "ipv6Setting": {
+        "ipv6ConnectionType": "PPPoE",
+        "isIPv6AutomaticEnabled": false
+      },
+      "macClone": false,
+      "macCloneAddress": null
+    }
+  },
+  "status": {
     "supportedIPv4ConnectionType": [
       "DHCP",
       "Static",
@@ -505,13 +791,9 @@ const internetSettingsStateIpv6PPPoE = {
       {"wanType": "DHCP", "wanIPv6Type": "Pass-through"},
       {"wanType": "PPPoE", "wanIPv6Type": "PPPoE"}
     ],
-    "mtu": 0
-  },
-  "ipv6Setting": {
-    "ipv6ConnectionType": "PPPoE",
     "supportedIPv6ConnectionType": ["Automatic", "PPPoE", "Pass-through"],
     "duid": "00:02:03:09:05:05:80:69:1A:BB:46:FC",
-    "isIPv6AutomaticEnabled": false
-  },
-  "macClone": false
+    "redirection": null,
+    "hostname": null
+  }
 };

@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/advanced_settings/internet_settings/models/internet_settings_enums.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/_providers.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
@@ -50,11 +51,11 @@ class _PnpIspSaveSettingsViewState
   Future<void> _saveNewSettings() {
     String? settingError;
     final wanType = WanType.resolve(
-      newSettings.ipv4Setting.ipv4ConnectionType,
+      newSettings.current.ipv4Setting.ipv4ConnectionType,
     )!;
     return ref
         .read(internetSettingsProvider.notifier)
-        .savePnpIpv4(newSettings)
+        .savePnpIpv4(newSettings.current)
         .then((value) {
       setState(() {
         _spinnerText = loc(context).savingChanges;
