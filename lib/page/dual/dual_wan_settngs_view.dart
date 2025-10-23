@@ -1,20 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/components/mixin/preserved_state_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/dual/models/connection.dart';
-import 'package:privacy_gui/page/dual/models/port_type.dart';
 import 'package:privacy_gui/page/dual/models/wan_configuration.dart';
 import 'package:privacy_gui/page/dual/providers/dual_wan_settings_state.dart';
-import 'package:privacy_gui/route/constants.dart';
-
-import 'package:privacy_gui/utils.dart';
+import 'widgets/logging_and_advanced_settings_card.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/information_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
@@ -95,22 +90,11 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
               }
             : null,
         bottomBar: PageBottomBar(
-          isPositiveEnabled: _errors.isEmpty && isStateChanged(state.settings),
+          isPositiveEnabled: state.isValid &&
+              _errors.isEmpty &&
+              isStateChanged(state.settings),
           onPositiveTap: () {
             if (!mounted) return;
-
-            final primaryWAN =
-                ref.read(dualWANSettingsProvider).settings.primaryWAN;
-            final secondaryWAN =
-                ref.read(dualWANSettingsProvider).settings.secondaryWAN;
-
-            final isPrimaryValid = _validateWANSettingsForm(true, primaryWAN);
-            final isSecondaryValid =
-                _validateWANSettingsForm(false, secondaryWAN);
-
-            if (!isPrimaryValid || !isSecondaryValid) {
-              return; // Stop if validation fails
-            }
 
             doSomethingWithSpinner(
               context,
@@ -188,7 +172,10 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
                       },
                     ),
                   if (showLoggingAndAdvancedSettings)
-                    _loggingAndAdvancedSettingsCard(twoColWidth, gutter),
+                    LoggingAndAdvancedSettingsCard(
+                      twoColWidth: twoColWidth,
+                      gutter: gutter,
+                    ),
                   const AppGap.large1(),
                 ],
               ],
@@ -222,7 +209,6 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
           ]),
     );
   }
-
 
   Widget _primaryWANCard() {
     final primaryWAN = ref.watch(dualWANSettingsProvider).settings.primaryWAN;
@@ -386,175 +372,5 @@ class _DualWANSettingsViewState extends ConsumerState<DualWANSettingsView>
         const AppGap.small3(),
       ],
     );
-  }
-
-
-
-
-  Widget _loggingAndAdvancedSettingsCard(double twoColWidth, double gutter) {
-    final loggingOptions =
-        ref.watch(dualWANSettingsProvider).settings.loggingOptions;
-    return AppInformationCard(
-      title: loc(context).loggingAdvancedSettings,
-      description: loc(context).loggingAdvancedSettingsDescription,
-      content: Column(
-        spacing: Spacing.large1,
-        children: [
-          AppCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                AppText.labelLarge(loc(context).loggingOptions),
-                const AppGap.medium(),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    AppText.labelMedium(loc(context).logFailoverEvents),
-                    AppSwitch(
-                      value: loggingOptions?.failoverEvents ?? false,
-                      onChanged: (value) {
-                        if (loggingOptions == null) return;
-
-                        _notifier.updateLoggingOptions(
-                            loggingOptions.copyWith(failoverEvents: value));
-                      },
-                    ),
-                  ],
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    AppText.labelMedium(loc(context).logWanUptime),
-                    AppSwitch(
-                      value: loggingOptions?.wanUptime ?? false,
-                      onChanged: (value) {
-                        if (loggingOptions == null) return;
-
-                        _notifier.updateLoggingOptions(
-                            loggingOptions.copyWith(wanUptime: value));
-                      },
-                    ),
-                  ],
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    AppText.labelMedium(loc(context).logSpeedChecks),
-                    AppSwitch(
-                      value: loggingOptions?.speedChecks ?? false,
-                      onChanged: (value) {
-                        if (loggingOptions == null) return;
-                        _notifier.updateLoggingOptions(
-                            loggingOptions.copyWith(speedChecks: value));
-                      },
-                    ),
-                  ],
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    AppText.labelMedium(loc(context).logThroughputData),
-                    AppSwitch(
-                      value: loggingOptions?.throughputData ?? false,
-                      onChanged: (value) {
-                        if (loggingOptions == null) return;
-                        _notifier.updateLoggingOptions(
-                            loggingOptions.copyWith(throughputData: value));
-                      },
-                    ),
-                  ],
-                ),
-                const Divider(
-                  height: 24,
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
-                  child: AppOutlinedButton.fillWidth(loc(context).viewLogs,
-                      onTap: () {
-                    // Log View
-                    context.pushNamed(RouteNamed.dualWANLog);
-                  }),
-                ),
-              ],
-            ),
-          ),
-          AppCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.start,
-              spacing: Spacing.small2,
-              children: [
-                AppText.labelLarge(loc(context).selfTestTools),
-                const AppGap.medium(),
-                AppOutlinedButton.fillWidth(loc(context).connectionHealthCheck,
-                    onTap: () {}),
-                AppOutlinedButton.fillWidth(loc(context).failoverTest,
-                    onTap: () {}),
-              ],
-            ),
-          ),
-          _failoverWarningCard(),
-        ],
-      ),
-    );
-  }
-
-  Widget _failoverWarningCard() {
-    return AppCard(
-      showBorder: false,
-      color: Theme.of(context).colorSchemeExt.orange?.withAlpha(0x10),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            LinksysIcons.infoCircle,
-            semanticLabel: 'info icon',
-            color: Theme.of(context).colorSchemeExt.orange,
-          ),
-          const AppGap.medium(),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AppText.labelMedium(
-                  loc(context).failoverBehavior,
-                  color: Theme.of(context).colorSchemeExt.orange,
-                ),
-                AppText.bodyMedium(
-                  loc(context).failoverBehaviorDescription,
-                  color: Theme.of(context).colorSchemeExt.orange,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  bool _validateWANSettingsForm(bool isPrimary, DualWANConfiguration wan) {
-    bool isValid = true;
-
-    switch (wan.wanType) {
-      case 'Static':
-        // Validation handled by StaticWANSettingsForm
-        break;
-      case 'PPPoE':
-        // Validation handled by PPPoEWANSettingsForm
-        break;
-      case 'PPTP':
-        // Validation handled by PPTPWANSettingsForm
-        break;
-      case 'L2TP':
-        // Validation handled by L2TPWANSettingsForm
-        break;
-    }
-    return isValid;
   }
 }

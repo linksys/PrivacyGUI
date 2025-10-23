@@ -245,4 +245,9 @@ class DualWANSettingsState extends Equatable {
         settings,
         status,
       ];
+
+  // Check all inputs are valid
+  bool get isValid =>
+      settings.primaryWAN.isCurrentWANConfigurationValid &&
+      settings.secondaryWAN.isCurrentWANConfigurationValid;
 }

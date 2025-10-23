@@ -341,4 +341,32 @@ class DualWANConfiguration extends Equatable {
       PPPConnectionBehavior.connectOnDemand => null,
     };
   }
+
+  // Check current WAN configuration depends on WAN type is valid
+  bool get isCurrentWANConfigurationValid {
+    return switch (wanType) {
+      'DHCP' => true,
+      'PPPoE' =>
+        _checkEmpty(username) && _checkEmpty(password) && _checkEmpty(serverIp),
+      'Static' => _checkEmpty(staticIpAddress) &&
+          _checkEmpty(staticGateway) &&
+          _checkEmpty(staticDns1) &&
+          _checkEmpty(networkPrefixLength),
+      'PPTP' =>
+        _checkEmpty(username) && _checkEmpty(password) && _checkEmpty(serverIp),
+      'L2TP' =>
+        _checkEmpty(username) && _checkEmpty(password) && _checkEmpty(serverIp),
+      _ => false,
+    };
+  }
+
+  bool _checkEmpty(Object? value) {
+    if (value == null) {
+      return false;
+    }
+    if (value is String) {
+      return value.isNotEmpty;
+    }
+    return true;
+  }
 }
