@@ -211,12 +211,10 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
   Widget _editButton(
       bool isOnlineFilter, List<DeviceListItem> filteredDeviceList) {
     return AppTextButton.noPadding(
-      filteredDeviceList.length == _selectedList.length
-          ? loc(context).deselectAll
-          : loc(context).selectAll,
+      loc(context).selectAll,
       icon: filteredDeviceList.length == _selectedList.length
-          ? LinksysIcons.checkBoxOutlineBlank
-          : LinksysIcons.checkBox,
+          ? LinksysIcons.checkBox
+          : LinksysIcons.checkBoxOutlineBlank,
       color: isOnlineFilter
           ? Theme.of(context).colorScheme.onSurface.withOpacity(0.12)
           : Theme.of(context).colorScheme.primary,
