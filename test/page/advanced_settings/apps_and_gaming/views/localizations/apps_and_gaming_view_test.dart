@@ -4,10 +4,8 @@ import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/models/dyn_dns_settings.dart';
 import 'package:privacy_gui/core/jnap/models/no_ip_settings.dart';
 import 'package:privacy_gui/core/jnap/models/tzo_settings.dart';
-import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/providers/ddns_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/providers/ddns_state.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/views/dyn_ddns_form.dart';
-import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/providers/apps_and_gaming_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/providers/apps_and_gaming_state.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
@@ -15,7 +13,6 @@ import 'package:privacygui_widgets/widgets/input_field/app_text_field.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 import 'package:privacygui_widgets/widgets/tab_bar/linksys_tab_bar.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
-import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:get_it/get_it.dart';
 
