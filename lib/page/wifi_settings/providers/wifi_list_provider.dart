@@ -1,5 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:meta/meta.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
@@ -85,7 +86,7 @@ class WifiListNotifier extends Notifier<WiFiState> {
       mainWiFi: wifiItems,
       guestWiFi: guestWiFi,
     );
-    _checkMode();
+    _setupSimpleMode();
     logger.d('[State]:[wiFiList]: ${state.toJson()}');
     return state;
   }
@@ -385,16 +386,22 @@ class WifiListNotifier extends Notifier<WiFiState> {
     }
   }
 
-  void _checkMode() {
-    final simpleModeWifi =
+  void _setupSimpleMode() {
+    final availableSecurityTypeList = getSimpleModeAvailableSecurityTypeList(state.mainWiFi);
+    final firstEnabledWifi =
         state.mainWiFi.firstWhereOrNull((e) => e.isEnabled) ??
             state.mainWiFi.first;
-    final isSimple = state.mainWiFi.every((wifi) =>
-        wifi.isEnabled == simpleModeWifi.isEnabled &&
-        wifi.ssid == simpleModeWifi.ssid &&
-        wifi.password == simpleModeWifi.password &&
-        wifi.securityType == simpleModeWifi.securityType);
 
+    final isSimple = state.mainWiFi.every((wifi) =>
+        wifi.isEnabled == firstEnabledWifi.isEnabled &&
+        wifi.ssid == firstEnabledWifi.ssid &&
+        wifi.password == firstEnabledWifi.password &&
+        wifi.securityType == firstEnabledWifi.securityType);
+    final simpleModeWifi = firstEnabledWifi.copyWith(
+      securityType: getSimpleModeAvailableSecurityType(
+          firstEnabledWifi.securityType, availableSecurityTypeList),
+      availableSecurityTypes: availableSecurityTypeList,
+    );
     state =
         state.copyWith(isSimpleMode: isSimple, simpleModeWifi: simpleModeWifi);
   }
@@ -405,5 +412,43 @@ class WifiListNotifier extends Notifier<WiFiState> {
 
   void setSimpleModeWifi(WiFiItem wifi) {
     state = state.copyWith(simpleModeWifi: wifi);
+  }
+
+  @visibleForTesting
+  WifiSecurityType getSimpleModeAvailableSecurityType(
+      WifiSecurityType currentSecurityType,
+      List<WifiSecurityType> availableSecurityTypeList) {
+    if (availableSecurityTypeList.isEmpty) {
+      return currentSecurityType;
+    }
+    
+    if (availableSecurityTypeList.contains(currentSecurityType)) {
+      return currentSecurityType;
+    } else if (availableSecurityTypeList
+        .contains(WifiSecurityType.wpa3Personal)) {
+      return WifiSecurityType.wpa3Personal;
+    } else if (availableSecurityTypeList
+        .contains(WifiSecurityType.wpa2Or3MixedPersonal)) {
+      return WifiSecurityType.wpa2Or3MixedPersonal;
+    } else if (availableSecurityTypeList
+        .contains(WifiSecurityType.wpa2Personal)) {
+      return WifiSecurityType.wpa2Personal;
+    } else {
+      return availableSecurityTypeList.first;
+    }
+  }
+
+  @visibleForTesting
+  List<WifiSecurityType> getSimpleModeAvailableSecurityTypeList(List<WiFiItem> wifiList) {
+    if (wifiList.isEmpty) {
+      return [];
+    }
+    Set<WifiSecurityType> securityTypeSet =
+        wifiList.first.availableSecurityTypes.toSet();
+    for (var e in wifiList) {
+      final availableSecurityTypesSet = e.availableSecurityTypes.toSet();
+      securityTypeSet = securityTypeSet.intersection(availableSecurityTypesSet);
+    }
+    return securityTypeSet.toList();
   }
 }
