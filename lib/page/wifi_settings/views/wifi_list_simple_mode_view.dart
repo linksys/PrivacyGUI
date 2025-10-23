@@ -41,13 +41,7 @@ class _SimpleModeViewState extends ConsumerState<SimpleModeView>
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(wifiListProvider);
-    Set<WifiSecurityType> securityTypeSet =
-        state.mainWiFi.first.availableSecurityTypes.toSet();
-    for (var e in state.mainWiFi) {
-      final availableSecurityTypesSet = e.availableSecurityTypes.toSet();
-      securityTypeSet = securityTypeSet.intersection(availableSecurityTypesSet);
-    }
-    final securityTypeList = securityTypeSet.toList();
+    final securityTypeList = state.simpleModeWifi.availableSecurityTypes;
 
     final isMobile = ResponsiveLayout.isMobileLayout(context);
 
