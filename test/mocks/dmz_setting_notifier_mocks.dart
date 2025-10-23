@@ -3,17 +3,16 @@
 // Do not manually edit this file.
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
-import 'dart:async' as _i6;
+import 'dart:async' as _i5;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i5;
-import 'package:privacy_gui/core/jnap/models/dmz_settings.dart' as _i7;
 import 'package:privacy_gui/page/advanced_settings/dmz/providers/dmz_settings_provider.dart'
     as _i4;
 import 'package:privacy_gui/page/advanced_settings/dmz/providers/dmz_settings_state.dart'
     as _i3;
-import 'package:privacy_gui/providers/empty_status.dart' as _i8;
+import 'package:privacy_gui/page/advanced_settings/dmz/providers/dmz_status.dart'
+    as _i6;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -57,32 +56,6 @@ class _FakeDMZSettingsState_1 extends _i1.SmartFake
 class MockDMZSettingsNotifier extends _i2.Notifier<_i3.DMZSettingsState>
     with _i1.Mock
     implements _i4.DMZSettingsNotifier {
-  @override
-  String get subnetMask => (super.noSuchMethod(
-        Invocation.getter(#subnetMask),
-        returnValue: _i5.dummyValue<String>(
-          this,
-          Invocation.getter(#subnetMask),
-        ),
-        returnValueForMissingStub: _i5.dummyValue<String>(
-          this,
-          Invocation.getter(#subnetMask),
-        ),
-      ) as String);
-
-  @override
-  String get ipAddress => (super.noSuchMethod(
-        Invocation.getter(#ipAddress),
-        returnValue: _i5.dummyValue<String>(
-          this,
-          Invocation.getter(#ipAddress),
-        ),
-        returnValueForMissingStub: _i5.dummyValue<String>(
-          this,
-          Invocation.getter(#ipAddress),
-        ),
-      ) as String);
-
   @override
   _i2.NotifierProviderRef<_i3.DMZSettingsState> get ref => (super.noSuchMethod(
         Invocation.getter(#ref),
@@ -142,7 +115,7 @@ class MockDMZSettingsNotifier extends _i2.Notifier<_i3.DMZSettingsState>
       ) as _i3.DMZSettingsState);
 
   @override
-  _i6.Future<(_i7.DMZSettings?, _i8.EmptyStatus?)> performFetch({
+  _i5.Future<(_i3.DMZUISettings?, _i6.DMZStatus?)> performFetch({
     bool? forceRemote = false,
     bool? updateStatusOnly = false,
   }) =>
@@ -155,25 +128,25 @@ class MockDMZSettingsNotifier extends _i2.Notifier<_i3.DMZSettingsState>
             #updateStatusOnly: updateStatusOnly,
           },
         ),
-        returnValue: _i6.Future<(_i7.DMZSettings?, _i8.EmptyStatus?)>.value(
+        returnValue: _i5.Future<(_i3.DMZUISettings?, _i6.DMZStatus?)>.value(
             (null, null)),
         returnValueForMissingStub:
-            _i6.Future<(_i7.DMZSettings?, _i8.EmptyStatus?)>.value(
+            _i5.Future<(_i3.DMZUISettings?, _i6.DMZStatus?)>.value(
                 (null, null)),
-      ) as _i6.Future<(_i7.DMZSettings?, _i8.EmptyStatus?)>);
+      ) as _i5.Future<(_i3.DMZUISettings?, _i6.DMZStatus?)>);
 
   @override
-  _i6.Future<void> performSave() => (super.noSuchMethod(
+  _i5.Future<void> performSave() => (super.noSuchMethod(
         Invocation.method(
           #performSave,
           [],
         ),
-        returnValue: _i6.Future<void>.value(),
-        returnValueForMissingStub: _i6.Future<void>.value(),
-      ) as _i6.Future<void>);
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
 
   @override
-  void setSettings(_i7.DMZSettings? settings) => super.noSuchMethod(
+  void setSettings(_i3.DMZUISettings? settings) => super.noSuchMethod(
         Invocation.method(
           #setSettings,
           [settings],
@@ -182,7 +155,7 @@ class MockDMZSettingsNotifier extends _i2.Notifier<_i3.DMZSettingsState>
       );
 
   @override
-  void setSourceType(_i7.DMZSourceType? type) => super.noSuchMethod(
+  void setSourceType(_i3.DMZSourceType? type) => super.noSuchMethod(
         Invocation.method(
           #setSourceType,
           [type],
@@ -191,19 +164,10 @@ class MockDMZSettingsNotifier extends _i2.Notifier<_i3.DMZSettingsState>
       );
 
   @override
-  void setDestinationType(_i7.DMZDestinationType? type) => super.noSuchMethod(
+  void setDestinationType(_i3.DMZDestinationType? type) => super.noSuchMethod(
         Invocation.method(
           #setDestinationType,
           [type],
-        ),
-        returnValueForMissingStub: null,
-      );
-
-  @override
-  void clearDestinations() => super.noSuchMethod(
-        Invocation.method(
-          #clearDestinations,
-          [],
         ),
         returnValueForMissingStub: null,
       );
@@ -246,7 +210,7 @@ class MockDMZSettingsNotifier extends _i2.Notifier<_i3.DMZSettingsState>
       ) as bool);
 
   @override
-  _i6.Future<_i3.DMZSettingsState> fetch({
+  _i5.Future<_i3.DMZSettingsState> fetch({
     bool? forceRemote = false,
     bool? updateStatusOnly = false,
   }) =>
@@ -260,7 +224,7 @@ class MockDMZSettingsNotifier extends _i2.Notifier<_i3.DMZSettingsState>
           },
         ),
         returnValue:
-            _i6.Future<_i3.DMZSettingsState>.value(_FakeDMZSettingsState_1(
+            _i5.Future<_i3.DMZSettingsState>.value(_FakeDMZSettingsState_1(
           this,
           Invocation.method(
             #fetch,
@@ -272,7 +236,7 @@ class MockDMZSettingsNotifier extends _i2.Notifier<_i3.DMZSettingsState>
           ),
         )),
         returnValueForMissingStub:
-            _i6.Future<_i3.DMZSettingsState>.value(_FakeDMZSettingsState_1(
+            _i5.Future<_i3.DMZSettingsState>.value(_FakeDMZSettingsState_1(
           this,
           Invocation.method(
             #fetch,
@@ -283,16 +247,16 @@ class MockDMZSettingsNotifier extends _i2.Notifier<_i3.DMZSettingsState>
             },
           ),
         )),
-      ) as _i6.Future<_i3.DMZSettingsState>);
+      ) as _i5.Future<_i3.DMZSettingsState>);
 
   @override
-  _i6.Future<_i3.DMZSettingsState> save() => (super.noSuchMethod(
+  _i5.Future<_i3.DMZSettingsState> save() => (super.noSuchMethod(
         Invocation.method(
           #save,
           [],
         ),
         returnValue:
-            _i6.Future<_i3.DMZSettingsState>.value(_FakeDMZSettingsState_1(
+            _i5.Future<_i3.DMZSettingsState>.value(_FakeDMZSettingsState_1(
           this,
           Invocation.method(
             #save,
@@ -300,14 +264,14 @@ class MockDMZSettingsNotifier extends _i2.Notifier<_i3.DMZSettingsState>
           ),
         )),
         returnValueForMissingStub:
-            _i6.Future<_i3.DMZSettingsState>.value(_FakeDMZSettingsState_1(
+            _i5.Future<_i3.DMZSettingsState>.value(_FakeDMZSettingsState_1(
           this,
           Invocation.method(
             #save,
             [],
           ),
         )),
-      ) as _i6.Future<_i3.DMZSettingsState>);
+      ) as _i5.Future<_i3.DMZSettingsState>);
 
   @override
   void revert() => super.noSuchMethod(

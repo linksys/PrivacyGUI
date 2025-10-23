@@ -23,5 +23,5 @@ const firewallSettingsTestState = {
       "isIPv6FirewallEnabled": true
     }
   },
-  "status": {}
+  "status": <String, dynamic>{}
 };

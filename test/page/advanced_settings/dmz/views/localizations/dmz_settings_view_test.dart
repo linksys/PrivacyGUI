@@ -37,15 +37,17 @@ void main() {
     mockDMZSettingsNotifier = MockDMZSettingsNotifier();
     final state = DMZSettingsState.fromMap(dmzSettingsTestState);
     when(mockDMZSettingsNotifier.build()).thenReturn(state);
-    when(mockDMZSettingsNotifier.fetch()).thenAnswer((_) async {
+    when(mockDMZSettingsNotifier.fetch(forceRemote: anyNamed('forceRemote')))
+        .thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 1));
       return state;
     });
-    when(mockDMZSettingsNotifier.subnetMask).thenReturn('255.255.0.0');
-    when(mockDMZSettingsNotifier.ipAddress).thenReturn('192.168.1.1');
   });
   testLocalizations('DMZ settings view - disabled', (tester, locale) async {
-    final settings = DMZSettings(isDMZEnabled: false);
+    final settings = const DMZUISettings(
+        isDMZEnabled: false,
+        sourceType: DMZSourceType.auto,
+        destinationType: DMZDestinationType.ip);
     final state = DMZSettingsState.fromMap(dmzSettingsTestState)
         .copyWith(settings: Preservable(original: settings, current: settings));
     when(mockDMZSettingsNotifier.build()).thenReturn(state);
@@ -72,7 +74,10 @@ void main() {
     ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1024)),
   ]);
   testLocalizations('DMZ settings view - enabled', (tester, locale) async {
-    final settings = DMZSettings(isDMZEnabled: true);
+    final settings = const DMZUISettings(
+        isDMZEnabled: true,
+        sourceType: DMZSourceType.auto,
+        destinationType: DMZDestinationType.ip);
     final state = DMZSettingsState.fromMap(dmzSettingsTestState)
         .copyWith(settings: Preservable(original: settings, current: settings));
     when(mockDMZSettingsNotifier.build()).thenReturn(state);
@@ -101,9 +106,10 @@ void main() {
 
   testLocalizations('DMZ settings view - enabled with specific range source',
       (tester, locale) async {
-    final settings = DMZSettings(
+    final settings = const DMZUISettings(
         isDMZEnabled: true,
         sourceType: DMZSourceType.range,
+        destinationType: DMZDestinationType.ip,
         sourceRestriction: DMZSourceRestriction(
             firstIPAddress: '192.168.1.23', lastIPAddress: '192.168.1.78'));
     final state = DMZSettingsState.fromMap(dmzSettingsTestState)
@@ -135,9 +141,10 @@ void main() {
   testLocalizations(
       'DMZ settings view - enabled with specific range source - error state',
       (tester, locale) async {
-    final settings = DMZSettings(
+    final settings = const DMZUISettings(
         isDMZEnabled: true,
         sourceType: DMZSourceType.range,
+        destinationType: DMZDestinationType.ip,
         sourceRestriction: DMZSourceRestriction(
             firstIPAddress: '192.168.1.23', lastIPAddress: '192.168.1.78'));
     var state = DMZSettingsState.fromMap(dmzSettingsTestState)
@@ -167,7 +174,7 @@ void main() {
         matching: find.byType(TextFormField));
     await tester.enterText(startIPInputForm.at(3), '1');
     await tester.pumpAndSettle();
-    await tester.tap(find.byType(AppIPFormField).at(0));
+    await tester.tap(find.byType(AppCard).first);
     await tester.pumpAndSettle();
   }, screens: [
     ...responsiveMobileScreens.map((e) => e.copyWith(height: 1024)),
@@ -177,8 +184,9 @@ void main() {
   testLocalizations(
       'DMZ settings view - enabled with IP address destination - error state',
       (tester, locale) async {
-    final settings = DMZSettings(
+    final settings = const DMZUISettings(
         isDMZEnabled: true,
+        sourceType: DMZSourceType.auto,
         destinationType: DMZDestinationType.ip,
         destinationIPAddress: '192.168.1.1');
     var state = DMZSettingsState.fromMap(dmzSettingsTestState)
@@ -218,8 +226,9 @@ void main() {
 
   testLocalizations('DMZ settings view - enabled with mac address destination',
       (tester, locale) async {
-    final settings = DMZSettings(
+    final settings = const DMZUISettings(
         isDMZEnabled: true,
+        sourceType: DMZSourceType.auto,
         destinationType: DMZDestinationType.mac,
         destinationMACAddress: '00:11:22:33:44:55');
     var state = DMZSettingsState.fromMap(dmzSettingsTestState)
@@ -251,8 +260,9 @@ void main() {
   testLocalizations(
       'DMZ settings view - enabled with mac address destination - error state',
       (tester, locale) async {
-    final settings = DMZSettings(
+    final settings = const DMZUISettings(
         isDMZEnabled: true,
+        sourceType: DMZSourceType.auto,
         destinationType: DMZDestinationType.mac,
         destinationMACAddress: '00:11:22:33:44:55');
     var state = DMZSettingsState.fromMap(dmzSettingsTestState)
@@ -312,7 +322,10 @@ void main() {
   ]);
 
   testLocalizations('DMZ settings view - Saved', (tester, locale) async {
-    final settings = DMZSettings(isDMZEnabled: true);
+    final settings = const DMZUISettings(
+        isDMZEnabled: true,
+        sourceType: DMZSourceType.auto,
+        destinationType: DMZDestinationType.ip);
     final state = DMZSettingsState.fromMap(dmzSettingsTestState)
         .copyWith(settings: Preservable(original: settings, current: settings));
     when(mockDMZSettingsNotifier.build()).thenReturn(state);
@@ -348,7 +361,10 @@ void main() {
   ]);
 
   testLocalizations('DMZ settings view - Save failed', (tester, locale) async {
-    final settings = DMZSettings(isDMZEnabled: true);
+    final settings = const DMZUISettings(
+        isDMZEnabled: true,
+        sourceType: DMZSourceType.auto,
+        destinationType: DMZDestinationType.ip);
     final state = DMZSettingsState.fromMap(dmzSettingsTestState)
         .copyWith(settings: Preservable(original: settings, current: settings));
     when(mockDMZSettingsNotifier.build()).thenReturn(state);

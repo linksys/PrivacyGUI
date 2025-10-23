@@ -38,7 +38,7 @@ void main() {
 
     when(mockFirewallNotifier.build())
         .thenReturn(FirewallState.fromMap(firewallSettingsTestState));
-    when(mockFirewallNotifier.fetch(any)).thenAnswer((realInvocation) async {
+    when(mockFirewallNotifier.fetch()).thenAnswer((realInvocation) async {
       await Future.delayed(const Duration(seconds: 1));
       return FirewallState.fromMap(firewallSettingsTestState);
     });
@@ -136,8 +136,7 @@ void main() {
 
   testLocalizations('Firewall settings view - IPv6 port service - empty state',
       (tester, locale) async {
-    final state = Ipv6PortServiceListState.fromMap(ipv6PortServiceListTestState)
-        .copyWith(settings: const Preservable(original: IPv6FirewallRuleList(rules: []), current: IPv6FirewallRuleList(rules: [])));
+    final state = Ipv6PortServiceListState.fromMap(ipv6PortServiceEmptyListTestState);
     when(mockIpv6PortServiceListNotifier.build()).thenReturn(state);
     when(mockIpv6PortServiceListNotifier.fetch())
         .thenAnswer((realInvocation) async {
@@ -195,7 +194,7 @@ void main() {
     await tester.pumpWidget(
       testableSingleRoute(
         child: Ipv6PortServiceRuleView(
-          args: {'items': state.current.rules},
+          args: {'items': state.settings.current.rules},
         ),
         locale: locale,
         overrides: [
