@@ -387,7 +387,8 @@ class WifiListNotifier extends Notifier<WiFiState> {
   }
 
   void _setupSimpleMode() {
-    final availableSecurityTypeList = getSimpleModeAvailableSecurityTypeList(state.mainWiFi);
+    final availableSecurityTypeList =
+        getSimpleModeAvailableSecurityTypeList(state.mainWiFi);
     final firstEnabledWifi =
         state.mainWiFi.firstWhereOrNull((e) => e.isEnabled) ??
             state.mainWiFi.first;
@@ -418,37 +419,37 @@ class WifiListNotifier extends Notifier<WiFiState> {
   WifiSecurityType getSimpleModeAvailableSecurityType(
       WifiSecurityType currentSecurityType,
       List<WifiSecurityType> availableSecurityTypeList) {
+    // 1. Return the current security type if availableSecurityTypeList is empty
     if (availableSecurityTypeList.isEmpty) {
       return currentSecurityType;
     }
-    
+    // 2. Return the current security type if it is available
     if (availableSecurityTypeList.contains(currentSecurityType)) {
       return currentSecurityType;
-    } else if (availableSecurityTypeList
-        .contains(WifiSecurityType.wpa3Personal)) {
-      return WifiSecurityType.wpa3Personal;
-    } else if (availableSecurityTypeList
-        .contains(WifiSecurityType.wpa2Or3MixedPersonal)) {
-      return WifiSecurityType.wpa2Or3MixedPersonal;
-    } else if (availableSecurityTypeList
-        .contains(WifiSecurityType.wpa2Personal)) {
-      return WifiSecurityType.wpa2Personal;
-    } else {
-      return availableSecurityTypeList.first;
     }
+    // 3. Return the first available security type in priority order
+    const priorityOrder = [
+      WifiSecurityType.wpa3Personal,
+      WifiSecurityType.wpa2Or3MixedPersonal,
+      WifiSecurityType.wpa2Personal,
+    ];
+    for (final type in priorityOrder) {
+      if (availableSecurityTypeList.contains(type)) {
+        return type;
+      }
+    }
+    // 4. Return the first available security type
+    return availableSecurityTypeList.first;
   }
 
   @visibleForTesting
-  List<WifiSecurityType> getSimpleModeAvailableSecurityTypeList(List<WiFiItem> wifiList) {
-    if (wifiList.isEmpty) {
-      return [];
-    }
-    Set<WifiSecurityType> securityTypeSet =
-        wifiList.first.availableSecurityTypes.toSet();
-    for (var e in wifiList) {
-      final availableSecurityTypesSet = e.availableSecurityTypes.toSet();
-      securityTypeSet = securityTypeSet.intersection(availableSecurityTypesSet);
-    }
-    return securityTypeSet.toList();
+  List<WifiSecurityType> getSimpleModeAvailableSecurityTypeList(
+      List<WiFiItem> wifiList) {
+    return wifiList.isEmpty
+        ? <WifiSecurityType>[]
+        : wifiList
+            .map((e) => e.availableSecurityTypes.toSet())
+            .reduce((value, element) => value.intersection(element))
+            .toList();
   }
 }
