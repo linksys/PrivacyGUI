@@ -1,0 +1,175 @@
+- id: 9
+  symbolic_id: "APPS_DDNS_SAVE_POSITIVE"
+  tags:
+    - "apps_and_gaming"
+    - "advanced_settings"
+    - "menu"
+  name: "Apps & Gaming - DDNS - Save Valid Settings"
+  objective: "Verify that valid DDNS settings can be entered and saved successfully."
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to \"Menu\" -> \"Advanced Settings\" -> \"Apps and Gaming\" and go to the \"DDNS\" tab."
+    - action: "Select a DDNS provider (e.g., \"dyn.com\")."
+    - action: "Enter a valid username, password, and hostname."
+    - action: "Click the \"Save\" button."
+      verify: "A success toast (e.g., \"Saved\") is displayed."
+    - action: "Wait for the confirmation to disappear."
+  expected_result: "The DDNS settings are saved successfully and persist."
+
+- id: 10
+  symbolic_id: "APPS_DDNS_PERSISTENCE"
+  tags:
+    - "apps_and_gaming"
+    - "advanced_settings"
+    - "menu"
+  name: "Apps & Gaming - DDNS - Settings Persistence"
+  objective: "Verify that saved DDNS settings persist after navigating away and returning."
+  preconditions:
+    - "Valid DDNS settings have been previously saved."
+  steps:
+    - action: "Navigate to \"Menu\" -> \"Advanced Settings\" -> \"Apps and Gaming\" and go to the \"DDNS\" tab."
+    - action: "Verify that the previously saved DDNS settings are displayed correctly."
+    - action: "Navigate away from the page and return."
+      verify: "The DDNS settings remain unchanged."
+  expected_result: "The saved DDNS settings persist correctly."
+
+- id: 11
+  symbolic_id: "APPS_DDNS_INVALID_INPUT_CHECK"
+  tags:
+    - "apps_and_gaming"
+    - "advanced_settings"
+    - "menu"
+  name: "Apps & Gaming - DDNS - Invalid Input Validation"
+  objective: "Verify error messages for invalid inputs in DDNS fields."
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to the \"DDNS\" tab."
+    - action: "Select a DDNS provider."
+    - action: "Leave the username field empty and click \"Save\"."
+      verify: "An error message \"Username cannot be empty\" is displayed."
+    - action: "Enter an invalid hostname (e.g., \"invalid host name\")."
+      verify: "An \"Invalid hostname\" error message is displayed."
+  expected_result: "The system prevents saving and displays clear error messages for invalid or missing DDNS information."
+
+- id: 12
+  symbolic_id: "APPS_SPF_ADD_POSITIVE"
+  tags:
+    - "apps_and_gaming"
+    - "advanced_settings"
+    - "menu"
+  name: "Apps & Gaming - Single Port Forwarding - Add Rule"
+  objective: "Verify that a valid single port forwarding rule can be added and saved."
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to the \"Single Port Forwarding\" tab."
+    - action: "Click \"Add New\"."
+      verify: "A new row for data entry appears."
+    - action: "Enter valid data for all fields."
+    - action: "Click the checkmark icon to add the rule."
+      verify: "The rule appears in the list."
+    - action: "Click the \"Save\" button on the page."
+      verify: "A success toast (e.g., \"Saved\") is displayed."
+    - action: "Wait for the confirmation to disappear."
+  expected_result: "The new single port forwarding rule is added and saved successfully."
+
+- id: 13
+  symbolic_id: "APPS_SPF_EDIT_AND_DELETE"
+  tags:
+    - "apps_and_gaming"
+    - "advanced_settings"
+    - "menu"
+  name: "Apps & Gaming - Single Port Forwarding - Edit and Delete Rule"
+  objective: "Verify an existing rule can be edited and deleted."
+  preconditions:
+    - "A single port forwarding rule has been previously added."
+  steps:
+    - action: "Navigate to the \"Single Port Forwarding\" tab."
+    - action: "Locate the rule and click the \"Edit\" icon."
+    - action: "Change the application name."
+    - action: "Click the checkmark icon to save the changes."
+      verify: "The name is updated in the list in the UI."
+    - action: "Click the \"Delete\" icon for the same rule."
+      verify: "The rule is removed from the list in the UI."
+    - action: "Click the \"Save\" button on the page."
+      verify: "A success toast (e.g., \"Saved\") is displayed."
+    - action: "Wait for the confirmation to disappear."
+  expected_result: "The rule is successfully edited, then deleted, and the final state persists."
+
+- id: 14
+  symbolic_id: "APPS_SPF_PORT_BOUNDARY_CHECK"
+  tags:
+    - "apps_and_gaming"
+    - "advanced_settings"
+    - "menu"
+  name: "Apps & Gaming - Single Port Forwarding - Port Boundary Validation"
+  objective: "Verify port number validation (1-65535)."
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to the \"Single Port Forwarding\" tab and click \"Add New\"."
+    - action: "Enter `0` in the \"External Port\" field."
+      verify: "An \"Invalid port number\" error is displayed."
+    - action: "Enter `65536` in the \"External Port\" field."
+      verify: "An \"Invalid port number\" error is displayed."
+    - action: "Enter a valid port (`1`) and then a valid port (`65535`)."
+      verify: "The error message disappears for both valid inputs."
+  expected_result: "The system correctly validates port number boundaries."
+
+- id: 15
+  symbolic_id: "APPS_PRF_ADD_POSITIVE"
+  tags:
+    - "apps_and_gaming"
+    - "advanced_settings"
+    - "menu"
+  name: "Apps & Gaming - Port Range Forwarding - Add Rule"
+  objective: "Verify a valid port range forwarding rule can be added."
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to the \"Port Range Forwarding\" tab and click \"Add New\"."
+    - action: "Enter valid data for all fields (e.g., start port 80, end port 90)."
+    - action: "Click the checkmark icon to save the rule."
+      verify: "The rule appears in the list."
+    - action: "Click the \"Save\" button."
+      verify: "A success toast (e.g., \"Saved\") is displayed."
+    - action: "Wait for the confirmation to disappear."
+  expected_result: "The new port range forwarding rule is saved successfully."
+
+- id: 16
+  symbolic_id: "APPS_PRT_ADD_POSITIVE"
+  tags:
+    - "apps_and_gaming"
+    - "advanced_settings"
+    - "menu"
+  name: "Apps & Gaming - Port Range Triggering - Add Rule"
+  objective: "Verify a valid port range triggering rule can be added."
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to the \"Port Range Triggering\" tab and click \"Add New\"."
+    - action: "Enter valid data for all fields."
+    - action: "Click the checkmark icon to save the rule."
+      verify: "The rule appears in the list."
+    - action: "Click the \"Save\" button."
+      verify: "A success toast (e.g., \"Saved\") is displayed."
+    - action: "Wait for the confirmation to disappear."
+  expected_result: "The new port range triggering rule is saved successfully."
+
+- id: 17
+  symbolic_id: "APPS_PRF_INVALID_RANGE_CHECK"
+  tags:
+    - "apps_and_gaming"
+    - "advanced_settings"
+    - "menu"
+  name: "Apps & Gaming - Port Range Forwarding - Invalid Range Validation"
+  objective: "Verify validation for start port <= end port."
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to the \"Port Range Forwarding\" tab and click \"Add New\"."
+    - action: "Enter a start port that is greater than the end port (e.g., start 100, end 50)."
+      verify: "An \"Invalid port range\" error message is displayed."
+  expected_result: "The system prevents saving and displays a clear error for an invalid range."

@@ -1,0 +1,68 @@
+- id: 58
+  symbolic_id: "IV_DEVICE_INFO_DISPLAY"
+  tags:
+    - "instant_verify"
+    - "dashboard"
+  name: "Instant-Verify - Device Information Display"
+  objective: "Verify that the 'Device Info' tab correctly displays the device's name, model, SKU, serial number, and firmware version."
+  preconditions:
+    - "User is logged in and on the 'Instant-Verify' page."
+  steps:
+    - action: "Click the 'Device Name' textbox."
+    - action: "Verify that the 'Device Name' textbox is present and displays a value after clicking."
+    - action: "Verify that the 'Device Model' textbox is present and displays a value."
+    - action: "Verify that the 'SKU' textbox is present and displays a value."
+    - action: "Verify that the 'Serial number' textbox is present and displays a value."
+    - action: "Verify that the 'Firmware version' textbox is present and displays a value."
+  expected_result: "All device information fields are displayed correctly and contain appropriate values."
+
+- id: 59
+  symbolic_id: "IV_CONNECTIVITY_DISPLAY"
+  tags:
+    - "instant_verify"
+    - "dashboard"
+  name: "Instant-Verify - Connectivity Information Display"
+  objective: "Verify that the 'Connectivity' section accurately displays WAN IP, Gateway, DNS, and port status."
+  preconditions:
+    - "User is logged in and on the 'Instant-Verify' page."
+  steps:
+    - action: "Verify that the 'WAN' IP address is displayed."
+    - action: "Verify that the 'Gateway' IP address is displayed."
+    - action: "Verify that 'DNS 1' is displayed."
+    - action: "Verify the status of 'Port 1' and its corresponding image."
+    - action: "Verify the status of 'Port 2' and its corresponding image."
+    - action: "Verify the status of 'Port 3' and its corresponding image."
+    - action: "Verify the status of 'WAN' port and its corresponding image."
+  expected_result: "All connectivity information is displayed correctly, and port statuses are accurately represented by their images."
+
+- id: 60
+  symbolic_id: "IV_SPEED_TEST_DISPLAY"
+  tags:
+    - "instant_verify"
+    - "dashboard"
+  name: "Instant-Verify - Speed Test Information Display"
+  objective: "Verify that the 'Speed Test' section displays placeholder values for download and upload speeds when a test has not been run."
+  preconditions:
+    - "User is logged in and on the 'Instant-Verify' page."
+  steps:
+    - action: "Verify that 'Download' and 'Upload' labels are present."
+    - action: "Verify that the download speed value is displayed as '—'."
+    - action: "Verify that the upload speed value is displayed as '—'."
+  expected_result: "Placeholder values ('—') are displayed for download and upload speeds, indicating no speed test has been performed yet."
+
+- id: 61
+  symbolic_id: "IV_TAB_SWITCHING"
+  tags:
+    - "instant_verify"
+    - "dashboard"
+  name: "Instant-Verify - Tab Switching Functionality"
+  objective: "Verify that the user can switch between 'Instant-Info' and 'Instant-Topology' tabs."
+  preconditions:
+    - "User is logged in and on the 'Instant-Verify' page."
+  steps:
+    - action: "Verify that 'Instant-Info' tab is currently selected."
+    - action: "Click on the 'Instant-Topology' tab."
+    - action: "Verify that the content of the page changes to display topology information."
+    - action: "Click on the 'Instant-Info' tab."
+    - action: "Verify that the content of the page reverts to display device information."
+  expected_result: "The page content updates correctly when switching between 'Instant-Info' and 'Instant-Topology' tabs."

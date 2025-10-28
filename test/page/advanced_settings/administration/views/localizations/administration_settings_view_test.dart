@@ -1,77 +1,47 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:get_it/get_it.dart';
 import 'package:mockito/mockito.dart';
+import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
+import 'package:privacy_gui/providers/preservable.dart';
 
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:privacy_gui/page/advanced_settings/administration/_administration.dart';
-import 'package:privacy_gui/route/route_model.dart';
-
-import '../../../../../common/di.dart';
+import '../../../../../common/test_helper.dart';
 import '../../../../../common/test_responsive_widget.dart';
-import '../../../../../common/testable_router.dart';
-import '../../../../../mocks/_index.dart';
-import '../../../../../test_data/_index.dart';
+import '../../../../../test_data/administration_settings_test_state.dart';
 
 void main() {
-  late MockAdministrationSettingsNotifier mockAdministrationSettingsNotifier;
+  final testHelper = TestHelper();
 
-  mockDependencyRegister();
-  ServiceHelper mockServiceHelper = GetIt.I.get<ServiceHelper>();
   setUp(() {
-    mockAdministrationSettingsNotifier = MockAdministrationSettingsNotifier();
-    when(mockAdministrationSettingsNotifier.build()).thenReturn(
-        AdministrationSettingsState.fromMap(administrationSettingsTestState));
-    when(mockAdministrationSettingsNotifier.fetch(forceRemote: anyNamed('forceRemote')))
-        .thenAnswer((realInvocation) async {
-      await Future.delayed(const Duration(seconds: 1));
-      return AdministrationSettingsState.fromMap(
-          administrationSettingsTestState);
-    });
+    testHelper.setup();
   });
+
+  tearDown(() {
+  });
+
   testLocalizations('Administration settings view', (tester, locale) async {
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const AdministrationSettingsView(),
-        config: LinksysRouteConfig(
-          column: ColumnGrid(column: 9),
-        ),
-        locale: locale,
-        overrides: [
-          administrationSettingsProvider
-              .overrideWith(() => mockAdministrationSettingsNotifier)
-        ],
-      ),
+    when(testHelper.mockAdministrationSettingsNotifier.build()).thenReturn(
+        AdministrationSettingsState.fromMap(administrationSettingsTestState));
+
+    await testHelper.pumpView(
+      tester,
+      child: const AdministrationSettingsView(),
+      locale: locale,
     );
-    await tester.pumpAndSettle();
   });
 
   testLocalizations('Administration settings view - no LAN ports',
       (tester, locale) async {
-    when(mockAdministrationSettingsNotifier.build()).thenReturn(
-        AdministrationSettingsState.fromMap(administrationSettingsTestState)
-            .copyWith(
-                settings: AdministrationSettingsState.fromMap(
-                        administrationSettingsTestState)
-                    .settings
-                    .copyWith(
-                        current: AdministrationSettingsState.fromMap(
-                                administrationSettingsTestState)
-                            .current
-                            .copyWith(
-                                canDisAllowLocalMangementWirelessly: false))));
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const AdministrationSettingsView(),
-        config: LinksysRouteConfig(
-          column: ColumnGrid(column: 9),
-        ),
-        locale: locale,
-        overrides: [
-          administrationSettingsProvider
-              .overrideWith(() => mockAdministrationSettingsNotifier)
-        ],
-      ),
+    final state =
+        AdministrationSettingsState.fromMap(administrationSettingsTestState);
+    final settings =
+        state.current.copyWith(canDisAllowLocalMangementWirelessly: false);
+    when(testHelper.mockAdministrationSettingsNotifier.build()).thenReturn(
+        state.copyWith(
+            settings: Preservable(original: settings, current: settings)));
+
+    await testHelper.pumpView(
+      tester,
+      child: const AdministrationSettingsView(),
+      locale: locale,
     );
-    await tester.pumpAndSettle();
   });
 }

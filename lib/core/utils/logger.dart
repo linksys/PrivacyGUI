@@ -14,6 +14,11 @@ import 'package:privacy_gui/utils.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// A global logger instance for application-wide logging.
+///
+/// This logger is configured with a `ProductionFilter` to control log output
+/// based on the build mode, a `SimplePrinter` for formatting, and a
+/// [CustomOutput] for handling log persistence.
 final logger = Logger(
   filter: ProductionFilter(),
   printer: SimplePrinter(
@@ -23,6 +28,11 @@ final logger = Logger(
   output: CustomOutput(),
 );
 
+/// A custom log output handler that writes logs to the console, files, or web storage.
+///
+/// In debug mode, all logs are printed to the console.
+/// For mobile platforms, logs of level `debug` or higher are appended to a log file.
+/// For the web platform, logs are cached in memory.
 class CustomOutput extends LogOutput {
   final File _file = File.fromUri(Storage.logFileUri);
 
@@ -60,15 +70,37 @@ class CustomOutput extends LogOutput {
   }
 }
 
+/// A cache to store log messages in memory, primarily for the web platform.
+/// The key is the log tag, and the value is a list of tuples containing the
+/// timestamp and the log message.
 Map<String, List<(int, String)>> _webLogCache = {};
+
+/// A cache specifically for storing the latest state of different state management providers.
+/// The key is the provider's name, and the value is its string representation.
 Map<String, String> _stateLogCache = {};
 
+/// The maximum number of log entries to keep for the 'RouteChanged' tag.
 const _maxLogSizeOfRouteTag = 20;
+
+/// The maximum number of log entries to keep for general tags.
 const _maxLogSizeOfGeneralTag = 2000;
+
+/// A regular expression to extract a tag and message from a formatted log string.
+/// Expects the format `[TAG]:message`.
 const _logTagRegex = r'\[(\w*)\]:(.*)';
+
+/// The default tag for general application logs.
 const appLogTag = 'app';
+
+/// The tag used for logging route changes.
 const routeLogTag = 'RouteChanged';
 
+/// Records a log message, adding it to the appropriate cache.
+///
+/// This function adds the log to the general `appLogTag` list and also to a
+/// custom tag list if a tag is present in the log message.
+///
+/// [log] The log message string to record.
 void _recordLog(String log) async {
   // Add every log message to the 'app' log list
   _addLogWithTag(message: log);
@@ -79,6 +111,14 @@ void _recordLog(String log) async {
   }
 }
 
+/// Adds a log message to the cache under a specific tag, managing size limits.
+///
+/// If the `tag` is 'State', the message is parsed to update the [stateLogCache].
+/// Otherwise, the message is added to the corresponding list in [_webLogCache],
+/// removing the oldest entry if the list exceeds its maximum size.
+///
+/// [message] The log message to add.
+/// [tag] The tag under which to store the message. Defaults to [appLogTag].
 void _addLogWithTag({required String message, String tag = appLogTag}) {
   final logList = _webLogCache[tag] ?? [];
   final maxSize =
@@ -98,6 +138,13 @@ void _addLogWithTag({required String message, String tag = appLogTag}) {
   }
 }
 
+/// Splits a formatted log string into its message and tag components.
+///
+/// Uses [_logTagRegex] to parse the string.
+///
+/// [log] The formatted log string (e.g., `[MyTag]:This is the message`).
+///
+/// Returns a tuple `(message, tag)` if successful, otherwise `null`.
 (String, String)? _splitTagAndMessage(String log) {
   final match = RegExp(_logTagRegex).firstMatch(log);
   if (match == null) {
@@ -111,6 +158,14 @@ void _addLogWithTag({required String message, String tag = appLogTag}) {
   return (message, tag);
 }
 
+/// Retrieves all log messages for a specific tag from the cache.
+///
+/// The messages are sorted by timestamp before being concatenated into a single string.
+///
+/// [tag] The log tag to retrieve. Defaults to [appLogTag].
+///
+/// Returns a single string containing all the log messages for the given tag,
+/// separated by newlines.
 String _getWebLogByTag({String tag = appLogTag}) {
   final logList = _webLogCache[tag] ?? [];
   return logList
@@ -119,6 +174,15 @@ String _getWebLogByTag({String tag = appLogTag}) {
       .join('\n');
 }
 
+/// Compiles a full diagnostic log report as a single string.
+///
+/// This function is intended for debugging and support purposes. It gathers
+/// information about the application package, device, screen, view history,
+/// state management, and all cached logs into a structured, readable format.
+///
+/// [context] The `BuildContext` used to retrieve screen information.
+///
+/// Returns a `Future<String>` that completes with the full log report.
 Future<String> outputFullWebLog(BuildContext context) async {
   final keys = List.from(_webLogCache.keys)
     ..remove(appLogTag)
@@ -138,6 +202,13 @@ ${_getWebLogByTag()}\n
 ''';
 }
 
+/// Retrieves detailed information about the application package and the host device.
+///
+/// This function gathers data like app name, version, build number, and OS details
+/// using the `package_info_plus` and `device_info_plus` packages.
+///
+/// Returns a `Future<String>` that completes with a formatted string containing
+/// the package and device information.
 Future<String> getPackageInfo() async {
   final packageInfo = await PackageInfo.fromPlatform();
   List<String> appInfo = [
@@ -159,6 +230,12 @@ Future<String> getPackageInfo() async {
   return appInfo.join('\n');
 }
 
+/// A private helper to get device-specific information based on the platform.
+///
+/// [plugin] An instance of [DeviceInfoPlugin].
+///
+/// Returns a `Future<String>` with formatted device info, or an empty string
+/// for unsupported platforms.
 Future<String> _getDeviceInfo(DeviceInfoPlugin plugin) async {
   if (kIsWeb) {
     return (await plugin.webBrowserInfo).data.toString();
@@ -172,6 +249,11 @@ Future<String> _getDeviceInfo(DeviceInfoPlugin plugin) async {
   }
 }
 
+/// Formats information from an [IosDeviceInfo] object into a list of strings.
+///
+/// [info] The [IosDeviceInfo] object containing the device details.
+///
+/// Returns a `List<String>` where each string is a key-value pair of device info.
 List<String> _getIosDeviceInfo(IosDeviceInfo info) {
   return [
     'Phone name: ${info.name}',
@@ -189,6 +271,11 @@ List<String> _getIosDeviceInfo(IosDeviceInfo info) {
   ];
 }
 
+/// Formats information from an [AndroidDeviceInfo] object into a list of strings.
+///
+/// [info] The [AndroidDeviceInfo] object containing the device details.
+///
+/// Returns a `List<String>` where each string is a key-value pair of device info.
 List<String> _getAndroidDeviceInfo(AndroidDeviceInfo info) {
   return [
     'version.securityPatch: ${info.version.securityPatch}',
@@ -206,6 +293,12 @@ List<String> _getAndroidDeviceInfo(AndroidDeviceInfo info) {
   ];
 }
 
+/// Gathers and formats information about the device's screen and display settings.
+///
+/// [context] The `BuildContext` from which to access `MediaQuery` data.
+///
+/// Returns a formatted string containing screen size, pixel ratio, text scale factor,
+/// and safe area padding.
 String getScreenInfo(BuildContext context) {
   final List data = [
     '================================= Screen Info ==================================',
@@ -219,6 +312,14 @@ String getScreenInfo(BuildContext context) {
   return data.join('\n');
 }
 
+/// Retrieves and formats cached JNAP action data for the current device.
+///
+/// This function is intended for debugging. It reads the current device's serial
+/// number, accesses its specific cache, and extracts the results for a predefined
+/// list of target JNAP actions.
+///
+/// Returns a `Future<String>` that completes with the JSON-encoded cache data,
+/// or a "Not available" message if the serial number or cache is not found.
 Future<String> _getLinksysCacheData() async {
   final targetActions = [
     JNAPAction.getWANStatus,

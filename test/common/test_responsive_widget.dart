@@ -42,7 +42,7 @@ void testResponsiveWidgets(
   Timeout? timeout,
   bool semanticsEnabled = true,
   ValueVariant<ScreenSize>? variants,
-  dynamic tags,
+  List<String> tags = const [],
 }) {
   final variant = variants ?? responsiveAllVariants;
   testWidgets(
@@ -66,7 +66,7 @@ void testResponsiveWidgets(
     timeout: timeout,
     semanticsEnabled: semanticsEnabled,
     variant: variant,
-    tags: tags,
+    tags: ['ui', ...tags],
   );
 }
 

@@ -8,7 +8,7 @@ import 'package:privacy_gui/providers/feature_state.dart';
 import 'package:privacy_gui/providers/preservable.dart';
 
 class InternetSettingsState
-    extends FeatureState<InternetSettings, InternetStatus> {
+    extends FeatureState<InternetSettings, InternetSettingsStatus> {
   const InternetSettingsState({
     required super.settings,
     required super.status,
@@ -18,20 +18,21 @@ class InternetSettingsState
     return InternetSettingsState(
       settings: Preservable(
           original: InternetSettings.init(), current: InternetSettings.init()),
-      status: InternetStatus.init(),
+      status: InternetSettingsStatus.init(),
     );
   }
 
   factory InternetSettingsState.fromJson(String source) =>
       InternetSettingsState.fromMap(json.decode(source));
-      
+
   factory InternetSettingsState.fromMap(Map<String, dynamic> map) {
     return InternetSettingsState(
       settings: Preservable.fromMap(
           map['settings'],
           (dynamic json) =>
               InternetSettings.fromMap(json as Map<String, dynamic>)),
-      status: InternetStatus.fromMap(map['status'] as Map<String, dynamic>),
+      status:
+          InternetSettingsStatus.fromMap(map['status'] as Map<String, dynamic>),
     );
   }
 
@@ -46,7 +47,7 @@ class InternetSettingsState
   @override
   InternetSettingsState copyWith({
     Preservable<InternetSettings>? settings,
-    InternetStatus? status,
+    InternetSettingsStatus? status,
   }) {
     return InternetSettingsState(
       settings: settings ?? this.settings,
@@ -138,7 +139,7 @@ class InternetSettings extends Equatable {
   }
 }
 
-class InternetStatus extends Equatable {
+class InternetSettingsStatus extends Equatable {
   final List<String> supportedIPv4ConnectionType;
   final List<SupportedWANCombination> supportedWANCombinations;
   final List<String> supportedIPv6ConnectionType;
@@ -146,7 +147,7 @@ class InternetStatus extends Equatable {
   final String? redirection;
   final String? hostname;
 
-  const InternetStatus({
+  const InternetSettingsStatus({
     required this.supportedIPv4ConnectionType,
     required this.supportedWANCombinations,
     required this.supportedIPv6ConnectionType,
@@ -155,8 +156,8 @@ class InternetStatus extends Equatable {
     this.hostname,
   });
 
-  factory InternetStatus.init() {
-    return const InternetStatus(
+  factory InternetSettingsStatus.init() {
+    return const InternetSettingsStatus(
       supportedIPv4ConnectionType: [],
       supportedWANCombinations: [],
       supportedIPv6ConnectionType: [],
@@ -177,8 +178,8 @@ class InternetStatus extends Equatable {
     }..removeWhere((key, value) => value == null);
   }
 
-  factory InternetStatus.fromMap(Map<String, dynamic> map) {
-    return InternetStatus(
+  factory InternetSettingsStatus.fromMap(Map<String, dynamic> map) {
+    return InternetSettingsStatus(
       supportedIPv4ConnectionType:
           List<String>.from(map['supportedIPv4ConnectionType']),
       supportedWANCombinations: List<SupportedWANCombination>.from(
@@ -205,7 +206,7 @@ class InternetStatus extends Equatable {
         hostname,
       ];
 
-  InternetStatus copyWith({
+  InternetSettingsStatus copyWith({
     List<String>? supportedIPv4ConnectionType,
     List<SupportedWANCombination>? supportedWANCombinations,
     List<String>? supportedIPv6ConnectionType,
@@ -213,7 +214,7 @@ class InternetStatus extends Equatable {
     ValueGetter<String?>? redirection,
     ValueGetter<String?>? hostname,
   }) {
-    return InternetStatus(
+    return InternetSettingsStatus(
       supportedIPv4ConnectionType:
           supportedIPv4ConnectionType ?? this.supportedIPv4ConnectionType,
       supportedWANCombinations:

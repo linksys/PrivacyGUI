@@ -41,13 +41,14 @@ final internetSettingsProvider =
 
 // The provider now needs to be generic to match the contract.
 final preservableInternetSettingsProvider =
-    Provider<PreservableContract<InternetSettings, InternetStatus>>((ref) {
+    Provider<PreservableContract<InternetSettings, InternetSettingsStatus>>(
+        (ref) {
   return ref.watch(internetSettingsProvider.notifier);
 });
 
 class InternetSettingsNotifier extends Notifier<InternetSettingsState>
     with
-        PreservableNotifierMixin<InternetSettings, InternetStatus,
+        PreservableNotifierMixin<InternetSettings, InternetSettingsStatus,
             InternetSettingsState> {
   @override
   InternetSettingsState build() => InternetSettingsState.init();
@@ -81,7 +82,7 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState>
   }
 
   @override
-  Future<(InternetSettings?, InternetStatus?)> performFetch(
+  Future<(InternetSettings?, InternetSettingsStatus?)> performFetch(
       {bool forceRemote = false, bool updateStatusOnly = false}) async {
     final repo = ref.read(routerRepositoryProvider);
     final results = await repo.fetchInternetSettings(forceRemote: forceRemote);
@@ -146,7 +147,7 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState>
       });
     }
 
-    final newStatus = InternetStatus(
+    final newStatus = InternetSettingsStatus(
       supportedIPv4ConnectionType: wanStatus?.supportedWANTypes ?? [],
       supportedWANCombinations: wanStatus?.supportedWANCombinations ?? [],
       supportedIPv6ConnectionType: wanStatus?.supportedIPv6WANTypes ?? [],
@@ -360,7 +361,7 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState>
     });
   }
 
-  void updateStatus(InternetStatus newStatus) {
+  void updateStatus(InternetSettingsStatus newStatus) {
     state = state.copyWith(status: newStatus);
   }
 

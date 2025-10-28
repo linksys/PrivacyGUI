@@ -1,0 +1,36 @@
+- id: 22
+  symbolic_id: "DMZ_ENABLE_AND_SAVE_POSITIVE"
+  tags:
+    - "dmz"
+    - "advanced_settings"
+    - "menu"
+  name: "DMZ - Enable and Configure"
+  objective: "Verify the DMZ feature can be enabled and configured."
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to \"Menu\" -> \"Advanced Settings\" -> \"DMZ\"."
+    - action: "Enable the \"DMZ\" switch."
+      verify: "DMZ configuration options become visible/enabled."
+    - action: "Select \"IP address\" and enter a valid destination IP."
+    - action: "Click the \"Save\" button."
+      verify: "A success toast (e.g., \"Saved\") is displayed."
+    - action: "Wait for the confirmation to disappear."
+  expected_result: "The DMZ feature is enabled and saved successfully."
+
+- id: 23
+  symbolic_id: "DMZ_INVALID_INPUT_CHECK"
+  tags:
+    - "dmz"
+    - "advanced_settings"
+    - "menu"
+  name: "DMZ - Invalid Input Validation"
+  objective: "Verify validation for the DMZ destination IP."
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to \"Menu\" -> \"Advanced Settings\" -> \"DMZ\"."
+    - action: "Enable the \"DMZ\" switch and select \"IP address\"."
+    - action: "Enter an invalid IP address (e.g., \"300.300.300.300\")."
+      verify: "An \"Invalid IP address\" error is displayed."
+  expected_result: "The system prevents saving and provides a clear error for an invalid IP."

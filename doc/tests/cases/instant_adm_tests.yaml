@@ -1,0 +1,53 @@
+- id: 30
+  symbolic_id: "INST_ADM_CHANGE_PASSWORD_POSITIVE"
+  tags:
+    - "admin"
+    - "menu"
+  name: "Instant Admin - Change Password"
+  objective: "Verify the admin password can be changed successfully."
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to \"Menu\" -> \"Instant Admin\"."
+    - action: "Open the \"Change Admin Password\" dialog."
+    - action: "Enter a new, valid password and confirm it."
+    - action: "Click \"Save\"."
+      verify: "A success toast (e.g., \"Saved\") is displayed and the dialog closes."
+    - action: "Wait for the confirmation to disappear."
+  expected_result: "The admin password is changed successfully."
+
+- id: 31
+  symbolic_id: "INST_ADM_CHANGE_PASSWORD_INVALID"
+  tags:
+    - "admin"
+    - "menu"
+  name: "Instant Admin - Change Password with Mismatched Passwords"
+  objective: "Verify error for mismatched passwords."
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to \"Menu\" -> \"Instant Admin\" and open the password dialog."
+    - action: "Enter a new password."
+    - action: "Enter a different password in the \"Confirm Password\" field."
+      verify: "An error message \"Passwords do not match\" is displayed."
+  expected_result: "The system prevents saving and displays a mismatch error."
+
+- id: 32
+  symbolic_id: "INST_ADM_TIMEZONE_AND_DST_SAVE"
+  tags:
+    - "admin"
+    - "menu"
+  name: "Instant Admin - Timezone and Daylight Saving"
+  objective: "Verify timezone and DST settings can be changed and saved."
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to \"Menu\" -> \"Instant Admin\" and go to \"Time Zone\" settings."
+    - action: "Select a new timezone that supports DST."
+    - action: "Toggle the \"Auto Daylight Saving\" switch."
+      verify: "The switch state changes."
+    - action: "Click \"Save\"."
+      verify: "A success toast (e.g., \"Saved\") is displayed."
+    - action: "Wait for the confirmation to disappear."
+    - action: "Re-enter the page to verify persistence."
+  expected_result: "The timezone and DST settings are saved and persist correctly."

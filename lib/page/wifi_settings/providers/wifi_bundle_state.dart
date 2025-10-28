@@ -34,9 +34,12 @@ class WifiBundleSettings extends Equatable {
 
   factory WifiBundleSettings.fromMap(Map<String, dynamic> map) {
     return WifiBundleSettings(
-      wifiList: WiFiListSettings.fromMap(map['wifiList'] as Map<String, dynamic>),
-      advanced: WifiAdvancedSettingsState.fromMap(map['advanced'] as Map<String, dynamic>),
-      privacy: InstantPrivacySettings.fromMap(map['privacy'] as Map<String, dynamic>),
+      wifiList:
+          WiFiListSettings.fromMap(map['wifiList'] as Map<String, dynamic>),
+      advanced: WifiAdvancedSettingsState.fromMap(
+          map['advanced'] as Map<String, dynamic>),
+      privacy: InstantPrivacySettings.fromMap(
+          map['privacy'] as Map<String, dynamic>),
     );
   }
 }
@@ -68,31 +71,37 @@ class WifiBundleStatus extends Equatable {
   factory WifiBundleStatus.fromMap(Map<String, dynamic> map) {
     return WifiBundleStatus(
       wifiList: WiFiListStatus.fromMap(map['wifiList'] as Map<String, dynamic>),
-      privacy: InstantPrivacyStatus.fromMap(map['privacy'] as Map<String, dynamic>),
+      privacy:
+          InstantPrivacyStatus.fromMap(map['privacy'] as Map<String, dynamic>),
     );
   }
 }
 
 // --- Final Composed FeatureState ---
-class WifiBundleState extends FeatureState<WifiBundleSettings, WifiBundleStatus> {
+class WifiBundleState
+    extends FeatureState<WifiBundleSettings, WifiBundleStatus> {
   const WifiBundleState({
     required super.settings,
     required super.status,
   });
 
-    @override
+  @override
   bool get isDirty {
     // Create temporary copies of wifiList settings with isSimpleMode set to true
     // to exclude it from the dirty check.
-    final originalWifiListForComparison = settings.original.wifiList.copyWith(isSimpleMode: true);
-    final currentWifiListForComparison = settings.current.wifiList.copyWith(isSimpleMode: true);
+    final originalWifiListForComparison =
+        settings.original.wifiList.copyWith(isSimpleMode: true);
+    final currentWifiListForComparison =
+        settings.current.wifiList.copyWith(isSimpleMode: true);
 
     // Compare other settings directly
-    final advancedDirty = settings.original.advanced != settings.current.advanced;
+    final advancedDirty =
+        settings.original.advanced != settings.current.advanced;
     final privacyDirty = settings.original.privacy != settings.current.privacy;
 
     // Compare wifiList settings with isSimpleMode excluded
-    final wifiListDirty = originalWifiListForComparison != currentWifiListForComparison;
+    final wifiListDirty =
+        originalWifiListForComparison != currentWifiListForComparison;
 
     return advancedDirty || privacyDirty || wifiListDirty;
   }
@@ -105,6 +114,16 @@ class WifiBundleState extends FeatureState<WifiBundleSettings, WifiBundleStatus>
     return WifiBundleState(
       settings: settings ?? this.settings,
       status: status ?? this.status,
+    );
+  }
+
+  factory WifiBundleState.fromMap(Map<String, dynamic> map) {
+    return WifiBundleState(
+      settings: Preservable.fromMap(
+          map['settings'] as Map<String, dynamic>,
+          (dynamic json) =>
+              WifiBundleSettings.fromMap(json as Map<String, dynamic>)),
+      status: WifiBundleStatus.fromMap(map['status'] as Map<String, dynamic>),
     );
   }
 

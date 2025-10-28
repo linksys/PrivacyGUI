@@ -117,7 +117,8 @@ class MockInternetSettingsNotifier
       ) as _i3.InternetSettingsState);
 
   @override
-  _i5.Future<(_i3.InternetSettings?, _i3.InternetStatus?)> performFetch({
+  _i5.Future<
+      (_i3.InternetSettings?, _i3.InternetSettingsStatus?)> performFetch({
     bool? forceRemote = false,
     bool? updateStatusOnly = false,
   }) =>
@@ -130,13 +131,13 @@ class MockInternetSettingsNotifier
             #updateStatusOnly: updateStatusOnly,
           },
         ),
-        returnValue:
-            _i5.Future<(_i3.InternetSettings?, _i3.InternetStatus?)>.value(
-                (null, null)),
-        returnValueForMissingStub:
-            _i5.Future<(_i3.InternetSettings?, _i3.InternetStatus?)>.value(
-                (null, null)),
-      ) as _i5.Future<(_i3.InternetSettings?, _i3.InternetStatus?)>);
+        returnValue: _i5
+            .Future<(_i3.InternetSettings?, _i3.InternetSettingsStatus?)>.value(
+            (null, null)),
+        returnValueForMissingStub: _i5
+            .Future<(_i3.InternetSettings?, _i3.InternetSettingsStatus?)>.value(
+            (null, null)),
+      ) as _i5.Future<(_i3.InternetSettings?, _i3.InternetSettingsStatus?)>);
 
   @override
   _i5.Future<void> performSave() => (super.noSuchMethod(
@@ -253,7 +254,8 @@ class MockInternetSettingsNotifier
       ) as _i5.Future<dynamic>);
 
   @override
-  void updateStatus(_i3.InternetStatus? newStatus) => super.noSuchMethod(
+  void updateStatus(_i3.InternetSettingsStatus? newStatus) =>
+      super.noSuchMethod(
         Invocation.method(
           #updateStatus,
           [newStatus],

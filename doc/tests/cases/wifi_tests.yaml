@@ -1,0 +1,176 @@
+- id: 50
+  symbolic_id: "WIFI_SETTINGS_CHANGE_POSITIVE_QUICK_SETUP"
+  tags:
+    - "wifi"
+    - "menu"
+    - "quick_setup"
+  name: "Incredible WiFi - Change and Save WiFi Settings (Quick Setup Mode)"
+  objective: "Verify Wi-Fi settings can be changed and saved in Quick Setup mode, persist across navigation, and are correctly reflected when Quick Setup is disabled."
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to \"Menu\" -> \"Incredible WiFi\"."
+    - action: "If Quick Setup is disabled, enable it."
+    - action: "Tap on Wi-Fi Name to open the modal, change the name to 'QuickSetupWiFi', and confirm."
+    - action: "Tap on Wi-Fi Password to open the modal, change the password to 'QuickSetupPass!', and confirm."
+    - action: "Tap on Security Mode to open the modal, select 'WPA2/WPA3 Mixed Personal', and confirm."
+    - action: "Click the \"Save\" button."
+      verify: "A confirmation dialog appears showing the new settings, MLO warning (if applicable), and disabled band warning (if applicable)."
+    - action: "Click 'OK' on the confirmation dialog."
+    - action: "Wait for the confirmation to disappear."
+    - action: "Navigate away from Incredible WiFi and then return."
+    - action: "Verify the Wi-Fi Name, Password, and Security Mode match 'QuickSetupWiFi', 'QuickSetupPass!', and 'WPA2/WPA3 Mixed Personal' respectively in Quick Setup mode."
+    - action: "Disable Quick Setup to access individual band settings."
+    - action: "Verify the Wi-Fi Name, Password, and Security Mode for all enabled bands match 'QuickSetupWiFi', 'QuickSetupPass!', and 'WPA2/WPA3 Mixed Personal' respectively."
+  expected_result: "Wi-Fi settings are successfully changed, saved, persist across navigation, and are correctly reflected when Quick Setup is disabled after being configured via Quick Setup."
+
+- id: 51
+  symbolic_id: "WIFI_SETTINGS_PERSISTENCE"
+  tags:
+    - "wifi"
+    - "menu"
+  name: "Incredible WiFi - WiFi Settings Persistence"
+  objective: "Verify saved Wi-Fi settings for a band persist."
+  note: "This is a meta test case, to be executed for each supported band (2.4GHz, 5GHz, 6GHz)."
+  preconditions:
+    - "Wi-Fi settings for the band have been previously saved."
+  steps:
+    - action: "Navigate to the band's tab in \"Incredible WiFi\"."
+    - action: "Verify all settings match the previously saved values."
+    - action: "Navigate away and return."
+      verify: "Settings remain unchanged."
+  expected_result: "All saved settings for the band persist correctly."
+
+- id: 52
+  symbolic_id: "WIFI_GUEST_WIFI_POSITIVE"
+  tags:
+    - "wifi"
+    - "menu"
+  name: "Incredible WiFi - Guest WiFi Configuration"
+  objective: "Verify Guest WiFi can be enabled and configured."
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to the \"Guest\" tab in \"Incredible WiFi\"."
+    - action: "Enable the \"Guest WiFi\" switch."
+      verify: "Configuration options appear."
+    - action: "Set a new name and password."
+    - action: "Click \"Save\"."
+    - action: "Wait for the confirmation to disappear."
+  expected_result: "Guest WiFi is enabled and configured successfully."
+
+- id: 53
+  symbolic_id: "WIFI_GUEST_WIFI_DEPENDENCY_CHECK"
+  tags:
+    - "wifi"
+    - "menu"
+  name: "Incredible WiFi - Guest WiFi Dependency on Main Bands"
+  objective: "Verify warning is shown if main bands are disabled."
+  preconditions:
+    - "Guest WiFi is enabled."
+  steps:
+    - action: "Navigate to \"Incredible WiFi\"."
+    - action: "Disable the switches for all main bands (2.4GHz, 5GHz)."
+    - action: "Click \"Save\"."
+      verify: "A warning dialog appears."
+  expected_result: "The system warns the user about the dependency before saving."
+
+- id: 54
+  symbolic_id: "WIFI_QUICK_SETUP_TOGGLE"
+  tags:
+    - "wifi"
+    - "menu"
+    - "quick_setup"
+  name: "Incredible WiFi - Quick Setup Toggle"
+  objective: "Verify that toggling the \"Quick Setup\" switch correctly enables/disables individual band settings."
+  preconditions:
+    - "User is successfully logged in to the web UI."
+    - "Navigated to \"Menu\" -> \"Incredible WiFi\"."
+  steps:
+    - action: "Record the initial state of the \"Quick Setup\" switch."
+    - action: "If \"Quick Setup\" is currently enabled, click the switch to disable it."
+      verify: "Individual band settings (e.g., \"2.4 GHz band\", \"5 GHz band\", \"Guest\") become visible and their respective switches are present."
+    - action: "If \"Quick Setup\" is currently disabled, click the switch to enable it."
+      verify: "Individual band settings (e.g., \"2.4 GHz band\", \"5 GHz band\", \"Guest\") become hidden, and the \"Quick Setup\" switch is checked."
+  expected_result: "Toggling the \"Quick Setup\" switch correctly shows or hides the individual band settings, and the switch state persists."
+
+- id: 55
+  symbolic_id: "WIFI_QUICK_SETUP_INTERACTION"
+  tags:
+    - "wifi"
+    - "menu"
+    - "quick_setup"
+  name: "Incredible WiFi - Quick Setup Interaction with WiFi Settings"
+  objective: "Verify the Quick Setup toggle's state is correctly determined on page load and only changes with explicit toggle actions, not individual WiFi setting modifications."
+  preconditions:
+    - "User is successfully logged in to the web UI."
+    - "Navigated to \"Menu\" -> \"Incredible WiFi\"."
+  steps:
+    - action: "Record the initial state of the \"Quick Setup\" switch on page load."
+      verify: "The initial state of the \"Quick Setup\" switch accurately reflects whether all main bands (2.4GHz, 5GHz, 6GHz) have identical SSID, password, security mode, and are all enabled."
+    - action: "Modify the Wi-Fi Name for one band (e.g., 2.4GHz) without saving."
+      verify: "The state of the \"Quick Setup\" switch remains unchanged."
+    - action: "Modify the Wi-Fi Password for one band (e.g., 5GHz) without saving."
+      verify: "The state of the \"Quick Setup\" switch remains unchanged."
+    - action: "Modify the Security Mode for one band (e.g., 2.4GHz) without saving."
+      verify: "The state of the \"Quick Setup\" switch remains unchanged."
+    - action: "Toggle the \"Quick Setup\" switch to its opposite state."
+      verify: "The \"Quick Setup\" switch changes to the opposite state, and individual band settings visibility updates accordingly."
+    - action: "Modify the Wi-Fi Name for one band (e.g., 2.4GHz) without saving."
+      verify: "The state of the \"Quick Setup\" switch remains unchanged."
+    - action: "Toggle the \"Quick Setup\" switch back to its original state."
+      verify: "The \"Quick Setup\" switch returns to its original state, and individual band settings visibility updates accordingly."
+    - action: "Modify the Wi-Fi Name for one band (e.g., 2.4GHz) without saving."
+      verify: "The state of the \"Quick Setup\" switch remains unchanged."
+  expected_result: "The Quick Setup toggle's state is correctly initialized and only responds to direct toggle actions, not intermediate changes to individual WiFi settings."
+
+- id: 56
+  symbolic_id: "WIFI_SETTINGS_CHANGE_POSITIVE_ADVANCED_MODE"
+  tags:
+    - "wifi"
+    - "menu"
+    - "individual_band_configuration"
+  name: "Incredible WiFi - Change and Save WiFi Settings (Individual Band Configuration)"
+  objective: "Verify individual band Wi-Fi settings can be changed and saved when Quick Setup is disabled, that this configuration state persists, and that enabling Quick Setup correctly reflects the first enabled band's settings."
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to \"Menu\" -> \"Incredible WiFi\"."
+    - action: "Ensure Quick Setup is disabled to access individual band settings."
+    - action: "Tap on Wi-Fi Name for 2.4GHz band to open the modal, change the name to 'AdvancedWiFi24', and confirm."
+    - action: "Tap on Wi-Fi Password for 2.4GHz band to open the modal, change the password to 'AdvancedPass24!', and confirm."
+    - action: "Tap on Security Mode for 2.4GHz band to open the modal, select 'WPA3 Personal', and confirm."
+    - action: "Click the \"Save\" button."
+      verify: "A confirmation dialog appears showing the new settings, MLO warning (if applicable), and disabled band warning (if applicable)."
+    - action: "Click 'OK' on the confirmation dialog."
+    - action: "Wait for the confirmation to disappear."
+    - action: "Navigate away from Incredible WiFi and then return."
+    - action: "Verify that the 'Quick Setup' switch is disabled, indicating individual band settings are still accessible."
+    - action: "Verify the Wi-Fi Name, Password, and Security Mode for 2.4GHz band match 'AdvancedWiFi24', 'AdvancedPass24!', and 'WPA3 Personal' respectively."
+    - action: "Enable the 'Quick Setup' switch."
+    - action: "Verify the Wi-Fi Name, Password, and Security Mode displayed in Quick Setup match those of the first enabled band (e.g., 2.4GHz if it's the first enabled band)."
+  expected_result: "Individual band Wi-Fi settings are successfully changed, saved, persist with Quick Setup disabled, and enabling Quick Setup correctly reflects the first enabled band's settings."
+
+- id: 57
+  symbolic_id: "WIFI_SETTINGS_SAVE_CANCEL_CONFIRMATION"
+  tags:
+    - "wifi"
+    - "menu"
+  name: "Incredible WiFi - Save Confirmation Dialog Cancel"
+  objective: "Verify that canceling the save confirmation dialog restores original Wi-Fi settings."
+  preconditions:
+    - "User is successfully logged in to the web UI."
+    - "Navigated to \"Menu\" -> \"Incredible WiFi\"."
+  steps:
+    - action: "Record the initial Wi-Fi Name, Password, and Security Mode for a band (e.g., 2.4GHz)."
+    - action: "Modify the Wi-Fi Name for the selected band to 'TempWiFiName'."
+    - action: "Modify the Wi-Fi Password for the selected band to 'TempPass!'."
+    - action: "Modify the Security Mode for the selected band to 'WPA3 Personal'."
+    - action: "Click the \"Save\" button."
+      verify: "A confirmation dialog appears showing the new settings."
+    - action: "Click 'Cancel' on the confirmation dialog."
+    - action: "Wait for the confirmation dialog to disappear."
+      verify: "The confirmation dialog disappears."
+    - action: "Navigate away from Incredible WiFi and then return."
+    - action: "Verify the Wi-Fi Name, Password, and Security Mode for the selected band are restored to their initial recorded values."
+  expected_result: "Canceling the save confirmation dialog successfully restores the original Wi-Fi settings for the band."
