@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:meta/meta.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
@@ -180,13 +181,22 @@ class WifiBundleNotifier extends Notifier<WifiBundleState>
       password: guestRadioInfo?.radios.firstOrNull?.guestWPAPassphrase ?? '',
       numOfDevices: deviceManagerState.guestWifiDevices.length,
     );
-    final simpleModeWifi = wifiItems.firstWhereOrNull((e) => e.isEnabled) ??
-        (wifiItems.isNotEmpty ? wifiItems.first : WiFiItem.fromMap(const {}));
+
+    final availableSecurityTypeList =
+        getSimpleModeAvailableSecurityTypeList(wifiItems);
+    final firstEnabledWifi =
+        wifiItems.firstWhereOrNull((e) => e.isEnabled) ?? wifiItems.first;
+
     final isSimpleMode = wifiItems.every((wifi) =>
-        wifi.isEnabled == simpleModeWifi.isEnabled &&
-        wifi.ssid == simpleModeWifi.ssid &&
-        wifi.password == simpleModeWifi.password &&
-        wifi.securityType == simpleModeWifi.securityType);
+        wifi.isEnabled == firstEnabledWifi.isEnabled &&
+        wifi.ssid == firstEnabledWifi.ssid &&
+        wifi.password == firstEnabledWifi.password &&
+        wifi.securityType == firstEnabledWifi.securityType);
+    final simpleModeWifi = firstEnabledWifi.copyWith(
+      securityType: getSimpleModeAvailableSecurityType(
+          firstEnabledWifi.securityType, availableSecurityTypeList),
+      availableSecurityTypes: availableSecurityTypeList,
+    );
 
     final wifiListSettings = WiFiListSettings(
         mainWiFi: wifiItems,
@@ -317,7 +327,9 @@ class WifiBundleNotifier extends Notifier<WifiBundleState>
       RouterRepository repo, WiFiListSettings settings) async {
     final isSupportGuestWiFi = serviceHelper.isSupportGuestNetwork();
 
-    final radioSettings = settings.mainWiFi
+    final radioSettings = (settings.isSimpleMode
+            ? settings.getMainWifiItemsWithSimpleSettings()
+            : settings.mainWiFi)
         .map((wifiItem) => NewRadioSettings(
               radioID: wifiItem.radioID.value,
               settings: RouterRadioSettings(
@@ -710,5 +722,43 @@ class WifiBundleNotifier extends Notifier<WifiBundleState>
         hasNonWPA3SecurityType ||
         hasDisabled5G6GBand ||
         has5G6GModeNotMixed;
+  }
+
+  @visibleForTesting
+  WifiSecurityType getSimpleModeAvailableSecurityType(
+      WifiSecurityType currentSecurityType,
+      List<WifiSecurityType> availableSecurityTypeList) {
+    // 1. Return the current security type if availableSecurityTypeList is empty
+    if (availableSecurityTypeList.isEmpty) {
+      return currentSecurityType;
+    }
+    // 2. Return the current security type if it is available
+    if (availableSecurityTypeList.contains(currentSecurityType)) {
+      return currentSecurityType;
+    }
+    // 3. Return the first available security type in priority order
+    const priorityOrder = [
+      WifiSecurityType.wpa3Personal,
+      WifiSecurityType.wpa2Or3MixedPersonal,
+      WifiSecurityType.wpa2Personal,
+    ];
+    for (final type in priorityOrder) {
+      if (availableSecurityTypeList.contains(type)) {
+        return type;
+      }
+    }
+    // 4. Return the first available security type
+    return availableSecurityTypeList.first;
+  }
+
+  @visibleForTesting
+  List<WifiSecurityType> getSimpleModeAvailableSecurityTypeList(
+      List<WiFiItem> wifiList) {
+    return wifiList.isEmpty
+        ? <WifiSecurityType>[]
+        : wifiList
+            .map((e) => e.availableSecurityTypes.toSet())
+            .reduce((value, element) => value.intersection(element))
+            .toList();
   }
 }

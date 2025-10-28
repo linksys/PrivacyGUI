@@ -82,9 +82,9 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView>
 
     return StyledAppPageView(
       title: loc(context).incredibleWiFi,
-      // onBackTap is no longer needed, LinksysRoute will handle it.
       bottomBar: PageBottomBar(
-        isPositiveEnabled: bundleState.isDirty,
+        isPositiveEnabled: bundleState.isDirty &&
+            bundleState.current.wifiList.isSettingsValid(),
         onPositiveTap: () async {
           // if current tab is wifi list settings, show save confirm modal
           if (_tabController.index == 0) {
@@ -138,6 +138,11 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView>
 
   Future<bool> _showSaveConfirmModal() async {
     final newState = ref.read(wifiBundleProvider);
+    final wifiListSettings = newState.current.wifiList.isSimpleMode
+        ? newState.current.wifiList.getMainWifiItemsWithSimpleSettings()
+        : newState.current.wifiList.mainWiFi;
+    final previewState =
+        newState.current.wifiList.copyWith(mainWiFi: wifiListSettings);
     final result = await showSimpleAppDialog(context,
         title: loc(context).wifiListSaveModalTitle,
         content: SingleChildScrollView(
@@ -146,10 +151,10 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               AppText.bodyMedium(loc(context).wifiListSaveModalDesc),
-              ..._mloWarning(newState.current.wifiList),
-              ..._disableBandWarning(newState.current.wifiList),
+              ..._mloWarning(previewState),
+              ..._disableBandWarning(previewState),
               const AppGap.medium(),
-              ..._buildNewSettings(newState.current.wifiList),
+              ..._buildNewSettings(previewState),
               const AppGap.medium(),
               AppText.bodyMedium(loc(context).doYouWantToContinue),
             ],

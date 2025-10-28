@@ -1,80 +1,11 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
-import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
 
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/guest_wifi_item.dart';
 
-class WiFiState extends Equatable {
-  final List<WiFiItem> mainWiFi;
-  final GuestWiFiItem guestWiFi;
-  final bool canDisableMainWiFi;
-  final bool isSimpleMode;
-  final WiFiItem simpleModeWifi;
 
-  const WiFiState({
-    required this.mainWiFi,
-    required this.guestWiFi,
-    this.canDisableMainWiFi = true,
-    this.isSimpleMode = true,
-    required this.simpleModeWifi,
-  });
-
-  WiFiState copyWith({
-    List<WiFiItem>? mainWiFi,
-    GuestWiFiItem? guestWiFi,
-    bool? canDisableMainWiFi,
-    bool? isSimpleMode,
-    WiFiItem? simpleModeWifi,
-  }) {
-    return WiFiState(
-      mainWiFi: mainWiFi ?? this.mainWiFi,
-      guestWiFi: guestWiFi ?? this.guestWiFi,
-      canDisableMainWiFi: canDisableMainWiFi ?? this.canDisableMainWiFi,
-      isSimpleMode: isSimpleMode ?? this.isSimpleMode,
-      simpleModeWifi: simpleModeWifi ?? this.simpleModeWifi,
-    );
-  }
-
-  @override
-  List<Object> get props => [
-        mainWiFi,
-        guestWiFi,
-        canDisableMainWiFi,
-        isSimpleMode,
-        simpleModeWifi,
-      ];
-
-  Map<String, dynamic> toMap() {
-    return <String, dynamic>{
-      'mainWiFi': mainWiFi.map((x) => x.toMap()).toList(),
-      'guestWiFi': guestWiFi.toMap(),
-      'canDisableMainWiFi': canDisableMainWiFi,
-      'isSimpleMode': isSimpleMode,
-      'simpleModeWifi': simpleModeWifi.toMap(),
-    };
-  }
-
-  factory WiFiState.fromMap(Map<String, dynamic> map) {
-    return WiFiState(
-      mainWiFi: List<WiFiItem>.from(
-        map['mainWiFi'].map<WiFiItem>(
-          (x) => WiFiItem.fromMap(x),
-        ),
-      ),
-      guestWiFi: GuestWiFiItem.fromMap(map['guestWiFi'] ?? {}),
-      canDisableMainWiFi: map['canDisableMainWiFi'],
-      isSimpleMode: map['isSimpleMode'] as bool? ?? true,
-      simpleModeWifi: WiFiItem.fromMap(map['simpleModeWifi'] ?? {}),
-    );
-  }
-
-  String toJson() => json.encode(toMap());
-
-  factory WiFiState.fromJson(String source) =>
-      WiFiState.fromMap(json.decode(source) as Map<String, dynamic>);
-}
 
 class WiFiListSettings extends Equatable {
   final List<WiFiItem> mainWiFi;
@@ -88,16 +19,6 @@ class WiFiListSettings extends Equatable {
     this.isSimpleMode = true,
     required this.simpleModeWifi,
   });
-
-  // fromWiFiState factory
-  factory WiFiListSettings.fromWiFiState(WiFiState state) {
-    return WiFiListSettings(
-      mainWiFi: state.mainWiFi,
-      guestWiFi: state.guestWiFi,
-      isSimpleMode: state.isSimpleMode,
-      simpleModeWifi: state.simpleModeWifi,
-    );
-  }
 
   @override
   List<Object> get props => [
@@ -143,6 +64,40 @@ class WiFiListSettings extends Equatable {
       simpleModeWifi: WiFiItem.fromMap(map['simpleModeWifi'] ?? {}),
     );
   }
+
+  List<WiFiItem> getMainWifiItemsWithSimpleSettings() {
+    return mainWiFi.map((wifiItem) {
+      final isEnabled = isSimpleMode ? true : wifiItem.isEnabled;
+      final ssid =
+          isSimpleMode ? simpleModeWifi.ssid : wifiItem.ssid;
+      final security = isSimpleMode
+          ? simpleModeWifi.securityType
+          : wifiItem.securityType;
+      final password = isSimpleMode
+          ? simpleModeWifi.password
+          : wifiItem.password;
+
+      return wifiItem.copyWith(
+        isEnabled: isEnabled,
+        ssid: ssid,
+        securityType: security,
+        password: password,
+      );
+    }).toList();
+  }
+
+  bool isSettingsValid() {
+    // Password verify
+    if (isSimpleMode) {
+      final emptyPassword = !simpleModeWifi.securityType.isOpenVariant &&
+          simpleModeWifi.password.isEmpty;
+      return !emptyPassword;
+    } else {
+      final hasEmptyPassword = mainWiFi
+          .any((e) => !e.securityType.isOpenVariant && e.password.isEmpty);
+      return !hasEmptyPassword;
+    }
+  }
 }
 
 class WiFiListStatus extends Equatable {
@@ -151,12 +106,6 @@ class WiFiListStatus extends Equatable {
   const WiFiListStatus({
     this.canDisableMainWiFi = true,
   });
-
-  factory WiFiListStatus.fromWiFiState(WiFiState state) {
-    return WiFiListStatus(
-      canDisableMainWiFi: state.canDisableMainWiFi,
-    );
-  }
 
   @override
   List<Object> get props => [canDisableMainWiFi];

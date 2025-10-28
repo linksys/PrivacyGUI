@@ -89,10 +89,20 @@ class WifiBundleState
   bool get isDirty {
     // Create temporary copies of wifiList settings with isSimpleMode set to true
     // to exclude it from the dirty check.
-    final originalWifiListForComparison =
-        settings.original.wifiList.copyWith(isSimpleMode: true);
-    final currentWifiListForComparison =
-        settings.current.wifiList.copyWith(isSimpleMode: true);
+    var originalWifiListForComparison = settings.original.wifiList;
+    var currentWifiListForComparison = settings.current.wifiList;
+    final newSimpleValue = settings.current.wifiList.isSimpleMode;
+    if (newSimpleValue) {
+      originalWifiListForComparison = originalWifiListForComparison.copyWith(
+          mainWiFi: currentWifiListForComparison.mainWiFi,
+          isSimpleMode: settings.original.wifiList.isSimpleMode);
+    } else {
+      originalWifiListForComparison = originalWifiListForComparison.copyWith(
+          simpleModeWifi: currentWifiListForComparison.simpleModeWifi,
+          isSimpleMode: true);
+      currentWifiListForComparison =
+          currentWifiListForComparison.copyWith(isSimpleMode: true);
+    }
 
     // Compare other settings directly
     final advancedDirty =

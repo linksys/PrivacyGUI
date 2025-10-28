@@ -25,12 +25,6 @@ class WiFiListView extends ArgumentsConsumerStatelessView {
         .toList()
         .join(', ');
 
-    // Controllers are now managed within the build method or a sub-widget if needed.
-    final simpleWifiNameController =
-        TextEditingController(text: wifiListState.simpleModeWifi.ssid);
-    final simpleWifiPasswordController =
-        TextEditingController(text: wifiListState.simpleModeWifi.password);
-
     return StyledAppPageView(
       appBarStyle: AppBarStyle.none,
       hideTopbar: true,
@@ -49,15 +43,9 @@ class WiFiListView extends ArgumentsConsumerStatelessView {
             Expanded(
               child: wifiListState.isSimpleMode
                   ? SimpleModeView(
-                      simpleWifiNameController: simpleWifiNameController,
-                      simpleWifiPasswordController:
-                          simpleWifiPasswordController,
-                      simpleSecurityType:
-                          wifiListState.simpleModeWifi.securityType,
                       onWifiNameEdited: (value) {
-                        final wifiItem =
-                            wifiListState.simpleModeWifi.copyWith(ssid: value);
-                        notifier.setSimpleModeWifi(wifiItem);
+                        notifier.setSimpleModeWifi(
+                            wifiListState.simpleModeWifi.copyWith(ssid: value));
                       },
                       onWifiPasswordEdited: (value) {
                         final wifiItem = wifiListState.simpleModeWifi
