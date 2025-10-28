@@ -5,7 +5,6 @@ import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
-import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/displayed_mac_filtering_devices_provider.dart';
@@ -46,14 +45,20 @@ class MacFilteringView extends ConsumerWidget {
       useMainPadding: true,
       // The bottom bar is now handled by the parent WiFiMainView.
       child: (context, constraints) => ResponsiveLayout(
-        desktop: _desktopLayout(context, ref, privacyState, originalPrivacyState, displayDevices),
-        mobile: _mobileLayout(context, ref, privacyState, originalPrivacyState, displayDevices),
+        desktop: _desktopLayout(
+            context, ref, privacyState, originalPrivacyState, displayDevices),
+        mobile: _mobileLayout(
+            context, ref, privacyState, originalPrivacyState, displayDevices),
       ),
     );
   }
 
   Widget _desktopLayout(
-      BuildContext context, WidgetRef ref, InstantPrivacySettings state, InstantPrivacySettings originalState, List<DeviceListItem> deviceList) {
+      BuildContext context,
+      WidgetRef ref,
+      InstantPrivacySettings state,
+      InstantPrivacySettings originalState,
+      List<DeviceListItem> deviceList) {
     return AppBasicLayout(
       content: SizedBox(
         width: 9.col,
@@ -88,7 +93,11 @@ class MacFilteringView extends ConsumerWidget {
   }
 
   Widget _mobileLayout(
-      BuildContext context, WidgetRef ref, InstantPrivacySettings state, InstantPrivacySettings originalState, List<DeviceListItem> deviceList) {
+      BuildContext context,
+      WidgetRef ref,
+      InstantPrivacySettings state,
+      InstantPrivacySettings originalState,
+      List<DeviceListItem> deviceList) {
     return AppBasicLayout(
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -136,7 +145,8 @@ class MacFilteringView extends ConsumerWidget {
     );
   }
 
-  Widget _enableTile(BuildContext context, WidgetRef ref, InstantPrivacySettings state) {
+  Widget _enableTile(
+      BuildContext context, WidgetRef ref, InstantPrivacySettings state) {
     final notifier = ref.read(wifiBundleProvider.notifier);
     return AppCard(
         child: Row(
@@ -146,9 +156,8 @@ class MacFilteringView extends ConsumerWidget {
           semanticLabel: 'wifi mac filtering',
           value: state.mode == MacFilterMode.deny,
           onChanged: (value) {
-            notifier.setMacFilterMode(value
-                ? MacFilterMode.deny
-                : MacFilterMode.disabled);
+            notifier.setMacFilterMode(
+                value ? MacFilterMode.deny : MacFilterMode.disabled);
           },
         )
       ],

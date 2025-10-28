@@ -431,7 +431,7 @@ class WifiBundleNotifier extends Notifier<WifiBundleState>
       ].unique();
     } else if (settings.mode == MacFilterMode.deny) {
       macAddresses = [
-        ...settings.macAddresses,
+        ...settings.denyMacAddresses,
       ];
     }
     return repo.send(
@@ -641,7 +641,7 @@ class WifiBundleNotifier extends Notifier<WifiBundleState>
     _updateSettings(currentSettings.copyWith(privacy: newPrivacy));
   }
 
-  void setMacFilterSelection(List<String> selections, [bool isDeny = false]) {
+  void setMacFilterSelection(List<String> selections, [bool isDeny = true]) {
     final currentSettings = state.settings.current;
     selections = selections.map((e) => e.toUpperCase()).toList();
     final currentList = isDeny
@@ -657,7 +657,7 @@ class WifiBundleNotifier extends Notifier<WifiBundleState>
     _updateSettings(currentSettings.copyWith(privacy: newPrivacy));
   }
 
-  void removeMacFilterSelection(List<String> selection, [bool isDeny = false]) {
+  void removeMacFilterSelection(List<String> selection, [bool isDeny = true]) {
     final currentSettings = state.settings.current;
     selection = selection.map((e) => e.toUpperCase()).toList();
     final currentList = isDeny
@@ -677,7 +677,7 @@ class WifiBundleNotifier extends Notifier<WifiBundleState>
     final currentSettings = state.settings.current;
     macAddressList = macAddressList.map((e) => e.toUpperCase()).toList();
     final newPrivacy =
-        currentSettings.privacy.copyWith(macAddresses: macAddressList);
+        currentSettings.privacy.copyWith(denyMacAddresses: macAddressList);
     _updateSettings(currentSettings.copyWith(privacy: newPrivacy));
   }
 

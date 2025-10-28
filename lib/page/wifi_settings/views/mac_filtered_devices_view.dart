@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
@@ -42,7 +42,7 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(instantPrivacyProvider);
+    final state = ref.watch(wifiBundleProvider);
 
     return StyledAppPageView(
       title: loc(context).filteredDevices,
@@ -51,7 +51,7 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
         AppTextButton(
           loc(context).edit,
           icon: LinksysIcons.edit,
-          onTap: state.settings.current.denyMacAddresses.isNotEmpty
+          onTap: state.current.privacy.denyMacAddresses.isNotEmpty
               ? () {
                   _toggleEdit();
                 }
@@ -63,8 +63,8 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
               isPositiveEnabled: true,
               onPositiveTap: () {
                 ref
-                    .read(instantPrivacyProvider.notifier)
-                    .removeSelection(_selectedMACs, true);
+                    .read(wifiBundleProvider.notifier)
+                    .removeMacFilterSelection(_selectedMACs);
                 _toggleEdit();
               },
               positiveLabel: loc(context).remove,
@@ -127,16 +127,16 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
         .pushNamed<List<DeviceListItem>?>(RouteNamed.devicePicker, extra: {
       'type': 'mac',
       'connection': 'wireless',
-      'selected': ref.read(instantPrivacyProvider).settings.current.denyMacAddresses
+      'selected': ref.read(wifiBundleProvider).current.privacy.denyMacAddresses
     });
-    final temp = ref.read(instantPrivacyProvider).settings.current.denyMacAddresses;
+    final temp = ref.read(wifiBundleProvider).current.privacy.denyMacAddresses;
     if (results != null) {
       final newMacs = results.map((e) => e.macAddress).toList();
       // temp and newMacs do XOR
       final added = newMacs.toSet().difference(temp.toSet());
       final removed = temp.toSet().difference(newMacs.toSet());
-      ref.read(instantPrivacyProvider.notifier).setSelection(
-          [...added, ...temp..removeWhere((e) => removed.contains(e))], true);
+      ref.read(wifiBundleProvider.notifier).setMacAddressList(
+          [...added, ...temp..removeWhere((e) => removed.contains(e))]);
     }
   }
 
@@ -237,7 +237,7 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
       checkPositiveEnabled: () => isValid && !isDuplicate,
     );
     if (result != null) {
-      ref.read(instantPrivacyProvider.notifier).setSelection([result], true);
+      ref.read(wifiBundleProvider.notifier).setMacFilterSelection([result]);
     }
   }
 }
