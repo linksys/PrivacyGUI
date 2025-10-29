@@ -31,14 +31,14 @@ class PnpIspSaveSettingsView extends ArgumentsConsumerStatefulView {
 class _PnpIspSaveSettingsViewState
     extends ConsumerState<PnpIspSaveSettingsView> {
   final _passwordController = TextEditingController();
-  late final InternetSettingsState newSettings;
+  late final InternetSettings newSettings;
   String? _spinnerText; //TODO: all spinner text is not confirmed
   StreamSubscription? subscription;
 
   @override
   void initState() {
     super.initState();
-    newSettings = widget.args['newSettings'] as InternetSettingsState;
+    newSettings = widget.args['newSettings'] as InternetSettings;
     _saveNewSettings();
   }
 
@@ -51,11 +51,11 @@ class _PnpIspSaveSettingsViewState
   Future<void> _saveNewSettings() {
     String? settingError;
     final wanType = WanType.resolve(
-      newSettings.current.ipv4Setting.ipv4ConnectionType,
+      newSettings.ipv4Setting.ipv4ConnectionType,
     )!;
     return ref
         .read(internetSettingsProvider.notifier)
-        .savePnpIpv4(newSettings.current)
+        .savePnpIpv4(newSettings)
         .then((value) {
       setState(() {
         _spinnerText = loc(context).savingChanges;
