@@ -42,9 +42,9 @@ void main() async {
             NodeDeviceInfo.fromJson(jsonDecode(testDeviceInfo)['output']),
         isUnconfigured: false,
         stepStateList: const {
-          0: PnpStepState(status: StepViewStatus.data, data: {}),
-          1: PnpStepState(status: StepViewStatus.data, data: {}),
-          2: PnpStepState(status: StepViewStatus.data, data: {}),
+          PnpStepId.personalWifi: PnpStepState(status: StepViewStatus.data, data: {}),
+          PnpStepId.guestWifi: PnpStepState(status: StepViewStatus.data, data: {}),
+          PnpStepId.nightMode: PnpStepState(status: StepViewStatus.data, data: {}),
         }));
     when(mockPnpNotifier.checkAdminPassword(null)).thenAnswer((_) {
       throw ExceptionInvalidAdminPassword();
@@ -286,10 +286,10 @@ void main() async {
       deviceInfo: NodeDeviceInfo.fromJson(jsonDecode(testDeviceInfo)['output']),
       isUnconfigured: true,
       stepStateList: const {
-        0: PnpStepState(status: StepViewStatus.data, data: {}),
-        1: PnpStepState(status: StepViewStatus.data, data: {}),
-        2: PnpStepState(status: StepViewStatus.data, data: {}),
-        3: PnpStepState(status: StepViewStatus.data, data: {}),
+        PnpStepId.personalWifi: PnpStepState(status: StepViewStatus.data, data: {}),
+        PnpStepId.guestWifi: PnpStepState(status: StepViewStatus.data, data: {}),
+        PnpStepId.nightMode: PnpStepState(status: StepViewStatus.data, data: {}),
+        PnpStepId.yourNetwork: PnpStepState(status: StepViewStatus.data, data: {}),
       },
     ));
     when(mockPnpNotifier.save()).thenAnswer((_) async {
@@ -413,12 +413,12 @@ void main() async {
       deviceInfo: NodeDeviceInfo.fromJson(jsonDecode(testDeviceInfo)['output']),
       isUnconfigured: false,
       stepStateList: const {
-        0: PnpStepState(
+        PnpStepId.personalWifi: PnpStepState(
           status: StepViewStatus.data,
           data: {"ssid": "Linksys03056", "password": "8kRnxa257@"},
         ),
-        1: PnpStepState(status: StepViewStatus.data, data: {}),
-        2: PnpStepState(status: StepViewStatus.data, data: {}),
+        PnpStepId.guestWifi: PnpStepState(status: StepViewStatus.data, data: {}),
+        PnpStepId.nightMode: PnpStepState(status: StepViewStatus.data, data: {}),
       },
     ));
 
@@ -465,10 +465,10 @@ void main() async {
             NodeDeviceInfo.fromJson(jsonDecode(testDeviceInfo)['output']),
         isUnconfigured: true,
         stepStateList: const {
-          0: PnpStepState(status: StepViewStatus.data, data: {}),
-          1: PnpStepState(status: StepViewStatus.data, data: {}),
-          2: PnpStepState(status: StepViewStatus.data, data: {}),
-          3: PnpStepState(status: StepViewStatus.data, data: {}),
+          PnpStepId.personalWifi: PnpStepState(status: StepViewStatus.data, data: {}),
+          PnpStepId.guestWifi: PnpStepState(status: StepViewStatus.data, data: {}),
+          PnpStepId.nightMode: PnpStepState(status: StepViewStatus.data, data: {}),
+          PnpStepId.yourNetwork: PnpStepState(status: StepViewStatus.data, data: {}),
         }));
     when(mockPnpNotifier.save()).thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 1));

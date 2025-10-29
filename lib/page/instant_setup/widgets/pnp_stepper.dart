@@ -10,10 +10,8 @@ class PnpStepper extends ConsumerStatefulWidget {
   final void Function(
       int index,
       PnpStep step,
-      ({
-        void Function() stepCancel,
-        void Function() stepContinue
-      }) stepController)? onStepChanged;
+      ({void Function() stepCancel, void Function() stepContinue}) stepController)?
+      onStepChanged;
 
   const PnpStepper({
     super.key,
@@ -35,9 +33,11 @@ class _PnpStepperState extends ConsumerState<PnpStepper> {
     super.initState();
 
     Future.doWhile(() => !mounted).then((value) async {
-      await widget.steps[0].onInit(ref);
-      widget.onStepChanged?.call(_index, widget.steps[_index],
-          (stepCancel: onStepCancel, stepContinue: onStepContinue));
+      if (widget.steps.isNotEmpty) {
+        await widget.steps[0].onInit(ref);
+        widget.onStepChanged?.call(_index, widget.steps[_index],
+            (stepCancel: onStepCancel, stepContinue: onStepContinue));
+      }
     });
   }
 
@@ -45,12 +45,15 @@ class _PnpStepperState extends ConsumerState<PnpStepper> {
   Widget build(BuildContext context) {
     return AppStepper(
         type: widget.stepperType,
-        controlsBuilder: widget.steps[_index].controlBuilder(_index),
+        controlsBuilder: widget.steps.isNotEmpty
+            ? widget.steps[_index].controlBuilder(_index, _index)
+            : null,
         currentStep: _index,
         onStepCancel: onStepCancel,
         onStepContinue: onStepContinue,
         steps: widget.steps
-            .map((e) => e.resolveStep(context: context, currentIndex: _index))
+            .map((e) => e.resolveStep(
+                context: context, currentIndex: _index, stepIndex: widget.steps.indexOf(e)))
             .toList());
   }
 

@@ -8,14 +8,13 @@ import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 class GuestWiFiStep extends PnpStep {
-  static int id = 1;
   TextEditingController? _ssidEditController;
   TextEditingController? _passwordEditController;
   bool isEnabled = false;
 
   GuestWiFiStep({
     super.saveChanges,
-  }): super(index: id);
+  }) : super(stepId: PnpStepId.guestWifi);
 
   @override
   Future<void> onInit(WidgetRef ref) async {
@@ -52,11 +51,6 @@ class GuestWiFiStep extends PnpStep {
     required WidgetRef ref,
     Widget? child,
   }) {
-    // final data = ref
-    //         .watch(pnpProvider.select((value) => value.stepStateList))[index]
-    //         ?.data ??
-    //     {};
-    // bool isEnabled = data['isEnabled'] ?? false;
     return StatefulBuilder(builder: (context, setState) {
       return Semantics(
         explicitChildNodes: true,
@@ -71,7 +65,7 @@ class GuestWiFiStep extends PnpStep {
                 setState(() {
                   isEnabled = value;
                 });
-                // update(ref, key: 'isEnabled', value: value);
+                _check(ref);
               },
             ),
             const AppGap.large3(),
@@ -84,15 +78,6 @@ class GuestWiFiStep extends PnpStep {
                       label: loc(context).guestWiFiName,
                       hint: loc(context).guestWiFiName,
                       onCheckInput: (isValid, input) {
-                        // if (isValid) {
-                        //   ref
-                        //       .read(pnpProvider.notifier)
-                        //       .setStepData(index, data: {'ssid': input});
-                        // } else {
-                        //   ref
-                        //       .read(pnpProvider.notifier)
-                        //       .setStepData(index, data: {'ssid': ''});
-                        // }
                         _check(ref);
                       },
                     ),
@@ -102,15 +87,6 @@ class GuestWiFiStep extends PnpStep {
                       label: loc(context).guestWiFiPassword,
                       hint: loc(context).guestWiFiPassword,
                       onCheckInput: (isValid, input) {
-                        // if (isValid) {
-                        //   ref
-                        //       .read(pnpProvider.notifier)
-                        //       .setStepData(index, data: {'password': input});
-                        // } else {
-                        //   ref
-                        //       .read(pnpProvider.notifier)
-                        //       .setStepData(index, data: {'password': ''});
-                        // }
                         _check(ref);
                       },
                     ),
@@ -126,32 +102,21 @@ class GuestWiFiStep extends PnpStep {
   @override
   String title(BuildContext context) => loc(context).guestNetwork;
 
-  // void update(WidgetRef ref, {required String key, dynamic value}) {
-  //   if (value == null) {
-  //     return;
-  //   }
-  //   final currentData = ref.read(pnpProvider).stepStateList[index]?.data ?? {};
-  //   ref
-  //       .read(pnpProvider.notifier)
-  //       .setStepData(index, data: Map.from(currentData)..[key] = value);
-  //   _check(ref);
-  // }
-
   void _check(WidgetRef ref) {
     final ssid = _ssidEditController?.text ?? '';
     final password = _passwordEditController?.text ?? '';
     final noSurroundSpace = NoSurroundWhitespaceRule().validate(password);
     final noUseUnsupportChar = AsciiRule().validate(password);
     if (!isEnabled ||
-        LengthRule(min: 1, max: 32).validate(ssid) &&
+        (LengthRule(min: 1, max: 32).validate(ssid) &&
             password.isNotEmpty &&
             password.length >= 8 &&
             password.length <= 64 &&
             noSurroundSpace &&
-            noUseUnsupportChar) {
-      pnp.setStepStatus(index, status: StepViewStatus.data);
+            noUseUnsupportChar)) {
+      pnp.setStepStatus(stepId, status: StepViewStatus.data);
     } else {
-      pnp.setStepStatus(index, status: StepViewStatus.error);
+      pnp.setStepStatus(stepId, status: StepViewStatus.error);
     }
   }
 }

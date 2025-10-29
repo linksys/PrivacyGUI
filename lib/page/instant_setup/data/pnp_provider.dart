@@ -24,17 +24,17 @@ import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_step_state.dart';
-import 'package:privacy_gui/page/instant_setup/model/impl/guest_wifi_step.dart';
-import 'package:privacy_gui/page/instant_setup/model/impl/night_mode_step.dart';
-import 'package:privacy_gui/page/instant_setup/model/impl/personal_wifi_step.dart';
 import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/connectivity/mixin.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// The main Riverpod provider for the PnP feature.
 final pnpProvider =
     NotifierProvider<BasePnpNotifier, PnpState>(() => PnpNotifier());
 
+/// Abstract base class for the PnP Notifier.
+/// Defines the contract for all actions that can be performed during the PnP flow.
 abstract class BasePnpNotifier extends Notifier<PnpState> {
   @override
   PnpState build() => const PnpState(
@@ -42,69 +42,111 @@ abstract class BasePnpNotifier extends Notifier<PnpState> {
         attachedPassword: '',
       );
 
-  ///
-  PnpStepState getStepState(int index) {
-    return state.stepStateList[index] ??
+  //region Step State Management
+  //----------------------------------------------------------------------------
+
+  /// Gets the state for a specific step by its ID.
+  PnpStepState getStepState(PnpStepId stepId) {
+    return state.stepStateList[stepId] ??
         const PnpStepState(status: StepViewStatus.data, data: {});
   }
 
-  void setStepState(int index, PnpStepState stepState) {
-    final stepStateData = Map<int, PnpStepState>.from(state.stepStateList);
-    stepStateData[index] = stepState;
+  /// Sets the entire state for a specific step.
+  void setStepState(PnpStepId stepId, PnpStepState stepState) {
+    final stepStateData = Map<PnpStepId, PnpStepState>.from(state.stepStateList);
+    stepStateData[stepId] = stepState;
     state = state.copyWith(stepStateList: stepStateData);
   }
 
-  void setStepStatus(int index, {required StepViewStatus status}) {
-    final stepStateData = Map<int, PnpStepState>.from(state.stepStateList);
-    final target = stepStateData[index] ??
+  /// Updates the status of a specific step.
+  void setStepStatus(PnpStepId stepId, {required StepViewStatus status}) {
+    final stepStateData = Map<PnpStepId, PnpStepState>.from(state.stepStateList);
+    final target = stepStateData[stepId] ??
         const PnpStepState(status: StepViewStatus.loading, data: {});
-    stepStateData[index] = target.copyWith(status: status);
+    stepStateData[stepId] = target.copyWith(status: status);
     state = state.copyWith(stepStateList: stepStateData);
   }
 
-  void setStepData(int index, {required Map<String, dynamic> data}) {
-    final stepStateData = Map<int, PnpStepState>.from(state.stepStateList);
-    final target = stepStateData[index] ??
+  /// Merges new data into a specific step's state.
+  void setStepData(PnpStepId stepId, {required Map<String, dynamic> data}) {
+    final stepStateData = Map<PnpStepId, PnpStepState>.from(state.stepStateList);
+    final target = stepStateData[stepId] ??
         const PnpStepState(status: StepViewStatus.loading, data: {});
-    stepStateData[index] = target.copyWith(
+    stepStateData[stepId] = target.copyWith(
         data: Map.fromEntries(target.data.entries)..addAll(data));
     state = state.copyWith(stepStateList: stepStateData);
-    logger.d('[PnP]: Set step <$index> data - ${state.stepStateList[index]}');
+    logger.d('[PnP]: Set step <$stepId> data - ${state.stepStateList[stepId]}');
   }
 
-  void setStepError(int index, {Object? error}) {
-    final stepStateData = Map<int, PnpStepState>.from(state.stepStateList);
-    final target = stepStateData[index] ??
+  /// Sets an error object for a specific step.
+  void setStepError(PnpStepId stepId, {Object? error}) {
+    final stepStateData = Map<PnpStepId, PnpStepState>.from(state.stepStateList);
+    final target = stepStateData[stepId] ??
         const PnpStepState(status: StepViewStatus.loading, data: {});
-    stepStateData[index] = target.copyWith(error: error);
+    stepStateData[stepId] = target.copyWith(error: error);
     state = state.copyWith(stepStateList: stepStateData);
   }
 
+  /// A helper to get the output from a cached JNAP success result.
   Map<String, dynamic>? getData(JNAPAction action) {
     return (state.data[action] as JNAPSuccess?)?.output;
   }
-  // abstract functions
 
+  //endregion
+
+  //region Abstract Methods
+  //----------------------------------------------------------------------------
+
+  /// Orchestrates the initial checks when the PnP flow begins.
+  Future<void> runInitialChecks(String? password);
+
+  /// Fetches basic device information.
   Future fetchDeviceInfo([bool clearCurrentSN = true]);
+
+  /// Validates the admin password against the router.
   Future checkAdminPassword(String? password);
+
+  /// Checks for a live internet connection.
   Future checkInternetConnection([int retries = 1]);
+
+  /// Checks if the router is in an unconfigured (factory default) state.
   Future checkRouterConfigured();
+
+  /// Checks the auto-configuration status of the router.
   Future<AutoConfigurationSettings?> autoConfigurationCheck();
+
+  /// Checks if the admin password has been set by the user.
   Future<bool> isRouterPasswordSet();
+
+  /// Fetches all necessary data for the PnP wizard steps.
   Future fetchData();
+
+  /// Saves all collected settings from the wizard to the router.
   Future save();
+
+  /// Tests if the connection to the router has been re-established after a change.
   Future testConnectionReconnected();
+
+  /// Fetches the list of connected child nodes.
   Future fetchDevices();
+
+  /// Forces the PnP flow to require a login.
   void setForceLogin(bool force);
+
+  /// Stores a password provided from an external source (e.g., URL).
   void setAttachedPassword(String? password);
 
-  // Personal WiFi
+  /// Gets the default Wi-Fi credentials from the device.
   ({String name, String password, String security})
       getDefaultWiFiNameAndPassphrase();
-  // Guest WiFi
+
+  /// Gets the default Guest Wi-Fi credentials from the device.
   ({String name, String password}) getDefaultGuestWiFiNameAndPassPhrase();
+
+  //endregion
 }
 
+/// A mock implementation of the PnP Notifier for testing and UI development.
 class MockPnpNotifier extends BasePnpNotifier {
   @override
   Future checkAdminPassword(String? password) {
@@ -197,11 +239,45 @@ class MockPnpNotifier extends BasePnpNotifier {
   void setForceLogin(bool force) {
     state = state.copyWith(forceLogin: force);
   }
+
+  @override
+  Future<void> runInitialChecks(String? password) {
+    return Future.delayed(const Duration(seconds: 1));
+  }
 }
 
+/// The concrete implementation of the PnP Notifier.
+/// This class contains the core business logic for the PnP setup flow.
 class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
   @override
+  Future<void> runInitialChecks(String? password) async {
+    logger.i('[PnP]: Running initial checks...');
+    // The UI will show a generic "loading" spinner while this runs.
+    await fetchDeviceInfo();
+    if (password != null) {
+      setAttachedPassword(password);
+    }
+    // This will throw ExceptionRouterUnconfigured on purpose if the router is unconfigured.
+    await checkRouterConfigured();
+
+    final isLoggedIn = ref.read(routerRepositoryProvider).isLoggedIn();
+    if (!isLoggedIn) {
+      logger.i('[PnP]: Not logged in, checking admin password.');
+      // This will throw ExceptionInvalidAdminPassword on purpose if the password is wrong.
+      await checkAdminPassword(state.attachedPassword);
+    }
+
+    logger.i('[PnP]: Checking for internet connection.');
+    // This will throw ExceptionNoInternetConnection on purpose if there is no internet.
+    await checkInternetConnection();
+
+    // If all checks pass, the method completes successfully.
+    logger.i('[PnP]: Initial checks completed successfully.');
+  }
+
+  @override
   Future fetchDeviceInfo([bool clearCurrentSN = true]) async {
+    logger.i('[PnP]: Fetching device info...');
     final deviceInfo = await ref
         .read(routerRepositoryProvider)
         .send(
@@ -213,7 +289,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
         )
         .then((result) => NodeDeviceInfo.fromJson(result.output))
         .catchError((e) {
-      logger.i('[PnP]: Failed to fetch device info');
+      logger.e('[PnP]: Failed to fetch device info.', error: e);
       throw ExceptionFetchDeviceInfo();
     });
     // check current sn and clear it
@@ -229,22 +305,27 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
     ref.read(routerRepositoryProvider).send(JNAPAction.getDeviceMode,
         fetchRemote: true, cacheLevel: CacheLevel.noCache);
     state = state.copyWith(deviceInfo: deviceInfo);
+    logger.i('[PnP]: Fetched device info successfully for ${deviceInfo.modelNumber}.');
   }
 
   @override
   Future checkAdminPassword(String? password) async {
+    logger.i('[PnP]: Checking admin password.');
     if (password == null) {
+      logger.w('[PnP]: Admin password is null.');
       throw ExceptionInvalidAdminPassword();
     }
     await ref
         .read(authProvider.notifier)
         .localLogin(password, pnp: true, guardError: false)
         .then((value) {
+      logger.i('[PnP]: Admin password accepted.');
       // Clear the password in pnp state once logging in successfully
       setAttachedPassword(null);
-    }).catchError((error) => throw ExceptionInvalidAdminPassword(),
-            test: (error) =>
-                error is JNAPError && error.result == errorJNAPUnauthorized);
+    }).catchError((error) {
+      logger.e('[PnP]: Admin password check failed.', error: error);
+      throw ExceptionInvalidAdminPassword();
+    }, test: (error) => error is JNAPError && error.result == errorJNAPUnauthorized);
   }
 
   /// check internet connection within 30 seconds
@@ -253,8 +334,8 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
     Future<bool> isInternetConnected() async {
       bool isConnected = false;
       for (int i = 0; i < retries; i++) {
-        logger.i(
-            '[PnP]: Check internet connections MAX retries <$retries>, i=$i');
+        logger.d(
+            '[PnP]: Checking internet connection (Attempt ${i + 1}/$retries)');
         isConnected = await ref
             .read(routerRepositoryProvider)
             .send(
@@ -270,6 +351,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
           return false;
         });
         if (isConnected) {
+          logger.i('[PnP]: Internet connection detected.');
           break;
         }
         await Future.delayed(const Duration(seconds: 3));
@@ -277,10 +359,9 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
       return isConnected;
     }
 
-    Future<bool> testPing() => ref.read(cloudRepositoryProvider).testPingPng();
     final isOnline = await isInternetConnected();
-    // final isOnline = await testPing();
     if (!isOnline) {
+      logger.e('[PnP]: No internet connection after all retries.');
       throw ExceptionNoInternetConnection();
     }
     return true;
@@ -336,17 +417,17 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
               ?.output['isAdminPasswordSetByUser'] ??
           true;
       logger.d(
-          '[PnP]: Admin changed? isAdminPasswordDefault=$isAdminPasswordDefault, isAdminPasswordSetByUser=$isAdminPasswordSetByUser');
+          '[PnP]: Admin password status: isAdminPasswordDefault=$isAdminPasswordDefault, isAdminPasswordSetByUser=$isAdminPasswordSetByUser');
       return !isAdminPasswordDefault || isAdminPasswordSetByUser;
-    }).onError((error, stackTrace) =>
-            true); // error handling - set configured to prevent go to pnp
+    }).onError((error, stackTrace) {
+      logger.e('[PnP]: Error checking if password is set. Assuming true.', error: error);
+      return true; // error handling - set configured to prevent go to pnp
+    });
   }
 
   @override
   Future fetchData() async {
-    // if (state.deviceInfo == null) {
-    //   await fetchDeviceInfo();
-    // }
+    logger.i('[PnP]: Fetching initial data for wizard steps...');
     bool isSupportNodeLight =
         serviceHelper.isSupportLedMode(state.deviceInfo?.services);
     final transaction = JNAPTransactionBuilder(
@@ -367,6 +448,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
         .read(routerRepositoryProvider)
         .transaction(transaction, fetchRemote: true, retries: 10)
         .then((response) {
+      logger.i('[PnP]: Successfully fetched initial data.');
       state = state.copyWith(data: Map.fromEntries(response.data));
     });
   }
@@ -405,34 +487,22 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
     return (name: name ?? '', password: passphrase ?? '');
   }
 
-  @override
-  Future save() async {
-    // store current configured SN
-    final deviceInfo = state.deviceInfo;
-    final prefs = await SharedPreferences.getInstance();
-    if (deviceInfo != null) {
-      prefs.setString(pPnpConfiguredSN, deviceInfo.serialNumber);
-    }
-    final isGuestWiFiSupport =
-        serviceHelper.isSupportGuestNetwork(deviceInfo?.services);
-    final isNightModeSupport =
-        serviceHelper.isSupportLedMode(deviceInfo?.services);
+  //region Save Logic Refactoring
+  //----------------------------------------------------------------------------
 
-    // processing data
+  MapEntry<JNAPAction, Map<String, dynamic>>? _buildPersonalWiFiPayload() {
     final defaultWiFi = getDefaultWiFiNameAndPassphrase();
-    final defaultGuestWiFi = getDefaultGuestWiFiNameAndPassPhrase();
-    // if configured call setUserAcknowledgedAutoConfiguration else call setAdminPassword
-    final closeCommand = state.isRouterUnConfigured
-        ? JNAPAction.pnpSetAdminPassword
-        : JNAPAction.setUserAcknowledgedAutoConfiguration;
-    final closeData = state.isRouterUnConfigured
-        ? {'adminPassword': defaultWiFi.password}
-        : <String, dynamic>{};
-    // personal wifi
-    final wifiStateData = getStepState(PersonalWiFiStep.id).data;
+    final wifiStateData = getStepState(PnpStepId.personalWifi).data;
     final wifiName = wifiStateData['ssid'] as String? ?? defaultWiFi.name;
     final wifiPassphase =
         wifiStateData['password'] as String? ?? defaultWiFi.password;
+
+    final isWiFiChanged =
+        wifiName != defaultWiFi.name || wifiPassphase != defaultWiFi.password;
+    logger.d('[PnP]: Wi-Fi changed: $isWiFiChanged');
+
+    if (!isWiFiChanged) return null;
+
     final simpleWiFiSettingsJson =
         getData(JNAPAction.getSimpleWiFiSettings) ?? {};
     final simpleWiFiSettings =
@@ -443,11 +513,23 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
                 security: defaultWiFi.security))
             .toList();
 
-    final isWiFiChanged =
-        wifiName != defaultWiFi.name || wifiPassphase != defaultWiFi.password;
-    // guest wifi
-    final guestWifiStateData = getStepState(GuestWiFiStep.id).data;
+    return MapEntry(JNAPAction.setSimpleWiFiSettings, {
+      'simpleWiFiSettings':
+          simpleWiFiSettings.map((e) => e.toMap()).toList()
+    });
+  }
+
+  MapEntry<JNAPAction, Map<String, dynamic>>? _buildGuestWiFiPayload() {
+    final deviceInfo = state.deviceInfo;
+    final isGuestWiFiSupport =
+        serviceHelper.isSupportGuestNetwork(deviceInfo?.services);
+    if (!isGuestWiFiSupport) return null;
+
+    final defaultGuestWiFi = getDefaultGuestWiFiNameAndPassPhrase();
+    final guestWifiStateData = getStepState(PnpStepId.guestWifi).data;
     final isGuestEnabled = guestWifiStateData['isEnabled'] as bool? ?? false;
+    logger.d('[PnP]: Guest Wi-Fi will be enabled: $isGuestEnabled');
+
     final guestWiFiName =
         guestWifiStateData['ssid'] as String? ?? defaultGuestWiFi.name;
     final guestWiFiPassphase =
@@ -461,24 +543,37 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
     setGuestRadioSettings =
         setGuestRadioSettings.copyWith(isGuestNetworkEnabled: isGuestEnabled);
     if (isGuestEnabled) {
-      setGuestRadioSettings =
-          setGuestRadioSettings.copyWith(isGuestNetworkEnabled: isGuestEnabled);
       var radios = setGuestRadioSettings.radios
           .map((e) => e.copyWith(
               guestSSID: guestWiFiName, guestWPAPassphrase: guestWiFiPassphase))
           .toList();
       setGuestRadioSettings = setGuestRadioSettings.copyWith(radios: radios);
     }
-    // Night mode
-    final nightModeStateData = getStepState(NightModeStep.id).data;
+
+    return MapEntry(
+        JNAPAction.setGuestRadioSettings, setGuestRadioSettings.toMap());
+  }
+
+  MapEntry<JNAPAction, Map<String, dynamic>>? _buildNightModePayload() {
+    final deviceInfo = state.deviceInfo;
+    final isNightModeSupport =
+        serviceHelper.isSupportLedMode(deviceInfo?.services);
+    final nightModeStateData = getStepState(PnpStepId.nightMode).data;
     final isNightModeEnabled =
         nightModeStateData['isEnabled'] as bool? ?? false;
+    logger.d('[PnP]: Night mode will be enabled: $isNightModeEnabled');
+
+    if (!isNightModeSupport || !isNightModeEnabled) return null;
+
     var nightModeSettings =
         NodeLightSettings(isNightModeEnable: isNightModeEnabled);
     if (isNightModeEnabled) {
       nightModeSettings = nightModeSettings.copyWith(startHour: 20, endHour: 8);
     }
-    // enable auto firmware update
+    return MapEntry(JNAPAction.setLedNightModeSetting, nightModeSettings.toMap());
+  }
+
+  MapEntry<JNAPAction, Map<String, dynamic>> _buildFirmwareUpdatePayload() {
     final firmwareUpdateSettingsJson =
         getData(JNAPAction.getFirmwareUpdateSettings);
     final firmwareUpdateSettings = firmwareUpdateSettingsJson != null
@@ -487,26 +582,45 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
                 updatePolicy: FirmwareUpdateSettings.firmwareUpdatePolicyAuto)
             .toMap()
         : <String, dynamic>{};
-    // set device mode to master if router is unconfigured
+    return MapEntry(
+        JNAPAction.setFirmwareUpdateSettings, firmwareUpdateSettings);
+  }
 
-    // Build transaction commands
-    final transaction = JNAPTransactionBuilder(commands: [
-      if (isWiFiChanged)
-        MapEntry(JNAPAction.setSimpleWiFiSettings, {
-          'simpleWiFiSettings':
-              simpleWiFiSettings.map((e) => e.toMap()).toList()
-        }),
-      if (isGuestWiFiSupport)
-        MapEntry(
-            JNAPAction.setGuestRadioSettings, setGuestRadioSettings.toMap()),
-      if (isNightModeSupport && isNightModeEnabled)
-        MapEntry(JNAPAction.setLedNightModeSetting, nightModeSettings.toMap()),
-      MapEntry(JNAPAction.setFirmwareUpdateSettings, firmwareUpdateSettings),
+  MapEntry<JNAPAction, Map<String, dynamic>> _buildCloseCommandPayload() {
+    final defaultWiFi = getDefaultWiFiNameAndPassphrase();
+    final closeCommand = state.isRouterUnConfigured
+        ? JNAPAction.pnpSetAdminPassword
+        : JNAPAction.setUserAcknowledgedAutoConfiguration;
+    final closeData = state.isRouterUnConfigured
+        ? {'adminPassword': defaultWiFi.password}
+        : <String, dynamic>{};
+    return MapEntry(closeCommand, closeData);
+  }
+
+  @override
+  Future save() async {
+    logger.i('[PnP]: Starting save process...');
+    final prefs = await SharedPreferences.getInstance();
+    if (state.deviceInfo != null) {
+      prefs.setString(pPnpConfiguredSN, state.deviceInfo!.serialNumber);
+    }
+
+    // 1. Build payloads using helper methods
+    final commands = [
+      _buildPersonalWiFiPayload(),
+      _buildGuestWiFiPayload(),
+      _buildNightModePayload(),
+      _buildFirmwareUpdatePayload(),
       if (state.isRouterUnConfigured)
         const MapEntry(JNAPAction.setDeviceMode, {'mode': 'Master'}),
-      MapEntry(closeCommand, closeData),
-    ], auth: true);
+      _buildCloseCommandPayload(),
+    ].whereNotNull().toList(); // Filter out nulls (no changes needed)
 
+    // 2. Build the transaction
+    final transaction = JNAPTransactionBuilder(commands: commands, auth: true);
+    logger.i('[PnP]: Sending save transaction with ${transaction.commands.length} commands.');
+
+    // 3. Execute transaction and handle post-save flow
     return ref
         .read(routerRepositoryProvider)
         .transaction(
@@ -517,29 +631,37 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
               const JNAPSideEffectOverrides(maxRetry: 18, retryDelayInSec: 10),
         )
         .catchError((error) {
-          // Connection error,
-          logger.d('[PnP]: Connection changed. Need to reconnect to the WiFi');
-          throw ExceptionNeedToReconnect();
-        },
-            test: (error) =>
-                error is ClientException || error is JNAPSideEffectError)
+      // Connection error,
+      logger.e('[PnP]: Connection changed during save. Need to reconnect.',
+          error: error);
+      throw ExceptionNeedToReconnect();
+    }, test: (error) => error is ClientException || error is JNAPSideEffectError)
         .onError((error, stackTrace) {
-          if (error is ExceptionNeedToReconnect) {
-            throw error;
-          }
-          // Saving error
-          throw ExceptionSavingChanges(error);
-        })
-        .then((_) async => await Future.delayed(const Duration(seconds: 3)))
-        .then((_) => testConnectionReconnected())
-        .then((_) => checkAdminPassword(defaultWiFi.password))
-        .whenComplete(() => prefs.remove(pPnpConfiguredSN));
-    // return Future.delayed(Duration(seconds: 5));
+      if (error is ExceptionNeedToReconnect) {
+        throw error;
+      }
+      // Saving error
+      logger.e('[PnP]: Save transaction failed.', error: error);
+      throw ExceptionSavingChanges(error);
+    }).then((_) async {
+      logger.i('[PnP]: Save transaction successful. Waiting for reconnect test.');
+      await Future.delayed(const Duration(seconds: 3));
+    }).then((_) {
+      final password = getDefaultWiFiNameAndPassphrase().password;
+      return testConnectionReconnected()
+          .then((_) => checkAdminPassword(password));
+    }).whenComplete(() {
+      logger.i('[PnP]: Save flow complete. Removing PnP SN.');
+      prefs.remove(pPnpConfiguredSN);
+    });
   }
+
+  //endregion
 
   @override
   Future testConnectionReconnected() async {
-    // Test connect to the propor router
+    logger.i('[PnP]: Testing connection after settings change...');
+    // Test connect to the proper router
     final result = await ref
         .read(routerRepositoryProvider)
         .send(JNAPAction.getDeviceInfo,
@@ -549,14 +671,18 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
             timeoutMs: 3000)
         .onError((error, stackTrace) {
       // Can't get device info
+      logger.e('[PnP]: Could not get device info during reconnect test.',
+          error: error);
       throw ExceptionNeedToReconnect();
     });
     final deviceInfo = NodeDeviceInfo.fromJson(result.output);
     final isConnected =
         state.deviceInfo?.serialNumber == deviceInfo.serialNumber;
     if (!isConnected) {
+      logger.e('[PnP]: Reconnect test failed. Connected to a different router.');
       throw ExceptionNeedToReconnect();
     }
+    logger.i('[PnP]: Reconnect test successful.');
     return;
   }
 
@@ -564,11 +690,13 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
   Future<void> checkRouterConfigured() async {
     final isFirstFetch = state.isUnconfigured == null;
     final repo = ref.read(routerRepositoryProvider);
+    logger.d('[PnP]: Checking if router is configured...');
     final isUnconfigured = await repo
         .send(JNAPAction.getDeviceMode, fetchRemote: true)
         .then((value) =>
             (value.output['mode'] ?? 'Unconfigured') == 'Unconfigured');
     state = state.copyWith(isUnconfigured: isUnconfigured);
+    logger.i('[PnP]: Router is ${isUnconfigured ? 'UNCONFIGURED' : 'CONFIGURED'}.');
     if (isUnconfigured && isFirstFetch) {
       throw ExceptionRouterUnconfigured();
     }
@@ -576,6 +704,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
 
   @override
   Future fetchDevices() {
+    logger.i('[PnP]: Fetching child nodes...');
     final repo = ref.read(routerRepositoryProvider);
     return repo
         .send(
@@ -591,17 +720,20 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
           .map((e) => LinksysDevice.fromMap(e))
           .where((device) => device.nodeType != null || device.isAuthority)
           .toList();
+      logger.i('[PnP]: Found ${deviceList.length} child nodes.');
       state = state.copyWith(childNodes: deviceList);
     });
   }
 
   @override
   void setAttachedPassword(String? password) {
+    logger.d('[PnP]: Setting attached password.');
     state = state.copyWith(attachedPassword: password);
   }
 
   @override
   void setForceLogin(bool force) {
+    logger.d('[PnP]: Setting forceLogin to $force.');
     state = state.copyWith(forceLogin: force);
   }
 }

@@ -34,17 +34,36 @@ import 'package:privacy_gui/util/export_selector/export_base.dart'
     if (dart.library.io) 'package:privacy_gui/util/export_selector/export_mobile.dart'
     if (dart.library.html) 'package:privacy_gui/util/export_selector/export_web.dart';
 
+/// Enum representing the high-level state of the PnP setup wizard UI.
 enum _PnpSetupStep {
+  /// Initializing, fetching preliminary data.
   init,
+
+  /// Displaying the main stepper configuration UI.
   config,
+
+  /// Saving all collected settings to the router.
   saving,
+
+  /// Settings have been successfully saved.
   saved,
+
+  /// Checking for firmware updates.
   fwCheck,
+
+  /// Displaying the new Wi-Fi credentials and QR code.
   wifiReady,
+
+  /// Prompting the user to reconnect to the new Wi-Fi network.
   needReconnect,
   ;
 }
 
+/// The main view for the PnP setup wizard.
+///
+/// This widget orchestrates the multi-step configuration process using a [PnpStepper].
+/// It manages the overall UI state of the flow, switching between loading indicators,
+/// the stepper, and success/failure screens.
 class PnpSetupView extends ConsumerStatefulWidget {
   const PnpSetupView({Key? key}) : super(key: key);
 
@@ -54,7 +73,7 @@ class PnpSetupView extends ConsumerStatefulWidget {
 
 class _PnpSetupViewState extends ConsumerState<PnpSetupView>
     with PageSnackbarMixin {
-  late final List<PnpStep> steps;
+  late List<PnpStep> steps;
   _PnpSetupStep _setupStep = _PnpSetupStep.init;
   String _loadingMessage = '';
   String _loadingMessageSub = '';
@@ -70,29 +89,37 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
   void initState() {
     super.initState();
 
-    Future.doWhile(() => !mounted).then((_) async {
-      setState(() {
-        _loadingMessage = loc(context).collectingData;
-        _setupStep = _PnpSetupStep.init;
-        logger.d('[PnP]: Fetching data. Setup step = init');
-      });
+    steps = []; // Initialize with empty list
+    // Using a post-frame callback to safely interact with the provider.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initialize();
+    });
+  }
+
+  Future<void> _initialize() async {
+    setState(() {
+      _loadingMessage = loc(context).collectingData;
+      _setupStep = _PnpSetupStep.init;
+      logger.d('[PnP]: Initializing... Fetching data.');
+    });
+
+    try {
       await ref.read(pnpProvider.notifier).fetchData();
-    }).then((_) {
       _isUnconfigured = ref.read(pnpProvider).isRouterUnConfigured;
       _forceLogin = ref.read(pnpProvider).forceLogin;
-      steps = buildSteps();
+      steps = _buildSteps();
       logger.d(
-          '[PnP]: Prescribed setup steps=${steps.map((e) => e.title(context))}');
+          '[PnP]: Initialization complete. Prescribed steps: ${steps.map((e) => e.runtimeType)}');
       setState(() {
         _setupStep = _PnpSetupStep.config;
-        logger.d('[PnP]: Settle configuration. Setup step = config');
       });
-    }).onError((e, _) {
-      logger.d('[PnP]: Fetch router data failed. Try again');
+    } catch (e, s) {
+      logger.e('[PnP]: Failed to fetch initial router data.',
+          error: e, stackTrace: s);
       setState(() {
         _fetchError = true;
       });
-    });
+    }
   }
 
   @override
@@ -105,18 +132,18 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
 
   @override
   Widget build(BuildContext context) {
+    // Listen for firmware update completion to advance the UI state.
     ref.listen(firmwareUpdateProvider, (previous, next) {
-      if (_setupStep != _PnpSetupStep.fwCheck) {
-        return;
-      }
-      if (!_hasNewFW) {
+      if (_setupStep != _PnpSetupStep.fwCheck || !_hasNewFW) {
         return;
       }
       if (previous?.isUpdating == true && next.isUpdating == false) {
-        logger.d('[PnP]: FW update finish go WiFi Ready!');
+        logger.i(
+            '[PnP]: Firmware update finished, proceeding to Wi-Fi Ready screen.');
         _goWiFiReady();
       }
     });
+
     return StyledAppPageView.innerPage(
         scrollable: true,
         padding: EdgeInsets.zero,
@@ -146,7 +173,8 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
               AppFilledButton(
                 loc(context).tryAgain,
                 onTap: () {
-                  logger.d('[PnP]: Tap try again, go home.');
+                  logger.d(
+                      '[PnP]: Error view - "Try Again" tapped, navigating home.');
                   context.goNamed(RouteNamed.home);
                 },
               )
@@ -157,12 +185,13 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
     );
   }
 
-  List<PnpStep> buildSteps() {
-    // For Pinnacle
+  /// Dynamically builds the list of steps based on router capabilities.
+  List<PnpStep> _buildSteps() {
     final services = ref.read(pnpProvider).deviceInfo?.services;
     final isGuestWiFiSupport = serviceHelper.isSupportGuestNetwork(services);
     final isNightModeSupport = serviceHelper.isSupportLedMode(services);
-    // Need a common way to figure out which step to save changes
+
+    // The logic to determine which steps to show based on router state.
     return switch ((_forceLogin, _isUnconfigured)) {
       (false, true) => [
           PersonalWiFiStep(
@@ -190,6 +219,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
     };
   }
 
+  /// The main view switcher for the setup process.
   Widget _buildPnpSetupView(BoxConstraints constraints) {
     final showConfig = _setupStep != _PnpSetupStep.saving &&
         _setupStep != _PnpSetupStep.saved &&
@@ -200,19 +230,21 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
       _PnpSetupStep.fwCheck => _fwUpdateCheck(),
       _ => Stack(
           children: [
+            // The main stepper UI, which is ignored and transparent during overlay states.
             IgnorePointer(
                 ignoring: !showConfig,
                 child: Opacity(
                     opacity: showConfig ? 1 : 0,
                     child: SizedBox(
                         height: constraints.maxHeight, child: _configView()))),
+            // Overlays for loading, saved, reconnect states.
             Container(
               color: Theme.of(context).colorScheme.background,
               child: switch (_setupStep) {
                 _PnpSetupStep.saving => _loadingSpinner(),
                 _PnpSetupStep.saved => _showSaved(),
                 _PnpSetupStep.needReconnect => _showNeedReconnect(),
-                _ => SizedBox.square(),
+                _ => const SizedBox.square(),
               },
             )
           ],
@@ -254,6 +286,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
           ),
         ),
       );
+
   Widget _loadingSpinner() => Container(
         color: Theme.of(context).colorScheme.background,
         child: Center(
@@ -270,6 +303,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
           ),
         ),
       );
+
   Widget _showSaved() => Container(
         color: Theme.of(context).colorScheme.background,
         child: Center(
@@ -287,9 +321,10 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
         ),
       );
 
+  /// The view that displays the new Wi-Fi credentials and QR code.
   Widget _showWiFi() {
     final wifiData =
-        ref.read(pnpProvider).stepStateList[PersonalWiFiStep.id]?.data;
+        ref.read(pnpProvider).stepStateList[PnpStepId.personalWifi]?.data;
     final wifiSSID = wifiData?['ssid'] as String? ?? '';
     final wifiPassword = wifiData?['password'] as String? ?? '';
     return Center(
@@ -398,7 +433,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
               // Check router connected propor, then go to dashboard
               testConnection(success: () {
                 logger.i(
-                    '[PnP]: The customized WiFi is well connected, go to dashboard!');
+                    '[PnP]: "Done" tapped. Connection OK. Navigating to dashboard preparation.');
                 context.goNamed(RouteNamed.prepareDashboard);
               });
             },
@@ -408,6 +443,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
     );
   }
 
+  /// The view that prompts the user to reconnect to the new Wi-Fi network.
   Widget _showNeedReconnect() {
     return Container(
       color: Theme.of(context).colorScheme.background,
@@ -430,12 +466,13 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
               AppFilledButtonWithLoading(
                 loc(context).next,
                 onTap: () async {
-                  logger.d('[PnP]: Tap Next to check the WiFi reconnection');
+                  logger.d(
+                      '[PnP]: "Next" tapped on reconnect screen. Testing connection...');
                   await testConnection(success: () async {
                     final isUnconfigured =
                         ref.read(pnpProvider).isRouterUnConfigured;
                     logger.i(
-                        '[PnP]: The customized WiFi has been reconnected - $isUnconfigured');
+                        '[PnP]: Reconnection successful. Router is ${isUnconfigured ? 'unconfigured' : 'configured'}');
                     final password = ref
                         .read(pnpProvider.notifier)
                         .getDefaultWiFiNameAndPassphrase()
@@ -449,11 +486,11 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
                     if (isUnconfigured) {
                       setState(() {
                         _setupStep = _PnpSetupStep.config;
-                        logger
-                            .d('[PnP]: WiFi reconnected. Setup step = config');
+                        logger.d(
+                            '[PnP]: Reconnected. Returning to config steps.');
                       });
                     } else {
-                      logger.d('[PnP]: WiFi reconnected. Setup step = fwCheck');
+                      logger.d('[PnP]: Reconnected. Proceeding to FW check.');
                       _doFwUpdateCheck();
                     }
                   });
@@ -466,61 +503,56 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
     );
   }
 
+  /// The final save action, triggered from the last step or a dedicated save button.
   Future _saveChanges() async {
     final isUnconfigured = ref.read(pnpProvider).isRouterUnConfigured;
     setState(() {
       _loadingMessage = loc(context).savingChanges;
       _loadingMessageSub = loc(context).pnpSavingChangesDesc;
       _setupStep = _PnpSetupStep.saving;
-      logger.d('[PnP]: Save changes. Setup step = saving');
+      logger.d('[PnP]: Saving changes...');
     });
     await ref.read(pnpProvider.notifier).save().catchError((error) {
       setState(() {
         _needToReconnect = true;
       });
-      // if (isUnconfigured) {
-      // if in unconfigured scenario, display the reconnect prompt
       _currentStep?.canGoNext(false);
       setState(() {
         logger.e(
-            '[PnP]: Caught a connection error and the router is unconfigured. Setup step = needReconnect');
+            '[PnP]: Caught a connection error during save. Switching to "needReconnect" state.',
+            error: error);
         _setupStep = _PnpSetupStep.needReconnect;
       });
-      // }
     }, test: (error) => error is ExceptionNeedToReconnect).catchError((error) {
       setState(() {
-        logger.e('[PnP]: Caught a saving error: $error. Setup step = config');
+        logger.e('[PnP]: Caught a save error: $error. Returning to config.',
+            error: error);
         _setupStep = _PnpSetupStep.config;
       });
       final err = error is ExceptionSavingChanges ? error.error : error;
       showSimpleSnackBar(context, 'Unexceped error! <$err}>');
     }, test: (error) => error is ExceptionSavingChanges).whenComplete(() async {
       logger.d(
-          '[PnP]: Save completed. isUnconfigured = $isUnconfigured, SetupStep = $_setupStep');
+          '[PnP]: Save flow complete. isUnconfigured = $isUnconfigured, current UI step = $_setupStep');
       if (isUnconfigured) {
-        // if is unconfigured scenario and no need to reconnect to the router, continue add nodes flow
+        // If in unconfigured scenario and no reconnect is needed, continue the stepper (to YourNetworkStep).
         if (_setupStep != _PnpSetupStep.needReconnect) {
           _stepController?.stepContinue();
           setState(() {
-            logger.d(
-                '[PnP]: The router is unconfigured and no need to reconnect. Setup step = config');
+            logger.d('[PnP]: Unconfigured router saved. Moving to next step.');
             _setupStep = _PnpSetupStep.config;
           });
         }
       } else {
+        // If in configured scenario, proceed to FW check or reconnect prompt.
         if (_setupStep != _PnpSetupStep.needReconnect) {
-          // if is configured scenario, go display WiFi page
           setState(() {
-            logger.d('[PnP]: The router is configured. Setup step = saved');
             _setupStep = _PnpSetupStep.saved;
           });
           await Future.delayed(const Duration(seconds: 3));
-          logger.d('[PnP]: The router is configured. Setup step = fwCheck');
           _doFwUpdateCheck();
         } else {
           setState(() {
-            logger.d(
-                '[PnP]: The router is configured but need to reconnect. Setup step = saved');
             _setupStep = _PnpSetupStep.saved;
           });
           await Future.delayed(const Duration(seconds: 3));
@@ -532,33 +564,36 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
     });
   }
 
+  /// Called after the "Your Network" step to confirm nodes and proceed.
   Future _confirmAddedNodes() async {
-    logger.i('[PnP]: Added nodes confirmed. Setup step = fwCheck');
+    logger.i('[PnP]: Node confirmation step complete. Proceeding to FW check.');
     _doFwUpdateCheck();
   }
 
+  /// Initiates the firmware update check.
   void _doFwUpdateCheck() {
     if (_setupStep != _PnpSetupStep.fwCheck) {
       setState(() {
         _setupStep = _PnpSetupStep.fwCheck;
       });
       final fwUpdate = ref.read(firmwareUpdateProvider.notifier);
-      logger.i('[PnP]: Do FW update check');
+      logger.i('[PnP]: Checking for firmware updates...');
       fwUpdate.fetchAvailableFirmwareUpdates().then((_) async {
         setState(() {
           _hasNewFW = fwUpdate.getAvailableUpdateNumber() > 0;
         });
         if (_hasNewFW) {
-          logger.i('[PnP]: New Firmware available!');
+          logger.i('[PnP]: New firmware found! Starting update...');
           await fwUpdate.updateFirmware();
         } else {
-          logger.i('[PnP]: No available FW, go WiFi Ready');
+          logger.i('[PnP]: No new firmware. Proceeding to Wi-Fi Ready screen.');
           _goWiFiReady();
         }
       });
     }
   }
 
+  /// Navigates to the final Wi-Fi Ready screen.
   void _goWiFiReady() {
     testConnection(success: () {
       setState(() {
@@ -572,16 +607,16 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
     });
   }
 
+  /// Helper to test router connection before proceeding.
   Future<void> testConnection(
       {required void Function() success, void Function()? failed}) {
-    // Check router connected propor, then go to dashboard
     return ref
         .read(pnpProvider.notifier)
         .testConnectionReconnected()
         .then((value) {
       success.call();
     }).onError((error, stackTrace) {
-      logger.e('[PnP]: Cannot detect the expected WiFi connected!');
+      logger.e('[PnP]: Connection test failed!', error: error);
       showSimpleSnackBar(context, loc(context).pnpReconnectWiFi);
       failed?.call();
     });

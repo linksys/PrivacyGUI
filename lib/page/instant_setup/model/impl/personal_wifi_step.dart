@@ -11,13 +11,12 @@ import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 class PersonalWiFiStep extends PnpStep {
-  static int id = 0;
   TextEditingController? _ssidEditController;
   TextEditingController? _passwordEditController;
 
   PersonalWiFiStep({
     super.saveChanges,
-  }) : super(index: id);
+  }) : super(stepId: PnpStepId.personalWifi);
 
   @override
   Future<void> onInit(WidgetRef ref) async {
@@ -63,15 +62,6 @@ class PersonalWiFiStep extends PnpStep {
             label: loc(context).wifiName,
             hint: loc(context).wifiName,
             onCheckInput: (isValid, input) {
-              // if (isValid) {
-              //   ref
-              //       .read(pnpProvider.notifier)
-              //       .setStepData(index, data: {'ssid': input});
-              // } else {
-              //   ref
-              //       .read(pnpProvider.notifier)
-              //       .setStepData(index, data: {'ssid': ''});
-              // }
               _checkForEnablingNext(ref);
             },
           ),
@@ -81,15 +71,6 @@ class PersonalWiFiStep extends PnpStep {
             label: loc(context).wifiPassword,
             hint: loc(context).wifiPassword,
             onCheckInput: (isValid, input) {
-              // if (isValid) {
-              //   ref
-              //       .read(pnpProvider.notifier)
-              //       .setStepData(index, data: {'password': input});
-              // } else {
-              //   ref
-              //       .read(pnpProvider.notifier)
-              //       .setStepData(index, data: {'password': ''});
-              // }
               _checkForEnablingNext(ref);
             },
           ),
@@ -141,9 +122,9 @@ class PersonalWiFiStep extends PnpStep {
     final isPasswordValid = wifiPasswordValidator.validate(password);
 
     if (isSSIDValid && isPasswordValid) {
-      pnp.setStepStatus(index, status: StepViewStatus.data);
+      pnp.setStepStatus(stepId, status: StepViewStatus.data);
     } else {
-      pnp.setStepStatus(index, status: StepViewStatus.error);
+      pnp.setStepStatus(stepId, status: StepViewStatus.error);
     }
   }
 

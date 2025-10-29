@@ -76,7 +76,6 @@ import 'package:privacy_gui/core/jnap/providers/ip_getter/get_local_ip.dart'
     if (dart.library.io) 'package:privacy_gui/core/jnap/providers/ip_getter/mobile_get_local_ip.dart'
     if (dart.library.html) 'package:privacy_gui/core/jnap/providers/ip_getter/web_get_local_ip.dart';
 
-
 import 'package:privacy_gui/page/instant_safety/providers/_providers.dart';
 
 part 'route_home.dart';
@@ -254,6 +253,38 @@ class RouterNotifier extends ChangeNotifier {
   }
 
   Future<String?> _redirectLogic(GoRouterState state) async {
+    // [NEW] PnP status check guard
+    final routerType =
+        _ref.read(connectivityProvider).connectivityInfo.routerType;
+    final isLocal = BuildConfig.forceCommandType == ForceCommand.local ||
+        routerType != RouterType.others;
+    final isTryingToAccessPnp = state.matchedLocation.startsWith('/pnp');
+
+    // Only run this check if on a local network and not already in the PnP flow.
+    if (isLocal && !isTryingToAccessPnp) {
+      final pnp = _ref.read(pnpProvider.notifier);
+      try {
+        // We need to be sure we are talking to the correct device.
+        await pnp.fetchDeviceInfo(false);
+        final config = await pnp.autoConfigurationCheck();
+
+        // If userAcknowledgedAutoConfiguration is false, PnP is required.
+        final needsPnp = config?.userAcknowledgedAutoConfiguration == false;
+
+        if (needsPnp) {
+          logger.i('[Route]: PnP not complete. Forcing redirect to /pnp.');
+          return _goPnp(state.uri.query);
+        }
+      } catch (e) {
+        // If any of the PnP checks fail (e.g., device is unreachable),
+        // log it and fall through to the standard auth check logic below,
+        // which will likely handle the error by redirecting to a login/error page.
+        logger.d(
+            '[Route]: PnP check during redirect guard failed, proceeding to normal auth check. Error: $e');
+      }
+    }
+
+    // --- Original redirect logic ---
     final loginType =
         _ref.watch(authProvider.select((data) => data.value?.loginType));
 

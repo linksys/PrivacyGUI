@@ -14,11 +14,9 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/node_list_card.dart';
 
 class YourNetworkStep extends PnpStep {
-  static int id = 3;
-
   YourNetworkStep({
     super.saveChanges,
-  }) : super(index: id) {
+  }) : super(stepId: PnpStepId.yourNetwork) {
     canBack(false);
   }
 
@@ -28,20 +26,15 @@ class YourNetworkStep extends PnpStep {
   @override
   Future<void> onInit(WidgetRef ref) async {
     await super.onInit(ref);
-    pnp.setStepStatus(index, status: StepViewStatus.loading);
+    pnp.setStepStatus(stepId, status: StepViewStatus.loading);
     await pnp.fetchDevices();
-    pnp.setStepStatus(index, status: StepViewStatus.data);
+    pnp.setStepStatus(stepId, status: StepViewStatus.data);
   }
 
   @override
   Future<Map<String, dynamic>> onNext(WidgetRef ref) async {
     return {};
   }
-
-  // @override
-  // void onDispose() {
-  //   super.onDispose();
-  // }
 
   @override
   Widget content({
