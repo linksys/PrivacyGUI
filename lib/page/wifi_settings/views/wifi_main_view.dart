@@ -82,6 +82,7 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView>
 
     return StyledAppPageView(
       title: loc(context).incredibleWiFi,
+      enableSliverAppBar: true,
       bottomBar: PageBottomBar(
         isPositiveEnabled: bundleState.isDirty &&
             bundleState.current.wifiList.isSettingsValid(),

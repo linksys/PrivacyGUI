@@ -90,6 +90,7 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
             )
           : StyledAppPageView(
               // scrollable: true,
+              enableSliverAppBar: true,
               onRefresh: () {
                 return ref.read(pollingProvider.notifier).forcePolling();
               },
@@ -122,16 +123,8 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
                       ),
                     ]
                   : null,
-              child: (context, constraints) => Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Flexible(
-                    child: _buildTopology(context, ref, desiredTreeWidth),
-                  ),
-                  const AppGap.large1(),
-                ],
-              ),
+              child: (context, constraints) =>
+                  _buildTopology(context, ref, desiredTreeWidth),
             );
     });
   }
@@ -141,8 +134,8 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
     return ResponsiveLayout.isMobileLayout(context)
         ? TreeView<RouterTreeNode>(
             treeController: treeController,
-            physics: const BouncingScrollPhysics(
-                parent: AlwaysScrollableScrollPhysics()),
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
             nodeBuilder:
                 (BuildContext context, TreeEntry<RouterTreeNode> entry) {
               return TreeIndentation(
@@ -188,6 +181,7 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
                 },
                 child: TreeView<RouterTreeNode>(
                   treeController: treeController,
+                  shrinkWrap: true,
                   physics: const BouncingScrollPhysics(
                       parent: AlwaysScrollableScrollPhysics()),
                   nodeBuilder:
