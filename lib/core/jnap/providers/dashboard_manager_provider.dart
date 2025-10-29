@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:privacy_gui/constants/_constants.dart';
-import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
@@ -173,24 +172,6 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
 
   bool isHealthCheckModuleSupported(String module) {
     return state.healthCheckModules.contains(module);
-  }
-
-  Future<NodeDeviceInfo?> _checkDeviceInfoFromCache(
-      String? serialNumber) async {
-    if (serialNumber == null) {
-      return null;
-    }
-    final data =
-        await ref.read(linksysCacheManagerProvider).getCache(serialNumber);
-    if (data == null) {
-      return null;
-    }
-    final deviceInfoRaw = data[JNAPAction.getDeviceInfo.actionValue];
-    if (deviceInfoRaw == null) {
-      return null;
-    }
-    return NodeDeviceInfo.fromJson(
-        JNAPSuccess.fromJson(deviceInfoRaw['data']).output);
   }
 
   // DashboardManagerState _getAvailableDeviceServices(

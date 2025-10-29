@@ -139,6 +139,8 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
     final shouldSave = await _confirmSaveDialog();
     if (!shouldSave) return;
     final notifier = ref.read(vpnProvider.notifier);
+    // If the widget is disposed before the save request, do nothing
+    if (!mounted) return;
     doSomethingWithSpinner(context, notifier.save()).then((state) {
       if (state == null) {
         return;
@@ -159,7 +161,7 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
   void _onBackTap() {
     if (isStateChanged(ref.read(vpnProvider).settings)) {
       showUnsavedAlert(context).then((shouldDiscard) {
-        if (shouldDiscard == true) {
+        if (shouldDiscard == true && mounted) {
           context.pop();
         }
       });
@@ -220,30 +222,37 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
             key: ValueKey('testAgain'),
             loc(context).testAgain,
             onTap: () async {
-              bool isChanged = isStateChanged(state.settings);
-              bool hasErrors = _hasErrors();
+              final isChanged = isStateChanged(state.settings);
+              final hasErrors = _hasErrors();
 
-              final shouldGo = !isChanged
-                  ? true
-                  : !hasErrors
-                      ? await showMessageAppDialog(context,
-                          title: loc(context).unsavedChangesTitle,
-                          message:
-                              'Your changes is undaved, do you want to save and test it?',
-                          actions: [
-                              AppTextButton(loc(context).cancel, onTap: () {
-                                context.pop(false);
-                              }),
-                              AppTextButton(loc(context).save, onTap: () {
-                                context.pop(true);
-                              }),
-                            ])
-                      : await showMessageAppOkDialog(context,
-                              title: loc(context).alertExclamation,
-                              message:
-                                  'Your changes has errors, please fix them before testing.',
-                              icon: Icon(LinksysIcons.error))
-                          .then((_) => false);
+              bool shouldGo;
+              if (!isChanged) {
+                shouldGo = true;
+              } else if (!hasErrors) {
+                shouldGo = await showMessageAppDialog(
+                  context,
+                  title: loc(context).unsavedChangesTitle,
+                  message:
+                      'Your changes is unsaved, do you want to save and test it?',
+                  actions: [
+                    AppTextButton(loc(context).cancel, onTap: () {
+                      context.pop(false);
+                    }),
+                    AppTextButton(loc(context).save, onTap: () {
+                      context.pop(true);
+                    }),
+                  ],
+                );
+              } else {
+                await showMessageAppOkDialog(
+                  context,
+                  title: loc(context).alertExclamation,
+                  message:
+                      'Your changes has errors, please fix them before testing.',
+                  icon: Icon(LinksysIcons.error),
+                );
+                shouldGo = false;
+              }
 
               if (!shouldGo) {
                 return;
@@ -252,6 +261,7 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
                 await _saveChanges();
               }
 
+              if (!mounted) return;
               doSomethingWithSpinner(context, notifier.testVPNConnection())
                   .then((state) {
                 if (state == null) {
@@ -527,7 +537,7 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
   Widget _buildTunneledUserSection(VPNState state, VPNNotifier notifier) {
     return _buildSection(
       title: loc(context).vpnTunneledUserSection,
-      isEnabled: state.settings.serviceSettings?.enabled ?? false,
+      isEnabled: state.settings.serviceSettings.enabled,
       children: [
         AppIPFormField(
           key: ValueKey('tunneledUser'),
@@ -590,14 +600,12 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
     return AppSettingCard(
       title: loc(context).vpnEnabled,
       trailing: AppSwitch(
-        value: state.settings.serviceSettings?.enabled ?? false,
+        value: state.settings.serviceSettings.enabled,
         onChanged: (value) {
-          if (state.settings.serviceSettings != null) {
-            notifier.setVPNService(
-              state.settings.serviceSettings!.copyWith(enabled: value),
-            );
-            setState(() {});
-          }
+          notifier.setVPNService(
+            state.settings.serviceSettings.copyWith(enabled: value),
+          );
+          setState(() {});
         },
       ),
     );
@@ -607,14 +615,12 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
     return AppSettingCard(
       title: loc(context).vpnAutoConnect,
       trailing: AppSwitch(
-        value: state.settings.serviceSettings?.autoConnect ?? false,
+        value: state.settings.serviceSettings.autoConnect,
         onChanged: (value) {
-          if (state.settings.serviceSettings != null) {
-            notifier.setVPNService(
-              state.settings.serviceSettings!.copyWith(autoConnect: value),
-            );
-            setState(() {});
-          }
+          notifier.setVPNService(
+            state.settings.serviceSettings.copyWith(autoConnect: value),
+          );
+          setState(() {});
         },
       ),
     );

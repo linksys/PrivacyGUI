@@ -26,4 +26,6 @@ Future<ShareResult?> exportFileFromBytes(
     {required Uint8List utf8Bytes,
     required String fileName,
     String? text,
-    String? subject}) async {}
+    String? subject}) async {
+  return const ShareResult('', ShareResultStatus.success);
+}

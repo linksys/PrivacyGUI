@@ -25,23 +25,23 @@ Future<T?> doSomethingWithSpinner<T>(
 }) async {
   NavigatorState? navigator;
   final completer = Completer();
-  Future.delayed(
-      Duration.zero,
-      () {
-        try {
-          navigator = Navigator.of(context, rootNavigator: true);
-          showAppSpinnerDialog(
-            context,
-            title: title,
-            icon: icon,
-            messages: messages ?? [loc(context).processing],
-            period: period,
-          );
-        } catch (e) {
-          logger.w('Could not show spinner dialog: $e');
-        }
-        completer.complete();
-      });
+  Future.delayed(Duration.zero, () {
+    try {
+      if (context.mounted) {
+        navigator = Navigator.of(context, rootNavigator: true);
+        showAppSpinnerDialog(
+          context,
+          title: title,
+          icon: icon,
+          messages: messages ?? [loc(context).processing],
+          period: period,
+        );
+      }
+    } catch (e) {
+      logger.w('Could not show spinner dialog: $e');
+    }
+    completer.complete();
+  });
 
   await completer.future;
   await Future.delayed(Duration(milliseconds: 100));
@@ -138,7 +138,9 @@ Future<T?> showSubmitAppDialog<T>(
             setState(() {
               isLoading = false;
             });
-            context.pop(value);
+            if (context.mounted) {
+              context.pop(value);
+            }
           }).onError((error, stackTrace) {
             logger.e('submit app error: $error', stackTrace: stackTrace);
             setState(() {
@@ -366,7 +368,9 @@ Future<T?> showRouterNotFoundAlert<T>(BuildContext context, WidgetRef ref,
               return onComplete?.call();
             }).then((value) {
               ref.read(pollingProvider.notifier).startPolling();
-              context.pop(value);
+              if (context.mounted) {
+                context.pop(value);
+              }
             }).onError((_, __) {
               logger.d('[RouterNotFound] Try again failed');
             });

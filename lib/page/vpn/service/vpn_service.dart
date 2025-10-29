@@ -79,7 +79,7 @@ class VPNService {
         MapEntry(
             JNAPAction.setVPNGateway, settings.gatewaySettings?.toMap() ?? {}),
       MapEntry(
-          JNAPAction.setVPNService, settings.serviceSettings?.toMap() ?? {}),
+          JNAPAction.setVPNService, settings.serviceSettings.toMap()),
       if (settings.tunneledUserIP != null)
         MapEntry(
             JNAPAction.setTunneledUser, {'ipAddress': settings.tunneledUserIP}),

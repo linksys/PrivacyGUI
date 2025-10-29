@@ -89,8 +89,11 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                   context,
                   ref.read(dmzSettingsProvider.notifier).save().then((value) {
                     _updateControllers(value);
-                    showSuccessSnackBar(context, loc(context).saved);
+                    if (context.mounted) {
+                      showSuccessSnackBar(context, loc(context).saved);
+                    }
                   }).onError((error, stackTrace) {
+                    if (!context.mounted) return;
                     final errorMsg = errorCodeHelper(
                         context, (error as JNAPError?)?.result ?? '');
                     if (errorMsg != null) {

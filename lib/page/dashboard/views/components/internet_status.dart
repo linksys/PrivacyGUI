@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_provider.dart';
 import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_state.dart';
-import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -33,8 +32,6 @@ class _InternetConnectionWidgetState
     extends ConsumerState<InternetConnectionWidget> {
   @override
   Widget build(BuildContext context) {
-    final isFirstPolling = ref
-        .watch(dashboardHomeProvider.select((value) => value.isFirstPolling));
     final wanStatus = ref.watch(internetStatusProvider);
     final isOnline = wanStatus == InternetStatus.online;
 

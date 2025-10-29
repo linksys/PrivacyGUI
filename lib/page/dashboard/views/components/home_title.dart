@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
-import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -53,6 +52,7 @@ class DashboardHomeTitle extends ConsumerWidget {
                       doSomethingWithSpinner(context,
                               ref.read(timezoneProvider.notifier).fetch())
                           .then((_) {
+                        if (!context.mounted) return;
                         context.pushNamed(RouteNamed.settingsTimeZone);
                       });
                     },

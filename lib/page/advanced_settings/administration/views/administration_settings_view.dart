@@ -48,7 +48,9 @@ class _AdministrationSettingsViewState
               final goBack = await showUnsavedAlert(context);
               if (goBack == true) {
                 ref.read(administrationSettingsProvider.notifier).revert();
-                context.pop();
+                if (context.mounted) {
+                  context.pop();
+                }
               }
             }
           : null,
@@ -61,10 +63,14 @@ class _AdministrationSettingsViewState
                     .read(administrationSettingsProvider.notifier)
                     .save()
                     .then((value) {
-                  showSuccessSnackBar(context, loc(context).saved);
+                  if (context.mounted) {
+                    showSuccessSnackBar(context, loc(context).saved);
+                  }
                 }).onError((error, stackTrace) {
-                  showFailedSnackBar(
-                      context, loc(context).unknownErrorCode(error ?? ''));
+                  if (context.mounted) {
+                    showFailedSnackBar(
+                        context, loc(context).unknownErrorCode(error ?? ''));
+                  }
                 }));
           }),
       child: (context, constraints) => AppBasicLayout(
@@ -78,7 +84,8 @@ class _AdministrationSettingsViewState
                   semanticLabel: 'allow local management wirelessly',
                   title: AppText.labelLarge(loc(context)
                       .administrationAllowLocalManagementWirelessly),
-                  value: state.current.managementSettings.canManageWirelessly ?? false,
+                  value: state.current.managementSettings.canManageWirelessly ??
+                      false,
                   onChanged: (value) {
                     ref
                         .read(administrationSettingsProvider.notifier)

@@ -429,41 +429,6 @@ class SimpleTreeNodeItem extends StatelessWidget {
           : Theme.of(context).colorScheme.onSurface,
     );
   }
-
-  Widget _instantPairItem(BuildContext context) {
-    return PopupMenuButton<NodeInstantActions>(
-      color: Theme.of(context).colorScheme.surface,
-      elevation: 10,
-      surfaceTintColor: Theme.of(context).colorScheme.surface,
-      itemBuilder: (context) {
-        return [
-          PopupMenuItem<NodeInstantActions>(
-            value: NodeInstantActions.pairWired,
-            child: _itemText(context, NodeInstantActions.pairWired),
-          ),
-          PopupMenuItem<NodeInstantActions>(
-            value: NodeInstantActions.pairWireless,
-            child: _itemText(context, NodeInstantActions.pairWireless),
-          )
-        ];
-      },
-      onSelected: onActionTap,
-      child: Row(
-        children: [
-          Expanded(
-            child: AppText.labelLarge(
-              NodeInstantActions.pair.resolveLabel(context),
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-          Icon(
-            Icons.arrow_right,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class BorderInfoCell extends StatefulWidget {
@@ -492,7 +457,7 @@ class _BorderInfoCellState extends State<BorderInfoCell> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
+        SizedBox(
           width: widget.width,
           child: Card(
             margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),

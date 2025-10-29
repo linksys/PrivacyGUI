@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/core/cloud/model/cloud_session_model.dart';
 import 'package:privacy_gui/core/cloud/model/error_response.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_communication_method.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
@@ -33,7 +32,7 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
   StreamSubscription? _subscription;
   late final TextEditingController _otpController;
   bool _rememberMe = false;
-  SessionToken? _sessionToken; // for mfa login
+  // SessionToken? _sessionToken; // for mfa login
   bool isAdd = false;
   // _startListenOtp() async {
   //   if (Platform.isAndroid) {
@@ -211,9 +210,7 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
     // }
     // // Require otp code
     // // authBloc.add(RequireOtpCode(communicationMethod: state.selectedMethod!));
-    // // TODO if is create account, do create account preparation first
 
-    // TODO WHY need delay here????
     await Future.delayed(Duration(seconds: 1));
     ref
         .read(otpProvider.notifier)

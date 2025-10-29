@@ -15,7 +15,6 @@ import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/page/troubleshooting/_troubleshooting.dart';
-import 'package:privacy_gui/page/troubleshooting/providers/troubleshooting_state.dart';
 import 'package:privacy_gui/util/extensions.dart';
 
 final troubleshootingProvider =
@@ -54,9 +53,8 @@ class TroubleshootingNotifier extends Notifier<TroubleshootingState> {
       final devices = _handleDeviceData(results[JNAPAction.getDevices]);
       final dhcpLeases =
           _handleDhcpLeaseData(results[JNAPAction.getDHCPClientLeases]);
-      final backHaulInfo =
-          _handleBackhaulInfoData(results[JNAPAction.getBackhaulInfo]);
-      final nodesWireless = _handleNodesWirelessConnectionData(
+      _handleBackhaulInfoData(results[JNAPAction.getBackhaulInfo]);
+      _handleNodesWirelessConnectionData(
           results[JNAPAction.getNodesWirelessNetworkConnections]);
       final currentTime =
           _handleTimeSettings(results[JNAPAction.getTimeSettings]);

@@ -5,7 +5,6 @@ import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
-import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
@@ -127,23 +126,5 @@ class ChannelFinderNotifier extends Notifier<ChannelFinderState> {
       }
     }
     return optimizedOldChannel;
-  }
-
-  int _getChannelSelectionDurationEstimate() {
-    var numOnline = 1;
-    ref.read(deviceManagerProvider).slaveDevices.forEach((node) {
-      if (node.isOnline()) {
-        numOnline++;
-      }
-    });
-    return numOnline * 60000;
-  }
-
-  int _countOptimizedNodes(
-      List<OptimizedSelectedChannel> optimizedSelectedChannels) {
-    var arr = optimizedSelectedChannels.where((element) {
-      return element.channels.any((channel) => channel.isOptimized == true);
-    }).toList();
-    return arr.length;
   }
 }

@@ -91,15 +91,6 @@ class _OTPMethodSelectorViewState extends ConsumerState<OTPMethodSelectorView> {
     return loc(context).otpSendMethodChoiceTitle;
   }
 
-  _checkPhoneExist(
-      BuildContext context, CommunicationMethod method, String token) {
-    if (method.method == CommunicationMethodType.sms.name.toUpperCase()) {
-      // Add phone number
-    } else {
-      _onSend(method);
-    }
-  }
-
   _onSend(CommunicationMethod method) {
     _setLoading(true);
     ref.read(otpProvider.notifier).onInputOtp();

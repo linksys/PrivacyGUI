@@ -2,7 +2,6 @@ import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart';
 import 'package:privacy_gui/constants/_constants.dart';
-import 'package:privacy_gui/core/cloud/linksys_cloud_repository.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
@@ -20,7 +19,6 @@ import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_step_state.dart';
@@ -277,9 +275,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
       return isConnected;
     }
 
-    Future<bool> testPing() => ref.read(cloudRepositoryProvider).testPingPng();
     final isOnline = await isInternetConnected();
-    // final isOnline = await testPing();
     if (!isOnline) {
       throw ExceptionNoInternetConnection();
     }

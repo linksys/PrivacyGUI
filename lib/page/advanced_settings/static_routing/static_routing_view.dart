@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/models/get_routing_settings.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_provider.dart';
@@ -193,8 +192,12 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
       pivotalIndex: 4, // Changes on the interface may make other values invalid
       onStartEdit: (index, rule) {
         currentFocus = null;
-        ref.read(staticRoutingRuleProvider.notifier).init(state.current.entries.entries,
-            rule, index, state.status.routerIp, state.status.subnetMask);
+        ref.read(staticRoutingRuleProvider.notifier).init(
+            state.current.entries.entries,
+            rule,
+            index,
+            state.status.routerIp,
+            state.status.subnetMask);
         // Edit
         routerNameTextController.text = rule?.name ?? '';
         destinationIPTextController.text =

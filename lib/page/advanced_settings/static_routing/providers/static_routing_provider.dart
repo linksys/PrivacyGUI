@@ -6,7 +6,6 @@ import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
 import 'package:privacy_gui/core/jnap/models/set_routing_settings.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_state.dart';
-import 'package:privacy_gui/providers/preservable.dart';
 import 'package:privacy_gui/providers/preservable_contract.dart';
 import 'package:privacy_gui/providers/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/utils.dart';

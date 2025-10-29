@@ -22,8 +22,6 @@ class _FirewallViewState extends ConsumerState<FirewallView>
     with PageSnackbarMixin, SingleTickerProviderStateMixin {
   late final TabController _tabController;
 
-  int _tabIndex = 0;
-
   @override
   void initState() {
     super.initState();
@@ -76,7 +74,8 @@ class _FirewallViewState extends ConsumerState<FirewallView>
               futures.add(ref.read(firewallProvider.notifier).save());
             }
             if (ipv6State.isDirty) {
-              futures.add(ref.read(ipv6PortServiceListProvider.notifier).save());
+              futures
+                  .add(ref.read(ipv6PortServiceListProvider.notifier).save());
             }
 
             doSomethingWithSpinner(context, Future.wait(futures))
@@ -92,7 +91,9 @@ class _FirewallViewState extends ConsumerState<FirewallView>
               if (goBack == true) {
                 ref.read(firewallProvider.notifier).revert();
                 ref.read(ipv6PortServiceListProvider.notifier).revert();
-                context.pop();
+                if (context.mounted) {
+                  context.pop();
+                }
               }
             }
           : null,
@@ -102,11 +103,6 @@ class _FirewallViewState extends ConsumerState<FirewallView>
               ))
           .toList(),
       tabContentViews: tabContents,
-      onTabTap: (index) {
-        setState(() {
-          _tabIndex = index;
-        });
-      },
     );
   }
 
@@ -121,8 +117,9 @@ class _FirewallViewState extends ConsumerState<FirewallView>
               semanticLabel: 'ipv4 SPI firewall protection',
               value: state.settings.current.isIPv4FirewallEnabled,
               onChanged: (value) {
-                ref.read(firewallProvider.notifier).setSettings(
-                    state.settings.current.copyWith(isIPv4FirewallEnabled: value));
+                ref.read(firewallProvider.notifier).setSettings(state
+                    .settings.current
+                    .copyWith(isIPv4FirewallEnabled: value));
               },
             ),
           ),
@@ -133,8 +130,9 @@ class _FirewallViewState extends ConsumerState<FirewallView>
               semanticLabel: 'ipv6 SPI firewall protection',
               value: state.settings.current.isIPv6FirewallEnabled,
               onChanged: (value) {
-                ref.read(firewallProvider.notifier).setSettings(
-                    state.settings.current.copyWith(isIPv6FirewallEnabled: value));
+                ref.read(firewallProvider.notifier).setSettings(state
+                    .settings.current
+                    .copyWith(isIPv6FirewallEnabled: value));
               },
             ),
           ),
@@ -154,9 +152,8 @@ class _FirewallViewState extends ConsumerState<FirewallView>
               semanticLabel: 'ipsec passthrough',
               value: !state.settings.current.blockIPSec,
               onChanged: (value) {
-                ref
-                    .read(firewallProvider.notifier)
-                    .setSettings(state.settings.current.copyWith(blockIPSec: !value));
+                ref.read(firewallProvider.notifier).setSettings(
+                    state.settings.current.copyWith(blockIPSec: !value));
               },
             ),
           ),
@@ -167,9 +164,8 @@ class _FirewallViewState extends ConsumerState<FirewallView>
               semanticLabel: 'pptp passthrough',
               value: !state.settings.current.blockPPTP,
               onChanged: (value) {
-                ref
-                    .read(firewallProvider.notifier)
-                    .setSettings(state.settings.current.copyWith(blockPPTP: !value));
+                ref.read(firewallProvider.notifier).setSettings(
+                    state.settings.current.copyWith(blockPPTP: !value));
               },
             ),
           ),
@@ -180,9 +176,8 @@ class _FirewallViewState extends ConsumerState<FirewallView>
               semanticLabel: 'l2tp passthrough',
               value: !state.settings.current.blockL2TP,
               onChanged: (value) {
-                ref
-                    .read(firewallProvider.notifier)
-                    .setSettings(state.settings.current.copyWith(blockL2TP: !value));
+                ref.read(firewallProvider.notifier).setSettings(
+                    state.settings.current.copyWith(blockL2TP: !value));
               },
             ),
           ),
@@ -202,8 +197,9 @@ class _FirewallViewState extends ConsumerState<FirewallView>
               semanticLabel: 'filter anonymous',
               value: state.settings.current.blockAnonymousRequests,
               onChanged: (value) {
-                ref.read(firewallProvider.notifier).setSettings(
-                    state.settings.current.copyWith(blockAnonymousRequests: value));
+                ref.read(firewallProvider.notifier).setSettings(state
+                    .settings.current
+                    .copyWith(blockAnonymousRequests: value));
               },
             ),
           ),
@@ -227,8 +223,9 @@ class _FirewallViewState extends ConsumerState<FirewallView>
               semanticLabel: 'filter internet NAT redirection',
               value: state.settings.current.blockNATRedirection,
               onChanged: (value) {
-                ref.read(firewallProvider.notifier).setSettings(
-                    state.settings.current.copyWith(blockNATRedirection: value));
+                ref.read(firewallProvider.notifier).setSettings(state
+                    .settings.current
+                    .copyWith(blockNATRedirection: value));
               },
             ),
           ),
@@ -239,9 +236,8 @@ class _FirewallViewState extends ConsumerState<FirewallView>
               semanticLabel: 'filter ident',
               value: state.settings.current.blockIDENT,
               onChanged: (value) {
-                ref
-                    .read(firewallProvider.notifier)
-                    .setSettings(state.settings.current.copyWith(blockIDENT: value));
+                ref.read(firewallProvider.notifier).setSettings(
+                    state.settings.current.copyWith(blockIDENT: value));
               },
             ),
           ),

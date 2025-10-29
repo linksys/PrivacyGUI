@@ -136,7 +136,7 @@ class _InstantSafetyViewState extends ConsumerState<InstantSafetyView>
         showChangesSavedSnackBar();
       }),
     ).catchError((error, stackTrace) {
-      if (error is JNAPSideEffectError) {
+      if (error is JNAPSideEffectError && mounted) {
         showRouterNotFoundAlert(context, ref, onComplete: () async {
           await _notifier.fetch(forceRemote: true);
           showChangesSavedSnackBar();

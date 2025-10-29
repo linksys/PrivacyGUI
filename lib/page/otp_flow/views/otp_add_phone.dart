@@ -1,14 +1,11 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/constants/default_country_codes.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_account.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/core/cloud/model/cloud_communication_method.dart';
-import 'package:privacy_gui/core/cloud/model/cloud_phone.dart';
 import 'package:privacy_gui/core/cloud/model/region_code.dart';
 import 'package:privacy_gui/page/components/layouts/basic_header.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
@@ -20,7 +17,6 @@ import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
-import 'dart:convert';
 
 class OtpAddPhoneView extends ArgumentsConsumerStatefulView {
   const OtpAddPhoneView({
@@ -39,7 +35,6 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
   CAMobile? editPhone;
   bool hasInput = false;
   bool isInputInvalid = false;
-  Map _countryCodes = {};
   RegionCode currentRegion = RegionCode(
     countryCode: 'US',
     countryName: 'United States',
@@ -59,25 +54,17 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
   void initState() {
     super.initState();
     editPhone = widget.args['phone'];
-    loadPhoneSamples().then((_) {
-      final data = List.from(defaultCountryCodes['countryCodes'])
-          .firstWhereOrNull((element) =>
-              '+${element['countryCode']}' == editPhone?.countryCode);
+    final data = List.from(defaultCountryCodes['countryCodes']).firstWhereOrNull(
+        (element) => '+${element['countryCode']}' == editPhone?.countryCode);
 
-      return data != null ? RegionCode.fromJson(data) : currentRegion;
-    }).then((region) => updateRegion(region));
+    final region = data != null ? RegionCode.fromJson(data) : currentRegion;
+    updateRegion(region);
   }
 
   @override
   void dispose() {
     phoneController.dispose();
     super.dispose();
-  }
-
-  Future<void> loadPhoneSamples() async {
-    final String jsonText = await rootBundle
-        .loadString('assets/resources/phone_number_examples.json');
-    _countryCodes = json.decode(jsonText);
   }
 
   void _onInputChanged(String text) {
@@ -88,7 +75,7 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
   }
 
   void _checkPhoneNumber() async {
-    final router = GoRouter.of(context);
+    // final router = GoRouter.of(context);
     final userInputPhoneNumber = phoneController.text;
     _setLoading(true);
     try {
@@ -131,16 +118,6 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
       _onInputChanged(phoneController.value.text);
     });
   }
-
-  // Future<String> _getPhoneHint(String countryCode) async {
-  //   final String? phoneSample = _countryCodes[countryCode];
-  //   if (phoneSample != null) {
-  //     return await phoneNumberUtil.format(
-  //         phoneSample, currentRegion.countryCode);
-  //   } else {
-  //     return loc(context).phone;
-  //   }
-  // }
 
   @override
   Widget build(BuildContext context) {
