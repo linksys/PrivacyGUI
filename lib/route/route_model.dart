@@ -5,8 +5,6 @@ import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 
-import 'package:privacy_gui/page/components/styled/top_bar.dart';
-
 ValueNotifier<bool> showColumnOverlayNotifier =
     ValueNotifier(BuildConfig.showColumnOverlay);
 
@@ -61,8 +59,6 @@ class LinksysRoute extends GoRoute {
   static bool isShowNaviRail(
           BuildContext context, LinksysRouteConfig? config) =>
       config == null ? true : config.noNaviRail != true;
-
-  // 
 
   static bool autoHideNaviRail(BuildContext context) =>
       (GoRouter.of(context)

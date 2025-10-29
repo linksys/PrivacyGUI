@@ -38,15 +38,21 @@ class MenuHolderState extends ConsumerState<MenuHolder> {
         .routes
         .last as LinksysRoute?;
 
-    final autoHide = false; //LinksysRoute.autoHideNaviRail(context);
+    const autoHide = false; //LinksysRoute.autoHideNaviRail(context);
     final showNavi = LinksysRoute.isShowNaviRail(context, pageRoute?.config);
     Future.doWhile(() => !mounted).then((value) {
-      final displayType =
-          shellNavigatorKey.currentContext == null || autoHide || !showNavi
-              ? MenuDisplay.none
-              : ResponsiveLayout.isMobileLayout(context)
-                  ? MenuDisplay.bottom
-                  : MenuDisplay.top;
+      MenuDisplay displayType;
+      if (shellNavigatorKey.currentContext == null || autoHide || !showNavi) {
+        displayType = MenuDisplay.none;
+      } else {
+        if (context.mounted) {
+          displayType = ResponsiveLayout.isMobileLayout(context)
+              ? MenuDisplay.bottom
+              : MenuDisplay.top;
+        } else {
+          displayType = MenuDisplay.none;
+        }
+      }
       _controller.setDisplayType(displayType);
     });
     return ValueListenableBuilder<NavigationMenus>(

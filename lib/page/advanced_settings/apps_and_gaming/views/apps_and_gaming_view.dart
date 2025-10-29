@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
-import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/providers/apps_and_gaming_provider.dart';
 import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
@@ -93,7 +92,9 @@ class _AppsGamingSettingsViewState extends ConsumerState<AppsGamingSettingsView>
         if (isCurrentChanged && (await showUnsavedAlert(context) != true)) {
           return;
         }
-        context.pop();
+        if (context.mounted) {
+          context.pop();
+        }
       },
       tabs: tabs,
       tabContentViews: tabContents,

@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/troubleshooting/providers/troubleshooting_provider.dart';
@@ -58,7 +57,7 @@ class _TroubleshootingPingViewState
             ),
             const AppGap.medium(),
             AppDropdownMenu<String>(
-              items: ['5', '10', '15', 'Unlimited'],
+              items: const ['5', '10', '15', 'Unlimited'],
               label: (item) => item,
               onChanged: (value) {
                 _pingCount = int.tryParse(value);

@@ -1,15 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/constants/pref_key.dart';
-import 'package:privacy_gui/core/jnap/models/firmware_update_settings.dart';
-import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/panel/general_section.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 typedef OnMenuItemClick = void Function(int index, AppSectionItemData item);
 
@@ -22,24 +18,14 @@ class DashboardSettingsView extends ConsumerStatefulWidget {
 }
 
 class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
-  bool _pushEnabled = false;
 
   @override
   void initState() {
     super.initState();
-
-    SharedPreferences.getInstance().then((prefs) {
-      setState(() {
-        _pushEnabled = prefs.getString(pDeviceToken) != null;
-      });
-    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final isFwAutoUpdate = ref.watch(firmwareUpdateProvider
-            .select((value) => value.settings.updatePolicy)) ==
-        FirmwareUpdateSettings.firmwareUpdatePolicyAuto;
     return StyledAppPageView(
       scrollable: true,
       child: (context, constraints) => SizedBox(
@@ -54,29 +40,6 @@ class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
             _section(
               _othersSettingsSection(),
             ),
-            // const AppGap.large2(),
-            // AppSwitchTriggerTile(
-            //   value: _pushEnabled,
-            //   title: AppText.bodyLarge('Enable Push Notification'),
-            //   semanticLabel: 'Enable Push Notification',
-            //   subtitle: AppText.bodySmall(
-            //     'Experiential',
-            //     color: Colors.grey,
-            //   ),
-            //   onChanged: (value) {},
-            //   event: (value) async {
-            //     if (value) {
-            //       await initCloudMessage((_){});
-            //     } else {
-            //       await removeCloudMessage();
-            //     }
-            //     SharedPreferences.getInstance().then((prefs) {
-            //       setState(() {
-            //         _pushEnabled = prefs.getString(pDeviceToken) != null;
-            //       });
-            //     });
-            //   },
-            // ),
           ],
         ),
       ),

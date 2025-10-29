@@ -152,8 +152,6 @@ class WifiListNotifier extends Notifier<WiFiState> {
           .then((response) => GuestRadioSettings.fromMap(response.output));
       final setGuestRadioSettings =
           SetGuestRadioSettings.fromGuestRadioSettings(guestRadioInfo);
-      final isGuestChanged = state.guestWiFi.isEnabled !=
-          setGuestRadioSettings.isGuestNetworkEnabled;
       final newGuestRadios = setGuestRadioSettings.radios
           .map(
             (e) => e.copyWith(
@@ -173,7 +171,6 @@ class WifiListNotifier extends Notifier<WiFiState> {
           radios: newGuestRadios);
     }
     final builder = JNAPTransactionBuilder(auth: true, commands: [
-      // if (isGuestChanged)
       MapEntry(JNAPAction.setRadioSettings, newSettings.toMap()),
       if (isSupportGuestWiFi)
         MapEntry(JNAPAction.setGuestRadioSettings,

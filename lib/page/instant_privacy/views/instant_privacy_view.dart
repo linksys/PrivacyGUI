@@ -363,7 +363,7 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
 
   void _showEnableDialog(bool enable) {
     showInstantPrivacyConfirmDialog(context, enable).then((value) {
-      if (value != true) {
+      if (value != true || !mounted) {
         return;
       }
       if (enable) {

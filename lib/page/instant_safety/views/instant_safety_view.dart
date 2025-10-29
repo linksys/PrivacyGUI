@@ -49,7 +49,7 @@ class _InstantSafetyViewState extends ConsumerState<InstantSafetyView>
       onBackTap: _edited(state.safeBrowsingType)
           ? () async {
               final goBack = await showUnsavedAlert(context);
-              if (goBack == true) {
+              if (goBack == true && context.mounted) {
                 context.pop();
               }
             }
@@ -158,6 +158,7 @@ class _InstantSafetyViewState extends ConsumerState<InstantSafetyView>
         showChangesSavedSnackBar();
       }),
     ).catchError((error) {
+      if (!mounted) return;
       showRouterNotFoundAlert(context, ref, onComplete: () async {
         await ref
             .read(instantSafetyProvider.notifier)
@@ -167,6 +168,7 @@ class _InstantSafetyViewState extends ConsumerState<InstantSafetyView>
       });
     }, test: (error) => error is JNAPSideEffectError).onError(
         (error, stackTrace) {
+      if (!mounted) return;
       final errorMsg = switch (error.runtimeType) {
         SafeBrowsingError => (error as SafeBrowsingError).message,
         _ => 'Unknown error',

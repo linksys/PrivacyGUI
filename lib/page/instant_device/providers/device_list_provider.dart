@@ -5,7 +5,6 @@ import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
-import 'package:privacy_gui/page/instant_device/extensions/icon_device_category_ext.dart';
 
 final offlineDeviceListProvider = Provider((ref) {
   final deviceListState = ref.watch(deviceListProvider);
@@ -110,7 +109,7 @@ class DeviceListNotifier extends Notifier<DeviceListState> {
     if (userDeviceType == null) {
       return deviceIconTest(device.toMap());
     }
-    final match = IconDeviceCategoryExt.resolveByName(userDeviceType);
+    // final match = IconDeviceCategoryExt.resolveByName(userDeviceType);
     // // The userDeviceType failed to be resolved may be because its value is not one of our custom values
     // // but can be resolved correctly by device icon test (e.g., desktop-mac)
     // if (match == LinksysIcons.genericDevice) {

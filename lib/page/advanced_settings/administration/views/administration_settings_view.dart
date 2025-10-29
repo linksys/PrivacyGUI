@@ -52,7 +52,9 @@ class _AdministrationSettingsViewState
               final goBack = await showUnsavedAlert(context);
               if (goBack == true) {
                 ref.read(administrationSettingsProvider.notifier).fetch();
-                context.pop();
+                if (context.mounted) {
+                  context.pop();
+                }
               }
             }
           : null,
@@ -67,10 +69,14 @@ class _AdministrationSettingsViewState
                     .save()
                     .then((value) {
                   _preservedState = value;
-                  showSuccessSnackBar(context, loc(context).saved);
+                  if (context.mounted) {
+                    showSuccessSnackBar(context, loc(context).saved);
+                  }
                 }).onError((error, stackTrace) {
-                  showFailedSnackBar(
-                      context, loc(context).unknownErrorCode(error ?? ''));
+                  if (context.mounted) {
+                    showFailedSnackBar(
+                        context, loc(context).unknownErrorCode(error ?? ''));
+                  }
                 }));
           }),
       child: (context, constraints) => AppBasicLayout(

@@ -3,14 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
-import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_light_settings_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/status_label.dart';
-import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_device_list_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
@@ -21,7 +19,6 @@ import 'package:privacy_gui/page/dashboard/views/components/loading_tile.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
 
 class DashboardQuickPanel extends ConsumerStatefulWidget {
   const DashboardQuickPanel({super.key});
@@ -82,7 +79,9 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
                           notifier.setMacAddressList(macAddressList);
                         }
                         notifier.setEnable(value);
-                        doSomethingWithSpinner(context, notifier.save());
+                        if (context.mounted) {
+                          doSomethingWithSpinner(context, notifier.save());
+                        }
                       });
                     },
                     tips: loc(context).instantPrivacyInfo,

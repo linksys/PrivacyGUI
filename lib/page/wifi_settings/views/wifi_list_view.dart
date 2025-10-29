@@ -246,58 +246,64 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
 
   Future<bool> _showSaveConfirmModal() async {
     final newState = ref.read(wifiListProvider);
-    final result = await showSimpleAppDialog(context,
-        title: loc(context).wifiListSaveModalTitle,
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AppText.bodyMedium(loc(context).wifiListSaveModalDesc),
-              ..._mloWarning(newState),
-              ..._disableBandWarning(newState),
-              const AppGap.medium(),
-              ..._buildNewSettings(newState),
-              const AppGap.medium(),
-              AppText.bodyMedium(loc(context).doYouWantToContinue),
-            ],
-          ),
+    final confirmed = await showSimpleAppDialog<bool>(
+      context,
+      title: loc(context).wifiListSaveModalTitle,
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppText.bodyMedium(loc(context).wifiListSaveModalDesc),
+            ..._mloWarning(newState),
+            ..._disableBandWarning(newState),
+            const AppGap.medium(),
+            ..._buildNewSettings(newState),
+            const AppGap.medium(),
+            AppText.bodyMedium(loc(context).doYouWantToContinue),
+          ],
         ),
-        actions: [
-          AppTextButton(
-            loc(context).cancel,
-            onTap: () {
-              context.pop(false);
-            },
-          ),
-          AppTextButton(loc(context).ok, onTap: () {
-            context.pop(true);
-          })
-        ]);
-    if (result) {
-      if (!mounted) return false;
-      doSomethingWithSpinner(
-              context, ref.read(wifiListProvider.notifier).save())
-          .then((state) {
-        if (!mounted) return false;
+      ),
+      actions: [
+        AppTextButton(
+          loc(context).cancel,
+          onTap: () => context.pop(false),
+        ),
+        AppTextButton(
+          loc(context).ok,
+          onTap: () => context.pop(true),
+        ),
+      ],
+    );
+
+    if (confirmed != true || !mounted) {
+      return false;
+    }
+
+    final notifier = ref.read(wifiListProvider.notifier);
+    try {
+      final state = await doSomethingWithSpinner(context, notifier.save());
+      if (state != null) {
         update(state);
         showChangesSavedSnackBar();
-      }).catchError((error, stackTrace) {
-        if (!mounted) return false;
-        showRouterNotFoundAlert(context, ref,
-            onComplete: () =>
-                ref.read(wifiListProvider.notifier).fetch(true)).then((state) {
-          if (!mounted) return false;
-          update(state);
-          showChangesSavedSnackBar();
-        });
-      }, test: (error) => error is JNAPSideEffectError).onError(
-              (error, stackTrace) {
-        if (!mounted) return false;
-        showErrorMessageSnackBar(error);
-      });
+      }
+      return true;
+    } on JNAPSideEffectError {
+      if (!mounted) return false;
+      final state = await showRouterNotFoundAlert(
+        context,
+        ref,
+        onComplete: () => notifier.fetch(true),
+      );
+      if (state != null) {
+        update(state);
+        showChangesSavedSnackBar();
+      }
+      return true;
+    } catch (error) {
+      showErrorMessageSnackBar(error);
+      return false;
     }
-    return result;
   }
 
   bool _stateHasChanged({required WiFiState state, WiFiState? preserved}) {

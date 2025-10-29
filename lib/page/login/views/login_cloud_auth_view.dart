@@ -230,7 +230,9 @@ class _LoginCloudAuthViewState extends ConsumerState<LoginCloudAuthView> {
                       setState(() {
                         isLoading = false;
                       });
-                      Navigator.pop(context, cloudEnvTarget);
+                      if (context.mounted) {
+                        Navigator.pop(context, cloudEnvTarget);
+                      }
                     },
                   ),
                   const AppGap.medium(),

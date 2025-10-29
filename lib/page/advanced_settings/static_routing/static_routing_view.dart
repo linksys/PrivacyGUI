@@ -104,7 +104,9 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
                 final goBack = await showUnsavedAlert(context);
                 if (goBack == true) {
                   _notifier.fetch();
-                  context.pop();
+                  if (context.mounted) {
+                    context.pop();
+                  }
                 }
               }
             : null,

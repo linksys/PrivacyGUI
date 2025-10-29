@@ -4,7 +4,6 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:collection/collection.dart';
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -43,6 +42,7 @@ class Utils {
         Storage.deleteFile(Storage.logFileUri);
         Storage.createLoggerFile();
       }
+      if (!context.mounted) return;
       showSnackBar(context, content: Text("Log exported - $shareLogFilename"));
     });
   }
@@ -100,7 +100,7 @@ class Utils {
     String result = raw;
     int idx = 0;
     regex.allMatches(result).forEach((element) {
-      element.groups([1, 2, 4]).whereNotNull().forEach((group) {
+      element.groups([1, 2, 4]).nonNulls.forEach((group) {
             int start = raw.indexOf(group, idx);
             int end = start + group.length;
             final replaced = group.replaceAll(':', '-').replaceAll('.', '-');
@@ -267,33 +267,33 @@ extension MediaQueryUtils on Utils {
         getBottomSafeAreaPadding(context);
   }
 
-  static Future<Map<String, dynamic>> _deviceInfoMap(
-      DeviceInfoPlugin deviceInfo) async {
-    if (Platform.isIOS) {
-      return _iosDeviceMap(await deviceInfo.iosInfo);
-    } else if (Platform.isAndroid) {
-      return _androidDeviceMap(await deviceInfo.androidInfo);
-    } else {
-      return {};
-    }
-  }
+  // static Future<Map<String, dynamic>> _deviceInfoMap(
+  //     DeviceInfoPlugin deviceInfo) async {
+  //   if (Platform.isIOS) {
+  //     return _iosDeviceMap(await deviceInfo.iosInfo);
+  //   } else if (Platform.isAndroid) {
+  //     return _androidDeviceMap(await deviceInfo.androidInfo);
+  //   } else {
+  //     return {};
+  //   }
+  // }
 
-  static Future<Map<String, dynamic>> _androidDeviceMap(
-      AndroidDeviceInfo build) async {
-    return {
-      'osVersion': build.version.release,
-      'mobileManufacturer': build.manufacturer,
-      'mobileModel': build.model,
-    };
-  }
+  // static Future<Map<String, dynamic>> _androidDeviceMap(
+  //     AndroidDeviceInfo build) async {
+  //   return {
+  //     'osVersion': build.version.release,
+  //     'mobileManufacturer': build.manufacturer,
+  //     'mobileModel': build.model,
+  //   };
+  // }
 
-  static Future<Map<String, dynamic>> _iosDeviceMap(IosDeviceInfo data) async {
-    return {
-      'osVersion': data.systemVersion,
-      'mobileModel': data.utsname.machine,
-      'mobileManufacturer': 'Apple'
-    };
-  }
+  // static Future<Map<String, dynamic>> _iosDeviceMap(IosDeviceInfo data) async {
+  //   return {
+  //     'osVersion': data.systemVersion,
+  //     'mobileModel': data.utsname.machine,
+  //     'mobileManufacturer': 'Apple'
+  //   };
+  // }
 
   // static Future<String> getTimeZone() async {
   //   return await FlutterNativeTimezone.getLocalTimezone();

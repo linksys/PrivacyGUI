@@ -7,7 +7,6 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
-import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_troubleshooter_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/theme/custom_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -114,13 +113,23 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
                       .read(pnpProvider.notifier)
                       .checkInternetConnection(30)
                       .then((value) {
-                    logger.i(
-                        '[PnP Troubleshooter]: Internet connection is OK after resetting the modem');
-                    context.goNamed(RouteNamed.pnp);
+                    if (context.mounted) {
+                      logger.i(
+                          '[PnP Troubleshooter]: Internet connection is OK after resetting the modem');
+                      context.goNamed(RouteNamed.pnp);
+                    } else {
+                      logger.e(
+                          '[PnP Troubleshooter]: Internet connection is OK after resetting the modem, but the view is not mounted');
+                    }
                   }).catchError((error, stackTrace) {
-                    logger.e(
-                        '[PnP Troubleshooter]: Internet connection still fails after resetting the modem');
-                    context.goNamed(RouteNamed.pnpNoInternetConnection);
+                    if (context.mounted) {
+                      logger.e(
+                          '[PnP Troubleshooter]: Internet connection still fails after resetting the modem');
+                      context.goNamed(RouteNamed.pnpNoInternetConnection);
+                    } else {
+                      logger.e(
+                          '[PnP Troubleshooter]: Internet connection still fails after resetting the modem, but the view is not mounted');
+                    }
                   }, test: (error) {
                     return error is ExceptionNoInternetConnection;
                   });

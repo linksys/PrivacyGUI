@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
 import 'package:privacy_gui/core/jnap/models/single_port_forwarding_rule.dart';
-import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/_ports.dart';
 import 'package:privacy_gui/utils.dart';
@@ -34,7 +33,7 @@ class SinglePortForwardingListNotifier
       fetchRemote: force,
       auth: true,
     )
-        .then<JNAPSuccess?>((value) {
+        .then((value) {
       final rules = List.from(value.output['rules'])
           .map((e) => SinglePortForwardingRule.fromMap(e))
           .toList();

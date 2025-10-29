@@ -24,8 +24,6 @@ class _FirewallViewState extends ConsumerState<FirewallView>
   FirewallState? _preservedState;
   Ipv6PortServiceListState? _preservedIPv6State;
 
-  int _tabIndex = 0;
-
   @override
   void initState() {
     super.initState();
@@ -106,7 +104,9 @@ class _FirewallViewState extends ConsumerState<FirewallView>
               final goBack = await showUnsavedAlert(context);
               if (goBack == true) {
                 ref.read(firewallProvider.notifier).fetch();
-                context.pop();
+                if (context.mounted) {
+                  context.pop();
+                }
               }
             }
           : null,
@@ -116,11 +116,6 @@ class _FirewallViewState extends ConsumerState<FirewallView>
               ))
           .toList(),
       tabContentViews: tabContents,
-      onTabTap: (index) {
-        setState(() {
-          _tabIndex = index;
-        });
-      },
     );
   }
 

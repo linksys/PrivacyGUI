@@ -204,7 +204,7 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView>
 
   void _showEnableDialog(bool enable) {
     showMacFilteringConfirmDialog(context, enable).then((value) {
-      if (value != true) {
+      if (value != true || !mounted) {
         return;
       }
       if (enable) {

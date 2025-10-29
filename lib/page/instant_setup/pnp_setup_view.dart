@@ -26,7 +26,6 @@ import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -336,18 +335,16 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
                       loc(context).print,
                       icon: LinksysIcons.print,
                       onTap: () {
-                        final ctx = context;
                         WidgetsBinding.instance.addPostFrameCallback((_) {
-                          if (mounted) {
-                            createWiFiQRCode(WiFiCredential(
-                                    ssid: wifiSSID,
-                                    password: wifiPassword,
-                                    type: SecurityType.wpa))
-                                .then((imageBytes) {
-                              printWiFiQRCode(
-                                  ctx, imageBytes, wifiSSID, wifiPassword);
-                            });
-                          }
+                          createWiFiQRCode(WiFiCredential(
+                                  ssid: wifiSSID,
+                                  password: wifiPassword,
+                                  type: SecurityType.wpa))
+                              .then((imageBytes) {
+                            if (!mounted) return;
+                            printWiFiQRCode(
+                                context, imageBytes, wifiSSID, wifiPassword);
+                          });
                         });
                       },
                     ),
@@ -492,6 +489,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
         logger.e('[PnP]: Caught a saving error: $error. Setup step = config');
         _setupStep = _PnpSetupStep.config;
       });
+      if (!mounted) return;
       final err = error is ExceptionSavingChanges ? error.error : error;
       showSimpleSnackBar(context, 'Unexceped error! <$err}>');
     }, test: (error) => error is ExceptionSavingChanges).whenComplete(() async {
@@ -582,7 +580,9 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
       success.call();
     }).onError((error, stackTrace) {
       logger.e('[PnP]: Cannot detect the expected WiFi connected!');
-      showSimpleSnackBar(context, loc(context).pnpReconnectWiFi);
+      if (mounted) {
+        showSimpleSnackBar(context, loc(context).pnpReconnectWiFi);
+      }
       failed?.call();
     });
   }

@@ -18,7 +18,6 @@ import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_admin/providers/manual_firmware_update_provider.dart';
 import 'package:privacy_gui/page/instant_admin/providers/manual_firmware_update_state.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -119,6 +118,7 @@ class _ManualFirmwareUpdateViewState
                                 .read(manualFirmwareUpdateProvider.notifier)
                                 .setStatus(null);
                           });
+                          if (!context.mounted) return;
                           showRouterNotFoundAlert(context, ref,
                               onComplete: () async {
                             handleSuccessUpdated();
@@ -130,6 +130,7 @@ class _ManualFirmwareUpdateViewState
                                 .read(manualFirmwareUpdateProvider.notifier)
                                 .setStatus(null);
                           });
+                          if (!context.mounted) return;
                           showRouterNotFoundAlert(context, ref,
                               onComplete: () async {
                             handleSuccessUpdated();

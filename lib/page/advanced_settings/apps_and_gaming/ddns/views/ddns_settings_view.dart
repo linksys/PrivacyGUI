@@ -4,7 +4,6 @@ import 'package:privacy_gui/core/jnap/models/dyn_dns_settings.dart';
 import 'package:privacy_gui/core/jnap/models/no_ip_settings.dart';
 import 'package:privacy_gui/core/jnap/models/tzo_settings.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/providers/apps_and_gaming_provider.dart';
 import 'package:privacy_gui/page/components/customs/animated_refresh_container.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';

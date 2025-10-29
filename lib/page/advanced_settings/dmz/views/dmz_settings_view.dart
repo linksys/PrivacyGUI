@@ -84,7 +84,9 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView>
                 showUnsavedAlert(context).then((value) {
                   if (value == true) {
                     ref.read(dmzSettingsProvider.notifier).fetch();
-                    context.pop();
+                    if (context.mounted) {
+                      context.pop();
+                    }
                   }
                 });
               }
@@ -109,8 +111,11 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView>
                                 .replaceAll('.0', '');
                     _destinationMACController.text =
                         value.settings.destinationMACAddress ?? '';
-                    showSuccessSnackBar(context, loc(context).saved);
+                    if (context.mounted) {
+                      showSuccessSnackBar(context, loc(context).saved);
+                    }
                   }).onError((error, stackTrace) {
+                    if (!context.mounted) return;
                     final errorMsg = errorCodeHelper(
                         context, (error as JNAPError?)?.result ?? '');
                     if (errorMsg != null) {

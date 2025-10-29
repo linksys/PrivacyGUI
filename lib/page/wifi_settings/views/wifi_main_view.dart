@@ -80,7 +80,9 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView>
           // Handle MAC filter, restore state if discard change
           ref.read(instantPrivacyProvider.notifier).fetch();
         }
-        context.pop();
+        if (context.mounted) {
+          context.pop();
+        }
       },
       // menuWidget: ListView.builder(
       //     shrinkWrap: true,
