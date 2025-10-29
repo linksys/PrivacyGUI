@@ -4,142 +4,50 @@ import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/models/dyn_dns_settings.dart';
 import 'package:privacy_gui/core/jnap/models/no_ip_settings.dart';
 import 'package:privacy_gui/core/jnap/models/tzo_settings.dart';
+import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/providers/ddns_state.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/views/dyn_ddns_form.dart';
-import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/providers/apps_and_gaming_state.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
 import 'package:privacygui_widgets/widgets/input_field/app_text_field.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 import 'package:privacygui_widgets/widgets/tab_bar/linksys_tab_bar.dart';
-import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:get_it/get_it.dart';
 
 import '../../../../../common/config.dart';
+import '../../../../../common/test_helper.dart';
 import '../../../../../common/test_responsive_widget.dart';
-import '../../../../../common/testable_router.dart';
-import '../../../../../common/di.dart';
-import '../../../../../mocks/apps_and_gaming_view_notifier_spec_mocks.dart';
-import '../../../../../mocks/ddns_notifier_spec_mocks.dart';
-import '../../../../../mocks/port_range_forwarding_list_notifier_mocks.dart';
-import '../../../../../mocks/port_range_forwarding_rule_notifier_mocks.dart';
-import '../../../../../mocks/port_range_triggering_list_notifier_mocks.dart';
-import '../../../../../mocks/port_range_triggering_rule_notifier_mocks.dart';
-import '../../../../../mocks/single_port_forwarding_list_notifier_mocks.dart';
-import '../../../../../mocks/single_port_forwarding_rule_notifier_mocks.dart';
 import '../../../../../test_data/ddns_test_state.dart';
 import '../../../../../test_data/port_range_forwarding_test_state.dart';
 import '../../../../../test_data/port_range_trigger_test_state.dart';
 import '../../../../../test_data/single_port_forwarding_test_state.dart';
 
 void main() {
-  late MockAppsAndGamingViewNotifier mockAppsAndGamingViewNotifier;
-  late MockDDNSNotifier mockDDNSNotifier;
-  late MockSinglePortForwardingListNotifier
-      mockSinglePortForwardingListNotifier;
-  late MockSinglePortForwardingRuleNotifier
-      mockSinglePortForwardingRuleNotifier;
-  late MockPortRangeForwardingListNotifier mockPortRangeForwardingListNotifier;
-  late MockPortRangeForwardingRuleNotifier mockPortRangeForwardingRuleNotifier;
-  late MockPortRangeTriggeringListNotifier mockPortRangeTriggeringListNotifier;
-  late MockPortRangeTriggeringRuleNotifier mockPortRangeTriggeringRuleNotifier;
+  final testHelper = TestHelper();
 
-  mockDependencyRegister();
-  ServiceHelper mockServiceHelper = GetIt.I.get<ServiceHelper>();
   setUp(() {
-    mockAppsAndGamingViewNotifier = MockAppsAndGamingViewNotifier();
-    mockDDNSNotifier = MockDDNSNotifier();
-    mockSinglePortForwardingListNotifier =
-        MockSinglePortForwardingListNotifier();
-    mockSinglePortForwardingRuleNotifier =
-        MockSinglePortForwardingRuleNotifier();
-    mockPortRangeForwardingRuleNotifier = MockPortRangeForwardingRuleNotifier();
-    mockPortRangeForwardingListNotifier = MockPortRangeForwardingListNotifier();
-    mockPortRangeTriggeringListNotifier = MockPortRangeTriggeringListNotifier();
-
-    when(mockAppsAndGamingViewNotifier.build())
-        .thenReturn(AppsAndGamingViewState.fromMap({}));
-    when(mockDDNSNotifier.build()).thenReturn(DDNSState.fromMap(ddnsTestState));
-    when(mockDDNSNotifier.fetch()).thenAnswer((realInvocation) async {
-      await Future.delayed(const Duration(seconds: 1));
-      return DDNSState.fromMap(ddnsTestState);
-    });
-    when(mockSinglePortForwardingListNotifier.build()).thenReturn(
-        SinglePortForwardingListState.fromMap(
-            singlePortForwardingListTestState));
-    when(mockSinglePortForwardingListNotifier.fetch())
-        .thenAnswer((realInvocation) async {
-      await Future.delayed(const Duration(seconds: 1));
-      return SinglePortForwardingListState();
-    });
-    when(mockSinglePortForwardingRuleNotifier.build()).thenReturn(
-        const SinglePortForwardingRuleState(
-            routerIp: '192.168.1.1', subnetMask: '255.255.255.0'));
-    when(mockPortRangeForwardingRuleNotifier.build()).thenReturn(
-        const PortRangeForwardingRuleState(
-            routerIp: '192.168.1.1', subnetMask: '255.255.255.0'));
-    when(mockPortRangeForwardingListNotifier.build()).thenReturn(
-        PortRangeForwardingListState.fromMap(portRangeForwardingListTestState));
-    when(mockPortRangeForwardingListNotifier.fetch())
-        .thenAnswer((realInvocation) async {
-      await Future.delayed(const Duration(seconds: 1));
-      return PortRangeForwardingListState();
-    });
-    when(mockPortRangeTriggeringListNotifier.build()).thenReturn(
-        PortRangeTriggeringListState.fromMap(portRangeTriggerListTestState));
-    when(mockPortRangeTriggeringListNotifier.fetch())
-        .thenAnswer((realInvocation) async {
-      await Future.delayed(const Duration(seconds: 1));
-      return PortRangeTriggeringListState();
-    });
-    mockPortRangeTriggeringRuleNotifier = MockPortRangeTriggeringRuleNotifier();
-    when(mockPortRangeTriggeringRuleNotifier.build())
-        .thenReturn(const PortRangeTriggeringRuleState());
+    testHelper.setup();
   });
 
   group('Apps & Gaming - DDNS', () {
     testLocalizations('DDNS - disable', (tester, locale) async {
-      final widget = testableSingleRoute(
-        overrides: [
-          appsAndGamingProvider
-              .overrideWith(() => mockAppsAndGamingViewNotifier),
-          ddnsProvider.overrideWith(() => mockDDNSNotifier),
-          singlePortForwardingListProvider
-              .overrideWith(() => mockSinglePortForwardingListNotifier),
-          portRangeForwardingListProvider
-              .overrideWith(() => mockPortRangeForwardingListNotifier),
-          portRangeTriggeringListProvider
-              .overrideWith(() => mockPortRangeTriggeringListNotifier),
-        ],
+      await testHelper.pumpView(
+        tester,
         locale: locale,
         child: const AppsGamingSettingsView(),
       );
-      await tester.pumpWidget(widget);
     });
 
     testLocalizations(
       'DDNS - dyn.com',
       (tester, locale) async {
-        when(mockDDNSNotifier.build()).thenReturn(
+        when(testHelper.mockDDNSNotifier.build()).thenReturn(
             DDNSState.fromMap(ddnsTestState)
                 .copyWith(provider: DDNSProvider.create(dynDNSProviderName)));
-        final widget = testableSingleRoute(
-          overrides: [
-            appsAndGamingProvider
-                .overrideWith(() => mockAppsAndGamingViewNotifier),
-            ddnsProvider.overrideWith(() => mockDDNSNotifier),
-            singlePortForwardingListProvider
-                .overrideWith(() => mockSinglePortForwardingListNotifier),
-            portRangeForwardingListProvider
-                .overrideWith(() => mockPortRangeForwardingListNotifier),
-            portRangeTriggeringListProvider
-                .overrideWith(() => mockPortRangeTriggeringListNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const AppsGamingSettingsView(),
         );
-        await tester.pumpWidget(widget);
       },
       screens: [
         ...responsiveMobileScreens
@@ -154,7 +62,7 @@ void main() {
     testLocalizations(
       'DDNS - dyn.com filled up',
       (tester, locale) async {
-        when(mockDDNSNotifier.build())
+        when(testHelper.mockDDNSNotifier.build())
             .thenReturn(DDNSState.fromMap(ddnsTestState).copyWith(
           provider: DynDNSProvider(
             settings: const DynDNSSettings(
@@ -171,22 +79,11 @@ void main() {
             ),
           ),
         ));
-        final widget = testableSingleRoute(
-          overrides: [
-            appsAndGamingProvider
-                .overrideWith(() => mockAppsAndGamingViewNotifier),
-            ddnsProvider.overrideWith(() => mockDDNSNotifier),
-            singlePortForwardingListProvider
-                .overrideWith(() => mockSinglePortForwardingListNotifier),
-            portRangeForwardingListProvider
-                .overrideWith(() => mockPortRangeForwardingListNotifier),
-            portRangeTriggeringListProvider
-                .overrideWith(() => mockPortRangeTriggeringListNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const AppsGamingSettingsView(),
         );
-        await tester.pumpWidget(widget);
       },
       screens: [
         ...responsiveMobileScreens
@@ -201,7 +98,7 @@ void main() {
     testLocalizations(
       'DDNS - dyn.com system type',
       (tester, locale) async {
-        when(mockDDNSNotifier.build())
+        when(testHelper.mockDDNSNotifier.build())
             .thenReturn(DDNSState.fromMap(ddnsTestState).copyWith(
           provider: DynDNSProvider(
             settings: const DynDNSSettings(
@@ -218,22 +115,11 @@ void main() {
             ),
           ),
         ));
-        final widget = testableSingleRoute(
-          overrides: [
-            appsAndGamingProvider
-                .overrideWith(() => mockAppsAndGamingViewNotifier),
-            ddnsProvider.overrideWith(() => mockDDNSNotifier),
-            singlePortForwardingListProvider
-                .overrideWith(() => mockSinglePortForwardingListNotifier),
-            portRangeForwardingListProvider
-                .overrideWith(() => mockPortRangeForwardingListNotifier),
-            portRangeTriggeringListProvider
-                .overrideWith(() => mockPortRangeTriggeringListNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const AppsGamingSettingsView(),
         );
-        await tester.pumpWidget(widget);
 
         final systemTypeFinder = find.byType(AppDropdownButton<DynDDNSSystem>);
         await tester.tap(systemTypeFinder.first);
@@ -252,25 +138,14 @@ void main() {
     testLocalizations(
       'DDNS - No-IP.com',
       (tester, locale) async {
-        when(mockDDNSNotifier.build()).thenReturn(
+        when(testHelper.mockDDNSNotifier.build()).thenReturn(
             DDNSState.fromMap(ddnsTestState)
                 .copyWith(provider: DDNSProvider.create(noIPDNSProviderName)));
-        final widget = testableSingleRoute(
-          overrides: [
-            appsAndGamingProvider
-                .overrideWith(() => mockAppsAndGamingViewNotifier),
-            ddnsProvider.overrideWith(() => mockDDNSNotifier),
-            singlePortForwardingListProvider
-                .overrideWith(() => mockSinglePortForwardingListNotifier),
-            portRangeForwardingListProvider
-                .overrideWith(() => mockPortRangeForwardingListNotifier),
-            portRangeTriggeringListProvider
-                .overrideWith(() => mockPortRangeTriggeringListNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const AppsGamingSettingsView(),
         );
-        await tester.pumpWidget(widget);
       },
       screens: [
         ...responsiveMobileScreens
@@ -285,7 +160,7 @@ void main() {
     testLocalizations(
       'DDNS - No-IP.com filled up',
       (tester, locale) async {
-        when(mockDDNSNotifier.build())
+        when(testHelper.mockDDNSNotifier.build())
             .thenReturn(DDNSState.fromMap(ddnsTestState).copyWith(
           provider: NoIPDNSProvider(
             settings: const NoIPSettings(
@@ -295,22 +170,11 @@ void main() {
             ),
           ),
         ));
-        final widget = testableSingleRoute(
-          overrides: [
-            appsAndGamingProvider
-                .overrideWith(() => mockAppsAndGamingViewNotifier),
-            ddnsProvider.overrideWith(() => mockDDNSNotifier),
-            singlePortForwardingListProvider
-                .overrideWith(() => mockSinglePortForwardingListNotifier),
-            portRangeForwardingListProvider
-                .overrideWith(() => mockPortRangeForwardingListNotifier),
-            portRangeTriggeringListProvider
-                .overrideWith(() => mockPortRangeTriggeringListNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const AppsGamingSettingsView(),
         );
-        await tester.pumpWidget(widget);
       },
       screens: [
         ...responsiveMobileScreens
@@ -325,25 +189,14 @@ void main() {
     testLocalizations(
       'DDNS - TZO',
       (tester, locale) async {
-        when(mockDDNSNotifier.build()).thenReturn(
+        when(testHelper.mockDDNSNotifier.build()).thenReturn(
             DDNSState.fromMap(ddnsTestState)
                 .copyWith(provider: DDNSProvider.create(tzoDNSProviderName)));
-        final widget = testableSingleRoute(
-          overrides: [
-            appsAndGamingProvider
-                .overrideWith(() => mockAppsAndGamingViewNotifier),
-            ddnsProvider.overrideWith(() => mockDDNSNotifier),
-            singlePortForwardingListProvider
-                .overrideWith(() => mockSinglePortForwardingListNotifier),
-            portRangeForwardingListProvider
-                .overrideWith(() => mockPortRangeForwardingListNotifier),
-            portRangeTriggeringListProvider
-                .overrideWith(() => mockPortRangeTriggeringListNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const AppsGamingSettingsView(),
         );
-        await tester.pumpWidget(widget);
       },
       screens: [
         ...responsiveMobileScreens
@@ -358,7 +211,7 @@ void main() {
     testLocalizations(
       'DDNS - TZO filled up',
       (tester, locale) async {
-        when(mockDDNSNotifier.build())
+        when(testHelper.mockDDNSNotifier.build())
             .thenReturn(DDNSState.fromMap(ddnsTestState).copyWith(
           provider: TzoDNSProvider(
             settings: const TZOSettings(
@@ -368,22 +221,11 @@ void main() {
             ),
           ),
         ));
-        final widget = testableSingleRoute(
-          overrides: [
-            appsAndGamingProvider
-                .overrideWith(() => mockAppsAndGamingViewNotifier),
-            ddnsProvider.overrideWith(() => mockDDNSNotifier),
-            singlePortForwardingListProvider
-                .overrideWith(() => mockSinglePortForwardingListNotifier),
-            portRangeForwardingListProvider
-                .overrideWith(() => mockPortRangeForwardingListNotifier),
-            portRangeTriggeringListProvider
-                .overrideWith(() => mockPortRangeTriggeringListNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const AppsGamingSettingsView(),
         );
-        await tester.pumpWidget(widget);
       },
       screens: [
         ...responsiveMobileScreens
@@ -399,26 +241,15 @@ void main() {
   group('Apps & Gaming - Single port forwarding', () {
     testLocalizations('Single port forwarding - with data',
         (tester, locale) async {
-      when(mockSinglePortForwardingListNotifier.build()).thenReturn(
+      when(testHelper.mockSinglePortForwardingListNotifier.build()).thenReturn(
           SinglePortForwardingListState.fromMap(
               singlePortForwardingListTestState));
 
-      final widget = testableSingleRoute(
-        overrides: [
-          appsAndGamingProvider
-              .overrideWith(() => mockAppsAndGamingViewNotifier),
-          ddnsProvider.overrideWith(() => mockDDNSNotifier),
-          singlePortForwardingListProvider
-              .overrideWith(() => mockSinglePortForwardingListNotifier),
-          portRangeForwardingListProvider
-              .overrideWith(() => mockPortRangeForwardingListNotifier),
-          portRangeTriggeringListProvider
-              .overrideWith(() => mockPortRangeTriggeringListNotifier),
-        ],
+      await testHelper.pumpView(
+        tester,
         locale: locale,
         child: const AppsGamingSettingsView(),
       );
-      await tester.pumpWidget(widget);
 
       final tabFinder = find.byType(Tab);
       await tester.tap(tabFinder.at(1));
@@ -426,26 +257,15 @@ void main() {
     });
 
     testLocalizations('Single port forwarding - empty', (tester, locale) async {
-      when(mockSinglePortForwardingListNotifier.build()).thenReturn(
+      when(testHelper.mockSinglePortForwardingListNotifier.build()).thenReturn(
           SinglePortForwardingListState.fromMap(
               singlePortForwardingEmptyListTestState));
 
-      final widget = testableSingleRoute(
-        overrides: [
-          appsAndGamingProvider
-              .overrideWith(() => mockAppsAndGamingViewNotifier),
-          ddnsProvider.overrideWith(() => mockDDNSNotifier),
-          singlePortForwardingListProvider
-              .overrideWith(() => mockSinglePortForwardingListNotifier),
-          portRangeForwardingListProvider
-              .overrideWith(() => mockPortRangeForwardingListNotifier),
-          portRangeTriggeringListProvider
-              .overrideWith(() => mockPortRangeTriggeringListNotifier),
-        ],
+      await testHelper.pumpView(
+        tester,
         locale: locale,
         child: const AppsGamingSettingsView(),
       );
-      await tester.pumpWidget(widget);
 
       final tabFinder = find.byType(Tab);
       await tester.tap(tabFinder.at(1));
@@ -455,26 +275,15 @@ void main() {
     testLocalizations(
       'Single port forwarding - edit',
       (tester, locale) async {
-        when(mockSinglePortForwardingListNotifier.build()).thenReturn(
+        when(testHelper.mockSinglePortForwardingListNotifier.build()).thenReturn(
             SinglePortForwardingListState.fromMap(
                 singlePortForwardingEmptyListTestState));
 
-        final widget = testableSingleRoute(
-          overrides: [
-            appsAndGamingProvider
-                .overrideWith(() => mockAppsAndGamingViewNotifier),
-            ddnsProvider.overrideWith(() => mockDDNSNotifier),
-            singlePortForwardingListProvider
-                .overrideWith(() => mockSinglePortForwardingListNotifier),
-            portRangeForwardingListProvider
-                .overrideWith(() => mockPortRangeForwardingListNotifier),
-            portRangeTriggeringListProvider
-                .overrideWith(() => mockPortRangeTriggeringListNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const AppsGamingSettingsView(),
         );
-        await tester.pumpWidget(widget);
 
         final tabFinder = find.byType(Tab);
         await tester.tap(tabFinder.at(1));
@@ -495,26 +304,15 @@ void main() {
       'Single port forwarding - edit error',
       (tester, locale) async {
         // TODO: preserve test case for the error message on dektop table
-        when(mockSinglePortForwardingListNotifier.build()).thenReturn(
+        when(testHelper.mockSinglePortForwardingListNotifier.build()).thenReturn(
             SinglePortForwardingListState.fromMap(
                 singlePortForwardingEmptyListTestState));
 
-        final widget = testableSingleRoute(
-          overrides: [
-            appsAndGamingProvider
-                .overrideWith(() => mockAppsAndGamingViewNotifier),
-            ddnsProvider.overrideWith(() => mockDDNSNotifier),
-            singlePortForwardingListProvider
-                .overrideWith(() => mockSinglePortForwardingListNotifier),
-            portRangeForwardingListProvider
-                .overrideWith(() => mockPortRangeForwardingListNotifier),
-            portRangeTriggeringListProvider
-                .overrideWith(() => mockPortRangeTriggeringListNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const AppsGamingSettingsView(),
         );
-        await tester.pumpWidget(widget);
 
         final tabFinder = find.byType(Tab);
         await tester.tap(tabFinder.at(1));
@@ -535,30 +333,17 @@ void main() {
       'Single port forwarding - edit overlap error',
       (tester, locale) async {
         // TODO: preserve test case for the error message on dektop table
-        when(mockSinglePortForwardingListNotifier.build()).thenReturn(
+        when(testHelper.mockSinglePortForwardingListNotifier.build()).thenReturn(
             SinglePortForwardingListState.fromMap(
                 singlePortForwardingListTestState));
-        when(mockSinglePortForwardingRuleNotifier.isPortConflict(any, any))
+        when(testHelper.mockSinglePortForwardingRuleNotifier.isPortConflict(any, any))
             .thenAnswer((invocation) => false);
 
-        final widget = testableSingleRoute(
-          overrides: [
-            appsAndGamingProvider
-                .overrideWith(() => mockAppsAndGamingViewNotifier),
-            ddnsProvider.overrideWith(() => mockDDNSNotifier),
-            singlePortForwardingListProvider
-                .overrideWith(() => mockSinglePortForwardingListNotifier),
-            singlePortForwardingRuleProvider
-                .overrideWith(() => mockSinglePortForwardingRuleNotifier),
-            portRangeForwardingListProvider
-                .overrideWith(() => mockPortRangeForwardingListNotifier),
-            portRangeTriggeringListProvider
-                .overrideWith(() => mockPortRangeTriggeringListNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const AppsGamingSettingsView(),
         );
-        await tester.pumpWidget(widget);
 
         final tabFinder = find.byType(Tab);
         await tester.tap(tabFinder.at(1));
@@ -600,26 +385,15 @@ void main() {
     testLocalizations(
       'Single port forwarding - edit filled up',
       (tester, locale) async {
-        when(mockSinglePortForwardingListNotifier.build()).thenReturn(
+        when(testHelper.mockSinglePortForwardingListNotifier.build()).thenReturn(
             SinglePortForwardingListState.fromMap(
                 singlePortForwardingEmptyListTestState));
 
-        final widget = testableSingleRoute(
-          overrides: [
-            appsAndGamingProvider
-                .overrideWith(() => mockAppsAndGamingViewNotifier),
-            ddnsProvider.overrideWith(() => mockDDNSNotifier),
-            singlePortForwardingListProvider
-                .overrideWith(() => mockSinglePortForwardingListNotifier),
-            portRangeForwardingListProvider
-                .overrideWith(() => mockPortRangeForwardingListNotifier),
-            portRangeTriggeringListProvider
-                .overrideWith(() => mockPortRangeTriggeringListNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const AppsGamingSettingsView(),
         );
-        await tester.pumpWidget(widget);
 
         final tabFinder = find.byType(Tab);
         await tester.tap(tabFinder.at(1));
@@ -659,19 +433,15 @@ void main() {
       'Single port forwarding - edit',
       (tester, locale) async {
         // For mobile layout
-        when(mockSinglePortForwardingListNotifier.build()).thenReturn(
+        when(testHelper.mockSinglePortForwardingListNotifier.build()).thenReturn(
             SinglePortForwardingListState.fromMap(
                 singlePortForwardingEmptyListTestState));
 
-        final widget = testableSingleRoute(
-          overrides: [
-            singlePortForwardingListProvider
-                .overrideWith(() => mockSinglePortForwardingListNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const SinglePortForwardingRuleView(),
         );
-        await tester.pumpWidget(widget);
       },
       screens: [
         ...responsiveMobileScreens.map((e) => e.copyWith(height: 1280)).toList()
@@ -682,19 +452,15 @@ void main() {
       'Single port forwarding - edit error',
       (tester, locale) async {
         // For mobile layout
-        when(mockSinglePortForwardingListNotifier.build()).thenReturn(
+        when(testHelper.mockSinglePortForwardingListNotifier.build()).thenReturn(
             SinglePortForwardingListState.fromMap(
                 singlePortForwardingEmptyListTestState));
 
-        final widget = testableSingleRoute(
-          overrides: [
-            singlePortForwardingListProvider
-                .overrideWith(() => mockSinglePortForwardingListNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const SinglePortForwardingRuleView(),
         );
-        await tester.pumpWidget(widget);
 
         final textFieldFinder = find.byType(AppTextField);
         await tester.enterText(textFieldFinder.at(0), 'name');
@@ -727,26 +493,17 @@ void main() {
       'Single port forwarding - edit overlap error',
       (tester, locale) async {
         // For mobile layout
-        when(mockSinglePortForwardingListNotifier.build()).thenReturn(
+        when(testHelper.mockSinglePortForwardingListNotifier.build()).thenReturn(
             SinglePortForwardingListState.fromMap(
                 singlePortForwardingListTestState));
-        when(mockSinglePortForwardingRuleNotifier.isPortConflict(any, any))
+        when(testHelper.mockSinglePortForwardingRuleNotifier.isPortConflict(any, any))
             .thenAnswer((invocation) => false);
 
-        final widget = testableSingleRoute(
-          overrides: [
-            appsAndGamingProvider
-                .overrideWith(() => mockAppsAndGamingViewNotifier),
-            ddnsProvider.overrideWith(() => mockDDNSNotifier),
-            singlePortForwardingListProvider
-                .overrideWith(() => mockSinglePortForwardingListNotifier),
-            singlePortForwardingRuleProvider
-                .overrideWith(() => mockSinglePortForwardingRuleNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const SinglePortForwardingRuleView(),
         );
-        await tester.pumpWidget(widget);
 
         final textFieldFinder = find.byType(AppTextField);
         await tester.enterText(textFieldFinder.at(0), 'name');
@@ -779,19 +536,15 @@ void main() {
       'Single port forwarding - edit filled up',
       (tester, locale) async {
         // For mobile layout
-        when(mockSinglePortForwardingListNotifier.build()).thenReturn(
+        when(testHelper.mockSinglePortForwardingListNotifier.build()).thenReturn(
             SinglePortForwardingListState.fromMap(
                 singlePortForwardingEmptyListTestState));
 
-        final widget = testableSingleRoute(
-          overrides: [
-            singlePortForwardingListProvider
-                .overrideWith(() => mockSinglePortForwardingListNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const SinglePortForwardingRuleView(),
         );
-        await tester.pumpWidget(widget);
 
         final textFieldFinder = find.byType(AppTextField);
         await tester.enterText(textFieldFinder.at(0), 'name');
@@ -821,26 +574,15 @@ void main() {
   group('Apps & Gaming - Port range forwarding', () {
     testLocalizations('Port range forwarding - with data',
         (tester, locale) async {
-      when(mockPortRangeForwardingListNotifier.build()).thenReturn(
+      when(testHelper.mockPortRangeForwardingListNotifier.build()).thenReturn(
           PortRangeForwardingListState.fromMap(
               portRangeForwardingListTestState));
 
-      final widget = testableSingleRoute(
-        overrides: [
-          appsAndGamingProvider
-              .overrideWith(() => mockAppsAndGamingViewNotifier),
-          ddnsProvider.overrideWith(() => mockDDNSNotifier),
-          singlePortForwardingListProvider
-              .overrideWith(() => mockSinglePortForwardingListNotifier),
-          portRangeForwardingListProvider
-              .overrideWith(() => mockPortRangeForwardingListNotifier),
-          portRangeTriggeringListProvider
-              .overrideWith(() => mockPortRangeTriggeringListNotifier),
-        ],
+      await testHelper.pumpView(
+        tester,
         locale: locale,
         child: const AppsGamingSettingsView(),
       );
-      await tester.pumpWidget(widget);
 
       final tabFinder = find.byType(Tab);
       await tester.tap(tabFinder.at(2));
@@ -848,26 +590,15 @@ void main() {
     });
 
     testLocalizations('Port range forwarding - empty', (tester, locale) async {
-      when(mockPortRangeForwardingListNotifier.build()).thenReturn(
+      when(testHelper.mockPortRangeForwardingListNotifier.build()).thenReturn(
           PortRangeForwardingListState.fromMap(
               portRangeForwardingEmptyListTestState));
 
-      final widget = testableSingleRoute(
-        overrides: [
-          appsAndGamingProvider
-              .overrideWith(() => mockAppsAndGamingViewNotifier),
-          ddnsProvider.overrideWith(() => mockDDNSNotifier),
-          singlePortForwardingListProvider
-              .overrideWith(() => mockSinglePortForwardingListNotifier),
-          portRangeForwardingListProvider
-              .overrideWith(() => mockPortRangeForwardingListNotifier),
-          portRangeTriggeringListProvider
-              .overrideWith(() => mockPortRangeTriggeringListNotifier),
-        ],
+      await testHelper.pumpView(
+        tester,
         locale: locale,
         child: const AppsGamingSettingsView(),
       );
-      await tester.pumpWidget(widget);
 
       final tabFinder = find.byType(Tab);
       await tester.tap(tabFinder.at(2));
@@ -880,35 +611,14 @@ void main() {
         final portRangeForwardingEmptyListState =
             PortRangeForwardingListState.fromMap(
                 portRangeForwardingEmptyListTestState);
-        when(mockPortRangeForwardingListNotifier.build())
+        when(testHelper.mockPortRangeForwardingListNotifier.build())
             .thenReturn(portRangeForwardingEmptyListState);
-        // when(mockPortRangeForwardingRuleNotifier.build())
-        //     .thenReturn(PortRangeForwardingRuleState(
-        //   rules: portRangeForwardingEmptyListState.rules,
-        //   routerIp: portRangeForwardingEmptyListState.routerIp,
-        //   subnetMask: portRangeForwardingEmptyListState.subnetMask,
-        // ));
-        // when(mockPortRangeForwardingRuleNotifier.isRuleValid())
-        //     .thenAnswer((invocation) => true);
 
-        final widget = testableSingleRoute(
-          overrides: [
-            appsAndGamingProvider
-                .overrideWith(() => mockAppsAndGamingViewNotifier),
-            ddnsProvider.overrideWith(() => mockDDNSNotifier),
-            singlePortForwardingListProvider
-                .overrideWith(() => mockSinglePortForwardingListNotifier),
-            portRangeForwardingListProvider
-                .overrideWith(() => mockPortRangeForwardingListNotifier),
-            // portRangeForwardingRuleProvider
-            //     .overrideWith(() => mockPortRangeForwardingRuleNotifier),
-            portRangeTriggeringListProvider
-                .overrideWith(() => mockPortRangeTriggeringListNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const AppsGamingSettingsView(),
         );
-        await tester.pumpWidget(widget);
 
         final tabFinder = find.byType(Tab);
         await tester.tap(tabFinder.at(2));
@@ -929,26 +639,15 @@ void main() {
       'Port range forwarding - edit error',
       (tester, locale) async {
         // TODO: preserve test case for the error message on dektop table
-        when(mockPortRangeForwardingListNotifier.build()).thenReturn(
+        when(testHelper.mockPortRangeForwardingListNotifier.build()).thenReturn(
             PortRangeForwardingListState.fromMap(
                 portRangeForwardingEmptyListTestState));
 
-        final widget = testableSingleRoute(
-          overrides: [
-            appsAndGamingProvider
-                .overrideWith(() => mockAppsAndGamingViewNotifier),
-            ddnsProvider.overrideWith(() => mockDDNSNotifier),
-            singlePortForwardingListProvider
-                .overrideWith(() => mockSinglePortForwardingListNotifier),
-            portRangeForwardingListProvider
-                .overrideWith(() => mockPortRangeForwardingListNotifier),
-            portRangeTriggeringListProvider
-                .overrideWith(() => mockPortRangeTriggeringListNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const AppsGamingSettingsView(),
         );
-        await tester.pumpWidget(widget);
 
         final tabFinder = find.byType(Tab);
         await tester.tap(tabFinder.at(2));
@@ -988,32 +687,19 @@ void main() {
       'Port range forwarding - edit overlap error',
       (tester, locale) async {
         // TODO: preserve test case for the error message on dektop table
-        when(mockPortRangeForwardingListNotifier.build()).thenReturn(
+        when(testHelper.mockPortRangeForwardingListNotifier.build()).thenReturn(
             PortRangeForwardingListState.fromMap(
                 portRangeForwardingListTestState));
-        when(mockPortRangeForwardingRuleNotifier.isPortRangeValid(any, any))
+        when(testHelper.mockPortRangeForwardingRuleNotifier.isPortRangeValid(any, any))
             .thenAnswer((invocation) => false);
-        when(mockPortRangeForwardingRuleNotifier.isPortConflict(any, any, any))
+        when(testHelper.mockPortRangeForwardingRuleNotifier.isPortConflict(any, any, any))
             .thenAnswer((invocation) => false);
 
-        final widget = testableSingleRoute(
-          overrides: [
-            appsAndGamingProvider
-                .overrideWith(() => mockAppsAndGamingViewNotifier),
-            ddnsProvider.overrideWith(() => mockDDNSNotifier),
-            singlePortForwardingListProvider
-                .overrideWith(() => mockSinglePortForwardingListNotifier),
-            portRangeForwardingListProvider
-                .overrideWith(() => mockPortRangeForwardingListNotifier),
-            portRangeForwardingRuleProvider
-                .overrideWith(() => mockPortRangeForwardingRuleNotifier),
-            portRangeTriggeringListProvider
-                .overrideWith(() => mockPortRangeTriggeringListNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const AppsGamingSettingsView(),
         );
-        await tester.pumpWidget(widget);
 
         final tabFinder = find.byType(Tab);
         await tester.tap(tabFinder.at(2));
@@ -1052,26 +738,15 @@ void main() {
     testLocalizations(
       'Port range forwarding - edit filled up',
       (tester, locale) async {
-        when(mockPortRangeForwardingListNotifier.build()).thenReturn(
+        when(testHelper.mockPortRangeForwardingListNotifier.build()).thenReturn(
             PortRangeForwardingListState.fromMap(
                 portRangeForwardingEmptyListTestState));
 
-        final widget = testableSingleRoute(
-          overrides: [
-            appsAndGamingProvider
-                .overrideWith(() => mockAppsAndGamingViewNotifier),
-            ddnsProvider.overrideWith(() => mockDDNSNotifier),
-            singlePortForwardingListProvider
-                .overrideWith(() => mockSinglePortForwardingListNotifier),
-            portRangeForwardingListProvider
-                .overrideWith(() => mockPortRangeForwardingListNotifier),
-            portRangeTriggeringListProvider
-                .overrideWith(() => mockPortRangeTriggeringListNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const AppsGamingSettingsView(),
         );
-        await tester.pumpWidget(widget);
 
         final tabFinder = find.byType(Tab);
         await tester.tap(tabFinder.at(2));
@@ -1110,26 +785,15 @@ void main() {
     testLocalizations(
       'Port range forwarding - protocol',
       (tester, locale) async {
-        when(mockPortRangeForwardingListNotifier.build()).thenReturn(
+        when(testHelper.mockPortRangeForwardingListNotifier.build()).thenReturn(
             PortRangeForwardingListState.fromMap(
                 portRangeForwardingEmptyListTestState));
 
-        final widget = testableSingleRoute(
-          overrides: [
-            appsAndGamingProvider
-                .overrideWith(() => mockAppsAndGamingViewNotifier),
-            ddnsProvider.overrideWith(() => mockDDNSNotifier),
-            singlePortForwardingListProvider
-                .overrideWith(() => mockSinglePortForwardingListNotifier),
-            portRangeForwardingListProvider
-                .overrideWith(() => mockPortRangeForwardingListNotifier),
-            portRangeTriggeringListProvider
-                .overrideWith(() => mockPortRangeTriggeringListNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const AppsGamingSettingsView(),
         );
-        await tester.pumpWidget(widget);
 
         final tabFinder = find.byType(Tab);
         await tester.tap(tabFinder.at(2));
@@ -1154,19 +818,15 @@ void main() {
       'Port range forwarding - edit',
       (tester, locale) async {
         // For mobile layout
-        when(mockPortRangeForwardingListNotifier.build()).thenReturn(
+        when(testHelper.mockPortRangeForwardingListNotifier.build()).thenReturn(
             PortRangeForwardingListState.fromMap(
                 portRangeForwardingEmptyListTestState));
 
-        final widget = testableSingleRoute(
-          overrides: [
-            portRangeForwardingListProvider
-                .overrideWith(() => mockPortRangeForwardingListNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const PortRangeForwardingRuleView(),
         );
-        await tester.pumpWidget(widget);
       },
       screens: [
         ...responsiveMobileScreens.map((e) => e.copyWith(height: 1280)).toList()
@@ -1177,19 +837,15 @@ void main() {
       'Port range forwarding - edit error',
       (tester, locale) async {
         // For mobile layout
-        when(mockPortRangeForwardingListNotifier.build()).thenReturn(
+        when(testHelper.mockPortRangeForwardingListNotifier.build()).thenReturn(
             PortRangeForwardingListState.fromMap(
                 portRangeForwardingEmptyListTestState));
 
-        final widget = testableSingleRoute(
-          overrides: [
-            portRangeForwardingListProvider
-                .overrideWith(() => mockPortRangeForwardingListNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const PortRangeForwardingRuleView(),
         );
-        await tester.pumpWidget(widget);
 
         final textFieldFinder = find.byType(AppTextField);
         await tester.enterText(textFieldFinder.at(0), 'name');
@@ -1222,30 +878,19 @@ void main() {
       'Port range forwarding - edit overlap error',
       (tester, locale) async {
         // For mobile layout
-        when(mockPortRangeForwardingListNotifier.build()).thenReturn(
+        when(testHelper.mockPortRangeForwardingListNotifier.build()).thenReturn(
             PortRangeForwardingListState.fromMap(
                 portRangeForwardingListTestState));
-        when(mockPortRangeForwardingRuleNotifier.isPortRangeValid(any, any))
+        when(testHelper.mockPortRangeForwardingRuleNotifier.isPortRangeValid(any, any))
             .thenAnswer((invocation) => false);
-        when(mockPortRangeForwardingRuleNotifier.isPortConflict(any, any, any))
+        when(testHelper.mockPortRangeForwardingRuleNotifier.isPortConflict(any, any, any))
             .thenAnswer((invocation) => false);
 
-        final widget = testableSingleRoute(
-          overrides: [
-            appsAndGamingProvider
-                .overrideWith(() => mockAppsAndGamingViewNotifier),
-            ddnsProvider.overrideWith(() => mockDDNSNotifier),
-            singlePortForwardingListProvider
-                .overrideWith(() => mockSinglePortForwardingListNotifier),
-            portRangeForwardingListProvider
-                .overrideWith(() => mockPortRangeForwardingListNotifier),
-            portRangeForwardingRuleProvider
-                .overrideWith(() => mockPortRangeForwardingRuleNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const PortRangeForwardingRuleView(),
         );
-        await tester.pumpWidget(widget);
 
         final textFieldFinder = find.byType(AppTextField);
         await tester.enterText(textFieldFinder.at(0), 'name');
@@ -1278,19 +923,15 @@ void main() {
       'Port range forwarding - edit filled up',
       (tester, locale) async {
         // For mobile layout
-        when(mockPortRangeForwardingListNotifier.build()).thenReturn(
+        when(testHelper.mockPortRangeForwardingListNotifier.build()).thenReturn(
             PortRangeForwardingListState.fromMap(
                 portRangeForwardingEmptyListTestState));
 
-        final widget = testableSingleRoute(
-          overrides: [
-            portRangeForwardingListProvider
-                .overrideWith(() => mockPortRangeForwardingListNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const PortRangeForwardingRuleView(),
         );
-        await tester.pumpWidget(widget);
 
         final textFieldFinder = find.byType(AppTextField);
         await tester.enterText(textFieldFinder.at(0), 'name');
@@ -1320,19 +961,15 @@ void main() {
       'Port range forwarding - protocol',
       (tester, locale) async {
         // For mobile layout
-        when(mockPortRangeForwardingListNotifier.build()).thenReturn(
+        when(testHelper.mockPortRangeForwardingListNotifier.build()).thenReturn(
             PortRangeForwardingListState.fromMap(
                 portRangeForwardingEmptyListTestState));
 
-        final widget = testableSingleRoute(
-          overrides: [
-            portRangeForwardingListProvider
-                .overrideWith(() => mockPortRangeForwardingListNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const PortRangeForwardingRuleView(),
         );
-        await tester.pumpWidget(widget);
 
         final protocolTypeFinder = find.byType(AppDropdownButton<String>);
         await tester.tap(protocolTypeFinder.first);
@@ -1347,25 +984,14 @@ void main() {
   group('Apps & Gaming - Port range triggerring', () {
     testLocalizations('Port range triggerring - with data',
         (tester, locale) async {
-      when(mockPortRangeTriggeringListNotifier.build()).thenReturn(
+      when(testHelper.mockPortRangeTriggeringListNotifier.build()).thenReturn(
           PortRangeTriggeringListState.fromMap(portRangeTriggerListTestState));
 
-      final widget = testableSingleRoute(
-        overrides: [
-          appsAndGamingProvider
-              .overrideWith(() => mockAppsAndGamingViewNotifier),
-          ddnsProvider.overrideWith(() => mockDDNSNotifier),
-          singlePortForwardingListProvider
-              .overrideWith(() => mockSinglePortForwardingListNotifier),
-          portRangeForwardingListProvider
-              .overrideWith(() => mockPortRangeForwardingListNotifier),
-          portRangeTriggeringListProvider
-              .overrideWith(() => mockPortRangeTriggeringListNotifier),
-        ],
+      await testHelper.pumpView(
+        tester,
         locale: locale,
         child: const AppsGamingSettingsView(),
       );
-      await tester.pumpWidget(widget);
 
       final tabFinder = find.byType(AppTabBar);
       final portRangeTriggeringFinder = find.byKey(Key('portRangeTriggering'));
@@ -1376,26 +1002,15 @@ void main() {
     });
 
     testLocalizations('Port range triggerring - empty', (tester, locale) async {
-      when(mockPortRangeTriggeringListNotifier.build()).thenReturn(
+      when(testHelper.mockPortRangeTriggeringListNotifier.build()).thenReturn(
           PortRangeTriggeringListState.fromMap(
               portRangeTriggerEmptyListTestState));
 
-      final widget = testableSingleRoute(
-        overrides: [
-          appsAndGamingProvider
-              .overrideWith(() => mockAppsAndGamingViewNotifier),
-          ddnsProvider.overrideWith(() => mockDDNSNotifier),
-          singlePortForwardingListProvider
-              .overrideWith(() => mockSinglePortForwardingListNotifier),
-          portRangeForwardingListProvider
-              .overrideWith(() => mockPortRangeForwardingListNotifier),
-          portRangeTriggeringListProvider
-              .overrideWith(() => mockPortRangeTriggeringListNotifier),
-        ],
+      await testHelper.pumpView(
+        tester,
         locale: locale,
         child: const AppsGamingSettingsView(),
       );
-      await tester.pumpWidget(widget);
 
       final tabFinder = find.byType(AppTabBar);
       final portRangeTriggeringFinder = find.byKey(Key('portRangeTriggering'));
@@ -1408,26 +1023,15 @@ void main() {
     testLocalizations(
       'Port range triggerring - edit',
       (tester, locale) async {
-        when(mockPortRangeTriggeringListNotifier.build()).thenReturn(
+        when(testHelper.mockPortRangeTriggeringListNotifier.build()).thenReturn(
             PortRangeTriggeringListState.fromMap(
                 portRangeTriggerEmptyListTestState));
 
-        final widget = testableSingleRoute(
-          overrides: [
-            appsAndGamingProvider
-                .overrideWith(() => mockAppsAndGamingViewNotifier),
-            ddnsProvider.overrideWith(() => mockDDNSNotifier),
-            singlePortForwardingListProvider
-                .overrideWith(() => mockSinglePortForwardingListNotifier),
-            portRangeForwardingListProvider
-                .overrideWith(() => mockPortRangeForwardingListNotifier),
-            portRangeTriggeringListProvider
-                .overrideWith(() => mockPortRangeTriggeringListNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const AppsGamingSettingsView(),
         );
-        await tester.pumpWidget(widget);
 
         final tabFinder = find.byType(AppTabBar);
         final portRangeTriggeringFinder =
@@ -1452,26 +1056,15 @@ void main() {
       'Port range triggerring - edit error',
       (tester, locale) async {
         // TODO: preserve test case for the error message on dektop table
-        when(mockPortRangeTriggeringListNotifier.build()).thenReturn(
+        when(testHelper.mockPortRangeTriggeringListNotifier.build()).thenReturn(
             PortRangeTriggeringListState.fromMap(
                 portRangeTriggerEmptyListTestState));
 
-        final widget = testableSingleRoute(
-          overrides: [
-            appsAndGamingProvider
-                .overrideWith(() => mockAppsAndGamingViewNotifier),
-            ddnsProvider.overrideWith(() => mockDDNSNotifier),
-            singlePortForwardingListProvider
-                .overrideWith(() => mockSinglePortForwardingListNotifier),
-            portRangeForwardingListProvider
-                .overrideWith(() => mockPortRangeForwardingListNotifier),
-            portRangeTriggeringListProvider
-                .overrideWith(() => mockPortRangeTriggeringListNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const AppsGamingSettingsView(),
         );
-        await tester.pumpWidget(widget);
 
         final tabFinder = find.byType(AppTabBar);
         final portRangeTriggeringFinder =
@@ -1515,31 +1108,18 @@ void main() {
       'Port range triggerring - edit overlap error',
       (tester, locale) async {
         // TODO: preserve test case for the error message on dektop table
-        when(mockPortRangeTriggeringListNotifier.build()).thenReturn(
+        when(testHelper.mockPortRangeTriggeringListNotifier.build()).thenReturn(
             PortRangeTriggeringListState.fromMap(
                 portRangeTriggerListTestState));
-        when(mockPortRangeTriggeringRuleNotifier.isTriggeredPortConflict(
+        when(testHelper.mockPortRangeTriggeringRuleNotifier.isTriggeredPortConflict(
                 any, any))
             .thenAnswer((invocation) => false);
 
-        final widget = testableSingleRoute(
-          overrides: [
-            appsAndGamingProvider
-                .overrideWith(() => mockAppsAndGamingViewNotifier),
-            ddnsProvider.overrideWith(() => mockDDNSNotifier),
-            singlePortForwardingListProvider
-                .overrideWith(() => mockSinglePortForwardingListNotifier),
-            portRangeForwardingListProvider
-                .overrideWith(() => mockPortRangeForwardingListNotifier),
-            portRangeTriggeringListProvider
-                .overrideWith(() => mockPortRangeTriggeringListNotifier),
-            portRangeTriggeringRuleProvider
-                .overrideWith(() => mockPortRangeTriggeringRuleNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const AppsGamingSettingsView(),
         );
-        await tester.pumpWidget(widget);
 
         final tabFinder = find.byType(AppTabBar);
         final portRangeTriggeringFinder =
@@ -1582,26 +1162,15 @@ void main() {
     testLocalizations(
       'Port range triggerring - edit filled up',
       (tester, locale) async {
-        when(mockPortRangeTriggeringListNotifier.build()).thenReturn(
+        when(testHelper.mockPortRangeTriggeringListNotifier.build()).thenReturn(
             PortRangeTriggeringListState.fromMap(
                 portRangeTriggerEmptyListTestState));
 
-        final widget = testableSingleRoute(
-          overrides: [
-            appsAndGamingProvider
-                .overrideWith(() => mockAppsAndGamingViewNotifier),
-            ddnsProvider.overrideWith(() => mockDDNSNotifier),
-            singlePortForwardingListProvider
-                .overrideWith(() => mockSinglePortForwardingListNotifier),
-            portRangeForwardingListProvider
-                .overrideWith(() => mockPortRangeForwardingListNotifier),
-            portRangeTriggeringListProvider
-                .overrideWith(() => mockPortRangeTriggeringListNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const AppsGamingSettingsView(),
         );
-        await tester.pumpWidget(widget);
 
         final tabFinder = find.byType(AppTabBar);
         final portRangeTriggeringFinder =
@@ -1645,19 +1214,15 @@ void main() {
       'Port range triggerring - edit',
       (tester, locale) async {
         // For mobile layout
-        when(mockPortRangeTriggeringListNotifier.build()).thenReturn(
+        when(testHelper.mockPortRangeTriggeringListNotifier.build()).thenReturn(
             PortRangeTriggeringListState.fromMap(
                 portRangeTriggerEmptyListTestState));
 
-        final widget = testableSingleRoute(
-          overrides: [
-            portRangeTriggeringListProvider
-                .overrideWith(() => mockPortRangeTriggeringListNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const PortRangeTriggeringRuleView(),
         );
-        await tester.pumpWidget(widget);
       },
       screens: [
         ...responsiveMobileScreens.map((e) => e.copyWith(height: 1280)).toList()
@@ -1668,19 +1233,15 @@ void main() {
       'Port range triggerring - edit error',
       (tester, locale) async {
         // For mobile layout
-        when(mockPortRangeTriggeringListNotifier.build()).thenReturn(
+        when(testHelper.mockPortRangeTriggeringListNotifier.build()).thenReturn(
             PortRangeTriggeringListState.fromMap(
                 portRangeTriggerEmptyListTestState));
 
-        final widget = testableSingleRoute(
-          overrides: [
-            portRangeTriggeringListProvider
-                .overrideWith(() => mockPortRangeTriggeringListNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const PortRangeTriggeringRuleView(),
         );
-        await tester.pumpWidget(widget);
 
         final textFieldFinder = find.byType(AppTextField);
         await tester.enterText(textFieldFinder.at(0), 'name');
@@ -1710,31 +1271,18 @@ void main() {
       'Port range triggerring - edit overlap error',
       (tester, locale) async {
         // For mobile layout
-        when(mockPortRangeTriggeringListNotifier.build()).thenReturn(
+        when(testHelper.mockPortRangeTriggeringListNotifier.build()).thenReturn(
             PortRangeTriggeringListState.fromMap(
                 portRangeTriggerListTestState));
-        when(mockPortRangeTriggeringRuleNotifier.isTriggeredPortConflict(
+        when(testHelper.mockPortRangeTriggeringRuleNotifier.isTriggeredPortConflict(
                 any, any))
             .thenAnswer((invocation) => false);
 
-        final widget = testableSingleRoute(
-          overrides: [
-            appsAndGamingProvider
-                .overrideWith(() => mockAppsAndGamingViewNotifier),
-            ddnsProvider.overrideWith(() => mockDDNSNotifier),
-            singlePortForwardingListProvider
-                .overrideWith(() => mockSinglePortForwardingListNotifier),
-            portRangeForwardingListProvider
-                .overrideWith(() => mockPortRangeForwardingListNotifier),
-            portRangeTriggeringListProvider
-                .overrideWith(() => mockPortRangeTriggeringListNotifier),
-            portRangeTriggeringRuleProvider
-                .overrideWith(() => mockPortRangeTriggeringRuleNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const PortRangeTriggeringRuleView(),
         );
-        await tester.pumpWidget(widget);
 
         final textFieldFinder = find.byType(AppTextField);
         await tester.enterText(textFieldFinder.at(0), 'name');
@@ -1764,19 +1312,15 @@ void main() {
       'Port range triggerring - edit filled up',
       (tester, locale) async {
         // For mobile layout
-        when(mockPortRangeTriggeringListNotifier.build()).thenReturn(
+        when(testHelper.mockPortRangeTriggeringListNotifier.build()).thenReturn(
             PortRangeTriggeringListState.fromMap(
                 portRangeTriggerEmptyListTestState));
 
-        final widget = testableSingleRoute(
-          overrides: [
-            portRangeTriggeringListProvider
-                .overrideWith(() => mockPortRangeTriggeringListNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const PortRangeTriggeringRuleView(),
         );
-        await tester.pumpWidget(widget);
 
         final textFieldFinder = find.byType(AppTextField);
         await tester.enterText(textFieldFinder.at(0), 'name');

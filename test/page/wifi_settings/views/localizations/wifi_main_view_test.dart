@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
-import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
 import 'package:privacy_gui/page/instant_device/views/select_device_view.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
@@ -15,48 +12,25 @@ import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 import '../../../../common/_index.dart';
-import '../../../../common/di.dart';
+import '../../../../common/test_helper.dart';
 import '../../../../mocks/_index.dart';
-import '../../../../mocks/jnap_service_supported_mocks.dart';
-import '../../../../mocks/wifi_view_notifier_mocks.dart';
 import '../../../../test_data/_index.dart';
 
 void main() {
-  late WiFiViewNotifier mockWiFiViewNotifier;
-  late MockWifiListNotifier mockWiFiListNotifier;
-  late MockWifiAdvancedSettingsNotifier mockWiFiAdvancedSettingsNotifier;
-  late MockInstantPrivacyNotifier mockInstantPrivacyNotifier;
-
-  mockDependencyRegister();
-  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
+  final testHelper = TestHelper();
 
   setUp(() {
-    mockWiFiViewNotifier = MockWiFiViewNotifier();
-    mockWiFiListNotifier = MockWifiListNotifier();
-    mockWiFiAdvancedSettingsNotifier = MockWifiAdvancedSettingsNotifier();
-    mockInstantPrivacyNotifier = MockInstantPrivacyNotifier();
-
-    when(mockWiFiListNotifier.build())
-        .thenReturn(WiFiState.fromMap(wifiListTestState));
-
-    when(mockWiFiAdvancedSettingsNotifier.build()).thenReturn(
-        WifiAdvancedSettingsState.fromMap(wifiAdvancedSettingsTestState));
-    when(mockWiFiViewNotifier.build()).thenReturn(WiFiViewState());
-
-    when(mockWiFiListNotifier.fetch(any)).thenAnswer((realInvocation) async {
+    testHelper.setup();
+    when(testHelper.mockWiFiListNotifier.fetch(any)).thenAnswer((realInvocation) async {
       await Future.delayed(Durations.extralong1);
       return WiFiState.fromMap(wifiListTestState);
     });
-
-    when(mockWiFiAdvancedSettingsNotifier.fetch(any))
+    when(testHelper.mockWiFiAdvancedSettingsNotifier.fetch(any))
         .thenAnswer((realInvocation) async {
       await Future.delayed(Durations.extralong1);
       return WifiAdvancedSettingsState.fromMap(wifiAdvancedSettingsTestState);
     });
-
-    when(mockInstantPrivacyNotifier.build())
-        .thenReturn(InstantPrivacyState.fromMap(instantPrivacyTestState));
-    when(mockInstantPrivacyNotifier.fetch(fetchRemote: anyNamed('fetchRemote')))
+    when(testHelper.mockInstantPrivacyNotifier.fetch(fetchRemote: anyNamed('fetchRemote')))
         .thenAnswer((_) async {
       await Future.delayed(Durations.extralong1);
       return InstantPrivacyState.fromMap(instantPrivacyTestState);
@@ -65,25 +39,17 @@ void main() {
   group('Incredible-WiFi - Wifi list view', () {
     testLocalizations('Incredible-WiFi - Wifi list view',
         (tester, locale) async {
-      when(mockWiFiListNotifier.build())
+      when(testHelper.mockWiFiListNotifier.build())
           .thenReturn(WiFiState.fromMap(wifiListGuestEnabledTestState));
-      when(mockWiFiListNotifier.fetch()).thenAnswer((realInvocation) async {
+      when(testHelper.mockWiFiListNotifier.fetch()).thenAnswer((realInvocation) async {
         await Future.delayed(Durations.extralong1);
         return WiFiState.fromMap(wifiListGuestEnabledTestState);
       });
-      final widget = testableSingleRoute(
-        overrides: [
-          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-          wifiAdvancedProvider
-              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
-        ],
+      await testHelper.pumpView(
+        tester,
         locale: locale,
         child: const WiFiMainView(),
       );
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
     }, screens: [
       ...responsiveMobileScreens.map((e) => e.copyWith(height: 1280)).toList(),
       ...responsiveDesktopScreens
@@ -92,21 +58,13 @@ void main() {
     testLocalizations(
         'Incredible-WiFi - Wifi list view - discard editing modal',
         (tester, locale) async {
-      when(mockWiFiViewNotifier.build()).thenReturn(
-          WiFiViewState().copyWith(isWifiListViewStateChanged: true));
-      final widget = testableSingleRoute(
-        overrides: [
-          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-          wifiAdvancedProvider
-              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
-        ],
+      when(testHelper.mockWiFiViewNotifier.build()).thenReturn(
+          const WiFiViewState().copyWith(isWifiListViewStateChanged: true));
+      await testHelper.pumpView(
+        tester,
         locale: locale,
         child: const WiFiMainView(),
       );
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
 
       final backFinder = find.byIcon(LinksysIcons.arrowBack);
       await tester.tap(backFinder);
@@ -115,19 +73,11 @@ void main() {
 
     testLocalizations('Incredible-WiFi - Wifi list view - edit SSID',
         (tester, locale) async {
-      final widget = testableSingleRoute(
-        overrides: [
-          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-          wifiAdvancedProvider
-              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
-        ],
+      await testHelper.pumpView(
+        tester,
         locale: locale,
         child: const WiFiMainView(),
       );
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
       final editIconFinder = find.byIcon(LinksysIcons.edit);
       await tester.tap(editIconFinder.first);
       await tester.pumpAndSettle();
@@ -136,19 +86,11 @@ void main() {
     testLocalizations(
         'Incredible-WiFi - Wifi list view - edit SSID - empty error',
         (tester, locale) async {
-      final widget = testableSingleRoute(
-        overrides: [
-          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-          wifiAdvancedProvider
-              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
-        ],
+      await testHelper.pumpView(
+        tester,
         locale: locale,
         child: const WiFiMainView(),
       );
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
       final editIconFinder = find.byIcon(LinksysIcons.edit);
       await tester.tap(editIconFinder.first);
       await tester.pumpAndSettle();
@@ -162,19 +104,11 @@ void main() {
     testLocalizations(
         'Incredible-WiFi - Wifi list view - edit SSID - surround space error',
         (tester, locale) async {
-      final widget = testableSingleRoute(
-        overrides: [
-          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-          wifiAdvancedProvider
-              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
-        ],
+      await testHelper.pumpView(
+        tester,
         locale: locale,
         child: const WiFiMainView(),
       );
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
       final editIconFinder = find.byIcon(LinksysIcons.edit);
       await tester.tap(editIconFinder.first);
       await tester.pumpAndSettle();
@@ -188,19 +122,11 @@ void main() {
     testLocalizations(
         'Incredible-WiFi - Wifi list view - edit SSID - length error',
         (tester, locale) async {
-      final widget = testableSingleRoute(
-        overrides: [
-          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-          wifiAdvancedProvider
-              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
-        ],
+      await testHelper.pumpView(
+        tester,
         locale: locale,
         child: const WiFiMainView(),
       );
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
       final editIconFinder = find.byIcon(LinksysIcons.edit);
       await tester.tap(editIconFinder.first);
       await tester.pumpAndSettle();
@@ -214,19 +140,11 @@ void main() {
 
     testLocalizations('Incredible-WiFi - Wifi list view - edit password',
         (tester, locale) async {
-      final widget = testableSingleRoute(
-        overrides: [
-          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-          wifiAdvancedProvider
-              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
-        ],
+      await testHelper.pumpView(
+        tester,
         locale: locale,
         child: const WiFiMainView(),
       );
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
       final editIconFinder = find.byIcon(LinksysIcons.edit);
       await tester.tap(editIconFinder.at(1));
       await tester.pumpAndSettle();
@@ -235,19 +153,11 @@ void main() {
     testLocalizations(
         'Incredible-WiFi - Wifi list view - edit password - error state',
         (tester, locale) async {
-      final widget = testableSingleRoute(
-        overrides: [
-          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-          wifiAdvancedProvider
-              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
-        ],
+      await testHelper.pumpView(
+        tester,
         locale: locale,
         child: const WiFiMainView(),
       );
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
       final editIconFinder = find.byIcon(LinksysIcons.edit);
       await tester.tap(editIconFinder.at(1));
       await tester.pumpAndSettle();
@@ -261,19 +171,11 @@ void main() {
 
     testLocalizations('Incredible-WiFi - Wifi list view - edit security mode',
         (tester, locale) async {
-      final widget = testableSingleRoute(
-        overrides: [
-          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-          wifiAdvancedProvider
-              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
-        ],
+      await testHelper.pumpView(
+        tester,
         locale: locale,
         child: const WiFiMainView(),
       );
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
       final editIconFinder = find.byIcon(LinksysIcons.edit);
       await tester.scrollUntilVisible(editIconFinder.at(2), 100,
           scrollable: find.byType(Scrollable).last);
@@ -283,19 +185,11 @@ void main() {
 
     testLocalizations('Incredible-WiFi - Wifi list view - edit WiFi mode',
         (tester, locale) async {
-      final widget = testableSingleRoute(
-        overrides: [
-          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-          wifiAdvancedProvider
-              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
-        ],
+      await testHelper.pumpView(
+        tester,
         locale: locale,
         child: const WiFiMainView(),
       );
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
       final editIconFinder = find.byIcon(LinksysIcons.edit);
       await tester.scrollUntilVisible(editIconFinder.at(3), 100,
           scrollable: find.byType(Scrollable).last);
@@ -306,26 +200,18 @@ void main() {
     testLocalizations(
         'Incredible-WiFi - Wifi list view - edit WiFi mode with invalid value',
         (tester, locale) async {
-      when(mockWiFiListNotifier.build())
+      when(testHelper.mockWiFiListNotifier.build())
           .thenReturn(WiFiState.fromMap(wifiListInvalidWirelessModeTestState));
 
-      when(mockWiFiListNotifier.fetch(any)).thenAnswer((realInvocation) async {
+      when(testHelper.mockWiFiListNotifier.fetch(any)).thenAnswer((realInvocation) async {
         await Future.delayed(Durations.extralong1);
         return WiFiState.fromMap(wifiListInvalidWirelessModeTestState);
       });
-      final widget = testableSingleRoute(
-        overrides: [
-          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-          wifiAdvancedProvider
-              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
-        ],
+      await testHelper.pumpView(
+        tester,
         locale: locale,
         child: const WiFiMainView(),
       );
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
       final editIconFinder = find.byIcon(LinksysIcons.edit);
       await tester.scrollUntilVisible(editIconFinder.at(3), 100,
           scrollable: find.byType(Scrollable).last);
@@ -335,19 +221,11 @@ void main() {
 
     testLocalizations('Incredible-WiFi - Wifi list view - edit channel width',
         (tester, locale) async {
-      final widget = testableSingleRoute(
-        overrides: [
-          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-          wifiAdvancedProvider
-              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
-        ],
+      await testHelper.pumpView(
+        tester,
         locale: locale,
         child: const WiFiMainView(),
       );
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
       final editIconFinder = find.byIcon(LinksysIcons.edit);
       await tester.scrollUntilVisible(editIconFinder.at(4), 100,
           scrollable: find.byType(Scrollable).last);
@@ -358,28 +236,20 @@ void main() {
     testLocalizations(
         'Incredible-WiFi - Wifi list view - edit channel width with unavailable value',
         (tester, locale) async {
-      when(mockWiFiListNotifier.build()).thenReturn(
+      when(testHelper.mockWiFiListNotifier.build()).thenReturn(
           WiFiState.fromMap(wifiListUnavailableChannelWidthTestState));
 
-      when(mockWiFiListNotifier.fetch(any)).thenAnswer((realInvocation) async {
+      when(testHelper.mockWiFiListNotifier.fetch(any)).thenAnswer((realInvocation) async {
         await Future.delayed(Durations.extralong1);
         return WiFiState.fromMap(wifiListUnavailableChannelWidthTestState);
       });
-      final widget = testableSingleRoute(
-        overrides: [
-          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-          wifiAdvancedProvider
-              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
-        ],
+      await testHelper.pumpView(
+        tester,
         locale: locale,
         child: const WiFiMainView(),
       );
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
       // find wifi card
-      final wifiCardFinder = find.byKey(ValueKey('WiFiCard-5GHz'));
+      final wifiCardFinder = find.byKey(const ValueKey('WiFiCard-5GHz'));
       expect(wifiCardFinder, findsOneWidget);
       final editIconFinder = find.descendant(
           of: wifiCardFinder, matching: find.byIcon(LinksysIcons.edit));
@@ -391,19 +261,11 @@ void main() {
 
     testLocalizations('Incredible-WiFi - Wifi list view - edit channel',
         (tester, locale) async {
-      final widget = testableSingleRoute(
-        overrides: [
-          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-          wifiAdvancedProvider
-              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
-        ],
+      await testHelper.pumpView(
+        tester,
         locale: locale,
         child: const WiFiMainView(),
       );
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
       final editIconFinder = find.byIcon(LinksysIcons.edit);
       await tester.scrollUntilVisible(editIconFinder.at(5), 100,
           scrollable: find.byType(Scrollable).last);
@@ -413,26 +275,18 @@ void main() {
 
     testLocalizations('Incredible-WiFi - Wifi list view - save confirm modal',
         (tester, locale) async {
-      when(mockWiFiListNotifier.fetch()).thenAnswer((realInvocation) async {
+      when(testHelper.mockWiFiListNotifier.fetch()).thenAnswer((realInvocation) async {
         await Future.delayed(Durations.extralong1);
         final wifiState = WiFiState.fromMap(wifiListTestState);
         return wifiState.copyWith(
             guestWiFi: wifiState.guestWiFi.copyWith(isEnabled: true));
       });
 
-      final widget = testableSingleRoute(
-        overrides: [
-          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-          wifiAdvancedProvider
-              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
-        ],
+      await testHelper.pumpView(
+        tester,
         locale: locale,
         child: const WiFiMainView(),
       );
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
 
       final saveButtonFinder = find.byType(AppFilledButton);
       await tester.tap(saveButtonFinder);
@@ -442,7 +296,7 @@ void main() {
     testLocalizations(
         'Incredible-WiFi - Wifi list view - save confirm modal - disable band warning',
         (tester, locale) async {
-      when(mockWiFiListNotifier.build()).thenReturn(() {
+      when(testHelper.mockWiFiListNotifier.build()).thenReturn(() {
         final wifiState = WiFiState.fromMap(wifiListGuestEnabledTestState);
         final changedMainWiFi =
             List<WiFiItem>.from(wifiState.mainWiFi).map((e) {
@@ -454,7 +308,7 @@ void main() {
         return wifiState.copyWith(mainWiFi: changedMainWiFi);
       }.call());
 
-      when(mockWiFiListNotifier.fetch()).thenAnswer((realInvocation) async {
+      when(testHelper.mockWiFiListNotifier.fetch()).thenAnswer((realInvocation) async {
         await Future.delayed(Durations.extralong1);
         final wifiState = WiFiState.fromMap(wifiListTestState);
 
@@ -462,19 +316,11 @@ void main() {
             guestWiFi: wifiState.guestWiFi.copyWith(isEnabled: true));
       });
 
-      final widget = testableSingleRoute(
-        overrides: [
-          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-          wifiAdvancedProvider
-              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
-        ],
+      await testHelper.pumpView(
+        tester,
         locale: locale,
         child: const WiFiMainView(),
       );
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
 
       final saveButtonFinder = find.byType(AppFilledButton);
       await tester.tap(saveButtonFinder);
@@ -485,9 +331,9 @@ void main() {
         'Incredible-WiFi - Wifi list view - save confirm modal - MLO warning',
         (tester, locale) async {
       final wifiState = WiFiState.fromMap(wifiListGuestEnabledTestState);
-      when(mockWiFiListNotifier.build()).thenReturn(wifiState);
+      when(testHelper.mockWiFiListNotifier.build()).thenReturn(wifiState);
 
-      when(mockWiFiListNotifier.fetch()).thenAnswer((realInvocation) async {
+      when(testHelper.mockWiFiListNotifier.fetch()).thenAnswer((realInvocation) async {
         await Future.delayed(Durations.extralong1);
         final wifiState = WiFiState.fromMap(wifiListTestState);
 
@@ -496,23 +342,15 @@ void main() {
       });
       final radios = Map.fromIterables(
           wifiState.mainWiFi.map((e) => e.radioID), wifiState.mainWiFi);
-      when(mockWiFiListNotifier.checkingMLOSettingsConflicts(radios,
+      when(testHelper.mockWiFiListNotifier.checkingMLOSettingsConflicts(radios,
               isMloEnabled: true))
           .thenReturn(true);
 
-      final widget = testableSingleRoute(
-        overrides: [
-          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-          wifiAdvancedProvider
-              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
-        ],
+      await testHelper.pumpView(
+        tester,
         locale: locale,
         child: const WiFiMainView(),
       );
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
 
       final saveButtonFinder = find.byType(AppFilledButton);
       await tester.tap(saveButtonFinder);
@@ -523,19 +361,11 @@ void main() {
   group('Incredible-WiFi - WiFi Advanced settings view', () {
     testLocalizations('Incredible-WiFi - Advanced settings view',
         (tester, locale) async {
-      final widget = testableSingleRoute(
-        overrides: [
-          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-          wifiAdvancedProvider
-              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
-        ],
+      await testHelper.pumpView(
+        tester,
         locale: locale,
         child: const WiFiMainView(),
       );
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
 
       final tabFinder = find.byType(Tab);
       await tester.tap(tabFinder.at(1));
@@ -548,26 +378,18 @@ void main() {
     testLocalizations('Incredible-WiFi - Advanced settings view - MLO warning',
         (tester, locale) async {
       final wifiState = WiFiState.fromMap(wifiListGuestEnabledTestState);
-      when(mockWiFiListNotifier.build()).thenReturn(wifiState);
+      when(testHelper.mockWiFiListNotifier.build()).thenReturn(wifiState);
 
       final radios = Map.fromIterables(
           wifiState.mainWiFi.map((e) => e.radioID), wifiState.mainWiFi);
-      when(mockWiFiListNotifier.checkingMLOSettingsConflicts(radios))
+      when(testHelper.mockWiFiListNotifier.checkingMLOSettingsConflicts(radios))
           .thenReturn(true);
 
-      final widget = testableSingleRoute(
-        overrides: [
-          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-          wifiAdvancedProvider
-              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
-        ],
+      await testHelper.pumpView(
+        tester,
         locale: locale,
         child: const WiFiMainView(),
       );
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
 
       final tabFinder = find.byType(Tab);
       await tester.tap(tabFinder.at(1));
@@ -580,28 +402,20 @@ void main() {
     testLocalizations(
         'Incredible-WiFi - Advanced settings view - DFS warning modal',
         (tester, locale) async {
-      when(mockWiFiAdvancedSettingsNotifier.build()).thenReturn(
+      when(testHelper.mockWiFiAdvancedSettingsNotifier.build()).thenReturn(
           WifiAdvancedSettingsState.fromMap(wifiAdvancedSettingsTestState));
 
-      when(mockWiFiAdvancedSettingsNotifier.fetch())
+      when(testHelper.mockWiFiAdvancedSettingsNotifier.fetch())
           .thenAnswer((realInvocation) async {
         await Future.delayed(Durations.extralong1);
         return WifiAdvancedSettingsState.fromMap(wifiAdvancedSettingsTestState)
             .copyWith(isDFSEnabled: false);
       });
-      final widget = testableSingleRoute(
-        overrides: [
-          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-          wifiAdvancedProvider
-              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
-        ],
+      await testHelper.pumpView(
+        tester,
         locale: locale,
         child: const WiFiMainView(),
       );
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
 
       final tabFinder = find.byType(Tab);
       await tester.tap(tabFinder.last);
@@ -616,19 +430,11 @@ void main() {
   group('Incredible-WiFi - MAC Filtering view', () {
     testLocalizations('Incredible-WiFi - MAC Filtering view',
         (tester, locale) async {
-      final widget = testableSingleRoute(
-        overrides: [
-          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-          wifiAdvancedProvider
-              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
-        ],
+      await testHelper.pumpView(
+        tester,
         locale: locale,
         child: const WiFiMainView(),
       );
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
 
       final tabFinder = find.byType(Tab);
       await tester.tap(tabFinder.last);
@@ -637,22 +443,11 @@ void main() {
 
     testLocalizations('Incredible-WiFi - MAC Filtering view - enabled',
         (tester, locale) async {
-      when(mockInstantPrivacyNotifier.build())
-          .thenReturn(InstantPrivacyState.fromMap(instantPrivacyDenyTestState));
-
-      final widget = testableSingleRoute(
-        overrides: [
-          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-          wifiAdvancedProvider
-              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
-        ],
+      await testHelper.pumpView(
+        tester,
         locale: locale,
         child: const WiFiMainView(),
       );
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
 
       final tabFinder = find.byType(Tab);
       await tester.tap(tabFinder.last);
@@ -661,28 +456,20 @@ void main() {
 
     testLocalizations('Incredible-WiFi - MAC Filtering view - turn on alert',
         (tester, locale) async {
-      when(mockInstantPrivacyNotifier.build())
+      when(testHelper.mockInstantPrivacyNotifier.build())
           .thenReturn(InstantPrivacyState.fromMap(instantPrivacyDenyTestState));
-      when(mockInstantPrivacyNotifier.fetch(
+      when(testHelper.mockInstantPrivacyNotifier.fetch(
               fetchRemote: anyNamed('fetchRemote')))
           .thenAnswer((_) {
         return Future.delayed(Durations.extralong1, () {
           return InstantPrivacyState.fromMap(instantPrivacyTestState);
         });
       });
-      final widget = testableSingleRoute(
-        overrides: [
-          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-          wifiAdvancedProvider
-              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
-        ],
+      await testHelper.pumpView(
+        tester,
         locale: locale,
         child: const WiFiMainView(),
       );
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
 
       final tabFinder = find.byType(Tab);
       await tester.tap(tabFinder.last);
@@ -694,26 +481,18 @@ void main() {
 
     testLocalizations('Incredible-WiFi - MAC Filtering view - turn off alert',
         (tester, locale) async {
-      when(mockInstantPrivacyNotifier.fetch(
+      when(testHelper.mockInstantPrivacyNotifier.fetch(
               fetchRemote: anyNamed('fetchRemote')))
           .thenAnswer((_) {
         return Future.delayed(Durations.extralong1, () {
           return InstantPrivacyState.fromMap(instantPrivacyDenyTestState);
         });
       });
-      final widget = testableSingleRoute(
-        overrides: [
-          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-          wifiAdvancedProvider
-              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
-        ],
+      await testHelper.pumpView(
+        tester,
         locale: locale,
         child: const WiFiMainView(),
       );
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
 
       final tabFinder = find.byType(Tab);
       await tester.tap(tabFinder.last);
@@ -726,28 +505,20 @@ void main() {
     testLocalizations(
         'Incredible-WiFi - MAC Filtering view - Instant Privacy disable warning',
         (tester, locale) async {
-      when(mockInstantPrivacyNotifier.build()).thenReturn(
+      when(testHelper.mockInstantPrivacyNotifier.build()).thenReturn(
           InstantPrivacyState.fromMap(instantPrivacyEnabledTestState));
-      when(mockInstantPrivacyNotifier.fetch(
+      when(testHelper.mockInstantPrivacyNotifier.fetch(
               fetchRemote: anyNamed('fetchRemote')))
           .thenAnswer((_) async {
         await Future.delayed(Durations.extralong1);
         return InstantPrivacyState.fromMap(instantPrivacyEnabledTestState);
       });
 
-      final widget = testableSingleRoute(
-        overrides: [
-          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-          wifiAdvancedProvider
-              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-          instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
-        ],
+      await testHelper.pumpView(
+        tester,
         locale: locale,
         child: const WiFiMainView(),
       );
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
 
       final tabFinder = find.byType(Tab);
       await tester.tap(tabFinder.last);
@@ -757,51 +528,27 @@ void main() {
 
   testLocalizations('Incredible-WiFi - MAC Filtering Devices view',
       (tester, locale) async {
-    final mockDeviceListNotifier = MockDeviceListNotifier();
-    when(mockDeviceListNotifier.build())
-        .thenReturn(DeviceListState.fromMap(deviceListTestState));
-    when(mockInstantPrivacyNotifier.build())
+    when(testHelper.mockInstantPrivacyNotifier.build())
         .thenReturn(InstantPrivacyState.fromMap(instantPrivacyDenyTestState));
 
-    final widget = testableSingleRoute(
-      overrides: [
-        wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-        wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-        wifiAdvancedProvider
-            .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-        instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
-        deviceListProvider.overrideWith(() => mockDeviceListNotifier),
-      ],
+    await testHelper.pumpView(
+      tester,
       locale: locale,
       child: const FilteredDevicesView(),
     );
-    await tester.pumpWidget(widget);
-    await tester.pumpAndSettle();
   }, screens: [...responsiveMobileScreens, ...responsiveDesktopScreens]);
 
   testLocalizations(
       'Incredible-WiFi - MAC Filtering Devices view - Manual add MAC address',
       (tester, locale) async {
-    final mockDeviceListNotifier = MockDeviceListNotifier();
-    when(mockDeviceListNotifier.build())
-        .thenReturn(DeviceListState.fromMap(deviceListTestState));
-    when(mockInstantPrivacyNotifier.build())
+    when(testHelper.mockInstantPrivacyNotifier.build())
         .thenReturn(InstantPrivacyState.fromMap(instantPrivacyDenyTestState));
 
-    final widget = testableSingleRoute(
-      overrides: [
-        wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-        wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-        wifiAdvancedProvider
-            .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-        instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
-        deviceListProvider.overrideWith(() => mockDeviceListNotifier),
-      ],
+    await testHelper.pumpView(
+      tester,
       locale: locale,
       child: const FilteredDevicesView(),
     );
-    await tester.pumpWidget(widget);
-    await tester.pumpAndSettle();
 
     await tester.tap(find.byIcon(LinksysIcons.add).last);
     await tester.pumpAndSettle();
@@ -810,21 +557,11 @@ void main() {
   testLocalizations(
       'Incredible-WiFi - MAC Filtering Devices view - Select devices',
       (tester, locale) async {
-    final mockDeviceListNotifier = MockDeviceListNotifier();
-    when(mockDeviceListNotifier.build())
-        .thenReturn(DeviceListState.fromMap(deviceListTestState));
-    when(mockInstantPrivacyNotifier.build())
+    when(testHelper.mockInstantPrivacyNotifier.build())
         .thenReturn(InstantPrivacyState.fromMap(instantPrivacyDenyTestState));
 
-    final widget = testableSingleRoute(
-      overrides: [
-        wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-        wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-        wifiAdvancedProvider
-            .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-        instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
-        deviceListProvider.overrideWith(() => mockDeviceListNotifier),
-      ],
+    await testHelper.pumpView(
+      tester,
       locale: locale,
       child: SelectDeviceView(
         args: {
@@ -835,32 +572,22 @@ void main() {
         },
       ),
     );
-    await tester.pumpWidget(widget);
-    await tester.pumpAndSettle();
   }, screens: [...responsiveMobileScreens, ...responsiveDesktopScreens]);
 
   testLocalizations('Incredible-WiFi - Wifi list view - No Guest WiFi',
       (tester, locale) async {
-    when(mockServiceHelper.isSupportGuestNetwork()).thenReturn(false);
-    when(mockServiceHelper.isSupportLedMode()).thenReturn(false);
-    when(mockWiFiListNotifier.build()).thenReturn(
+    when(testHelper.mockServiceHelper.isSupportGuestNetwork()).thenReturn(false);
+    when(testHelper.mockServiceHelper.isSupportLedMode()).thenReturn(false);
+    when(testHelper.mockWiFiListNotifier.build()).thenReturn(
         WiFiState.fromMap(wifiListGuestEnabledTestState).copyWith());
-    when(mockWiFiListNotifier.fetch()).thenAnswer((realInvocation) async {
+    when(testHelper.mockWiFiListNotifier.fetch()).thenAnswer((realInvocation) async {
       await Future.delayed(Durations.extralong1);
       return WiFiState.fromMap(wifiListGuestEnabledTestState);
     });
-    final widget = testableSingleRoute(
-      overrides: [
-        wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-        wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-        wifiAdvancedProvider
-            .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-        instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
-      ],
+    await testHelper.pumpView(
+      tester,
       locale: locale,
       child: const WiFiMainView(),
     );
-    await tester.pumpWidget(widget);
-    await tester.pumpAndSettle();
   }, screens: [...responsiveMobileScreens, ...responsiveDesktopScreens]);
 }
