@@ -47,9 +47,8 @@ class _PnpPPPOEViewState extends ConsumerState<PnpPPPOEView> {
 
   @override
   Widget build(BuildContext context) {
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       title: loc(context).pnpPppoeTitle,
-      scrollable: true,
       child: (context, constraints) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

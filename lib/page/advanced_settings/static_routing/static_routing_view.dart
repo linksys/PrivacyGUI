@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/models/get_routing_settings.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_provider.dart';
@@ -79,7 +78,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
           inputDecorationTheme: Theme.of(context)
               .inputDecorationTheme
               .copyWith(contentPadding: EdgeInsets.all(Spacing.small1))),
-      child: StyledAppPageView(
+      child: StyledAppPageView.withSliver(
         title: loc(context).advancedRouting,
         scrollable: true,
         bottomBar: PageBottomBar(
@@ -91,36 +90,37 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
                 showErrorMessageSnackBar(error);
               });
             }),
-        onBackTap: null,
-        child: (context, constraints) => Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AppRadioList(
-              selected: state.current.isNATEnabled
-                  ? RoutingSettingNetwork.nat
-                  : RoutingSettingNetwork.dynamicRouting,
-              itemHeight: 56,
-              items: [
-                AppRadioListItem(
-                  title: loc(context).nat,
-                  value: RoutingSettingNetwork.nat,
-                ),
-                AppRadioListItem(
-                  title: loc(context).dynamicRouting,
-                  value: RoutingSettingNetwork.dynamicRouting,
-                ),
-              ],
-              onChanged: (index, value) {
-                if (value != null) {
-                  _notifier.updateSettingNetwork(value);
-                }
-              },
-            ),
-            const AppGap.large2(),
-            ResponsiveLayout(
-                desktop: _desktopSettingsView(state, submaskToken, prefixIP),
-                mobile: _mobildSettingsView(state, submaskToken, prefixIP))
-          ],
+        child: (context, constraints) => SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AppRadioList(
+                selected: state.current.isNATEnabled
+                    ? RoutingSettingNetwork.nat
+                    : RoutingSettingNetwork.dynamicRouting,
+                itemHeight: 56,
+                items: [
+                  AppRadioListItem(
+                    title: loc(context).nat,
+                    value: RoutingSettingNetwork.nat,
+                  ),
+                  AppRadioListItem(
+                    title: loc(context).dynamicRouting,
+                    value: RoutingSettingNetwork.dynamicRouting,
+                  ),
+                ],
+                onChanged: (index, value) {
+                  if (value != null) {
+                    _notifier.updateSettingNetwork(value);
+                  }
+                },
+              ),
+              const AppGap.large2(),
+              ResponsiveLayout(
+                  desktop: _desktopSettingsView(state, submaskToken, prefixIP),
+                  mobile: _mobildSettingsView(state, submaskToken, prefixIP))
+            ],
+          ),
         ),
       ),
     );
@@ -193,8 +193,12 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
       pivotalIndex: 4, // Changes on the interface may make other values invalid
       onStartEdit: (index, rule) {
         currentFocus = null;
-        ref.read(staticRoutingRuleProvider.notifier).init(state.current.entries.entries,
-            rule, index, state.status.routerIp, state.status.subnetMask);
+        ref.read(staticRoutingRuleProvider.notifier).init(
+            state.current.entries.entries,
+            rule,
+            index,
+            state.status.routerIp,
+            state.status.subnetMask);
         // Edit
         routerNameTextController.text = rule?.name ?? '';
         destinationIPTextController.text =

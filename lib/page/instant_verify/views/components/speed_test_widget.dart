@@ -57,7 +57,7 @@ class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
     final latency = result?.speedTestResult?.latency?.toStringAsFixed(0) ?? '0';
 
     return Column(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         widget.layout == SpeedTestLayout.vertical

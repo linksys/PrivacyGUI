@@ -80,7 +80,7 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView>
       const MacFilteringView(),
     ];
 
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       title: loc(context).incredibleWiFi,
       bottomBar: PageBottomBar(
         isPositiveEnabled: bundleState.isDirty &&
@@ -107,7 +107,6 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView>
           .toList(),
       tabContentViews: tabContents,
       tabController: _tabController,
-      useMainPadding: false,
     );
   }
 

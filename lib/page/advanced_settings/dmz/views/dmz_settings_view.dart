@@ -79,7 +79,7 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
     // ref.listen(dmzSettingsProvider, (previous, next) {
     //   _updateControllers(next);
     // });
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
         title: loc(context).dmz,
         bottomBar: PageBottomBar(
             isPositiveEnabled: state.isDirty &&

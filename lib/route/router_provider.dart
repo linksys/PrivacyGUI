@@ -23,7 +23,6 @@ import 'package:privacy_gui/page/advanced_settings/static_routing/providers/stat
 import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_rule_view.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_view.dart';
 import 'package:privacy_gui/page/components/picker/region_picker_view.dart';
-import 'package:privacy_gui/page/components/settings_view/editable_card_list_edit_view.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/_ddns.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
@@ -60,7 +59,6 @@ import 'package:privacy_gui/page/select_network/_select_network.dart';
 import 'package:privacy_gui/page/instant_verify/views/instant_verify_view.dart';
 import 'package:privacy_gui/page/support/faq_list_view.dart';
 import 'package:privacy_gui/page/instant_topology/views/instant_topology_view.dart';
-import 'package:privacy_gui/page/troubleshooting/_troubleshooting.dart';
 import 'package:privacy_gui/page/vpn/views/vpn_settings_page.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/views/mac_filtered_devices_view.dart';

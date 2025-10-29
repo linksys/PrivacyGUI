@@ -84,24 +84,17 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
     final filteredDeviceList = ref.watch(filteredDeviceListProvider);
     final isOnlineFilter = ref.watch(
         deviceFilterConfigProvider.select((value) => value.connectionFilter));
-    return LayoutBuilder(
-      builder: (context, constraint) {
-        return ResponsiveLayout(
-          desktop: _desktopLayout(
-              constraint, state, filteredDeviceList, isOnlineFilter),
-          mobile: _mobileLayout(
-              constraint, state, filteredDeviceList, isOnlineFilter),
-        );
-      },
+    return ResponsiveLayout(
+      desktop: _desktopLayout(state, filteredDeviceList, isOnlineFilter),
+      mobile: _mobileLayout(state, filteredDeviceList, isOnlineFilter),
     );
   }
 
-  Widget _desktopLayout(BoxConstraints constraint, NodeDetailState state,
+  Widget _desktopLayout(NodeDetailState state,
       List<DeviceListItem> filteredDeviceList, bool isOnlineFilter) {
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       padding: const EdgeInsets.only(),
       title: state.location,
-      scrollable: true,
       actions: [
         AnimatedRefreshContainer(
           builder: (controller) {
@@ -118,33 +111,34 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
           },
         ),
       ],
-      child: (context, constraints) => AppBasicLayout(
-        content: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              width: 4.col,
-              child: infoTab(state),
-            ),
-            const AppGap.gutter(),
-            SizedBox(
-              width: 8.col,
-              child: deviceTab(
-                state.deviceId,
-                filteredDeviceList,
-                constraint.maxHeight - kDefaultToolbarHeight,
-                isOnlineFilter,
+      child: (context, constraints) => Column(
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 4.col,
+                child: infoTab(state),
               ),
-            ),
-          ],
-        ),
+              const AppGap.gutter(),
+              SizedBox(
+                width: 8.col,
+                child: deviceTab(
+                  state.deviceId,
+                  filteredDeviceList,
+                  isOnlineFilter,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
-  Widget _mobileLayout(BoxConstraints constraint, NodeDetailState state,
+  Widget _mobileLayout(NodeDetailState state,
       List<DeviceListItem> filteredDeviceList, bool isOnlineFilter) {
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       title: state.location,
       tabController: _tabController,
       actions: [
@@ -172,16 +166,13 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
         ),
       ],
       tabContentViews: [
-        StyledAppPageView.innerPage(
-          scrollable: true,
-          child: (context, constraints) => infoTab(state),
+        SingleChildScrollView(
+          child: infoTab(state),
         ),
-        StyledAppPageView.innerPage(
-          scrollable: false,
-          child: (context, constraints) => deviceTab(
+        SingleChildScrollView(
+          child: deviceTab(
             state.deviceId,
             filteredDeviceList,
-            0,
             isOnlineFilter,
           ),
         ),
@@ -201,13 +192,12 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
         _detailSection(state),
         const AppGap.small2(),
         _lightCard(state),
-        const Spacer(),
       ],
     );
   }
 
   Widget deviceTab(String deviceId, List<DeviceListItem> filteredDeviceList,
-      double listHeight, bool isOnlineFilter) {
+      bool isOnlineFilter) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -270,15 +260,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
           ],
         ),
         const AppGap.medium(),
-        if (listHeight > 0)
-          SizedBox(
-            height: listHeight,
-            child: _deviceList(filteredDeviceList, isOnlineFilter),
-          ),
-        if (listHeight <= 0)
-          Expanded(
-            child: _deviceList(filteredDeviceList, isOnlineFilter),
-          ),
+        _deviceList(filteredDeviceList, isOnlineFilter)
       ],
     );
   }
@@ -289,7 +271,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
       devices: filteredDeviceList,
       enableDeauth: isOnlineFilter,
       enableDelete: !isOnlineFilter,
-      // physics: const NeverScrollableScrollPhysics(),
+      physics: const NeverScrollableScrollPhysics(),
       onItemClick: (item) {
         ref.read(deviceDetailIdProvider.notifier).state = item.deviceId;
         context.pushNamed(RouteNamed.deviceDetails);
@@ -429,7 +411,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
       hardwareVersion: state.hardwareVersion,
     );
     if (!isSupportNodeLight || !isCognitive || !state.isMaster) {
-      return const Center();
+      return Container();
     }
     return _nodeDetailBackgroundCard(
       child: Column(

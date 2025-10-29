@@ -63,9 +63,8 @@ class _FirewallViewState extends ConsumerState<FirewallView>
 
     final isDirty = firewallState.isDirty || ipv6State.isDirty;
 
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       padding: EdgeInsets.zero,
-      useMainPadding: false,
       tabController: _tabController,
       title: loc(context).firewall,
       bottomBar: PageBottomBar(
@@ -111,41 +110,41 @@ class _FirewallViewState extends ConsumerState<FirewallView>
   }
 
   Widget _firewallView(FirewallState state) {
-    return StyledAppPageView.innerPage(
-      child: (context, constraints) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppCard(
-            child: AppSwitchTriggerTile(
-              title: AppText.labelLarge(loc(context).ipv4SPIFirewallProtection),
-              semanticLabel: 'ipv4 SPI firewall protection',
-              value: state.settings.current.isIPv4FirewallEnabled,
-              onChanged: (value) {
-                ref.read(firewallProvider.notifier).setSettings(
-                    state.settings.current.copyWith(isIPv4FirewallEnabled: value));
-              },
+    return SingleChildScrollView(
+      child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppCard(
+              child: AppSwitchTriggerTile(
+                title: AppText.labelLarge(loc(context).ipv4SPIFirewallProtection),
+                semanticLabel: 'ipv4 SPI firewall protection',
+                value: state.settings.current.isIPv4FirewallEnabled,
+                onChanged: (value) {
+                  ref.read(firewallProvider.notifier).setSettings(
+                      state.settings.current.copyWith(isIPv4FirewallEnabled: value));
+                },
+              ),
             ),
-          ),
-          const AppGap.small2(),
-          AppCard(
-            child: AppSwitchTriggerTile(
-              title: AppText.labelLarge(loc(context).ipv6SPIFirewallProtection),
-              semanticLabel: 'ipv6 SPI firewall protection',
-              value: state.settings.current.isIPv6FirewallEnabled,
-              onChanged: (value) {
-                ref.read(firewallProvider.notifier).setSettings(
-                    state.settings.current.copyWith(isIPv6FirewallEnabled: value));
-              },
+            const AppGap.small2(),
+            AppCard(
+              child: AppSwitchTriggerTile(
+                title: AppText.labelLarge(loc(context).ipv6SPIFirewallProtection),
+                semanticLabel: 'ipv6 SPI firewall protection',
+                value: state.settings.current.isIPv6FirewallEnabled,
+                onChanged: (value) {
+                  ref.read(firewallProvider.notifier).setSettings(
+                      state.settings.current.copyWith(isIPv6FirewallEnabled: value));
+                },
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
     );
   }
 
   Widget _vpnPassthroughView(FirewallState state) {
-    return StyledAppPageView.innerPage(
-      child: (context, constraints) => Column(
+    return SingleChildScrollView(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppCard(
@@ -192,8 +191,8 @@ class _FirewallViewState extends ConsumerState<FirewallView>
   }
 
   Widget _internetFiltersView(FirewallState state) {
-    return StyledAppPageView.innerPage(
-      child: (context, constraints) => Column(
+    return SingleChildScrollView(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppCard(

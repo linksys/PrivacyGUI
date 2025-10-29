@@ -64,17 +64,15 @@ class _Ipv6PortServiceListViewState
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(ipv6PortServiceListProvider);
-    return StyledAppPageView.innerPage(
-      child: (context, constraints) => AppBasicLayout(
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const AppGap.large2(),
-            ResponsiveLayout(
-                desktop: _desktopSettingsView(state),
-                mobile: _mobildSettingsView(state)),
-          ],
-        ),
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const AppGap.large2(),
+          ResponsiveLayout(
+              desktop: _desktopSettingsView(state),
+              mobile: _mobildSettingsView(state)),
+        ],
       ),
     );
   }

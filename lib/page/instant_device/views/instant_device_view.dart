@@ -58,7 +58,7 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
 
     return StyledAppPageView(
       padding: const EdgeInsets.only(),
-      scrollable: ResponsiveLayout.isMobileLayout(context) ? false : true,
+      enableSliverAppBar: true,
       title: loc(context).instantDevices,
       bottomBar: isOnlineFilter
           ? null
@@ -85,12 +85,9 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
           },
         ),
       ],
-      child: (context, constraints) => AppBasicLayout(
-        // height: constraints.maxHeight,
-        content: ResponsiveLayout(
-          desktop: _desktopLayout(isOnlineFilter, filteredDeviceList),
-          mobile: _mobileLayout(isOnlineFilter, filteredDeviceList),
-        ),
+      child: (context, constraints) => ResponsiveLayout(
+        desktop: _desktopLayout(isOnlineFilter, filteredDeviceList),
+        mobile: _mobileLayout(isOnlineFilter, filteredDeviceList),
       ),
     );
   }
@@ -127,62 +124,62 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
 
   Widget _deviceListView(
       bool isOnlineFilter, List<DeviceListItem> filteredDeviceList) {
-    return AppBasicLayout(
-      header: Padding(
-        padding: const EdgeInsets.only(bottom: Spacing.medium),
-        child: ResponsiveLayout(
-          desktop: Column(
-            children: [
-              Row(
-                children: [
-                  AppText.labelLarge(
-                    loc(context).nDevices(filteredDeviceList.length),
-                  ),
-                  const Spacer(),
-                  _editButton(isOnlineFilter, filteredDeviceList),
-                ],
-              ),
-            ],
-          ),
-          mobile: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AppText.labelLarge(
-                loc(context).nDevices(filteredDeviceList.length),
-              ),
-              const AppGap.medium(),
-              Row(
-                children: [
-                  _editButton(isOnlineFilter, filteredDeviceList),
-                  const Spacer(),
-                  AppTextButton.noPadding(
-                    loc(context).filters,
-                    icon: LinksysIcons.filter,
-                    color: Theme.of(context).colorScheme.primary,
-                    onTap: () {
-                      showModalBottomSheet(
-                        context: context,
-                        isScrollControlled: true,
-                        useRootNavigator: true,
-                        showDragHandle: true,
-                        builder: (context) => Container(
-                          padding: const EdgeInsets.all(Spacing.large2),
-                          width: double.infinity,
-                          child: const DevicesFilterWidget(),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ],
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: Spacing.medium),
+          child: ResponsiveLayout(
+            desktop: Column(
+              children: [
+                Row(
+                  children: [
+                    AppText.labelLarge(
+                      loc(context).nDevices(filteredDeviceList.length),
+                    ),
+                    const Spacer(),
+                    _editButton(isOnlineFilter, filteredDeviceList),
+                  ],
+                ),
+              ],
+            ),
+            mobile: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppText.labelLarge(
+                  loc(context).nDevices(filteredDeviceList.length),
+                ),
+                const AppGap.medium(),
+                Row(
+                  children: [
+                    _editButton(isOnlineFilter, filteredDeviceList),
+                    const Spacer(),
+                    AppTextButton.noPadding(
+                      loc(context).filters,
+                      icon: LinksysIcons.filter,
+                      color: Theme.of(context).colorScheme.primary,
+                      onTap: () {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          useRootNavigator: true,
+                          showDragHandle: true,
+                          builder: (context) => Container(
+                            padding: const EdgeInsets.all(Spacing.large2),
+                            width: double.infinity,
+                            child: const DevicesFilterWidget(),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
-      ),
-      content: SizedBox(
-        height: filteredDeviceList.length * 84,
-        child: DeviceListWidget(
+        DeviceListWidget(
+          physics: NeverScrollableScrollPhysics(),
           devices: filteredDeviceList,
           isEdit: !isOnlineFilter,
           enableDeauth: isOnlineFilter,
@@ -204,7 +201,7 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
             _showConfirmDeauthDialog(item.macAddress);
           },
         ),
-      ),
+      ],
     );
   }
 

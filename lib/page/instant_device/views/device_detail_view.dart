@@ -80,15 +80,13 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
     });
     return LayoutBuilder(
       builder: (context, constraint) {
-        return StyledAppPageView(
+        return StyledAppPageView.withSliver(
           padding: const EdgeInsets.only(),
           title: state.item.name,
           scrollable: true,
-          child: (context, constraints) => AppBasicLayout(
-            content: ResponsiveLayout(
-              desktop: _desktopLayout(state),
-              mobile: _mobileLayout(state),
-            ),
+          child: (context, constraints) => ResponsiveLayout(
+            desktop: _desktopLayout(state),
+            mobile: _mobileLayout(state),
           ),
         );
       },

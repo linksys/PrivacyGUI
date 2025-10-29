@@ -50,7 +50,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
 
   @override
   Widget build(BuildContext context) {
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       scrollable: true,
       backState: StyledBackState.none,
       title: loc(context).menu,
@@ -72,7 +72,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(child: _buildMenuGridView(createMenuItems())),
+          _buildMenuGridView(createMenuItems()),
           const AppGap.large2(),
           // const Spacer(),
           // AppTextButton.noPadding('About Linksys', onTap: () {}),
@@ -172,7 +172,8 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
           description: loc(context).instantSafetyDesc,
           iconData: LinksysIcons.encrypted,
           disabledOnBridge: true,
-          status: safetyState.settings.current.safeBrowsingType == InstantSafetyType.off,
+          status: safetyState.settings.current.safeBrowsingType ==
+              InstantSafetyType.off,
           onTap: () {
             _navigateTo(RouteNamed.menuInstantSafety);
           }),
@@ -219,7 +220,8 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
             description: loc(context).speedTestInternetToDeviceDesc,
             iconData: LinksysIcons.networkCheck,
             onTap: () {
-              _navigateTo(RouteNamed.speedTestExternal);
+              // _navigateTo(RouteNamed.speedTestExternal);
+              _navigateTo(RouteNamed.firmwareUpdateDetail);
             }),
       if (isSupportHealthCheck)
         AppSectionItemData(

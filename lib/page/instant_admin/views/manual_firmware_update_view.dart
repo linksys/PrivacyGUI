@@ -18,12 +18,10 @@ import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_admin/providers/manual_firmware_update_provider.dart';
 import 'package:privacy_gui/page/instant_admin/providers/manual_firmware_update_state.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ManualFirmwareUpdateView extends ArgumentsConsumerStatefulView {
@@ -47,144 +45,144 @@ class _ManualFirmwareUpdateViewState
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(manualFirmwareUpdateProvider);
+    return _processingView(state.status);
     return state.status == null
         ? _mainContent(state.file)
         : _processingView(state.status);
   }
 
   Widget _mainContent(FileInfo? file) {
-    return StyledAppPageView(
-      scrollable: true,
+    return StyledAppPageView.withSliver(
       title: loc(context).manualFirmwareUpdate,
-      child: (context, constraints) => AppBasicLayout(
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AppListCard(
-              title: AppText.bodyLarge(loc(context).manual),
-              description: AppText.labelMedium(
-                  file == null ? loc(context).noFileChosen : file.name),
-              trailing: AppTextButton.noPadding(
-                file == null ? loc(context).chooseFile : loc(context).remove,
-                icon: file == null ? LinksysIcons.upload : LinksysIcons.delete,
-                color: file == null
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.error,
-                onTap: () async {
-                  if (file == null) {
-                    final result = await FilePicker.platform.pickFiles();
-                    if (result != null) {
-                      ref.read(manualFirmwareUpdateProvider.notifier).setFile(
-                          result.files.first.name, result.files.first.bytes!);
-                      logger.d(
-                          '[Manual Firmware update]: selected file: ${file?.name}');
-                    }
-                  } else {
+      child: (context, constraints) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppListCard(
+            title: AppText.bodyLarge(loc(context).manual),
+            description: AppText.labelMedium(
+                file == null ? loc(context).noFileChosen : file.name),
+            trailing: AppTextButton.noPadding(
+              file == null ? loc(context).chooseFile : loc(context).remove,
+              icon: file == null ? LinksysIcons.upload : LinksysIcons.delete,
+              color: file == null
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.error,
+              onTap: () async {
+                if (file == null) {
+                  final result = await FilePicker.platform.pickFiles();
+                  if (result != null) {
+                    ref.read(manualFirmwareUpdateProvider.notifier).setFile(
+                        result.files.first.name, result.files.first.bytes!);
+                    logger.d(
+                        '[Manual Firmware update]: selected file: ${file?.name}');
+                  }
+                } else {
+                  ref.read(manualFirmwareUpdateProvider.notifier).removeFile();
+                }
+              },
+            ),
+          ),
+          const AppGap.large2(),
+          AppFilledButton(
+            loc(context).start,
+            onTap: file == null
+                ? null
+                : () {
+                    ManualUpdateStatus? status = ManualUpdateInstalling(0);
                     ref
                         .read(manualFirmwareUpdateProvider.notifier)
-                        .removeFile();
-                  }
-                },
-              ),
-            ),
-            const AppGap.large2(),
-            AppFilledButton(
-              loc(context).start,
-              onTap: file == null
-                  ? null
-                  : () {
-                      ManualUpdateStatus? status = ManualUpdateInstalling(0);
+                        .setStatus(status);
+                    status.start(setState);
+                    ref
+                        .read(firmwareUpdateProvider.notifier)
+                        .manualFirmwareUpdate(file.name, file.bytes)
+                        .then((value) {
+                      status?.stop();
+                      status = ManualUpdateRebooting();
                       ref
                           .read(manualFirmwareUpdateProvider.notifier)
                           .setStatus(status);
-                      status.start(setState);
                       ref
                           .read(firmwareUpdateProvider.notifier)
-                          .manualFirmwareUpdate(file.name, file.bytes)
-                          .then((value) {
-                        status?.stop();
-                        status = ManualUpdateRebooting();
-                        ref
-                            .read(manualFirmwareUpdateProvider.notifier)
-                            .setStatus(status);
-                        ref
-                            .read(firmwareUpdateProvider.notifier)
-                            .waitForRouterBackOnline()
-                            .then((_) {
-                          handleSuccessUpdated();
-                        }).catchError((error) {
-                          setState(() {
-                            status?.stop();
-                            ref
-                                .read(manualFirmwareUpdateProvider.notifier)
-                                .setStatus(null);
-                          });
-                          showRouterNotFoundAlert(context, ref,
-                              onComplete: () async {
-                            handleSuccessUpdated();
-                          });
-                        }, test: (error) => error is JNAPSideEffectError).catchError((error) {
-                          setState(() {
-                            status?.stop();
-                            ref
-                                .read(manualFirmwareUpdateProvider.notifier)
-                                .setStatus(null);
-                          });
-                          showRouterNotFoundAlert(context, ref,
-                              onComplete: () async {
-                            handleSuccessUpdated();
-                          });
-                        }, test: (error) => error is TimeoutException);
-                      }, onError: (error, stackTrace) {
+                          .waitForRouterBackOnline()
+                          .then((_) {
+                        handleSuccessUpdated();
+                      }).catchError((error) {
                         setState(() {
                           status?.stop();
                           ref
                               .read(manualFirmwareUpdateProvider.notifier)
                               .setStatus(null);
                         });
-                        if (error is ManualFirmwareUpdateException) {
-                          _showErrorSnackbar(error.result);
-                        } else {
-                          _showErrorSnackbar();
-                        }
+                        showRouterNotFoundAlert(context, ref,
+                            onComplete: () async {
+                          handleSuccessUpdated();
+                        });
+                      },
+                              test: (error) =>
+                                  error is JNAPSideEffectError).catchError(
+                              (error) {
+                        setState(() {
+                          status?.stop();
+                          ref
+                              .read(manualFirmwareUpdateProvider.notifier)
+                              .setStatus(null);
+                        });
+                        showRouterNotFoundAlert(context, ref,
+                            onComplete: () async {
+                          handleSuccessUpdated();
+                        });
+                      }, test: (error) => error is TimeoutException);
+                    }, onError: (error, stackTrace) {
+                      setState(() {
+                        status?.stop();
+                        ref
+                            .read(manualFirmwareUpdateProvider.notifier)
+                            .setStatus(null);
                       });
-                    },
-            )
-          ],
-        ),
+                      if (error is ManualFirmwareUpdateException) {
+                        _showErrorSnackbar(error.result);
+                      } else {
+                        _showErrorSnackbar();
+                      }
+                    });
+                  },
+          )
+        ],
       ),
     );
   }
 
   Widget _processingView(ManualUpdateStatus? status) {
-    return StyledAppPageView(
-      scrollable: true,
-      appBarStyle: AppBarStyle.none,
-      child: (context, constraints) => AppBasicLayout(
-        content: Center(
-          child: SizedBox(
-            width: 6.col,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                status is ManualUpdateRebooting
-                    ? RotatingIcon(
-                        Icon(_getProcessingIcon(status),
-                            size: 64,
-                            color: Theme.of(context).colorScheme.primary),
-                        reverse: true,
-                      )
-                    : Icon(_getProcessingIcon(status),
-                        size: 64, color: Theme.of(context).colorScheme.primary),
-                AppGap.medium(),
-                AppText.titleLarge(_getProcessingTitle(status)),
-                AppGap.medium(),
-                AppText.bodyMedium(_getProcessingMessage(status)),
-              ],
+    return Column(
+      children: [
+        Expanded(
+          child: Center(
+            child: SizedBox(
+              width: 6.col,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  status is ManualUpdateRebooting
+                      ? RotatingIcon(
+                          Icon(_getProcessingIcon(status),
+                              size: 64,
+                              color: Theme.of(context).colorScheme.primary),
+                          reverse: true,
+                        )
+                      : Icon(_getProcessingIcon(status),
+                          size: 64,
+                          color: Theme.of(context).colorScheme.primary),
+                  AppGap.medium(),
+                  AppText.titleLarge(_getProcessingTitle(status)),
+                  AppGap.medium(),
+                  AppText.bodyMedium(_getProcessingMessage(status)),
+                ],
+              ),
             ),
           ),
         ),
-        footer: status is ManualUpdateInstalling
+        status is ManualUpdateInstalling
             ? Center(
                 child: SizedBox(
                   width: 6.col,
@@ -199,7 +197,8 @@ class _ManualFirmwareUpdateViewState
                 ),
               )
             : Center(),
-      ),
+        AppGap.medium(),
+      ],
     );
   }
 

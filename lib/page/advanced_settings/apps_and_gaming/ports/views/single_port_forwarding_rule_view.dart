@@ -103,7 +103,7 @@ class _AddRuleContentViewState
 
   @override
   Widget build(BuildContext context) {
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       title: loc(context).singlePortForwarding,
       bottomBar: PageBottomBar(
         isPositiveEnabled: _notifier.isRuleValid(),

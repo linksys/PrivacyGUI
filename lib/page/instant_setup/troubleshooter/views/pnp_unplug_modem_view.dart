@@ -30,7 +30,7 @@ class _PnpUnplugModemViewState extends ConsumerState<PnpUnplugModemView> {
 
   @override
   Widget build(BuildContext context) {
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       title: loc(context).pnpUnplugModemTitle,
       scrollable: true,
       enableSafeArea: (left: true, top: false, right: true, bottom: true),

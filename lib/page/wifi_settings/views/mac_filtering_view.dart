@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/components/styled/consts.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/displayed_mac_filtering_devices_provider.dart';
@@ -19,7 +17,6 @@ import 'package:privacygui_widgets/widgets/card/info_card.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
 class MacFilteringView extends ConsumerWidget {
   const MacFilteringView({
@@ -37,14 +34,8 @@ class MacFilteringView extends ConsumerWidget {
         wifiBundleProvider.select((state) => state.settings.original.privacy));
 
     final displayDevices = ref.watch(macFilteringDeviceListProvider);
-
-    return StyledAppPageView(
-      scrollable: true,
-      hideTopbar: true,
-      appBarStyle: AppBarStyle.none,
-      useMainPadding: true,
-      // The bottom bar is now handled by the parent WiFiMainView.
-      child: (context, constraints) => ResponsiveLayout(
+    return SingleChildScrollView(
+      child: ResponsiveLayout(
         desktop: _desktopLayout(
             context, ref, privacyState, originalPrivacyState, displayDevices),
         mobile: _mobileLayout(
@@ -59,35 +50,33 @@ class MacFilteringView extends ConsumerWidget {
       InstantPrivacySettings state,
       InstantPrivacySettings originalState,
       List<DeviceListItem> deviceList) {
-    return AppBasicLayout(
-      content: SizedBox(
-        width: 9.col,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (originalState.mode == MacFilterMode.allow) ...[
-              _warningCard(context),
-              const AppGap.small2(),
-            ],
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _enableTile(context, ref, state),
-                      const AppGap.small2(),
-                      _infoCard(context, state.mode == MacFilterMode.deny,
-                          deviceList.length),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+    return SizedBox(
+      width: 9.col,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (originalState.mode == MacFilterMode.allow) ...[
+            _warningCard(context),
+            const AppGap.small2(),
           ],
-        ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _enableTile(context, ref, state),
+                    const AppGap.small2(),
+                    _infoCard(context, state.mode == MacFilterMode.deny,
+                        deviceList.length),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -98,22 +87,19 @@ class MacFilteringView extends ConsumerWidget {
       InstantPrivacySettings state,
       InstantPrivacySettings originalState,
       List<DeviceListItem> deviceList) {
-    return AppBasicLayout(
-      content: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (originalState.mode == MacFilterMode.allow) ...[
-            _warningCard(context),
-            const AppGap.small2(),
-          ],
-          _enableTile(context, ref, state),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (originalState.mode == MacFilterMode.allow) ...[
+          _warningCard(context),
           const AppGap.small2(),
-          _infoCard(
-              context, state.mode == MacFilterMode.deny, deviceList.length),
-          const AppGap.large2(),
         ],
-      ),
+        _enableTile(context, ref, state),
+        const AppGap.small2(),
+        _infoCard(context, state.mode == MacFilterMode.deny, deviceList.length),
+        const AppGap.large2(),
+      ],
     );
   }
 

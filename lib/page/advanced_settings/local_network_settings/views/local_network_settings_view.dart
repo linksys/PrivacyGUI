@@ -118,9 +118,8 @@ class _LocalNetworkSettingsViewState
       _ipAddressView(state),
       _dhcpServerView(state),
     ];
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       padding: EdgeInsets.zero,
-      useMainPadding: false,
       tabController: _tabController,
       bottomBar: PageBottomBar(
         isPositiveEnabled: _notifier.isDirty() && !_hasError(state),
@@ -232,8 +231,8 @@ class _LocalNetworkSettingsViewState
 
   Widget _viewLayout({double? col, required Widget child}) {
     col = col ?? 9.col;
-    return StyledAppPageView.innerPage(
-      child: (context, constraints) => ResponsiveLayout.isMobileLayout(context)
+    return SingleChildScrollView(
+      child: ResponsiveLayout.isMobileLayout(context)
           ? child
           : Row(
               crossAxisAlignment: CrossAxisAlignment.start,

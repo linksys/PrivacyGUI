@@ -9,13 +9,11 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
-import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_troubleshooter_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 
 class PnpNoInternetConnectionView extends ArgumentsConsumerStatefulView {
@@ -48,17 +46,13 @@ class _PnpNoInternetConnectionState
   Widget build(BuildContext context) {
     return StyledAppPageView(
       appBarStyle: AppBarStyle.none,
-      scrollable: true,
       backState: StyledBackState.none,
       enableSafeArea: (left: true, top: false, right: true, bottom: true),
-      child: (context, constraints) => AppBasicLayout(
-        content: _contentView(context),
-      ),
+      child: (context, constraints) => _contentView(context),
     );
   }
 
   Widget _contentView(BuildContext context) {
-    final state = ref.watch(pnpTroubleshooterProvider);
     return Center(
       child: AppCard(
         padding: const EdgeInsets.all(Spacing.large3),
@@ -78,36 +72,6 @@ class _PnpNoInternetConnectionState
               loc(context).noInternetConnectionDescription,
             ),
             const AppGap.large3(),
-            // Padding(
-            //   padding: const EdgeInsets.only(bottom: Spacing.small2),
-            //   child: AppCard(
-            //     onTap: () {
-            //       gotoOfficialWebUrl(
-            //         FaqItem.faqVisitLinksysSupport.url,
-            //         locale: ref.read(appSettingsProvider).locale,
-            //       );
-            //     },
-            //     child: Row(
-            //       children: [
-            //         Expanded(
-            //           child: Column(
-            //             crossAxisAlignment: CrossAxisAlignment.start,
-            //             children: [
-            //               AppText.labelLarge(
-            //                 loc(context).needHelp,
-            //               ),
-            //               const AppGap.small3(),
-            //               AppText.bodyMedium(
-            //                 loc(context).pnpNoInternetConnectionContactSupport,
-            //               ),
-            //             ],
-            //           ),
-            //         ),
-            //         const Icon(LinksysIcons.chevronRight),
-            //       ],
-            //     ),
-            //   ),
-            // ),
             AppCard(
               onTap: () {
                 goRoute(RouteNamed.pnpUnplugModem);

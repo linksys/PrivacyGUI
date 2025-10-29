@@ -41,8 +41,8 @@ class ReleaseAndRenewView extends ConsumerWidget {
     final wanIpv6Type = WanIPv6Type.resolve(
         internetSettingsState.settings.current.ipv6Setting.ipv6ConnectionType);
 
-    return StyledAppPageView.innerPage(
-      child: (context, constraints) => Column(
+    return SingleChildScrollView(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -59,7 +59,8 @@ class ReleaseAndRenewView extends ConsumerWidget {
                 onTap: isBridgeMode
                     ? null
                     : () {
-                        _showRenewIPAlert(context, ref, InternetSettingsViewType.ipv4);
+                        _showRenewIPAlert(
+                            context, ref, InternetSettingsViewType.ipv4);
                       },
               ),
             ),
@@ -76,7 +77,8 @@ class ReleaseAndRenewView extends ConsumerWidget {
                 onTap: isBridgeMode || wanIpv6Type == WanIPv6Type.passThrough
                     ? null
                     : () {
-                        _showRenewIPAlert(context, ref, InternetSettingsViewType.ipv6);
+                        _showRenewIPAlert(
+                            context, ref, InternetSettingsViewType.ipv6);
                       },
               ),
             ),
@@ -86,7 +88,8 @@ class ReleaseAndRenewView extends ConsumerWidget {
     );
   }
 
-  void _showRenewIPAlert(BuildContext context, WidgetRef ref, InternetSettingsViewType type) {
+  void _showRenewIPAlert(
+      BuildContext context, WidgetRef ref, InternetSettingsViewType type) {
     showSimpleAppDialog(
       context,
       dismissible: false,

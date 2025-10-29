@@ -19,7 +19,7 @@ class SpeedTestExternalView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       scrollable: true,
       title: loc(context).externalSpeedText,
       child: (context, constraints) => SizedBox(

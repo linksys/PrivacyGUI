@@ -39,67 +39,66 @@ class _InstantSafetyViewState extends ConsumerState<InstantSafetyView>
     final settings = state.settings.current;
     final status = state.status;
 
-    final bool enableSafeBrowsing = settings.safeBrowsingType != InstantSafetyType.off;
+    final bool enableSafeBrowsing =
+        settings.safeBrowsingType != InstantSafetyType.off;
 
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       scrollable: true,
       title: loc(context).instantSafety,
       bottomBar: PageBottomBar(
         isPositiveEnabled: state.isDirty,
         onPositiveTap: _showRestartAlert,
       ),
-      child: (context, constraints) => AppBasicLayout(
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AppText.bodyLarge(loc(context).safeBrowsingDesc),
-            const AppGap.large3(),
-            AppListExpandCard(
-              title: AppText.labelLarge(loc(context).instantSafety),
-              trailing: AppSwitch(
-                semanticLabel: 'instant safety',
-                value: enableSafeBrowsing,
-                onChanged: (enable) {
-                  _notifier.setSafeBrowsingEnabled(enable);
-                },
-              ),
-              description: enableSafeBrowsing
-                  ? Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const AppGap.medium(),
-                        const Divider(
-                          height: 1,
-                        ),
-                        const AppGap.large2(),
-                        AppText.labelLarge(loc(context).provider),
-                        AppRadioList(
-                          initial: settings.safeBrowsingType,
-                          mainAxisSize: MainAxisSize.min,
-                          itemHeight: 56,
-                          items: [
-                            if (status.hasFortinet)
-                              AppRadioListItem(
-                                title: loc(context).fortinetSecureDns,
-                                value: InstantSafetyType.fortinet,
-                              ),
-                            AppRadioListItem(
-                              title: loc(context).openDNS,
-                              value: InstantSafetyType.openDNS,
-                            ),
-                          ],
-                          onChanged: (index, selectedType) {
-                            if (selectedType != null) {
-                              _notifier.setSafeBrowsingProvider(selectedType);
-                            }
-                          },
-                        ),
-                      ],
-                    )
-                  : null,
+      child: (context, constraints) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppText.bodyLarge(loc(context).safeBrowsingDesc),
+          const AppGap.large3(),
+          AppListExpandCard(
+            title: AppText.labelLarge(loc(context).instantSafety),
+            trailing: AppSwitch(
+              semanticLabel: 'instant safety',
+              value: enableSafeBrowsing,
+              onChanged: (enable) {
+                _notifier.setSafeBrowsingEnabled(enable);
+              },
             ),
-          ],
-        ),
+            description: enableSafeBrowsing
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const AppGap.medium(),
+                      const Divider(
+                        height: 1,
+                      ),
+                      const AppGap.large2(),
+                      AppText.labelLarge(loc(context).provider),
+                      AppRadioList(
+                        initial: settings.safeBrowsingType,
+                        mainAxisSize: MainAxisSize.min,
+                        itemHeight: 56,
+                        items: [
+                          if (status.hasFortinet)
+                            AppRadioListItem(
+                              title: loc(context).fortinetSecureDns,
+                              value: InstantSafetyType.fortinet,
+                            ),
+                          AppRadioListItem(
+                            title: loc(context).openDNS,
+                            value: InstantSafetyType.openDNS,
+                          ),
+                        ],
+                        onChanged: (index, selectedType) {
+                          if (selectedType != null) {
+                            _notifier.setSafeBrowsingProvider(selectedType);
+                          }
+                        },
+                      ),
+                    ],
+                  )
+                : null,
+          ),
+        ],
       ),
     );
   }
@@ -142,7 +141,8 @@ class _InstantSafetyViewState extends ConsumerState<InstantSafetyView>
           showChangesSavedSnackBar();
         });
       } else {
-         showFailedSnackBar((error as SafeBrowsingError?)?.message ?? 'Unknown error');
+        showFailedSnackBar(
+            (error as SafeBrowsingError?)?.message ?? 'Unknown error');
       }
     });
   }

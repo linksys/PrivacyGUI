@@ -55,7 +55,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     final hasLanPort =
         ref.read(dashboardHomeProvider).lanPortConnections.isNotEmpty;
 
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       scrollable: true,
       onRefresh: () async {
         await ref.read(pollingProvider.notifier).forcePolling();

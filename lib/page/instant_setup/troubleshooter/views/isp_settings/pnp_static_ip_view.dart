@@ -53,7 +53,7 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
 
   @override
   Widget build(BuildContext context) {
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       scrollable: true,
       title: loc(context).staticIPAddress,
       child: (context, constraints) => Column(

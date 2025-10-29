@@ -46,7 +46,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
     final state = ref.watch(healthCheckProvider);
     final supportedBy = ref.watch(dashboardHomeProvider).healthCheckModule;
 
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       scrollable: true,
       title: loc(context).speedTest,
       bottomBar: state.status == 'COMPLETE'

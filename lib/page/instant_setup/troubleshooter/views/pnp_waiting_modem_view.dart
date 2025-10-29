@@ -7,12 +7,10 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
-import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_troubleshooter_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/theme/custom_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
 
@@ -49,19 +47,17 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
     return StyledAppPageView(
       backState: StyledBackState.none,
       title: loc(context).pnpWaitingModemTitle,
-      child: (context, constraints) => AppBasicLayout(
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const AppGap.large3(),
-            AppText.bodyLarge(loc(context).pnpWaitingModemDesc),
-            Expanded(
-              child: Center(
-                child: _createCircleTimer(),
-              ),
+      child: (context, constraints) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const AppGap.large3(),
+          AppText.bodyLarge(loc(context).pnpWaitingModemDesc),
+          Expanded(
+            child: Center(
+              child: _createCircleTimer(),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

@@ -5,8 +5,8 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/models/internet_settings_enums.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
+import 'package:privacy_gui/page/advanced_settings/internet_settings/widgets/optional_settings_form.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/widgets/wan_forms/ipv6/ipv6_wan_form_factory.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
@@ -33,8 +33,8 @@ class Ipv6ConnectionView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StyledAppPageView.innerPage(
-      child: (context, constraints) => ResponsiveLayout(
+    return SingleChildScrollView(
+      child: ResponsiveLayout(
         desktop: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -43,8 +43,11 @@ class Ipv6ConnectionView extends StatelessWidget {
               child: _infoCard(context),
             ),
             const AppGap.gutter(),
-            const Expanded(
-              child: SizedBox(), // No optional settings for IPv6
+            Expanded(
+              child: OptionalSettingsForm(
+                isEditing: isEditing,
+                isBridgeMode: isBridgeMode,
+              ),
             ),
           ],
         ),
@@ -53,6 +56,11 @@ class Ipv6ConnectionView extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             _infoCard(context),
+            AppGap.large4(),
+            OptionalSettingsForm(
+              isEditing: isEditing,
+              isBridgeMode: isBridgeMode,
+            ),
           ],
         ),
       ),

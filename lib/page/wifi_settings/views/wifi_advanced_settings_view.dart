@@ -24,17 +24,11 @@ class WifiAdvancedSettingsView extends ConsumerWidget {
     // The state is now read from the single bundle provider.
     final advancedState = ref.watch(
         wifiBundleProvider.select((state) => state.settings.current.advanced));
-
-    return StyledAppPageView(
-      appBarStyle: AppBarStyle.none,
-      hideTopbar: true,
-      // The bottom bar is now handled by the parent WiFiMainView.
-      useMainPadding: true,
-      child: (context, constraints) => _buildGrid(context, ref, advancedState),
-    );
+    return _buildGrid(context, ref, advancedState);
   }
 
-  Widget _buildGrid(BuildContext context, WidgetRef ref, WifiAdvancedSettingsState state) {
+  Widget _buildGrid(
+      BuildContext context, WidgetRef ref, WifiAdvancedSettingsState state) {
     final notifier = ref.read(wifiBundleProvider.notifier);
     final advancedSettingWidgets = [
       if (state.isClientSteeringEnabled != null)
@@ -54,6 +48,8 @@ class WifiAdvancedSettingsView extends ConsumerWidget {
       crossAxisSpacing: ResponsiveLayout.columnPadding(context),
       itemCount: advancedSettingWidgets.length,
       itemBuilder: (context, index) => advancedSettingWidgets[index],
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
     );
   }
 
@@ -142,12 +138,13 @@ class WifiAdvancedSettingsView extends ConsumerWidget {
     );
   }
 
-  Widget _buildMLO(
-      BuildContext context, WidgetRef ref, WifiBundleNotifier notifier, bool isEnabled) {
-    final wifiList = ref.watch(wifiBundleProvider.select((s) => s.settings.current.wifiList.mainWiFi));
+  Widget _buildMLO(BuildContext context, WidgetRef ref,
+      WifiBundleNotifier notifier, bool isEnabled) {
+    final wifiList = ref.watch(
+        wifiBundleProvider.select((s) => s.settings.current.wifiList.mainWiFi));
     // This logic might need to be moved to the notifier itself to be a derived state (status)
     bool showMLOWarning = notifier.checkingMLOSettingsConflicts(
-            Map.fromIterables(wifiList.map((e) => e.radioID), wifiList));
+        Map.fromIterables(wifiList.map((e) => e.radioID), wifiList));
     return AppCard(
       key: const Key('mlo'),
       padding: const EdgeInsets.all(Spacing.large2),
