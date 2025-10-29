@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/di.dart';
+import 'package:privacy_gui/page/advanced_settings/internet_settings/models/internet_settings_enums.dart';
+import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_form_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/views/internet_settings_view.dart';
@@ -14,16 +16,30 @@ import '../../../../../common/config.dart';
 import '../../../../../common/di.dart';
 import '../../../../../common/test_responsive_widget.dart';
 import '../../../../../common/testable_router.dart';
+import '../../../../../mocks/internet_settings_form_notifier_mocks.dart';
 import '../../../../../test_data/internet_settings_state_data.dart';
 import '../../../../../mocks/internet_settings_notifier_mocks.dart';
 
 Future<void> main() async {
   late MockInternetSettingsNotifier mockInternetSettingsNotifier;
+  late MockInternetSettingsIPv4FormValidityNotifier
+      mockInternetSettingsIPv4FormValidityNotifier;
+  late MockInternetSettingsIPv6FormValidityNotifier
+      mockInternetSettingsIPv6FormValidityNotifier;
+  late MockOptionalSettingsFormValidityNotifier
+      mockOptionalSettingsFormValidityNotifier;
+
   mockDependencyRegister();
   ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
 
   setUp(() {
     mockInternetSettingsNotifier = MockInternetSettingsNotifier();
+    mockInternetSettingsIPv4FormValidityNotifier =
+        MockInternetSettingsIPv4FormValidityNotifier();
+    mockInternetSettingsIPv6FormValidityNotifier =
+        MockInternetSettingsIPv6FormValidityNotifier();
+    mockOptionalSettingsFormValidityNotifier =
+        MockOptionalSettingsFormValidityNotifier();
   });
 
   group('InternetSettings - Ipv4', () {
@@ -41,6 +57,12 @@ Future<void> main() async {
           overrides: [
             internetSettingsProvider
                 .overrideWith(() => mockInternetSettingsNotifier),
+            internetSettingsIPv4FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv4FormValidityNotifier),
+            internetSettingsIPv6FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv6FormValidityNotifier),
+            optionalSettingsFormValidityProvider
+                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
           ],
           locale: locale,
           child: const InternetSettingsView(),
@@ -71,6 +93,12 @@ Future<void> main() async {
           overrides: [
             internetSettingsProvider
                 .overrideWith(() => mockInternetSettingsNotifier),
+            internetSettingsIPv4FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv4FormValidityNotifier),
+            internetSettingsIPv6FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv6FormValidityNotifier),
+            optionalSettingsFormValidityProvider
+                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
           ],
           locale: locale,
           child: const InternetSettingsView(),
@@ -101,6 +129,12 @@ Future<void> main() async {
           overrides: [
             internetSettingsProvider
                 .overrideWith(() => mockInternetSettingsNotifier),
+            internetSettingsIPv4FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv4FormValidityNotifier),
+            internetSettingsIPv6FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv6FormValidityNotifier),
+            optionalSettingsFormValidityProvider
+                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
           ],
           locale: locale,
           child: const InternetSettingsView(),
@@ -131,6 +165,12 @@ Future<void> main() async {
           overrides: [
             internetSettingsProvider
                 .overrideWith(() => mockInternetSettingsNotifier),
+            internetSettingsIPv4FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv4FormValidityNotifier),
+            internetSettingsIPv6FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv6FormValidityNotifier),
+            optionalSettingsFormValidityProvider
+                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
           ],
           locale: locale,
           child: const InternetSettingsView(),
@@ -163,6 +203,12 @@ Future<void> main() async {
           overrides: [
             internetSettingsProvider
                 .overrideWith(() => mockInternetSettingsNotifier),
+            internetSettingsIPv4FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv4FormValidityNotifier),
+            internetSettingsIPv6FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv6FormValidityNotifier),
+            optionalSettingsFormValidityProvider
+                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
           ],
           locale: locale,
           child: const InternetSettingsView(),
@@ -193,6 +239,12 @@ Future<void> main() async {
           overrides: [
             internetSettingsProvider
                 .overrideWith(() => mockInternetSettingsNotifier),
+            internetSettingsIPv4FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv4FormValidityNotifier),
+            internetSettingsIPv6FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv6FormValidityNotifier),
+            optionalSettingsFormValidityProvider
+                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
           ],
           locale: locale,
           child: const InternetSettingsView(),
@@ -212,21 +264,26 @@ Future<void> main() async {
     testLocalizations(
       'InternetSettings - bridge',
       (tester, locale) async {
-        when(mockInternetSettingsNotifier.build()).thenReturn(
-            InternetSettingsState.fromMap(internetSettingsStateBridge));
+        final state =
+            InternetSettingsState.fromMap(internetSettingsStateBridge);
+        final status = state.status.copyWith(hostname: () => 'Linksys00000');
+        when(mockInternetSettingsNotifier.build())
+            .thenReturn(state.copyWith(status: status));
         when(mockInternetSettingsNotifier.fetch())
             .thenAnswer((realInvocation) async {
           await Future.delayed(const Duration(seconds: 1));
-          return InternetSettingsState.fromMap(internetSettingsStateBridge);
-        });
-        when(mockInternetSettingsNotifier.hostname)
-            .thenAnswer((realInvocation) {
-          return 'Linksys00000';
+          return state.copyWith(status: status);
         });
         final widget = testableSingleRoute(
           overrides: [
             internetSettingsProvider
                 .overrideWith(() => mockInternetSettingsNotifier),
+            internetSettingsIPv4FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv4FormValidityNotifier),
+            internetSettingsIPv6FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv6FormValidityNotifier),
+            optionalSettingsFormValidityProvider
+                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
           ],
           locale: locale,
           child: const InternetSettingsView(),
@@ -257,6 +314,12 @@ Future<void> main() async {
           overrides: [
             internetSettingsProvider
                 .overrideWith(() => mockInternetSettingsNotifier),
+            internetSettingsIPv4FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv4FormValidityNotifier),
+            internetSettingsIPv6FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv6FormValidityNotifier),
+            optionalSettingsFormValidityProvider
+                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
           ],
           locale: locale,
           child: const InternetSettingsView(),
@@ -291,6 +354,12 @@ Future<void> main() async {
           overrides: [
             internetSettingsProvider
                 .overrideWith(() => mockInternetSettingsNotifier),
+            internetSettingsIPv4FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv4FormValidityNotifier),
+            internetSettingsIPv6FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv6FormValidityNotifier),
+            optionalSettingsFormValidityProvider
+                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
           ],
           locale: locale,
           child: const InternetSettingsView(),
@@ -325,6 +394,12 @@ Future<void> main() async {
           overrides: [
             internetSettingsProvider
                 .overrideWith(() => mockInternetSettingsNotifier),
+            internetSettingsIPv4FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv4FormValidityNotifier),
+            internetSettingsIPv6FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv6FormValidityNotifier),
+            optionalSettingsFormValidityProvider
+                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
           ],
           locale: locale,
           child: const InternetSettingsView(),
@@ -359,6 +434,12 @@ Future<void> main() async {
           overrides: [
             internetSettingsProvider
                 .overrideWith(() => mockInternetSettingsNotifier),
+            internetSettingsIPv4FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv4FormValidityNotifier),
+            internetSettingsIPv6FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv6FormValidityNotifier),
+            optionalSettingsFormValidityProvider
+                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
           ],
           locale: locale,
           child: const InternetSettingsView(),
@@ -393,6 +474,12 @@ Future<void> main() async {
           overrides: [
             internetSettingsProvider
                 .overrideWith(() => mockInternetSettingsNotifier),
+            internetSettingsIPv4FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv4FormValidityNotifier),
+            internetSettingsIPv6FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv6FormValidityNotifier),
+            optionalSettingsFormValidityProvider
+                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
           ],
           locale: locale,
           child: const InternetSettingsView(),
@@ -416,21 +503,26 @@ Future<void> main() async {
     testLocalizations(
       'InternetSettings - bridge editing',
       (tester, locale) async {
-        when(mockInternetSettingsNotifier.build()).thenReturn(
-            InternetSettingsState.fromMap(internetSettingsStateBridge));
+        final state =
+            InternetSettingsState.fromMap(internetSettingsStateBridge);
+        final status = state.status.copyWith(hostname: () => 'Linksys00000');
+        when(mockInternetSettingsNotifier.build())
+            .thenReturn(state.copyWith(status: status));
         when(mockInternetSettingsNotifier.fetch())
             .thenAnswer((realInvocation) async {
           await Future.delayed(const Duration(seconds: 1));
-          return InternetSettingsState.fromMap(internetSettingsStateBridge);
-        });
-        when(mockInternetSettingsNotifier.hostname)
-            .thenAnswer((realInvocation) {
-          return 'Linksys00000';
+          return state.copyWith(status: status);
         });
         final widget = testableSingleRoute(
           overrides: [
             internetSettingsProvider
                 .overrideWith(() => mockInternetSettingsNotifier),
+            internetSettingsIPv4FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv4FormValidityNotifier),
+            internetSettingsIPv6FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv6FormValidityNotifier),
+            optionalSettingsFormValidityProvider
+                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
           ],
           locale: locale,
           child: const InternetSettingsView(),
@@ -465,6 +557,12 @@ Future<void> main() async {
           overrides: [
             internetSettingsProvider
                 .overrideWith(() => mockInternetSettingsNotifier),
+            internetSettingsIPv4FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv4FormValidityNotifier),
+            internetSettingsIPv6FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv6FormValidityNotifier),
+            optionalSettingsFormValidityProvider
+                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
           ],
           locale: locale,
           child: const InternetSettingsView(),
@@ -502,6 +600,12 @@ Future<void> main() async {
           overrides: [
             internetSettingsProvider
                 .overrideWith(() => mockInternetSettingsNotifier),
+            internetSettingsIPv4FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv4FormValidityNotifier),
+            internetSettingsIPv6FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv6FormValidityNotifier),
+            optionalSettingsFormValidityProvider
+                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
           ],
           locale: locale,
           child: const InternetSettingsView(),
@@ -537,6 +641,12 @@ Future<void> main() async {
           overrides: [
             internetSettingsProvider
                 .overrideWith(() => mockInternetSettingsNotifier),
+            internetSettingsIPv4FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv4FormValidityNotifier),
+            internetSettingsIPv6FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv6FormValidityNotifier),
+            optionalSettingsFormValidityProvider
+                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
           ],
           locale: locale,
           child: const InternetSettingsView(),
@@ -566,10 +676,15 @@ Future<void> main() async {
       (tester, locale) async {
         final state =
             InternetSettingsState.fromMap(internetSettingsStateIpv6Automatic);
+        final settings = state.settings.current;
         final newState = state.copyWith(
-            ipv6Setting: state.ipv6Setting.copyWith(
-          isIPv6AutomaticEnabled: false,
-          ipv6rdTunnelMode: () => IPv6rdTunnelMode.disabled,
+            settings: state.settings.copyWith(
+          current: settings.copyWith(
+            ipv6Setting: settings.ipv6Setting.copyWith(
+              isIPv6AutomaticEnabled: false,
+              ipv6rdTunnelMode: () => IPv6rdTunnelMode.disabled,
+            ),
+          ),
         ));
         when(mockInternetSettingsNotifier.build()).thenReturn(newState);
         when(mockInternetSettingsNotifier.fetch())
@@ -581,6 +696,12 @@ Future<void> main() async {
           overrides: [
             internetSettingsProvider
                 .overrideWith(() => mockInternetSettingsNotifier),
+            internetSettingsIPv4FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv4FormValidityNotifier),
+            internetSettingsIPv6FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv6FormValidityNotifier),
+            optionalSettingsFormValidityProvider
+                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
           ],
           locale: locale,
           child: const InternetSettingsView(),
@@ -610,10 +731,15 @@ Future<void> main() async {
       (tester, locale) async {
         final state =
             InternetSettingsState.fromMap(internetSettingsStateIpv6Automatic);
+        final settings = state.settings.current;
         final newState = state.copyWith(
-            ipv6Setting: state.ipv6Setting.copyWith(
-          isIPv6AutomaticEnabled: false,
-          ipv6rdTunnelMode: () => IPv6rdTunnelMode.automatic,
+            settings: state.settings.copyWith(
+          current: settings.copyWith(
+            ipv6Setting: settings.ipv6Setting.copyWith(
+              isIPv6AutomaticEnabled: false,
+              ipv6rdTunnelMode: () => IPv6rdTunnelMode.automatic,
+            ),
+          ),
         ));
         when(mockInternetSettingsNotifier.build()).thenReturn(newState);
         when(mockInternetSettingsNotifier.fetch())
@@ -625,6 +751,12 @@ Future<void> main() async {
           overrides: [
             internetSettingsProvider
                 .overrideWith(() => mockInternetSettingsNotifier),
+            internetSettingsIPv4FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv4FormValidityNotifier),
+            internetSettingsIPv6FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv6FormValidityNotifier),
+            optionalSettingsFormValidityProvider
+                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
           ],
           locale: locale,
           child: const InternetSettingsView(),
@@ -654,10 +786,15 @@ Future<void> main() async {
       (tester, locale) async {
         final state =
             InternetSettingsState.fromMap(internetSettingsStateIpv6Automatic);
+        final settings = state.settings.current;
         final newState = state.copyWith(
-            ipv6Setting: state.ipv6Setting.copyWith(
-          isIPv6AutomaticEnabled: false,
-          ipv6rdTunnelMode: () => IPv6rdTunnelMode.manual,
+            settings: state.settings.copyWith(
+          current: settings.copyWith(
+            ipv6Setting: settings.ipv6Setting.copyWith(
+              isIPv6AutomaticEnabled: false,
+              ipv6rdTunnelMode: () => IPv6rdTunnelMode.manual,
+            ),
+          ),
         ));
         when(mockInternetSettingsNotifier.build()).thenReturn(newState);
         when(mockInternetSettingsNotifier.fetch())
@@ -669,6 +806,12 @@ Future<void> main() async {
           overrides: [
             internetSettingsProvider
                 .overrideWith(() => mockInternetSettingsNotifier),
+            internetSettingsIPv4FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv4FormValidityNotifier),
+            internetSettingsIPv6FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv6FormValidityNotifier),
+            optionalSettingsFormValidityProvider
+                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
           ],
           locale: locale,
           child: const InternetSettingsView(),
@@ -709,6 +852,12 @@ Future<void> main() async {
           overrides: [
             internetSettingsProvider
                 .overrideWith(() => mockInternetSettingsNotifier),
+            internetSettingsIPv4FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv4FormValidityNotifier),
+            internetSettingsIPv6FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv6FormValidityNotifier),
+            optionalSettingsFormValidityProvider
+                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
           ],
           locale: locale,
           child: const InternetSettingsView(),
@@ -745,6 +894,12 @@ Future<void> main() async {
           overrides: [
             internetSettingsProvider
                 .overrideWith(() => mockInternetSettingsNotifier),
+            internetSettingsIPv4FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv4FormValidityNotifier),
+            internetSettingsIPv6FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv6FormValidityNotifier),
+            optionalSettingsFormValidityProvider
+                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
           ],
           locale: locale,
           child: const InternetSettingsView(),
@@ -783,6 +938,12 @@ Future<void> main() async {
           overrides: [
             internetSettingsProvider
                 .overrideWith(() => mockInternetSettingsNotifier),
+            internetSettingsIPv4FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv4FormValidityNotifier),
+            internetSettingsIPv6FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv6FormValidityNotifier),
+            optionalSettingsFormValidityProvider
+                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
           ],
           locale: locale,
           child: const InternetSettingsView(),
@@ -817,6 +978,12 @@ Future<void> main() async {
           overrides: [
             internetSettingsProvider
                 .overrideWith(() => mockInternetSettingsNotifier),
+            internetSettingsIPv4FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv4FormValidityNotifier),
+            internetSettingsIPv6FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv6FormValidityNotifier),
+            optionalSettingsFormValidityProvider
+                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
           ],
           locale: locale,
           child: const InternetSettingsView(),
@@ -857,6 +1024,12 @@ Future<void> main() async {
           overrides: [
             internetSettingsProvider
                 .overrideWith(() => mockInternetSettingsNotifier),
+            internetSettingsIPv4FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv4FormValidityNotifier),
+            internetSettingsIPv6FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv6FormValidityNotifier),
+            optionalSettingsFormValidityProvider
+                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
           ],
           locale: locale,
           child: const InternetSettingsView(),
@@ -883,6 +1056,12 @@ Future<void> main() async {
           overrides: [
             internetSettingsProvider
                 .overrideWith(() => mockInternetSettingsNotifier),
+            internetSettingsIPv4FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv4FormValidityNotifier),
+            internetSettingsIPv6FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv6FormValidityNotifier),
+            optionalSettingsFormValidityProvider
+                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
           ],
           locale: locale,
           child: const InternetSettingsView(),
@@ -909,6 +1088,12 @@ Future<void> main() async {
           overrides: [
             internetSettingsProvider
                 .overrideWith(() => mockInternetSettingsNotifier),
+            internetSettingsIPv4FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv4FormValidityNotifier),
+            internetSettingsIPv6FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv6FormValidityNotifier),
+            optionalSettingsFormValidityProvider
+                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
           ],
           locale: locale,
           child: const InternetSettingsView(),
@@ -930,18 +1115,31 @@ Future<void> main() async {
     testLocalizations(
       'InternetSettings - restart dialog',
       (tester, locale) async {
-        when(mockInternetSettingsNotifier.build()).thenReturn(
-            InternetSettingsState.fromMap(internetSettingsStateIpv6PPPoE));
+        final state =
+            InternetSettingsState.fromMap(internetSettingsStateIpv6PPPoE);
+        final settings = state.settings.current;
+        final newState = state.copyWith(
+            settings: state.settings.copyWith(
+          current: settings.copyWith(
+            macClone: true,
+          ),
+        ));
+        when(mockInternetSettingsNotifier.build()).thenReturn(newState);
         when(mockInternetSettingsNotifier.fetch())
             .thenAnswer((realInvocation) async {
           await Future.delayed(const Duration(seconds: 1));
-          return InternetSettingsState.fromMap(internetSettingsStateIpv6PPPoE)
-              .copyWith(macClone: true);
+          return newState;
         });
         final widget = testableSingleRoute(
           overrides: [
             internetSettingsProvider
                 .overrideWith(() => mockInternetSettingsNotifier),
+            internetSettingsIPv4FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv4FormValidityNotifier),
+            internetSettingsIPv6FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv6FormValidityNotifier),
+            optionalSettingsFormValidityProvider
+                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
           ],
           locale: locale,
           child: const InternetSettingsView(),
@@ -973,18 +1171,31 @@ Future<void> main() async {
     testLocalizations(
       'InternetSettings - ipv4 and ipv6 combination dialog',
       (tester, locale) async {
-        when(mockInternetSettingsNotifier.build()).thenReturn(
-            InternetSettingsState.fromMap(internetSettingsStateIpv6PPPoE));
+        final state =
+            InternetSettingsState.fromMap(internetSettingsStateIpv6PPPoE);
+        final settings = state.settings.current;
+        final newState = state.copyWith(
+            settings: state.settings.copyWith(
+          current: settings.copyWith(
+            macClone: true,
+          ),
+        ));
+        when(mockInternetSettingsNotifier.build()).thenReturn(newState);
         when(mockInternetSettingsNotifier.fetch())
             .thenAnswer((realInvocation) async {
           await Future.delayed(const Duration(seconds: 1));
-          return InternetSettingsState.fromMap(internetSettingsStateIpv6PPPoE)
-              .copyWith(macClone: true);
+          return newState;
         });
         final widget = testableSingleRoute(
           overrides: [
             internetSettingsProvider
                 .overrideWith(() => mockInternetSettingsNotifier),
+            internetSettingsIPv4FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv4FormValidityNotifier),
+            internetSettingsIPv6FormValidityProvider.overrideWith(
+                () => mockInternetSettingsIPv6FormValidityNotifier),
+            optionalSettingsFormValidityProvider
+                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
           ],
           locale: locale,
           child: const InternetSettingsView(),

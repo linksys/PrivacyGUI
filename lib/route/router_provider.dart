@@ -14,7 +14,12 @@ import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart'
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/providers/apps_and_gaming_provider.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/providers/apps_and_gaming_provider.dart';
+import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/dhcp_reservations_provider.dart';
+import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
+import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_rule_view.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_view.dart';
 import 'package:privacy_gui/page/components/picker/region_picker_view.dart';
@@ -25,6 +30,7 @@ import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacy_gui/page/instant_device/views/select_device_view.dart';
 import 'package:privacy_gui/page/firmware_update/_firmware_update.dart';
 import 'package:privacy_gui/page/health_check/_health_check.dart';
+import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/views/instant_privacy_view.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_isp_auth_view.dart';
 import 'package:privacy_gui/page/landing/_landing.dart';
@@ -56,7 +62,9 @@ import 'package:privacy_gui/page/support/faq_list_view.dart';
 import 'package:privacy_gui/page/instant_topology/views/instant_topology_view.dart';
 import 'package:privacy_gui/page/troubleshooting/_troubleshooting.dart';
 import 'package:privacy_gui/page/vpn/views/vpn_settings_page.dart';
-import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.dart';
+import 'package:privacy_gui/page/wifi_settings/views/mac_filtered_devices_view.dart';
+import 'package:privacy_gui/page/wifi_settings/views/wifi_main_view.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/auth/ra_session_provider.dart';
 import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
@@ -67,6 +75,9 @@ import 'constants.dart';
 import 'package:privacy_gui/core/jnap/providers/ip_getter/get_local_ip.dart'
     if (dart.library.io) 'package:privacy_gui/core/jnap/providers/ip_getter/mobile_get_local_ip.dart'
     if (dart.library.html) 'package:privacy_gui/core/jnap/providers/ip_getter/web_get_local_ip.dart';
+
+
+import 'package:privacy_gui/page/instant_safety/providers/_providers.dart';
 
 part 'route_home.dart';
 part 'route_cloud_login.dart';

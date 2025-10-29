@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
+import 'package:privacy_gui/providers/preservable.dart';
 
 import '../../../../../common/test_helper.dart';
 import '../../../../../common/test_responsive_widget.dart';
@@ -14,7 +15,6 @@ void main() {
   });
 
   tearDown(() {
-
   });
 
   testLocalizations('Administration settings view', (tester, locale) async {
@@ -30,9 +30,13 @@ void main() {
 
   testLocalizations('Administration settings view - no LAN ports',
       (tester, locale) async {
+    final state =
+        AdministrationSettingsState.fromMap(administrationSettingsTestState);
+    final settings =
+        state.current.copyWith(canDisAllowLocalMangementWirelessly: false);
     when(testHelper.mockAdministrationSettingsNotifier.build()).thenReturn(
-        AdministrationSettingsState.fromMap(administrationSettingsTestState)
-            .copyWith(canDisAllowLocalMangementWirelessly: false));
+        state.copyWith(
+            settings: Preservable(original: settings, current: settings)));
 
     await testHelper.pumpView(
       tester,

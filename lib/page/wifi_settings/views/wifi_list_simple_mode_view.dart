@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_item.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/wifi_list_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/views/widgets/wifi_setting_modal_mixin.dart';
 import 'package:privacy_gui/page/wifi_settings/views/wifi_term_titles.dart';
 import 'package:privacy_gui/page/wifi_settings/views/widgets/guest_wifi_card.dart';
@@ -38,7 +38,8 @@ class _SimpleModeViewState extends ConsumerState<SimpleModeView>
   void initState() {
     super.initState();
 
-    final simpleWifi = ref.read(wifiListProvider).simpleModeWifi;
+    final simpleWifi =
+        ref.read(wifiBundleProvider).current.wifiList.simpleModeWifi;
     _passwordController.text =
         simpleWifi.securityType.isOpenVariant ? '' : simpleWifi.password;
   }
@@ -51,8 +52,8 @@ class _SimpleModeViewState extends ConsumerState<SimpleModeView>
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(wifiListProvider);
-    final simpleWifi = state.simpleModeWifi;
+    final state = ref.watch(wifiBundleProvider);
+    final simpleWifi = state.current.wifiList.simpleModeWifi;
 
     final isMobile = ResponsiveLayout.isMobileLayout(context);
 
@@ -71,7 +72,9 @@ class _SimpleModeViewState extends ConsumerState<SimpleModeView>
           children: [
             Padding(
               padding: const EdgeInsets.only(top: 16),
-              child: GuestWiFiCard(state: state.guestWiFi, lastInRow: true),
+              child: GuestWiFiCard(
+                  state: state.settings.current.wifiList.guestWiFi,
+                  lastInRow: true),
             ),
           ],
         ),
@@ -87,7 +90,9 @@ class _SimpleModeViewState extends ConsumerState<SimpleModeView>
           children: [
             _settingsView(simpleWifi),
             const AppGap.medium(),
-            GuestWiFiCard(state: state.guestWiFi, lastInRow: true),
+            GuestWiFiCard(
+                state: state.settings.current.wifiList.guestWiFi,
+                lastInRow: true),
           ],
         ),
       ];
@@ -138,9 +143,6 @@ class _SimpleModeViewState extends ConsumerState<SimpleModeView>
 
   Widget _simpleWiFiPasswordCard(
       String password, WifiSecurityType securityType) {
-    if (securityType.isOpenVariant) {
-      _passwordController.text = '';
-    }
     return Opacity(
       opacity: securityType.isOpenVariant ? .5 : 1,
       child: IgnorePointer(

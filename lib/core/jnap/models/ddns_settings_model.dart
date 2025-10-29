@@ -7,25 +7,25 @@ import 'dyn_dns_settings.dart';
 import 'no_ip_settings.dart';
 import 'tzo_settings.dart';
 
-class DDNSSettings extends Equatable {
+class RouterDDNSSettings extends Equatable {
   final String ddnsProvider;
   final DynDNSSettings? dynDNSSettings;
   final TZOSettings? tzoSettings;
   final NoIPSettings? noIPSettings;
-  const DDNSSettings({
+  const RouterDDNSSettings({
     required this.ddnsProvider,
     this.dynDNSSettings,
     this.tzoSettings,
     this.noIPSettings,
   });
 
-  DDNSSettings copyWith({
+  RouterDDNSSettings copyWith({
     String? ddnsProvider,
     DynDNSSettings? dynDNSSettings,
     TZOSettings? tzoSettings,
     NoIPSettings? noIPSettings,
   }) {
-    return DDNSSettings(
+    return RouterDDNSSettings(
       ddnsProvider: ddnsProvider ?? this.ddnsProvider,
       dynDNSSettings: dynDNSSettings ?? this.dynDNSSettings,
       tzoSettings: tzoSettings ?? this.tzoSettings,
@@ -42,8 +42,8 @@ class DDNSSettings extends Equatable {
     };
   }
 
-  factory DDNSSettings.fromMap(Map<String, dynamic> map) {
-    return DDNSSettings(
+  factory RouterDDNSSettings.fromMap(Map<String, dynamic> map) {
+    return RouterDDNSSettings(
       ddnsProvider: map['ddnsProvider'] as String,
       dynDNSSettings: map['dynDNSSettings'] != null
           ? DynDNSSettings.fromMap(
@@ -60,8 +60,8 @@ class DDNSSettings extends Equatable {
 
   String toJson() => json.encode(toMap());
 
-  factory DDNSSettings.fromJson(String source) =>
-      DDNSSettings.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory RouterDDNSSettings.fromJson(String source) =>
+      RouterDDNSSettings.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
   bool get stringify => true;

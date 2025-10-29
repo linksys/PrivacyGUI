@@ -41,10 +41,10 @@ void main() async {
     });
 
     final mockInternetSettingsState =
-        InternetSettingsState.fromJson(internetSettingsStateData);
+        InternetSettingsState.fromMap(jsonDecode(internetSettingsStateData));
     when(mockInternetSettingsNotifier.build())
         .thenReturn(mockInternetSettingsState);
-    when(mockInternetSettingsNotifier.fetch(fetchRemote: true))
+    when(mockInternetSettingsNotifier.fetch(forceRemote: true))
         .thenAnswer((_) async {
       return mockInternetSettingsState;
     });
@@ -71,7 +71,7 @@ void main() async {
   testLocalizations('Troubleshooter - PnP ISP type selection: DHCP Alert',
       (tester, locale) async {
     final mockInternetSettingsState =
-        InternetSettingsState.fromJson(internetSettingsStateData2);
+        InternetSettingsState.fromMap(jsonDecode(internetSettingsStateData2));
     when(mockInternetSettingsNotifier.build())
         .thenReturn(mockInternetSettingsState);
     await tester.pumpWidget(

@@ -51,7 +51,6 @@ void main() async {
     });
 
     tearDown(() {
-      testHelper.tearDown();
       topologyTestData.cleanup();
     });
 

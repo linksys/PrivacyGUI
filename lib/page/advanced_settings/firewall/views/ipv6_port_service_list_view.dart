@@ -129,7 +129,7 @@ class _Ipv6PortServiceListViewState
               ),
             ),
         editRoute: RouteNamed.ipv6PortServiceRule,
-        dataList: state.rules,
+        dataList: state.current.rules,
         onSave: (index, rule) {
           if (index >= 0) {
             _notifier.editRule(index, rule);
@@ -150,7 +150,7 @@ class _Ipv6PortServiceListViewState
       onStartEdit: (index, rule) {
         ref
             .read(ipv6PortServiceRuleProvider.notifier)
-            .init(state.rules, rule, index);
+            .init(state.current.rules, rule, index);
         // Edit
         applicationTextController.text = rule?.description ?? '';
         firstPortTextController.text =
@@ -179,7 +179,7 @@ class _Ipv6PortServiceListViewState
               2: FractionColumnWidth(.35),
               3: FractionColumnWidth(.15),
             },
-      dataList: [...state.rules],
+      dataList: [...state.current.rules],
       editRowIndex: 0,
       cellBuilder: (context, ref, index, rule) {
         return switch (index) {

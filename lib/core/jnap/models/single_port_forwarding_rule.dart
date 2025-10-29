@@ -2,13 +2,6 @@ import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
 
-/// isEnabled : true
-/// externalPort : 3074
-/// protocol : "TCP"
-/// internalServerIPAddress : "192.168.1.150"
-/// internalPort : 3074
-/// description : "XBox Live (TM)"
-
 class SinglePortForwardingRule extends Equatable {
   const SinglePortForwardingRule({
     required this.isEnabled,
@@ -82,4 +75,42 @@ class SinglePortForwardingRule extends Equatable {
   factory SinglePortForwardingRule.fromJson(String source) =>
       SinglePortForwardingRule.fromMap(
           json.decode(source) as Map<String, dynamic>);
+}
+
+class SinglePortForwardingRuleList extends Equatable {
+  final List<SinglePortForwardingRule> rules;
+
+  const SinglePortForwardingRuleList({required this.rules});
+
+  @override
+  List<Object> get props => [rules];
+
+  SinglePortForwardingRuleList copyWith({
+    List<SinglePortForwardingRule>? rules,
+  }) {
+    return SinglePortForwardingRuleList(
+      rules: rules ?? this.rules,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'rules': rules.map((x) => x.toMap()).toList(),
+    };
+  }
+
+  factory SinglePortForwardingRuleList.fromMap(Map<String, dynamic> map) {
+    return SinglePortForwardingRuleList(
+      rules: List<SinglePortForwardingRule>.from(
+        map['rules']?.map<SinglePortForwardingRule>(
+          (x) => SinglePortForwardingRule.fromMap(x as Map<String, dynamic>),
+        ) ?? [],
+      ),
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory SinglePortForwardingRuleList.fromJson(String source) =>
+      SinglePortForwardingRuleList.fromMap(json.decode(source) as Map<String, dynamic>);
 }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/advanced_settings/internet_settings/models/internet_settings_enums.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/_providers.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -29,10 +30,10 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
   void initState() {
     ref
         .read(internetSettingsProvider.notifier)
-        .fetch(fetchRemote: true)
+        .fetch(forceRemote: true)
         .then((state) {
       setState(() {
-        _hasVLan = state.ipv4Setting.wanTaggingSettingsEnable ?? false;
+        _hasVLan = state.current.ipv4Setting.wanTaggingSettingsEnable ?? false;
         _isLoading = false;
       });
     });
@@ -71,9 +72,8 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
 
   void _saveToDHCP() async {
     logger.i('[PnP Troubleshooter]: Set the router into DHCP mode');
-    var newState = ref.read(internetSettingsProvider).copyWith();
-    newState = newState.copyWith(
-      ipv4Setting: newState.ipv4Setting.copyWith(
+    var newState = ref.read(internetSettingsProvider).current.copyWith(
+      ipv4Setting: ref.read(internetSettingsProvider).current.ipv4Setting.copyWith(
         ipv4ConnectionType: WanType.dhcp.type,
       ),
     );
@@ -86,7 +86,7 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(internetSettingsProvider);
-    final wanType = WanType.resolve(state.ipv4Setting.ipv4ConnectionType);
+    final wanType = WanType.resolve(state.current.ipv4Setting.ipv4ConnectionType);
     return _isLoading
         ? const AppFullScreenSpinner()
         : StyledAppPageView(

@@ -5,7 +5,6 @@ import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_safety/providers/_providers.dart';
@@ -27,35 +26,26 @@ class InstantSafetyView extends ArgumentsConsumerStatefulView {
 class _InstantSafetyViewState extends ConsumerState<InstantSafetyView>
     with PageSnackbarMixin {
   late final InstantSafetyNotifier _notifier;
-  bool enableSafeBrowsing = false;
-  InstantSafetyType currentSafeBrowsingType = InstantSafetyType.fortinet;
-  String loadingDesc = '';
 
   @override
   void initState() {
-    _notifier = ref.read(instantSafetyProvider.notifier);
-
-    _fetchData();
     super.initState();
+    _notifier = ref.read(instantSafetyProvider.notifier);
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(instantSafetyProvider);
+    final settings = state.settings.current;
+    final status = state.status;
+
+    final bool enableSafeBrowsing = settings.safeBrowsingType != InstantSafetyType.off;
 
     return StyledAppPageView(
       scrollable: true,
       title: loc(context).instantSafety,
-      onBackTap: _edited(state.safeBrowsingType)
-          ? () async {
-              final goBack = await showUnsavedAlert(context);
-              if (goBack == true) {
-                context.pop();
-              }
-            }
-          : null,
       bottomBar: PageBottomBar(
-        isPositiveEnabled: _edited(state.safeBrowsingType),
+        isPositiveEnabled: state.isDirty,
         onPositiveTap: _showRestartAlert,
       ),
       child: (context, constraints) => AppBasicLayout(
@@ -70,9 +60,7 @@ class _InstantSafetyViewState extends ConsumerState<InstantSafetyView>
                 semanticLabel: 'instant safety',
                 value: enableSafeBrowsing,
                 onChanged: (enable) {
-                  setState(() {
-                    enableSafeBrowsing = enable;
-                  });
+                  _notifier.setSafeBrowsingEnabled(enable);
                 },
               ),
               description: enableSafeBrowsing
@@ -86,11 +74,11 @@ class _InstantSafetyViewState extends ConsumerState<InstantSafetyView>
                         const AppGap.large2(),
                         AppText.labelLarge(loc(context).provider),
                         AppRadioList(
-                          initial: currentSafeBrowsingType,
+                          initial: settings.safeBrowsingType,
                           mainAxisSize: MainAxisSize.min,
                           itemHeight: 56,
                           items: [
-                            if (state.hasFortinet)
+                            if (status.hasFortinet)
                               AppRadioListItem(
                                 title: loc(context).fortinetSecureDns,
                                 value: InstantSafetyType.fortinet,
@@ -101,11 +89,9 @@ class _InstantSafetyViewState extends ConsumerState<InstantSafetyView>
                             ),
                           ],
                           onChanged: (index, selectedType) {
-                            setState(() {
-                              if (selectedType != null) {
-                                currentSafeBrowsingType = selectedType;
-                              }
-                            });
+                            if (selectedType != null) {
+                              _notifier.setSafeBrowsingProvider(selectedType);
+                            }
                           },
                         ),
                       ],
@@ -134,88 +120,30 @@ class _InstantSafetyViewState extends ConsumerState<InstantSafetyView>
         AppTextButton(
           loc(context).restart,
           onTap: () {
-            _setSafeBrowsing();
-            context.pop();
+            context.pop(); // Close the dialog first
+            _saveSettings();
           },
         ),
       ],
     );
   }
 
-  void _setSafeBrowsing() {
-    setState(() {
-      loadingDesc = loc(context).restartingWifi;
-    });
+  void _saveSettings() {
     doSomethingWithSpinner(
       context,
-      messages: [loadingDesc],
-      _notifier
-          .setSafeBrowsing(enableSafeBrowsing
-              ? currentSafeBrowsingType
-              : InstantSafetyType.off)
-          .then((_) {
-        _initCurrentState();
+      messages: [loc(context).restartingWifi],
+      _notifier.save().then((_) {
         showChangesSavedSnackBar();
       }),
-    ).catchError((error) {
-      showRouterNotFoundAlert(context, ref, onComplete: () async {
-        await ref
-            .read(instantSafetyProvider.notifier)
-            .fetchLANSettings(fetchRemote: true);
-        _initCurrentState();
-        showChangesSavedSnackBar();
-      });
-    }, test: (error) => error is JNAPSideEffectError).onError(
-        (error, stackTrace) {
-      final errorMsg = switch (error.runtimeType) {
-        SafeBrowsingError => (error as SafeBrowsingError).message,
-        _ => 'Unknown error',
-      };
-      showFailedSnackBar(
-        context,
-        errorMsg ?? '',
-      );
-    }).whenComplete(
-      () {
-        setState(() {
-          loadingDesc = '';
+    ).catchError((error, stackTrace) {
+      if (error is JNAPSideEffectError) {
+        showRouterNotFoundAlert(context, ref, onComplete: () async {
+          await _notifier.fetch(forceRemote: true);
+          showChangesSavedSnackBar();
         });
-      },
-    );
-  }
-
-  Future _fetchData() async {
-    doSomethingWithSpinner(
-      context,
-      _notifier.fetchLANSettings().then(
-        (_) {
-          _initCurrentState();
-        },
-      ),
-    );
-  }
-
-  _initCurrentState() {
-    setState(() {
-      final stateSafeBrowsingType =
-          ref.read(instantSafetyProvider).safeBrowsingType;
-      enableSafeBrowsing = !(stateSafeBrowsingType == InstantSafetyType.off);
-      if (stateSafeBrowsingType == InstantSafetyType.off) {
-        currentSafeBrowsingType = ref.read(instantSafetyProvider).hasFortinet
-            ? InstantSafetyType.fortinet
-            : InstantSafetyType.openDNS;
       } else {
-        currentSafeBrowsingType = stateSafeBrowsingType;
+         showFailedSnackBar((error as SafeBrowsingError?)?.message ?? 'Unknown error');
       }
     });
-  }
-
-  bool _edited(InstantSafetyType stateSafeBrowsingType) {
-    if (stateSafeBrowsingType == InstantSafetyType.off) {
-      return enableSafeBrowsing;
-    } else {
-      return !enableSafeBrowsing ||
-          (stateSafeBrowsingType != currentSafeBrowsingType);
-    }
   }
 }

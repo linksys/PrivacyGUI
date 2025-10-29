@@ -1,45 +1,46 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
 
-import 'package:equatable/equatable.dart';
-
 import 'package:privacy_gui/core/jnap/models/firewall_settings.dart';
+import 'package:privacy_gui/providers/empty_status.dart';
+import 'package:privacy_gui/providers/feature_state.dart';
+import 'package:privacy_gui/providers/preservable.dart';
 
-class FirewallState extends Equatable {
+class FirewallState extends FeatureState<FirewallSettings, EmptyStatus> {
   const FirewallState({
-    required this.settings,
+    required super.settings,
+    required super.status,
   });
 
-  final FirewallSettings settings;
-
-
+  @override
   FirewallState copyWith({
-    FirewallSettings? settings,
+    Preservable<FirewallSettings>? settings,
+    EmptyStatus? status,
   }) {
     return FirewallState(
       settings: settings ?? this.settings,
+      status: status ?? this.status,
     );
   }
 
+  @override
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
-      'settings': settings.toMap(),
+      'settings': settings.toMap((s) => s.toMap()),
+      'status': {},
     };
   }
 
   factory FirewallState.fromMap(Map<String, dynamic> map) {
     return FirewallState(
-      settings: FirewallSettings.fromMap(map['settings'] as Map<String,dynamic>),
+      settings: Preservable.fromMap(
+        map['settings'] as Map<String, dynamic>,
+        (valueMap) =>
+            FirewallSettings.fromMap(valueMap as Map<String, dynamic>),
+      ),
+      status: const EmptyStatus(),
     );
   }
 
-  String toJson() => json.encode(toMap());
-
-  factory FirewallState.fromJson(String source) => FirewallState.fromMap(json.decode(source) as Map<String, dynamic>);
-
-  @override
-  bool get stringify => true;
-
-  @override
-  List<Object> get props => [settings];
+  factory FirewallState.fromJson(String source) =>
+      FirewallState.fromMap(json.decode(source) as Map<String, dynamic>);
 }

@@ -211,7 +211,7 @@ void main() {
   testLocalizations(
     'Instant-Device - Device detail view - reserve IP confirm ',
     (tester, locale) async {
-      when(mockLocalNetworkSettingsNotifier.saveSettings(any))
+      when(mockLocalNetworkSettingsNotifier.saveReservations(any))
           .thenAnswer((_) async {
         await Future.delayed(const Duration(seconds: 2));
       });
@@ -235,15 +235,17 @@ void main() {
 
   testLocalizations('Instant-Device - Device detail view - release IP ',
       (tester, locale) async {
-    when(mockLocalNetworkSettingsNotifier.build()).thenReturn(
-        LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState)
-            .copyWith(dhcpReservationList: [
+    final state =
+        LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState);
+    final status = state.status.copyWith(dhcpReservationList: [
       DHCPReservation(
         macAddress: '3C:22:FB:E4:4F:18',
         ipAddress: '192.168.1.30',
         description: 'My laptop',
       )
-    ]));
+    ]);
+    when(mockLocalNetworkSettingsNotifier.build())
+        .thenReturn(state.copyWith(status: status));
     final widget = testableSingleRoute(
       overrides: [
         localNetworkSettingProvider
@@ -260,16 +262,18 @@ void main() {
   testLocalizations(
     'Instant-Device - Device detail view - release IP confirm ',
     (tester, locale) async {
-      when(mockLocalNetworkSettingsNotifier.build()).thenReturn(
-          LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState)
-              .copyWith(dhcpReservationList: [
+      final state =
+          LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState);
+      final status = state.status.copyWith(dhcpReservationList: [
         DHCPReservation(
           macAddress: '3C:22:FB:E4:4F:18',
           ipAddress: '192.168.1.30',
           description: 'My laptop',
         )
-      ]));
-      when(mockLocalNetworkSettingsNotifier.saveSettings(any))
+      ]);
+      when(mockLocalNetworkSettingsNotifier.build())
+          .thenReturn(state.copyWith(status: status));
+      when(mockLocalNetworkSettingsNotifier.saveReservations(any))
           .thenAnswer((_) async {
         await Future.delayed(const Duration(seconds: 2));
       });

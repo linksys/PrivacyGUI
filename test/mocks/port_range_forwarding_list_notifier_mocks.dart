@@ -28,8 +28,13 @@ import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/_ports.
 
 class _FakeNotifierProviderRef_0<T> extends _i1.SmartFake
     implements _i2.NotifierProviderRef<T> {
-  _FakeNotifierProviderRef_0(Object parent, Invocation parentInvocation)
-      : super(parent, parentInvocation);
+  _FakeNotifierProviderRef_0(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
 }
 
 class _FakePortRangeForwardingListState_1 extends _i1.SmartFake
@@ -37,16 +42,16 @@ class _FakePortRangeForwardingListState_1 extends _i1.SmartFake
   _FakePortRangeForwardingListState_1(
     Object parent,
     Invocation parentInvocation,
-  ) : super(parent, parentInvocation);
+  ) : super(
+          parent,
+          parentInvocation,
+        );
 }
 
 /// A class which mocks [PortRangeForwardingListNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockPortRangeForwardingListNotifier
-    extends _i2.Notifier<_i3.PortRangeForwardingListState>
-    with _i1.Mock
-    implements _i3.PortRangeForwardingListNotifier {
+class MockPortRangeForwardingListNotifier extends _i2.Notifier<_i3.PortRangeForwardingListState> with _i1.Mock implements _i3.PortRangeForwardingListNotifier {
   @override
   _i2.NotifierProviderRef<_i3.PortRangeForwardingListState> get ref =>
       (super.noSuchMethod(
@@ -78,83 +83,120 @@ class MockPortRangeForwardingListNotifier
 
   @override
   set state(_i3.PortRangeForwardingListState? value) => super.noSuchMethod(
-        Invocation.setter(#state, value),
+        Invocation.setter(
+          #state,
+          value,
+        ),
         returnValueForMissingStub: null,
       );
 
   @override
   _i3.PortRangeForwardingListState build() => (super.noSuchMethod(
-        Invocation.method(#build, []),
+        Invocation.method(
+          #build,
+          [],
+        ),
         returnValue: _FakePortRangeForwardingListState_1(
           this,
-          Invocation.method(#build, []),
+          Invocation.method(
+            #build,
+            [],
+          ),
         ),
         returnValueForMissingStub: _FakePortRangeForwardingListState_1(
           this,
-          Invocation.method(#build, []),
+          Invocation.method(
+            #build,
+            [],
+          ),
         ),
       ) as _i3.PortRangeForwardingListState);
 
   @override
-  _i4.Future<_i3.PortRangeForwardingListState> fetch([bool? force = false]) =>
+  _i4.Future<
+      (
+        _i5.PortRangeForwardingRuleList?,
+        _i3.PortRangeForwardingListStatus?
+      )> performFetch({
+    bool? forceRemote = false,
+    bool? updateStatusOnly = false,
+  }) =>
       (super.noSuchMethod(
-        Invocation.method(#fetch, [force]),
-        returnValue: _i4.Future<_i3.PortRangeForwardingListState>.value(
-          _FakePortRangeForwardingListState_1(
-            this,
-            Invocation.method(#fetch, [force]),
-          ),
+        Invocation.method(
+          #performFetch,
+          [],
+          {
+            #forceRemote: forceRemote,
+            #updateStatusOnly: updateStatusOnly,
+          },
         ),
-        returnValueForMissingStub:
-            _i4.Future<_i3.PortRangeForwardingListState>.value(
-          _FakePortRangeForwardingListState_1(
-            this,
-            Invocation.method(#fetch, [force]),
-          ),
-        ),
-      ) as _i4.Future<_i3.PortRangeForwardingListState>);
+        returnValue: _i4.Future<
+            (
+              _i5.PortRangeForwardingRuleList?,
+              _i3.PortRangeForwardingListStatus?
+            )>.value((null, null)),
+        returnValueForMissingStub: _i4.Future<
+            (
+              _i5.PortRangeForwardingRuleList?,
+              _i3.PortRangeForwardingListStatus?
+            )>.value((null, null)),
+      ) as _i4.Future<
+          (
+            _i5.PortRangeForwardingRuleList?,
+            _i3.PortRangeForwardingListStatus?
+          )>);
 
   @override
-  _i4.Future<_i3.PortRangeForwardingListState> save() => (super.noSuchMethod(
-        Invocation.method(#save, []),
-        returnValue: _i4.Future<_i3.PortRangeForwardingListState>.value(
-          _FakePortRangeForwardingListState_1(
-            this,
-            Invocation.method(#save, []),
-          ),
+  _i4.Future<void> performSave() => (super.noSuchMethod(
+        Invocation.method(
+          #performSave,
+          [],
         ),
-        returnValueForMissingStub:
-            _i4.Future<_i3.PortRangeForwardingListState>.value(
-          _FakePortRangeForwardingListState_1(
-            this,
-            Invocation.method(#save, []),
-          ),
-        ),
-      ) as _i4.Future<_i3.PortRangeForwardingListState>);
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 
   @override
   bool isExceedMax() => (super.noSuchMethod(
-        Invocation.method(#isExceedMax, []),
+        Invocation.method(
+          #isExceedMax,
+          [],
+        ),
         returnValue: false,
         returnValueForMissingStub: false,
       ) as bool);
 
   @override
   void addRule(_i5.PortRangeForwardingRule? rule) => super.noSuchMethod(
-        Invocation.method(#addRule, [rule]),
+        Invocation.method(
+          #addRule,
+          [rule],
+        ),
         returnValueForMissingStub: null,
       );
 
   @override
-  void editRule(int? index, _i5.PortRangeForwardingRule? rule) =>
+  void editRule(
+    int? index,
+    _i5.PortRangeForwardingRule? rule,
+  ) =>
       super.noSuchMethod(
-        Invocation.method(#editRule, [index, rule]),
+        Invocation.method(
+          #editRule,
+          [
+            index,
+            rule,
+          ],
+        ),
         returnValueForMissingStub: null,
       );
 
   @override
   void deleteRule(_i5.PortRangeForwardingRule? rule) => super.noSuchMethod(
-        Invocation.method(#deleteRule, [rule]),
+        Invocation.method(
+          #deleteRule,
+          [rule],
+        ),
         returnValueForMissingStub: null,
       );
 
@@ -164,10 +206,17 @@ class MockPortRangeForwardingListNotifier
       _i3.PortRangeForwardingListState?,
       _i3.PortRangeForwardingListState,
     )? listener, {
-    void Function(Object, StackTrace)? onError,
+    void Function(
+      Object,
+      StackTrace,
+    )? onError,
   }) =>
       super.noSuchMethod(
-        Invocation.method(#listenSelf, [listener], {#onError: onError}),
+        Invocation.method(
+          #listenSelf,
+          [listener],
+          {#onError: onError},
+        ),
         returnValueForMissingStub: null,
       );
 
@@ -177,8 +226,108 @@ class MockPortRangeForwardingListNotifier
     _i3.PortRangeForwardingListState? next,
   ) =>
       (super.noSuchMethod(
-        Invocation.method(#updateShouldNotify, [previous, next]),
+        Invocation.method(
+          #updateShouldNotify,
+          [
+            previous,
+            next,
+          ],
+        ),
         returnValue: false,
         returnValueForMissingStub: false,
       ) as bool);
+
+  @override
+  _i4.Future<_i3.PortRangeForwardingListState> fetch({
+    bool? forceRemote = false,
+    bool? updateStatusOnly = false,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #fetch,
+          [],
+          {
+            #forceRemote: forceRemote,
+            #updateStatusOnly: updateStatusOnly,
+          },
+        ),
+        returnValue: _i4.Future<_i3.PortRangeForwardingListState>.value(
+            _FakePortRangeForwardingListState_1(
+          this,
+          Invocation.method(
+            #fetch,
+            [],
+            {
+              #forceRemote: forceRemote,
+              #updateStatusOnly: updateStatusOnly,
+            },
+          ),
+        )),
+        returnValueForMissingStub:
+            _i4.Future<_i3.PortRangeForwardingListState>.value(
+                _FakePortRangeForwardingListState_1(
+          this,
+          Invocation.method(
+            #fetch,
+            [],
+            {
+              #forceRemote: forceRemote,
+              #updateStatusOnly: updateStatusOnly,
+            },
+          ),
+        )),
+      ) as _i4.Future<_i3.PortRangeForwardingListState>);
+
+  @override
+  _i4.Future<_i3.PortRangeForwardingListState> save() => (super.noSuchMethod(
+        Invocation.method(
+          #save,
+          [],
+        ),
+        returnValue: _i4.Future<_i3.PortRangeForwardingListState>.value(
+            _FakePortRangeForwardingListState_1(
+          this,
+          Invocation.method(
+            #save,
+            [],
+          ),
+        )),
+        returnValueForMissingStub:
+            _i4.Future<_i3.PortRangeForwardingListState>.value(
+                _FakePortRangeForwardingListState_1(
+          this,
+          Invocation.method(
+            #save,
+            [],
+          ),
+        )),
+      ) as _i4.Future<_i3.PortRangeForwardingListState>);
+
+  @override
+  void revert() => super.noSuchMethod(
+        Invocation.method(
+          #revert,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  bool isDirty() => (super.noSuchMethod(
+        Invocation.method(
+          #isDirty,
+          [],
+        ),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  void markAsSaved() => super.noSuchMethod(
+        Invocation.method(
+          #markAsSaved,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
 }

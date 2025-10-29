@@ -1,80 +1,63 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/di.dart';
-import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
-import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
-import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/wifi_state.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/wifi_view_provider.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_state.dart';
+import 'package:privacy_gui/page/wifi_settings/views/wifi_main_view.dart';
+import 'package:privacy_gui/providers/preservable.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 import '../../../common/_index.dart';
 import '../../../common/di.dart';
-import '../../../mocks/_index.dart';
-import '../../../mocks/jnap_service_supported_mocks.dart';
-import '../../../mocks/wifi_view_notifier_mocks.dart';
-import '../../../test_data/_index.dart';
+import '../../../mocks/wifi_bundle_settings_notifier_mocks.dart';
+import '../../../test_data/wifi_bundle_test_state.dart';
 
 void main() {
   mockDependencyRegister();
   ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
 
-  setUp(() {});
+  late MockWifiBundleNotifier mockWifiBundleNotifier;
+  late WifiBundleState initialState;
+
+  setUp(() {
+    mockWifiBundleNotifier = MockWifiBundleNotifier();
+    final settings = WifiBundleSettings.fromMap(wifiBundleTestState['settings'] as Map<String, dynamic>);
+    final status = WifiBundleStatus.fromMap(wifiBundleTestState['status'] as Map<String, dynamic>);
+    initialState = WifiBundleState(
+      settings: Preservable(original: settings, current: settings),
+      status: status,
+    );
+    when(mockWifiBundleNotifier.build()).thenReturn(initialState);
+    when(mockWifiBundleNotifier.state).thenReturn(initialState);
+    when(mockWifiBundleNotifier.isDirty()).thenReturn(false);
+  });
 
   testLocalizations('Dialog - Router Not Found', (tester, locale) async {
-    // Wifi main view notifier
-    final mockWiFiViewNotifier = MockWiFiViewNotifier();
-    when(mockWiFiViewNotifier.build()).thenReturn(WiFiViewState());
-    // Wifi list view notifier
-    final mockWiFiListNotifier = MockWifiListNotifier();
-    when(mockWiFiListNotifier.build()).thenReturn(
-      WiFiState.fromMap(wifiListTestState),
-    );
-    when(mockWiFiListNotifier.fetch()).thenAnswer((realInvocation) async {
-      await Future.delayed(Durations.extralong1);
-      return WiFiState.fromMap(wifiListTestState);
-    });
-    // Wifi advanced settings view notifier
-    final mockWiFiAdvancedSettingsNotifier = MockWifiAdvancedSettingsNotifier();
-    when(mockWiFiAdvancedSettingsNotifier.build()).thenReturn(
-      WifiAdvancedSettingsState.fromMap(wifiAdvancedSettingsTestState).copyWith(
-        isMLOEnabled: false,
-        isDFSEnabled: false,
-      ),
-    );
-    when(mockWiFiAdvancedSettingsNotifier.fetch()).thenAnswer(
-      (realInvocation) async {
-        return WifiAdvancedSettingsState.fromMap(wifiAdvancedSettingsTestState);
-      },
-    );
-    when(mockWiFiAdvancedSettingsNotifier.save()).thenAnswer((_) async {
-      await Future.delayed(Duration(seconds: 1));
+    when(mockWifiBundleNotifier.save()).thenAnswer((_) async {
+      await Future.delayed(const Duration(seconds: 1));
       throw JNAPSideEffectError();
     });
-    final mockInstantPrivacyNotifier = MockInstantPrivacyNotifier();
-    when(mockInstantPrivacyNotifier.build())
-        .thenReturn(InstantPrivacyState.fromMap(instantPrivacyTestState));
 
     final widget = testableSingleRoute(
       overrides: [
-        wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-        wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-        wifiAdvancedProvider
-            .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-        instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
+        wifiBundleProvider.overrideWith(() => mockWifiBundleNotifier),
       ],
       locale: locale,
       child: const WiFiMainView(),
     );
     await tester.pumpWidget(widget);
     await tester.pumpAndSettle();
-    // switch to advanced settings
-    final tabFinder = find.byType(Tab);
-    await tester.tap(tabFinder.at(1));
-    await tester.pumpAndSettle();
+
+    // Simulate a change to enable the save button
+    final dirtyState = initialState.copyWith(
+        settings: initialState.settings.update(initialState.settings.current.copyWith(advanced: initialState.settings.current.advanced.copyWith(isIptvEnabled: true)))
+    );
+    when(mockWifiBundleNotifier.isDirty()).thenReturn(true);
+    when(mockWifiBundleNotifier.state).thenReturn(dirtyState);
+    await tester.pump();
+
     // Tap save button
     final saveButtonFinder = find.byType(AppFilledButton);
     await tester.tap(saveButtonFinder);
@@ -83,45 +66,27 @@ void main() {
 
   testLocalizations('Dialog - You have unsaved changes',
       (tester, locale) async {
-    // Wifi main view notifier
-    final mockWiFiViewNotifier = MockWiFiViewNotifier();
-    when(mockWiFiViewNotifier.build()).thenReturn(
-      WiFiViewState(isWifiAdvancedSettingsViewStateChanged: true),
+    final settings = WifiBundleSettings.fromMap(wifiBundleTestState['settings'] as Map<String, dynamic>);
+    final status = WifiBundleStatus.fromMap(wifiBundleTestState['status'] as Map<String, dynamic>);
+    final dirtySettings = settings.copyWith(advanced: settings.advanced.copyWith(isIptvEnabled: true));
+    final dirtyState = WifiBundleState(
+        settings: Preservable(original: settings, current: dirtySettings),
+        status: status,
     );
-    // Wifi list view notifier
-    final mockWiFiListNotifier = MockWifiListNotifier();
-    when(mockWiFiListNotifier.build())
-        .thenReturn(WiFiState.fromMap(wifiListTestState));
-    when(mockWiFiListNotifier.fetch()).thenAnswer((realInvocation) async {
-      await Future.delayed(Durations.extralong1);
-      return WiFiState.fromMap(wifiListTestState);
-    });
-    // Wifi advanced settings view notifier
-    final mockWiFiAdvancedSettingsNotifier = MockWifiAdvancedSettingsNotifier();
-    when(mockWiFiAdvancedSettingsNotifier.build()).thenReturn(
-        WifiAdvancedSettingsState.fromMap(wifiAdvancedSettingsTestState));
-    when(mockWiFiAdvancedSettingsNotifier.fetch())
-        .thenAnswer((realInvocation) async {
-      return WifiAdvancedSettingsState.fromMap(wifiAdvancedSettingsTestState);
-    });
+
+    when(mockWifiBundleNotifier.isDirty()).thenReturn(true);
+    when(mockWifiBundleNotifier.state).thenReturn(dirtyState);
 
     final widget = testableSingleRoute(
       overrides: [
-        wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
-        wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-        wifiAdvancedProvider
-            .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
+        wifiBundleProvider.overrideWith(() => mockWifiBundleNotifier),
       ],
       locale: locale,
       child: const WiFiMainView(),
     );
     await tester.pumpWidget(widget);
     await tester.pumpAndSettle();
-    // Switch to advanced settings
-    final tabFinder = find.byType(Tab);
-    await tester.tap(tabFinder.at(1));
-    await tester.pumpAndSettle();
-    await tester.pump(Duration(seconds: 1));
+
     // Tap back button
     final backButtonFinder = find.byType(AppIconButton);
     await tester.tap(backButtonFinder);

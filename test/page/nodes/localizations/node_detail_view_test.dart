@@ -9,8 +9,9 @@ import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_filtered_list_state.dart';
 import 'package:privacy_gui/page/nodes/_nodes.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/wifi_list_provider.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/wifi_state.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_state.dart';
+import 'package:privacy_gui/providers/preservable.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:mockito/mockito.dart';
@@ -22,19 +23,20 @@ import '../../../common/di.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
 import '../../../mocks/_index.dart';
+import '../../../mocks/wifi_bundle_settings_notifier_mocks.dart';
 import '../../../test_data/device_filter_config_test_state.dart';
 import '../../../test_data/device_filtered_list_test_data.dart';
 import '../../../test_data/device_manager_test_state.dart';
 import '../../../test_data/firmware_update_test_state.dart';
 import '../../../test_data/node_details_data.dart';
-import '../../../test_data/wifi_list_test_state.dart';
+import '../../../test_data/wifi_bundle_test_state.dart';
 
 void main() {
   late NodeDetailNotifier mockNodeDetailNotifier;
   late FirmwareUpdateNotifier mockFirmwareUpdateNotifier;
   late DeviceFilterConfigNotifier mockDeviceFilterConfigNotifier;
   late MockDeviceManagerNotifier mockDeviceManagerNotifier;
-  late WifiListNotifier mockWifiListNotifier;
+  late MockWifiBundleNotifier mockWifiBundleNotifier;
 
   mockDependencyRegister();
   ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
@@ -44,12 +46,20 @@ void main() {
     mockFirmwareUpdateNotifier = MockFirmwareUpdateNotifier();
     mockDeviceFilterConfigNotifier = MockDeviceFilterConfigNotifier();
     mockDeviceManagerNotifier = MockDeviceManagerNotifier();
-    mockWifiListNotifier = MockWifiListNotifier();
+    mockWifiBundleNotifier = MockWifiBundleNotifier();
+
+    final settings = WifiBundleSettings.fromMap(wifiBundleTestState['settings'] as Map<String, dynamic>);
+    final status = WifiBundleStatus.fromMap(wifiBundleTestState['status'] as Map<String, dynamic>);
+
+    final initialState = WifiBundleState(
+      settings: Preservable(original: settings, current: settings),
+      status: status,
+    );
 
     when(mockDeviceManagerNotifier.build())
         .thenReturn(DeviceManagerState.fromMap(deviceManagerCherry7TestState));
-    when(mockWifiListNotifier.build())
-        .thenReturn(WiFiState.fromMap(wifiListTestState));
+    when(mockWifiBundleNotifier.build()).thenReturn(initialState);
+    when(mockWifiBundleNotifier.state).thenReturn(initialState);
 
     when(mockDeviceManagerNotifier.getBandConnectedBy(any))
         .thenReturn('2.4GHz');
@@ -70,7 +80,7 @@ void main() {
           deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
           deviceFilterConfigProvider
               .overrideWith(() => mockDeviceFilterConfigNotifier),
-          wifiListProvider.overrideWith(() => mockWifiListNotifier),
+          wifiBundleProvider.overrideWith(() => mockWifiBundleNotifier),
           filteredDeviceListProvider.overrideWith((ref) =>
               deviceFilteredTestData
                   .map((e) => DeviceListItem.fromMap(e))
@@ -108,7 +118,7 @@ void main() {
           deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
           deviceFilterConfigProvider
               .overrideWith(() => mockDeviceFilterConfigNotifier),
-          wifiListProvider.overrideWith(() => mockWifiListNotifier),
+          wifiBundleProvider.overrideWith(() => mockWifiBundleNotifier),
           filteredDeviceListProvider.overrideWith((ref) => []),
         ],
         locale: locale,
@@ -145,7 +155,7 @@ void main() {
           deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
           deviceFilterConfigProvider
               .overrideWith(() => mockDeviceFilterConfigNotifier),
-          wifiListProvider.overrideWith(() => mockWifiListNotifier),
+          wifiBundleProvider.overrideWith(() => mockWifiBundleNotifier),
           filteredDeviceListProvider.overrideWith((ref) =>
               deviceFilteredTestData
                   .map((e) => DeviceListItem.fromMap(e))
@@ -186,7 +196,7 @@ void main() {
           deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
           deviceFilterConfigProvider
               .overrideWith(() => mockDeviceFilterConfigNotifier),
-          wifiListProvider.overrideWith(() => mockWifiListNotifier),
+          wifiBundleProvider.overrideWith(() => mockWifiBundleNotifier),
           filteredDeviceListProvider.overrideWith((ref) =>
               deviceFilteredTestData
                   .map((e) => DeviceListItem.fromMap(e))
@@ -229,7 +239,7 @@ void main() {
           deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
           deviceFilterConfigProvider
               .overrideWith(() => mockDeviceFilterConfigNotifier),
-          wifiListProvider.overrideWith(() => mockWifiListNotifier),
+          wifiBundleProvider.overrideWith(() => mockWifiBundleNotifier),
           filteredDeviceListProvider.overrideWith((ref) =>
               deviceFilteredTestData
                   .map((e) => DeviceListItem.fromMap(e))
@@ -272,7 +282,7 @@ void main() {
           deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
           deviceFilterConfigProvider
               .overrideWith(() => mockDeviceFilterConfigNotifier),
-          wifiListProvider.overrideWith(() => mockWifiListNotifier),
+          wifiBundleProvider.overrideWith(() => mockWifiBundleNotifier),
           filteredDeviceListProvider.overrideWith((ref) => []),
         ],
         locale: locale,
@@ -313,7 +323,7 @@ void main() {
           deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
           deviceFilterConfigProvider
               .overrideWith(() => mockDeviceFilterConfigNotifier),
-          wifiListProvider.overrideWith(() => mockWifiListNotifier),
+          wifiBundleProvider.overrideWith(() => mockWifiBundleNotifier),
           filteredDeviceListProvider.overrideWith((ref) =>
               deviceFilteredTestData
                   .map((e) => DeviceListItem.fromMap(e))
@@ -357,7 +367,7 @@ void main() {
           deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
           deviceFilterConfigProvider
               .overrideWith(() => mockDeviceFilterConfigNotifier),
-          wifiListProvider.overrideWith(() => mockWifiListNotifier),
+          wifiBundleProvider.overrideWith(() => mockWifiBundleNotifier),
           filteredDeviceListProvider.overrideWith((ref) =>
               deviceFilteredTestData
                   .map((e) => DeviceListItem.fromMap(e))
@@ -404,7 +414,7 @@ void main() {
           deviceFilterConfigProvider
               .overrideWith(() => mockDeviceFilterConfigNotifier),
           deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-          wifiListProvider.overrideWith(() => mockWifiListNotifier),
+          wifiBundleProvider.overrideWith(() => mockWifiBundleNotifier),
           filteredDeviceListProvider.overrideWith((ref) =>
               deviceFilteredTestData
                   .map((e) => DeviceListItem.fromMap(e))
@@ -441,7 +451,7 @@ void main() {
           deviceFilterConfigProvider
               .overrideWith(() => mockDeviceFilterConfigNotifier),
           deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-          wifiListProvider.overrideWith(() => mockWifiListNotifier),
+          wifiBundleProvider.overrideWith(() => mockWifiBundleNotifier),
           filteredDeviceListProvider.overrideWith((ref) =>
               deviceFilteredTestData
                   .map((e) => DeviceListItem.fromMap(e))
@@ -478,7 +488,7 @@ void main() {
           deviceFilterConfigProvider
               .overrideWith(() => mockDeviceFilterConfigNotifier),
           deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-          wifiListProvider.overrideWith(() => mockWifiListNotifier),
+          wifiBundleProvider.overrideWith(() => mockWifiBundleNotifier),
           filteredDeviceListProvider.overrideWith((ref) =>
               deviceFilteredTestData
                   .map((e) => DeviceListItem.fromMap(e))
@@ -521,7 +531,7 @@ void main() {
             deviceFilterConfigProvider
                 .overrideWith(() => mockDeviceFilterConfigNotifier),
             deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            wifiListProvider.overrideWith(() => mockWifiListNotifier),
+            wifiBundleProvider.overrideWith(() => mockWifiBundleNotifier),
             filteredDeviceListProvider.overrideWith((ref) =>
                 deviceFilteredTestData
                     .map((e) => DeviceListItem.fromMap(e))
@@ -561,7 +571,7 @@ void main() {
             deviceFilterConfigProvider
                 .overrideWith(() => mockDeviceFilterConfigNotifier),
             deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            wifiListProvider.overrideWith(() => mockWifiListNotifier),
+            wifiBundleProvider.overrideWith(() => mockWifiBundleNotifier),
             filteredDeviceListProvider.overrideWith((ref) =>
                 deviceFilteredTestData
                     .map((e) => DeviceListItem.fromMap(e))
@@ -604,7 +614,7 @@ void main() {
             deviceFilterConfigProvider
                 .overrideWith(() => mockDeviceFilterConfigNotifier),
             deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            wifiListProvider.overrideWith(() => mockWifiListNotifier),
+            wifiBundleProvider.overrideWith(() => mockWifiBundleNotifier),
             filteredDeviceListProvider.overrideWith((ref) =>
                 deviceFilteredTestData
                     .map((e) => DeviceListItem.fromMap(e))
@@ -652,7 +662,7 @@ void main() {
             deviceFilterConfigProvider
                 .overrideWith(() => mockDeviceFilterConfigNotifier),
             deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            wifiListProvider.overrideWith(() => mockWifiListNotifier),
+            wifiBundleProvider.overrideWith(() => mockWifiBundleNotifier),
             filteredDeviceListProvider.overrideWith((ref) =>
                 deviceFilteredTestData
                     .map((e) => DeviceListItem.fromMap(e))
@@ -696,7 +706,7 @@ void main() {
           deviceFilterConfigProvider
               .overrideWith(() => mockDeviceFilterConfigNotifier),
           deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-          wifiListProvider.overrideWith(() => mockWifiListNotifier),
+          wifiBundleProvider.overrideWith(() => mockWifiBundleNotifier),
           filteredDeviceListProvider.overrideWith((ref) =>
               deviceFilteredTestData
                   .map((e) => DeviceListItem.fromMap(e))
@@ -745,7 +755,7 @@ void main() {
             deviceFilterConfigProvider
                 .overrideWith(() => mockDeviceFilterConfigNotifier),
             deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            wifiListProvider.overrideWith(() => mockWifiListNotifier),
+            wifiBundleProvider.overrideWith(() => mockWifiBundleNotifier),
             filteredDeviceListProvider.overrideWith((ref) =>
                 deviceFilteredTestData
                     .map((e) => DeviceListItem.fromMap(e))
@@ -783,7 +793,7 @@ void main() {
         deviceFilterConfigProvider
             .overrideWith(() => mockDeviceFilterConfigNotifier),
         deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-        wifiListProvider.overrideWith(() => mockWifiListNotifier),
+        wifiBundleProvider.overrideWith(() => mockWifiBundleNotifier),
         filteredDeviceListProvider.overrideWith((ref) => deviceFilteredTestData
             .map((e) => DeviceListItem.fromMap(e))
             .toList()),

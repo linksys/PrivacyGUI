@@ -26,9 +26,9 @@ extension BatchCommands on RouterRepository {
   }
 
   Future<List<MapEntry<JNAPAction, JNAPResult>>> fetchInternetSettings(
-      {bool fetchRemote = false}) async {
+      {bool forceRemote = false}) async {
     return transaction(
-      fetchRemote: fetchRemote,
+      fetchRemote: forceRemote,
       JNAPTransactionBuilder(commands: [
         const MapEntry(JNAPAction.getIPv6Settings, {}),
         const MapEntry(JNAPAction.getWANSettings, {}),

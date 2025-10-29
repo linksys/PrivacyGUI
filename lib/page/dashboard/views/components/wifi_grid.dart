@@ -11,6 +11,7 @@ import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/qr_code.dart';
 import 'package:privacy_gui/util/wifi_credential.dart';
@@ -306,7 +307,7 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
     final result = await showSwitchWifiDialog();
     if (result) {
       showSpinnerDialog(context);
-      final wifiProvider = ref.read(wifiListProvider.notifier);
+      final wifiProvider = ref.read(wifiBundleProvider.notifier);
       await wifiProvider.fetch();
       if (widget.item.isGuest) {
         wifiProvider.setWiFiEnabled(value);

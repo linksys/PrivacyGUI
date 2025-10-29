@@ -9,13 +9,13 @@ import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/provider
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/views/dyn_ddns_form.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/providers/apps_and_gaming_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/providers/apps_and_gaming_state.dart';
+import 'package:privacy_gui/providers/preservable.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
 import 'package:privacygui_widgets/widgets/input_field/app_text_field.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 import 'package:privacygui_widgets/widgets/tab_bar/linksys_tab_bar.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
-import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:get_it/get_it.dart';
 
@@ -23,14 +23,15 @@ import '../../../../../common/config.dart';
 import '../../../../../common/test_responsive_widget.dart';
 import '../../../../../common/testable_router.dart';
 import '../../../../../common/di.dart';
-import '../../../../../mocks/apps_and_gaming_view_notifier_spec_mocks.dart';
-import '../../../../../mocks/ddns_notifier_spec_mocks.dart';
+import '../../../../../mocks/apps_and_gaming_view_notifier_mocks.dart';
+import '../../../../../mocks/ddns_notifier_mocks.dart';
 import '../../../../../mocks/port_range_forwarding_list_notifier_mocks.dart';
 import '../../../../../mocks/port_range_forwarding_rule_notifier_mocks.dart';
 import '../../../../../mocks/port_range_triggering_list_notifier_mocks.dart';
 import '../../../../../mocks/port_range_triggering_rule_notifier_mocks.dart';
 import '../../../../../mocks/single_port_forwarding_list_notifier_mocks.dart';
 import '../../../../../mocks/single_port_forwarding_rule_notifier_mocks.dart';
+import '../../../../../test_data/apps_and_gaming_test_state.dart';
 import '../../../../../test_data/ddns_test_state.dart';
 import '../../../../../test_data/port_range_forwarding_test_state.dart';
 import '../../../../../test_data/port_range_trigger_test_state.dart';
@@ -61,8 +62,8 @@ void main() {
     mockPortRangeForwardingListNotifier = MockPortRangeForwardingListNotifier();
     mockPortRangeTriggeringListNotifier = MockPortRangeTriggeringListNotifier();
 
-    when(mockAppsAndGamingViewNotifier.build())
-        .thenReturn(AppsAndGamingViewState.fromMap({}));
+    final appsState = AppsAndGamingViewState.fromMap(appsAndGamingTestState);
+    when(mockAppsAndGamingViewNotifier.build()).thenReturn(appsState);
     when(mockDDNSNotifier.build()).thenReturn(DDNSState.fromMap(ddnsTestState));
     when(mockDDNSNotifier.fetch()).thenAnswer((realInvocation) async {
       await Future.delayed(const Duration(seconds: 1));
@@ -74,7 +75,8 @@ void main() {
     when(mockSinglePortForwardingListNotifier.fetch())
         .thenAnswer((realInvocation) async {
       await Future.delayed(const Duration(seconds: 1));
-      return SinglePortForwardingListState();
+      return SinglePortForwardingListState.fromMap(
+          singlePortForwardingListTestState);
     });
     when(mockSinglePortForwardingRuleNotifier.build()).thenReturn(
         const SinglePortForwardingRuleState(
@@ -87,14 +89,16 @@ void main() {
     when(mockPortRangeForwardingListNotifier.fetch())
         .thenAnswer((realInvocation) async {
       await Future.delayed(const Duration(seconds: 1));
-      return PortRangeForwardingListState();
+      return PortRangeForwardingListState.fromMap(
+          portRangeForwardingListTestState);
     });
     when(mockPortRangeTriggeringListNotifier.build()).thenReturn(
         PortRangeTriggeringListState.fromMap(portRangeTriggerListTestState));
     when(mockPortRangeTriggeringListNotifier.fetch())
         .thenAnswer((realInvocation) async {
       await Future.delayed(const Duration(seconds: 1));
-      return PortRangeTriggeringListState();
+      return PortRangeTriggeringListState.fromMap(
+          portRangeTriggerListTestState);
     });
     mockPortRangeTriggeringRuleNotifier = MockPortRangeTriggeringRuleNotifier();
     when(mockPortRangeTriggeringRuleNotifier.build())
@@ -124,9 +128,11 @@ void main() {
     testLocalizations(
       'DDNS - dyn.com',
       (tester, locale) async {
-        when(mockDDNSNotifier.build()).thenReturn(
-            DDNSState.fromMap(ddnsTestState)
-                .copyWith(provider: DDNSProvider.create(dynDNSProviderName)));
+        final state = DDNSState.fromMap(ddnsTestState);
+        final settings =
+            DDNSSettings(provider: DDNSProvider.create(dynDNSProviderName));
+        when(mockDDNSNotifier.build()).thenReturn(state.copyWith(
+            settings: Preservable(original: settings, current: settings)));
         final widget = testableSingleRoute(
           overrides: [
             appsAndGamingProvider
@@ -157,23 +163,24 @@ void main() {
     testLocalizations(
       'DDNS - dyn.com filled up',
       (tester, locale) async {
-        when(mockDDNSNotifier.build())
-            .thenReturn(DDNSState.fromMap(ddnsTestState).copyWith(
-          provider: DynDNSProvider(
-            settings: const DynDNSSettings(
-              username: 'username',
-              password: 'password',
-              hostName: 'hostname',
-              isWildcardEnabled: true,
-              mode: 'Dynamic',
-              isMailExchangeEnabled: true,
-              mailExchangeSettings: DynDNSMailExchangeSettings(
-                hostName: 'mail exchange',
-                isBackup: true,
-              ),
+        final state = DDNSState.fromMap(ddnsTestState);
+        final settings = DDNSSettings(
+            provider: DynDNSProvider(
+          settings: const DynDNSSettings(
+            username: 'username',
+            password: 'password',
+            hostName: 'hostname',
+            isWildcardEnabled: true,
+            mode: 'Dynamic',
+            isMailExchangeEnabled: true,
+            mailExchangeSettings: DynDNSMailExchangeSettings(
+              hostName: 'mail exchange',
+              isBackup: true,
             ),
           ),
         ));
+        when(mockDDNSNotifier.build()).thenReturn(state.copyWith(
+            settings: Preservable(original: settings, current: settings)));
         final widget = testableSingleRoute(
           overrides: [
             appsAndGamingProvider
@@ -204,23 +211,25 @@ void main() {
     testLocalizations(
       'DDNS - dyn.com system type',
       (tester, locale) async {
-        when(mockDDNSNotifier.build())
-            .thenReturn(DDNSState.fromMap(ddnsTestState).copyWith(
-          provider: DynDNSProvider(
-            settings: const DynDNSSettings(
-              username: 'username',
-              password: 'password',
-              hostName: 'hostname',
-              isWildcardEnabled: true,
-              mode: 'Dynamic',
-              isMailExchangeEnabled: true,
-              mailExchangeSettings: DynDNSMailExchangeSettings(
-                hostName: 'mail exchange',
-                isBackup: true,
-              ),
+        final state = DDNSState.fromMap(ddnsTestState);
+        final settings = DDNSSettings(
+            provider: DynDNSProvider(
+          settings: const DynDNSSettings(
+            username: 'username',
+            password: 'password',
+            hostName: 'hostname',
+            isWildcardEnabled: true,
+            mode: 'Dynamic',
+            isMailExchangeEnabled: true,
+            mailExchangeSettings: DynDNSMailExchangeSettings(
+              hostName: 'mail exchange',
+              isBackup: true,
             ),
           ),
         ));
+
+        when(mockDDNSNotifier.build()).thenReturn(state.copyWith(
+            settings: Preservable(original: settings, current: settings)));
         final widget = testableSingleRoute(
           overrides: [
             appsAndGamingProvider
@@ -255,9 +264,11 @@ void main() {
     testLocalizations(
       'DDNS - No-IP.com',
       (tester, locale) async {
-        when(mockDDNSNotifier.build()).thenReturn(
-            DDNSState.fromMap(ddnsTestState)
-                .copyWith(provider: DDNSProvider.create(noIPDNSProviderName)));
+        final state = DDNSState.fromMap(ddnsTestState);
+        final settings =
+            DDNSSettings(provider: DDNSProvider.create(noIPDNSProviderName));
+        when(mockDDNSNotifier.build()).thenReturn(state.copyWith(
+            settings: Preservable(original: settings, current: settings)));
         final widget = testableSingleRoute(
           overrides: [
             appsAndGamingProvider
@@ -288,16 +299,18 @@ void main() {
     testLocalizations(
       'DDNS - No-IP.com filled up',
       (tester, locale) async {
-        when(mockDDNSNotifier.build())
-            .thenReturn(DDNSState.fromMap(ddnsTestState).copyWith(
-          provider: NoIPDNSProvider(
-            settings: const NoIPSettings(
-              username: 'username',
-              password: 'password',
-              hostName: 'hostname',
-            ),
+        final state = DDNSState.fromMap(ddnsTestState);
+        final settings = DDNSSettings(
+            provider: NoIPDNSProvider(
+          settings: const NoIPSettings(
+            username: 'username',
+            password: 'password',
+            hostName: 'hostname',
           ),
         ));
+
+        when(mockDDNSNotifier.build()).thenReturn(state.copyWith(
+            settings: Preservable(original: settings, current: settings)));
         final widget = testableSingleRoute(
           overrides: [
             appsAndGamingProvider
@@ -328,9 +341,11 @@ void main() {
     testLocalizations(
       'DDNS - TZO',
       (tester, locale) async {
-        when(mockDDNSNotifier.build()).thenReturn(
-            DDNSState.fromMap(ddnsTestState)
-                .copyWith(provider: DDNSProvider.create(tzoDNSProviderName)));
+        final state = DDNSState.fromMap(ddnsTestState);
+        final settings =
+            DDNSSettings(provider: DDNSProvider.create(tzoDNSProviderName));
+        when(mockDDNSNotifier.build()).thenReturn(state.copyWith(
+            settings: Preservable(original: settings, current: settings)));
         final widget = testableSingleRoute(
           overrides: [
             appsAndGamingProvider
@@ -361,16 +376,17 @@ void main() {
     testLocalizations(
       'DDNS - TZO filled up',
       (tester, locale) async {
-        when(mockDDNSNotifier.build())
-            .thenReturn(DDNSState.fromMap(ddnsTestState).copyWith(
-          provider: TzoDNSProvider(
-            settings: const TZOSettings(
-              username: 'username',
-              password: 'password',
-              hostName: 'hostname',
-            ),
+        final state = DDNSState.fromMap(ddnsTestState);
+        final settings = DDNSSettings(
+            provider: TzoDNSProvider(
+          settings: const TZOSettings(
+            username: 'username',
+            password: 'password',
+            hostName: 'hostname',
           ),
         ));
+        when(mockDDNSNotifier.build()).thenReturn(state.copyWith(
+            settings: Preservable(original: settings, current: settings)));
         final widget = testableSingleRoute(
           overrides: [
             appsAndGamingProvider

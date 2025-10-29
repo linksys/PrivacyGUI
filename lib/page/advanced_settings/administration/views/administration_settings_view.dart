@@ -22,18 +22,14 @@ class AdministrationSettingsView extends ArgumentsConsumerStatefulView {
 
 class _AdministrationSettingsViewState
     extends ConsumerState<AdministrationSettingsView> {
-  AdministrationSettingsState? _preservedState;
-
   @override
   void initState() {
     super.initState();
-    doSomethingWithSpinner(context,
-            ref.read(administrationSettingsProvider.notifier).fetch(true))
-        .then((value) {
-      setState(() {
-        _preservedState = value;
-      });
-    });
+    doSomethingWithSpinner(
+        context,
+        ref
+            .read(administrationSettingsProvider.notifier)
+            .fetch(forceRemote: true));
   }
 
   @override
@@ -47,18 +43,17 @@ class _AdministrationSettingsViewState
     return StyledAppPageView(
       scrollable: true,
       title: loc(context).administration,
-      onBackTap: _preservedState != state
+      onBackTap: state.isDirty
           ? () async {
               final goBack = await showUnsavedAlert(context);
               if (goBack == true) {
-                ref.read(administrationSettingsProvider.notifier).fetch();
+                ref.read(administrationSettingsProvider.notifier).revert();
                 context.pop();
               }
             }
           : null,
       bottomBar: PageBottomBar(
-          isPositiveEnabled:
-              _preservedState != null && _preservedState != state,
+          isPositiveEnabled: state.isDirty,
           onPositiveTap: () {
             doSomethingWithSpinner(
                 context,
@@ -66,7 +61,6 @@ class _AdministrationSettingsViewState
                     .read(administrationSettingsProvider.notifier)
                     .save()
                     .then((value) {
-                  _preservedState = value;
                   showSuccessSnackBar(context, loc(context).saved);
                 }).onError((error, stackTrace) {
                   showFailedSnackBar(
@@ -77,14 +71,14 @@ class _AdministrationSettingsViewState
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (state.managementSettings.isManageWirelesslySupported &&
-                state.canDisAllowLocalMangementWirelessly) ...[
+            if (state.current.managementSettings.isManageWirelesslySupported &&
+                state.current.canDisAllowLocalMangementWirelessly) ...[
               AppCard(
                 child: AppSwitchTriggerTile(
                   semanticLabel: 'allow local management wirelessly',
                   title: AppText.labelLarge(loc(context)
                       .administrationAllowLocalManagementWirelessly),
-                  value: state.managementSettings.canManageWirelessly ?? false,
+                  value: state.current.managementSettings.canManageWirelessly ?? false,
                   onChanged: (value) {
                     ref
                         .read(administrationSettingsProvider.notifier)
@@ -101,17 +95,17 @@ class _AdministrationSettingsViewState
                   AppSwitchTriggerTile(
                     semanticLabel: 'upnp',
                     title: AppText.labelLarge(loc(context).upnp),
-                    value: state.isUPnPEnabled,
+                    value: state.current.isUPnPEnabled,
                     onChanged: (value) {
                       ref
                           .read(administrationSettingsProvider.notifier)
                           .setUPnPEnabled(value);
                     },
                   ),
-                  if (state.isUPnPEnabled) ...[
+                  if (state.current.isUPnPEnabled) ...[
                     const Divider(),
                     AppCheckbox(
-                      value: state.canUsersConfigure,
+                      value: state.current.canUsersConfigure,
                       semanticLabel: 'upnp allow users configure',
                       text: loc(context).administrationUPnPAllowUsersConfigure,
                       onChanged: (value) {
@@ -125,7 +119,7 @@ class _AdministrationSettingsViewState
                     ),
                     const AppGap.small2(),
                     AppCheckbox(
-                      value: state.canUsersDisableWANAccess,
+                      value: state.current.canUsersDisableWANAccess,
                       semanticLabel: 'upnp allow users disable internet access',
                       text: loc(context)
                           .administrationUPnPAllowUsersDisableInternetAccess,
@@ -148,7 +142,7 @@ class _AdministrationSettingsViewState
                 semanticLabel: 'application layer gateway',
                 title: AppText.labelLarge(
                     loc(context).administrationApplicationLayerGateway),
-                value: state.enabledALG,
+                value: state.current.enabledALG,
                 onChanged: (value) {
                   ref
                       .read(administrationSettingsProvider.notifier)
@@ -162,7 +156,7 @@ class _AdministrationSettingsViewState
                 semanticLabel: 'express forwarding',
                 title: AppText.labelLarge(
                     loc(context).administrationExpressForwarding),
-                value: state.enabledExpressForwarfing,
+                value: state.current.enabledExpressForwarfing,
                 onChanged: (value) {
                   ref
                       .read(administrationSettingsProvider.notifier)

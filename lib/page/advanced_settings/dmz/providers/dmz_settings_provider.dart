@@ -8,102 +8,140 @@ import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/advanced_settings/dmz/providers/dmz_settings_state.dart';
+import 'package:privacy_gui/page/advanced_settings/dmz/providers/dmz_status.dart';
+import 'package:privacy_gui/providers/preservable.dart';
+import 'package:privacy_gui/providers/preservable_contract.dart';
+import 'package:privacy_gui/providers/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/utils.dart';
 
+final preservableDMZSettingsProvider = Provider<PreservableContract>(
+    (ref) => ref.watch(dmzSettingsProvider.notifier));
+
 final dmzSettingsProvider =
-    NotifierProvider<DMZSettingNotifier, DMZSettingsState>(
-        () => DMZSettingNotifier());
+    NotifierProvider<DMZSettingsNotifier, DMZSettingsState>(
+        () => DMZSettingsNotifier());
 
-class DMZSettingNotifier extends Notifier<DMZSettingsState> {
-  String _subnetMask = '255.255.0.0';
-  String get subnetMask => _subnetMask;
-  String _ipAddress = '192.168.1.1';
-  String get ipAddress => _ipAddress;
-
+class DMZSettingsNotifier extends Notifier<DMZSettingsState>
+    with PreservableNotifierMixin<DMZUISettings, DMZStatus, DMZSettingsState> {
   @override
   DMZSettingsState build() {
+    const settings = DMZUISettings(
+      isDMZEnabled: false,
+      sourceType: DMZSourceType.auto,
+      destinationType: DMZDestinationType.ip,
+    );
     return const DMZSettingsState(
-        settings: DMZSettings(isDMZEnabled: false),
-        sourceType: DMZSourceType.auto,
-        destinationType: DMZDestinationType.ip);
+      settings: Preservable(original: settings, current: settings),
+      status: DMZStatus(),
+    );
   }
 
-  Future<DMZSettingsState> fetch([bool force = false]) {
-    final repo = ref.read(routerRepositoryProvider);
-    return repo
-        .transaction(
-      JNAPTransactionBuilder(
-        commands: const [
-          MapEntry(JNAPAction.getLANSettings, {}),
-          MapEntry(JNAPAction.getDMZSettings, {}),
-        ],
-        auth: true,
-      ),
-      fetchRemote: force,
-    )
-        .then((result) {
-      final lanResult = result.data
-          .firstWhereOrNull(
-              (element) => element.key == JNAPAction.getLANSettings)
-          ?.value;
-      final dmzResult = result.data
-          .firstWhereOrNull(
-              (element) => element.key == JNAPAction.getDMZSettings)
-          ?.value;
-      if (lanResult != null && lanResult is JNAPSuccess) {
-        final lanSettings = RouterLANSettings.fromMap(lanResult.output);
-        _subnetMask = NetworkUtils.prefixLengthToSubnetMask(
-            lanSettings.networkPrefixLength);
-        _ipAddress =
-            NetworkUtils.getIpPrefix(lanSettings.ipAddress, subnetMask);
-      }
-      if (dmzResult != null && dmzResult is JNAPSuccess) {
-        final dmzSettings = DMZSettings.fromMap(dmzResult.output);
-        state = state.copyWith(
-          settings: dmzSettings,
-          sourceType: dmzSettings.sourceRestriction == null
-              ? DMZSourceType.auto
-              : DMZSourceType.range,
-          destinationType: dmzSettings.destinationMACAddress == null
-              ? DMZDestinationType.ip
-              : DMZDestinationType.mac,
+  @override
+  Future<(DMZUISettings?, DMZStatus?)> performFetch(
+      {bool forceRemote = false, bool updateStatusOnly = false}) async {
+    final result = await ref.read(routerRepositoryProvider).transaction(
+          JNAPTransactionBuilder(
+            commands: const [
+              MapEntry(JNAPAction.getLANSettings, {}),
+              MapEntry(JNAPAction.getDMZSettings, {}),
+            ],
+            auth: true,
+          ),
+          fetchRemote: forceRemote,
         );
-      }
-      return state;
-    });
+
+    final lanResult = result.data
+        .firstWhereOrNull((element) => element.key == JNAPAction.getLANSettings)
+        ?.value;
+    final dmzResult = result.data
+        .firstWhereOrNull((element) => element.key == JNAPAction.getDMZSettings)
+        ?.value;
+
+    DMZStatus? status;
+    if (lanResult != null && lanResult is JNAPSuccess) {
+      final lanSettings = RouterLANSettings.fromMap(lanResult.output);
+      final subnetMask = NetworkUtils.prefixLengthToSubnetMask(
+          lanSettings.networkPrefixLength);
+      final ipAddress =
+          NetworkUtils.getIpPrefix(lanSettings.ipAddress, subnetMask);
+      status = DMZStatus(ipAddress: ipAddress, subnetMask: subnetMask);
+    }
+
+    if (dmzResult != null && dmzResult is JNAPSuccess) {
+      final dmzSettings = DMZSettings.fromMap(dmzResult.output);
+      final uiSettings = DMZUISettings(
+        isDMZEnabled: dmzSettings.isDMZEnabled,
+        sourceRestriction: dmzSettings.sourceRestriction,
+        destinationIPAddress: dmzSettings.destinationIPAddress,
+        destinationMACAddress: dmzSettings.destinationMACAddress,
+        sourceType: dmzSettings.sourceRestriction == null
+            ? DMZSourceType.auto
+            : DMZSourceType.range,
+        destinationType: dmzSettings.destinationMACAddress == null
+            ? DMZDestinationType.ip
+            : DMZDestinationType.mac,
+      );
+      return (uiSettings, status ?? const DMZStatus());
+    }
+
+    return (null, null);
   }
 
-  Future<DMZSettingsState> save() {
-    return ref
-        .read(routerRepositoryProvider)
-        .send(
+  @override
+  Future<void> performSave() async {
+    final uiSettings = state.settings.current;
+    final domainSettings = DMZSettings(
+      isDMZEnabled: uiSettings.isDMZEnabled,
+      sourceRestriction: uiSettings.sourceRestriction,
+      destinationIPAddress: uiSettings.destinationIPAddress,
+      destinationMACAddress: uiSettings.destinationMACAddress,
+    );
+    await ref.read(routerRepositoryProvider).send(
           JNAPAction.setDMZSettings,
           fetchRemote: true,
           cacheLevel: CacheLevel.noCache,
           auth: true,
-          data: state.settings.toMap()
+          data: domainSettings.toMap()
             ..removeWhere((key, value) => value == null),
-        )
-        .then((value) => fetch(true));
+        );
   }
 
-  void setSettings(DMZSettings settings) {
-    state = state.copyWith(settings: settings);
+  void setSettings(DMZUISettings settings) {
+    state =
+        state.copyWith(settings: state.settings.copyWith(current: settings));
   }
 
   void setSourceType(DMZSourceType type) {
-    state = state.copyWith(sourceType: type);
+    final currentSettings = state.settings.current;
+    final originalSettings = state.settings.original;
+    final newSettings = type == DMZSourceType.auto
+        ? currentSettings.copyWith(sourceRestriction: () => null)
+        : currentSettings.copyWith(
+            sourceRestriction: () =>
+                originalSettings.sourceRestriction ??
+                const DMZSourceRestriction(
+                    firstIPAddress: '', lastIPAddress: ''));
+
+    state = state.copyWith(
+      settings: state.settings
+          .copyWith(current: newSettings.copyWith(sourceType: type)),
+    );
   }
 
   void setDestinationType(DMZDestinationType type) {
-    state = state.copyWith(destinationType: type);
-  }
-
-  void clearDestinations() {
+    final currentSettings = state.settings.current;
+    final newSettings = type == DMZDestinationType.ip
+        ? currentSettings.copyWith(
+            destinationMACAddress: () => null,
+            destinationIPAddress: () =>
+                state.settings.original.destinationIPAddress ?? '')
+        : currentSettings.copyWith(
+            destinationIPAddress: () => null,
+            destinationMACAddress: () =>
+                state.settings.original.destinationMACAddress ?? '');
     state = state.copyWith(
-        settings: DMZSettings(
-      isDMZEnabled: state.settings.isDMZEnabled,
-      sourceRestriction: state.settings.sourceRestriction,
-    ));
+      settings: state.settings
+          .copyWith(current: newSettings.copyWith(destinationType: type)),
+    );
   }
 }

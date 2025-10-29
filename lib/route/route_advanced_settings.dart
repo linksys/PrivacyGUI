@@ -4,6 +4,8 @@ final advancedSettings = [
   LinksysRoute(
     name: RouteNamed.internetSettings,
     path: RoutePath.internetSettings,
+    preservableProvider: preservableInternetSettingsProvider,
+    enableDirtyCheck: true,
     config: LinksysRouteConfig(
       column: ColumnGrid(column: 12),
     ),
@@ -13,6 +15,8 @@ final advancedSettings = [
   LinksysRoute(
     name: RouteNamed.settingsLocalNetwork,
     path: RoutePath.settingsLocalNetwork,
+    preservableProvider: preservableLocalNetworkSettingsProvider,
+    enableDirtyCheck: true,
     config: LinksysRouteConfig(
       column: ColumnGrid(column: 12),
     ),
@@ -21,20 +25,12 @@ final advancedSettings = [
       LinksysRoute(
         name: RouteNamed.dhcpReservation,
         path: RoutePath.dhcpReservation,
+        preservableProvider: preservableDHCPReservationsProvider,
+        enableDirtyCheck: true,
         config: LinksysRouteConfig(
           column: ColumnGrid(column: 12),
         ),
         builder: (context, state) => DHCPReservationsView(
-          args: state.extra as Map<String, dynamic>? ?? {},
-        ),
-      ),
-      LinksysRoute(
-        name: RouteNamed.dhcpReservationEdit,
-        path: RoutePath.dhcpReservationEdit,
-        config: LinksysRouteConfig(
-          column: ColumnGrid(column: 9),
-        ),
-        builder: (context, state) => DHCPReservationsEditView(
           args: state.extra as Map<String, dynamic>? ?? {},
         ),
       ),
@@ -43,6 +39,8 @@ final advancedSettings = [
   LinksysRoute(
     name: RouteNamed.settingsAppsGaming,
     path: RoutePath.settingsAppsGaming,
+    preservableProvider: preservableAppsAndGamingSettingsProvider,
+    enableDirtyCheck: true,
     config: LinksysRouteConfig(
       column: ColumnGrid(column: 12),
     ),
@@ -113,6 +111,8 @@ final advancedSettings = [
   LinksysRoute(
       name: RouteNamed.settingsFirewall,
       path: RoutePath.settingsFirewall,
+      preservableProvider: preservableFirewallProvider,
+      enableDirtyCheck: true,
       config: LinksysRouteConfig(
         column: ColumnGrid(column: 12),
       ),
@@ -145,6 +145,8 @@ final advancedSettings = [
   LinksysRoute(
     name: RouteNamed.settingsDMZ,
     path: RoutePath.settingsDMZ,
+    preservableProvider: preservableDMZSettingsProvider,
+    enableDirtyCheck: true,
     config: LinksysRouteConfig(
       column: ColumnGrid(column: 9),
     ),
@@ -155,6 +157,8 @@ final advancedSettings = [
   LinksysRoute(
     name: RouteNamed.settingsAdministration,
     path: RoutePath.settingsAdministration,
+    preservableProvider: preservableAdministrationSettingsProvider,
+    enableDirtyCheck: true,
     config: LinksysRouteConfig(
       column: ColumnGrid(column: 9),
     ),
@@ -165,6 +169,8 @@ final advancedSettings = [
   LinksysRoute(
     name: RouteNamed.settingsStaticRouting,
     path: RoutePath.settingsStaticRouting,
+    preservableProvider: preservableStaticRoutingProvider,
+    enableDirtyCheck: true,
     config: LinksysRouteConfig(
       column: ColumnGrid(column: 12),
     ),

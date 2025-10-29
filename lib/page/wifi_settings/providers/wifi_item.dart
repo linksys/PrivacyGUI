@@ -303,6 +303,7 @@ enum WifiWirelessMode {
 
   bool get isIncludeBeMixedMode =>
       this == axbe || this == anacaxbe || this == mixed;
+
   /// Gets the maximum channel width supported by this wireless mode.
   WifiChannelWidth get maxSupportedWidth {
     switch (this) {

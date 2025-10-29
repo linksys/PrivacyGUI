@@ -1,77 +1,133 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
-import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
 
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/guest_wifi_item.dart';
 
-class WiFiState extends Equatable {
+
+
+class WiFiListSettings extends Equatable {
   final List<WiFiItem> mainWiFi;
   final GuestWiFiItem guestWiFi;
-  final bool canDisableMainWiFi;
   final bool isSimpleMode;
   final WiFiItem simpleModeWifi;
 
-  const WiFiState({
+  const WiFiListSettings({
     required this.mainWiFi,
     required this.guestWiFi,
-    this.canDisableMainWiFi = true,
     this.isSimpleMode = true,
     required this.simpleModeWifi,
   });
-
-  WiFiState copyWith({
-    List<WiFiItem>? mainWiFi,
-    GuestWiFiItem? guestWiFi,
-    bool? canDisableMainWiFi,
-    bool? isSimpleMode,
-    WiFiItem? simpleModeWifi,
-  }) {
-    return WiFiState(
-      mainWiFi: mainWiFi ?? this.mainWiFi,
-      guestWiFi: guestWiFi ?? this.guestWiFi,
-      canDisableMainWiFi: canDisableMainWiFi ?? this.canDisableMainWiFi,
-      isSimpleMode: isSimpleMode ?? this.isSimpleMode,
-      simpleModeWifi: simpleModeWifi ?? this.simpleModeWifi,
-    );
-  }
 
   @override
   List<Object> get props => [
         mainWiFi,
         guestWiFi,
-        canDisableMainWiFi,
         isSimpleMode,
         simpleModeWifi,
       ];
+
+  // copyWith, toMap, fromMap, etc.
+  WiFiListSettings copyWith({
+    List<WiFiItem>? mainWiFi,
+    GuestWiFiItem? guestWiFi,
+    bool? isSimpleMode,
+    WiFiItem? simpleModeWifi,
+  }) {
+    return WiFiListSettings(
+      mainWiFi: mainWiFi ?? this.mainWiFi,
+      guestWiFi: guestWiFi ?? this.guestWiFi,
+      isSimpleMode: isSimpleMode ?? this.isSimpleMode,
+      simpleModeWifi: simpleModeWifi ?? this.simpleModeWifi,
+    );
+  }
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'mainWiFi': mainWiFi.map((x) => x.toMap()).toList(),
       'guestWiFi': guestWiFi.toMap(),
-      'canDisableMainWiFi': canDisableMainWiFi,
       'isSimpleMode': isSimpleMode,
       'simpleModeWifi': simpleModeWifi.toMap(),
     };
   }
 
-  factory WiFiState.fromMap(Map<String, dynamic> map) {
-    return WiFiState(
+  factory WiFiListSettings.fromMap(Map<String, dynamic> map) {
+    return WiFiListSettings(
       mainWiFi: List<WiFiItem>.from(
         map['mainWiFi'].map<WiFiItem>(
           (x) => WiFiItem.fromMap(x),
         ),
       ),
       guestWiFi: GuestWiFiItem.fromMap(map['guestWiFi'] ?? {}),
-      canDisableMainWiFi: map['canDisableMainWiFi'],
       isSimpleMode: map['isSimpleMode'] as bool? ?? true,
       simpleModeWifi: WiFiItem.fromMap(map['simpleModeWifi'] ?? {}),
     );
   }
 
-  String toJson() => json.encode(toMap());
+  List<WiFiItem> getMainWifiItemsWithSimpleSettings() {
+    return mainWiFi.map((wifiItem) {
+      final isEnabled = isSimpleMode ? true : wifiItem.isEnabled;
+      final ssid =
+          isSimpleMode ? simpleModeWifi.ssid : wifiItem.ssid;
+      final security = isSimpleMode
+          ? simpleModeWifi.securityType
+          : wifiItem.securityType;
+      final password = isSimpleMode
+          ? simpleModeWifi.password
+          : wifiItem.password;
 
-  factory WiFiState.fromJson(String source) =>
-      WiFiState.fromMap(json.decode(source) as Map<String, dynamic>);
+      return wifiItem.copyWith(
+        isEnabled: isEnabled,
+        ssid: ssid,
+        securityType: security,
+        password: password,
+      );
+    }).toList();
+  }
+
+  bool isSettingsValid() {
+    // Password verify
+    if (isSimpleMode) {
+      final emptyPassword = !simpleModeWifi.securityType.isOpenVariant &&
+          simpleModeWifi.password.isEmpty;
+      return !emptyPassword;
+    } else {
+      final hasEmptyPassword = mainWiFi
+          .any((e) => !e.securityType.isOpenVariant && e.password.isEmpty);
+      return !hasEmptyPassword;
+    }
+  }
+}
+
+class WiFiListStatus extends Equatable {
+  final bool canDisableMainWiFi;
+
+  const WiFiListStatus({
+    this.canDisableMainWiFi = true,
+  });
+
+  @override
+  List<Object> get props => [canDisableMainWiFi];
+
+  // copyWith, toMap, fromMap
+  WiFiListStatus copyWith({
+    bool? canDisableMainWiFi,
+  }) {
+    return WiFiListStatus(
+      canDisableMainWiFi: canDisableMainWiFi ?? this.canDisableMainWiFi,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'canDisableMainWiFi': canDisableMainWiFi,
+    };
+  }
+
+  factory WiFiListStatus.fromMap(Map<String, dynamic> map) {
+    return WiFiListStatus(
+      canDisableMainWiFi: map['canDisableMainWiFi'] as bool? ?? true,
+    );
+  }
 }

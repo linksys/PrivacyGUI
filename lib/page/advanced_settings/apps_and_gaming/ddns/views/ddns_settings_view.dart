@@ -58,7 +58,7 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
                       ? 6.col
                       : 4.col,
                   child: _ddnsProvideSelector(state)),
-              if (state.provider is! NoDDNSProvider) ...[
+              if (state.current.provider is! NoDDNSProvider) ...[
                 AppGap.gutter(),
                 SizedBox(
                     width: ResponsiveLayout.isOverMedimumLayout(context)
@@ -71,7 +71,8 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
           mobile: Column(
             children: [
               _ddnsProvideSelector(state),
-              if (state.provider is! NoDDNSProvider) _buildStatusCell(state)
+              if (state.current.provider is! NoDDNSProvider)
+                _buildStatusCell(state)
             ],
           ),
         ),
@@ -87,8 +88,8 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
             AppText.titleMedium(loc(context).selectAProvider),
             const AppGap.medium(),
             AppDropdownButton<String>(
-              selected: state.provider.name,
-              items: state.supportedProvider,
+              selected: state.current.provider.name,
+              items: state.status.supportedProvider,
               label: (item) {
                 if (item == dynDNSProviderName) {
                   return 'dyn.com';
@@ -112,7 +113,7 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
         ),
       );
   Widget _buildDNSForms(DDNSState state) {
-    final provider = state.provider;
+    final provider = state.current.provider;
     if (provider is DynDNSProvider) {
       return _buildDynDNSForm(provider.settings);
     } else if (provider is NoIPDNSProvider) {
@@ -165,7 +166,7 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
 
   Widget _buildStatusCell(DDNSState state) {
     return AppCard(
-      child: state.provider.name == noDNSProviderName
+      child: state.current.provider.name == noDNSProviderName
           ? const Center()
           : Column(
               mainAxisSize: MainAxisSize.min,
@@ -198,13 +199,13 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
                 AppSettingCard.noBorder(
                   padding: EdgeInsets.zero,
                   title: loc(context).internetIPAddress,
-                  description: state.ipAddress,
+                  description: state.status.ipAddress,
                 ),
                 const AppGap.large2(),
                 AppSettingCard.noBorder(
                   padding: EdgeInsets.zero,
                   title: loc(context).status,
-                  description: state.status,
+                  description: state.status.status,
                 ),
               ],
             ),

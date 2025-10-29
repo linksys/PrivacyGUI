@@ -315,7 +315,7 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
         }).catchError((error) {
           showRouterNotFound();
         }, test: (error) => error is JNAPSideEffectError);
-        ;
+        
       }
     });
   }
@@ -337,8 +337,8 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
   }
 
   String _getTimezone(TimezoneState timezoneState) {
-    final timezone = timezoneState.supportedTimezones.firstWhereOrNull(
-        (element) => element.timeZoneID == timezoneState.timezoneId);
+    final timezone = timezoneState.status.supportedTimezones.firstWhereOrNull(
+        (element) => element.timeZoneID == timezoneState.current.timezoneId);
     return timezone != null
         ? '(${getTimezoneGMT(timezone.description)}) ${getTimeZoneRegionName(context, timezone.timeZoneID)}'
         : '--';

@@ -112,3 +112,41 @@ class IPv6FirewallRule extends Equatable {
   @override
   List<Object> get props => [description, ipv6Address, isEnabled, portRanges];
 }
+
+class IPv6FirewallRuleList extends Equatable {
+  final List<IPv6FirewallRule> rules;
+
+  const IPv6FirewallRuleList({required this.rules});
+
+  @override
+  List<Object> get props => [rules];
+
+  IPv6FirewallRuleList copyWith({
+    List<IPv6FirewallRule>? rules,
+  }) {
+    return IPv6FirewallRuleList(
+      rules: rules ?? this.rules,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'rules': rules.map((x) => x.toMap()).toList(),
+    };
+  }
+
+  factory IPv6FirewallRuleList.fromMap(Map<String, dynamic> map) {
+    return IPv6FirewallRuleList(
+      rules: List<IPv6FirewallRule>.from(
+        map['rules']?.map<IPv6FirewallRule>(
+          (x) => IPv6FirewallRule.fromMap(x as Map<String, dynamic>),
+        ) ?? [],
+      ),
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory IPv6FirewallRuleList.fromJson(String source) =>
+      IPv6FirewallRuleList.fromMap(json.decode(source) as Map<String, dynamic>);
+}

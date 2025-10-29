@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/advanced_settings/internet_settings/models/internet_settings_enums.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/_providers.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
@@ -30,14 +31,14 @@ class PnpIspSaveSettingsView extends ArgumentsConsumerStatefulView {
 class _PnpIspSaveSettingsViewState
     extends ConsumerState<PnpIspSaveSettingsView> {
   final _passwordController = TextEditingController();
-  late final InternetSettingsState newSettings;
+  late final InternetSettings newSettings;
   String? _spinnerText; //TODO: all spinner text is not confirmed
   StreamSubscription? subscription;
 
   @override
   void initState() {
     super.initState();
-    newSettings = widget.args['newSettings'] as InternetSettingsState;
+    newSettings = widget.args['newSettings'] as InternetSettings;
     _saveNewSettings();
   }
 

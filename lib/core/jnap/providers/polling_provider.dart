@@ -141,7 +141,7 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
       await ref.read(vpnProvider.notifier).fetch(false, true);
     }
 
-    await ref.read(instantPrivacyProvider.notifier).fetch(statusOnly: true);
+    await ref.read(instantPrivacyProvider.notifier).fetch(updateStatusOnly: true);
   }
 
   Future forcePolling() {

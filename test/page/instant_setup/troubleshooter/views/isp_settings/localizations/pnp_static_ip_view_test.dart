@@ -49,7 +49,7 @@ void main() async {
     });
 
     final mockInternetSettingsState =
-        InternetSettingsState.fromJson(internetSettingsStateData);
+        InternetSettingsState.fromMap(jsonDecode(internetSettingsStateData));
     when(mockInternetSettingsNotifier.build())
         .thenReturn(mockInternetSettingsState);
     when(mockInternetSettingsNotifier.fetch()).thenAnswer((_) async {
