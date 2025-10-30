@@ -44,8 +44,8 @@ void main() async {
           DashboardHomeState.fromMap(dashboardHomeCherry7TestState));
       when(testHelper.mockDeviceManagerNotifier.build()).thenReturn(
           DeviceManagerState.fromMap(deviceManagerCherry7TestState));
-      when(testHelper.mockFirmwareUpdateNotifier.build()).thenReturn(
-          FirmwareUpdateState.fromMap(firmwareUpdateTestData));
+      when(testHelper.mockFirmwareUpdateNotifier.build())
+          .thenReturn(FirmwareUpdateState.fromMap(firmwareUpdateTestData));
     });
 
     tearDown(() {
@@ -54,13 +54,14 @@ void main() async {
 
     testLocalizations('Dashboard Home View - no LAN ports',
         (tester, locale) async {
-      await testHelper.pumpShellView(
-        tester,
-        child: const DashboardHomeView(),
-        config: LinksysRouteConfig(column: ColumnGrid(column: 12)),
-        locale: locale,
-      );
       await tester.runAsync(() async {
+        await testHelper.pumpShellView(
+          tester,
+          child: const DashboardHomeView(),
+          config: LinksysRouteConfig(column: ColumnGrid(column: 12)),
+          locale: locale,
+        );
+        await tester.pumpAndSettle();
         final context = tester.element(find.byType(DashboardHomeView));
         await precacheImage(
             CustomTheme.of(context).images.devices.routerLn12, context);

@@ -264,23 +264,28 @@ class TestHelper {
         Ipv6PortServiceListState.fromMap(ipv6PortServiceListTestState));
     when(mockIpv6PortServiceRuleNotifier.build())
         .thenReturn(const Ipv6PortServiceRuleState());
-    when(mockInternetSettingsNotifier.build()).thenReturn(
-            InternetSettingsState.fromMap(internetSettingsStateDHCP));
+    when(mockInternetSettingsNotifier.build())
+        .thenReturn(InternetSettingsState.fromMap(internetSettingsStateDHCP));
     when(mockLocalNetworkSettingsNotifier.build()).thenReturn(
         LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState));
-    when(mockStaticRoutingNotifier.build()).thenReturn(StaticRoutingState.fromMap(staticRoutingEmptyState));
+    when(mockStaticRoutingNotifier.build())
+        .thenReturn(StaticRoutingState.fromMap(staticRoutingEmptyState));
     when(mockStaticRoutingRuleNotifier.build()).thenReturn(
         StaticRoutingRuleState(
             routerIp: '192.168.1.1', subnetMask: '255.255.255.0'));
-    when(mockAuthNotifier.build()).thenReturn(Future.value(AuthState(loginType: LoginType.local)));
+    when(mockAuthNotifier.build()).thenAnswer(
+      (_) async => Future.value(AuthState(loginType: LoginType.local)),
+    );
     when(mockInstantSafetyNotifier.build())
         .thenReturn(InstantSafetyState.fromMap(instantSafetyTestState));
     when(mockConnectivityNotifier.build()).thenReturn(ConnectivityState(
         hasInternet: true,
         connectivityInfo:
             ConnectivityInfo(routerType: RouterType.behindManaged)));
-    when(mockRouterPasswordNotifier.build()).thenReturn(RouterPasswordState.fromMap(routerPasswordTestState1));
-    when(mockTimezoneNotifier.build()).thenReturn(TimezoneState.fromMap(timezoneTestState));
+    when(mockRouterPasswordNotifier.build())
+        .thenReturn(RouterPasswordState.fromMap(routerPasswordTestState1));
+    when(mockTimezoneNotifier.build())
+        .thenReturn(TimezoneState.fromMap(timezoneTestState));
     when(mockPowerTableNotifier.build()).thenReturn(
         PowerTableState.fromMap(powerTableTestState)
             .copyWith(isPowerTableSelectable: false));
@@ -292,9 +297,11 @@ class TestHelper {
         DeviceFilterConfigState.fromMap(deviceFilterConfigTestState));
     when(mockPnpTroubleshooterNotifier.build())
         .thenReturn(PnpTroubleshooterState());
-    when(mockInstantVerifyNotifier.build()).thenReturn(InstantVerifyState.fromMap(instantVerifyTestState));
+    when(mockInstantVerifyNotifier.build())
+        .thenReturn(InstantVerifyState.fromMap(instantVerifyTestState));
     when(mockAddNodesNotifier.build()).thenReturn(const AddNodesState());
-    when(mockNodeDetailNotifier.build()).thenReturn(NodeDetailState.fromMap(nodeDetailsCherry7TestState));
+    when(mockNodeDetailNotifier.build())
+        .thenReturn(NodeDetailState.fromMap(nodeDetailsCherry7TestState));
   }
 
   List<Override> get defaultOverrides => [
@@ -362,8 +369,7 @@ class TestHelper {
         pnpProvider.overrideWith(() => mockPnpNotifier),
         instantVerifyProvider.overrideWith(() => mockInstantVerifyNotifier),
         addNodesProvider.overrideWith(() => mockAddNodesNotifier),
-        
-        .overrideWith(() => mockNodeDetailNotifier),
+        nodeDetailProvider.overrideWith(() => mockNodeDetailNotifier),
       ];
 
   Future<void> pumpView(
