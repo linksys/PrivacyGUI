@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_provider.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
 
@@ -50,7 +50,7 @@ abstract class PnpStep {
   /// Saves the data collected in this step to the central [PnpState].
   /// This is called internally when the user proceeds to the next step.
   @protected
-  Future save(WidgetRef ref, Map<String, dynamic> data) async {
+  Future<void> save(WidgetRef ref, Map<String, dynamic> data) async {
     logger.d('[PnP]: $runtimeType - Saving data: $data');
     pnp.setStepData(stepId, data: data);
     // If a global save function is provided (for last step), call it.
@@ -125,13 +125,14 @@ abstract class PnpStep {
                               .then((data) async => await save(ref, data))
                               .then((_) {
                             if (_canGoNext) {
-                              logger.d('[PnP]: $runtimeType - Proceeding to next step.');
-                              return details.onStepContinue?.call();
-                            } else {
-                              return;
+                              logger.d(
+                                  '[PnP]: $runtimeType - Proceeding to next step.');
+                              details.onStepContinue?.call();
                             }
-                          }).onError((error, stackTrace) =>
-                                  onError(ref, error, stackTrace));
+                          }).onError((error, stackTrace) {
+                            onError(ref, error, stackTrace);
+                            return null;
+                          });
                         },
                 ),
               ],

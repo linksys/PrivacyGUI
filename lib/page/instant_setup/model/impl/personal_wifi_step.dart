@@ -28,7 +28,6 @@ class PersonalWiFiStep extends PnpStep {
     final wifi = pnp.getDefaultWiFiNameAndPassphrase();
     _ssidEditController?.text = wifi.name;
     _passwordEditController?.text = wifi.password;
-
     _checkForEnablingNext(ref);
     canGoNext(saveChanges == null);
   }

@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/hook/icon_hooks.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
@@ -56,8 +55,8 @@ class YourNetworkStep extends PnpStep {
               ...state.childNodes
                   .map((e) => AppNodeListCard(
                       leading: CustomTheme.of(context).getRouterImage(
-                          routerIconTestByModel(modelNumber: e.modelNumber ?? ''), false),
-                      title: e.getDeviceLocation(),
+                          routerIconTestByModel(modelNumber: e.modelNumber), false),
+                      title: e.location,
                       trailing: null))
                   .toList()
             ],
