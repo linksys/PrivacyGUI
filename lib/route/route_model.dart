@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/providers/feature_state.dart';
 import 'package:privacy_gui/providers/preservable_contract.dart';
 
 ValueNotifier<bool> showColumnOverlayNotifier =
@@ -70,11 +69,15 @@ class LinksysRoute extends GoRoute {
 
             // If dirty checking is enabled and a provider is given...
             if (enableDirtyCheck && preservableProvider != null) {
+              // If the view is destroyed, return true
+              if (!context.mounted) return true;
               final container = ProviderScope.containerOf(context);
               final notifier = container.read(preservableProvider);
 
               if (notifier.isDirty()) {
-                final bool? confirmed = await (showAlertForTest?.call(context) ?? showUnsavedAlert(context));
+                final bool? confirmed =
+                    await (showAlertForTest?.call(context) ??
+                        showUnsavedAlert(context));
                 if (confirmed == true) {
                   // User wants to discard, so revert the state.
                   notifier.revert();
@@ -93,8 +96,6 @@ class LinksysRoute extends GoRoute {
   static bool isShowNaviRail(
           BuildContext context, LinksysRouteConfig? config) =>
       config == null ? true : config.noNaviRail != true;
-
-  //
 
   static bool autoHideNaviRail(BuildContext context) =>
       (GoRouter.of(context)

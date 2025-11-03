@@ -269,9 +269,13 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
               '${loc(context).restarting}...'
             ]).then((value) {
               ref.read(pollingProvider.notifier).startPolling();
-              showSuccessSnackBar(context, loc(context).successExclamation);
+              if (mounted) {
+                showSuccessSnackBar(context, loc(context).successExclamation);
+              }
             }).catchError((error) {
-              showRouterNotFoundAlert(context, ref);
+              if (mounted) {
+                showRouterNotFoundAlert(context, ref);
+              }
             }, test: (error) => error is JNAPSideEffectError);
           },
         ),

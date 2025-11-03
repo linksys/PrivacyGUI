@@ -32,7 +32,7 @@ class _PnpIspSaveSettingsViewState
     extends ConsumerState<PnpIspSaveSettingsView> {
   final _passwordController = TextEditingController();
   late final InternetSettings newSettings;
-  String? _spinnerText; //TODO: all spinner text is not confirmed
+  String? _spinnerText;
   StreamSubscription? subscription;
 
   @override
@@ -87,13 +87,15 @@ class _PnpIspSaveSettingsViewState
                     .then((value) {
                   logger.i(
                       '[PnP]: Troubleshooter - Check internet connection with new settings - OK');
-                  // Internet connection is OK
-                  context.goNamed(RouteNamed.pnp);
+                  if (mounted) {
+                    context.goNamed(RouteNamed.pnp);
+                  }
                 }).catchError((error) {
                   logger.e(
                       '[PnP]: Troubleshooter - Check internet connection with new settings - Failed');
-                  // Internet connection is Not OK
-                  context.pop(_getErrorMessage(wanType));
+                  if (mounted) {
+                    context.pop(_getErrorMessage(wanType));
+                  }
                 }, test: (error) => error is ExceptionNoInternetConnection);
               }
               subscription?.cancel();
@@ -116,7 +118,7 @@ class _PnpIspSaveSettingsViewState
     }).onError((error, stackTrace) {
       logger.e(
           '[PnP]: Troubleshooter - Failed to save the new settings - $error');
-
+      if (!mounted) return;
       if (error is JNAPSideEffectError) {
         final lastHandledResult = error.lastHandledResult;
         if (lastHandledResult != null && lastHandledResult is JNAPSuccess) {

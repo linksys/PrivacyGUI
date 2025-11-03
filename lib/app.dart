@@ -149,11 +149,10 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
                   onInvoke: (intent) => showColumnOverlayNotifier.value =
                       !showColumnOverlayNotifier.value),
               ToggleDownloadLogIntent: CallbackAction(onInvoke: (intent) {
-                if (increase()) {
-                  // context.pushNamed(RouteNamed.debug);
-                  Utils.exportLogFile(context);
-                  return;
-                }
+                if (!increase()) return null;
+                // context.pushNamed(RouteNamed.debug);
+                Utils.exportLogFile(context);
+                return null;
               }),
             },
             child: CustomResponsive(
@@ -190,7 +189,6 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     //     if (currentSN != null &&
     //         ref.read(dashboardManagerProvider).deviceInfo?.serialNumber !=
     //             currentSN) {
-    //       // TODO
     //       // if (mounted) {
     //       //   showRouterNotFoundAlert(context, ref);
     //       // }
@@ -358,14 +356,5 @@ class AppGlobalActionDispatcher extends ActionDispatcher {
     super.invokeAction(action, intent, context);
 
     return null;
-  }
-
-  @override
-  (bool, Object?) invokeActionIfEnabled(
-    covariant Action<Intent> action,
-    covariant Intent intent, [
-    BuildContext? context,
-  ]) {
-    return super.invokeActionIfEnabled(action, intent, context);
   }
 }

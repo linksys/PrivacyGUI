@@ -206,7 +206,7 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
         child: AppTextButton.noPadding(
           loc(context).manualUpdate,
           key: const Key('manualUpdateButton'),
-        onTap: BuildConfig.isRemote()
+          onTap: BuildConfig.isRemote()
               ? null
               : () {
                   context.goNamed(RouteNamed.manualFirmwareUpdate);
@@ -229,7 +229,7 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
         final result =
             await context.pushNamed<bool?>(RouteNamed.settingsTimeZone);
         if (result == true) {
-          if (!mounted) return;
+          if (!context.mounted) return;
           showSuccessSnackBar(context, loc(context).done);
         }
       },
@@ -315,7 +315,6 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
         }).catchError((error) {
           showRouterNotFound();
         }, test: (error) => error is JNAPSideEffectError);
-        
       }
     });
   }
@@ -470,51 +469,15 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
     );
   }
 
-  Future<void> _scrollToWidget(GlobalKey key) async {
-    await Scrollable.ensureVisible(
-      key.currentContext!, // Use the GlobalKey's context
-      alignment: 0.5, // Adjust alignment as needed (0.0 = top, 1.0 = bottom)
-      curve: Curves.easeInOut, // Optional animation curve
-    );
-  }
-
-  _showRouterHintModal(String value) {
-    TextEditingController controller = TextEditingController()..text = value;
-    bool isValid = value.isNotEmpty;
-    showSubmitAppDialog(
-      context,
-      title: loc(context).routerPasswordHint,
-      contentBuilder: (context, setState, onSubmit) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AppTextField(
-            border: const OutlineInputBorder(),
-            controller: controller,
-            headerText: loc(context).routerPasswordHint,
-            onChanged: (value) {
-              setState(() {
-                isValid = value.isNotEmpty;
-              });
-            },
-          ),
-        ],
-      ),
-      event: () async {
-        await _save(hint: controller.text);
-      },
-      checkPositiveEnabled: () {
-        return isValid;
-      },
-    );
-  }
-
   Future _save({String? newPassword, String? hint}) async {
     FocusManager.instance.primaryFocus?.unfocus();
     await _routerPasswordNotifier
         .setAdminPasswordWithCredentials(newPassword, hint)
         .then<void>((_) {
+      if (!mounted) return;
       _success();
     }).onError((error, stackTrace) {
+      if (!mounted) return;
       showFailedSnackBar(context, loc(context).invalidAdminPassword);
     });
   }

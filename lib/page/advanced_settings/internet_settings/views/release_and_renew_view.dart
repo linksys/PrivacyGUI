@@ -122,15 +122,17 @@ class ReleaseAndRenewView extends ConsumerWidget {
       context,
       notifier.renewDHCPWANLease().then(
         (value) {
+          if (!context.mounted) return;
           showSuccessSnackBar(
             context,
             loc(context).successExclamation,
           );
         },
       ).catchError((error) {
+        if (!context.mounted) return;
         showRouterNotFoundAlert(context, ref, onComplete: () async {
           await ref.read(pollingProvider.notifier).forcePolling();
-
+          if (!context.mounted) return;
           showSuccessSnackBar(
             context,
             loc(context).successExclamation,
@@ -138,10 +140,11 @@ class ReleaseAndRenewView extends ConsumerWidget {
         });
       }, test: (error) => error is JNAPSideEffectError).onError(
           (error, stackTrace) {
+        if (!context.mounted) return;
         final errorMsg = switch (error.runtimeType) {
           JNAPError => (error as JNAPError).result == 'ErrorInvalidWANType'
               ? loc(context).currentWanTypeIsNotDhcp
-              : errorCodeHelper(context, (error as JNAPError).result),
+              : errorCodeHelper(context, error.result),
           TimeoutException => loc(context).generalError,
           _ => loc(context).unknownError,
         };
@@ -160,15 +163,17 @@ class ReleaseAndRenewView extends ConsumerWidget {
       context,
       notifier.renewDHCPIPv6WANLease().then(
         (value) {
+          if (!context.mounted) return;
           showSuccessSnackBar(
             context,
             loc(context).successExclamation,
           );
         },
       ).catchError((error) {
+        if (!context.mounted) return;
         showRouterNotFoundAlert(context, ref, onComplete: () async {
           await ref.read(pollingProvider.notifier).forcePolling();
-
+          if (!context.mounted) return;
           showSuccessSnackBar(
             context,
             loc(context).successExclamation,
@@ -176,10 +181,11 @@ class ReleaseAndRenewView extends ConsumerWidget {
         });
       }, test: (error) => error is JNAPSideEffectError).onError(
           (error, stackTrace) {
+        if (!context.mounted) return;
         final errorMsg = switch (error.runtimeType) {
           JNAPError => (error as JNAPError).result == 'ErrorInvalidIPv6WANType'
               ? loc(context).currentIPv6ConnectionTypeIsNotAutomatic
-              : errorCodeHelper(context, (error as JNAPError).result),
+              : errorCodeHelper(context, error.result),
           TimeoutException => loc(context).generalError,
           _ => loc(context).unknownError,
         };

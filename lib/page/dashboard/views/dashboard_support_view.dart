@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_remote_assistance_info.dart';
@@ -143,6 +142,8 @@ class _DashboardSupportViewState extends ConsumerState<DashboardSupportView> {
           }
         },
       );
+
+      if (!mounted) return;
       showSimpleAppDialog(context,
           dismissible: status == 'ACTIVE',
           title: 'Remote Assistance',
@@ -206,7 +207,7 @@ class _DashboardSupportViewState extends ConsumerState<DashboardSupportView> {
             color: Theme.of(context).colorScheme.primary,
           ),
           tilePadding: EdgeInsets.only(),
-          children: [
+          children: const [
             AppBulletList(children: [
               AppText.bodyMedium(
                   'You may end remote assistance at any time by clicking the orange End Session button on your screen.'),
@@ -219,7 +220,7 @@ class _DashboardSupportViewState extends ConsumerState<DashboardSupportView> {
               AppText.bodyMedium(
                   'The support agent should never ask for your password.'),
             ]),
-            const AppGap.medium(),
+            AppGap.medium(),
           ],
         ),
       ],

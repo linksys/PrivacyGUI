@@ -9,7 +9,6 @@ import 'package:privacy_gui/page/nodes/_nodes.dart';
 import 'package:privacy_gui/page/nodes/providers/node_detail_id_provider.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
-
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
 class ChangeNodeNameView extends ArgumentsConsumerStatefulView {
@@ -78,7 +77,9 @@ class __ChangeNodeNameViewState extends ConsumerState<ChangeNodeNameView> {
             isLocation: true,
           )
           .then((value) {
-        context.pop();
+        if (mounted) {
+          context.pop();
+        }
       });
     }
   }

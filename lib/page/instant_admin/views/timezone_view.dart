@@ -38,8 +38,9 @@ class _TimezoneContentViewState extends ConsumerState<TimezoneView>
       context,
       _notifier.fetch(),
     ).onError((error, stackTrace) {
-        showErrorMessageSnackBar(error);
-      });
+      showErrorMessageSnackBar(error);
+      return null;
+    });
   }
 
   @override
@@ -59,7 +60,9 @@ class _TimezoneContentViewState extends ConsumerState<TimezoneView>
               final goBack = await showUnsavedAlert(context);
               if (goBack == true) {
                 _notifier.revert(); // Use notifier's revert
-                context.pop();
+                if (context.mounted) {
+                  context.pop();
+                }
               }
             }
           : null,
@@ -71,8 +74,10 @@ class _TimezoneContentViewState extends ConsumerState<TimezoneView>
               _notifier.save(),
               title: loc(context).savingChanges,
             ).then((value) {
-              context.pop(true);
-              showChangesSavedSnackBar();
+              if (context.mounted) {
+                context.pop(true);
+                showChangesSavedSnackBar();
+              }
             }).onError((error, stackTrace) {
               showErrorMessageSnackBar(error);
             });
@@ -110,15 +115,17 @@ class _TimezoneContentViewState extends ConsumerState<TimezoneView>
                           showBorder: false,
                           padding: EdgeInsets.zero,
                           title: AppText.labelLarge(
-                            getTimeZoneRegionName(context,
-                                state.status.supportedTimezones[index].timeZoneID),
+                            getTimeZoneRegionName(
+                                context,
+                                state.status.supportedTimezones[index]
+                                    .timeZoneID),
                             color: _notifier.isSelectedTimezone(index)
                                 ? Theme.of(context).colorScheme.primary
                                 : null,
                           ),
                           description: AppText.bodyMedium(
-                            getTimezoneGMT(
-                                state.status.supportedTimezones[index].description),
+                            getTimezoneGMT(state
+                                .status.supportedTimezones[index].description),
                             color: _notifier.isSelectedTimezone(index)
                                 ? Theme.of(context).colorScheme.primary
                                 : null,

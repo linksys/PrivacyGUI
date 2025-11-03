@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -27,9 +26,6 @@ import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 import 'package:privacy_gui/core/jnap/providers/assign_ip/base_assign_ip.dart'
     if (dart.library.html) 'package:privacy_gui/core/jnap/providers/assign_ip/web_assign_ip.dart';
-import 'package:privacy_gui/core/jnap/providers/ip_getter/get_local_ip.dart'
-    if (dart.library.io) 'package:privacy_gui/core/jnap/providers/ip_getter/mobile_get_local_ip.dart'
-    if (dart.library.html) 'package:privacy_gui/core/jnap/providers/ip_getter/web_get_local_ip.dart';
 
 class LocalNetworkSettingsView extends ArgumentsConsumerStatefulView {
   const LocalNetworkSettingsView({
@@ -96,8 +92,6 @@ class _LocalNetworkSettingsViewState
       });
     }
     final state = ref.watch(localNetworkSettingProvider);
-    final notifier = ref.read(localNetworkSettingProvider.notifier);
-
     ref.listen(localNetworkSettingProvider, (previous, next) {
       if (previous?.settings.current.hostName !=
           next.settings.current.hostName) {
@@ -276,8 +270,6 @@ class _LocalNetworkSettingsViewState
   }
 
   void _saveSettings() {
-    final originalIpAddress =
-        ref.read(localNetworkSettingProvider).settings.original.ipAddress;
     doSomethingWithSpinner(
       context,
       _notifier.save(),
@@ -295,6 +287,7 @@ class _LocalNetworkSettingsViewState
         // url start with myrouter.info, show router not found and wait for connect back
         _showRouterNotFoundModal();
       } else if (currentUrl != state.settings.current.ipAddress) {
+        if (!mounted) return;
         // ip is changed, show redirect alert to warn user make sure connect back to the router
         showRedirectNewIpAlert(context, ref, state.settings.current.ipAddress);
       } else {

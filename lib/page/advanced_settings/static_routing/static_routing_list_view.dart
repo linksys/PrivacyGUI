@@ -169,7 +169,6 @@ class _StaticRoutingListViewState extends ConsumerState<StaticRoutingListView> {
       RoutingSettingInterface.lan => loc(context).lanWireless,
       RoutingSettingInterface.internet =>
         RoutingSettingInterface.internet.value,
-      _ => loc(context).lanWireless,
     };
   }
 }

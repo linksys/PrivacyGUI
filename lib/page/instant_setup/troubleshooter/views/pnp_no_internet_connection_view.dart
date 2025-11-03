@@ -9,7 +9,6 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
-import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_troubleshooter_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
@@ -58,7 +57,6 @@ class _PnpNoInternetConnectionState
   }
 
   Widget _contentView(BuildContext context) {
-    final state = ref.watch(pnpTroubleshooterProvider);
     return Center(
       child: AppCard(
         padding: const EdgeInsets.all(Spacing.large3),

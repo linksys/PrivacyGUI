@@ -71,12 +71,12 @@ class StyledAppTabPageView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final pageRoute = GoRouter.of(context)
-        .routerDelegate
-        .currentConfiguration
-        .routes
-        .last as LinksysRoute?;
-    final config = pageRoute?.config;
+    // final pageRoute = GoRouter.of(context)
+    //     .routerDelegate
+    //     .currentConfiguration
+    //     .routes
+    //     .last as LinksysRoute?;
+    // final config = pageRoute?.config;
     return ValueListenableBuilder<bool>(
         valueListenable: showColumnOverlayNotifier,
         builder: (context, showColumnOverlay, _) {

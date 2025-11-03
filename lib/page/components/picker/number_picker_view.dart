@@ -10,7 +10,7 @@ import 'package:numberpicker/numberpicker.dart';
 const double _kItemExtent = 32.0;
 
 class NumberPickerView extends ConsumerStatefulWidget {
-  NumberPickerView(
+  const NumberPickerView(
       {Key? key,
       required this.title,
       required this.value,
@@ -20,11 +20,11 @@ class NumberPickerView extends ConsumerStatefulWidget {
       required this.callback})
       : super(key: key);
   final String title;
-  int value;
-  int min;
-  int max;
-  int step;
-  ValueChanged callback;
+  final int value;
+  final int min;
+  final int max;
+  final int step;
+  final ValueChanged callback;
 
   @override
   ConsumerState<NumberPickerView> createState() => _NumberPickerViewState();
@@ -125,7 +125,7 @@ class _NumberPickerViewState extends ConsumerState<NumberPickerView> {
 }
 
 class AndroidPicker extends ConsumerStatefulWidget {
-  AndroidPicker(
+  const AndroidPicker(
       {Key? key,
       required this.current,
       required this.min,
@@ -133,11 +133,11 @@ class AndroidPicker extends ConsumerStatefulWidget {
       required this.step,
       required this.callback})
       : super(key: key);
-  int current;
-  int min;
-  int max;
-  int step;
-  ValueChanged callback;
+  final int current;
+  final int min;
+  final int max;
+  final int step;
+  final ValueChanged callback;
 
   @override
   AndroidPickerState createState() => AndroidPickerState();
@@ -174,7 +174,7 @@ class AndroidPickerState extends ConsumerState<AndroidPicker> {
 }
 
 class IOSPicker extends ConsumerStatefulWidget {
-  IOSPicker(
+  const IOSPicker(
       {Key? key,
       required this.current,
       required this.min,
@@ -182,11 +182,11 @@ class IOSPicker extends ConsumerStatefulWidget {
       required this.step,
       required this.callback})
       : super(key: key);
-  int current;
-  int min;
-  int max;
-  int step;
-  ValueChanged callback;
+  final int current;
+  final int min;
+  final int max;
+  final int step;
+  final ValueChanged callback;
 
   @override
   ConsumerState<IOSPicker> createState() => _IOSPickerState();
@@ -197,6 +197,7 @@ class _IOSPickerState extends ConsumerState<IOSPicker> {
 
   @override
   void initState() {
+    super.initState();
     nums = List.generate((widget.max - widget.min + 1) ~/ widget.step,
         (index) => index * widget.step + widget.min,
         growable: true);
