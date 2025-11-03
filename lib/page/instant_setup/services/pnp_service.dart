@@ -30,6 +30,7 @@ import 'package:privacy_gui/page/instant_setup/providers/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_step_state.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/connectivity/mixin.dart';
+import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final pnpServiceProvider = Provider((ref) => PnpService(ref));
@@ -91,7 +92,7 @@ class PnpService with AvailabilityChecker {
 
     final uiModel = PnpDeviceInfoUIModel(
       modelName: _rawDeviceInfo!.modelNumber,
-      imageUrl: imageUrl,
+      image: imageUrl,
       serialNumber: _rawDeviceInfo!.serialNumber,
       firmwareVersion: _rawDeviceInfo!.firmwareVersion,
     );
@@ -581,6 +582,23 @@ class PnpService with AvailabilityChecker {
         ? {'adminPassword': defaultWiFi.password}
         : <String, dynamic>{};
     return MapEntry(closeCommand, closeData);
+  }
+
+  /// Validates a map of data against a map of validation rules.
+  /// Returns a map of field names to error messages. If a field is valid, its entry will be null.
+  Map<String, String?> validate(
+      Map<String, dynamic> data, Map<String, List<ValidationRule>> rules) {
+    final errors = <String, String?>{};
+    for (final field in rules.keys) {
+      for (final rule in rules[field]!) {
+        if (!rule.validate(data[field])) {
+          errors[field] =
+              rule.name; // Use the rule's class name as the error code
+          break;
+        }
+      }
+    }
+    return errors;
   }
 
   //endregion

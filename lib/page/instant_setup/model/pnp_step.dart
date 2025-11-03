@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_provider.dart';
+import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
 
@@ -26,11 +27,22 @@ enum PnpStepId {
 /// An abstract class defining the contract for a single step in the PnP wizard.
 /// This follows the Strategy Pattern, where each concrete step implements this interface.
 abstract class PnpStep {
+  /// The unique identifier for this PnP step.
   final PnpStepId stepId;
+
+  /// An optional callback function to save changes, typically used for the final step.
   final Future Function()? saveChanges;
+
+  /// A reference to the [BasePnpNotifier] for interacting with the PnP state.
   late final BasePnpNotifier pnp;
+
+  /// Internal flag to control the "Next" button's enabled state.
   bool _canGoNext = true;
+
+  /// Internal flag to control the "Back" button's enabled state.
   bool _canBack = true;
+
+  /// Internal flag to track if the [onInit] method has been called.
   bool _init = false;
 
   /// Returns true if the `onInit` method has been called.
@@ -71,6 +83,7 @@ abstract class PnpStep {
   /// It's used for pre-fetching data or initializing controllers.
   @mustCallSuper
   Future<void> onInit(WidgetRef ref) async {
+    if (_init) return;
     logger.d('[PnP]: $runtimeType - onInit');
     pnp = ref.read(pnpProvider.notifier);
     _init = true;
@@ -90,6 +103,16 @@ abstract class PnpStep {
   /// Called when the entire PnP wizard page is disposed.
   /// Used for cleaning up resources like TextEditingControllers.
   void onDispose() {}
+
+  /// Returns a map of data to be validated.
+  Map<String, dynamic> getValidationData() {
+    return {};
+  }
+
+  /// Returns a map of validation rules for the data.
+  Map<String, List<ValidationRule>> getValidationRules() {
+    return {};
+  }
 
   /// Builds the UI for the step's controls (e.g., Next/Back buttons).
   ControlsWidgetBuilder controlBuilder(int currentIndex, int stepIndex) =>

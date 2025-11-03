@@ -18,6 +18,12 @@ import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
 
+/// A view responsible for the initial administrative setup and login process
+/// of the Plug and Play (PnP) flow.
+///
+/// This widget handles checking the router's status (configured/unconfigured,
+/// internet connection), prompting for admin password if necessary, and
+/// navigating to the appropriate next step in the PnP wizard or troubleshooter.
 class PnpAdminView extends ArgumentsBaseConsumerStatefulView {
   const PnpAdminView({super.key, super.args});
 
@@ -26,15 +32,20 @@ class PnpAdminView extends ArgumentsBaseConsumerStatefulView {
 }
 
 class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
+  /// Controller for the admin password input field.
   late final TextEditingController _textEditController;
+
+  /// Stores the password passed as an argument, if any.
   String? _password;
 
   @override
   void initState() {
     super.initState();
     _textEditController = TextEditingController();
+    // Extract password from widget arguments, typically from a deep link or initial setup.
     _password = widget.args['p'] as String?;
 
+    // Start the PnP flow after the first frame is rendered.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(pnpProvider.notifier).startPnpFlow(_password);
     });
@@ -55,7 +66,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
 
       if (prevStatus == nextStatus) return; // Only act on status changes
 
-      // On success, navigate to the wizard
+      // On successful internet connection or wizard initialization, navigate to the PnP configuration.
       if (nextStatus == PnpFlowStatus.adminInternetConnected ||
           nextStatus == PnpFlowStatus.wizardInitializing) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -63,11 +74,12 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
         });
       }
 
-      // On no internet, navigate to troubleshooter
+      // If no internet connection is detected, navigate to the internet troubleshooting screen.
       if (nextStatus == PnpFlowStatus.adminNeedsInternetTroubleshooting) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
             var ssid = '';
+            // If a password was attached, get the default WiFi name for display in troubleshooting.
             if (next.attachedPassword != null) {
               ssid = ref
                   .read(pnpProvider.notifier)
@@ -82,7 +94,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
         });
       }
 
-      // On interrupt, navigate to the specified route
+      // If the wizard initialization fails due to an interrupt, navigate to the specified route.
       if (nextStatus == PnpFlowStatus.wizardInitFailed &&
           next.error is ExceptionInterruptAndExit) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -96,6 +108,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
 
     final pnpState = ref.watch(pnpProvider);
 
+    // Render different UI based on the current PnP flow status.
     switch (pnpState.status) {
       case PnpFlowStatus.adminInitializing:
       case PnpFlowStatus.adminCheckingInternet:
@@ -114,6 +127,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
     }
   }
 
+  /// Displays a loading spinner with a message based on the current status.
   Widget _loadingView(PnpFlowStatus status) {
     String message = status == PnpFlowStatus.adminCheckingInternet
         ? loc(context).launchCheckInternet
@@ -130,6 +144,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
     );
   }
 
+  /// Displays a confirmation view when the internet connection is established.
   Widget _internetConnectedView() {
     return Center(
       child: Column(
@@ -148,6 +163,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
     );
   }
 
+  /// Wraps an error view in a styled page layout.
   Widget _errorPage(Widget child) {
     return StyledAppPageView(
       appBarStyle: AppBarStyle.none,
@@ -167,6 +183,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
     );
   }
 
+  /// Displays a generic error message with a "Try Again" button.
   Widget _errorView() {
     return Container(
       color: Theme.of(context).colorScheme.background,
@@ -192,6 +209,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
     );
   }
 
+  /// The main view for handling unconfigured routers or admin password input.
   Widget _mainView(PnpState pnpState) {
     final deviceInfo = pnpState.deviceInfo;
     return StyledAppPageView(
@@ -209,12 +227,13 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
             children: [
               if (deviceInfo != null)
                 Image(
-                  image: CustomTheme.of(context).getRouterImage(
-                      deviceInfo.imageUrl),
+                  image:
+                      CustomTheme.of(context).getRouterImage(deviceInfo.image),
                   height: 160,
                   width: 160,
                   fit: BoxFit.contain,
                 ),
+              // Animates the transition between unconfigured view and password view.
               AnimatedContainer(
                 duration: const Duration(seconds: 1),
                 child: pnpState.status == PnpFlowStatus.adminUnconfigured
@@ -228,6 +247,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
     );
   }
 
+  /// Displays a view for an unconfigured router, prompting the user to continue.
   Widget _unconfiguredView() {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -247,10 +267,11 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
     );
   }
 
+  /// Displays the admin password input form.
   Widget _routerPasswordView(PnpState pnpState) {
     final isProcessing = pnpState.status == PnpFlowStatus.adminLoggingIn;
-    final hasError =
-        pnpState.status == PnpFlowStatus.adminLoginFailed && pnpState.error != null;
+    final hasError = pnpState.status == PnpFlowStatus.adminLoginFailed &&
+        pnpState.error != null;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -272,6 +293,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
             }
           },
         ),
+        // Display error message if login failed.
         if (hasError)
           Padding(
             padding: const EdgeInsets.only(top: 8.0),
@@ -300,6 +322,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
     );
   }
 
+  /// Shows a modal dialog explaining where to find the router password.
   _showRouterPasswordModal() {
     return showDialog(
         context: context,

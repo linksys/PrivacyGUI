@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
-import 'package:privacy_gui/page/instant_setup/providers/mock_pnp_providers.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_step_state.dart';
@@ -11,8 +10,11 @@ import 'package:privacy_gui/core/jnap/models/auto_configuration_settings.dart';
 import '../troubleshooter/providers/pnp_troubleshooter_provider.dart';
 
 /// The main Riverpod provider for the PnP feature.
-final pnpProvider = NotifierProvider<BasePnpNotifier, PnpState>(
-    () => NoInternetMockPnpNotifier());
+///
+/// This provider exposes a [PnpNotifier] which manages the state of the
+/// entire Plug and Play flow.
+final pnpProvider =
+    NotifierProvider<BasePnpNotifier, PnpState>(() => PnpNotifier());
 
 /// Abstract base class for the PnP Notifier.
 /// Defines the contract for all actions that can be performed during the PnP flow.
@@ -24,12 +26,18 @@ abstract class BasePnpNotifier extends Notifier<PnpState> {
   //----------------------------------------------------------------------------
 
   /// Gets the state for a specific step by its ID.
+  ///
+  /// Returns [PnpStepState] for the given [stepId], or a default empty state
+  /// if not found.
   PnpStepState getStepState(PnpStepId stepId) {
     return state.stepStateList[stepId] ??
         const PnpStepState(status: StepViewStatus.data, data: {});
   }
 
   /// Sets the entire state for a specific step.
+  ///
+  /// [stepId] the ID of the step to update.
+  /// [stepState] the new [PnpStepState] for the step.
   void setStepState(PnpStepId stepId, PnpStepState stepState) {
     final stepStateData =
         Map<PnpStepId, PnpStepState>.from(state.stepStateList);
@@ -38,6 +46,9 @@ abstract class BasePnpNotifier extends Notifier<PnpState> {
   }
 
   /// Updates the status of a specific step.
+  ///
+  /// [stepId] the ID of the step to update.
+  /// [status] the new [StepViewStatus] for the step.
   void setStepStatus(PnpStepId stepId, {required StepViewStatus status}) {
     final stepStateData =
         Map<PnpStepId, PnpStepState>.from(state.stepStateList);
@@ -48,6 +59,9 @@ abstract class BasePnpNotifier extends Notifier<PnpState> {
   }
 
   /// Merges new data into a specific step's state.
+  ///
+  /// [stepId] the ID of the step to update.
+  /// [data] the new data to merge into the step's existing data.
   void setStepData(PnpStepId stepId, {required Map<String, dynamic> data}) {
     final stepStateData =
         Map<PnpStepId, PnpStepState>.from(state.stepStateList);
@@ -60,6 +74,9 @@ abstract class BasePnpNotifier extends Notifier<PnpState> {
   }
 
   /// Sets an error object for a specific step.
+  ///
+  /// [stepId] the ID of the step to update.
+  /// [error] the error object to associate with the step.
   void setStepError(PnpStepId stepId, {Object? error}) {
     final stepStateData =
         Map<PnpStepId, PnpStepState>.from(state.stepStateList);
@@ -69,21 +86,30 @@ abstract class BasePnpNotifier extends Notifier<PnpState> {
     state = state.copyWith(stepStateList: stepStateData);
   }
 
+  /// Validates the data for a specific step and updates its status.
+  ///
+  /// [step] the [PnpStep] to validate.
+  void validateStep(PnpStep step);
+
   //endregion
 
   //region Abstract Methods
   //----------------------------------------------------------------------------
 
   /// Orchestrates the initial checks when the PnP flow begins.
+  ///
+  /// [password] an optional pre-filled password for admin login.
   Future<void> startPnpFlow(String? password);
 
   /// Submits the admin password for login.
+  ///
+  /// [password] the admin password entered by the user.
   Future<void> submitPassword(String password);
 
   /// Continues the flow from an unconfigured state.
   Future<void> continueFromUnconfigured();
 
-  /// Initializes the wizard phase.
+  /// Initializes the wizard phase by fetching initial data.
   Future<void> initializeWizard();
 
   /// Saves all collected settings from the wizard to the router.
@@ -96,17 +122,24 @@ abstract class BasePnpNotifier extends Notifier<PnpState> {
   Future<void> completeFwCheck();
 
   /// Fetches basic device information.
+  ///
+  /// [clearCurrentSN] if true, clears the current serial number from shared preferences.
   Future fetchDeviceInfo([bool clearCurrentSN = true]);
 
   /// Validates the admin password against the router.
+  ///
+  /// [password] the admin password to check.
   Future checkAdminPassword(String? password);
 
   /// Checks for a live internet connection.
+  ///
+  /// [retries] the number of times to retry checking for internet connection.
   Future checkInternetConnection([int retries = 1]);
 
   /// Checks if the router is in an unconfigured (factory default) state.
   Future<ConfigurationResult> checkRouterConfigured();
 
+  /// Checks the auto-configuration status of the router.
   Future<AutoConfigurationSettings?> autoConfigurationCheck();
 
   /// Checks if the admin password has been set by the user.
@@ -119,16 +152,24 @@ abstract class BasePnpNotifier extends Notifier<PnpState> {
   Future fetchDevices();
 
   /// Forces the PnP flow to require a login.
+  ///
+  /// [force] true to force login, false otherwise.
   void setForceLogin(bool force);
 
   /// Stores a password provided from an external source (e.g., URL).
+  ///
+  /// [password] the password to attach.
   void setAttachedPassword(String? password);
 
   /// Gets the default Wi-Fi credentials from the device.
+  ///
+  /// Returns a record containing the name, password, and security type.
   ({String name, String password, String security})
       getDefaultWiFiNameAndPassphrase();
 
   /// Gets the default Guest Wi-Fi credentials from the device.
+  ///
+  /// Returns a record containing the name and password.
   ({String name, String password}) getDefaultGuestWiFiNameAndPassPhrase();
 
   //endregion
@@ -433,5 +474,32 @@ class PnpNotifier extends BasePnpNotifier {
   void setForceLogin(bool force) {
     logger.d('[PnP]: Setting forceLogin to $force.');
     state = state.copyWith(forceLogin: force);
+  }
+
+  @override
+  void validateStep(PnpStep step) {
+    final data = step.getValidationData();
+    final rules = step.getValidationRules();
+    final errors = ref.read(pnpServiceProvider).validate(data, rules);
+
+    if (errors.values.any((element) => element != null)) {
+      setStepState(
+        step.stepId,
+        PnpStepState(
+          status: StepViewStatus.error,
+          data: getStepState(step.stepId).data, // Preserve existing data
+          error: errors,
+        ),
+      );
+    } else {
+      setStepState(
+        step.stepId,
+        PnpStepState(
+          status: StepViewStatus.data,
+          data: getStepState(step.stepId).data, // Preserve existing data
+          error: null,
+        ),
+      );
+    }
   }
 }

@@ -3,15 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/di.dart';
-import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
-import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
+import 'package:privacy_gui/page/instant_setup/models/pnp_ui_models.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_exception.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_provider.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_state.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import '../../../common/di.dart';
 import '../../../mocks/pnp_notifier_mocks.dart' as Mock;
-import 'package:privacy_gui/page/instant_setup/data/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/pnp_admin_view.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
@@ -31,14 +31,18 @@ void main() async {
       (tester, locale) async {
     when(mockPnpNotifier.build()).thenReturn(
       PnpState(
-        deviceInfo: NodeDeviceInfo.fromJson(
-          jsonDecode(testDeviceInfo)['output'],
+        deviceInfo: PnpDeviceInfoUIModel(
+          modelName: 'LN16',
+          image: 'routerLn16',
+          serialNumber: 'serialNumber',
+          firmwareVersion: 'firmwareVersion',
         ),
       ),
     );
     when(mockPnpNotifier.fetchDeviceInfo()).thenAnswer((_) async {});
     when(mockPnpNotifier.checkRouterConfigured()).thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 2));
+      throw ExceptionRouterUnconfigured();
     });
 
     await tester.pumpWidget(
@@ -59,8 +63,11 @@ void main() async {
       (tester, locale) async {
     when(mockPnpNotifier.build()).thenReturn(
       PnpState(
-        deviceInfo: NodeDeviceInfo.fromJson(
-          jsonDecode(testDeviceInfo)['output'],
+        deviceInfo: PnpDeviceInfoUIModel(
+          modelName: 'LN16',
+          image: 'routerLn16',
+          serialNumber: 'serialNumber',
+          firmwareVersion: 'firmwareVersion',
         ),
         isUnconfigured: true,
       ),
@@ -93,13 +100,18 @@ void main() async {
       (tester, locale) async {
     when(mockPnpNotifier.build()).thenReturn(
       PnpState(
-        deviceInfo: NodeDeviceInfo.fromJson(
-          jsonDecode(testDeviceInfo)['output'],
+        deviceInfo: PnpDeviceInfoUIModel(
+          modelName: 'LN16',
+          image: 'routerLn16',
+          serialNumber: 'serialNumber',
+          firmwareVersion: 'firmwareVersion',
         ),
       ),
     );
     when(mockPnpNotifier.fetchDeviceInfo()).thenAnswer((_) async {});
-    when(mockPnpNotifier.checkRouterConfigured()).thenAnswer((_) async {});
+    when(mockPnpNotifier.checkRouterConfigured()).thenAnswer((_) async {
+      throw ExceptionRouterUnconfigured();
+    });
     when(mockPnpNotifier.checkInternetConnection()).thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 2));
     });
@@ -122,13 +134,18 @@ void main() async {
       (tester, locale) async {
     when(mockPnpNotifier.build()).thenReturn(
       PnpState(
-        deviceInfo: NodeDeviceInfo.fromJson(
-          jsonDecode(testDeviceInfo)['output'],
+        deviceInfo: PnpDeviceInfoUIModel(
+          modelName: 'LN16',
+          image: 'routerLn16',
+          serialNumber: 'serialNumber',
+          firmwareVersion: 'firmwareVersion',
         ),
       ),
     );
     when(mockPnpNotifier.fetchDeviceInfo()).thenAnswer((_) async {});
-    when(mockPnpNotifier.checkRouterConfigured()).thenAnswer((_) async {});
+    when(mockPnpNotifier.checkRouterConfigured()).thenAnswer((_) async {
+      throw ExceptionRouterUnconfigured();
+    });
     when(mockPnpNotifier.checkInternetConnection()).thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 1));
     });
@@ -151,8 +168,11 @@ void main() async {
       (tester, locale) async {
     when(mockPnpNotifier.build()).thenReturn(
       PnpState(
-        deviceInfo: NodeDeviceInfo.fromJson(
-          jsonDecode(testDeviceInfo)['output'],
+        deviceInfo: PnpDeviceInfoUIModel(
+          modelName: 'LN16',
+          image: 'routerLn16',
+          serialNumber: 'serialNumber',
+          firmwareVersion: 'firmwareVersion',
         ),
         isUnconfigured: false,
       ),
@@ -180,8 +200,11 @@ void main() async {
       (tester, locale) async {
     when(mockPnpNotifier.build()).thenReturn(
       PnpState(
-        deviceInfo: NodeDeviceInfo.fromJson(
-          jsonDecode(testDeviceInfo)['output'],
+        deviceInfo: PnpDeviceInfoUIModel(
+          modelName: 'LN16',
+          image: 'routerLn16',
+          serialNumber: 'serialNumber',
+          firmwareVersion: 'firmwareVersion',
         ),
         isUnconfigured: false,
       ),

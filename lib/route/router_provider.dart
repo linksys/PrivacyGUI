@@ -269,7 +269,8 @@ class RouterNotifier extends ChangeNotifier {
         final needsPnp = config?.userAcknowledgedAutoConfiguration == false;
 
         if (needsPnp) {
-          logger.i('[Route]: PnP not complete. Forcing redirect to /pnp.');
+          logger.i(
+              '[Route]: Routing to ${state.matchedLocation} but PnP not complete. Forcing redirect to /pnp.');
           return _goPnp(state.uri.query);
         }
       } catch (e) {

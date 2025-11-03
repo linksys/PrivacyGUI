@@ -37,4 +37,13 @@ class PnpStepState extends Equatable {
         data,
         error,
       ];
+
+  /// Generic helper to safely retrieve data from the `data` map.
+  T getData<T>(String key, [T? defaultValue]) {
+    final value = data[key];
+    if (value is T) {
+      return value;
+    }
+    return defaultValue as T;
+  }
 }

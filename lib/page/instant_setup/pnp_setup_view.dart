@@ -7,30 +7,36 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
-import 'package:privacy_gui/page/instant_setup/providers/pnp_provider.dart';
-import 'package:privacy_gui/page/instant_setup/providers/pnp_state.dart';
+import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/instant_setup/model/impl/guest_wifi_step.dart';
 import 'package:privacy_gui/page/instant_setup/model/impl/night_mode_step.dart';
 import 'package:privacy_gui/page/instant_setup/model/impl/personal_wifi_step.dart';
 import 'package:privacy_gui/page/instant_setup/model/impl/your_network_step.dart';
 import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_provider.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/widgets/pnp_stepper.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/util/export_selector/export_base.dart';
 import 'package:privacy_gui/util/qr_code.dart';
 import 'package:privacy_gui/util/wifi_credential.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacygui_widgets/widgets/gap/gap.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
+import 'package:privacygui_widgets/widgets/text/app_text.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:privacy_gui/util/export_selector/export_base.dart'
-    if (dart.library.io) 'package:privacy_gui/util/export_selector/export_mobile.dart'
-    if (dart.library.html) 'package:privacy_gui/util/export_selector/export_web.dart';
 
+/// A widget that orchestrates the entire PnP (Plug and Play) setup process.
+///
+/// This view presents a stepper UI that guides the user through various steps
+/// of configuring their router, such as personal Wi-Fi, guest Wi-Fi, night mode,
+/// and network overview. It handles state changes, error handling, and navigation
+/// throughout the PnP flow.
 class PnpSetupView extends ConsumerStatefulWidget {
   const PnpSetupView({Key? key}) : super(key: key);
 
@@ -60,6 +66,8 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
     super.dispose();
   }
 
+  /// Builds the list of PnP steps dynamically based on the router's capabilities
+  /// and the current PnP state (e.g., force login, unconfigured).
   List<PnpStep> _buildSteps(PnpState pnpState) {
     final capabilities = pnpState.capabilities;
     final isGuestWiFiSupport = capabilities?.isGuestWiFiSupported ?? false;
@@ -67,7 +75,9 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
 
     final pnpNotifier = ref.read(pnpProvider.notifier);
 
+    // Determines the sequence of steps based on router's state.
     return switch ((pnpState.forceLogin, pnpState.isRouterUnConfigured)) {
+      // Scenario: Not force login and router unconfigured
       (false, true) => [
           PersonalWiFiStep(
               saveChanges: !isGuestWiFiSupport && !isNightModeSupport
@@ -81,13 +91,16 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
             NightModeStep(saveChanges: pnpNotifier.savePnpSettings),
           YourNetworkStep(saveChanges: pnpNotifier.completeFwCheck),
         ],
+      // Scenario: Force login and router is configured
       (true, false) => [
           PersonalWiFiStep(),
         ],
+      // Scenario: Force login and router is unconfigured
       (true, true) => [
           PersonalWiFiStep(saveChanges: pnpNotifier.savePnpSettings),
           YourNetworkStep(saveChanges: pnpNotifier.completeFwCheck),
         ],
+      // Default scenario (catch-all)
       _ => [
           PersonalWiFiStep(),
           if (isGuestWiFiSupport) GuestWiFiStep(),
@@ -100,6 +113,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
   Widget build(BuildContext context) {
     final pnpState = ref.watch(pnpProvider);
 
+    // Listen for changes in PnP flow status.
     ref.listen(pnpProvider.select((s) => s.status), (previous, next) {
       if (next == PnpFlowStatus.wizardConfiguring &&
           previous == PnpFlowStatus.wizardSaving) {
@@ -111,6 +125,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
       }
     });
 
+    // Listen for firmware update status changes.
     ref.listen(firmwareUpdateProvider, (previous, next) {
       if (pnpState.status != PnpFlowStatus.wizardUpdatingFirmware) return;
 
@@ -121,6 +136,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
       }
     });
 
+    // Build steps only once or when necessary.
     if (steps.isEmpty) {
       steps = _buildSteps(pnpState);
     }
@@ -139,10 +155,11 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
     );
   }
 
+  /// Builds the content view, showing different widgets based on the current PnP status.
   Widget _buildContentView(PnpState pnpState, BoxConstraints constraints) {
     final status = pnpState.status;
 
-    // Determine if the config view should be visible and interactive.
+    // Determine if the config view (stepper) should be visible and interactive.
     final showConfig = status == PnpFlowStatus.wizardConfiguring ||
         status == PnpFlowStatus.wizardSaveFailed;
 
@@ -158,7 +175,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
           ),
         ),
 
-        // Layer 2: Overlays (conditionally visible)
+        // Layer 2: Overlays (conditionally visible based on PnP flow status)
         if (status == PnpFlowStatus.wizardInitializing ||
             status == PnpFlowStatus.wizardSaving ||
             status == PnpFlowStatus.wizardTestingReconnect)
@@ -174,6 +191,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
     );
   }
 
+  /// Builds the PnP Stepper widget.
   Widget _configView(PnpState pnpState) {
     return LayoutBuilder(builder: (context, constraints) {
       return Padding(
@@ -195,6 +213,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
     });
   }
 
+  /// Displays a view for firmware update checking/updating.
   Widget _fwUpdateCheck() => Container(
         color: Theme.of(context).colorScheme.background,
         child: Center(
@@ -212,6 +231,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
         ),
       );
 
+  /// Displays a loading spinner with a customizable message.
   Widget _loadingSpinner(PnpState pnpState) {
     // You can map statuses to specific messages if needed
     final message = pnpState.loadingMessage ?? loc(context).processing;
@@ -231,6 +251,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
     );
   }
 
+  /// Displays a generic error view with a "Try Again" button.
   Widget _errorView() {
     return Container(
       color: Theme.of(context).colorScheme.background,
@@ -256,6 +277,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
     );
   }
 
+  /// Displays a success message after saving settings.
   Widget _showSaved() => Container(
         color: Theme.of(context).colorScheme.background,
         child: Center(
@@ -273,6 +295,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
         ),
       );
 
+  /// Displays the Wi-Fi Ready screen with QR code and password.
   Widget _showWiFi(PnpState pnpState) {
     final wifiData = pnpState.stepStateList[PnpStepId.personalWifi]?.data;
     final wifiSSID = wifiData?['ssid'] as String? ?? '';
@@ -381,6 +404,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
     );
   }
 
+  /// Displays a view prompting the user to reconnect to the Wi-Fi network.
   Widget _showNeedReconnect() {
     return Container(
       color: Theme.of(context).colorScheme.background,
