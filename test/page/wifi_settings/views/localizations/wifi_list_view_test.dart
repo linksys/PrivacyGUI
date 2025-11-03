@@ -61,7 +61,7 @@ void main() {
       when(testHelper.mockWiFiListNotifier.build())
           .thenReturn(WiFiState.fromMap(wifiListGuestEnabledTestState));
       await testHelper.pumpView(
-        tester,
+        tester, 
         child: const WiFiMainView(),
         locale: locale,
       );
@@ -404,5 +404,22 @@ void main() {
       ...responsiveMobileScreens.map((e) => e.copyWith(height: 1280)).toList(),
       ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1280)).toList(),
     ]);
+
+    testLocalizations('Incredible-WiFi - Wifi list view - No Guest WiFi',
+      (tester, locale) async {
+    when(testHelper.mockServiceHelper.isSupportGuestNetwork()).thenReturn(false);
+    when(testHelper.mockServiceHelper.isSupportLedMode()).thenReturn(false);
+    when(testHelper.mockWiFiListNotifier.build()).thenReturn(
+        WiFiState.fromMap(wifiListGuestEnabledTestState).copyWith());
+    when(testHelper.mockWiFiListNotifier.fetch()).thenAnswer((realInvocation) async {
+      await Future.delayed(Durations.extralong1);
+      return WiFiState.fromMap(wifiListGuestEnabledTestState);
+    });
+    await testHelper.pumpView(
+      tester,
+      locale: locale,
+      child: const WiFiMainView(),
+    );
+  }, screens: [...responsiveMobileScreens, ...responsiveDesktopScreens]);
   });
 }

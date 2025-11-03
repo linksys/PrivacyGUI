@@ -33,7 +33,7 @@ void main() {
       Future.delayed(const Duration(seconds: 1));
       return state;
     });
-    await testHelper.pumpView(
+    await testHelper.pumpShellView(
       tester,
       config: LinksysRouteConfig(column: ColumnGrid(column: 9, centered: true)),
       locale: locale,
@@ -48,7 +48,7 @@ void main() {
       Future.delayed(const Duration(seconds: 1));
       return state;
     });
-    await testHelper.pumpView(
+    await testHelper.pumpShellView(
       tester,
       config: LinksysRouteConfig(column: ColumnGrid(column: 9, centered: true)),
       locale: locale,
@@ -73,10 +73,10 @@ void main() {
       locale: locale,
       child: const StaticRoutingView(),
     );
-
+    await tester.pumpAndSettle();
     await tester.tap(find.byIcon(LinksysIcons.add));
     await tester.pumpAndSettle();
-  }, screens: screens);
+  }, screens: responsiveDesktopScreens);
 
   testLocalizations(
       'Static routing view test - NAT enabled add rule - interface dropdown',
@@ -90,7 +90,7 @@ void main() {
     when(testHelper.mockStaticRoutingRuleNotifier.build()).thenReturn(
         StaticRoutingRuleState(
             routerIp: '192.168.1.1', subnetMask: '255.255.255.0'));
-    await testHelper.pumpView(
+    await testHelper.pumpShellView(
       tester,
       config: LinksysRouteConfig(column: ColumnGrid(column: 9, centered: true)),
       locale: locale,
@@ -102,7 +102,7 @@ void main() {
 
     await tester.tap(find.byType(AppDropdownButton<RoutingSettingInterface>));
     await tester.pumpAndSettle();
-  }, screens: screens);
+  }, screens: responsiveDesktopScreens);
 
   testLocalizations(
       'Static routing view test - NAT enabled add rule - invalid gateway IP',
@@ -116,7 +116,7 @@ void main() {
     when(testHelper.mockStaticRoutingRuleNotifier.build()).thenReturn(
         StaticRoutingRuleState(
             routerIp: '192.168.1.1', subnetMask: '255.255.255.0'));
-    await testHelper.pumpView(
+    await testHelper.pumpShellView(
       tester,
       config: LinksysRouteConfig(column: ColumnGrid(column: 9, centered: true)),
       locale: locale,
@@ -137,7 +137,7 @@ void main() {
     await tester.tap(find.byType(AppText).first);
 
     await tester.pumpAndSettle();
-  }, screens: screens);
+  }, screens: responsiveDesktopScreens);
 
   testLocalizations('Static routing view test - NAT enabled add rule',
       (tester, locale) async {
@@ -154,7 +154,7 @@ void main() {
         .thenAnswer((_) async {
       Future.delayed(const Duration(seconds: 1));
     });
-    await testHelper.pumpView(
+    await testHelper.pumpShellView(
       tester,
       config: LinksysRouteConfig(column: ColumnGrid(column: 9, centered: true)),
       locale: locale,
@@ -182,7 +182,7 @@ void main() {
         .thenAnswer((_) async {
       Future.delayed(const Duration(seconds: 1));
     });
-    await testHelper.pumpView(
+    await testHelper.pumpShellView(
       tester,
       config: LinksysRouteConfig(column: ColumnGrid(column: 9, centered: true)),
       locale: locale,
@@ -213,7 +213,7 @@ void main() {
         .thenAnswer((_) async {
       Future.delayed(const Duration(seconds: 1));
     });
-    await testHelper.pumpView(
+    await testHelper.pumpShellView(
       tester,
       config: LinksysRouteConfig(column: ColumnGrid(column: 9, centered: true)),
       locale: locale,
@@ -243,7 +243,7 @@ void main() {
       Future.delayed(const Duration(seconds: 1));
       return state;
     });
-    await testHelper.pumpView(
+    await testHelper.pumpShellView(
       tester,
       config: LinksysRouteConfig(column: ColumnGrid(column: 9, centered: true)),
       locale: locale,

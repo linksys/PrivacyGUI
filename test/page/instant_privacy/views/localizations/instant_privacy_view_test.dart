@@ -25,6 +25,11 @@ void main() {
 
   setUp(() {
     testHelper.setup();
+
+    when(testHelper.mockInstantPrivacyNotifier.fetch()).thenAnswer((realInvocation) async {
+      await Future.delayed(const Duration(seconds: 1));
+      return InstantPrivacyState.fromMap(instantPrivacyInitState);
+    });
   });
 
   testLocalizations(

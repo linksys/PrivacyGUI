@@ -378,16 +378,20 @@ class TestHelper {
     List<Override> overrides = const [],
     Locale locale = const Locale('en'),
     LinksysRouteConfig? config,
+    ThemeMode themeMode = ThemeMode.system,
+    GlobalKey<NavigatorState>? navigatorKey,
   }) async {
     await tester.pumpWidget(
       testableSingleRoute(
         config: config ?? LinksysRouteConfig(column: ColumnGrid(column: 9)),
         locale: locale,
         overrides: [...defaultOverrides, ...overrides],
+        themeMode: themeMode,
+        navigatorKey: navigatorKey,
         child: child,
       ),
     );
-    await tester.pumpAndSettle();
+    // await tester.pumpAndSettle();
   }
 
   /// Pump a widget with a shell widget
@@ -408,6 +412,6 @@ class TestHelper {
         child: child,
       ),
     );
-    await tester.pumpAndSettle();
+    // await tester.pumpAndSettle();
   }
 }

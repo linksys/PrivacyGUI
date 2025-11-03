@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:privacy_gui/core/jnap/providers/firmware_update_state.dart';
 import 'package:privacy_gui/page/instant_admin/_instant_admin.dart';
 import 'package:privacy_gui/page/instant_admin/providers/manual_firmware_update_state.dart';
 import 'dart:typed_data';
@@ -8,7 +7,6 @@ import 'dart:typed_data';
 import '../../../../common/config.dart';
 import '../../../../common/test_helper.dart';
 import '../../../../common/test_responsive_widget.dart';
-import '../../../../test_data/firmware_update_test_state.dart';
 
 void main() {
   final testHelper = TestHelper();
@@ -19,7 +17,7 @@ void main() {
   });
 
   testLocalizations('Manual firmware update - default', (tester, locale) async {
-    await testHelper.pumpView(
+    await testHelper.pumpShellView(
       tester,
       child: const ManualFirmwareUpdateView(),
       locale: locale,
@@ -32,7 +30,7 @@ void main() {
             file: FileInfo(
                 name: 'FW_LN16_1.0.5.216445_release.img',
                 bytes: Uint8List.fromList('bytes'.codeUnits))));
-    await testHelper.pumpView(
+    await testHelper.pumpShellView(
       tester,
       child: const ManualFirmwareUpdateView(),
       locale: locale,
@@ -47,7 +45,7 @@ void main() {
                 name: 'FW_LN16_1.0.5.216445_release.img',
                 bytes: Uint8List.fromList('bytes'.codeUnits)),
             status: ManualUpdateInstalling(15)));
-    await testHelper.pumpView(
+    await testHelper.pumpShellView(
       tester,
       child: const ManualFirmwareUpdateView(),
       locale: locale,
@@ -68,7 +66,7 @@ void main() {
       await Future.delayed(Duration(seconds: 2));
       return true;
     });
-    await testHelper.pumpView(
+    await testHelper.pumpShellView(
       tester,
       child: const ManualFirmwareUpdateView(),
       locale: locale,

@@ -63,7 +63,7 @@ void main() async {
         child: const InstantTopologyView(),
       );
       await operateForShowingAddWiredNode(tester);
-      await tester.pumpFrames(tester.widget(find.byType(InstantTopologyView)), Duration(seconds: 2));
+      await tester.pump(const Duration(seconds: 2));
     });
 
     testLocalizations('Instant-Topology view - add wired node success',
@@ -80,8 +80,8 @@ void main() async {
         child: const InstantTopologyView(),
       );
       await operateForShowingAddWiredNode(tester);
-      await tester.pumpFrames(tester.widget(find.byType(InstantTopologyView)), Duration(seconds: 2));
-      await tester.pumpFrames(tester.widget(find.byType(InstantTopologyView)), Duration(seconds: 5));
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pump(const Duration(seconds: 5));
     });
 
     testLocalizations('Instant-Topology view - add wired node failed',
@@ -97,10 +97,12 @@ void main() async {
         locale: locale,
         child: const InstantTopologyView(),
       );
+      await tester.pumpAndSettle();
       await operateForShowingAddWiredNode(tester);
-      await tester.pumpFrames(tester.widget(find.byType(InstantTopologyView)), Duration(seconds: 2));
-      await tester.pumpFrames(tester.widget(find.byType(InstantTopologyView)), Duration(seconds: 5));
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pump(const Duration(seconds: 5));
     });
+
   });
 }
 
