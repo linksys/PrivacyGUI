@@ -25,7 +25,7 @@ class HomeView extends ArgumentsConsumerStatefulView {
 }
 
 class _HomeViewState extends ConsumerState<HomeView> {
-  bool _isOpenDebug = false;
+  final bool _isOpenDebug = false;
   final bool _isLoading = false;
 
   @override
@@ -187,7 +187,9 @@ class _HomeViewState extends ConsumerState<HomeView> {
                       setState(() {
                         isLoading = false;
                       });
-                      Navigator.pop(context, cloudEnvTarget);
+                      if (context.mounted) {
+                        Navigator.pop(context, cloudEnvTarget);
+                      }
                     },
                   ),
                   const AppGap.medium(),

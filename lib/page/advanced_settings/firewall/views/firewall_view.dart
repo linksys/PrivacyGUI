@@ -101,11 +101,6 @@ class _FirewallViewState extends ConsumerState<FirewallView>
               ))
           .toList(),
       tabContentViews: tabContents,
-      onTabTap: (index) {
-        setState(() {
-          _tabIndex = index;
-        });
-      },
     );
   }
 

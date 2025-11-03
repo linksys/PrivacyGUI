@@ -50,10 +50,14 @@ class _AdministrationSettingsViewState
                     .read(administrationSettingsProvider.notifier)
                     .save()
                     .then((value) {
-                  showSuccessSnackBar(context, loc(context).saved);
+                  if (context.mounted) {
+                    showSuccessSnackBar(context, loc(context).saved);
+                  }
                 }).onError((error, stackTrace) {
-                  showFailedSnackBar(
-                      context, loc(context).unknownErrorCode(error ?? ''));
+                  if (context.mounted) {
+                    showFailedSnackBar(
+                        context, loc(context).unknownErrorCode(error ?? ''));
+                  }
                 }));
           }),
       child: (context, constraints) => Column(

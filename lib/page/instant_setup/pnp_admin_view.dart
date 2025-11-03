@@ -16,7 +16,6 @@ import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:privacy_gui/validator_rules/input_validators.dart';
-import 'package:privacygui_widgets/hook/icon_hooks.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -85,6 +84,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
           }
         })
         .then((_) {
+          if (!mounted) return;
           logger.i('[PnP]: Auto-login successfully, go to Setup page');
           context.goNamed(RouteNamed.pnpConfig);
         })
@@ -137,6 +137,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
           if (ref.read(authProvider).value?.loginType == LoginType.local) {
             ref.read(pollingProvider.notifier).forcePolling();
           }
+          if (!mounted) return;
           context.goNamed(route);
         }, test: (error) => error is ExceptionInterruptAndExit)
         .onError((error, stackTrace) {
@@ -320,6 +321,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
             _examineAdminPassword(_password).then((_) {
               return _checkInternetConnection();
             }).then((_) {
+              if (!mounted) return;
               logger.i(
                   '[PnP]: Logged in successfully by given password, go to Setup page');
               context.goNamed(RouteNamed.pnpConfig);
@@ -402,6 +404,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
     _examineAdminPassword(_textEditController.text)
         .then((_) => _checkInternetConnection())
         .then((_) {
+      if (!mounted) return;
       logger.i(
           '[PnP]: Logged in successfully by tapping Login, go to Setup page');
       context.goNamed(RouteNamed.pnpConfig);
@@ -465,6 +468,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
           return '';
         });
       }
+      if (!mounted) return;
       context.goNamed(
         RouteNamed.pnpNoInternetConnection,
         extra: ssid.isEmpty ? null : {'ssid': ssid},

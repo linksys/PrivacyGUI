@@ -27,7 +27,7 @@ class _PnpIspAuthViewState extends ConsumerState<PnpIspAuthView> {
   final _passwordController = TextEditingController();
   late final InternetSettingsState newSettings;
   bool _isLoading = false;
-  String? _spinnerText; //TODO: all spinner text is not confirmed
+  String? _spinnerText;
   String? _inputPasswordError;
   StreamSubscription? subscription;
 
@@ -51,8 +51,9 @@ class _PnpIspAuthViewState extends ConsumerState<PnpIspAuthView> {
         .checkAdminPassword(password)
         .then((value) {
       logger.i('[PnP]: Troubleshooter - Login succeeded');
-      // Login succeeded
-      context.pop(true);
+      if (mounted) {
+        context.pop(true);
+      }
     }).catchError((error) {
       logger
           .e('[PnP]: Troubleshooter - Login failed - Invalid admin password!');

@@ -71,8 +71,10 @@ class _TimezoneContentViewState extends ConsumerState<TimezoneView>
               _notifier.save(),
               title: loc(context).savingChanges,
             ).then((value) {
-              context.pop(true);
-              showChangesSavedSnackBar();
+              if (context.mounted) {
+                context.pop(true);
+                showChangesSavedSnackBar();
+              }
             }).onError((error, stackTrace) {
               showErrorMessageSnackBar(error);
             });

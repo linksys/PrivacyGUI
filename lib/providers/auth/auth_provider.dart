@@ -102,7 +102,7 @@ final authProvider =
     AsyncNotifierProvider<AuthNotifier, AuthState>(() => AuthNotifier());
 
 class AuthNotifier extends AsyncNotifier<AuthState> {
-  bool _isInit = false;
+  // bool _isInit = false;
 
   AuthNotifier() : super() {
     LinksysHttpClient.onError = (error) async {

@@ -53,7 +53,7 @@ class _StaticRoutingDetailViewState
     int? index;
     if (rule != null) {
       _isEdit = true;
-      _routeNameController.text = rule!.name;
+      _routeNameController.text = rule.name;
       _subnetController.text = NetworkUtils.prefixLengthToSubnetMask(
           rule.settings.networkPrefixLength);
       _gatewayController.text = rule.settings.gateway ?? '';

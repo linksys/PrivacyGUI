@@ -57,14 +57,14 @@ Future<Uint8List> createQRCodeBytes(QrImage qr, {int size = 360}) async {
   );
   img.clear(image.ColorFloat16.rgb(255, 255, 255));
 
-  String str = '';
+  // String str = '';
   for (var x = 0; x < qr.moduleCount; x++) {
     for (var y = 0; y < qr.moduleCount; y++) {
       if (qr.isDark(x, y) == false) {
-        str += ' ';
+        // str += ' ';
         continue;
       }
-      str += '*';
+      // str += '*';
       int xx = (x * blockSize) + blockSize;
       int yy = (y * blockSize) + blockSize;
 
@@ -77,7 +77,7 @@ Future<Uint8List> createQRCodeBytes(QrImage qr, {int size = 360}) async {
             color: image.ColorUint8.rgb(0, 0, 0));
       }
     }
-    str += '\n';
+    // str += '\n';
   }
 
   // TODO add icon in the center

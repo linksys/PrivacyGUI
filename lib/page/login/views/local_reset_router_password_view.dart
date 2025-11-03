@@ -211,6 +211,7 @@ class _LocalResetRouterPasswordViewState
           code,
         )
         .then<void>((_) {
+      if (!mounted) return;
       dialogTitle = loc(context).successExclamation;
       dialogContent = loc(context).localResetRouterPasswordSuccessContent;
       actionTitle = loc(context).localResetRouterPasswordSuccessNext;
@@ -218,7 +219,7 @@ class _LocalResetRouterPasswordViewState
         context.goNamed(RouteNamed.localLoginPassword, extra: {'reset': true});
       };
     }).onError((error, stackTrace) {
-      //TODO: Error messages are not defined by UI
+      if (!mounted) return;
       dialogTitle = loc(context).failedExclamation;
       dialogContent = loc(context).invalidAdminPassword;
       actionTitle = loc(context).ok;
@@ -226,6 +227,7 @@ class _LocalResetRouterPasswordViewState
         context.pop();
       };
     }).whenComplete(() {
+      if (!mounted) return;
       showAdaptiveDialog(
         context: context,
         builder: (BuildContext context) => AlertDialog.adaptive(

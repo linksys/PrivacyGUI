@@ -265,9 +265,13 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
         setState(() {
           _selectedList = [];
         });
-        showSimpleSnackBar(context, loc(context).deviceDeleted);
+        if (mounted) {
+          showSimpleSnackBar(context, loc(context).deviceDeleted);
+        }
       }).onError((error, stackTrace) {
-        showFailedSnackBar(context, loc(context).generalError);
+        if (mounted) {
+          showFailedSnackBar(context, loc(context).generalError);
+        }
       }),
     );
   }
@@ -297,9 +301,13 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
                   .read(deviceManagerProvider.notifier)
                   .deauthClient(macAddress: macAddress)
                   .then((_) {
-                showSimpleSnackBar(context, loc(context).successExclamation);
+                if (mounted) {
+                  showSimpleSnackBar(context, loc(context).successExclamation);
+                }
               }).onError((error, stackTrace) {
-                showFailedSnackBar(context, loc(context).generalError);
+                if (mounted) {
+                  showFailedSnackBar(context, loc(context).generalError);
+                }
               }),
             );
           },

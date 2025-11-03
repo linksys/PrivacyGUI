@@ -110,13 +110,23 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
                       .read(pnpProvider.notifier)
                       .checkInternetConnection(30)
                       .then((value) {
-                    logger.i(
-                        '[PnP Troubleshooter]: Internet connection is OK after resetting the modem');
-                    context.goNamed(RouteNamed.pnp);
+                    if (context.mounted) {
+                      logger.i(
+                          '[PnP Troubleshooter]: Internet connection is OK after resetting the modem');
+                      context.goNamed(RouteNamed.pnp);
+                    } else {
+                      logger.e(
+                          '[PnP Troubleshooter]: Internet connection is OK after resetting the modem, but the view is not mounted');
+                    }
                   }).catchError((error, stackTrace) {
-                    logger.e(
-                        '[PnP Troubleshooter]: Internet connection still fails after resetting the modem');
-                    context.goNamed(RouteNamed.pnpNoInternetConnection);
+                    if (context.mounted) {
+                      logger.e(
+                          '[PnP Troubleshooter]: Internet connection still fails after resetting the modem');
+                      context.goNamed(RouteNamed.pnpNoInternetConnection);
+                    } else {
+                      logger.e(
+                          '[PnP Troubleshooter]: Internet connection still fails after resetting the modem, but the view is not mounted');
+                    }
                   }, test: (error) {
                     return error is ExceptionNoInternetConnection;
                   });

@@ -33,7 +33,6 @@ import 'package:privacygui_widgets/widgets/bullet_list/bullet_style.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/lotties/mesh_wired_connection.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
 
 class InstantTopologyView extends ArgumentsConsumerStatefulView {
   const InstantTopologyView({super.key, super.args});
@@ -330,14 +329,18 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
             await ref.read(pollingProvider.notifier).forcePolling();
           }
         });
+        // If the widget is not mounted, cancel reboot even though the user has agreed
+        if (!mounted) return;
         doSomethingWithSpinner(context, reboot, messages: [
           '${loc(context).restarting}.',
           '${loc(context).restarting}..',
           '${loc(context).restarting}...'
         ]).then((value) {
           ref.read(pollingProvider.notifier).startPolling();
+          if (!mounted) return;
           showSuccessSnackBar(context, loc(context).successExclamation);
         }).catchError((error) {
+          if (!mounted) return;
           showRouterNotFoundAlert(context, ref);
         }, test: (error) => error is JNAPSideEffectError);
       }
@@ -350,6 +353,8 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
         node?.toFlatList().map((e) => e.data.deviceId).toList() ?? [];
     showFactoryResetModal(context, isMaster, isLastNode).then((isAgreed) {
       if (isAgreed == true) {
+        // If the widget is not mounted, cancel factory reset even though the user has agreed
+        if (!mounted) return;
         doSomethingWithSpinner(
           context,
           ref
@@ -368,7 +373,7 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
             },
           ),
         ).then((_) {
-          if (isMaster) {
+          if (isMaster && mounted) {
             // If the master is restored to factory settings, the current session becomes invalid
             showRouterNotFoundAlert(context, ref);
           }
@@ -404,7 +409,8 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
       barrierDismissible: false,
       builder: (BuildContext dialogContext) {
         final addWiredNodesNotifier = ref.read(addWiredNodesProvider.notifier);
-        Future.doWhile(() => !mounted).then((_) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
           addWiredNodesNotifier.startAutoOnboarding(context);
         });
 
@@ -508,8 +514,10 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
             if ((value ?? false)) {
               // Do remove
               _doRemoveNode(node).then((result) {
+                if (!context.mounted) return;
                 showSimpleSnackBar(context, loc(context).nodeRemoved);
               }).onError((error, stackTrace) {
+                if (!context.mounted) return;
                 showSimpleSnackBar(context, loc(context).unknownError);
               });
             }
