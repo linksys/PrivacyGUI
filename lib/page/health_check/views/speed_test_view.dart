@@ -216,7 +216,6 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
         children: [
           _meterView(state.step, bandwidth.value, bandwidth.unit, latency),
           const AppGap.medium(),
-          const Spacer(),
           _infoView(state),
           const AppGap.medium(),
         ],
