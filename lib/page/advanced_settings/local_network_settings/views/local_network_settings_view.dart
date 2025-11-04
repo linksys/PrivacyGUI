@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -27,9 +26,6 @@ import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 import 'package:privacy_gui/core/jnap/providers/assign_ip/base_assign_ip.dart'
     if (dart.library.html) 'package:privacy_gui/core/jnap/providers/assign_ip/web_assign_ip.dart';
-import 'package:privacy_gui/core/jnap/providers/ip_getter/get_local_ip.dart'
-    if (dart.library.io) 'package:privacy_gui/core/jnap/providers/ip_getter/mobile_get_local_ip.dart'
-    if (dart.library.html) 'package:privacy_gui/core/jnap/providers/ip_getter/web_get_local_ip.dart';
 
 class LocalNetworkSettingsView extends ArgumentsConsumerStatefulView {
   const LocalNetworkSettingsView({
@@ -118,10 +114,10 @@ class _LocalNetworkSettingsViewState
       _ipAddressView(state),
       _dhcpServerView(state),
     ];
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       padding: EdgeInsets.zero,
-      useMainPadding: false,
       tabController: _tabController,
+      useMainPadding: false,
       bottomBar: PageBottomBar(
         isPositiveEnabled: _notifier.isDirty() && !_hasError(state),
         onPositiveTap: _saveSettings,
@@ -178,7 +174,6 @@ class _LocalNetworkSettingsViewState
 
   Widget _ipAddressView(LocalNetworkSettingsState state) {
     return _viewLayout(
-      col: 6.col,
       child: AppCard(
         padding: const EdgeInsets.symmetric(
             vertical: Spacing.large3, horizontal: Spacing.large2),
@@ -231,19 +226,23 @@ class _LocalNetworkSettingsViewState
   }
 
   Widget _viewLayout({double? col, required Widget child}) {
-    col = col ?? 9.col;
-    return StyledAppPageView.innerPage(
-      child: (context, constraints) => ResponsiveLayout.isMobileLayout(context)
-          ? child
-          : Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: col,
-                  child: child,
-                ),
-              ],
-            ),
+    col = col ?? 12.col;
+    return SingleChildScrollView(
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+            horizontal: ResponsiveLayout.pageHorizontalPadding(context)),
+        child: ResponsiveLayout.isMobileLayout(context)
+            ? child
+            : Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: col,
+                    child: child,
+                  ),
+                ],
+              ),
+      ),
     );
   }
 

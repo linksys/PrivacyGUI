@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
@@ -120,7 +119,7 @@ class _SelectDeviceViewState extends ConsumerState<SelectDeviceView> {
         .toList();
     final offlineDevices =
         state.devices.where((device) => !device.isOnline).toList();
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       title: loc(context).selectDevices,
       bottomBar: _selectMode == SelectMode.multiple
           ? PageBottomBar(
@@ -130,71 +129,68 @@ class _SelectDeviceViewState extends ConsumerState<SelectDeviceView> {
                 context.pop(selected);
               })
           : null,
-      child: (context, constraints) => AppBasicLayout(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        content: GroupList<DeviceListItem>(
-            groups: [
-              if (onlineDevices.isNotEmpty)
-                GroupItem(
-                  key: const ObjectKey('online'),
-                  label: loc(context).onlineDevices,
-                  items: onlineDevices,
-                ),
-              if (!_onlineOnly && offlineDevices.isNotEmpty)
-                GroupItem(
-                  key: const ObjectKey('offline'),
-                  label: loc(context).offlineDevices,
-                  items: offlineDevices,
-                ),
-            ],
-            itemBuilder: (item) {
-              final value = _subMessage(item);
-              final selectable = _selectable(item);
-              return Opacity(
-                opacity: _selectMode == SelectMode.multiple
-                    ? 1
-                    : selectable
-                        ? 1
-                        : 0.3,
-                child: AppListCard(
-                  color: selected.any((element) => element == item)
-                      ? Theme.of(context).colorScheme.primaryContainer
-                      : null,
-                  borderColor: selected.any((element) => element == item)
-                      ? Theme.of(context).colorScheme.primary
-                      : null,
-                  title: AppText.labelMedium(item.name),
-                  leading: _selectMode == SelectMode.multiple
-                      ? Opacity(
-                          opacity: selectable ? 1 : 0.3,
-                          child: AbsorbPointer(
-                            absorbing: !selectable,
-                            child: AppCheckbox(
-                              value: selected.any((element) => element == item),
-                              onChanged: (value) {
-                                onChecked(item);
-                              },
-                            ),
-                          ),
-                        )
-                      : null,
-                  description:
-                      selectable ? AppText.bodyMedium(value ?? '') : null,
-                  onTap: _selectMode == SelectMode.multiple
-                      ? selectable
-                          ? () {
+      child: (context, constraints) => GroupList<DeviceListItem>(
+          groups: [
+            if (onlineDevices.isNotEmpty)
+              GroupItem(
+                key: const ObjectKey('online'),
+                label: loc(context).onlineDevices,
+                items: onlineDevices,
+              ),
+            if (!_onlineOnly && offlineDevices.isNotEmpty)
+              GroupItem(
+                key: const ObjectKey('offline'),
+                label: loc(context).offlineDevices,
+                items: offlineDevices,
+              ),
+          ],
+          itemBuilder: (item) {
+            final value = _subMessage(item);
+            final selectable = _selectable(item);
+            return Opacity(
+              opacity: _selectMode == SelectMode.multiple
+                  ? 1
+                  : selectable
+                      ? 1
+                      : 0.3,
+              child: AppListCard(
+                color: selected.any((element) => element == item)
+                    ? Theme.of(context).colorScheme.primaryContainer
+                    : null,
+                borderColor: selected.any((element) => element == item)
+                    ? Theme.of(context).colorScheme.primary
+                    : null,
+                title: AppText.labelMedium(item.name),
+                leading: _selectMode == SelectMode.multiple
+                    ? Opacity(
+                        opacity: selectable ? 1 : 0.3,
+                        child: AbsorbPointer(
+                          absorbing: !selectable,
+                          child: AppCheckbox(
+                            value: selected.any((element) => element == item),
+                            onChanged: (value) {
                               onChecked(item);
-                            }
-                          : null
-                      : selectable
-                          ? () {
-                              context.pop([item]);
-                            }
-                          : null,
-                ),
-              );
-            }),
-      ),
+                            },
+                          ),
+                        ),
+                      )
+                    : null,
+                description:
+                    selectable ? AppText.bodyMedium(value ?? '') : null,
+                onTap: _selectMode == SelectMode.multiple
+                    ? selectable
+                        ? () {
+                            onChecked(item);
+                          }
+                        : null
+                    : selectable
+                        ? () {
+                            context.pop([item]);
+                          }
+                        : null,
+              ),
+            );
+          }),
     );
   }
 

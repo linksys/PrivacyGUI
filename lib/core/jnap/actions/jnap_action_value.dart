@@ -298,11 +298,6 @@ enum _JNAPActionValue {
   // TODO - Checking for the reference
   getRadioInfo2(value: 'http://linksys.com/jnap/wirelessap/GetRadioInfo2'),
   getRadioInfo3(value: 'http://linksys.com/jnap/wirelessap/GetRadioInfo3'),
-  // TODO - Checking for the reference
-  getMountPartitions(
-      value: 'http://linksys.com/jnap/storage/GetMountedPartitions'),
-  // TODO - Checking for the reference
-  getPartitions(value: 'http://linksys.com/jnap/storage/GetPartitions'),
   getWPSServerSessionStatus(
       value: 'http://linksys.com/jnap/wirelessap/GetWPSServerSessionStatus'),
   setRadioSettings(

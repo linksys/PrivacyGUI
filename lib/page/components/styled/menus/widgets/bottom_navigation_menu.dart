@@ -1,11 +1,9 @@
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/page/dashboard/views/dashboard_shell.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
 
 class BottomNavigationMenu extends StatefulWidget {
   final List<NaviType> items;

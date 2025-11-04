@@ -1,15 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
-import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/styled/consts.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
-import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_advanced_state.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/wifi_item.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -24,17 +19,11 @@ class WifiAdvancedSettingsView extends ConsumerWidget {
     // The state is now read from the single bundle provider.
     final advancedState = ref.watch(
         wifiBundleProvider.select((state) => state.settings.current.advanced));
-
-    return StyledAppPageView(
-      appBarStyle: AppBarStyle.none,
-      hideTopbar: true,
-      // The bottom bar is now handled by the parent WiFiMainView.
-      useMainPadding: true,
-      child: (context, constraints) => _buildGrid(context, ref, advancedState),
-    );
+    return _buildGrid(context, ref, advancedState);
   }
 
-  Widget _buildGrid(BuildContext context, WidgetRef ref, WifiAdvancedSettingsState state) {
+  Widget _buildGrid(
+      BuildContext context, WidgetRef ref, WifiAdvancedSettingsState state) {
     final notifier = ref.read(wifiBundleProvider.notifier);
     final advancedSettingWidgets = [
       if (state.isClientSteeringEnabled != null)
@@ -48,12 +37,20 @@ class WifiAdvancedSettingsView extends ConsumerWidget {
       if (state.isIptvEnabled != null)
         _buildIptv(context, notifier, state.isIptvEnabled!),
     ];
-    return MasonryGridView.count(
-      crossAxisCount: ResponsiveLayout.isMobileLayout(context) ? 1 : 2,
-      mainAxisSpacing: Spacing.small2,
-      crossAxisSpacing: ResponsiveLayout.columnPadding(context),
-      itemCount: advancedSettingWidgets.length,
-      itemBuilder: (context, index) => advancedSettingWidgets[index],
+    return SingleChildScrollView(
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+            horizontal: ResponsiveLayout.pageHorizontalPadding(context)),
+        child: MasonryGridView.count(
+          crossAxisCount: ResponsiveLayout.isMobileLayout(context) ? 1 : 2,
+          mainAxisSpacing: Spacing.small2,
+          crossAxisSpacing: ResponsiveLayout.columnPadding(context),
+          itemCount: advancedSettingWidgets.length,
+          itemBuilder: (context, index) => advancedSettingWidgets[index],
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+        ),
+      ),
     );
   }
 
@@ -142,12 +139,13 @@ class WifiAdvancedSettingsView extends ConsumerWidget {
     );
   }
 
-  Widget _buildMLO(
-      BuildContext context, WidgetRef ref, WifiBundleNotifier notifier, bool isEnabled) {
-    final wifiList = ref.watch(wifiBundleProvider.select((s) => s.settings.current.wifiList.mainWiFi));
+  Widget _buildMLO(BuildContext context, WidgetRef ref,
+      WifiBundleNotifier notifier, bool isEnabled) {
+    final wifiList = ref.watch(
+        wifiBundleProvider.select((s) => s.settings.current.wifiList.mainWiFi));
     // This logic might need to be moved to the notifier itself to be a derived state (status)
     bool showMLOWarning = notifier.checkingMLOSettingsConflicts(
-            Map.fromIterables(wifiList.map((e) => e.radioID), wifiList));
+        Map.fromIterables(wifiList.map((e) => e.radioID), wifiList));
     return AppCard(
       key: const Key('mlo'),
       padding: const EdgeInsets.all(Spacing.large2),

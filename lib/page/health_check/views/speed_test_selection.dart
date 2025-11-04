@@ -11,7 +11,6 @@ import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
 class SpeedTestSelectionView extends ConsumerWidget {
   const SpeedTestSelectionView({super.key});
@@ -25,10 +24,9 @@ class SpeedTestSelectionView extends ConsumerWidget {
     final isSpeedCheckSupported = ref
         .read(dashboardManagerProvider.notifier)
         .isHealthCheckModuleSupported('SpeedTest');
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       title: loc(context).speedTest,
-      child: (context, constraints) => AppBasicLayout(
-          content: SizedBox(
+      child: (context, constraints) => SizedBox(
         width: 6.col,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
@@ -42,7 +40,7 @@ class SpeedTestSelectionView extends ConsumerWidget {
             ])
           ],
         ),
-      )),
+      ),
     );
   }
 

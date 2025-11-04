@@ -55,11 +55,13 @@ class InstantVerifyView extends ArgumentsConsumerStatefulView {
 class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
+  late final Widget _instantTopologyWidget;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _instantTopologyWidget = InstantTopologyView.widget();
 
     ref.read(wanExternalProvider.notifier).fetch();
   }
@@ -76,9 +78,13 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
     final tabs = [loc(context).instantInfo, loc(context).instantTopology];
     final tabContents = [
       _instantInfo(context, ref),
-      _instantTopology(),
+      _instantTopologyWidget,
     ];
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
+      useMainPadding: false,
+      onRefresh: () {
+        return ref.read(pollingProvider.notifier).forcePolling();
+      },
       title: loc(context).instantVerify,
       actions: [
         AppIconButton.noPadding(
@@ -119,37 +125,65 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
   Widget _instantInfo(BuildContext context, WidgetRef ref) {
     final dashboardHomeState = ref.watch(dashboardHomeProvider);
     final desktopCol = 4.col;
-    return StyledAppPageView.innerPage(
-      onRefresh: () {
-        return ref.read(pollingProvider.notifier).forcePolling();
-      },
-      child: (context, constraints) => ResponsiveLayout.isMobileLayout(context)
-          ? Column(
-              children: [
-                _deviceInfoCard(context, ref),
-                const AppGap.medium(),
-                _connectivityContentWidget(context, ref),
-                const AppGap.medium(),
-                _speedTestContent(context),
-                const AppGap.medium(),
-                _portsCard(context, ref),
-              ],
-            )
-          : Column(
-              children: [
-                dashboardHomeState.isHealthCheckSupported
-                    ? IntrinsicHeight(
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
+    return SingleChildScrollView(
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+            horizontal: ResponsiveLayout.pageHorizontalPadding(context)),
+        child: ResponsiveLayout.isMobileLayout(context)
+            ? Column(
+                children: [
+                  _deviceInfoCard(context, ref),
+                  const AppGap.medium(),
+                  _connectivityContentWidget(context, ref),
+                  const AppGap.medium(),
+                  _speedTestContent(context),
+                  const AppGap.medium(),
+                  _portsCard(context, ref),
+                ],
+              )
+            : Column(
+                children: [
+                  dashboardHomeState.isHealthCheckSupported
+                      ? IntrinsicHeight(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              SizedBox(
+                                width: desktopCol,
+                                child: _deviceInfoCard(context, ref),
+                              ),
+                              const AppGap.gutter(),
+                              SizedBox(
+                                width: desktopCol,
+                                child: _connectivityContentWidget(context, ref),
+                              ),
+                              const AppGap.gutter(),
+                              SizedBox(
+                                width: desktopCol,
+                                child: _speedTestContent(context),
+                              ),
+                            ],
+                          ),
+                        )
+                      : Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            SizedBox(
-                              width: desktopCol,
-                              child: _deviceInfoCard(context, ref),
-                            ),
-                            const AppGap.gutter(),
-                            SizedBox(
-                              width: desktopCol,
-                              child: _connectivityContentWidget(context, ref),
+                            IntrinsicHeight(
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  SizedBox(
+                                    width: desktopCol,
+                                    child: _deviceInfoCard(context, ref),
+                                  ),
+                                  const AppGap.gutter(),
+                                  SizedBox(
+                                    width: desktopCol,
+                                    child: _connectivityContentWidget(
+                                        context, ref),
+                                  ),
+                                ],
+                              ),
                             ),
                             const AppGap.gutter(),
                             SizedBox(
@@ -158,43 +192,12 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
                             ),
                           ],
                         ),
-                      )
-                    : Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          IntrinsicHeight(
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                SizedBox(
-                                  width: desktopCol,
-                                  child: _deviceInfoCard(context, ref),
-                                ),
-                                const AppGap.gutter(),
-                                SizedBox(
-                                  width: desktopCol,
-                                  child:
-                                      _connectivityContentWidget(context, ref),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const AppGap.gutter(),
-                          SizedBox(
-                            width: desktopCol,
-                            child: _speedTestContent(context),
-                          ),
-                        ],
-                      ),
-                const AppGap.medium(),
-                _portsCard(context, ref),
-              ],
-            ),
+                  const AppGap.medium(),
+                  _portsCard(context, ref),
+                ],
+              ),
+      ),
     );
-  }
-
-  Widget _instantTopology() {
-    return InstantTopologyView.widget();
   }
 
   Widget _deviceInfoCard(BuildContext context, WidgetRef ref) {
@@ -383,10 +386,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
 
   Widget _portsCard(BuildContext context, WidgetRef ref) {
     final state = ref.watch(dashboardHomeProvider);
-    final isLoading = ref
-        .watch(deviceManagerProvider.select((value) => value.deviceList))
-        .isEmpty;
-    return Container(
+    return SizedBox(
       height: ResponsiveLayout.isMobileLayout(context) ? 224 : 208,
       width: double.infinity,
       child: AppCard(

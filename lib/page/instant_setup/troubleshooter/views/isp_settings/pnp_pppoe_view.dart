@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/models/internet_settings_enums.dart';
@@ -47,9 +46,8 @@ class _PnpPPPOEViewState extends ConsumerState<PnpPPPOEView> {
 
   @override
   Widget build(BuildContext context) {
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       title: loc(context).pnpPppoeTitle,
-      scrollable: true,
       child: (context, constraints) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

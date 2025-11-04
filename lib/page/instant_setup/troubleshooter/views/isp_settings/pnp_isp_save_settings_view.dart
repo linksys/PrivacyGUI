@@ -31,14 +31,14 @@ class PnpIspSaveSettingsView extends ArgumentsConsumerStatefulView {
 class _PnpIspSaveSettingsViewState
     extends ConsumerState<PnpIspSaveSettingsView> {
   final _passwordController = TextEditingController();
-  late final InternetSettingsState newSettings;
-  String? _spinnerText; //TODO: all spinner text is not confirmed
+  late final InternetSettings newSettings;
+  String? _spinnerText;
   StreamSubscription? subscription;
 
   @override
   void initState() {
     super.initState();
-    newSettings = widget.args['newSettings'] as InternetSettingsState;
+    newSettings = widget.args['newSettings'] as InternetSettings;
     _saveNewSettings();
   }
 
@@ -51,11 +51,11 @@ class _PnpIspSaveSettingsViewState
   Future<void> _saveNewSettings() {
     String? settingError;
     final wanType = WanType.resolve(
-      newSettings.current.ipv4Setting.ipv4ConnectionType,
+      newSettings.ipv4Setting.ipv4ConnectionType,
     )!;
     return ref
         .read(internetSettingsProvider.notifier)
-        .savePnpIpv4(newSettings.current)
+        .savePnpIpv4(newSettings)
         .then((value) {
       setState(() {
         _spinnerText = loc(context).savingChanges;
@@ -87,13 +87,15 @@ class _PnpIspSaveSettingsViewState
                     .then((value) {
                   logger.i(
                       '[PnP]: Troubleshooter - Check internet connection with new settings - OK');
-                  // Internet connection is OK
-                  context.goNamed(RouteNamed.pnp);
+                  if (mounted) {
+                    context.goNamed(RouteNamed.pnp);
+                  }
                 }).catchError((error) {
                   logger.e(
                       '[PnP]: Troubleshooter - Check internet connection with new settings - Failed');
-                  // Internet connection is Not OK
-                  context.pop(_getErrorMessage(wanType));
+                  if (mounted) {
+                    context.pop(_getErrorMessage(wanType));
+                  }
                 }, test: (error) => error is ExceptionNoInternetConnection);
               }
               subscription?.cancel();
@@ -116,7 +118,7 @@ class _PnpIspSaveSettingsViewState
     }).onError((error, stackTrace) {
       logger.e(
           '[PnP]: Troubleshooter - Failed to save the new settings - $error');
-
+      if (!mounted) return;
       if (error is JNAPSideEffectError) {
         final lastHandledResult = error.lastHandledResult;
         if (lastHandledResult != null && lastHandledResult is JNAPSuccess) {

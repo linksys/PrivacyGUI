@@ -53,7 +53,7 @@ class _StaticRoutingDetailViewState
     int? index;
     if (rule != null) {
       _isEdit = true;
-      _routeNameController.text = rule!.name;
+      _routeNameController.text = rule.name;
       _subnetController.text = NetworkUtils.prefixLengthToSubnetMask(
           rule.settings.networkPrefixLength);
       _gatewayController.text = rule.settings.gateway ?? '';
@@ -87,7 +87,7 @@ class _StaticRoutingDetailViewState
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(staticRoutingRuleProvider);
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       scrollable: true,
       title: _isEdit ? loc(context).edit : loc(context).addStaticRoute,
       bottomBar: PageBottomBar(

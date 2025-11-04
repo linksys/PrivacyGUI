@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,7 +19,6 @@ import 'package:privacy_gui/page/advanced_settings/static_routing/providers/stat
 import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_rule_view.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_view.dart';
 import 'package:privacy_gui/page/components/picker/region_picker_view.dart';
-import 'package:privacy_gui/page/components/settings_view/editable_card_list_edit_view.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/_ddns.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
@@ -32,7 +30,6 @@ import 'package:privacy_gui/page/instant_privacy/views/instant_privacy_view.dart
 import 'package:privacy_gui/page/instant_setup/providers/pnp_provider.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_isp_auth_view.dart';
 import 'package:privacy_gui/page/landing/_landing.dart';
-
 import 'package:privacy_gui/page/login/views/_views.dart';
 import 'package:privacy_gui/page/login/auto_parent/views/auto_parent_first_login_view.dart';
 import 'package:privacy_gui/page/login/views/local_reset_router_password_view.dart';
@@ -57,7 +54,6 @@ import 'package:privacy_gui/page/select_network/_select_network.dart';
 import 'package:privacy_gui/page/instant_verify/views/instant_verify_view.dart';
 import 'package:privacy_gui/page/support/faq_list_view.dart';
 import 'package:privacy_gui/page/instant_topology/views/instant_topology_view.dart';
-import 'package:privacy_gui/page/troubleshooting/_troubleshooting.dart';
 import 'package:privacy_gui/page/vpn/views/vpn_settings_page.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/views/mac_filtered_devices_view.dart';
@@ -250,39 +246,6 @@ class RouterNotifier extends ChangeNotifier {
   }
 
   Future<String?> _redirectLogic(GoRouterState state) async {
-    // [NEW] PnP status check guard
-    final routerType =
-        _ref.read(connectivityProvider).connectivityInfo.routerType;
-    final isLocal = BuildConfig.forceCommandType == ForceCommand.local ||
-        routerType != RouterType.others;
-    final isTryingToAccessPnp = state.matchedLocation.startsWith('/pnp');
-
-    // Only run this check if on a local network and not already in the PnP flow.
-    if (isLocal && !isTryingToAccessPnp) {
-      final pnpNotifier = _ref.read(pnpProvider.notifier);
-      try {
-        // We need to be sure we are talking to the correct device.
-        await pnpNotifier.fetchDeviceInfo(false);
-        final config = await pnpNotifier.autoConfigurationCheck();
-
-        // If userAcknowledgedAutoConfiguration is false, PnP is required.
-        final needsPnp = config?.userAcknowledgedAutoConfiguration == false;
-
-        if (needsPnp) {
-          logger.i(
-              '[Route]: Routing to ${state.matchedLocation} but PnP not complete. Forcing redirect to /pnp.');
-          return _goPnp(state.uri.query);
-        }
-      } catch (e) {
-        // If any of the PnP checks fail (e.g., device is unreachable),
-        // log it and fall through to the standard auth check logic below,
-        // which will likely handle the error by redirecting to a login/error page.
-        logger.d(
-            '[Route]: PnP check during redirect guard failed, proceeding to normal auth check. Error: $e');
-      }
-    }
-
-    // --- Original redirect logic ---
     final loginType =
         _ref.watch(authProvider.select((data) => data.value?.loginType));
 

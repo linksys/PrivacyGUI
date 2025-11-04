@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
-import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
@@ -33,46 +31,35 @@ class _AdvancedSettingsViewState extends ConsumerState<AdvancedSettingsView> {
   @override
   Widget build(BuildContext context) {
     advancedSettings = _initAdvancedSettingsItems();
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       title: loc(context).advancedSettings,
       scrollable: true,
-      child: (context, constraints) => Column(
-        children: [
-          Expanded(
-            child: ResponsiveLayout(
-                desktop: SizedBox(
-                  height: (advancedSettings.length / 2) * 56,
-                  child: GridView.builder(
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      mainAxisSpacing: Spacing.medium,
-                      crossAxisSpacing: ResponsiveLayout.columnPadding(context),
-                      childAspectRatio: (430 / 56),
-                      mainAxisExtent: 56,
-                    ),
-                    physics: const ScrollPhysics(),
-                    itemCount: advancedSettings.length,
-                    itemBuilder: (context, index) {
-                      return _advancedSettingCard(index);
-                    },
-                    shrinkWrap: true,
-                  ),
-                ),
-                mobile: SizedBox(
-                  height: advancedSettings.length * 56,
-                  child: ListView.separated(
-                    itemCount: advancedSettings.length,
-                    shrinkWrap: true,
-                    itemBuilder: (context, index) {
-                      return _advancedSettingCard(index);
-                    },
-                    separatorBuilder: (BuildContext context, int index) {
-                      return const AppGap.small2();
-                    },
-                  ),
-                )),
+      child: (context, constraints) => ResponsiveLayout(
+        desktop: GridView.builder(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            mainAxisSpacing: Spacing.medium,
+            crossAxisSpacing: ResponsiveLayout.columnPadding(context),
+            childAspectRatio: (430 / 56),
+            mainAxisExtent: 56,
           ),
-        ],
+          physics: const ScrollPhysics(),
+          itemCount: advancedSettings.length,
+          itemBuilder: (context, index) {
+            return _advancedSettingCard(index);
+          },
+          shrinkWrap: true,
+        ),
+        mobile: ListView.separated(
+          itemCount: advancedSettings.length,
+          shrinkWrap: true,
+          itemBuilder: (context, index) {
+            return _advancedSettingCard(index);
+          },
+          separatorBuilder: (BuildContext context, int index) {
+            return const AppGap.small2();
+          },
+        ),
       ),
     );
   }

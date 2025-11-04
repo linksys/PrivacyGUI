@@ -49,7 +49,6 @@ enum LocalNetworkErrorPrompt {
       LocalNetworkErrorPrompt.wins => loc(context).invalidIpAddress,
       LocalNetworkErrorPrompt.hostName => loc(context).hostNameCannotEmpty,
       LocalNetworkErrorPrompt.hostNameInvalid => loc(context).invalidHostname,
-      _ => null,
     };
   }
 

@@ -7,7 +7,6 @@ import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/i
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/widgets/optional_settings_form.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/widgets/wan_forms/wan_form_factory.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
@@ -34,35 +33,39 @@ class Ipv4ConnectionView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StyledAppPageView.innerPage(
-      child: (context, constraints) => ResponsiveLayout(
-        desktop: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Expanded(
-              child: _infoCard(context),
-            ),
-            const AppGap.gutter(),
-            Expanded(
-              child: OptionalSettingsForm(
+    return SingleChildScrollView(
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+            horizontal: ResponsiveLayout.pageHorizontalPadding(context)),
+        child: ResponsiveLayout(
+          desktop: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Expanded(
+                child: _infoCard(context),
+              ),
+              const AppGap.gutter(),
+              Expanded(
+                child: OptionalSettingsForm(
+                  isEditing: isEditing,
+                  isBridgeMode: isBridgeMode,
+                ),
+              ),
+            ],
+          ),
+          mobile: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _infoCard(context),
+              AppGap.large4(),
+              OptionalSettingsForm(
                 isEditing: isEditing,
                 isBridgeMode: isBridgeMode,
               ),
-            ),
-          ],
-        ),
-        mobile: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _infoCard(context),
-            AppGap.large4(),
-            OptionalSettingsForm(
-              isEditing: isEditing,
-              isBridgeMode: isBridgeMode,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -110,7 +113,6 @@ class Ipv4ConnectionView extends StatelessWidget {
   }
 
   Widget _buildInfoCards(BuildContext context) {
-    
     final wanType = WanType.resolve(
         internetSettingsState.current.ipv4Setting.ipv4ConnectionType);
 

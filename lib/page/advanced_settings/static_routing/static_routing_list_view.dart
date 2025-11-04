@@ -31,7 +31,7 @@ class _StaticRoutingListViewState extends ConsumerState<StaticRoutingListView> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(staticRoutingProvider);
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       title: loc(context).staticRouting,
       scrollable: true,
       child: (context, constraints) => Column(
@@ -169,7 +169,6 @@ class _StaticRoutingListViewState extends ConsumerState<StaticRoutingListView> {
       RoutingSettingInterface.lan => loc(context).lanWireless,
       RoutingSettingInterface.internet =>
         RoutingSettingInterface.internet.value,
-      _ => loc(context).lanWireless,
     };
   }
 }

@@ -1,6 +1,5 @@
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_provider.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/extensions/_extensions.dart';
@@ -18,7 +17,6 @@ import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/icon_device_category.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 
 final deviceManagerProvider =
     NotifierProvider<DeviceManagerNotifier, DeviceManagerState>(
@@ -156,8 +154,8 @@ class DeviceManagerNotifier extends Notifier<DeviceManagerState> {
     var nodes = allDevices.where((device) => device.nodeType != null).toList();
     var externalDevices =
         allDevices.where((device) => device.nodeType == null).toList();
-    final masterId =
-        nodes.firstWhereOrNull((node) => node.isAuthority)?.deviceID;
+    // final masterId =
+    //     nodes.firstWhereOrNull((node) => node.isAuthority)?.deviceID;
 
     // Collect all the connected devices for nodes
     nodes = nodes.fold(<LinksysDevice>[], (list, node) {

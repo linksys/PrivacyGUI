@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/util/wifi_credential.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -11,10 +10,7 @@ import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-
-import 'package:url_launcher/url_launcher.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:share_plus/share_plus.dart';
 
 enum ShareWifiOption {
   clipboard(displayTitle: 'Copy to clipboard', iconId: 'copyDefault'),
@@ -93,8 +89,7 @@ class _WiFiShareDetailViewState extends ConsumerState<WiFiShareDetailView>
                 data: WiFiCredential(
                   ssid: widget.ssid,
                   password: widget.password,
-                  type: SecurityType
-                      .wpa, //TODO: The security type is fixed for now
+                  type: SecurityType.wpa, //The security type is fixed for now
                 ).generate(),
               ),
             ),
@@ -105,28 +100,28 @@ class _WiFiShareDetailViewState extends ConsumerState<WiFiShareDetailView>
     );
   }
 
-  Widget _shareSection() {
-    return Row(
-      children: [
-        Expanded(
-            child: AppTextButton(
-          loc(context).textMessage,
-          icon: LinksysIcons.sms,
-          onTap: () {
-            _shareBySMS();
-          },
-        )),
-        Expanded(
-            child: AppTextButton(
-          loc(context).email,
-          icon: LinksysIcons.mail,
-          onTap: () {
-            _shareByEmail();
-          },
-        )),
-      ],
-    );
-  }
+  // Widget _shareSection() {
+  //   return Row(
+  //     children: [
+  //       Expanded(
+  //           child: AppTextButton(
+  //         loc(context).textMessage,
+  //         icon: LinksysIcons.sms,
+  //         onTap: () {
+  //           _shareBySMS();
+  //         },
+  //       )),
+  //       Expanded(
+  //           child: AppTextButton(
+  //         loc(context).email,
+  //         icon: LinksysIcons.mail,
+  //         onTap: () {
+  //           _shareByEmail();
+  //         },
+  //       )),
+  //     ],
+  //   );
+  // }
 
   Widget _wifiInfoSection() {
     return Column(
@@ -154,40 +149,40 @@ class _WiFiShareDetailViewState extends ConsumerState<WiFiShareDetailView>
     );
   }
 
-  void _shareBySMS() async {
-    final Uri smsUrl =
-        Uri(scheme: 'sms', path: '', query: '&body=$sharingContent');
-    await canLaunchUrl(smsUrl).then((isAllowed) {
-      if (isAllowed) {
-        launchUrl(smsUrl);
-      } else {
-        logger.e('Share WiFi - SMS: Cannot launch url');
-      }
-    });
-  }
+  // void _shareBySMS() async {
+  //   final Uri smsUrl =
+  //       Uri(scheme: 'sms', path: '', query: '&body=$sharingContent');
+  //   await canLaunchUrl(smsUrl).then((isAllowed) {
+  //     if (isAllowed) {
+  //       launchUrl(smsUrl);
+  //     } else {
+  //       logger.e('Share WiFi - SMS: Cannot launch url');
+  //     }
+  //   });
+  // }
 
-  void _shareByEmail() async {
-    final Uri emailUrl = Uri(
-        scheme: 'mailto',
-        path: '',
-        query: 'subject=Connect to my WiFi&body=$sharingContent');
-    await canLaunchUrl(emailUrl).then((isAllowed) {
-      if (isAllowed) {
-        launchUrl(emailUrl);
-      } else {
-        logger.e('Share WiFi - Email: Cannot launch url');
-      }
-    });
-  }
+  // void _shareByEmail() async {
+  //   final Uri emailUrl = Uri(
+  //       scheme: 'mailto',
+  //       path: '',
+  //       query: 'subject=Connect to my WiFi&body=$sharingContent');
+  //   await canLaunchUrl(emailUrl).then((isAllowed) {
+  //     if (isAllowed) {
+  //       launchUrl(emailUrl);
+  //     } else {
+  //       logger.e('Share WiFi - Email: Cannot launch url');
+  //     }
+  //   });
+  // }
 
-  void _shareByOtherWays() async {
-    Size size = MediaQuery.of(context).size;
-    await Share.shareWithResult(
-      sharingContent,
-      subject: 'Connect to my WiFi',
-      sharePositionOrigin: Rect.fromLTWH(0, 0, size.width, size.height / 2),
-    ).then((result) {
-      logger.d('Share WiFi - More options: result=${result.status}');
-    });
-  }
+  // void _shareByOtherWays() async {
+  //   Size size = MediaQuery.of(context).size;
+  //   await Share.shareWithResult(
+  //     sharingContent,
+  //     subject: 'Connect to my WiFi',
+  //     sharePositionOrigin: Rect.fromLTWH(0, 0, size.width, size.height / 2),
+  //   ).then((result) {
+  //     logger.d('Share WiFi - More options: result=${result.status}');
+  //   });
+  // }
 }

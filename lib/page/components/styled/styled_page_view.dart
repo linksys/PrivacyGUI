@@ -245,6 +245,83 @@ class StyledAppPageView extends ConsumerStatefulWidget {
     );
   }
 
+  /// A factory constructor for creating a page with a Sliver AppBar enabled by default.
+  factory StyledAppPageView.withSliver({
+    Key? key,
+    Widget Function(BuildContext context, BoxConstraints constraints)? child,
+    String? title,
+    EdgeInsets? padding,
+    bool? scrollable = true,
+    double toolbarHeight = kDefaultToolbarHeight,
+    Future<void> Function()? onRefresh,
+    VoidCallback? onBackTap,
+    StyledBackState backState = StyledBackState.enabled,
+    List<Widget>? actions,
+    Widget? bottomSheet,
+    Widget? bottomNavigationBar,
+    AppBarStyle appBarStyle = AppBarStyle.back,
+    bool handleNoConnection = false,
+    bool handleBanner = false,
+    IconData? menuIcon,
+    PageMenu? menu,
+    Widget? menuWidget,
+    ScrollController? controller,
+    ({
+      bool left,
+      bool top,
+      bool right,
+      bool bottom
+    }) enableSafeArea = (left: true, top: true, right: true, bottom: true),
+    PageBottomBar? bottomBar,
+    bool menuOnRight = false,
+    bool largeMenu = false,
+    Widget? topbar,
+    String? markLabel,
+    List<Widget>? tabs,
+    List<Widget>? tabContentViews,
+    TabController? tabController,
+    void Function(int index)? onTabTap,
+    bool hideTopbar = false,
+    bool useMainPadding = true,
+    PageContentType pageContentType = PageContentType.flexible,
+  }) {
+    return StyledAppPageView(
+      key: key,
+      child: child,
+      title: title,
+      padding: padding,
+      scrollable: scrollable,
+      toolbarHeight: toolbarHeight,
+      onBackTap: onBackTap,
+      onRefresh: onRefresh,
+      backState: backState,
+      actions: actions,
+      bottomSheet: bottomSheet,
+      bottomNavigationBar: bottomNavigationBar,
+      appBarStyle: appBarStyle,
+      handleNoConnection: handleNoConnection,
+      handleBanner: handleBanner,
+      menuIcon: menuIcon,
+      menu: menu,
+      menuWidget: menuWidget,
+      controller: controller,
+      enableSafeArea: enableSafeArea,
+      bottomBar: bottomBar,
+      menuOnRight: menuOnRight,
+      largeMenu: largeMenu,
+      topbar: topbar,
+      useMainPadding: useMainPadding,
+      markLabel: markLabel,
+      tabs: tabs,
+      tabContentViews: tabContentViews,
+      tabController: tabController,
+      onTabTap: onTabTap,
+      hideTopbar: hideTopbar,
+      pageContentType: pageContentType,
+      enableSliverAppBar: true,
+    );
+  }
+
   @override
   ConsumerState<StyledAppPageView> createState() => _StyledAppPageViewState();
 }
@@ -326,6 +403,14 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
             body = _SliverWithoutTabsLayout(state: this);
           }
 
+          // Background
+          body = DecoratedBox(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.background,
+            ),
+            child: body,
+          );
+
           // Wrap with RefreshIndicator if needed.
           if (widget.onRefresh != null) {
             body = RefreshIndicator(
@@ -406,6 +491,7 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (widget.backState == StyledBackState.none) AppGap.small2(),
                   Flexible(
                     fit: FlexFit.loose,
                     child: AppText.titleLarge(
@@ -422,7 +508,7 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
               ),
             ),
       actions: _buildActions(context),
-      pinned: true,
+      pinned: ResponsiveLayout.isMobileLayout(context) ? false : true,
       floating: true,
       snap: true,
       toolbarHeight: widget.toolbarHeight,
@@ -521,6 +607,7 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
         yield const AppGap.small2();
       } else {
         yield element;
+        yield const AppGap.large2();
       }
     }).toList();
   }
@@ -544,8 +631,10 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
                       identifier: 'now-page-bottom-container',
                       child: Padding(
                         padding: EdgeInsets.symmetric(
-                            horizontal: ResponsiveLayout.pageHorizontalPadding(
-                                context)),
+                            horizontal: widget.useMainPadding
+                                ? ResponsiveLayout.pageHorizontalPadding(
+                                    context)
+                                : Spacing.large2),
                         child: Row(
                           children: [
                             if (ResponsiveLayout.isMobileLayout(context)) ...[
@@ -715,8 +804,9 @@ class _SliverWithTabsLayout extends StatelessWidget {
     );
 
     return NestedScrollView(
-      physics:
-          state.widget.scrollable == false ? const NeverScrollableScrollPhysics() : null,
+      physics: state.widget.scrollable == false
+          ? const NeverScrollableScrollPhysics()
+          : null,
       controller: state._scrollController,
       headerSliverBuilder: (context, innerBoxIsScrolled) {
         return [
@@ -730,17 +820,20 @@ class _SliverWithTabsLayout extends StatelessWidget {
             state._buildSliverAppBar(context, state.ref)!,
           SliverPersistentHeader(
             delegate: _SliverTabBarDelegate(tabBar),
-            pinned: true,
+            pinned: ResponsiveLayout.isMobileLayout(context) ? false : true,
           ),
         ];
       },
       body: TabBarView(
+        physics: NeverScrollableScrollPhysics(),
         controller: state.widget.tabController,
         children: state.widget.tabContentViews!
-            .map((e) => Padding(
-                  padding: state.widget.useMainPadding
-                      ? EdgeInsets.symmetric(horizontal: mainContentPadding)
-                      : EdgeInsets.zero,
+            .map((e) => Container(
+                  color: Theme.of(context).colorScheme.background,
+                  padding: EdgeInsets.symmetric(
+                      horizontal:
+                          state.widget.useMainPadding ? mainContentPadding : 0,
+                      vertical: Spacing.medium),
                   child: e,
                 ))
             .toList(),
@@ -759,9 +852,46 @@ class _SliverWithoutTabsLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final mainContentPadding = ResponsiveLayout.pageHorizontalPadding(context);
+    final layoutBuilder = LayoutBuilder(
+      builder: (context, constraints) {
+        // On desktop with a menu, show a side-by-side layout.
+        if (!ResponsiveLayout.isMobileLayout(context) && state.hasMenu()) {
+          final views = [
+            SizedBox(
+              width: state.widget.largeMenu ? 4.col : 3.col,
+              child: AppCard(
+                child: state._createMenuWidget(context),
+              ),
+            ),
+            const AppGap.gutter(),
+            Expanded(
+              child: state.widget.child?.call(context, constraints) ??
+                  const SizedBox.shrink(),
+            ),
+          ];
+          return Padding(
+            padding: state.widget.padding ?? EdgeInsets.zero,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children:
+                  state.widget.menuOnRight ? views.reversed.toList() : views,
+            ),
+          );
+        } else {
+          // On mobile or without a menu, show the main child directly.
+          return Padding(
+            padding: state.widget.padding ?? EdgeInsets.zero,
+            child: state.widget.child?.call(context, constraints) ??
+                const SizedBox.shrink(),
+          );
+        }
+      },
+    );
     return CustomScrollView(
-      physics:
-          state.widget.scrollable == false ? const NeverScrollableScrollPhysics() : null,
+      physics: state.widget.scrollable == false
+          ? const NeverScrollableScrollPhysics()
+          : null,
       controller: state._scrollController,
       slivers: [
         if (!state.widget.hideTopbar)
@@ -773,49 +903,17 @@ class _SliverWithoutTabsLayout extends StatelessWidget {
         if (state.widget.appBarStyle != AppBarStyle.none)
           state._buildSliverAppBar(context, state.ref)!,
         SliverPadding(
-          padding: state.widget.useMainPadding
-              ? EdgeInsets.symmetric(horizontal: mainContentPadding)
-              : EdgeInsets.zero,
-          sliver: SliverToBoxAdapter(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                // On desktop with a menu, show a side-by-side layout.
-                if (!ResponsiveLayout.isMobileLayout(context) &&
-                    state.hasMenu()) {
-                  final views = [
-                    SizedBox(
-                      width: state.widget.largeMenu ? 4.col : 3.col,
-                      child: AppCard(
-                        child: state._createMenuWidget(context),
-                      ),
-                    ),
-                    const AppGap.gutter(),
-                    Expanded(
-                      child: state.widget.child?.call(context, constraints) ??
-                          const SizedBox.shrink(),
-                    ),
-                  ];
-                  return Padding(
-                    padding: state.widget.padding ?? EdgeInsets.zero,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: state.widget.menuOnRight
-                          ? views.reversed.toList()
-                          : views,
-                    ),
-                  );
-                } else {
-                  // On mobile or without a menu, show the main child directly.
-                  return Padding(
-                    padding: state.widget.padding ?? EdgeInsets.zero,
-                    child: state.widget.child?.call(context, constraints) ??
-                        const SizedBox.shrink(),
-                  );
-                }
-              },
-            ),
-          ),
+          padding: EdgeInsets.symmetric(
+              horizontal: state.widget.useMainPadding ? mainContentPadding : 0,
+              vertical: Spacing.medium),
+          sliver: state.widget.pageContentType == PageContentType.fit
+              ? SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: layoutBuilder,
+                )
+              : SliverToBoxAdapter(
+                  child: layoutBuilder,
+                ),
         ),
       ],
     );
@@ -837,9 +935,8 @@ class _NonSliverLayout extends StatelessWidget {
       children: [
         Padding(
           padding: EdgeInsets.only(
-              bottom: state.widget.bottomBar != null
-                  ? kDefaultBottomHeight
-                  : 0.0),
+              bottom:
+                  state.widget.bottomBar != null ? kDefaultBottomHeight : 0.0),
           child: state.widget.tabs != null
               ? Container(
                   color: Theme.of(context).colorScheme.background,
@@ -902,9 +999,9 @@ class _NonSliverLayout extends StatelessWidget {
                         const AppGap.gutter(),
                       ],
                       Expanded(
-                          child: state.widget.child
-                                  ?.call(context, constraints) ??
-                              const SizedBox.shrink()),
+                          child:
+                              state.widget.child?.call(context, constraints) ??
+                                  const SizedBox.shrink()),
                     ];
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -939,8 +1036,7 @@ class _NonSliverLayout extends StatelessWidget {
       children: [
         if (!state.widget.hideTopbar)
           state.widget.topbar ??
-              const PreferredSize(
-                  preferredSize: Size(0, 80), child: TopBar()),
+              const PreferredSize(preferredSize: Size(0, 80), child: TopBar()),
         Expanded(child: content),
       ],
     );

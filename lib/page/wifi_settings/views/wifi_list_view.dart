@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/components/styled/consts.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/views/wifi_list_advanced_mode_view.dart';
 import 'package:privacy_gui/page/wifi_settings/views/wifi_list_simple_mode_view.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 
 class WiFiListView extends ArgumentsConsumerStatelessView {
   const WiFiListView({Key? key, super.args}) : super(key: key);
@@ -24,45 +23,38 @@ class WiFiListView extends ArgumentsConsumerStatelessView {
         .map((e) => e.radioID.bandName)
         .toList()
         .join(', ');
-
-    return StyledAppPageView(
-      appBarStyle: AppBarStyle.none,
-      hideTopbar: true,
-      scrollable: true,
-      padding: EdgeInsets.zero,
-      // The bottom bar is now handled by the parent WiFiMainView.
-      useMainPadding: true,
-      child: (context, constraints) {
-        return Column(
+    return SingleChildScrollView(
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+            horizontal: ResponsiveLayout.pageHorizontalPadding(context)),
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _wifiDescription(context, wifiBands),
             const AppGap.medium(),
             _quickSetupSwitch(context, ref, wifiListState.isSimpleMode),
             const AppGap.medium(),
-            Expanded(
-              child: wifiListState.isSimpleMode
-                  ? SimpleModeView(
-                      onWifiNameEdited: (value) {
-                        notifier.setSimpleModeWifi(
-                            wifiListState.simpleModeWifi.copyWith(ssid: value));
-                      },
-                      onWifiPasswordEdited: (value) {
-                        final wifiItem = wifiListState.simpleModeWifi
-                            .copyWith(password: value);
-                        notifier.setSimpleModeWifi(wifiItem);
-                      },
-                      onSecurityTypeChanged: (value) {
-                        final wifiItem = wifiListState.simpleModeWifi
-                            .copyWith(securityType: value);
-                        notifier.setSimpleModeWifi(wifiItem);
-                      },
-                    )
-                  : const AdvancedModeView(),
-            ),
+            wifiListState.isSimpleMode
+                ? SimpleModeView(
+                    onWifiNameEdited: (value) {
+                      notifier.setSimpleModeWifi(
+                          wifiListState.simpleModeWifi.copyWith(ssid: value));
+                    },
+                    onWifiPasswordEdited: (value) {
+                      final wifiItem =
+                          wifiListState.simpleModeWifi.copyWith(password: value);
+                      notifier.setSimpleModeWifi(wifiItem);
+                    },
+                    onSecurityTypeChanged: (value) {
+                      final wifiItem = wifiListState.simpleModeWifi
+                          .copyWith(securityType: value);
+                      notifier.setSimpleModeWifi(wifiItem);
+                    },
+                  )
+                : const AdvancedModeView(),
           ],
-        );
-      },
+        ),
+      ),
     );
   }
 

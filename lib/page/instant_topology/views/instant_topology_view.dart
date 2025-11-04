@@ -33,7 +33,6 @@ import 'package:privacygui_widgets/widgets/bullet_list/bullet_style.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/lotties/mesh_wired_connection.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
 
 class InstantTopologyView extends ArgumentsConsumerStatefulView {
   const InstantTopologyView({super.key, super.args});
@@ -90,10 +89,7 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
             )
           : StyledAppPageView(
               // scrollable: true,
-              enableSliverAppBar: true,
-              onRefresh: () {
-                return ref.read(pollingProvider.notifier).forcePolling();
-              },
+              enableSliverAppBar: _isWidget ? false : true,
               hideTopbar: _isWidget,
               useMainPadding: true,
               appBarStyle: _isWidget ? AppBarStyle.none : AppBarStyle.back,
@@ -175,54 +171,49 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
               width: largeDesiredTreeWidth,
               // Somehow the parent of the RefreshIndicator is served to the parent of the SingleChildScrollView
               // So we need to wrap it with another RefreshIndicator again here.
-              child: RefreshIndicator(
-                onRefresh: () {
-                  return ref.read(pollingProvider.notifier).forcePolling();
+              child: TreeView<RouterTreeNode>(
+                treeController: treeController,
+                shrinkWrap: true,
+                physics: const BouncingScrollPhysics(
+                    parent: AlwaysScrollableScrollPhysics()),
+                nodeBuilder:
+                    (BuildContext context, TreeEntry<RouterTreeNode> entry) {
+                  return TreeIndentation(
+                    entry: entry,
+                    guide: IndentGuide.connectingLines(
+                      indent: 72,
+                      thickness: 0.5,
+                      pathModifier: (path) => TopologyNodeItem.buildPath(
+                          path,
+                          entry.node,
+                          entry.node.data.isMaster
+                              ? ref.watch(internetStatusProvider) ==
+                                  InternetStatus.online
+                              : entry.node.data.isOnline),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(0, 16, 8, 0),
+                      child: switch (entry.node.runtimeType) {
+                        OnlineTopologyNode => Row(
+                            children: [
+                              SizedBox(
+                                  width: 200,
+                                  child:
+                                      _buildHeader(context, ref, entry.node)),
+                              const Spacer(),
+                            ],
+                          ),
+                        RouterTopologyNode => Row(
+                            children: [
+                              _buildNode(context, ref, entry.node),
+                              const Spacer(),
+                            ],
+                          ),
+                        _ => const Center(),
+                      },
+                    ),
+                  );
                 },
-                child: TreeView<RouterTreeNode>(
-                  treeController: treeController,
-                  shrinkWrap: true,
-                  physics: const BouncingScrollPhysics(
-                      parent: AlwaysScrollableScrollPhysics()),
-                  nodeBuilder:
-                      (BuildContext context, TreeEntry<RouterTreeNode> entry) {
-                    return TreeIndentation(
-                      entry: entry,
-                      guide: IndentGuide.connectingLines(
-                        indent: 72,
-                        thickness: 0.5,
-                        pathModifier: (path) => TopologyNodeItem.buildPath(
-                            path,
-                            entry.node,
-                            entry.node.data.isMaster
-                                ? ref.watch(internetStatusProvider) ==
-                                    InternetStatus.online
-                                : entry.node.data.isOnline),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(0, 16, 8, 0),
-                        child: switch (entry.node.runtimeType) {
-                          OnlineTopologyNode => Row(
-                              children: [
-                                SizedBox(
-                                    width: 200,
-                                    child:
-                                        _buildHeader(context, ref, entry.node)),
-                                const Spacer(),
-                              ],
-                            ),
-                          RouterTopologyNode => Row(
-                              children: [
-                                _buildNode(context, ref, entry.node),
-                                const Spacer(),
-                              ],
-                            ),
-                          _ => const Center(),
-                        },
-                      ),
-                    );
-                  },
-                ),
               ),
             ),
           );
@@ -338,14 +329,18 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
             await ref.read(pollingProvider.notifier).forcePolling();
           }
         });
+        // If the widget is not mounted, cancel reboot even though the user has agreed
+        if (!mounted) return;
         doSomethingWithSpinner(context, reboot, messages: [
           '${loc(context).restarting}.',
           '${loc(context).restarting}..',
           '${loc(context).restarting}...'
         ]).then((value) {
           ref.read(pollingProvider.notifier).startPolling();
+          if (!mounted) return;
           showSuccessSnackBar(context, loc(context).successExclamation);
         }).catchError((error) {
+          if (!mounted) return;
           showRouterNotFoundAlert(context, ref);
         }, test: (error) => error is JNAPSideEffectError);
       }
@@ -358,6 +353,8 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
         node?.toFlatList().map((e) => e.data.deviceId).toList() ?? [];
     showFactoryResetModal(context, isMaster, isLastNode).then((isAgreed) {
       if (isAgreed == true) {
+        // If the widget is not mounted, cancel factory reset even though the user has agreed
+        if (!mounted) return;
         doSomethingWithSpinner(
           context,
           ref
@@ -376,7 +373,7 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
             },
           ),
         ).then((_) {
-          if (isMaster) {
+          if (isMaster && mounted) {
             // If the master is restored to factory settings, the current session becomes invalid
             showRouterNotFoundAlert(context, ref);
           }
@@ -412,7 +409,8 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
       barrierDismissible: false,
       builder: (BuildContext dialogContext) {
         final addWiredNodesNotifier = ref.read(addWiredNodesProvider.notifier);
-        Future.doWhile(() => !mounted).then((_) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
           addWiredNodesNotifier.startAutoOnboarding(context);
         });
 
@@ -516,8 +514,10 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
             if ((value ?? false)) {
               // Do remove
               _doRemoveNode(node).then((result) {
+                if (!context.mounted) return;
                 showSimpleSnackBar(context, loc(context).nodeRemoved);
               }).onError((error, stackTrace) {
+                if (!context.mounted) return;
                 showSimpleSnackBar(context, loc(context).unknownError);
               });
             }

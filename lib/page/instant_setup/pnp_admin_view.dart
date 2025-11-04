@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
@@ -10,12 +9,10 @@ import 'package:privacy_gui/page/instant_setup/providers/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_provider.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_state.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacygui_widgets/hook/icon_hooks.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
 
 /// A view responsible for the initial administrative setup and login process
@@ -170,8 +167,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
       backState: StyledBackState.none,
       padding: EdgeInsets.zero,
       enableSafeArea: (bottom: true, top: false, left: true, right: false),
-      child: (context, constraints) => AppBasicLayout(
-        content: Center(
+      child: (context, constraints) => Center(
           child: AppCard(
             showBorder: false,
             color: Theme.of(context).colorScheme.background,
@@ -179,9 +175,8 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
             child: child,
           ),
         ),
-      ),
-    );
-  }
+      );
+    }
 
   /// Displays a generic error message with a "Try Again" button.
   Widget _errorView() {

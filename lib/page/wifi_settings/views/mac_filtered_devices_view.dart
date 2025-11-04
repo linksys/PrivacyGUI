@@ -16,7 +16,6 @@ import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
 class FilteredDevicesView extends ArgumentsConsumerStatefulView {
   const FilteredDevicesView({super.key, super.args});
@@ -44,9 +43,8 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
   Widget build(BuildContext context) {
     final state = ref.watch(wifiBundleProvider);
 
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       title: loc(context).filteredDevices,
-      scrollable: true,
       actions: [
         AppTextButton(
           loc(context).edit,
@@ -79,38 +77,35 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
                 context.pop();
               },
               positiveLabel: loc(context).done),
-      child: (context, constraints) => AppBasicLayout(
+      child: (context, constraints) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AppListCard(
-              title: AppText.labelLarge(loc(context).selectFromMyDeviceList),
-              trailing: !_isEdit ? const Icon(LinksysIcons.add) : null,
-              onTap: !_isEdit
-                  ? () {
-                      _pickDevices();
-                    }
-                  : null,
-            ),
-            const AppGap.small2(),
-            AppListCard(
-              title: AppText.labelLarge(loc(context).manuallyAddDevice),
-              trailing: !_isEdit ? const Icon(LinksysIcons.add) : null,
-              onTap: !_isEdit
-                  ? () {
-                      _showManuallyAddModal();
-                    }
-                  : null,
-            ),
-            const AppGap.small2(),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: Spacing.medium),
-              child: AppText.labelLarge(loc(context).filteredDevices),
-            ),
-            _buildFilteredDevices(),
-          ],
-        ),
+        children: [
+          AppListCard(
+            title: AppText.labelLarge(loc(context).selectFromMyDeviceList),
+            trailing: !_isEdit ? const Icon(LinksysIcons.add) : null,
+            onTap: !_isEdit
+                ? () {
+                    _pickDevices();
+                  }
+                : null,
+          ),
+          const AppGap.small2(),
+          AppListCard(
+            title: AppText.labelLarge(loc(context).manuallyAddDevice),
+            trailing: !_isEdit ? const Icon(LinksysIcons.add) : null,
+            onTap: !_isEdit
+                ? () {
+                    _showManuallyAddModal();
+                  }
+                : null,
+          ),
+          const AppGap.small2(),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: Spacing.medium),
+            child: AppText.labelLarge(loc(context).filteredDevices),
+          ),
+          _buildFilteredDevices(),
+        ],
       ),
     );
   }

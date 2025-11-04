@@ -190,14 +190,4 @@ final advancedSettings = [
       ),
     ],
   ),
-  LinksysRoute(
-    name: RouteNamed.cardListEdit,
-    path: RoutePath.cardListEdit,
-    config: LinksysRouteConfig(
-      column: ColumnGrid(column: 9),
-    ),
-    builder: (context, state) => EditableCardListEditView(
-      args: state.extra as Map<String, dynamic>? ?? {},
-    ),
-  ),
 ];

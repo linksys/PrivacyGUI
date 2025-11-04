@@ -109,7 +109,6 @@ class PnpService with AvailabilityChecker {
       final result = await _ref.read(routerRepositoryProvider).send(
             JNAPAction.getDeviceInfo,
             type: CommandType.local,
-            fetchRemote: true,
             retries: 10,
             timeoutMs: 3000,
           );

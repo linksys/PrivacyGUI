@@ -12,7 +12,6 @@ import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/theme/custom_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
 
@@ -49,19 +48,17 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
     return StyledAppPageView(
       backState: StyledBackState.none,
       title: loc(context).pnpWaitingModemTitle,
-      child: (context, constraints) => AppBasicLayout(
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const AppGap.large3(),
-            AppText.bodyLarge(loc(context).pnpWaitingModemDesc),
-            Expanded(
-              child: Center(
-                child: _createCircleTimer(),
-              ),
+      child: (context, constraints) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const AppGap.large3(),
+          AppText.bodyLarge(loc(context).pnpWaitingModemDesc),
+          Expanded(
+            child: Center(
+              child: _createCircleTimer(),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -114,13 +111,23 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
                       .read(pnpProvider.notifier)
                       .checkInternetConnection(30)
                       .then((value) {
-                    logger.i(
-                        '[PnP Troubleshooter]: Internet connection is OK after resetting the modem');
-                    context.goNamed(RouteNamed.pnp);
+                    if (context.mounted) {
+                      logger.i(
+                          '[PnP Troubleshooter]: Internet connection is OK after resetting the modem');
+                      context.goNamed(RouteNamed.pnp);
+                    } else {
+                      logger.e(
+                          '[PnP Troubleshooter]: Internet connection is OK after resetting the modem, but the view is not mounted');
+                    }
                   }).catchError((error, stackTrace) {
-                    logger.e(
-                        '[PnP Troubleshooter]: Internet connection still fails after resetting the modem');
-                    context.goNamed(RouteNamed.pnpNoInternetConnection);
+                    if (context.mounted) {
+                      logger.e(
+                          '[PnP Troubleshooter]: Internet connection still fails after resetting the modem');
+                      context.goNamed(RouteNamed.pnpNoInternetConnection);
+                    } else {
+                      logger.e(
+                          '[PnP Troubleshooter]: Internet connection still fails after resetting the modem, but the view is not mounted');
+                    }
                   }, test: (error) {
                     return error is ExceptionNoInternetConnection;
                   });

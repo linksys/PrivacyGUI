@@ -22,7 +22,6 @@ import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/providers/redirection/redirection_provider.dart';
 import 'package:privacy_gui/util/error_code_helper.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacy_gui/core/jnap/providers/assign_ip/base_assign_ip.dart'
     if (dart.library.html) 'package:privacy_gui/core/jnap/providers/assign_ip/web_assign_ip.dart';
 
@@ -115,28 +114,26 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
         isBridgeMode: isBridgeMode,
       ),
     ];
-    return AppBasicLayout(
-      content: StyledAppPageView(
-        padding: EdgeInsets.zero,
-        useMainPadding: false,
-        title: loc(context).internetSettings.capitalizeWords(),
-        bottomBar: isEditing
-            ? PageBottomBar(
-                isPositiveEnabled: state.isDirty &&
-                    isIpv4FormValid &&
-                    isIpv6FormValid &&
-                    isOptionalFormValid,
-                onPositiveTap: _showRestartAlert,
-              )
-            : null,
-        tabs: tabs
-            .map((e) => Tab(
-                  text: e,
-                ))
-            .toList(),
-        tabContentViews: tabContents,
-        tabController: _tabController,
-      ),
+    return StyledAppPageView.withSliver(
+      padding: EdgeInsets.zero,
+      useMainPadding: false,
+      title: loc(context).internetSettings.capitalizeWords(),
+      bottomBar: isEditing
+          ? PageBottomBar(
+              isPositiveEnabled: state.isDirty &&
+                  isIpv4FormValid &&
+                  isIpv6FormValid &&
+                  isOptionalFormValid,
+              onPositiveTap: _showRestartAlert,
+            )
+          : null,
+      tabs: tabs
+          .map((e) => Tab(
+                text: e,
+              ))
+          .toList(),
+      tabContentViews: tabContents,
+      tabController: _tabController,
     );
   }
 

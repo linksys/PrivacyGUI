@@ -3,26 +3,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_provider.dart';
-import 'package:privacy_gui/page/instant_setup/providers/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_step_state.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_service.dart';
-import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
-
-import 'pnp_step_state_test.mocks.dart'; // Generated mock file
 
 @GenerateMocks([PnpService])
 void main() {
   group('PnpNotifier Step State Management Tests', () {
     late ProviderContainer container;
-    late MockPnpService mockPnpService;
     late PnpNotifier pnpNotifier;
 
     setUp(() {
-      mockPnpService = MockPnpService();
       container = ProviderContainer(
         overrides: [
-          pnpServiceProvider.overrideWithValue(mockPnpService),
           pnpProvider.overrideWith(() => PnpNotifier()),
         ],
       );

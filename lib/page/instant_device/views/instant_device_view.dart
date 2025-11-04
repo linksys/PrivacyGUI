@@ -59,7 +59,6 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
     return StyledAppPageView(
       padding: const EdgeInsets.only(),
       enableSliverAppBar: true,
-      scrollable: ResponsiveLayout.isMobileLayout(context) ? false : true,
       title: loc(context).instantDevices,
       bottomBar: isOnlineFilter
           ? null
@@ -179,30 +178,28 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
             ),
           ),
         ),
-        SizedBox(
-          height: filteredDeviceList.length * 84,
-          child: DeviceListWidget(
-            devices: filteredDeviceList,
-            isEdit: !isOnlineFilter,
-            enableDeauth: isOnlineFilter,
-            isItemSelected: (item) => _selectedList.contains(item.deviceId),
-            onItemSelected: (value, item) {
-              setState(() {
-                if (value) {
-                  _selectedList.add(item.deviceId);
-                } else {
-                  _selectedList.remove(item.deviceId);
-                }
-              });
-            },
-            onItemClick: (item) {
-              ref.read(deviceDetailIdProvider.notifier).state = item.deviceId;
-              context.pushNamed(RouteNamed.deviceDetails);
-            },
-            onItemDeauth: (item) {
-              _showConfirmDeauthDialog(item.macAddress);
-            },
-          ),
+        DeviceListWidget(
+          physics: NeverScrollableScrollPhysics(),
+          devices: filteredDeviceList,
+          isEdit: !isOnlineFilter,
+          enableDeauth: isOnlineFilter,
+          isItemSelected: (item) => _selectedList.contains(item.deviceId),
+          onItemSelected: (value, item) {
+            setState(() {
+              if (value) {
+                _selectedList.add(item.deviceId);
+              } else {
+                _selectedList.remove(item.deviceId);
+              }
+            });
+          },
+          onItemClick: (item) {
+            ref.read(deviceDetailIdProvider.notifier).state = item.deviceId;
+            context.pushNamed(RouteNamed.deviceDetails);
+          },
+          onItemDeauth: (item) {
+            _showConfirmDeauthDialog(item.macAddress);
+          },
         ),
       ],
     );
@@ -268,9 +265,13 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
         setState(() {
           _selectedList = [];
         });
-        showSimpleSnackBar(context, loc(context).deviceDeleted);
+        if (mounted) {
+          showSimpleSnackBar(context, loc(context).deviceDeleted);
+        }
       }).onError((error, stackTrace) {
-        showFailedSnackBar(context, loc(context).generalError);
+        if (mounted) {
+          showFailedSnackBar(context, loc(context).generalError);
+        }
       }),
     );
   }
@@ -300,9 +301,13 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
                   .read(deviceManagerProvider.notifier)
                   .deauthClient(macAddress: macAddress)
                   .then((_) {
-                showSimpleSnackBar(context, loc(context).successExclamation);
+                if (mounted) {
+                  showSimpleSnackBar(context, loc(context).successExclamation);
+                }
               }).onError((error, stackTrace) {
-                showFailedSnackBar(context, loc(context).generalError);
+                if (mounted) {
+                  showFailedSnackBar(context, loc(context).generalError);
+                }
               }),
             );
           },

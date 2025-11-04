@@ -73,10 +73,11 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
   void _saveToDHCP() async {
     logger.i('[PnP Troubleshooter]: Set the router into DHCP mode');
     var newState = ref.read(internetSettingsProvider).current.copyWith(
-      ipv4Setting: ref.read(internetSettingsProvider).current.ipv4Setting.copyWith(
-        ipv4ConnectionType: WanType.dhcp.type,
-      ),
-    );
+          ipv4Setting:
+              ref.read(internetSettingsProvider).current.ipv4Setting.copyWith(
+                    ipv4ConnectionType: WanType.dhcp.type,
+                  ),
+        );
     context.pushNamed(
       RouteNamed.pnpIspSaveSettings,
       extra: {'newSettings': newState},
@@ -86,10 +87,11 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(internetSettingsProvider);
-    final wanType = WanType.resolve(state.current.ipv4Setting.ipv4ConnectionType);
+    final wanType =
+        WanType.resolve(state.current.ipv4Setting.ipv4ConnectionType);
     return _isLoading
         ? const AppFullScreenSpinner()
-        : StyledAppPageView(
+        : StyledAppPageView.withSliver(
             title: loc(context).pnpIspTypeSelectionTitle,
             child: (context, constraints) => ListView(
               shrinkWrap: true,

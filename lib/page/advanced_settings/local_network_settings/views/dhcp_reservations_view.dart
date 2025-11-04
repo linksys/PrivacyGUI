@@ -13,7 +13,6 @@ import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
-
 import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -77,7 +76,7 @@ class _DHCPReservationsContentViewState
           .toList());
     });
 
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       scrollable: true,
       title: loc(context).dhcpReservations.capitalizeWords(),
       bottomBar: PageBottomBar(
@@ -101,65 +100,63 @@ class _DHCPReservationsContentViewState
           },
         )
       ],
-      child: (context, constraints) => AppBasicLayout(
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AppText.bodyLarge(loc(context).dhcpReservationDescption),
-            const AppGap.large2(),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (ResponsiveLayout.isDesktopLayout(context))
-                  SizedBox(
-                    width: 4.col,
-                    child: AppCard(
-                      child: DevicesFilterWidget(
-                        onlineOnly: true,
-                      ),
+      child: (context, constraints) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppText.bodyLarge(loc(context).dhcpReservationDescption),
+          const AppGap.large2(),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (ResponsiveLayout.isDesktopLayout(context))
+                SizedBox(
+                  width: 4.col,
+                  child: AppCard(
+                    child: DevicesFilterWidget(
+                      onlineOnly: true,
                     ),
                   ),
-                const AppGap.gutter(),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: AppText.labelLarge(
-                              loc(context).nReservedAddresses(state
-                                  .settings.current.reservations
-                                  .where((e) => e.reserved)
-                                  .length),
-                            ),
-                          ),
-                          if (ResponsiveLayout.isMobileLayout(context))
-                            AppIconButton(
-                              icon: LinksysIcons.filter,
-                              onTap: () {
-                                showSimpleAppOkDialog(
-                                  context,
-                                  content: SingleChildScrollView(
-                                    child: DevicesFilterWidget(
-                                      onlineOnly: true,
-                                    ),
-                                  ),
-                                );
-                              },
-                            )
-                        ],
-                      ),
-                      const AppGap.medium(),
-                      reservedAddresses(),
-                    ],
-                  ),
                 ),
-              ],
-            ),
-          ],
-        ),
+              const AppGap.gutter(),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: AppText.labelLarge(
+                            loc(context).nReservedAddresses(state
+                                .settings.current.reservations
+                                .where((e) => e.reserved)
+                                .length),
+                          ),
+                        ),
+                        if (ResponsiveLayout.isMobileLayout(context))
+                          AppIconButton(
+                            icon: LinksysIcons.filter,
+                            onTap: () {
+                              showSimpleAppOkDialog(
+                                context,
+                                content: SingleChildScrollView(
+                                  child: DevicesFilterWidget(
+                                    onlineOnly: true,
+                                  ),
+                                ),
+                              );
+                            },
+                          )
+                      ],
+                    ),
+                    const AppGap.medium(),
+                    reservedAddresses(),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -283,61 +280,63 @@ class _DHCPReservationsContentViewState
             : loc(context).edit,
         positiveLabel: item == null ? loc(context).save : loc(context).update,
         contentBuilder: (context, setState, onSubmit) {
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AppTextField(
-                key: Key('deviceNameTextField'),
-                headerText: loc(context).deviceName,
-                controller: deviceNameController,
-                border: const OutlineInputBorder(),
-                errorText: !(isNameValid(deviceNameController.text))
-                    ? loc(context).invalidCharacters
-                    : null,
-                onChanged: (value) {
-                  setState(() {
-                    enableSave = updateEnableSave();
-                  });
-                },
-              ),
-              const AppGap.large3(),
-              AppIPFormField(
-                key: Key('ipAddressTextField'),
-                header: AppText.bodySmall(loc(context).assignIpAddress),
-                semanticLabel: 'assign ip address',
-                controller: ipController,
-                border: const OutlineInputBorder(),
-                octet1ReadOnly: subnetToken[0] == '255',
-                octet2ReadOnly: subnetToken[1] == '255',
-                octet3ReadOnly: subnetToken[2] == '255',
-                octet4ReadOnly: subnetToken[3] == '255',
-                onChanged: (value) {
-                  setState(() {
-                    enableSave = updateEnableSave();
-                  });
-                },
-                errorText: isIpValid(ipController.text)
-                    ? null
-                    : loc(context).invalidIpOrSameAsHostIp,
-              ),
-              const AppGap.large3(),
-              AppTextField.macAddress(
-                key: Key('macAddressTextField'),
-                headerText: loc(context).macAddress,
-                semanticLabel: 'mac address',
-                controller: macController,
-                border: const OutlineInputBorder(),
-                errorText: !isMacValid(macController.text)
-                    ? loc(context).invalidMACAddress
-                    : null,
-                onChanged: (value) {
-                  setState(() {
-                    enableSave = updateEnableSave();
-                  });
-                },
-              ),
-            ],
+          return SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppTextField(
+                  key: Key('deviceNameTextField'),
+                  headerText: loc(context).deviceName,
+                  controller: deviceNameController,
+                  border: const OutlineInputBorder(),
+                  errorText: !(isNameValid(deviceNameController.text))
+                      ? loc(context).invalidCharacters
+                      : null,
+                  onChanged: (value) {
+                    setState(() {
+                      enableSave = updateEnableSave();
+                    });
+                  },
+                ),
+                const AppGap.large3(),
+                AppIPFormField(
+                  key: Key('ipAddressTextField'),
+                  header: AppText.bodySmall(loc(context).assignIpAddress),
+                  semanticLabel: 'assign ip address',
+                  controller: ipController,
+                  border: const OutlineInputBorder(),
+                  octet1ReadOnly: subnetToken[0] == '255',
+                  octet2ReadOnly: subnetToken[1] == '255',
+                  octet3ReadOnly: subnetToken[2] == '255',
+                  octet4ReadOnly: subnetToken[3] == '255',
+                  onChanged: (value) {
+                    setState(() {
+                      enableSave = updateEnableSave();
+                    });
+                  },
+                  errorText: isIpValid(ipController.text)
+                      ? null
+                      : loc(context).invalidIpOrSameAsHostIp,
+                ),
+                const AppGap.large3(),
+                AppTextField.macAddress(
+                  key: Key('macAddressTextField'),
+                  headerText: loc(context).macAddress,
+                  semanticLabel: 'mac address',
+                  controller: macController,
+                  border: const OutlineInputBorder(),
+                  errorText: !isMacValid(macController.text)
+                      ? loc(context).invalidMACAddress
+                      : null,
+                  onChanged: (value) {
+                    setState(() {
+                      enableSave = updateEnableSave();
+                    });
+                  },
+                ),
+              ],
+            ),
           );
         },
         event: () async {

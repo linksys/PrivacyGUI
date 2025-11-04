@@ -98,7 +98,7 @@ class _AddRuleContentViewState
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(ipv6PortServiceRuleProvider);
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       scrollable: true,
       title: loc(context).ipv6PortServices,
       bottomBar: PageBottomBar(

@@ -194,7 +194,7 @@ class PersonalWiFiStep extends PnpStep {
             ),
           ],
           content: SizedBox(
-            child: Container(
+            child: SizedBox(
               width: 400.0,
               child: Column(
                 mainAxisSize: MainAxisSize.min,

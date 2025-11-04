@@ -106,7 +106,7 @@ class _AddRuleContentViewState
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(portRangeForwardingRuleProvider);
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       scrollable: true,
       title: loc(context).portRangeForwarding,
       bottomBar: PageBottomBar(
