@@ -5,7 +5,6 @@ import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/gap/gap.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class WifiSettingsChannelFinderView extends ArgumentsConsumerStatefulView {
@@ -31,13 +30,11 @@ class _WifiSettingsChannelFinderViewState
     final state = ref.watch(channelFinderProvider);
     return isLoading
         ? const AppFullScreenSpinner()
-        : StyledAppPageView(
+        : StyledAppPageView.withSliver(
             title: 'Channel Finder',
-            child: (context, constraints) => AppBasicLayout(
-              content: isShowButton
+            child: (context, constraints) => isShowButton
                   ? _channelFinderButton()
                   : _channelFinderResult(state),
-            ),
           );
   }
 

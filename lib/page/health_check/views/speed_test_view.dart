@@ -46,7 +46,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
     final state = ref.watch(healthCheckProvider);
     final supportedBy = ref.watch(dashboardHomeProvider).healthCheckModule;
 
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       scrollable: true,
       title: loc(context).speedTest,
       bottomBar: state.status == 'COMPLETE'
@@ -216,7 +216,6 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
         children: [
           _meterView(state.step, bandwidth.value, bandwidth.unit, latency),
           const AppGap.medium(),
-          const Spacer(),
           _infoView(state),
           const AppGap.medium(),
         ],

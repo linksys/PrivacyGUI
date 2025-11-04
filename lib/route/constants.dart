@@ -114,10 +114,6 @@ class RoutePath {
   /// Safe Browsing
   static const safeBrowsing = 'safeBrowsing';
 
-  /// Troubleshooting
-  static const troubleshooting = 'troubleshooting';
-  static const troubleshootingPing = 'troubleshootingPing';
-
   /// Support
   static const faqList = 'faqList';
   static const callSupportMainRegion = 'callSupportMainRegion';
@@ -132,9 +128,6 @@ class RoutePath {
 
   /// Device picker
   static const devicePicker = 'devicePicker';
-
-  /// Card List edit
-  static const cardListEdit = 'cardListEdit';
 
   /// debug
   static const debug = 'debug';
@@ -253,10 +246,6 @@ class RouteNamed {
   static const pnpIspAuth = 'pnpIspAuth';
   static const pnpIspSaveSettings = 'pnpIspSaveSettings';
 
-  /// Troubleshooting
-  static const troubleshooting = 'troubleshooting';
-  static const troubleshootingPing = 'troubleshootingPing';
-
   /// Support
   static const faqList = 'faqList';
   static const callSupportMainRegion = 'callSupportMainRegion';
@@ -271,9 +260,6 @@ class RouteNamed {
 
   /// Device picker
   static const devicePicker = 'devicePicker';
-
-  /// Card List edit
-  static const cardListEdit = 'cardListEdit';
 
   /// debug
   static const debug = 'debug';

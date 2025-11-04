@@ -92,6 +92,8 @@ class _LocalNetworkSettingsViewState
       });
     }
     final state = ref.watch(localNetworkSettingProvider);
+    final notifier = ref.read(localNetworkSettingProvider.notifier);
+
     ref.listen(localNetworkSettingProvider, (previous, next) {
       if (previous?.settings.current.hostName !=
           next.settings.current.hostName) {
@@ -112,9 +114,8 @@ class _LocalNetworkSettingsViewState
       _ipAddressView(state),
       _dhcpServerView(state),
     ];
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       padding: EdgeInsets.zero,
-      useMainPadding: false,
       tabController: _tabController,
       bottomBar: PageBottomBar(
         isPositiveEnabled: _notifier.isDirty() && !_hasError(state),
@@ -226,8 +227,8 @@ class _LocalNetworkSettingsViewState
 
   Widget _viewLayout({double? col, required Widget child}) {
     col = col ?? 9.col;
-    return StyledAppPageView.innerPage(
-      child: (context, constraints) => ResponsiveLayout.isMobileLayout(context)
+    return SingleChildScrollView(
+      child: ResponsiveLayout.isMobileLayout(context)
           ? child
           : Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -270,6 +271,8 @@ class _LocalNetworkSettingsViewState
   }
 
   void _saveSettings() {
+    final originalIpAddress =
+        ref.read(localNetworkSettingProvider).settings.original.ipAddress;
     doSomethingWithSpinner(
       context,
       _notifier.save(),
@@ -287,7 +290,6 @@ class _LocalNetworkSettingsViewState
         // url start with myrouter.info, show router not found and wait for connect back
         _showRouterNotFoundModal();
       } else if (currentUrl != state.settings.current.ipAddress) {
-        if (!mounted) return;
         // ip is changed, show redirect alert to warn user make sure connect back to the router
         showRedirectNewIpAlert(context, ref, state.settings.current.ipAddress);
       } else {

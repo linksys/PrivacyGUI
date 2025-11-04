@@ -12,7 +12,6 @@ import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
 class SimpleModeView extends ConsumerStatefulWidget {
   const SimpleModeView({
@@ -98,15 +97,12 @@ class _SimpleModeViewState extends ConsumerState<SimpleModeView>
       ];
     }
 
-    return AppBasicLayout(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      content: Table(
+    return Table(
         border: const TableBorder(),
         columnWidths: columnWidths,
         defaultVerticalAlignment: TableCellVerticalAlignment.top,
         children: children,
-      ),
-    );
+      );
   }
 
   Widget _settingsView(WiFiItem simpleWifi) {

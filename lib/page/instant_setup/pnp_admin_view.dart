@@ -181,8 +181,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
       backState: StyledBackState.none,
       padding: EdgeInsets.zero,
       enableSafeArea: (bottom: true, top: false, left: true, right: false),
-      child: (context, constraints) => AppBasicLayout(
-        content: Center(
+      child: (context, constraints) => Center(
           child: AppCard(
             showBorder: false,
             color: Theme.of(context).colorScheme.background,
@@ -190,7 +189,6 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
             child: _errorView(),
           ),
         ),
-      ),
     );
   }
 

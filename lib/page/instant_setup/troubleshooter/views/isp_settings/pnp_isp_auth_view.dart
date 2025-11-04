@@ -78,7 +78,7 @@ class _PnpIspAuthViewState extends ConsumerState<PnpIspAuthView> {
   Widget build(BuildContext context) {
     return _isLoading
         ? AppFullScreenSpinner(text: _spinnerText)
-        : StyledAppPageView(
+        : StyledAppPageView.withSliver(
             title: loc(context).pnpIspSettingsAuthTitle,
             child: (context, constraints) => Column(
               crossAxisAlignment: CrossAxisAlignment.start,

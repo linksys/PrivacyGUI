@@ -89,11 +89,9 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
             )
           : StyledAppPageView(
               // scrollable: true,
-              onRefresh: () {
-                return ref.read(pollingProvider.notifier).forcePolling();
-              },
+              enableSliverAppBar: _isWidget ? false : true,
               hideTopbar: _isWidget,
-              useMainPadding: true,
+              useMainPadding: _isWidget ? false : true,
               appBarStyle: _isWidget ? AppBarStyle.none : AppBarStyle.back,
               padding: EdgeInsets.zero,
               title: loc(context).instantTopology,
@@ -121,16 +119,8 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
                       ),
                     ]
                   : null,
-              child: (context, constraints) => Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Flexible(
-                    child: _buildTopology(context, ref, desiredTreeWidth),
-                  ),
-                  const AppGap.large1(),
-                ],
-              ),
+              child: (context, constraints) =>
+                  _buildTopology(context, ref, desiredTreeWidth),
             );
     });
   }
@@ -140,8 +130,8 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
     return ResponsiveLayout.isMobileLayout(context)
         ? TreeView<RouterTreeNode>(
             treeController: treeController,
-            physics: const BouncingScrollPhysics(
-                parent: AlwaysScrollableScrollPhysics()),
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
             nodeBuilder:
                 (BuildContext context, TreeEntry<RouterTreeNode> entry) {
               return TreeIndentation(
@@ -181,53 +171,49 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
               width: largeDesiredTreeWidth,
               // Somehow the parent of the RefreshIndicator is served to the parent of the SingleChildScrollView
               // So we need to wrap it with another RefreshIndicator again here.
-              child: RefreshIndicator(
-                onRefresh: () {
-                  return ref.read(pollingProvider.notifier).forcePolling();
+              child: TreeView<RouterTreeNode>(
+                treeController: treeController,
+                shrinkWrap: true,
+                physics: const BouncingScrollPhysics(
+                    parent: AlwaysScrollableScrollPhysics()),
+                nodeBuilder:
+                    (BuildContext context, TreeEntry<RouterTreeNode> entry) {
+                  return TreeIndentation(
+                    entry: entry,
+                    guide: IndentGuide.connectingLines(
+                      indent: 72,
+                      thickness: 0.5,
+                      pathModifier: (path) => TopologyNodeItem.buildPath(
+                          path,
+                          entry.node,
+                          entry.node.data.isMaster
+                              ? ref.watch(internetStatusProvider) ==
+                                  InternetStatus.online
+                              : entry.node.data.isOnline),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(0, 16, 8, 0),
+                      child: switch (entry.node.runtimeType) {
+                        OnlineTopologyNode => Row(
+                            children: [
+                              SizedBox(
+                                  width: 200,
+                                  child:
+                                      _buildHeader(context, ref, entry.node)),
+                              const Spacer(),
+                            ],
+                          ),
+                        RouterTopologyNode => Row(
+                            children: [
+                              _buildNode(context, ref, entry.node),
+                              const Spacer(),
+                            ],
+                          ),
+                        _ => const Center(),
+                      },
+                    ),
+                  );
                 },
-                child: TreeView<RouterTreeNode>(
-                  treeController: treeController,
-                  physics: const BouncingScrollPhysics(
-                      parent: AlwaysScrollableScrollPhysics()),
-                  nodeBuilder:
-                      (BuildContext context, TreeEntry<RouterTreeNode> entry) {
-                    return TreeIndentation(
-                      entry: entry,
-                      guide: IndentGuide.connectingLines(
-                        indent: 72,
-                        thickness: 0.5,
-                        pathModifier: (path) => TopologyNodeItem.buildPath(
-                            path,
-                            entry.node,
-                            entry.node.data.isMaster
-                                ? ref.watch(internetStatusProvider) ==
-                                    InternetStatus.online
-                                : entry.node.data.isOnline),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(0, 16, 8, 0),
-                        child: switch (entry.node.runtimeType) {
-                          OnlineTopologyNode => Row(
-                              children: [
-                                SizedBox(
-                                    width: 200,
-                                    child:
-                                        _buildHeader(context, ref, entry.node)),
-                                const Spacer(),
-                              ],
-                            ),
-                          RouterTopologyNode => Row(
-                              children: [
-                                _buildNode(context, ref, entry.node),
-                                const Spacer(),
-                              ],
-                            ),
-                          _ => const Center(),
-                        },
-                      ),
-                    );
-                  },
-                ),
               ),
             ),
           );

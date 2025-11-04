@@ -92,19 +92,17 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
         _buildTransmitRegionWidget(context, powerTableState),
     ];
 
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       title: loc(context).instantAdmin,
       scrollable: true,
-      child: (context, constraints) => SizedBox(
-        height: constraints.maxHeight,
-        child: MasonryGridView.count(
-          controller: Scrollable.maybeOf(context)?.widget.controller,
-          crossAxisCount: ResponsiveLayout.isMobileLayout(context) ? 1 : 2,
-          mainAxisSpacing: Spacing.small2,
-          crossAxisSpacing: ResponsiveLayout.columnPadding(context),
-          itemCount: widgets.length,
-          itemBuilder: (context, index) => widgets[index],
-        ),
+      child: (context, constraints) => MasonryGridView.count(
+        crossAxisCount: ResponsiveLayout.isMobileLayout(context) ? 1 : 2,
+        mainAxisSpacing: Spacing.small2,
+        crossAxisSpacing: ResponsiveLayout.columnPadding(context),
+        itemCount: widgets.length,
+        itemBuilder: (context, index) => widgets[index],
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
       ),
     );
   }

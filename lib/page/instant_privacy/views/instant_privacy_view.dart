@@ -52,7 +52,7 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
   Widget build(BuildContext context) {
     final state = ref.watch(instantPrivacyProvider);
     final displayDevices = ref.watch(instantPrivacyDeviceListProvider);
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       scrollable: true,
       title: loc(context).instantPrivacy,
       markLabel: 'Beta',
@@ -65,66 +65,62 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
 
   Widget _desktopLayout(
       InstantPrivacyState state, List<DeviceListItem> deviceList) {
-    return AppBasicLayout(
-      content: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AppText.bodyLarge(loc(context).instantPrivacyDescription),
-          const AppGap.large4(),
-          if (state.settings.current.mode == MacFilterMode.deny) ...[
-            _warningCard(),
-            const AppGap.small2(),
-          ],
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _enableTile(state),
-                    const AppGap.large2(),
-                    _deviceListView(
-                        state.settings.current.mode == MacFilterMode.allow,
-                        deviceList),
-                  ],
-                ),
-              ),
-              const AppGap.gutter(),
-              SizedBox(
-                width: 3.col,
-                child: _infoCard(),
-              ),
-            ],
-          ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AppText.bodyLarge(loc(context).instantPrivacyDescription),
+        const AppGap.large4(),
+        if (state.settings.current.mode == MacFilterMode.deny) ...[
+          _warningCard(),
+          const AppGap.small2(),
         ],
-      ),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _enableTile(state),
+                  const AppGap.large2(),
+                  _deviceListView(
+                      state.settings.current.mode == MacFilterMode.allow,
+                      deviceList),
+                ],
+              ),
+            ),
+            const AppGap.gutter(),
+            SizedBox(
+              width: 3.col,
+              child: _infoCard(),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
   Widget _mobileLayout(
       InstantPrivacyState state, List<DeviceListItem> deviceList) {
-    return AppBasicLayout(
-      content: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (state.settings.current.mode == MacFilterMode.deny) ...[
-            _warningCard(),
-            const AppGap.small2(),
-          ],
-          AppText.bodyLarge(loc(context).instantPrivacyDescription),
-          const AppGap.medium(),
-          _enableTile(state),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (state.settings.current.mode == MacFilterMode.deny) ...[
+          _warningCard(),
           const AppGap.small2(),
-          _infoCard(),
-          const AppGap.large2(),
-          _deviceListView(
-              state.settings.current.mode == MacFilterMode.allow, deviceList),
-          const AppGap.large2(),
         ],
-      ),
+        AppText.bodyLarge(loc(context).instantPrivacyDescription),
+        const AppGap.medium(),
+        _enableTile(state),
+        const AppGap.small2(),
+        _infoCard(),
+        const AppGap.large2(),
+        _deviceListView(
+            state.settings.current.mode == MacFilterMode.allow, deviceList),
+        const AppGap.large2(),
+      ],
     );
   }
 
@@ -213,8 +209,8 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
   }
 
   Widget _deviceCard(bool isEnable, DeviceListItem device) {
-    final myMac = ref
-        .watch(instantPrivacyProvider.select((state) => state.settings.current.myMac));
+    final myMac = ref.watch(
+        instantPrivacyProvider.select((state) => state.settings.current.myMac));
     return AppCard(
       color:
           device.isOnline ? null : Theme.of(context).colorScheme.surfaceVariant,

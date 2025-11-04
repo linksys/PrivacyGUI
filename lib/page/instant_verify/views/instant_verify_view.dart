@@ -55,11 +55,13 @@ class InstantVerifyView extends ArgumentsConsumerStatefulView {
 class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
+  late final Widget _instantTopologyWidget;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _instantTopologyWidget = InstantTopologyView.widget();
 
     ref.read(wanExternalProvider.notifier).fetch();
   }
@@ -76,9 +78,12 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
     final tabs = [loc(context).instantInfo, loc(context).instantTopology];
     final tabContents = [
       _instantInfo(context, ref),
-      _instantTopology(),
+      _instantTopologyWidget,
     ];
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
+      onRefresh: () {
+        return ref.read(pollingProvider.notifier).forcePolling();
+      },
       title: loc(context).instantVerify,
       actions: [
         AppIconButton.noPadding(
@@ -119,11 +124,8 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
   Widget _instantInfo(BuildContext context, WidgetRef ref) {
     final dashboardHomeState = ref.watch(dashboardHomeProvider);
     final desktopCol = 4.col;
-    return StyledAppPageView.innerPage(
-      onRefresh: () {
-        return ref.read(pollingProvider.notifier).forcePolling();
-      },
-      child: (context, constraints) => ResponsiveLayout.isMobileLayout(context)
+    return SingleChildScrollView(
+      child: ResponsiveLayout.isMobileLayout(context)
           ? Column(
               children: [
                 _deviceInfoCard(context, ref),
@@ -173,8 +175,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
                                 const AppGap.gutter(),
                                 SizedBox(
                                   width: desktopCol,
-                                  child:
-                                      _connectivityContentWidget(context, ref),
+                                  child: _connectivityContentWidget(context, ref),
                                 ),
                               ],
                             ),
@@ -191,10 +192,6 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
               ],
             ),
     );
-  }
-
-  Widget _instantTopology() {
-    return InstantTopologyView.widget();
   }
 
   Widget _deviceInfoCard(BuildContext context, WidgetRef ref) {

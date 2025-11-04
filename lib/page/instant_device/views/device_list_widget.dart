@@ -50,6 +50,7 @@ class _DeviceListWidgetState extends ConsumerState<DeviceListWidget> {
   Widget build(BuildContext context) {
     return ListView.separated(
       physics: widget.physics,
+      shrinkWrap: true,
       padding: EdgeInsets.zero,
       itemCount: widget.devices.length,
       itemBuilder: widget.itemBuilder ??
@@ -58,7 +59,7 @@ class _DeviceListWidgetState extends ConsumerState<DeviceListWidget> {
         if (index != widget.devices.length - 1) {
           return const AppGap.small2();
         } else {
-          return const Center();
+          return const SizedBox.shrink();
         }
       },
     );

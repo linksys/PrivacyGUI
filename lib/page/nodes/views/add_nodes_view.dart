@@ -70,11 +70,9 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
   }
 
   Widget _resultView(AddNodesState state) {
-    return StyledAppPageView(
-      scrollable: true,
+    return StyledAppPageView.withSliver(
       title: loc(context).addNodes,
-      child: (context, constraints) => AppBasicLayout(
-          content: Column(
+      child: (context, constraints) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Wrap(
@@ -116,7 +114,8 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
                       return AppNodeListCard(
                           leading: CustomTheme.of(context).getRouterImage(
                               routerIconTestByModel(
-                                  modelNumber: node.modelNumber ?? ''), false),
+                                  modelNumber: node.modelNumber ?? ''),
+                              false),
                           title: e.getDeviceLocation(),
                           trailing: SharedWidgets.resolveSignalStrengthIcon(
                             context,
@@ -154,16 +153,15 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
             },
           )
         ],
-      )),
+      ),
     );
   }
 
   Widget _contentView() {
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       scrollable: true,
       title: loc(context).addNodes,
-      child: (context, constraints) => AppBasicLayout(
-          content: Column(
+      child: (context, constraints) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppStyledText.bold(loc(context).addNodesDesc,
@@ -197,7 +195,7 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
             },
           )
         ],
-      )),
+      ),
     );
   }
 

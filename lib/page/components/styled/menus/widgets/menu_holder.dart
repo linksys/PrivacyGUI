@@ -1,6 +1,5 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
@@ -98,12 +97,16 @@ class MenuHolderState extends ConsumerState<MenuHolder> {
                   _controller.select(_controller.items[index]);
                 },
               ),
-            MenuDisplay.bottom => BottomNavigationMenu(
-                items: _controller.items,
-                selected: _controller.selected,
-                onItemClick: (index) {
-                  _controller.select(_controller.items[index]);
-                },
+            MenuDisplay.bottom => AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                height: _controller.isVisible ? kBottomNavigationBarHeight : 0,
+                child: BottomNavigationMenu(
+                  items: _controller.items,
+                  selected: _controller.selected,
+                  onItemClick: (index) {
+                    _controller.select(_controller.items[index]);
+                  },
+                ),
               ),
           };
         });
@@ -123,6 +126,13 @@ class MenuController {
   NaviType get selected => _menuNotifier.value.selected;
   MenuDisplay get displayType {
     return _menuNotifier.value.type;
+  }
+
+  bool get isVisible => _menuNotifier.value.isVisible;
+
+  void setMenuVisible(bool visible) {
+    if (visible == isVisible) return;
+    _menuNotifier.value = _menuNotifier.value.copyWith(isVisible: visible);
   }
 
   void setTo(NaviType type) {
@@ -150,22 +160,26 @@ class NavigationMenus extends Equatable {
   final List<NaviType> items;
   final NaviType selected;
   final MenuDisplay type;
+  final bool isVisible;
 
   const NavigationMenus({
     required this.items,
     required this.selected,
     required this.type,
+    this.isVisible = true,
   });
 
   NavigationMenus copyWith({
     List<NaviType>? items,
     NaviType? selected,
     MenuDisplay? type,
+    bool? isVisible,
   }) {
     return NavigationMenus(
       items: items ?? this.items,
       selected: selected ?? this.selected,
       type: type ?? this.type,
+      isVisible: isVisible ?? this.isVisible,
     );
   }
 
@@ -173,5 +187,5 @@ class NavigationMenus extends Equatable {
   bool get stringify => true;
 
   @override
-  List<Object> get props => [items, selected, type];
+  List<Object> get props => [items, selected, type, isVisible];
 }

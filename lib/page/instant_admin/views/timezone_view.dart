@@ -39,7 +39,6 @@ class _TimezoneContentViewState extends ConsumerState<TimezoneView>
       _notifier.fetch(),
     ).onError((error, stackTrace) {
       showErrorMessageSnackBar(error);
-      return null;
     });
   }
 
@@ -52,7 +51,7 @@ class _TimezoneContentViewState extends ConsumerState<TimezoneView>
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(timezoneProvider);
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       title: loc(context).timezone,
       scrollable: true,
       onBackTap: _notifier.isDirty()
@@ -60,9 +59,7 @@ class _TimezoneContentViewState extends ConsumerState<TimezoneView>
               final goBack = await showUnsavedAlert(context);
               if (goBack == true) {
                 _notifier.revert(); // Use notifier's revert
-                if (context.mounted) {
-                  context.pop();
-                }
+                context.pop();
               }
             }
           : null,
@@ -82,76 +79,74 @@ class _TimezoneContentViewState extends ConsumerState<TimezoneView>
               showErrorMessageSnackBar(error);
             });
           }),
-      child: (context, constraints) => AppBasicLayout(
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AppCard(
-              child: AppSwitchTriggerTile(
-                title: AppText.labelLarge(loc(context).daylightSavingsTime),
-                semanticLabel: 'daylight savings time',
-                value: state.settings.current.isDaylightSaving,
-                onChanged: _notifier.isSupportDaylightSaving()
-                    ? (value) {
-                        _notifier.setDaylightSaving(value);
-                      }
-                    : null,
-              ),
+      child: (context, constraints) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppCard(
+            child: AppSwitchTriggerTile(
+              title: AppText.labelLarge(loc(context).daylightSavingsTime),
+              semanticLabel: 'daylight savings time',
+              value: state.settings.current.isDaylightSaving,
+              onChanged: _notifier.isSupportDaylightSaving()
+                  ? (value) {
+                      _notifier.setDaylightSaving(value);
+                    }
+                  : null,
             ),
-            const AppGap.medium(),
-            SizedBox(
-              height: (70.0) * state.status.supportedTimezones.length +
-                  17 * (state.status.supportedTimezones.length - 1),
-              child: AppCard(
-                child: ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: state.status.supportedTimezones.length,
-                  itemBuilder: (context, index) => ConstrainedBox(
-                    constraints: const BoxConstraints(minHeight: 70.0),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8.0),
-                      child: AppListCard(
-                          showBorder: false,
-                          padding: EdgeInsets.zero,
-                          title: AppText.labelLarge(
-                            getTimeZoneRegionName(
-                                context,
-                                state.status.supportedTimezones[index]
-                                    .timeZoneID),
-                            color: _notifier.isSelectedTimezone(index)
-                                ? Theme.of(context).colorScheme.primary
-                                : null,
-                          ),
-                          description: AppText.bodyMedium(
-                            getTimezoneGMT(state
-                                .status.supportedTimezones[index].description),
-                            color: _notifier.isSelectedTimezone(index)
-                                ? Theme.of(context).colorScheme.primary
-                                : null,
-                          ),
-                          trailing: _notifier.isSelectedTimezone(index)
-                              ? Icon(
-                                  LinksysIcons.check,
-                                  color: Theme.of(context).colorScheme.primary,
-                                  semanticLabel: 'check icon',
-                                )
+          ),
+          const AppGap.medium(),
+          SizedBox(
+            height: (70.0) * state.status.supportedTimezones.length +
+                17 * (state.status.supportedTimezones.length - 1),
+            child: AppCard(
+              child: ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: state.status.supportedTimezones.length,
+                itemBuilder: (context, index) => ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: 70.0),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: AppListCard(
+                        showBorder: false,
+                        padding: EdgeInsets.zero,
+                        title: AppText.labelLarge(
+                          getTimeZoneRegionName(
+                              context,
+                              state
+                                  .status.supportedTimezones[index].timeZoneID),
+                          color: _notifier.isSelectedTimezone(index)
+                              ? Theme.of(context).colorScheme.primary
                               : null,
-                          onTap: () {
-                            _notifier.setSelectedTimezone(index);
-                          }),
-                    ),
+                        ),
+                        description: AppText.bodyMedium(
+                          getTimezoneGMT(state
+                              .status.supportedTimezones[index].description),
+                          color: _notifier.isSelectedTimezone(index)
+                              ? Theme.of(context).colorScheme.primary
+                              : null,
+                        ),
+                        trailing: _notifier.isSelectedTimezone(index)
+                            ? Icon(
+                                LinksysIcons.check,
+                                color: Theme.of(context).colorScheme.primary,
+                                semanticLabel: 'check icon',
+                              )
+                            : null,
+                        onTap: () {
+                          _notifier.setSelectedTimezone(index);
+                        }),
                   ),
-                  separatorBuilder: (BuildContext context, int index) {
-                    return index != (state.status.supportedTimezones.length - 1)
-                        ? const Divider()
-                        : const Center();
-                  },
                 ),
+                separatorBuilder: (BuildContext context, int index) {
+                  return index != (state.status.supportedTimezones.length - 1)
+                      ? const Divider()
+                      : const Center();
+                },
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

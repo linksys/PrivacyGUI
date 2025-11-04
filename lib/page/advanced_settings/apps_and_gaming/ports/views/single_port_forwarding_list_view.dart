@@ -6,9 +6,7 @@ import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/_ports.
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/views/widgets/_widgets.dart';
 import 'package:privacy_gui/page/components/settings_view/editable_card_list_settings_view.dart';
 import 'package:privacy_gui/page/components/settings_view/editable_table_settings_view.dart';
-import 'package:privacy_gui/page/components/styled/consts.dart';
 
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -17,7 +15,6 @@ import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
 class SinglePortForwardingListView extends ArgumentsConsumerStatelessView {
   const SinglePortForwardingListView({super.key, super.args});
@@ -89,34 +86,10 @@ class _SinglePortForwardingContentViewState
     //       .read(appsAndGamingProvider.notifier)
     //       .setChanged(next != preservedState);
     // });
-    return StyledAppPageView(
-      hideTopbar: true,
-      title: loc(context).singlePortForwarding,
-      scrollable: true,
-      useMainPadding: true,
-      appBarStyle: AppBarStyle.none,
-      padding: EdgeInsets.zero,
-      // bottomBar: PageBottomBar(
-      //     isPositiveEnabled: state != preservedState,
-      //     onPositiveTap: () {
-      //       doSomethingWithSpinner(context, _notifier.save()).then((state) {
-      //         setState(() {
-      //           preservedState = state;
-      //         });
-      //         // ref.read(appsAndGamingProvider.notifier).setChanged(false);
-      //       });
-      //     }),
-      child: (context, constraints) => AppBasicLayout(
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const AppGap.large2(),
-            ResponsiveLayout(
-                desktop: _desktopSettingsView(state, submaskToken, prefixIP),
-                mobile: _mobildSettingsView(state, submaskToken, prefixIP))
-          ],
-        ),
-      ),
+    return SingleChildScrollView(
+      child: ResponsiveLayout(
+          desktop: _desktopSettingsView(state, submaskToken, prefixIP),
+          mobile: _mobildSettingsView(state, submaskToken, prefixIP)),
     );
   }
 

@@ -79,7 +79,7 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
     // ref.listen(dmzSettingsProvider, (previous, next) {
     //   _updateControllers(next);
     // });
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
         title: loc(context).dmz,
         bottomBar: PageBottomBar(
             isPositiveEnabled: state.isDirty &&
@@ -89,9 +89,7 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                   context,
                   ref.read(dmzSettingsProvider.notifier).save().then((value) {
                     _updateControllers(value);
-                    if (context.mounted) {
-                      showSuccessSnackBar(context, loc(context).saved);
-                    }
+                    showSuccessSnackBar(context, loc(context).saved);
                   }).onError((error, stackTrace) {
                     if (!context.mounted) return;
                     final errorMsg = errorCodeHelper(

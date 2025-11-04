@@ -78,7 +78,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
           inputDecorationTheme: Theme.of(context)
               .inputDecorationTheme
               .copyWith(contentPadding: EdgeInsets.all(Spacing.small1))),
-      child: StyledAppPageView(
+      child: StyledAppPageView.withSliver(
         title: loc(context).advancedRouting,
         scrollable: true,
         bottomBar: PageBottomBar(
@@ -90,36 +90,37 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
                 showErrorMessageSnackBar(error);
               });
             }),
-        onBackTap: null,
-        child: (context, constraints) => Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AppRadioList(
-              selected: state.current.isNATEnabled
-                  ? RoutingSettingNetwork.nat
-                  : RoutingSettingNetwork.dynamicRouting,
-              itemHeight: 56,
-              items: [
-                AppRadioListItem(
-                  title: loc(context).nat,
-                  value: RoutingSettingNetwork.nat,
-                ),
-                AppRadioListItem(
-                  title: loc(context).dynamicRouting,
-                  value: RoutingSettingNetwork.dynamicRouting,
-                ),
-              ],
-              onChanged: (index, value) {
-                if (value != null) {
-                  _notifier.updateSettingNetwork(value);
-                }
-              },
-            ),
-            const AppGap.large2(),
-            ResponsiveLayout(
-                desktop: _desktopSettingsView(state, submaskToken, prefixIP),
-                mobile: _mobildSettingsView(state, submaskToken, prefixIP))
-          ],
+        child: (context, constraints) => SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AppRadioList(
+                selected: state.current.isNATEnabled
+                    ? RoutingSettingNetwork.nat
+                    : RoutingSettingNetwork.dynamicRouting,
+                itemHeight: 56,
+                items: [
+                  AppRadioListItem(
+                    title: loc(context).nat,
+                    value: RoutingSettingNetwork.nat,
+                  ),
+                  AppRadioListItem(
+                    title: loc(context).dynamicRouting,
+                    value: RoutingSettingNetwork.dynamicRouting,
+                  ),
+                ],
+                onChanged: (index, value) {
+                  if (value != null) {
+                    _notifier.updateSettingNetwork(value);
+                  }
+                },
+              ),
+              const AppGap.large2(),
+              ResponsiveLayout(
+                  desktop: _desktopSettingsView(state, submaskToken, prefixIP),
+                  mobile: _mobildSettingsView(state, submaskToken, prefixIP))
+            ],
+          ),
         ),
       ),
     );

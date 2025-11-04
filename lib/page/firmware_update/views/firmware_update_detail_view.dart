@@ -15,7 +15,6 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class FirmwareUpdateDetailView extends ConsumerStatefulWidget {
@@ -98,35 +97,30 @@ class _FirmwareUpdateDetailViewState
     });
     return isUpdating
         ? _updatingProgressView(ongoingList)
-        : StyledAppPageView(
+        : StyledAppPageView.withSliver(
             title: loc(context).firmwareUpdate,
-            child: (context, constraints) => AppBasicLayout(
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AppText.bodyLarge(loc(context).firmwareUpdateDesc1),
-                  const AppGap.medium(),
-                  AppText.bodyLarge(loc(context).firmwareUpdateDesc2),
-                  const AppGap.large2(),
-                  _buildList(statusRecords, isWaitingChildren),
-                ],
-              ),
-              // There will be a short offline period after firmware updating
-              // During this period, the mock nodes displayed should not be able to be updated
-              footer: isUpdateAvailable && !isWaitingChildren
-                  ? Padding(
-                      padding: const EdgeInsets.only(top: Spacing.large5),
-                      child: AppFilledButton(
-                        loc(context).updateAll,
-                        onTap: () {
-                          ref
-                              .read(firmwareUpdateProvider.notifier)
-                              .updateFirmware();
-                        },
-                      ),
-                    )
-                  : null,
+            // There will be a short offline period after firmware updating
+            // During this period, the mock nodes displayed should not be able to be updated
+            bottomBar: isUpdateAvailable && !isWaitingChildren
+                ? PageBottomBar(
+                    isPositiveEnabled: isUpdateAvailable && !isWaitingChildren,
+                    onPositiveTap: () {
+                      ref
+                          .read(firmwareUpdateProvider.notifier)
+                          .updateFirmware();
+                    },
+                    positiveLabel: loc(context).updateAll)
+                : null,
+            child: (context, constraints) => Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppText.bodyLarge(loc(context).firmwareUpdateDesc1),
+                const AppGap.medium(),
+                AppText.bodyLarge(loc(context).firmwareUpdateDesc2),
+                const AppGap.large2(),
+                _buildList(statusRecords, isWaitingChildren),
+              ],
             ),
           );
   }
@@ -135,46 +129,44 @@ class _FirmwareUpdateDetailViewState
     List<(LinksysDevice?, FirmwareUpdateStatus)> statusRecords,
     bool isWaitingChildren,
   ) {
-    return Expanded(
-      child: ListView.separated(
-        shrinkWrap: true,
-        physics: ScrollPhysics(),
-        itemCount: statusRecords.length,
-        itemBuilder: (context, index) {
-          final nodeDevice = statusRecords[index].$1;
-          final updateStatus = statusRecords[index].$2;
-          String currentVersion;
-          String? newVersion;
-          if (isWaitingChildren) {
-            // we are using the cached status list that still contains available fw version and old currentVersion
-            // For updated nodes, we mock up the versions for a while to avoid a mismatch in displayed info,
-            // For nodes without updates, remain the original versions
-            currentVersion = updateStatus.availableUpdate?.firmwareVersion ??
-                (nodeDevice?.unit.firmwareVersion ?? loc(context).unknown);
-            newVersion = null;
-          } else {
-            currentVersion =
-                nodeDevice?.unit.firmwareVersion ?? loc(context).unknown;
-            newVersion = updateStatus.availableUpdate?.firmwareVersion;
-          }
-          final modelNumber = nodeDevice?.modelNumber ?? '';
-          final routerImage = Image(
-            height: 40,
-            image: CustomTheme.of(context).getRouterImage(
-                routerIconTestByModel(modelNumber: modelNumber), false),
-          );
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: ScrollPhysics(),
+      itemCount: statusRecords.length,
+      itemBuilder: (context, index) {
+        final nodeDevice = statusRecords[index].$1;
+        final updateStatus = statusRecords[index].$2;
+        String currentVersion;
+        String? newVersion;
+        if (isWaitingChildren) {
+          // we are using the cached status list that still contains available fw version and old currentVersion
+          // For updated nodes, we mock up the versions for a while to avoid a mismatch in displayed info,
+          // For nodes without updates, remain the original versions
+          currentVersion = updateStatus.availableUpdate?.firmwareVersion ??
+              (nodeDevice?.unit.firmwareVersion ?? loc(context).unknown);
+          newVersion = null;
+        } else {
+          currentVersion =
+              nodeDevice?.unit.firmwareVersion ?? loc(context).unknown;
+          newVersion = updateStatus.availableUpdate?.firmwareVersion;
+        }
+        final modelNumber = nodeDevice?.modelNumber ?? '';
+        final routerImage = Image(
+          height: 40,
+          image: CustomTheme.of(context).getRouterImage(
+              routerIconTestByModel(modelNumber: modelNumber), false),
+        );
 
-          return FirmwareUpdateNodeCard(
-            image: routerImage,
-            title: nodeDevice?.getDeviceName() ?? loc(context).device,
-            model: modelNumber,
-            currentVersion: currentVersion,
-            newVersion: newVersion,
-          );
-        },
-        separatorBuilder: (BuildContext context, int index) =>
-            const AppGap.medium(),
-      ),
+        return FirmwareUpdateNodeCard(
+          image: routerImage,
+          title: nodeDevice?.getDeviceName() ?? loc(context).device,
+          model: modelNumber,
+          currentVersion: currentVersion,
+          newVersion: newVersion,
+        );
+      },
+      separatorBuilder: (BuildContext context, int index) =>
+          const AppGap.medium(),
     );
   }
 

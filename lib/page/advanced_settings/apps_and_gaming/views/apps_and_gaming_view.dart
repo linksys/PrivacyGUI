@@ -63,7 +63,7 @@ class _AppsGamingSettingsViewState extends ConsumerState<AppsGamingSettingsView>
       PortRangeForwardingListView(),
       PortRangeTriggeringListView(),
     ];
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       title: loc(context).appsGaming,
       padding: EdgeInsets.zero,
       tabController: _tabController,

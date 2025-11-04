@@ -10,7 +10,6 @@ import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
 class PortRangeTriggeringRuleView extends ArgumentsConsumerStatelessView {
   const PortRangeTriggeringRuleView({super.key, super.args});
@@ -96,7 +95,7 @@ class _AddRuleContentViewState
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(portRangeTriggeringRuleProvider);
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       scrollable: true,
       title: loc(context).portRangeTriggering,
       bottomBar: PageBottomBar(
@@ -106,8 +105,7 @@ class _AddRuleContentViewState
           context.pop(rule);
         },
       ),
-      child: (context, constraints) => AppBasicLayout(
-        content: Column(
+      child: (context, constraints) => Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const AppGap.large2(),
@@ -117,7 +115,6 @@ class _AddRuleContentViewState
               ..._buildAddContents(state)
           ],
         ),
-      ),
     );
   }
 

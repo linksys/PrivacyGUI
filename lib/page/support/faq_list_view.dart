@@ -39,7 +39,7 @@ class _FaqListViewState extends ConsumerState<FaqListView> {
 
   @override
   Widget build(BuildContext context) {
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       title: loc(context).faqs,
       backState: StyledBackState.none,
       menuWidget: Column(
