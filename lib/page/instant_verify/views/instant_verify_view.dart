@@ -81,6 +81,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
       _instantTopologyWidget,
     ];
     return StyledAppPageView.withSliver(
+      useMainPadding: false,
       onRefresh: () {
         return ref.read(pollingProvider.notifier).forcePolling();
       },
@@ -125,33 +126,64 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
     final dashboardHomeState = ref.watch(dashboardHomeProvider);
     final desktopCol = 4.col;
     return SingleChildScrollView(
-      child: ResponsiveLayout.isMobileLayout(context)
-          ? Column(
-              children: [
-                _deviceInfoCard(context, ref),
-                const AppGap.medium(),
-                _connectivityContentWidget(context, ref),
-                const AppGap.medium(),
-                _speedTestContent(context),
-                const AppGap.medium(),
-                _portsCard(context, ref),
-              ],
-            )
-          : Column(
-              children: [
-                dashboardHomeState.isHealthCheckSupported
-                    ? IntrinsicHeight(
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+            horizontal: ResponsiveLayout.pageHorizontalPadding(context)),
+        child: ResponsiveLayout.isMobileLayout(context)
+            ? Column(
+                children: [
+                  _deviceInfoCard(context, ref),
+                  const AppGap.medium(),
+                  _connectivityContentWidget(context, ref),
+                  const AppGap.medium(),
+                  _speedTestContent(context),
+                  const AppGap.medium(),
+                  _portsCard(context, ref),
+                ],
+              )
+            : Column(
+                children: [
+                  dashboardHomeState.isHealthCheckSupported
+                      ? IntrinsicHeight(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              SizedBox(
+                                width: desktopCol,
+                                child: _deviceInfoCard(context, ref),
+                              ),
+                              const AppGap.gutter(),
+                              SizedBox(
+                                width: desktopCol,
+                                child: _connectivityContentWidget(context, ref),
+                              ),
+                              const AppGap.gutter(),
+                              SizedBox(
+                                width: desktopCol,
+                                child: _speedTestContent(context),
+                              ),
+                            ],
+                          ),
+                        )
+                      : Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            SizedBox(
-                              width: desktopCol,
-                              child: _deviceInfoCard(context, ref),
-                            ),
-                            const AppGap.gutter(),
-                            SizedBox(
-                              width: desktopCol,
-                              child: _connectivityContentWidget(context, ref),
+                            IntrinsicHeight(
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  SizedBox(
+                                    width: desktopCol,
+                                    child: _deviceInfoCard(context, ref),
+                                  ),
+                                  const AppGap.gutter(),
+                                  SizedBox(
+                                    width: desktopCol,
+                                    child: _connectivityContentWidget(
+                                        context, ref),
+                                  ),
+                                ],
+                              ),
                             ),
                             const AppGap.gutter(),
                             SizedBox(
@@ -160,37 +192,11 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
                             ),
                           ],
                         ),
-                      )
-                    : Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          IntrinsicHeight(
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                SizedBox(
-                                  width: desktopCol,
-                                  child: _deviceInfoCard(context, ref),
-                                ),
-                                const AppGap.gutter(),
-                                SizedBox(
-                                  width: desktopCol,
-                                  child: _connectivityContentWidget(context, ref),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const AppGap.gutter(),
-                          SizedBox(
-                            width: desktopCol,
-                            child: _speedTestContent(context),
-                          ),
-                        ],
-                      ),
-                const AppGap.medium(),
-                _portsCard(context, ref),
-              ],
-            ),
+                  const AppGap.medium(),
+                  _portsCard(context, ref),
+                ],
+              ),
+      ),
     );
   }
 

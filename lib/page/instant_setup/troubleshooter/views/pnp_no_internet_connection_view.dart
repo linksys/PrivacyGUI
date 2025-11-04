@@ -8,7 +8,8 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
-import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_provider.dart';
+import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_troubleshooter_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
@@ -102,30 +103,31 @@ class _PnpNoInternetConnectionState
                 // Fetch device info and update better actions before start.
                 await ref.read(pnpProvider.notifier).fetchDeviceInfo();
                 // ALT, check router is configured and ignore the exception, check only
-                await ref
-                    .read(pnpProvider.notifier)
-                    .checkRouterConfigured()
-                    .onError((_, __) {});
+                try {
+                  await ref.read(pnpProvider.notifier).checkRouterConfigured();
+                } catch (_) {}
                 final attachedPassword = ref.read(pnpProvider).attachedPassword;
                 if (ref.read(pnpProvider).isRouterUnConfigured) {
                   // ALT, check router admin password is default one and ignore the exception, check only
-                  await ref
-                      .read(pnpProvider.notifier)
-                      .checkAdminPassword(defaultAdminPassword)
-                      .onError((_, __) {});
+                  try {
+                    await ref
+                        .read(pnpProvider.notifier)
+                        .checkAdminPassword(defaultAdminPassword);
+                  } catch (_) {}
                 } else if (attachedPassword != null &&
                     attachedPassword.isNotEmpty) {
                   // ALT, check router admin password is attached one and ignore the exception, check only
-                  await ref
-                      .read(pnpProvider.notifier)
-                      .checkAdminPassword(attachedPassword)
-                      .onError((_, __) {});
+                  try {
+                    await ref
+                        .read(pnpProvider.notifier)
+                        .checkAdminPassword(attachedPassword);
+                  } catch (_) {}
                 }
                 if (ref.read(routerRepositoryProvider).isLoggedIn()) {
                   goRoute(RouteNamed.pnpIspTypeSelection);
                 } else {
                   final isLoggedIn = await goRoute(RouteNamed.pnpIspAuth);
-                  if (isLoggedIn) {
+                  if (isLoggedIn == true) {
                     goRoute(RouteNamed.pnpIspTypeSelection);
                   }
                 }

@@ -1,73 +1,56 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/validator_rules/rules.dart';
-import 'package:privacy_gui/validator_rules/input_validators.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/input_field/validator_widget.dart';
 
-class WiFiPasswordField extends ConsumerStatefulWidget {
+/// A reusable widget for entering Wi-Fi passwords.
+///
+/// This widget provides a password input field with optional label, hint,
+/// error text, controller, and validation rules.
+class WiFiPasswordField extends ConsumerWidget {
+  /// The label text for the password input field.
   final String? label;
+
+  /// The hint text displayed inside the password input field.
   final String? hint;
+
+  /// The error text to display below the password input field.
+  final String? errorText;
+
+  /// The text editing controller for the password input field.
   final TextEditingController? controller;
-  final void Function(bool isValid, String input)? onCheckInput;
+
+  /// Callback function when the text in the password field changes.
+  final void Function(String value)? onChanged;
+
+  /// Callback function when the user submits the text in the password field.
   final void Function(String value)? onSubmitted;
+
+  /// A list of validation rules to apply to the password input.
+  final List<Validation>? validations;
 
   const WiFiPasswordField({
     super.key,
     this.label,
     this.hint,
+    this.errorText,
     this.controller,
-    this.onCheckInput,
+    this.onChanged,
     this.onSubmitted,
+    this.validations,
   });
 
   @override
-  ConsumerState<WiFiPasswordField> createState() => _WiFiPasswordFieldState();
-}
-
-class _WiFiPasswordFieldState extends ConsumerState<WiFiPasswordField> {
-  final InputValidator wifiPasswordValidator = InputValidator([
-    RequiredRule(),
-    NoSurroundWhitespaceRule(),
-    WiFiPasswordRule(ignoreLength: true),
-    LengthRule(min: 8, max: 64),
-  ]);
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return AppPasswordField.withValidator(
       border: const OutlineInputBorder(),
-      headerText: widget.label,
-      hintText: widget.hint,
-      validations: [
-        Validation(
-            description: loc(context).wifiPasswordLimit,
-            validator: LengthRule(min: 8, max: 64).validate),
-        Validation(
-            description: loc(context).routerPasswordRuleStartEndWithSpace,
-            validator: NoSurroundWhitespaceRule().validate),
-        Validation(
-          description: loc(context).routerPasswordRuleUnsupportSpecialChar,
-          validator: (AsciiRule().validate),
-        ),
-        if (widget.controller?.text.length == 64)
-          Validation(
-            description: loc(context).wifiPasswordRuleHex,
-            validator: WiFiPSKRule().validate,
-          ),
-      ],
-      controller: widget.controller,
-      onChanged: (value) {
-        final errorKeys = wifiPasswordValidator
-            .validateDetail(widget.controller?.text ?? '', onlyFailed: true);
-        if (value.isEmpty || errorKeys.isNotEmpty) {
-          widget.onCheckInput?.call(false, value);
-        } else {
-          widget.onCheckInput?.call(true, value);
-        }
-      },
-      onSubmitted: widget.onSubmitted,
+      headerText: label,
+      hintText: hint,
+      errorText: errorText,
+      controller: controller,
+      onChanged: onChanged,
+      onSubmitted: onSubmitted,
+      validations: validations,
     );
   }
 }

@@ -116,6 +116,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
     ];
     return StyledAppPageView.withSliver(
       padding: EdgeInsets.zero,
+      useMainPadding: false,
       title: loc(context).internetSettings.capitalizeWords(),
       bottomBar: isEditing
           ? PageBottomBar(

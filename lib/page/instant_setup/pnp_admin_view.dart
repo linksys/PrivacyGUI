@@ -1,28 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
-import 'package:privacy_gui/core/jnap/router_repository.dart';
-import 'package:privacy_gui/core/utils/icon_rules.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
-import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
-import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
-import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_troubleshooter_provider.dart';
-import 'package:privacy_gui/providers/auth/auth_provider.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_exception.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_provider.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_state.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacy_gui/validator_rules/rules.dart';
-import 'package:privacy_gui/validator_rules/input_validators.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
 
+/// A view responsible for the initial administrative setup and login process
+/// of the Plug and Play (PnP) flow.
+///
+/// This widget handles checking the router's status (configured/unconfigured,
+/// internet connection), prompting for admin password if necessary, and
+/// navigating to the appropriate next step in the PnP wizard or troubleshooter.
 class PnpAdminView extends ArgumentsBaseConsumerStatefulView {
   const PnpAdminView({super.key, super.args});
 
@@ -31,194 +29,119 @@ class PnpAdminView extends ArgumentsBaseConsumerStatefulView {
 }
 
 class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
+  /// Controller for the admin password input field.
   late final TextEditingController _textEditController;
-  late final BasePnpNotifier pnp;
-  final InputValidator _validator = InputValidator([
-    RequiredRule(),
-  ]);
 
-  bool _showInternetConnected = false;
-  bool _isCheckingInternet = false;
-  // The first thing to do when entering this page is checking factory reset, so just show the spinner
-  bool _isCheckingFactoryReset = true;
-  // It will be true only if admin password check fails
-  bool _hasDefaultPasswordChanged = false;
-  bool _processing = false;
-  String? _inputError;
-  Object? _error;
+  /// Stores the password passed as an argument, if any.
   String? _password;
-  bool _isFetchingDeviceInfo = false;
+
   @override
   void initState() {
     super.initState();
     _textEditController = TextEditingController();
-
-    pnp = ref.read(pnpProvider.notifier);
-    // check path include local password
+    // Extract password from widget arguments, typically from a deep link or initial setup.
     _password = widget.args['p'] as String?;
-    logger.i(
-        '[PnP]: Start PNP setup ${_password != null ? 'with' : 'without'} admin password');
-    // verify admin password is valid
-    pnp
-        .fetchDeviceInfo()
-        .then((_) {
-          logger.i('[PnP]: Get device info successfully');
-          if (_password != null) {
-            // keep the admin password anyway if it exists
-            pnp.setAttachedPassword(_password!);
-          }
-        })
-        .then((_) => _checkRouterConfigured())
-        .then((_) {
-          logger.i('[PnP]: The router has already configured');
-          final isLoggedIn = ref.read(routerRepositoryProvider).isLoggedIn();
-          if (!isLoggedIn) {
-            return _examineAdminPassword(_password);
-          }
-        })
-        .then((_) => _checkInternetConnection())
-        .then((_) {
-          final routeFrom = ref.read(pnpTroubleshooterProvider).enterRouteName;
-          if (routeFrom.isNotEmpty) {
-            throw ExceptionInterruptAndExit(route: routeFrom);
-          }
-        })
-        .then((_) {
-          if (!mounted) return;
-          logger.i('[PnP]: Auto-login successfully, go to Setup page');
-          context.goNamed(RouteNamed.pnpConfig);
-        })
-        .catchError((error, stackTrace) {
-          logger.e('[PnP]: Failed to fetch device info');
-          // reload the page
-          setState(() {
-            _isFetchingDeviceInfo = true;
-          });
-        }, test: (error) => error is ExceptionFetchDeviceInfo)
-        .catchError((error, stackTrace) {
-          logger.e('[PnP]: The given admin password is invalid');
-          setState(() {
-            _inputError = '';
-            _password = null;
-          });
-        }, test: (error) => error is ExceptionInvalidAdminPassword)
-        // .catchError((error, stackTrace) {
-        //   logger.e(
-        //       '[PnP Troubleshooter]: Internet connection failed - initiate the troubleshooter');
-        //   if (_password != null) {
-        //     pnp.fetchData().then((value) {
-        //       final ssid = pnp.getDefaultWiFiNameAndPassphrase().name;
-        //       context.goNamed(
-        //         RouteNamed.pnpNoInternetConnection,
-        //         extra: {'ssid': ssid},
-        //       );
-        //     }).onError((error, stackTrace) {
-        //       logger.e(
-        //           '[PnP Troubleshooter]: Fetch data failed (Getting SSID): $error');
-        //       context.goNamed(RouteNamed.pnpNoInternetConnection);
-        //     });
-        //   } else {
-        //     context.goNamed(RouteNamed.pnpNoInternetConnection);
-        //   }
-        // }, test: (error) => error is ExceptionNoInternetConnection)
-        // .catchError((error, stackTrace) {
-        //   logger.e('[PnP]: The router is unconfigured');
-        //   setState(() {
-        //     _internetChecked = true;
-        //     _isFactoryReset = true;
-        //     _inputError = '';
-        //     _password = defaultAdminPassword;
-        //   });
-        // }, test: (error) => error is ExceptionRouterUnconfigured)
-        .catchError((error, stackTrace) {
-          final route = (error as ExceptionInterruptAndExit).route;
-          logger.e('[PnP]: Interrupted and go to: $route');
-          // Force polling to fetch latest data
-          if (ref.read(authProvider).value?.loginType == LoginType.local) {
-            ref.read(pollingProvider.notifier).forcePolling();
-          }
-          if (!mounted) return;
-          context.goNamed(route);
-        }, test: (error) => error is ExceptionInterruptAndExit)
-        .onError((error, stackTrace) {
-          // All error should be handled on the above flow. Do nothing
 
-          // logger.e('[PnP]: Uncaught Error',
-          //     error: error, stackTrace: stackTrace);
-          // context.goNamed(RouteNamed.pnpNoInternetConnection);
-        });
+    // Start the PnP flow after the first frame is rendered.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(pnpProvider.notifier).startPnpFlow(_password);
+    });
   }
 
   @override
   void dispose() {
-    super.dispose();
-
     _textEditController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // In order to let users see internet connected screen,
-    // this has a higher priority when both showInternetConnected and isCheckingInternet are true
-    if (_isFetchingDeviceInfo) {
-      return _checkDeviceInfoView();
-    } else if (_showInternetConnected) {
-      return _internetConnectedView();
-    } else {
-      if (_isCheckingInternet) {
-        return _checkInternetView();
-      } else {
-        return _isCheckingFactoryReset
-            ? _checkFactorySettingView()
-            : _mainView();
+    // Listen for state changes that trigger navigation or one-off events.
+    ref.listen<PnpState>(pnpProvider, (previous, next) {
+      final prevStatus = previous?.status;
+      final nextStatus = next.status;
+
+      if (prevStatus == nextStatus) return; // Only act on status changes
+
+      // On successful internet connection or wizard initialization, navigate to the PnP configuration.
+      if (nextStatus == PnpFlowStatus.adminInternetConnected ||
+          nextStatus == PnpFlowStatus.wizardInitializing) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) context.goNamed(RouteNamed.pnpConfig);
+        });
       }
+
+      // If no internet connection is detected, navigate to the internet troubleshooting screen.
+      if (nextStatus == PnpFlowStatus.adminNeedsInternetTroubleshooting) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            var ssid = '';
+            // If a password was attached, get the default WiFi name for display in troubleshooting.
+            if (next.attachedPassword != null) {
+              ssid = ref
+                  .read(pnpProvider.notifier)
+                  .getDefaultWiFiNameAndPassphrase()
+                  .name;
+            }
+            context.goNamed(
+              RouteNamed.pnpNoInternetConnection,
+              extra: ssid.isEmpty ? null : {'ssid': ssid},
+            );
+          }
+        });
+      }
+
+      // If the wizard initialization fails due to an interrupt, navigate to the specified route.
+      if (nextStatus == PnpFlowStatus.wizardInitFailed &&
+          next.error is ExceptionInterruptAndExit) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            final route = (next.error as ExceptionInterruptAndExit).route;
+            context.goNamed(route);
+          }
+        });
+      }
+    });
+
+    final pnpState = ref.watch(pnpProvider);
+
+    // Render different UI based on the current PnP flow status.
+    switch (pnpState.status) {
+      case PnpFlowStatus.adminInitializing:
+      case PnpFlowStatus.adminCheckingInternet:
+        return _loadingView(pnpState.status);
+      case PnpFlowStatus.adminInternetConnected:
+        return _internetConnectedView();
+      case PnpFlowStatus.adminError:
+        return _errorPage(_errorView());
+      case PnpFlowStatus.adminUnconfigured:
+      case PnpFlowStatus.adminAwaitingPassword:
+      case PnpFlowStatus.adminLoggingIn:
+      case PnpFlowStatus.adminLoginFailed:
+        return _mainView(pnpState);
+      default:
+        return _loadingView(pnpState.status);
     }
   }
 
-  Widget _checkDeviceInfoView() {
-    return StyledAppPageView(
-      appBarStyle: AppBarStyle.none,
-      backState: StyledBackState.none,
-      padding: EdgeInsets.zero,
-      enableSafeArea: (bottom: true, top: false, left: true, right: false),
-      child: (context, constraints) => Center(
-          child: AppCard(
-            showBorder: false,
-            color: Theme.of(context).colorScheme.background,
-            padding: EdgeInsets.zero,
-            child: _errorView(),
-          ),
-        ),
-    );
-  }
-
-  Widget _errorView() {
-    return Container(
-      color: Theme.of(context).colorScheme.background,
-      child: Center(
-        child: AppCard(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AppText.headlineSmall(loc(context).generalError),
-              const AppGap.large5(),
-              AppFilledButton(
-                loc(context).tryAgain,
-                onTap: () {
-                  logger.d(
-                      '[PnP]: Fetch device info error. Tap try again, go home.');
-                  context.goNamed(RouteNamed.home);
-                },
-              )
-            ],
-          ),
-        ),
+  /// Displays a loading spinner with a message based on the current status.
+  Widget _loadingView(PnpFlowStatus status) {
+    String message = status == PnpFlowStatus.adminCheckingInternet
+        ? loc(context).launchCheckInternet
+        : loc(context).processing;
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const AppSpinner(),
+          const AppGap.medium(),
+          AppText.titleMedium(message),
+        ],
       ),
     );
   }
 
+  /// Displays a confirmation view when the internet connection is established.
   Widget _internetConnectedView() {
     return Center(
       child: Column(
@@ -237,40 +160,53 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
     );
   }
 
-  Widget _checkFactorySettingView() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const AppSpinner(
-            semanticLabel: 'Initialize spinner',
+  /// Wraps an error view in a styled page layout.
+  Widget _errorPage(Widget child) {
+    return StyledAppPageView(
+      appBarStyle: AppBarStyle.none,
+      backState: StyledBackState.none,
+      padding: EdgeInsets.zero,
+      enableSafeArea: (bottom: true, top: false, left: true, right: false),
+      child: (context, constraints) => Center(
+          child: AppCard(
+            showBorder: false,
+            color: Theme.of(context).colorScheme.background,
+            padding: EdgeInsets.zero,
+            child: child,
           ),
-          const AppGap.medium(),
-          AppText.titleMedium(loc(context).processing),
-        ],
+        ),
+      );
+    }
+
+  /// Displays a generic error message with a "Try Again" button.
+  Widget _errorView() {
+    return Container(
+      color: Theme.of(context).colorScheme.background,
+      child: Center(
+        child: AppCard(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AppText.headlineSmall(loc(context).generalError),
+              const AppGap.large5(),
+              AppFilledButton(
+                loc(context).tryAgain,
+                onTap: () {
+                  context.goNamed(RouteNamed.home);
+                },
+              )
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  Widget _checkInternetView() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const AppSpinner(
-            semanticLabel: 'Check Internet spinner',
-          ),
-          const AppGap.medium(),
-          AppText.titleMedium(loc(context).launchCheckInternet),
-        ],
-      ),
-    );
-  }
-
-  Widget _mainView() {
-    final deviceInfo =
-        ref.watch(pnpProvider.select((value) => value.deviceInfo));
-    final isUnconfiguredRouter = ref.read(pnpProvider).isUnconfigured ?? false;
+  /// The main view for handling unconfigured routers or admin password input.
+  Widget _mainView(PnpState pnpState) {
+    final deviceInfo = pnpState.deviceInfo;
     return StyledAppPageView(
       scrollable: true,
       appBarStyle: AppBarStyle.none,
@@ -284,20 +220,20 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Image(
-                image: CustomTheme.of(context)
-                    .getRouterImage(routerIconTestByModel(
-                  modelNumber: deviceInfo?.modelNumber ?? 'LN12',
-                )),
-                height: 160,
-                width: 160,
-                fit: BoxFit.contain,
-              ),
+              if (deviceInfo != null)
+                Image(
+                  image:
+                      CustomTheme.of(context).getRouterImage(deviceInfo.image),
+                  height: 160,
+                  width: 160,
+                  fit: BoxFit.contain,
+                ),
+              // Animates the transition between unconfigured view and password view.
               AnimatedContainer(
                 duration: const Duration(seconds: 1),
-                child: isUnconfiguredRouter && !_hasDefaultPasswordChanged
+                child: pnpState.status == PnpFlowStatus.adminUnconfigured
                     ? _unconfiguredView()
-                    : _routerPasswordView(),
+                    : _routerPasswordView(pnpState),
               )
             ],
           ),
@@ -306,6 +242,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
     );
   }
 
+  /// Displays a view for an unconfigured router, prompting the user to continue.
   Widget _unconfiguredView() {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -318,28 +255,19 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
         AppFilledButton(
           loc(context).textContinue,
           onTap: () {
-            _examineAdminPassword(_password).then((_) {
-              return _checkInternetConnection();
-            }).then((_) {
-              if (!mounted) return;
-              logger.i(
-                  '[PnP]: Logged in successfully by given password, go to Setup page');
-              context.goNamed(RouteNamed.pnpConfig);
-            }).onError((error, stackTrace) {
-              logger.e(
-                '[PnP]: ${_password == null ? 'There is no admin password, bring up the input view' : 'The given password is invalid'}',
-              );
-              setState(() {
-                _hasDefaultPasswordChanged = true;
-              });
-            });
+            ref.read(pnpProvider.notifier).continueFromUnconfigured();
           },
         ),
       ],
     );
   }
 
-  Widget _routerPasswordView() {
+  /// Displays the admin password input form.
+  Widget _routerPasswordView(PnpState pnpState) {
+    final isProcessing = pnpState.status == PnpFlowStatus.adminLoggingIn;
+    final hasError = pnpState.status == PnpFlowStatus.adminLoginFailed &&
+        pnpState.error != null;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -352,31 +280,21 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
           hintText: loc(context).routerPassword,
           border: const OutlineInputBorder(),
           controller: _textEditController,
-          errorText: _inputError?.isEmpty ?? true ? null : _inputError,
-          onFocusChanged: (focused) {
-            if (focused) {
-              setState(() {
-                _inputError = null;
-                _error = null;
-              });
-            }
-          },
-          onChanged: (value) {
-            setState(() {
-              _inputError = value.isEmpty
-                  ? ''
-                  : _validator.validate(value)
-                      ? null
-                      : 'Password should not be empty';
-            });
-          },
           onSubmitted: (_) {
-            if (_inputError == null && !_processing) {
-              _doLogin();
+            if (!isProcessing) {
+              ref
+                  .read(pnpProvider.notifier)
+                  .submitPassword(_textEditController.text);
             }
           },
         ),
-        ..._checkError(context, _error),
+        // Display error message if login failed.
+        if (hasError)
+          Padding(
+            padding: const EdgeInsets.only(top: 8.0),
+            child: AppText.labelMedium(loc(context).incorrectPassword,
+                color: Theme.of(context).colorScheme.error),
+          ),
         const AppGap.large3(),
         AppTextButton.noPadding(
           loc(context).pnpRouterLoginWhereIsIt,
@@ -387,9 +305,11 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
         const AppGap.large5(),
         AppFilledButton(
           loc(context).login,
-          onTap: _inputError == null && !_processing
+          onTap: !isProcessing
               ? () {
-                  _doLogin();
+                  ref
+                      .read(pnpProvider.notifier)
+                      .submitPassword(_textEditController.text);
                 }
               : null,
         ),
@@ -397,106 +317,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
     );
   }
 
-  void _doLogin() {
-    setState(() {
-      _processing = true;
-    });
-    _examineAdminPassword(_textEditController.text)
-        .then((_) => _checkInternetConnection())
-        .then((_) {
-      if (!mounted) return;
-      logger.i(
-          '[PnP]: Logged in successfully by tapping Login, go to Setup page');
-      context.goNamed(RouteNamed.pnpConfig);
-    }).onError((error, stackTrace) {
-      logger.e('[PnP]: The input admin password is invalid');
-      setState(() {
-        _error = error;
-      });
-    }).whenComplete(() {
-      setState(() {
-        _processing = false;
-      });
-    });
-  }
-
-  Future _checkRouterConfigured() {
-    logger.i('[PnP]: Check the router configured');
-    setState(() {
-      _isCheckingFactoryReset = true;
-    });
-    return pnp.checkRouterConfigured().then((_) {}).catchError(
-        (error, stackTrace) {
-      logger.e('[PnP]: The router is unconfigured');
-      setState(() {
-        // _hasDefaultPasswordChanged = false;
-        _inputError = '';
-        _password = defaultAdminPassword;
-      });
-      throw error;
-    }, test: (error) => error is ExceptionRouterUnconfigured).whenComplete(() {
-      setState(() {
-        _isCheckingFactoryReset = false;
-      });
-    });
-  }
-
-  Future _checkInternetConnection() {
-    setState(() {
-      _isCheckingInternet = true;
-    });
-    return pnp.checkInternetConnection().then((_) async {
-      logger.i('[PnP]: Check the Internet connection - OK');
-      setState(() {
-        _showInternetConnected = true;
-      });
-      await Future.delayed(const Duration(seconds: 1)).then((_) {
-        setState(() {
-          _isCheckingInternet = false;
-        });
-      });
-    }).catchError((error, stackTrace) async {
-      logger.e(
-          '[PnP Troubleshooter]: Internet connection failed - initiate the troubleshooter');
-      var ssid = '';
-      if (_password != null) {
-        ssid = await pnp.fetchData().then((value) {
-          return pnp.getDefaultWiFiNameAndPassphrase().name;
-        }).onError((error, stackTrace) {
-          logger.e(
-              '[PnP Troubleshooter]: Fetch data failed (Getting SSID): $error');
-          return '';
-        });
-      }
-      if (!mounted) return;
-      context.goNamed(
-        RouteNamed.pnpNoInternetConnection,
-        extra: ssid.isEmpty ? null : {'ssid': ssid},
-      );
-      throw error;
-    }, test: (error) => error is ExceptionNoInternetConnection);
-  }
-
-  List<Widget> _checkError(BuildContext context, Object? error) {
-    if (error == null) {
-      return [];
-    }
-    if (error is ExceptionInvalidAdminPassword) {
-      return [
-        AppText.labelMedium(loc(context).incorrectPassword,
-            color: Theme.of(context).colorScheme.error)
-      ];
-    }
-    return [
-      AppText.labelMedium('Unknown error',
-          color: Theme.of(context).colorScheme.error)
-    ];
-  }
-
-  Future _examineAdminPassword(String? password) {
-    return pnp.checkAdminPassword(password);
-  }
-
+  /// Shows a modal dialog explaining where to find the router password.
   _showRouterPasswordModal() {
     return showDialog(
         context: context,

@@ -37,14 +37,20 @@ class WifiAdvancedSettingsView extends ConsumerWidget {
       if (state.isIptvEnabled != null)
         _buildIptv(context, notifier, state.isIptvEnabled!),
     ];
-    return MasonryGridView.count(
-      crossAxisCount: ResponsiveLayout.isMobileLayout(context) ? 1 : 2,
-      mainAxisSpacing: Spacing.small2,
-      crossAxisSpacing: ResponsiveLayout.columnPadding(context),
-      itemCount: advancedSettingWidgets.length,
-      itemBuilder: (context, index) => advancedSettingWidgets[index],
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
+    return SingleChildScrollView(
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+            horizontal: ResponsiveLayout.pageHorizontalPadding(context)),
+        child: MasonryGridView.count(
+          crossAxisCount: ResponsiveLayout.isMobileLayout(context) ? 1 : 2,
+          mainAxisSpacing: Spacing.small2,
+          crossAxisSpacing: ResponsiveLayout.columnPadding(context),
+          itemCount: advancedSettingWidgets.length,
+          itemBuilder: (context, index) => advancedSettingWidgets[index],
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+        ),
+      ),
     );
   }
 

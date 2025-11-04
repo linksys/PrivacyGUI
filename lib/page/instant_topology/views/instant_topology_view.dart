@@ -91,7 +91,7 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
               // scrollable: true,
               enableSliverAppBar: _isWidget ? false : true,
               hideTopbar: _isWidget,
-              useMainPadding: _isWidget ? false : true,
+              useMainPadding: true,
               appBarStyle: _isWidget ? AppBarStyle.none : AppBarStyle.back,
               padding: EdgeInsets.zero,
               title: loc(context).instantTopology,

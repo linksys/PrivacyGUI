@@ -117,6 +117,7 @@ class _LocalNetworkSettingsViewState
     return StyledAppPageView.withSliver(
       padding: EdgeInsets.zero,
       tabController: _tabController,
+      useMainPadding: false,
       bottomBar: PageBottomBar(
         isPositiveEnabled: _notifier.isDirty() && !_hasError(state),
         onPositiveTap: _saveSettings,
@@ -173,7 +174,6 @@ class _LocalNetworkSettingsViewState
 
   Widget _ipAddressView(LocalNetworkSettingsState state) {
     return _viewLayout(
-      col: 6.col,
       child: AppCard(
         padding: const EdgeInsets.symmetric(
             vertical: Spacing.large3, horizontal: Spacing.large2),
@@ -226,19 +226,23 @@ class _LocalNetworkSettingsViewState
   }
 
   Widget _viewLayout({double? col, required Widget child}) {
-    col = col ?? 9.col;
+    col = col ?? 12.col;
     return SingleChildScrollView(
-      child: ResponsiveLayout.isMobileLayout(context)
-          ? child
-          : Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: col,
-                  child: child,
-                ),
-              ],
-            ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+            horizontal: ResponsiveLayout.pageHorizontalPadding(context)),
+        child: ResponsiveLayout.isMobileLayout(context)
+            ? child
+            : Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: col,
+                    child: child,
+                  ),
+                ],
+              ),
+      ),
     );
   }
 

@@ -282,6 +282,7 @@ class StyledAppPageView extends ConsumerStatefulWidget {
     TabController? tabController,
     void Function(int index)? onTabTap,
     bool hideTopbar = false,
+    bool useMainPadding = true,
     PageContentType pageContentType = PageContentType.flexible,
   }) {
     return StyledAppPageView(
@@ -309,7 +310,7 @@ class StyledAppPageView extends ConsumerStatefulWidget {
       menuOnRight: menuOnRight,
       largeMenu: largeMenu,
       topbar: topbar,
-      useMainPadding: true,
+      useMainPadding: useMainPadding,
       markLabel: markLabel,
       tabs: tabs,
       tabContentViews: tabContentViews,

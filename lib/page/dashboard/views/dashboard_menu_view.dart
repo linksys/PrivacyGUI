@@ -220,8 +220,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
             description: loc(context).speedTestInternetToDeviceDesc,
             iconData: LinksysIcons.networkCheck,
             onTap: () {
-              // _navigateTo(RouteNamed.speedTestExternal);
-              _navigateTo(RouteNamed.firmwareUpdateDetail);
+              _navigateTo(RouteNamed.speedTestExternal);
             }),
       if (isSupportHealthCheck)
         AppSectionItemData(

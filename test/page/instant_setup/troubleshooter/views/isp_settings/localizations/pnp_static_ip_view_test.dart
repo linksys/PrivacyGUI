@@ -4,12 +4,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/constants/_constants.dart';
-import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/_internet_settings.dart';
-import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
-import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
-import 'package:privacy_gui/page/instant_setup/data/pnp_state.dart';
+import 'package:privacy_gui/page/instant_setup/models/pnp_ui_models.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_exception.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_provider.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_isp_save_settings_view.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_static_ip_view.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -41,8 +41,12 @@ void main() async {
     mockInternetSettingsNotifier = MockInternetSettingsNotifier();
 
     when(mockPnpNotifier.build()).thenReturn(PnpState(
-        deviceInfo:
-            NodeDeviceInfo.fromJson(jsonDecode(testDeviceInfo)['output']),
+        deviceInfo: PnpDeviceInfoUIModel(
+          modelName: 'LN16',
+          image: 'routerLn16',
+          serialNumber: 'serialNumber',
+          firmwareVersion: 'firmwareVersion',
+        ),
         isUnconfigured: true));
     when(mockPnpNotifier.checkAdminPassword(null)).thenAnswer((_) {
       throw ExceptionInvalidAdminPassword();

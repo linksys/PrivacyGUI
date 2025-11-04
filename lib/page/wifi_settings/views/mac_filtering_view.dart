@@ -34,11 +34,15 @@ class MacFilteringView extends ConsumerWidget {
 
     final displayDevices = ref.watch(macFilteringDeviceListProvider);
     return SingleChildScrollView(
-      child: ResponsiveLayout(
-        desktop: _desktopLayout(
-            context, ref, privacyState, originalPrivacyState, displayDevices),
-        mobile: _mobileLayout(
-            context, ref, privacyState, originalPrivacyState, displayDevices),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+            horizontal: ResponsiveLayout.pageHorizontalPadding(context)),
+        child: ResponsiveLayout(
+          desktop: _desktopLayout(
+              context, ref, privacyState, originalPrivacyState, displayDevices),
+          mobile: _mobileLayout(
+              context, ref, privacyState, originalPrivacyState, displayDevices),
+        ),
       ),
     );
   }

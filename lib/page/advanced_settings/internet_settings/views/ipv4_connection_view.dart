@@ -34,34 +34,38 @@ class Ipv4ConnectionView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      child: ResponsiveLayout(
-        desktop: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Expanded(
-              child: _infoCard(context),
-            ),
-            const AppGap.gutter(),
-            Expanded(
-              child: OptionalSettingsForm(
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+            horizontal: ResponsiveLayout.pageHorizontalPadding(context)),
+        child: ResponsiveLayout(
+          desktop: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Expanded(
+                child: _infoCard(context),
+              ),
+              const AppGap.gutter(),
+              Expanded(
+                child: OptionalSettingsForm(
+                  isEditing: isEditing,
+                  isBridgeMode: isBridgeMode,
+                ),
+              ),
+            ],
+          ),
+          mobile: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _infoCard(context),
+              AppGap.large4(),
+              OptionalSettingsForm(
                 isEditing: isEditing,
                 isBridgeMode: isBridgeMode,
               ),
-            ),
-          ],
-        ),
-        mobile: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _infoCard(context),
-            AppGap.large4(),
-            OptionalSettingsForm(
-              isEditing: isEditing,
-              isBridgeMode: isBridgeMode,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

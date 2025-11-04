@@ -10,8 +10,8 @@ import 'package:privacy_gui/page/advanced_settings/internet_settings/models/inte
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/_providers.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
-import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
-import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_exception.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_provider.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_troubleshooter_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/error_code_helper.dart';

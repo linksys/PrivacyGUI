@@ -14,11 +14,11 @@ import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/i
 import 'package:privacy_gui/page/advanced_settings/internet_settings/views/internet_settings_view.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/util/error_code_helper.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
+import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/gap.dart';
 import 'package:privacygui_widgets/widgets/text/app_text.dart';
 
@@ -42,48 +42,53 @@ class ReleaseAndRenewView extends ConsumerWidget {
         internetSettingsState.settings.current.ipv6Setting.ipv6ConnectionType);
 
     return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AppText.titleMedium(loc(context).internetIPAddress),
-          const AppGap.medium(),
-          SizedBox(
-            width: 9.col,
-            child: AppListCard(
-              title: AppText.bodyMedium(loc(context).ipv4),
-              description: AppText.labelLarge(
-                  wanStatus?.wanConnection?.ipAddress ?? '-'),
-              trailing: AppTextButton.noPadding(
-                loc(context).releaseAndRenew,
-                onTap: isBridgeMode
-                    ? null
-                    : () {
-                        _showRenewIPAlert(
-                            context, ref, InternetSettingsViewType.ipv4);
-                      },
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+            horizontal: ResponsiveLayout.pageHorizontalPadding(context)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppText.titleMedium(loc(context).internetIPAddress),
+            const AppGap.medium(),
+            SizedBox(
+              width: 9.col,
+              child: AppListCard(
+                title: AppText.bodyMedium(loc(context).ipv4),
+                description: AppText.labelLarge(
+                    wanStatus?.wanConnection?.ipAddress ?? '-'),
+                trailing: AppTextButton.noPadding(
+                  loc(context).releaseAndRenew,
+                  onTap: isBridgeMode
+                      ? null
+                      : () {
+                          _showRenewIPAlert(
+                              context, ref, InternetSettingsViewType.ipv4);
+                        },
+                ),
               ),
             ),
-          ),
-          const AppGap.small2(),
-          SizedBox(
-            width: 9.col,
-            child: AppListCard(
-              title: AppText.bodyMedium(loc(context).ipv6),
-              description: AppText.labelLarge(
-                  wanStatus?.wanIPv6Connection?.networkInfo?.ipAddress ?? '-'),
-              trailing: AppTextButton.noPadding(
-                loc(context).releaseAndRenew,
-                onTap: isBridgeMode || wanIpv6Type == WanIPv6Type.passThrough
-                    ? null
-                    : () {
-                        _showRenewIPAlert(
-                            context, ref, InternetSettingsViewType.ipv6);
-                      },
+            const AppGap.small2(),
+            SizedBox(
+              width: 9.col,
+              child: AppListCard(
+                title: AppText.bodyMedium(loc(context).ipv6),
+                description: AppText.labelLarge(
+                    wanStatus?.wanIPv6Connection?.networkInfo?.ipAddress ??
+                        '-'),
+                trailing: AppTextButton.noPadding(
+                  loc(context).releaseAndRenew,
+                  onTap: isBridgeMode || wanIpv6Type == WanIPv6Type.passThrough
+                      ? null
+                      : () {
+                          _showRenewIPAlert(
+                              context, ref, InternetSettingsViewType.ipv6);
+                        },
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
