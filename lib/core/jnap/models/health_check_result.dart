@@ -125,4 +125,16 @@ class SpeedTestResult extends Equatable {
       downloadBandwidth: json['downloadBandwidth'],
     );
   }
+
+  /// exitCode:
+  /// Success - Health check was successfully completed.
+  /// SpeedTestConfigurationError - There is an error in the speed test configuration.
+  /// SpeedTestLicenseError - Speed test license is likely to have expired.
+  /// SpeedTestExecutionError - Error encountered during a speed test execution.
+  /// AbortedByUser - A health check was aborted by user.
+  /// Unavailable - Health check hasn't exited.
+  /// DBError	DB Error of HealthCheck module
+  bool isErrorExitCode() {
+    return exitCode != 'Success' && exitCode != 'Unavailable';
+  }
 }

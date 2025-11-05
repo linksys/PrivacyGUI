@@ -217,10 +217,10 @@ Future<String> getPackageInfo() async {
     'OS: ${defaultTargetPlatform.name}',
   ];
 
-    appInfo.add(
-      '================================= Device Info ==================================',
-    );
-    appInfo.add(await _getDeviceInfo(DeviceInfoPlugin()));
+  appInfo.add(
+    '================================= Device Info ==================================',
+  );
+  appInfo.add(await _getDeviceInfo(DeviceInfoPlugin()));
 
   return appInfo.join('\n');
 }

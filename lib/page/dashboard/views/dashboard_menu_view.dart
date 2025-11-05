@@ -16,6 +16,7 @@ import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dar
 import 'package:privacy_gui/page/components/styled/status_label.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
+import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
 import 'package:privacy_gui/page/instant_safety/providers/_providers.dart';
@@ -143,7 +144,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
     final isBehindRouter = routerType == RouterType.behindManaged ||
         BuildConfig.forceCommandType == ForceCommand.local;
     final isSupportHealthCheck =
-        ref.watch(dashboardHomeProvider).isHealthCheckSupported;
+        ref.watch(healthCheckProvider).isSpeedTestModuleSupported;
     final isSupportVPN = getIt.get<ServiceHelper>().isSupportVPN();
     return [
       AppSectionItemData(
