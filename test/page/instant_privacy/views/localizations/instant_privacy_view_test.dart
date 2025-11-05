@@ -12,7 +12,9 @@ import '../../../../common/config.dart';
 import '../../../../common/test_helper.dart';
 import '../../../../common/test_responsive_widget.dart';
 import '../../../../test_data/device_list_test_state.dart';
-import '../../../../test_data/instant_privacy_test_data.dart';
+import '../../../../common/testable_router.dart';
+import '../../../../mocks/_index.dart';
+import '../../../../test_data/_index.dart';
 import '../../../../test_data/instant_privacy_test_state.dart';
 
 final _instantPrivacyScreens = [
@@ -28,9 +30,11 @@ void main() {
 
     when(testHelper.mockInstantPrivacyNotifier.fetch()).thenAnswer((realInvocation) async {
       await Future.delayed(const Duration(seconds: 1));
-      return InstantPrivacyState.fromMap(instantPrivacyInitState);
+      return InstantPrivacyState.fromMap(instantPrivacyTestState);
     });
   });
+
+  tearDown(() {});
 
   testLocalizations(
     'Instant-Privacy view - disabled state',
@@ -56,7 +60,7 @@ void main() {
       when(testHelper.mockInstantPrivacyNotifier.build())
           .thenReturn(InstantPrivacyState.fromMap(instantPrivacyDenyTestState));
       when(testHelper.mockInstantPrivacyNotifier.fetch(
-              fetchRemote: anyNamed('fetchRemote')))
+              forceRemote: anyNamed('forceRemote')))
           .thenAnswer((_) {
         return Future.delayed(Durations.extralong1, () {
           return InstantPrivacyState.fromMap(instantPrivacyDenyTestState);
@@ -75,7 +79,7 @@ void main() {
     'Instant-Privacy view - enabled state',
     (tester, locale) async {
       when(testHelper.mockInstantPrivacyNotifier.build())
-          .thenReturn(InstantPrivacyState.fromMap(instantPrivacyOnState));
+          .thenReturn(InstantPrivacyState.fromMap(instantPrivacyEnabledTestState));
       when(testHelper.mockDeviceListNotifier.build()).thenReturn(
           DeviceListState.fromMap(instantPrivacyDeviceListTestState));
 
@@ -107,7 +111,7 @@ void main() {
   testLocalizations('Instant-Privacy view - disabling modal',
       (tester, locale) async {
     when(testHelper.mockInstantPrivacyNotifier.build())
-        .thenReturn(InstantPrivacyState.fromMap(instantPrivacyOnState));
+        .thenReturn(InstantPrivacyState.fromMap(instantPrivacyEnabledTestState));
     when(testHelper.mockDeviceListNotifier.build())
         .thenReturn(DeviceListState.fromMap(instantPrivacyDeviceListTestState));
 
@@ -124,8 +128,8 @@ void main() {
 
   testLocalizations('Instant-Privacy view - delete confirm modal',
       (tester, locale) async {
-    when(testHelper.mockInstantPrivacyNotifier.build())
-        .thenReturn(InstantPrivacyState.fromMap(instantPrivacyOnState));
+    when(testHelper.mockInstantPrivacyNotifier.build()).thenReturn(
+        InstantPrivacyState.fromMap(instantPrivacyEnabledTestState));
     when(testHelper.mockDeviceListNotifier.build())
         .thenReturn(DeviceListState.fromMap(instantPrivacyDeviceListTestState));
 
@@ -142,8 +146,8 @@ void main() {
 
   testLocalizations('Instant-Privacy view - delete self alert modal',
       (tester, locale) async {
-    when(testHelper.mockInstantPrivacyNotifier.build())
-        .thenReturn(InstantPrivacyState.fromMap(instantPrivacyOnState));
+    when(testHelper.mockInstantPrivacyNotifier.build()).thenReturn(
+        InstantPrivacyState.fromMap(instantPrivacyEnabledTestState));
     when(testHelper.mockDeviceListNotifier.build())
         .thenReturn(DeviceListState.fromMap(instantPrivacyDeviceListTestState));
 
@@ -154,6 +158,9 @@ void main() {
     );
     final myCardFinder = find.ancestor(
         of: find.text('3C:22:FB:E4:4F:18'), matching: find.byType(AppCard));
+    await tester.scrollUntilVisible(myCardFinder, 100,
+        scrollable: find.byType(Scrollable).last);
+    expect(myCardFinder, findsOneWidget);
     final deleteFinder = find.descendant(
         of: myCardFinder, matching: find.byIcon(LinksysIcons.delete));
     await tester.tap(deleteFinder.first);

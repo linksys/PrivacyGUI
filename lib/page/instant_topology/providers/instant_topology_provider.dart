@@ -27,7 +27,6 @@ class InstantTopologyNotifier extends Notifier<InstantTopologyState> {
   InstantTopologyState build() {
     final deviceManagerState = ref.watch(deviceManagerProvider);
     final topologySelectId = ref.watch(topologySelectedIdProvider);
-    final count = deviceManagerState.nodeDevices.length;
 
     final onlineRoot = _buildRootNode(deviceManagerState, topologySelectId);
     final offlineRoot = _buildOfflineRootNode(deviceManagerState);

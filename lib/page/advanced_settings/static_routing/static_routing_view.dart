@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/models/get_routing_settings.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_provider.dart';
@@ -36,7 +35,6 @@ class StaticRoutingView extends ArgumentsConsumerStatefulView {
 class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
     with PageSnackbarMixin {
   late final StaticRoutingNotifier _notifier;
-  StaticRoutingState? preservedState;
 
   // Fro Edit table settings
   final TextEditingController routerNameTextController =
@@ -58,11 +56,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
     doSomethingWithSpinner(
       context,
       _notifier.fetch(),
-    ).then((state) {
-      setState(() {
-        preservedState = state;
-      });
-    });
+    );
   }
 
   @override
@@ -77,66 +71,56 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(staticRoutingProvider);
-    final submaskToken = state.subnetMask.split('.');
-    final prefixIP = state.routerIp;
+    final submaskToken = state.status.subnetMask.split('.');
+    final prefixIP = state.status.routerIp;
     return Theme(
       data: Theme.of(context).copyWith(
           inputDecorationTheme: Theme.of(context)
               .inputDecorationTheme
               .copyWith(contentPadding: EdgeInsets.all(Spacing.small1))),
-      child: StyledAppPageView(
+      child: StyledAppPageView.withSliver(
         title: loc(context).advancedRouting,
         scrollable: true,
         bottomBar: PageBottomBar(
-            isPositiveEnabled: state != preservedState,
+            isPositiveEnabled: state.isDirty,
             onPositiveTap: () {
-              doSomethingWithSpinner(context, _notifier.save()).then((state) {
-                setState(() {
-                  preservedState = state;
-                });
+              doSomethingWithSpinner(context, _notifier.save()).then((_) {
                 showChangesSavedSnackBar();
               }).onError((error, stackTrace) {
                 showErrorMessageSnackBar(error);
               });
             }),
-        onBackTap: state != preservedState
-            ? () async {
-                final goBack = await showUnsavedAlert(context);
-                if (goBack == true) {
-                  _notifier.fetch();
-                  context.pop();
-                }
-              }
-            : null,
-        child: (context, constraints) => Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AppRadioList(
-              selected: state.setting.isNATEnabled
-                  ? RoutingSettingNetwork.nat
-                  : RoutingSettingNetwork.dynamicRouting,
-              itemHeight: 56,
-              items: [
-                AppRadioListItem(
-                  title: loc(context).nat,
-                  value: RoutingSettingNetwork.nat,
-                ),
-                AppRadioListItem(
-                  title: loc(context).dynamicRouting,
-                  value: RoutingSettingNetwork.dynamicRouting,
-                ),
-              ],
-              onChanged: (index, value) {
-                if (value != null) {
-                  _notifier.updateSettingNetwork(value);
-                }
-              },
-            ),
-            const AppGap.large2(),
-            ResponsiveLayout(
-                desktop: _desktopSettingsView(state, submaskToken, prefixIP),
-                mobile: _mobildSettingsView(state, submaskToken, prefixIP))
-          ],
+        child: (context, constraints) => SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AppRadioList(
+                selected: state.current.isNATEnabled
+                    ? RoutingSettingNetwork.nat
+                    : RoutingSettingNetwork.dynamicRouting,
+                itemHeight: 56,
+                items: [
+                  AppRadioListItem(
+                    title: loc(context).nat,
+                    value: RoutingSettingNetwork.nat,
+                  ),
+                  AppRadioListItem(
+                    title: loc(context).dynamicRouting,
+                    value: RoutingSettingNetwork.dynamicRouting,
+                  ),
+                ],
+                onChanged: (index, value) {
+                  if (value != null) {
+                    _notifier.updateSettingNetwork(value);
+                  }
+                },
+              ),
+              const AppGap.large2(),
+              ResponsiveLayout(
+                  desktop: _desktopSettingsView(state, submaskToken, prefixIP),
+                  mobile: _mobildSettingsView(state, submaskToken, prefixIP))
+            ],
+          ),
         ),
       ),
     );
@@ -187,7 +171,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
               ),
             ),
         editRoute: RouteNamed.settingsStaticRoutingRule,
-        dataList: state.setting.entries,
+        dataList: state.current.entries.entries,
         onSave: (index, rule) {
           if (index >= 0) {
             _notifier.editRule(index, rule);
@@ -209,8 +193,12 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
       pivotalIndex: 4, // Changes on the interface may make other values invalid
       onStartEdit: (index, rule) {
         currentFocus = null;
-        ref.read(staticRoutingRuleProvider.notifier).init(state.setting.entries,
-            rule, index, state.routerIp, state.subnetMask);
+        ref.read(staticRoutingRuleProvider.notifier).init(
+            state.current.entries.entries,
+            rule,
+            index,
+            state.status.routerIp,
+            state.status.subnetMask);
         // Edit
         routerNameTextController.text = rule?.name ?? '';
         destinationIPTextController.text =
@@ -245,7 +233,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
               3: FractionColumnWidth(.2),
               4: FractionColumnWidth(.15),
             },
-      dataList: [...state.setting.entries],
+      dataList: [...state.current.entries.entries],
       editRowIndex: 0,
       cellBuilder: (context, ref, index, rule) {
         return switch (index) {

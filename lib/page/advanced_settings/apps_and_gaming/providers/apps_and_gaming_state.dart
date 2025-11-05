@@ -1,111 +1,120 @@
 import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
-import 'package:flutter/widgets.dart';
+import 'package:privacy_gui/core/jnap/models/port_range_forwarding_rule.dart';
+import 'package:privacy_gui/core/jnap/models/port_range_triggering_rule.dart';
+import 'package:privacy_gui/core/jnap/models/single_port_forwarding_rule.dart';
 
-import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/providers/ddns_state.dart';
+import 'package:privacy_gui/providers/empty_status.dart';
+import 'package:privacy_gui/providers/feature_state.dart';
+import 'package:privacy_gui/providers/preservable.dart';
 
-class AppsAndGamingViewState extends Equatable {
-  final DDNSState? preserveDDNSState;
-  final SinglePortForwardingListState? preserveSinglePortForwardingListState;
-  final PortRangeForwardingListState? preservePortRangeForwardingListState;
-  final PortRangeTriggeringListState? preservePortRangeTriggeringListState;
-  final bool isDataValid;
+class AppsAndGamingSettings extends Equatable {
+  final DDNSSettings ddnsSettings;
+  final SinglePortForwardingRuleList singlePortForwardingList;
+  final PortRangeForwardingRuleList portRangeForwardingList;
+  final PortRangeTriggeringRuleList portRangeTriggeringList;
 
-  const AppsAndGamingViewState({
-    this.preserveDDNSState,
-    this.preserveSinglePortForwardingListState,
-    this.preservePortRangeForwardingListState,
-    this.preservePortRangeTriggeringListState,
-    this.isDataValid = true,
+  const AppsAndGamingSettings({
+    required this.ddnsSettings,
+    required this.singlePortForwardingList,
+    required this.portRangeForwardingList,
+    required this.portRangeTriggeringList,
   });
 
-  AppsAndGamingViewState copyWith({
-    ValueGetter<DDNSState?>? preserveDDNSState,
-    ValueGetter<SinglePortForwardingListState?>?
-        preserveSinglePortForwardingListState,
-    ValueGetter<PortRangeForwardingListState?>?
-        preservePortRangeForwardingListState,
-    ValueGetter<PortRangeTriggeringListState?>?
-        preservePortRangeTriggeringListState,
-    bool? isDataValid,
+  @override
+  List<Object?> get props => [
+        ddnsSettings,
+        singlePortForwardingList,
+        portRangeForwardingList,
+        portRangeTriggeringList,
+      ];
+
+  AppsAndGamingSettings copyWith({
+    DDNSSettings? ddnsSettings,
+    SinglePortForwardingRuleList? singlePortForwardingList,
+    PortRangeForwardingRuleList? portRangeForwardingList,
+    PortRangeTriggeringRuleList? portRangeTriggeringList,
   }) {
-    return AppsAndGamingViewState(
-      preserveDDNSState: preserveDDNSState != null
-          ? preserveDDNSState()
-          : this.preserveDDNSState,
-      preserveSinglePortForwardingListState:
-          preserveSinglePortForwardingListState != null
-              ? preserveSinglePortForwardingListState()
-              : this.preserveSinglePortForwardingListState,
-      preservePortRangeForwardingListState:
-          preservePortRangeForwardingListState != null
-              ? preservePortRangeForwardingListState()
-              : this.preservePortRangeForwardingListState,
-      preservePortRangeTriggeringListState:
-          preservePortRangeTriggeringListState != null
-              ? preservePortRangeTriggeringListState()
-              : this.preservePortRangeTriggeringListState,
-      isDataValid: isDataValid ?? this.isDataValid,
+    return AppsAndGamingSettings(
+      ddnsSettings: ddnsSettings ?? this.ddnsSettings,
+      singlePortForwardingList:
+          singlePortForwardingList ?? this.singlePortForwardingList,
+      portRangeForwardingList:
+          portRangeForwardingList ?? this.portRangeForwardingList,
+      portRangeTriggeringList:
+          portRangeTriggeringList ?? this.portRangeTriggeringList,
     );
   }
 
   Map<String, dynamic> toMap() {
-    return {
-      'preserveDDNSState': preserveDDNSState?.toMap(),
-      'preserveSinglePortForwardingListState':
-          preserveSinglePortForwardingListState?.toMap(),
-      'preservePortRangeForwardingListState':
-          preservePortRangeForwardingListState?.toMap(),
-      'preservePortRangeTriggeringListState':
-          preservePortRangeTriggeringListState?.toMap(),
-      'isDataValid': isDataValid,
+    return <String, dynamic>{
+      'ddnsSettings': ddnsSettings.toMap(),
+      'singlePortForwardingList': singlePortForwardingList.toMap(),
+      'portRangeForwardingList': portRangeForwardingList.toMap(),
+      'portRangeTriggeringList': portRangeTriggeringList.toMap(),
+    };
+  }
+
+  factory AppsAndGamingSettings.fromMap(Map<String, dynamic> map) {
+    return AppsAndGamingSettings(
+      ddnsSettings:
+          DDNSSettings.fromMap(map['ddnsSettings'] as Map<String, dynamic>),
+      singlePortForwardingList: SinglePortForwardingRuleList.fromMap(
+          map['singlePortForwardingList'] as Map<String, dynamic>),
+      portRangeForwardingList: PortRangeForwardingRuleList.fromMap(
+          map['portRangeForwardingList'] as Map<String, dynamic>),
+      portRangeTriggeringList: PortRangeTriggeringRuleList.fromMap(
+          map['portRangeTriggeringList'] as Map<String, dynamic>),
+    );
+  }
+}
+
+class AppsAndGamingViewState
+    extends FeatureState<AppsAndGamingSettings, EmptyStatus> {
+  const AppsAndGamingViewState({
+    required super.settings,
+    required super.status,
+  });
+
+  @override
+  AppsAndGamingViewState copyWith({
+    Preservable<AppsAndGamingSettings>? settings,
+    EmptyStatus? status,
+  }) {
+    return AppsAndGamingViewState(
+      settings: settings ?? this.settings,
+      status: status ?? this.status,
+    );
+  }
+
+  @override
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'settings': settings.toMap((s) => s.toMap()),
+      'status': {},
     };
   }
 
   factory AppsAndGamingViewState.fromMap(Map<String, dynamic> map) {
     return AppsAndGamingViewState(
-      preserveDDNSState: map['preserveDDNSState'] != null
-          ? DDNSState.fromMap(map['preserveDDNSState'])
-          : null,
-      preserveSinglePortForwardingListState:
-          map['preserveSinglePortForwardingListState'] != null
-              ? SinglePortForwardingListState.fromMap(
-                  map['preserveSinglePortForwardingListState'])
-              : null,
-      preservePortRangeForwardingListState:
-          map['preservePortRangeForwardingListState'] != null
-              ? PortRangeForwardingListState.fromMap(
-                  map['preservePortRangeForwardingListState'])
-              : null,
-      preservePortRangeTriggeringListState:
-          map['preservePortRangeTriggeringListState'] != null
-              ? PortRangeTriggeringListState.fromMap(
-                  map['preservePortRangeTriggeringListState'])
-              : null,
-      isDataValid: map['isDataValid'] ?? false,
+      settings: Preservable.fromMap(
+        map['settings'] as Map<String, dynamic>,
+        (valueMap) =>
+            AppsAndGamingSettings.fromMap(valueMap as Map<String, dynamic>),
+      ),
+      status: EmptyStatus(),
     );
   }
 
-  String toJson() => json.encode(toMap());
-
   factory AppsAndGamingViewState.fromJson(String source) =>
-      AppsAndGamingViewState.fromMap(json.decode(source));
+      AppsAndGamingViewState.fromMap(
+          json.decode(source) as Map<String, dynamic>);
 
   @override
-  String toString() {
-    return 'AppsAndGamingViewState(preserveDDNSState: $preserveDDNSState, preserveSinglePortForwardingListState: $preserveSinglePortForwardingListState, preservePortRangeForwardingListState: $preservePortRangeForwardingListState, preservePortRangeTriggeringListState: $preservePortRangeTriggeringListState, isDataValid: $isDataValid)';
-  }
+  bool get stringify => true;
 
   @override
-  List<Object?> get props {
-    return [
-      preserveDDNSState,
-      preserveSinglePortForwardingListState,
-      preservePortRangeForwardingListState,
-      preservePortRangeTriggeringListState,
-      isDataValid,
-    ];
-  }
+  List<Object> get props => [settings, status];
 }

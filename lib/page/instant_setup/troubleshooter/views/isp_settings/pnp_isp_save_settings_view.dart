@@ -6,11 +6,12 @@ import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/advanced_settings/internet_settings/models/internet_settings_enums.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/_providers.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
-import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
-import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_exception.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_provider.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_troubleshooter_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/error_code_helper.dart';
@@ -30,14 +31,14 @@ class PnpIspSaveSettingsView extends ArgumentsConsumerStatefulView {
 class _PnpIspSaveSettingsViewState
     extends ConsumerState<PnpIspSaveSettingsView> {
   final _passwordController = TextEditingController();
-  late final InternetSettingsState newSettings;
-  String? _spinnerText; //TODO: all spinner text is not confirmed
+  late final InternetSettings newSettings;
+  String? _spinnerText;
   StreamSubscription? subscription;
 
   @override
   void initState() {
     super.initState();
-    newSettings = widget.args['newSettings'] as InternetSettingsState;
+    newSettings = widget.args['newSettings'] as InternetSettings;
     _saveNewSettings();
   }
 
@@ -86,13 +87,15 @@ class _PnpIspSaveSettingsViewState
                     .then((value) {
                   logger.i(
                       '[PnP]: Troubleshooter - Check internet connection with new settings - OK');
-                  // Internet connection is OK
-                  context.goNamed(RouteNamed.pnp);
+                  if (mounted) {
+                    context.goNamed(RouteNamed.pnp);
+                  }
                 }).catchError((error) {
                   logger.e(
                       '[PnP]: Troubleshooter - Check internet connection with new settings - Failed');
-                  // Internet connection is Not OK
-                  context.pop(_getErrorMessage(wanType));
+                  if (mounted) {
+                    context.pop(_getErrorMessage(wanType));
+                  }
                 }, test: (error) => error is ExceptionNoInternetConnection);
               }
               subscription?.cancel();
@@ -115,7 +118,7 @@ class _PnpIspSaveSettingsViewState
     }).onError((error, stackTrace) {
       logger.e(
           '[PnP]: Troubleshooter - Failed to save the new settings - $error');
-
+      if (!mounted) return;
       if (error is JNAPSideEffectError) {
         final lastHandledResult = error.lastHandledResult;
         if (lastHandledResult != null && lastHandledResult is JNAPSuccess) {

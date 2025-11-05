@@ -3,11 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/constants/_constants.dart';
-import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/_internet_settings.dart';
-import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
-import 'package:privacy_gui/page/instant_setup/data/pnp_state.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_static_ip_view.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -16,7 +14,6 @@ import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 import '../../../../../../common/config.dart';
 import '../../../../../../common/test_helper.dart';
 import '../../../../../../common/test_responsive_widget.dart';
-import '../../../../../../test_data/device_info_test_data.dart';
 import '../../../../../../test_data/internet_settings_state_data.dart';
 
 void main() async {
@@ -26,16 +23,12 @@ void main() async {
   setUp(() {
     testHelper.setup();
 
-    when(testHelper.mockPnpNotifier.build()).thenReturn(PnpState(
-        deviceInfo:
-            NodeDeviceInfo.fromJson(jsonDecode(testDeviceInfo)['output']),
-        isUnconfigured: true));
     when(testHelper.mockPnpNotifier.checkAdminPassword(null)).thenAnswer((_) {
       throw ExceptionInvalidAdminPassword();
     });
 
     final mockInternetSettingsState =
-        InternetSettingsState.fromJson(internetSettingsStateData);
+        InternetSettingsState.fromMap(jsonDecode(internetSettingsStateData));
     when(testHelper.mockInternetSettingsNotifier.build())
         .thenReturn(mockInternetSettingsState);
     when(testHelper.mockInternetSettingsNotifier.fetch()).thenAnswer((_) async {

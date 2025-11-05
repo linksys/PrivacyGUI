@@ -1,15 +1,8 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dart';
-import 'package:privacy_gui/page/dashboard/views/components/shimmer.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
-import 'package:privacy_gui/route/constants.dart';
 
 class DashboardShell extends ArgumentsConsumerStatefulView {
   const DashboardShell({

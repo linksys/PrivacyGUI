@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 
 class DesktopLayout extends StatefulWidget {

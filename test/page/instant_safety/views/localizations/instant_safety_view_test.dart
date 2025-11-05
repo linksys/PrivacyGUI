@@ -17,9 +17,10 @@ void main() {
     testHelper.setup();
     when(testHelper.mockInstantSafetyNotifier.build())
         .thenReturn(InstantSafetyState.fromMap(instantSafetyTestState));
-    when(testHelper.mockInstantSafetyNotifier.fetchLANSettings())
+    when(testHelper.mockInstantSafetyNotifier.fetch())
         .thenAnswer((realInvocation) async {
       await Future.delayed(const Duration(seconds: 1));
+      return InstantSafetyState.fromMap(instantSafetyTestState);
     });
   });
 

@@ -6,7 +6,7 @@ import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/wifi_list_provider.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.dart';
 import 'package:privacy_gui/util/extensions.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
@@ -62,10 +62,10 @@ class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
       }
       return radios;
     });
-    final wifiState = ref.watch(wifiListProvider);
+    final wifiState = ref.watch(wifiBundleProvider);
     final wifiNames = [
-      ...wifiState.mainWiFi.map((e) => e.ssid).toList().unique(),
-      wifiState.guestWiFi.ssid,
+      ...wifiState.settings.current.wifiList.mainWiFi.map((e) => e.ssid).toList().unique(),
+      wifiState.settings.current.wifiList.guestWiFi.ssid,
     ];
     final radios = (ref
             .watch(dashboardManagerProvider.select((value) => value.mainRadios))
@@ -118,7 +118,6 @@ class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
 
 class _FiltersWidget extends StatelessWidget {
   const _FiltersWidget({
-    super.key,
     required this.widget,
     required this.selectConnection,
     required this.notifier,

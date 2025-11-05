@@ -1,19 +1,36 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
+import 'package:privacy_gui/core/jnap/providers/dashboard_manager_state.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/dhcp_reservations_state.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_state.dart';
+import 'package:privacy_gui/providers/preservable.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 
 import '../../../../../common/config.dart';
 import '../../../../../common/test_helper.dart';
 import '../../../../../common/test_responsive_widget.dart';
+import '../../../../../test_data/dashboard_manager_test_state.dart';
 import '../../../../../test_data/dhcp_reservations_test_state.dart';
+import '../../../../../test_data/wifi_bundle_test_state.dart';
 
 void main() {
   final testHelper = TestHelper();
 
   setUp(() {
     testHelper.setup();
+
+    final settings = WifiBundleSettings.fromMap(
+        wifiBundleTestState['settings'] as Map<String, dynamic>);
+    final status = WifiBundleStatus.fromMap(
+        wifiBundleTestState['status'] as Map<String, dynamic>);
+    final wifiInitialState = WifiBundleState(
+      settings: Preservable(original: settings, current: settings),
+      status: status,
+    );
+    when(testHelper.mockWiFiBundleNotifier.build()).thenReturn(wifiInitialState);
+    when(testHelper.mockDashboardManagerNotifier.build()).thenReturn(
+        DashboardManagerState.fromMap(dashboardManagerChrry7TestState));
   });
 
   testLocalizations(
@@ -52,12 +69,12 @@ void main() {
   testLocalizations(
     'DHCP reservations - 1 reserved',
     (tester, locale) async {
-      DHCPReservationState dhcpReservationState =
-          DHCPReservationState.fromMap(dhcpReservationTestState);
-      when(testHelper.mockDHCPReservationsNotifier.build()).thenReturn(dhcpReservationState
-          .copyWith(reservations: [
-        dhcpReservationState.devices.first.copyWith(reserved: true)
-      ]));
+      final state = DHCPReservationState.fromMap(dhcpReservationTestState);
+      final settings = state.settings.current.copyWith(reservations: [
+        state.settings.current.reservations.first.copyWith(reserved: true)
+      ]);
+      when(testHelper.mockDHCPReservationsNotifier.build()).thenReturn(state.copyWith(
+          settings: Preservable(original: settings, current: settings)));
 
       await testHelper.pumpView(
         tester,
@@ -74,13 +91,13 @@ void main() {
   testLocalizations(
     'DHCP reservations - 2 reserved',
     (tester, locale) async {
-      DHCPReservationState dhcpReservationState =
-          DHCPReservationState.fromMap(dhcpReservationTestState);
-      when(testHelper.mockDHCPReservationsNotifier.build())
-          .thenReturn(dhcpReservationState.copyWith(reservations: [
-        dhcpReservationState.devices[0].copyWith(reserved: true),
-        dhcpReservationState.devices[1].copyWith(reserved: true)
-      ]));
+      final state = DHCPReservationState.fromMap(dhcpReservationTestState);
+      final settings = state.settings.current.copyWith(reservations: [
+        state.settings.current.reservations.first.copyWith(reserved: true),
+        state.settings.current.reservations[1].copyWith(reserved: true),
+      ]);
+      when(testHelper.mockDHCPReservationsNotifier.build()).thenReturn(state.copyWith(
+          settings: Preservable(original: settings, current: settings)));
 
       await testHelper.pumpView(
         tester,
@@ -97,13 +114,13 @@ void main() {
   testLocalizations(
     'DHCP reservations - all reserved',
     (tester, locale) async {
-      DHCPReservationState dhcpReservationState =
-          DHCPReservationState.fromMap(dhcpReservationTestState);
-      when(testHelper.mockDHCPReservationsNotifier.build()).thenReturn(
-          dhcpReservationState.copyWith(
-              reservations: dhcpReservationState.devices
-                  .map((e) => e.copyWith(reserved: true))
-                  .toList()));
+      final state = DHCPReservationState.fromMap(dhcpReservationTestState);
+      final settings = state.settings.current.copyWith(reservations: [
+        ...state.settings.current.reservations
+            .map((e) => e.copyWith(reserved: true)),
+      ]);
+      when(testHelper.mockDHCPReservationsNotifier.build()).thenReturn(state.copyWith(
+          settings: Preservable(original: settings, current: settings)));
 
       await testHelper.pumpView(
         tester,
@@ -163,12 +180,37 @@ void main() {
   testLocalizations(
     'DHCP reservations - edit reservation',
     (tester, locale) async {
-      DHCPReservationState dhcpReservationState =
-          DHCPReservationState.fromMap(dhcpReservationTestState);
-      when(testHelper.mockDHCPReservationsNotifier.build()).thenReturn(dhcpReservationState
-          .copyWith(reservations: [
-        dhcpReservationState.devices.first.copyWith(reserved: true)
-      ]));
+      final state = DHCPReservationState.fromMap(dhcpReservationTestState);
+      final settings = state.settings.current.copyWith(reservations: [
+        state.settings.current.reservations.first.copyWith(reserved: true)
+      ]);
+      when(testHelper.mockDHCPReservationsNotifier.build()).thenReturn(state.copyWith(
+          settings: Preservable(original: settings, current: settings)));
+      await testHelper.pumpView(
+        tester,
+        locale: locale,
+        child: const DHCPReservationsView(),
+      );
+
+      final editBtnFinder = find.byIcon(LinksysIcons.edit);
+      await tester.tap(editBtnFinder.first);
+      await tester.pumpAndSettle();
+    },
+    screens: [
+      ...responsiveMobileScreens.map((e) => e).toList(),
+      ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1240)).toList()
+    ],
+  );
+
+  testLocalizations(
+    'DHCP reservations - can not be added state',
+    (tester, locale) async {
+      final state = DHCPReservationState.fromMap(dhcpReservationTestState);
+      final settings = state.settings.current.copyWith(reservations: [
+        state.settings.current.reservations.first.copyWith(reserved: true)
+      ]);
+      when(testHelper.mockDHCPReservationsNotifier.build()).thenReturn(state.copyWith(
+          settings: Preservable(original: settings, current: settings)));
 
       await testHelper.pumpView(
         tester,
@@ -189,21 +231,21 @@ void main() {
   testLocalizations(
     'DHCP reservations - can not be added state',
     (tester, locale) async {
-      DHCPReservationState dhcpReservationState =
-          DHCPReservationState.fromMap(dhcpReservationTestState);
+      final state = DHCPReservationState.fromMap(dhcpReservationTestState);
 
-      when(testHelper.mockDHCPReservationsNotifier.build())
-          .thenReturn(dhcpReservationState.copyWith(reservations: [
-        dhcpReservationState.devices.first.copyWith(
+      when(testHelper.mockDHCPReservationsNotifier.build()).thenReturn(state.copyWith(
+          settings: Preservable(original: state.settings.current,
+              current: state.settings.current.copyWith(reservations: [
+        state.settings.current.reservations.first.copyWith(
           reserved: true,
-          data: dhcpReservationState.devices.first.data
+          data: state.settings.current.reservations.first.data
               .copyWith(ipAddress: "10.175.1.144"),
         ),
-        dhcpReservationState.devices[1],
-      ]));
+        state.settings.current.reservations[1],
+      ]))));
 
       when(testHelper.mockDHCPReservationsNotifier
-              .isConflict(dhcpReservationState.devices[1]))
+              .isConflict(state.settings.current.reservations[1]))
           .thenAnswer((invocation) => true);
 
       await testHelper.pumpView(

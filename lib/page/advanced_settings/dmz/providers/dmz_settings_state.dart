@@ -1,9 +1,11 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
-
+import 'package:flutter/material.dart';
 import 'package:privacy_gui/core/jnap/models/dmz_settings.dart';
+import 'package:privacy_gui/page/advanced_settings/dmz/providers/dmz_status.dart';
+import 'package:privacy_gui/providers/feature_state.dart';
+import 'package:privacy_gui/providers/preservable.dart';
 
 enum DMZSourceType {
   auto,
@@ -23,52 +25,121 @@ enum DMZDestinationType {
       values.firstWhere((element) => element.name == value);
 }
 
-class DMZSettingsState extends Equatable {
-  final DMZSettings settings;
+class DMZUISettings extends Equatable {
+  final bool isDMZEnabled;
+  final DMZSourceRestriction? sourceRestriction;
+  final String? destinationIPAddress;
+  final String? destinationMACAddress;
   final DMZSourceType sourceType;
   final DMZDestinationType destinationType;
-  const DMZSettingsState({
-    required this.settings,
+
+  const DMZUISettings({
+    required this.isDMZEnabled,
+    this.sourceRestriction,
+    this.destinationIPAddress,
+    this.destinationMACAddress,
     required this.sourceType,
     required this.destinationType,
   });
 
-  DMZSettingsState copyWith({
-    DMZSettings? settings,
+  @override
+  List<Object?> get props => [
+        isDMZEnabled,
+        sourceRestriction,
+        destinationIPAddress,
+        destinationMACAddress,
+        sourceType,
+        destinationType,
+      ];
+
+  DMZUISettings copyWith({
+    bool? isDMZEnabled,
+    ValueGetter<DMZSourceRestriction?>? sourceRestriction,
+    ValueGetter<String?>? destinationIPAddress,
+    ValueGetter<String?>? destinationMACAddress,
     DMZSourceType? sourceType,
     DMZDestinationType? destinationType,
   }) {
-    return DMZSettingsState(
-      settings: settings ?? this.settings,
+    return DMZUISettings(
+      isDMZEnabled: isDMZEnabled ?? this.isDMZEnabled,
+      sourceRestriction:
+          sourceRestriction != null ? sourceRestriction() : this.sourceRestriction,
+      destinationIPAddress: destinationIPAddress != null
+          ? destinationIPAddress()
+          : this.destinationIPAddress,
+      destinationMACAddress: destinationMACAddress != null
+          ? destinationMACAddress()
+          : this.destinationMACAddress,
       sourceType: sourceType ?? this.sourceType,
       destinationType: destinationType ?? this.destinationType,
     );
   }
 
   Map<String, dynamic> toMap() {
-    return <String, dynamic>{
-      'settings': settings.toMap(),
+    return {
+      'isDMZEnabled': isDMZEnabled,
+      'sourceRestriction': sourceRestriction?.toMap(),
+      'destinationIPAddress': destinationIPAddress,
+      'destinationMACAddress': destinationMACAddress,
       'sourceType': sourceType.name,
       'destinationType': destinationType.name,
     };
   }
 
-  factory DMZSettingsState.fromMap(Map<String, dynamic> map) {
+  factory DMZUISettings.fromMap(Map<String, dynamic> map) {
+    return DMZUISettings(
+      isDMZEnabled: map['isDMZEnabled'] as bool,
+      sourceRestriction: map['sourceRestriction'] != null
+          ? DMZSourceRestriction.fromMap(
+              map['sourceRestriction'] as Map<String, dynamic>)
+          : null,
+      destinationIPAddress: map['destinationIPAddress'] as String?,
+      destinationMACAddress: map['destinationMACAddress'] as String?,
+      sourceType: DMZSourceType.resolve(map['sourceType'] ?? 'auto'),
+      destinationType: DMZDestinationType.resolve(map['destinationType'] ?? 'ip'),
+    );
+  }
+}
+
+class DMZSettingsState extends FeatureState<DMZUISettings, DMZStatus> {
+  const DMZSettingsState({
+    required super.settings,
+    required super.status,
+  });
+
+  @override
+  DMZSettingsState copyWith({
+    Preservable<DMZUISettings>? settings,
+    DMZStatus? status,
+  }) {
     return DMZSettingsState(
-      settings: DMZSettings.fromMap(map['settings'] as Map<String, dynamic>),
-      sourceType: DMZSourceType.resolve(map['sourceType']),
-      destinationType: DMZDestinationType.resolve(map['destinationType']),
+      settings: settings ?? this.settings,
+      status: status ?? this.status,
     );
   }
 
+  @override
+  Map<String, dynamic> toMap() {
+    return {
+      'settings': settings.toMap((value) => value.toMap()),
+      'status': status.toMap(),
+    };
+  }
+
+  factory DMZSettingsState.fromMap(Map<String, dynamic> map) {
+    return DMZSettingsState(
+      settings: Preservable<DMZUISettings>.fromMap(map['settings'],
+          (m) => DMZUISettings.fromMap(m as Map<String, dynamic>)),
+      status: DMZStatus.fromMap(map['status']),
+    );
+  }
+
+  @override
   String toJson() => json.encode(toMap());
 
   factory DMZSettingsState.fromJson(String source) =>
-      DMZSettingsState.fromMap(json.decode(source) as Map<String, dynamic>);
+      DMZSettingsState.fromMap(json.decode(source));
 
   @override
-  bool get stringify => true;
-
-  @override
-  List<Object> get props => [settings, sourceType, destinationType];
+  List<Object> get props => [settings, status];
 }

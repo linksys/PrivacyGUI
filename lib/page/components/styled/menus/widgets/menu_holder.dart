@@ -1,6 +1,5 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
@@ -23,11 +22,38 @@ class MenuHolder extends ConsumerStatefulWidget {
 
 class MenuHolderState extends ConsumerState<MenuHolder> {
   late final MenuController _controller;
+  GoRouterDelegate? _routerDelegate;
 
   @override
   void initState() {
     super.initState();
     _controller = ref.read(menuController);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final newRouterDelegate = GoRouter.of(context).routerDelegate;
+    if (newRouterDelegate != _routerDelegate) {
+      _routerDelegate?.removeListener(_updateMenuSelection);
+      _routerDelegate = newRouterDelegate;
+      _routerDelegate?.addListener(_updateMenuSelection);
+      _updateMenuSelection();
+    }
+  }
+
+  @override
+  void dispose() {
+    _routerDelegate?.removeListener(_updateMenuSelection);
+    super.dispose();
+  }
+
+  void _updateMenuSelection() {
+    if (_routerDelegate == null) return;
+    final extra = _routerDelegate!.currentConfiguration.extra;
+    if (extra is NaviType) {
+      _controller.setTo(extra);
+    }
   }
 
   @override
@@ -38,15 +64,21 @@ class MenuHolderState extends ConsumerState<MenuHolder> {
         .routes
         .last as LinksysRoute?;
 
-    final autoHide = false; //LinksysRoute.autoHideNaviRail(context);
+    const autoHide = false; //LinksysRoute.autoHideNaviRail(context);
     final showNavi = LinksysRoute.isShowNaviRail(context, pageRoute?.config);
     Future.doWhile(() => !mounted).then((value) {
-      final displayType =
-          shellNavigatorKey.currentContext == null || autoHide || !showNavi
-              ? MenuDisplay.none
-              : ResponsiveLayout.isMobileLayout(context)
-                  ? MenuDisplay.bottom
-                  : MenuDisplay.top;
+      MenuDisplay displayType;
+      if (shellNavigatorKey.currentContext == null || autoHide || !showNavi) {
+        displayType = MenuDisplay.none;
+      } else {
+        if (context.mounted) {
+          displayType = ResponsiveLayout.isMobileLayout(context)
+              ? MenuDisplay.bottom
+              : MenuDisplay.top;
+        } else {
+          displayType = MenuDisplay.none;
+        }
+      }
       _controller.setDisplayType(displayType);
     });
     return ValueListenableBuilder<NavigationMenus>(
@@ -65,12 +97,16 @@ class MenuHolderState extends ConsumerState<MenuHolder> {
                   _controller.select(_controller.items[index]);
                 },
               ),
-            MenuDisplay.bottom => BottomNavigationMenu(
-                items: _controller.items,
-                selected: _controller.selected,
-                onItemClick: (index) {
-                  _controller.select(_controller.items[index]);
-                },
+            MenuDisplay.bottom => AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                height: _controller.isVisible ? kBottomNavigationBarHeight : 0,
+                child: BottomNavigationMenu(
+                  items: _controller.items,
+                  selected: _controller.selected,
+                  onItemClick: (index) {
+                    _controller.select(_controller.items[index]);
+                  },
+                ),
               ),
           };
         });
@@ -92,13 +128,23 @@ class MenuController {
     return _menuNotifier.value.type;
   }
 
+  bool get isVisible => _menuNotifier.value.isVisible;
+
+  void setMenuVisible(bool visible) {
+    if (visible == isVisible) return;
+    _menuNotifier.value = _menuNotifier.value.copyWith(isVisible: visible);
+  }
+
   void setTo(NaviType type) {
+    if (_menuNotifier.value.selected == type) return;
     _menuNotifier.value = _menuNotifier.value.copyWith(selected: type);
   }
 
   void select(NaviType type) {
-    shellNavigatorKey.currentContext!.goNamed(type.resolvePath());
-    _menuNotifier.value = _menuNotifier.value.copyWith(selected: type);
+    shellNavigatorKey.currentContext!.goNamed(
+      type.resolvePath(),
+      extra: type,
+    );
   }
 
   void setDisplayType(MenuDisplay type) {
@@ -114,22 +160,26 @@ class NavigationMenus extends Equatable {
   final List<NaviType> items;
   final NaviType selected;
   final MenuDisplay type;
+  final bool isVisible;
 
   const NavigationMenus({
     required this.items,
     required this.selected,
     required this.type,
+    this.isVisible = true,
   });
 
   NavigationMenus copyWith({
     List<NaviType>? items,
     NaviType? selected,
     MenuDisplay? type,
+    bool? isVisible,
   }) {
     return NavigationMenus(
       items: items ?? this.items,
       selected: selected ?? this.selected,
       type: type ?? this.type,
+      isVisible: isVisible ?? this.isVisible,
     );
   }
 
@@ -137,5 +187,5 @@ class NavigationMenus extends Equatable {
   bool get stringify => true;
 
   @override
-  List<Object> get props => [items, selected, type];
+  List<Object> get props => [items, selected, type, isVisible];
 }

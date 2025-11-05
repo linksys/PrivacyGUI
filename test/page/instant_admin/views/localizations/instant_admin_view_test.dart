@@ -8,6 +8,7 @@ import '../../../../common/config.dart';
 import '../../../../common/test_helper.dart';
 import '../../../../common/test_responsive_widget.dart';
 import '../../../../test_data/power_table_test_state.dart';
+import '../../../../test_data/timezone_test_state.dart';
 
 void main() {
   final testHelper = TestHelper();
@@ -20,6 +21,8 @@ void main() {
       await Future.delayed(const Duration(seconds: 1));
     });
     when(testHelper.mockTimezoneNotifier.fetch()).thenAnswer((realInvocation) async {
+      await Future.delayed(const Duration(seconds: 1));
+      return TimezoneState.fromMap(timezoneTestState);
     });
   });
 

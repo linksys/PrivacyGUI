@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
-import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/providers/apps_and_gaming_provider.dart';
 import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
@@ -26,10 +24,8 @@ class _AppsGamingSettingsViewState extends ConsumerState<AppsGamingSettingsView>
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
-
     doSomethingWithSpinner(
-            context, ref.read(appsAndGamingProvider.notifier).fetch())
-        .then((state) {});
+        context, ref.read(appsAndGamingProvider.notifier).fetch());
   }
 
   @override
@@ -41,7 +37,7 @@ class _AppsGamingSettingsViewState extends ConsumerState<AppsGamingSettingsView>
 
   @override
   Widget build(BuildContext context) {
-    ref.watch(appsAndGamingProvider);
+    final appsAndGamingState = ref.watch(appsAndGamingProvider);
     ref.watch(singlePortForwardingListProvider);
     ref.watch(portRangeForwardingListProvider);
     ref.watch(portRangeTriggeringListProvider);
@@ -67,13 +63,13 @@ class _AppsGamingSettingsViewState extends ConsumerState<AppsGamingSettingsView>
       PortRangeForwardingListView(),
       PortRangeTriggeringListView(),
     ];
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       title: loc(context).appsGaming,
       padding: EdgeInsets.zero,
       tabController: _tabController,
       bottomBar: PageBottomBar(
         isPositiveEnabled:
-            ref.read(appsAndGamingProvider.notifier).isChanged() &&
+            appsAndGamingState.isDirty &&
                 ref.watch(appsAndGamingProvider.notifier).isDataValid(),
         onPositiveTap: () {
           doSomethingWithSpinner(
@@ -87,14 +83,7 @@ class _AppsGamingSettingsViewState extends ConsumerState<AppsGamingSettingsView>
           );
         },
       ),
-      onBackTap: () async {
-        final isCurrentChanged =
-            ref.read(appsAndGamingProvider.notifier).isChanged();
-        if (isCurrentChanged && (await showUnsavedAlert(context) != true)) {
-          return;
-        }
-        context.pop();
-      },
+      onBackTap: null,
       tabs: tabs,
       tabContentViews: tabContents,
       onTabTap: (index) {},

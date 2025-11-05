@@ -3,18 +3,15 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/components/layouts/idle_checker.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/idle_checker_pause_provider.dart';
 import 'package:privacy_gui/providers/root/root_config.dart';
 import 'package:privacy_gui/providers/root/root_provider.dart';
 
-import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_provider.dart';
-import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class AppRootContainer extends ConsumerStatefulWidget {

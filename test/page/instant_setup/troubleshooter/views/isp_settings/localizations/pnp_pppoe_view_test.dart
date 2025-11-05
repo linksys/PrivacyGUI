@@ -1,25 +1,18 @@
-import 'dart:convert';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:go_router/go_router.dart';
 import 'package:mockito/mockito.dart';
-import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/_internet_settings.dart';
-import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
-import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
-import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_isp_save_settings_view.dart';
+import 'package:privacy_gui/page/advanced_settings/internet_settings/models/internet_settings_enums.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_pppoe_view.dart';
-import 'package:privacy_gui/page/instant_setup/data/pnp_state.dart';
-import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/providers/preservable.dart';
 import 'package:privacy_gui/route/route_model.dart';
-import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 import '../../../../../../common/config.dart';
 import '../../../../../../common/test_helper.dart';
 import '../../../../../../common/test_responsive_widget.dart';
-import '../../../../../../test_data/device_info_test_data.dart';
 import '../../../../../../test_data/internet_settings_state_data.dart';
 
 void main() async {
@@ -29,10 +22,6 @@ void main() async {
   setUp(() {
     testHelper.setup();
 
-    when(testHelper.mockPnpNotifier.build()).thenReturn(PnpState(
-        deviceInfo:
-            NodeDeviceInfo.fromJson(jsonDecode(testDeviceInfo)['output']),
-        isUnconfigured: true));
     when(testHelper.mockPnpNotifier.checkAdminPassword(null)).thenAnswer((_) {
       throw ExceptionInvalidAdminPassword();
     });
@@ -76,12 +65,16 @@ void main() async {
       (tester, locale) async {
     final mockInternetSettingsState =
         InternetSettingsState.fromJson(internetSettingsStateData);
-
-    final pppoeSetting = mockInternetSettingsState.ipv4Setting.copyWith(
+    final mockInternetSettings = mockInternetSettingsState.settings.current;
+    final pppoeSetting = mockInternetSettings.ipv4Setting.copyWith(
       ipv4ConnectionType: WanType.pppoe.name,
     );
     when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
-        mockInternetSettingsState.copyWith(ipv4Setting: pppoeSetting));
+        mockInternetSettingsState.copyWith(
+            settings: Preservable(
+                original: mockInternetSettings,
+                current:
+                    mockInternetSettings.copyWith(ipv4Setting: pppoeSetting))));
     when(testHelper.mockInternetSettingsNotifier.savePnpIpv4(any)).thenAnswer((_) async {
       throw JNAPError(result: '', error: 'error');
     });

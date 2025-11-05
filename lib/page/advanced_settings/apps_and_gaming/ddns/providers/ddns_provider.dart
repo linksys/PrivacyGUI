@@ -10,22 +10,35 @@ import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/providers/ddns_state.dart';
+import 'package:privacy_gui/providers/preservable.dart';
+import 'package:privacy_gui/providers/preservable_contract.dart';
+import 'package:privacy_gui/providers/preservable_notifier_mixin.dart';
 
 final ddnsProvider =
     NotifierProvider<DDNSNotifier, DDNSState>(() => DDNSNotifier());
 
-class DDNSNotifier extends Notifier<DDNSState> {
+final preservableDDNSProvider = Provider<PreservableContract>(
+  (ref) => ref.watch(ddnsProvider.notifier),
+);
+
+class DDNSNotifier extends Notifier<DDNSState>
+    with PreservableNotifierMixin<DDNSSettings, DDNSStatus, DDNSState> {
   @override
   DDNSState build() {
+    const settings = DDNSSettings(provider: NoDDNSProvider());
     return DDNSState(
-      supportedProvider: const [],
-      provider: NoDDNSProvider(),
-      status: '',
-      ipAddress: '',
+      settings: Preservable(original: settings, current: settings),
+      status: const DDNSStatus(
+        supportedProvider: [],
+        status: '',
+        ipAddress: '',
+      ),
     );
   }
 
-  Future<DDNSState> fetch([bool force = false]) async {
+  @override
+  Future<(DDNSSettings?, DDNSStatus?)> performFetch(
+      {bool forceRemote = false, bool updateStatusOnly = false}) async {
     final builder = JNAPTransactionBuilder(commands: [
       const MapEntry(JNAPAction.getDDNSSettings, {}),
       const MapEntry(JNAPAction.getSupportedDDNSProviders, {}),
@@ -33,11 +46,11 @@ class DDNSNotifier extends Notifier<DDNSState> {
       const MapEntry(JNAPAction.getWANStatus, {}),
     ], auth: true);
 
-    await ref
+    final results = await ref
         .read(routerRepositoryProvider)
         .transaction(
           builder,
-          fetchRemote: force,
+          fetchRemote: forceRemote,
         )
         .then((value) => value.data.fold<Map<JNAPAction, JNAPSuccess>>({},
                 (previousValue, element) {
@@ -45,38 +58,43 @@ class DDNSNotifier extends Notifier<DDNSState> {
                 previousValue[element.key] = element.value as JNAPSuccess;
               }
               return previousValue;
-            }))
-        .then((results) {
-      final wanStatusData = results[JNAPAction.getWANStatus];
-      final wanStatus = wanStatusData != null
-          ? RouterWANStatus.fromMap(wanStatusData.output)
-          : null;
+            }));
 
-      final ddnsSettingsData = results[JNAPAction.getDDNSSettings];
-      final ddnsSettings = ddnsSettingsData != null
-          ? DDNSSettings.fromMap(ddnsSettingsData.output)
-          : null;
+    final wanStatusData = results[JNAPAction.getWANStatus];
+    final wanStatus = wanStatusData != null
+        ? RouterWANStatus.fromMap(wanStatusData.output)
+        : null;
 
-      final ddnsSupportedProvidersData =
-          results[JNAPAction.getSupportedDDNSProviders];
-      final ddnsSupportedProviders = ddnsSupportedProvidersData != null
-          ? List<String>.from(
-              ddnsSupportedProvidersData.output['supportedDDNSProviders'])
-          : <String>[];
+    final ddnsSettingsData = results[JNAPAction.getDDNSSettings];
+    final ddnsSettings = ddnsSettingsData != null
+        ? RouterDDNSSettings.fromMap(ddnsSettingsData.output)
+        : null;
 
-      final ddnsStatusData = results[JNAPAction.getDDNSStatus];
-      final ddnsStatus =
-          ddnsStatusData != null ? ddnsStatusData.output['status'] : null;
+    final ddnsSupportedProvidersData =
+        results[JNAPAction.getSupportedDDNSProviders];
+    final ddnsSupportedProviders = ddnsSupportedProvidersData != null
+        ? List<String>.from(
+            ddnsSupportedProvidersData.output['supportedDDNSProviders'])
+        : <String>[];
 
-      state = state.copyWith(
-        supportedProvider: [noDNSProviderName, ...ddnsSupportedProviders],
-        status: ddnsStatus,
-        provider: DDNSProvider.reslove(ddnsSettings),
-        ipAddress: wanStatus?.wanConnection?.ipAddress,
-      );
-    });
+    final ddnsStatusData = results[JNAPAction.getDDNSStatus];
+    final ddnsStatusString =
+        ddnsStatusData != null ? ddnsStatusData.output['status'] : null;
+
+    final settings = DDNSSettings(
+      provider: DDNSProvider.reslove(ddnsSettings),
+    );
+    final status = DDNSStatus(
+      supportedProvider: [noDNSProviderName, ...ddnsSupportedProviders],
+      status: ddnsStatusString ?? '',
+      ipAddress: wanStatus?.wanConnection?.ipAddress ?? '',
+    );
+
     logger.d('[State]:[DDNS]: ${state.toJson()}');
-    return state;
+    // state = state.copyWith(
+    //     settings: Preservable(original: settings, current: settings),
+    //     status: status);
+    return (settings, status);
   }
 
   Future getStatus() {
@@ -85,52 +103,54 @@ class DDNSNotifier extends Notifier<DDNSState> {
         .send(JNAPAction.getDDNSStatus, fetchRemote: true, auth: true)
         .then((value) => value.output['status'])
         .then((value) {
-      state = state.copyWith(status: value);
+      state = state.copyWith(status: state.status.copyWith(status: value));
     });
   }
 
-  Future<DDNSState> save() {
-    return ref
-        .read(routerRepositoryProvider)
-        .send(
+  @override
+  Future<void> performSave() async {
+    await ref.read(routerRepositoryProvider).send(
           JNAPAction.setDDNSSetting,
-          data: DDNSSettings(
-            ddnsProvider: state.provider.name,
-            dynDNSSettings: state.provider is DynDNSProvider
-                ? state.provider.settings
+          data: RouterDDNSSettings(
+            ddnsProvider: state.settings.current.provider.name,
+            dynDNSSettings: state.settings.current.provider is DynDNSProvider
+                ? state.settings.current.provider.settings
                 : null,
-            noIPSettings: state.provider is NoIPDNSProvider
-                ? state.provider.settings
+            noIPSettings: state.settings.current.provider is NoIPDNSProvider
+                ? state.settings.current.provider.settings
                 : null,
-            tzoSettings: state.provider is TzoDNSProvider
-                ? state.provider.settings
+            tzoSettings: state.settings.current.provider is TzoDNSProvider
+                ? state.settings.current.provider.settings
                 : null,
           ).toMap()
             ..removeWhere((key, value) => value == null),
           auth: true,
-        )
-        .then((value) => fetch(true));
+        );
   }
 
   void setProvider(String value) {
-    state = state.copyWith(provider: DDNSProvider.create(value));
+    state = state.copyWith(
+        settings: state.settings.copyWith(
+            current: state.settings.current
+                .copyWith(provider: DDNSProvider.create(value))));
   }
 
   void setProviderSettings(dynamic settings) {
-    final provider = state.provider.applySettings(settings);
-    state = state.copyWith(provider: provider);
-
+    final provider = state.settings.current.provider.applySettings(settings);
+    state = state.copyWith(
+        settings: state.settings.copyWith(
+            current: state.settings.current.copyWith(provider: provider)));
   }
 
   bool isDataValid() {
-    return switch (state.provider.settings) {
+    return switch (state.settings.current.provider.settings) {
       final DynDNSSettings settings => settings.username.isNotEmpty &&
           settings.password.isNotEmpty &&
           settings.hostName.isNotEmpty,
-          final NoIPSettings settings => settings.username.isNotEmpty &&
+      final NoIPSettings settings => settings.username.isNotEmpty &&
           settings.password.isNotEmpty &&
           settings.hostName.isNotEmpty,
-          final TZOSettings settings => settings.username.isNotEmpty &&
+      final TZOSettings settings => settings.username.isNotEmpty &&
           settings.password.isNotEmpty &&
           settings.hostName.isNotEmpty,
       _ => true,

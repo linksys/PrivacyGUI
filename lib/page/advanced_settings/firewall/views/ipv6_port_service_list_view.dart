@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/models/ipv6_firewall_rule.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/components/settings_view/editable_card_list_settings_view.dart';
@@ -64,17 +63,15 @@ class _Ipv6PortServiceListViewState
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(ipv6PortServiceListProvider);
-    return StyledAppPageView.innerPage(
-      child: (context, constraints) => AppBasicLayout(
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const AppGap.large2(),
-            ResponsiveLayout(
-                desktop: _desktopSettingsView(state),
-                mobile: _mobildSettingsView(state)),
-          ],
-        ),
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const AppGap.large2(),
+          ResponsiveLayout(
+              desktop: _desktopSettingsView(state),
+              mobile: _mobildSettingsView(state)),
+        ],
       ),
     );
   }
@@ -129,7 +126,7 @@ class _Ipv6PortServiceListViewState
               ),
             ),
         editRoute: RouteNamed.ipv6PortServiceRule,
-        dataList: state.rules,
+        dataList: state.current.rules,
         onSave: (index, rule) {
           if (index >= 0) {
             _notifier.editRule(index, rule);
@@ -150,7 +147,7 @@ class _Ipv6PortServiceListViewState
       onStartEdit: (index, rule) {
         ref
             .read(ipv6PortServiceRuleProvider.notifier)
-            .init(state.rules, rule, index);
+            .init(state.current.rules, rule, index);
         // Edit
         applicationTextController.text = rule?.description ?? '';
         firstPortTextController.text =
@@ -179,7 +176,7 @@ class _Ipv6PortServiceListViewState
               2: FractionColumnWidth(.35),
               3: FractionColumnWidth(.15),
             },
-      dataList: [...state.rules],
+      dataList: [...state.current.rules],
       editRowIndex: 0,
       cellBuilder: (context, ref, index, rule) {
         return switch (index) {

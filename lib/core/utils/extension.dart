@@ -1,8 +1,6 @@
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
-
 /// An extension on the `Map` class providing additional utility methods.
 extension MapExt on Map {
   /// Retrieves a value from a nested map structure using a dot-separated path.

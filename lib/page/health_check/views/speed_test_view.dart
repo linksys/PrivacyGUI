@@ -46,7 +46,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
     final state = ref.watch(healthCheckProvider);
     final supportedBy = ref.watch(dashboardHomeProvider).healthCheckModule;
 
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       scrollable: true,
       title: loc(context).speedTest,
       bottomBar: state.status == 'COMPLETE'
@@ -216,7 +216,6 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
         children: [
           _meterView(state.step, bandwidth.value, bandwidth.unit, latency),
           const AppGap.medium(),
-          const Spacer(),
           _infoView(state),
           const AppGap.medium(),
         ],
@@ -545,15 +544,6 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
         ],
       ),
     );
-  }
-
-  (String, String, String) _getDataText(SpeedTestResult? result) {
-    var latency = result?.latency?.toStringAsFixed(0) ?? '—';
-    var downloadBandWidth =
-        ((result?.downloadBandwidth ?? 0) / 1024.0).toStringAsFixed(1);
-    var uploadBandWidth =
-        ((result?.uploadBandwidth ?? 0) / 1024.0).toStringAsFixed(1);
-    return (latency, downloadBandWidth, uploadBandWidth);
   }
 
   (String, String) _getTestResultDesc(SpeedTestResult? result) {

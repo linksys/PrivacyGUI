@@ -3,7 +3,6 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
-import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/models/back_haul_info.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
@@ -78,52 +77,52 @@ class AddWiredNodesNotifier extends AutoDisposeNotifier<AddWiredNodesState> {
     logger.d('[AddWiredNode]: end auto onboarding, cost time: ${delta}ms');
   }
 
-  _startPollingConnectStatus() async {
-    if (state.forceStop) {
-      logger.d('[AddWiredNode]: force stop smart connect status');
-      return;
-    }
-    final repo = ref.read(routerRepositoryProvider);
-    final pin = await repo
-        .send(JNAPAction.getSmartConnectPin,
-            fetchRemote: true, cacheLevel: CacheLevel.noCache, auth: true)
-        .then((result) => result.output['pin'])
-        .onError((error, stackTrace) {
-      logger.d('[AddWiredNode]: get pin error');
-    });
-    String getStatus(JNAPSuccess result) {
-      final status = result.output['status'] ?? '';
-      return status;
-    }
+  // _startPollingConnectStatus() async {
+  //   if (state.forceStop) {
+  //     logger.d('[AddWiredNode]: force stop smart connect status');
+  //     return;
+  //   }
+  //   final repo = ref.read(routerRepositoryProvider);
+  //   final pin = await repo
+  //       .send(JNAPAction.getSmartConnectPin,
+  //           fetchRemote: true, cacheLevel: CacheLevel.noCache, auth: true)
+  //       .then((result) => result.output['pin'])
+  //       .onError((error, stackTrace) {
+  //     logger.d('[AddWiredNode]: get pin error');
+  //   });
+  //   String getStatus(JNAPSuccess result) {
+  //     final status = result.output['status'] ?? '';
+  //     return status;
+  //   }
 
-    final pollStatusStream = repo.scheduledCommand(
-        action: JNAPAction.getSmartConnectStatus,
-        data: {'pin': pin},
-        auth: true,
-        maxRetry: 30,
-        retryDelayInMilliSec: 3000,
-        condition: (result) {
-          if (state.forceStop) {
-            logger.d('[AddWiredNode]: force stop smart connect status');
-            return true;
-          }
-          if (result is! JNAPSuccess) {
-            return false;
-          }
-          final status = getStatus(result);
-          if (status == 'Connecting') {
-            state = state.copyWith(onboardingProceed: true);
-          }
-          return status == 'Success' && state.onboardingProceed == true;
-        });
+  //   final pollStatusStream = repo.scheduledCommand(
+  //       action: JNAPAction.getSmartConnectStatus,
+  //       data: {'pin': pin},
+  //       auth: true,
+  //       maxRetry: 30,
+  //       retryDelayInMilliSec: 3000,
+  //       condition: (result) {
+  //         if (state.forceStop) {
+  //           logger.d('[AddWiredNode]: force stop smart connect status');
+  //           return true;
+  //         }
+  //         if (result is! JNAPSuccess) {
+  //           return false;
+  //         }
+  //         final status = getStatus(result);
+  //         if (status == 'Connecting') {
+  //           state = state.copyWith(onboardingProceed: true);
+  //         }
+  //         return status == 'Success' && state.onboardingProceed == true;
+  //       });
 
-    await for (final result in pollStatusStream) {
-      if (result is JNAPSuccess) {
-        final status = getStatus(result);
-        logger.d('[AddWiredNode]: polling smart connect status: $status');
-      }
-    }
-  }
+  //   await for (final result in pollStatusStream) {
+  //     if (result is JNAPSuccess) {
+  //       final status = getStatus(result);
+  //       logger.d('[AddWiredNode]: polling smart connect status: $status');
+  //     }
+  //   }
+  // }
 
   Future _checkBackhaulChanges(BuildContext context,
       [bool refreshing = false]) async {

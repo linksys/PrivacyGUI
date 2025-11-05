@@ -4,10 +4,7 @@ import 'package:privacy_gui/core/jnap/models/dyn_dns_settings.dart';
 import 'package:privacy_gui/core/jnap/models/no_ip_settings.dart';
 import 'package:privacy_gui/core/jnap/models/tzo_settings.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/providers/apps_and_gaming_provider.dart';
 import 'package:privacy_gui/page/components/customs/animated_refresh_container.dart';
-import 'package:privacy_gui/page/components/styled/consts.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/views/_views.dart';
 
@@ -20,7 +17,6 @@ import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
 class DDNSSettingsView extends ArgumentsConsumerStatefulView {
   const DDNSSettingsView({
@@ -41,39 +37,32 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(ddnsProvider);
-    return StyledAppPageView(
-      hideTopbar: true,
-      useMainPadding: true,
-      appBarStyle: AppBarStyle.none,
-      padding: EdgeInsets.zero,
-      scrollable: true,
-      title: loc(context).ddns,
-      child: (context, constraints) => AppBasicLayout(
-        content: ResponsiveLayout(
-          desktop: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+    return SingleChildScrollView(
+      child: ResponsiveLayout(
+        desktop: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+                width: ResponsiveLayout.isOverMedimumLayout(context)
+                    ? 6.col
+                    : 4.col,
+                child: _ddnsProvideSelector(state)),
+            if (state.current.provider is! NoDDNSProvider) ...[
+              AppGap.gutter(),
               SizedBox(
                   width: ResponsiveLayout.isOverMedimumLayout(context)
                       ? 6.col
                       : 4.col,
-                  child: _ddnsProvideSelector(state)),
-              if (state.provider is! NoDDNSProvider) ...[
-                AppGap.gutter(),
-                SizedBox(
-                    width: ResponsiveLayout.isOverMedimumLayout(context)
-                        ? 6.col
-                        : 4.col,
-                    child: _buildStatusCell(state))
-              ],
+                  child: _buildStatusCell(state))
             ],
-          ),
-          mobile: Column(
-            children: [
-              _ddnsProvideSelector(state),
-              if (state.provider is! NoDDNSProvider) _buildStatusCell(state)
-            ],
-          ),
+          ],
+        ),
+        mobile: Column(
+          children: [
+            _ddnsProvideSelector(state),
+            if (state.current.provider is! NoDDNSProvider)
+              _buildStatusCell(state)
+          ],
         ),
       ),
     );
@@ -87,8 +76,8 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
             AppText.titleMedium(loc(context).selectAProvider),
             const AppGap.medium(),
             AppDropdownButton<String>(
-              selected: state.provider.name,
-              items: state.supportedProvider,
+              selected: state.current.provider.name,
+              items: state.status.supportedProvider,
               label: (item) {
                 if (item == dynDNSProviderName) {
                   return 'dyn.com';
@@ -112,7 +101,7 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
         ),
       );
   Widget _buildDNSForms(DDNSState state) {
-    final provider = state.provider;
+    final provider = state.current.provider;
     if (provider is DynDNSProvider) {
       return _buildDynDNSForm(provider.settings);
     } else if (provider is NoIPDNSProvider) {
@@ -165,7 +154,7 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
 
   Widget _buildStatusCell(DDNSState state) {
     return AppCard(
-      child: state.provider.name == noDNSProviderName
+      child: state.current.provider.name == noDNSProviderName
           ? const Center()
           : Column(
               mainAxisSize: MainAxisSize.min,
@@ -198,13 +187,13 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
                 AppSettingCard.noBorder(
                   padding: EdgeInsets.zero,
                   title: loc(context).internetIPAddress,
-                  description: state.ipAddress,
+                  description: state.status.ipAddress,
                 ),
                 const AppGap.large2(),
                 AppSettingCard.noBorder(
                   padding: EdgeInsets.zero,
                   title: loc(context).status,
-                  description: state.status,
+                  description: state.status.status,
                 ),
               ],
             ),

@@ -1,149 +1,61 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
-import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/styled/consts.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
-import 'package:privacy_gui/page/components/views/arguments_view.dart';
-import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/wifi_view_provider.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_advanced_state.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/panel/switch_trigger_tile.dart';
 
-class WifiAdvancedSettingsView extends ArgumentsConsumerStatefulView {
+class WifiAdvancedSettingsView extends ConsumerWidget {
   const WifiAdvancedSettingsView({super.key});
 
   @override
-  ConsumerState<WifiAdvancedSettingsView> createState() =>
-      _WifiAdvancedSettingsViewState();
-}
-
-class _WifiAdvancedSettingsViewState
-    extends ConsumerState<WifiAdvancedSettingsView> with PageSnackbarMixin {
-  WifiAdvancedSettingsState? _preservedState;
-
-  @override
-  void initState() {
-    super.initState();
-
-    ref.read(wifiAdvancedProvider.notifier).fetch().then(
-      (state) {
-        if (!mounted) {
-          return;
-        }
-        setState(
-          () {
-            _preservedState = state;
-            ref
-                .read(wifiViewProvider.notifier)
-                .setWifiAdvancedSettingsViewChanged(state != _preservedState);
-          },
-        );
-      },
-    );
+  Widget build(BuildContext context, WidgetRef ref) {
+    // The state is now read from the single bundle provider.
+    final advancedState = ref.watch(
+        wifiBundleProvider.select((state) => state.settings.current.advanced));
+    return _buildGrid(context, ref, advancedState);
   }
 
-  @override
-  Widget build(BuildContext context) {
-    ref.listen(wifiAdvancedProvider, (previous, next) {
-      if (_preservedState != null) {
-        ref
-            .read(wifiViewProvider.notifier)
-            .setWifiAdvancedSettingsViewChanged(next != _preservedState);
-      }
-    });
-    final isPositiveEnabled =
-        _preservedState != ref.watch(wifiAdvancedProvider);
-
-    // return LayoutBuilder(builder: (context, constraints) {
-    return StyledAppPageView(
-      appBarStyle: AppBarStyle.none,
-      hideTopbar: true,
-      bottomBar: PageBottomBar(
-          isPositiveEnabled: isPositiveEnabled,
-          onPositiveTap: () {
-            if (ref.read(wifiAdvancedProvider).isDFSEnabled == true) {
-              _showConfirmDFSModal().then((value) {
-                if (value == true) {
-                  save();
-                }
-              });
-            } else {
-              save();
-            }
-          }),
-      useMainPadding: true,
-      child: (context, constraints) => _buildGrid(),
-    );
-    // });
-  }
-
-  Future save() {
-    return doSomethingWithSpinner(
-      context,
-      ref.read(wifiAdvancedProvider.notifier).save().then((state) async {
-        // Fetch wifi list to update the wifi list state
-        await ref.read(wifiListProvider.notifier).fetch(true);
-        return state;
-      }).then(
-        (state) {
-          success(state);
-        },
-      ),
-    ).catchError((error) {
-      routerNotFound();
-    }, test: (error) => error is JNAPSideEffectError).onError(
-        (error, stackTrace) {
-      showErrorMessageSnackBar(error);
-    });
-  }
-
-  void routerNotFound() {
-    showRouterNotFoundAlert(context, ref, onComplete: () {
-      ref.read(wifiAdvancedProvider.notifier).fetch(true).then((state) {
-        success(state);
-      });
-    });
-  }
-
-  void success(WifiAdvancedSettingsState state) {
-    setState(() {
-      _preservedState = state;
-      ref
-          .read(wifiViewProvider.notifier)
-          .setWifiAdvancedSettingsViewChanged(false);
-    });
-    showChangesSavedSnackBar();
-  }
-
-  Widget _buildGrid() {
-    final state = ref.watch(wifiAdvancedProvider);
+  Widget _buildGrid(
+      BuildContext context, WidgetRef ref, WifiAdvancedSettingsState state) {
+    final notifier = ref.read(wifiBundleProvider.notifier);
     final advancedSettingWidgets = [
       if (state.isClientSteeringEnabled != null)
-        _buildClientSteering(state.isClientSteeringEnabled!),
+        _buildClientSteering(context, notifier, state.isClientSteeringEnabled!),
       if (state.isNodesSteeringEnabled != null)
-        _buildNodeSteering(state.isNodesSteeringEnabled!),
-      if (state.isDFSEnabled != null) _buildDFS(state.isDFSEnabled!),
-      if (state.isMLOEnabled != null) _buildMLO(state.isMLOEnabled!),
-      if (state.isIptvEnabled != null) _buildIptv(state.isIptvEnabled!),
+        _buildNodeSteering(context, notifier, state.isNodesSteeringEnabled!),
+      if (state.isDFSEnabled != null)
+        _buildDFS(context, notifier, state.isDFSEnabled!),
+      if (state.isMLOEnabled != null)
+        _buildMLO(context, ref, notifier, state.isMLOEnabled!),
+      if (state.isIptvEnabled != null)
+        _buildIptv(context, notifier, state.isIptvEnabled!),
     ];
-    return MasonryGridView.count(
-      crossAxisCount: ResponsiveLayout.isMobileLayout(context) ? 1 : 2,
-      mainAxisSpacing: Spacing.small2,
-      crossAxisSpacing: ResponsiveLayout.columnPadding(context),
-      itemCount: advancedSettingWidgets.length,
-      itemBuilder: (context, index) => advancedSettingWidgets[index],
+    return SingleChildScrollView(
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+            horizontal: ResponsiveLayout.pageHorizontalPadding(context)),
+        child: MasonryGridView.count(
+          crossAxisCount: ResponsiveLayout.isMobileLayout(context) ? 1 : 2,
+          mainAxisSpacing: Spacing.small2,
+          crossAxisSpacing: ResponsiveLayout.columnPadding(context),
+          itemCount: advancedSettingWidgets.length,
+          itemBuilder: (context, index) => advancedSettingWidgets[index],
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+        ),
+      ),
     );
   }
 
-  Widget _buildClientSteering(bool isEnabled) {
+  Widget _buildClientSteering(
+      BuildContext context, WifiBundleNotifier notifier, bool isEnabled) {
     return AppCard(
       key: const Key('clientSteering'),
       padding: const EdgeInsets.all(Spacing.large2),
@@ -154,15 +66,14 @@ class _WifiAdvancedSettingsViewState
         value: isEnabled,
         toggleInCenter: true,
         onChanged: (value) {
-          ref
-              .read(wifiAdvancedProvider.notifier)
-              .setClientSteeringEnabled(value);
+          notifier.setClientSteeringEnabled(value);
         },
       ),
     );
   }
 
-  Widget _buildNodeSteering(bool isEnabled) {
+  Widget _buildNodeSteering(
+      BuildContext context, WifiBundleNotifier notifier, bool isEnabled) {
     return AppCard(
       key: const Key('nodeSteering'),
       padding: const EdgeInsets.all(Spacing.large2),
@@ -173,15 +84,14 @@ class _WifiAdvancedSettingsViewState
         value: isEnabled,
         toggleInCenter: true,
         onChanged: (value) {
-          ref
-              .read(wifiAdvancedProvider.notifier)
-              .setNodesSteeringEnabled(value);
+          notifier.setNodesSteeringEnabled(value);
         },
       ),
     );
   }
 
-  Widget _buildIptv(bool isEnabled) {
+  Widget _buildIptv(
+      BuildContext context, WifiBundleNotifier notifier, bool isEnabled) {
     return AppCard(
       key: const Key('iptv'),
       padding: const EdgeInsets.all(Spacing.large2),
@@ -195,13 +105,14 @@ class _WifiAdvancedSettingsViewState
         value: isEnabled,
         toggleInCenter: true,
         onChanged: (value) {
-          ref.read(wifiAdvancedProvider.notifier).setIptvEnabled(value);
+          notifier.setIptvEnabled(value);
         },
       ),
     );
   }
 
-  Widget _buildDFS(bool isEnabled) {
+  Widget _buildDFS(
+      BuildContext context, WifiBundleNotifier notifier, bool isEnabled) {
     return AppCard(
       key: const Key('dfs'),
       padding: const EdgeInsets.all(Spacing.large2),
@@ -215,25 +126,26 @@ class _WifiAdvancedSettingsViewState
           tags: const ['a'],
           callbackTags: {
             'a': (String? text, Map<String?, String?> attrs) {
-              _showDFSModal();
+              _showDFSModal(context);
             }
           },
         ),
         value: isEnabled,
         toggleInCenter: true,
         onChanged: (value) {
-          ref.read(wifiAdvancedProvider.notifier).setDFSEnabled(value);
+          notifier.setDFSEnabled(value);
         },
       ),
     );
   }
 
-  Widget _buildMLO(bool isEnabled) {
-    final wifiList = ref.read(wifiListProvider).mainWiFi;
-    bool showMLOWarning = ref
-        .read(wifiListProvider.notifier)
-        .checkingMLOSettingsConflicts(
-            Map.fromIterables(wifiList.map((e) => e.radioID), wifiList));
+  Widget _buildMLO(BuildContext context, WidgetRef ref,
+      WifiBundleNotifier notifier, bool isEnabled) {
+    final wifiList = ref.watch(
+        wifiBundleProvider.select((s) => s.settings.current.wifiList.mainWiFi));
+    // This logic might need to be moved to the notifier itself to be a derived state (status)
+    bool showMLOWarning = notifier.checkingMLOSettingsConflicts(
+        Map.fromIterables(wifiList.map((e) => e.radioID), wifiList));
     return AppCard(
       key: const Key('mlo'),
       padding: const EdgeInsets.all(Spacing.large2),
@@ -253,34 +165,14 @@ class _WifiAdvancedSettingsViewState
         value: isEnabled,
         toggleInCenter: true,
         onChanged: (value) {
-          ref.read(wifiAdvancedProvider.notifier).setMLOEnabled(value);
+          notifier.setMLOEnabled(value);
         },
       ),
     );
   }
 
-  void _showDFSModal() {
+  void _showDFSModal(BuildContext context) {
     showMessageAppOkDialog(context,
         title: loc(context).dfs, message: loc(context).modalDFSDesc);
-  }
-
-  Future<bool?> _showConfirmDFSModal() {
-    return showMessageAppDialog(context,
-        title: loc(context).dfs,
-        message: loc(context).modalDFSDesc,
-        actions: [
-          AppTextButton(
-            loc(context).cancel,
-            onTap: () {
-              context.pop();
-            },
-          ),
-          AppTextButton(
-            loc(context).ok,
-            onTap: () {
-              context.pop(true);
-            },
-          ),
-        ]);
   }
 }

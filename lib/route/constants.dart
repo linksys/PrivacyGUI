@@ -81,7 +81,6 @@ class RoutePath {
 
   /// Local Network
   static const dhcpReservation = 'dhcpReservation';
-  static const dhcpReservationEdit = 'dhcpReservationEdit';
   static const dhcpServer = 'dhcpServer';
 
   /// mac filtering
@@ -111,13 +110,10 @@ class RoutePath {
   static const pnpStaticIp = 'pnpStaticIp';
   static const pnpIspAuth = 'pnpIspAuth';
   static const pnpIspSaveSettings = 'pnpIspSaveSettings';
+  static const pnpAddNodes = 'pnpAddNodes';
 
   /// Safe Browsing
   static const safeBrowsing = 'safeBrowsing';
-
-  /// Troubleshooting
-  static const troubleshooting = 'troubleshooting';
-  static const troubleshootingPing = 'troubleshootingPing';
 
   /// Support
   static const faqList = 'faqList';
@@ -133,9 +129,6 @@ class RoutePath {
 
   /// Device picker
   static const devicePicker = 'devicePicker';
-
-  /// Card List edit
-  static const cardListEdit = 'cardListEdit';
 
   /// debug
   static const debug = 'debug';
@@ -223,7 +216,6 @@ class RouteNamed {
 
   /// Local Network
   static const dhcpReservation = 'dhcpReservation';
-  static const dhcpReservationEdit = 'dhcpReservationEdit';
   static const dhcpServer = 'dhcpServer';
 
   /// mac filtering
@@ -254,7 +246,8 @@ class RouteNamed {
   static const pnpStaticIp = 'pnpStaticIp';
   static const pnpIspAuth = 'pnpIspAuth';
   static const pnpIspSaveSettings = 'pnpIspSaveSettings';
-
+  static const pnpAddNodes = 'pnpAddNodes';
+  
   /// Troubleshooting
   static const troubleshooting = 'troubleshooting';
   static const troubleshootingPing = 'troubleshootingPing';
@@ -273,9 +266,6 @@ class RouteNamed {
 
   /// Device picker
   static const devicePicker = 'devicePicker';
-
-  /// Card List edit
-  static const cardListEdit = 'cardListEdit';
 
   /// debug
   static const debug = 'debug';

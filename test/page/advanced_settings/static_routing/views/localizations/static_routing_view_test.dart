@@ -5,6 +5,7 @@ import 'package:privacy_gui/page/advanced_settings/static_routing/providers/stat
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_state.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_rule_view.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_view.dart';
+import 'package:privacy_gui/providers/preservable.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
@@ -27,9 +28,9 @@ void main() {
 
   testLocalizations('Static routing view test - empty state',
       (tester, locale) async {
-    final state = StaticRoutingState.fromMap(staticRoutingEmptyState);
+    final state = StaticRoutingState.fromMap(staticRoutingTestStateEmpty);
     when(testHelper.mockStaticRoutingNotifier.build()).thenReturn(state);
-    when(testHelper.mockStaticRoutingNotifier.fetch(any)).thenAnswer((_) async {
+    when(testHelper.mockStaticRoutingNotifier.fetch(forceRemote: any)).thenAnswer((_) async {
       Future.delayed(const Duration(seconds: 1));
       return state;
     });
@@ -42,9 +43,9 @@ void main() {
   }, screens: screens);
   testLocalizations('Static routing view test - NAT enabled',
       (tester, locale) async {
-    final state = StaticRoutingState.fromMap(staticRoutingState1);
+    final state = StaticRoutingState.fromMap(staticRoutingTestState);
     when(testHelper.mockStaticRoutingNotifier.build()).thenReturn(state);
-    when(testHelper.mockStaticRoutingNotifier.fetch(any)).thenAnswer((_) async {
+    when(testHelper.mockStaticRoutingNotifier.fetch(forceRemote: any)).thenAnswer((_) async {
       Future.delayed(const Duration(seconds: 1));
       return state;
     });
@@ -58,14 +59,14 @@ void main() {
 
   testLocalizations('Static routing view test - NAT enabled add rule',
       (tester, locale) async {
-    final state = StaticRoutingState.fromMap(staticRoutingState1);
+    final state = StaticRoutingState.fromMap(staticRoutingTestState);
     when(testHelper.mockStaticRoutingNotifier.build()).thenReturn(state);
-    when(testHelper.mockStaticRoutingNotifier.fetch(any)).thenAnswer((_) async {
+    when(testHelper.mockStaticRoutingNotifier.fetch(forceRemote: any)).thenAnswer((_) async {
       Future.delayed(const Duration(seconds: 1));
       return state;
     });
     when(testHelper.mockStaticRoutingRuleNotifier.build()).thenReturn(
-        StaticRoutingRuleState(
+        const StaticRoutingRuleState(
             routerIp: '192.168.1.1', subnetMask: '255.255.255.0'));
     await testHelper.pumpView(
       tester,
@@ -81,14 +82,14 @@ void main() {
   testLocalizations(
       'Static routing view test - NAT enabled add rule - interface dropdown',
       (tester, locale) async {
-    final state = StaticRoutingState.fromMap(staticRoutingState1);
+    final state = StaticRoutingState.fromMap(staticRoutingTestState);
     when(testHelper.mockStaticRoutingNotifier.build()).thenReturn(state);
-    when(testHelper.mockStaticRoutingNotifier.fetch(any)).thenAnswer((_) async {
+    when(testHelper.mockStaticRoutingNotifier.fetch()).thenAnswer((_) async {
       Future.delayed(const Duration(seconds: 1));
       return state;
     });
     when(testHelper.mockStaticRoutingRuleNotifier.build()).thenReturn(
-        StaticRoutingRuleState(
+        const StaticRoutingRuleState(
             routerIp: '192.168.1.1', subnetMask: '255.255.255.0'));
     await testHelper.pumpShellView(
       tester,
@@ -107,14 +108,14 @@ void main() {
   testLocalizations(
       'Static routing view test - NAT enabled add rule - invalid gateway IP',
       (tester, locale) async {
-    final state = StaticRoutingState.fromMap(staticRoutingState1);
+    final state = StaticRoutingState.fromMap(staticRoutingTestState);
     when(testHelper.mockStaticRoutingNotifier.build()).thenReturn(state);
-    when(testHelper.mockStaticRoutingNotifier.fetch(any)).thenAnswer((_) async {
+    when(testHelper.mockStaticRoutingNotifier.fetch()).thenAnswer((_) async {
       Future.delayed(const Duration(seconds: 1));
       return state;
     });
     when(testHelper.mockStaticRoutingRuleNotifier.build()).thenReturn(
-        StaticRoutingRuleState(
+        const StaticRoutingRuleState(
             routerIp: '192.168.1.1', subnetMask: '255.255.255.0'));
     await testHelper.pumpShellView(
       tester,
@@ -141,14 +142,14 @@ void main() {
 
   testLocalizations('Static routing view test - NAT enabled add rule',
       (tester, locale) async {
-    final state = StaticRoutingState.fromMap(staticRoutingState1);
+    final state = StaticRoutingState.fromMap(staticRoutingTestState);
     when(testHelper.mockStaticRoutingNotifier.build()).thenReturn(state);
-    when(testHelper.mockStaticRoutingNotifier.fetch(any)).thenAnswer((_) async {
+    when(testHelper.mockStaticRoutingNotifier.fetch()).thenAnswer((_) async {
       Future.delayed(const Duration(seconds: 1));
       return state;
     });
     when(testHelper.mockStaticRoutingRuleNotifier.build()).thenReturn(
-        StaticRoutingRuleState(
+        const StaticRoutingRuleState(
             routerIp: '192.168.1.1', subnetMask: '255.255.255.0'));
     when(testHelper.mockStaticRoutingRuleNotifier.init(any, any, any, any, any))
         .thenAnswer((_) async {
@@ -159,24 +160,24 @@ void main() {
       config: LinksysRouteConfig(column: ColumnGrid(column: 9, centered: true)),
       locale: locale,
       child: StaticRoutingRuleView(
-        args: {'items': state.setting.entries},
+        args: {'items': state.settings.current.entries.entries},
       ),
     );
-    await tester.pump(Duration(seconds: 3));
+    await tester.pump(const Duration(seconds: 3));
     await tester.pumpAndSettle();
   }, screens: screens);
 
   testLocalizations(
       'Static routing view test - NAT enabled add rule - interface dropdown',
       (tester, locale) async {
-    final state = StaticRoutingState.fromMap(staticRoutingState1);
+    final state = StaticRoutingState.fromMap(staticRoutingTestState);
     when(testHelper.mockStaticRoutingNotifier.build()).thenReturn(state);
-    when(testHelper.mockStaticRoutingNotifier.fetch(any)).thenAnswer((_) async {
+    when(testHelper.mockStaticRoutingNotifier.fetch()).thenAnswer((_) async {
       Future.delayed(const Duration(seconds: 1));
       return state;
     });
     when(testHelper.mockStaticRoutingRuleNotifier.build()).thenReturn(
-        StaticRoutingRuleState(
+        const StaticRoutingRuleState(
             routerIp: '192.168.1.1', subnetMask: '255.255.255.0'));
     when(testHelper.mockStaticRoutingRuleNotifier.init(any, any, any, any, any))
         .thenAnswer((_) async {
@@ -187,10 +188,10 @@ void main() {
       config: LinksysRouteConfig(column: ColumnGrid(column: 9, centered: true)),
       locale: locale,
       child: StaticRoutingRuleView(
-        args: {'items': state.setting.entries},
+        args: {'items': state.settings.current.entries.entries},
       ),
     );
-    await tester.pump(Duration(seconds: 3));
+    await tester.pump(const Duration(seconds: 3));
     await tester.pumpAndSettle();
 
     await tester.tap(find.byType(AppDropdownButton<RoutingSettingInterface>));
@@ -200,14 +201,14 @@ void main() {
   testLocalizations(
       'Static routing view test - NAT enabled add rule - invalid gateway IP',
       (tester, locale) async {
-    final state = StaticRoutingState.fromMap(staticRoutingState1);
+    final state = StaticRoutingState.fromMap(staticRoutingTestState);
     when(testHelper.mockStaticRoutingNotifier.build()).thenReturn(state);
-    when(testHelper.mockStaticRoutingNotifier.fetch(any)).thenAnswer((_) async {
+    when(testHelper.mockStaticRoutingNotifier.fetch()).thenAnswer((_) async {
       Future.delayed(const Duration(seconds: 1));
       return state;
     });
     when(testHelper.mockStaticRoutingRuleNotifier.build()).thenReturn(
-        StaticRoutingRuleState(
+        const StaticRoutingRuleState(
             routerIp: '192.168.1.1', subnetMask: '255.255.255.0'));
     when(testHelper.mockStaticRoutingRuleNotifier.init(any, any, any, any, any))
         .thenAnswer((_) async {
@@ -218,10 +219,10 @@ void main() {
       config: LinksysRouteConfig(column: ColumnGrid(column: 9, centered: true)),
       locale: locale,
       child: StaticRoutingRuleView(
-        args: {'items': state.setting.entries},
+        args: {'items': state.settings.current.entries.entries},
       ),
     );
-    await tester.pump(Duration(seconds: 3));
+    await tester.pump(const Duration(seconds: 3));
     await tester.pumpAndSettle();
 
     final ipFormFieldFinder = find.byType(AppIPFormField).last;
@@ -237,9 +238,18 @@ void main() {
 
   testLocalizations('Static routing view test - Dynamic Routing (RIP) enabled',
       (tester, locale) async {
-    final state = StaticRoutingState.fromMap(staticRoutingState2);
+    final state = StaticRoutingState.fromMap(staticRoutingTestState).copyWith(
+        settings: Preservable(
+            original: const StaticRoutingSettings(
+                isNATEnabled: false,
+                isDynamicRoutingEnabled: true,
+                entries: NamedStaticRouteEntryList(entries: [])),
+            current: const StaticRoutingSettings(
+                isNATEnabled: false,
+                isDynamicRoutingEnabled: true,
+                entries: NamedStaticRouteEntryList(entries: []))));
     when(testHelper.mockStaticRoutingNotifier.build()).thenReturn(state);
-    when(testHelper.mockStaticRoutingNotifier.fetch(any)).thenAnswer((_) async {
+    when(testHelper.mockStaticRoutingNotifier.fetch()).thenAnswer((_) async {
       Future.delayed(const Duration(seconds: 1));
       return state;
     });

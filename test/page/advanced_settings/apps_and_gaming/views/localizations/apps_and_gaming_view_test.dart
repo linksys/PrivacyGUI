@@ -7,6 +7,7 @@ import 'package:privacy_gui/core/jnap/models/tzo_settings.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/providers/ddns_state.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/views/dyn_ddns_form.dart';
+import 'package:privacy_gui/providers/preservable.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
 import 'package:privacygui_widgets/widgets/input_field/app_text_field.dart';
@@ -25,7 +26,27 @@ void main() {
   final testHelper = TestHelper();
 
   setUp(() {
-    testHelper.setup();
+    when(testHelper.mockDDNSNotifier.fetch()).thenAnswer((realInvocation) async {
+      await Future.delayed(const Duration(seconds: 1));
+      return DDNSState.fromMap(ddnsTestState);
+    });
+    when(testHelper.mockSinglePortForwardingListNotifier.fetch())
+        .thenAnswer((realInvocation) async {
+      await Future.delayed(const Duration(seconds: 1));
+      return SinglePortForwardingListState.fromMap(
+          singlePortForwardingListTestState);
+    });
+    when(testHelper.mockPortRangeForwardingListNotifier.fetch())
+        .thenAnswer((realInvocation) async {
+      await Future.delayed(const Duration(seconds: 1));
+      return PortRangeForwardingListState.fromMap(
+          portRangeForwardingListTestState);
+    });
+    when(testHelper.mockPortRangeTriggeringListNotifier.fetch())
+        .thenAnswer((realInvocation) async {
+      await Future.delayed(const Duration(seconds: 1));
+      return PortRangeTriggeringListState.fromMap(portRangeTriggerListTestState);
+    });
   });
 
   group('Apps & Gaming - DDNS', () {
@@ -40,9 +61,11 @@ void main() {
     testLocalizations(
       'DDNS - dyn.com',
       (tester, locale) async {
-        when(testHelper.mockDDNSNotifier.build()).thenReturn(
-            DDNSState.fromMap(ddnsTestState)
-                .copyWith(provider: DDNSProvider.create(dynDNSProviderName)));
+        final state = DDNSState.fromMap(ddnsTestState);
+        final settings =
+            DDNSSettings(provider: DDNSProvider.create(dynDNSProviderName));
+        when(testHelper.mockDDNSNotifier.build()).thenReturn(state.copyWith(
+            settings: Preservable(original: settings, current: settings)));
         await testHelper.pumpView(
           tester,
           locale: locale,
@@ -62,8 +85,8 @@ void main() {
     testLocalizations(
       'DDNS - dyn.com filled up',
       (tester, locale) async {
-        when(testHelper.mockDDNSNotifier.build())
-            .thenReturn(DDNSState.fromMap(ddnsTestState).copyWith(
+        final state = DDNSState.fromMap(ddnsTestState);
+        final settings = DDNSSettings(
           provider: DynDNSProvider(
             settings: const DynDNSSettings(
               username: 'username',
@@ -78,7 +101,9 @@ void main() {
               ),
             ),
           ),
-        ));
+        );
+        when(testHelper.mockDDNSNotifier.build()).thenReturn(state.copyWith(
+            settings: Preservable(original: settings, current: settings)));
         await testHelper.pumpView(
           tester,
           locale: locale,
@@ -98,8 +123,8 @@ void main() {
     testLocalizations(
       'DDNS - dyn.com system type',
       (tester, locale) async {
-        when(testHelper.mockDDNSNotifier.build())
-            .thenReturn(DDNSState.fromMap(ddnsTestState).copyWith(
+        final state = DDNSState.fromMap(ddnsTestState);
+        final settings = DDNSSettings(
           provider: DynDNSProvider(
             settings: const DynDNSSettings(
               username: 'username',
@@ -114,7 +139,10 @@ void main() {
               ),
             ),
           ),
-        ));
+        );
+
+        when(testHelper.mockDDNSNotifier.build()).thenReturn(state.copyWith(
+            settings: Preservable(original: settings, current: settings)));
         await testHelper.pumpView(
           tester,
           locale: locale,
@@ -138,9 +166,11 @@ void main() {
     testLocalizations(
       'DDNS - No-IP.com',
       (tester, locale) async {
-        when(testHelper.mockDDNSNotifier.build()).thenReturn(
-            DDNSState.fromMap(ddnsTestState)
-                .copyWith(provider: DDNSProvider.create(noIPDNSProviderName)));
+        final state = DDNSState.fromMap(ddnsTestState);
+        final settings =
+            DDNSSettings(provider: DDNSProvider.create(noIPDNSProviderName));
+        when(testHelper.mockDDNSNotifier.build()).thenReturn(state.copyWith(
+            settings: Preservable(original: settings, current: settings)));
         await testHelper.pumpView(
           tester,
           locale: locale,
@@ -160,16 +190,18 @@ void main() {
     testLocalizations(
       'DDNS - No-IP.com filled up',
       (tester, locale) async {
-        when(testHelper.mockDDNSNotifier.build())
-            .thenReturn(DDNSState.fromMap(ddnsTestState).copyWith(
-          provider: NoIPDNSProvider(
-            settings: const NoIPSettings(
-              username: 'username',
-              password: 'password',
-              hostName: 'hostname',
-            ),
+        final state = DDNSState.fromMap(ddnsTestState);
+        final settings = DDNSSettings(
+            provider: NoIPDNSProvider(
+          settings: const NoIPSettings(
+            username: 'username',
+            password: 'password',
+            hostName: 'hostname',
           ),
         ));
+
+        when(testHelper.mockDDNSNotifier.build()).thenReturn(state.copyWith(
+            settings: Preservable(original: settings, current: settings)));
         await testHelper.pumpView(
           tester,
           locale: locale,
@@ -189,9 +221,11 @@ void main() {
     testLocalizations(
       'DDNS - TZO',
       (tester, locale) async {
-        when(testHelper.mockDDNSNotifier.build()).thenReturn(
-            DDNSState.fromMap(ddnsTestState)
-                .copyWith(provider: DDNSProvider.create(tzoDNSProviderName)));
+        final state = DDNSState.fromMap(ddnsTestState);
+        final settings =
+            DDNSSettings(provider: DDNSProvider.create(tzoDNSProviderName));
+        when(testHelper.mockDDNSNotifier.build()).thenReturn(state.copyWith(
+            settings: Preservable(original: settings, current: settings)));
         await testHelper.pumpView(
           tester,
           locale: locale,
@@ -211,16 +245,17 @@ void main() {
     testLocalizations(
       'DDNS - TZO filled up',
       (tester, locale) async {
-        when(testHelper.mockDDNSNotifier.build())
-            .thenReturn(DDNSState.fromMap(ddnsTestState).copyWith(
-          provider: TzoDNSProvider(
-            settings: const TZOSettings(
-              username: 'username',
-              password: 'password',
-              hostName: 'hostname',
-            ),
+        final state = DDNSState.fromMap(ddnsTestState);
+        final settings = DDNSSettings(
+            provider: TzoDNSProvider(
+          settings: const TZOSettings(
+            username: 'username',
+            password: 'password',
+            hostName: 'hostname',
           ),
         ));
+        when(testHelper.mockDDNSNotifier.build()).thenReturn(state.copyWith(
+            settings: Preservable(original: settings, current: settings)));
         await testHelper.pumpView(
           tester,
           locale: locale,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
+import 'package:privacy_gui/page/advanced_settings/internet_settings/models/internet_settings_enums.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/views/internet_settings_view.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
@@ -180,16 +181,15 @@ Future<void> main() async {
     testLocalizations(
       'InternetSettings - bridge',
       (tester, locale) async {
-        when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
-            InternetSettingsState.fromMap(internetSettingsStateBridge));
+        final state =
+            InternetSettingsState.fromMap(internetSettingsStateBridge);
+        final status = state.status.copyWith(hostname: () => 'Linksys00000');
+        when(testHelper.mockInternetSettingsNotifier.build())
+            .thenReturn(state.copyWith(status: status));
         when(testHelper.mockInternetSettingsNotifier.fetch())
             .thenAnswer((realInvocation) async {
           await Future.delayed(const Duration(seconds: 1));
           return InternetSettingsState.fromMap(internetSettingsStateBridge);
-        });
-        when(testHelper.mockInternetSettingsNotifier.hostname)
-            .thenAnswer((realInvocation) {
-          return 'Linksys00000';
         });
         await testHelper.pumpView(
           tester,
@@ -360,16 +360,15 @@ Future<void> main() async {
     testLocalizations(
       'InternetSettings - bridge editing',
       (tester, locale) async {
-        when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
-            InternetSettingsState.fromMap(internetSettingsStateBridge));
+        final state =
+            InternetSettingsState.fromMap(internetSettingsStateBridge);
+        final status = state.status.copyWith(hostname: () => 'Linksys00000');
+        when(testHelper.mockInternetSettingsNotifier.build())
+            .thenReturn(state.copyWith(status: status));
         when(testHelper.mockInternetSettingsNotifier.fetch())
             .thenAnswer((realInvocation) async {
           await Future.delayed(const Duration(seconds: 1));
-          return InternetSettingsState.fromMap(internetSettingsStateBridge);
-        });
-        when(testHelper.mockInternetSettingsNotifier.hostname)
-            .thenAnswer((realInvocation) {
-          return 'Linksys00000';
+          return state.copyWith(status: status);
         });
         await testHelper.pumpView(
           tester,
@@ -494,10 +493,15 @@ Future<void> main() async {
       (tester, locale) async {
         final state =
             InternetSettingsState.fromMap(internetSettingsStateIpv6Automatic);
+        final settings = state.settings.current;
         final newState = state.copyWith(
-            ipv6Setting: state.ipv6Setting.copyWith(
-          isIPv6AutomaticEnabled: false,
-          ipv6rdTunnelMode: () => IPv6rdTunnelMode.disabled,
+            settings: state.settings.copyWith(
+          current: settings.copyWith(
+            ipv6Setting: settings.ipv6Setting.copyWith(
+              isIPv6AutomaticEnabled: false,
+              ipv6rdTunnelMode: () => IPv6rdTunnelMode.disabled,
+            ),
+          ),
         ));
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(newState);
         when(testHelper.mockInternetSettingsNotifier.fetch())
@@ -534,10 +538,15 @@ Future<void> main() async {
       (tester, locale) async {
         final state =
             InternetSettingsState.fromMap(internetSettingsStateIpv6Automatic);
+        final settings = state.settings.current;
         final newState = state.copyWith(
-            ipv6Setting: state.ipv6Setting.copyWith(
-          isIPv6AutomaticEnabled: false,
-          ipv6rdTunnelMode: () => IPv6rdTunnelMode.automatic,
+            settings: state.settings.copyWith(
+          current: settings.copyWith(
+            ipv6Setting: settings.ipv6Setting.copyWith(
+              isIPv6AutomaticEnabled: false,
+              ipv6rdTunnelMode: () => IPv6rdTunnelMode.automatic,
+            ),
+          ),
         ));
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(newState);
         when(testHelper.mockInternetSettingsNotifier.fetch())
@@ -574,10 +583,15 @@ Future<void> main() async {
       (tester, locale) async {
         final state =
             InternetSettingsState.fromMap(internetSettingsStateIpv6Automatic);
+        final settings = state.settings.current;
         final newState = state.copyWith(
-            ipv6Setting: state.ipv6Setting.copyWith(
-          isIPv6AutomaticEnabled: false,
-          ipv6rdTunnelMode: () => IPv6rdTunnelMode.manual,
+            settings: state.settings.copyWith(
+          current: settings.copyWith(
+            ipv6Setting: settings.ipv6Setting.copyWith(
+              isIPv6AutomaticEnabled: false,
+              ipv6rdTunnelMode: () => IPv6rdTunnelMode.manual,
+            ),
+          ),
         ));
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(newState);
         when(testHelper.mockInternetSettingsNotifier.fetch())
@@ -818,13 +832,20 @@ Future<void> main() async {
     testLocalizations(
       'InternetSettings - restart dialog',
       (tester, locale) async {
-        when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
-            InternetSettingsState.fromMap(internetSettingsStateIpv6PPPoE));
+        final state =
+            InternetSettingsState.fromMap(internetSettingsStateIpv6PPPoE);
+        final settings = state.settings.current;
+        final newState = state.copyWith(
+            settings: state.settings.copyWith(
+          current: settings.copyWith(
+            macClone: true,
+          ),
+        ));
+        when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(newState);
         when(testHelper.mockInternetSettingsNotifier.fetch())
             .thenAnswer((realInvocation) async {
           await Future.delayed(const Duration(seconds: 1));
-          return InternetSettingsState.fromMap(internetSettingsStateIpv6PPPoE)
-              .copyWith(macClone: true);
+          return newState;
         });
         await testHelper.pumpView(
           tester,
@@ -857,13 +878,20 @@ Future<void> main() async {
     testLocalizations(
       'InternetSettings - ipv4 and ipv6 combination dialog',
       (tester, locale) async {
-        when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
-            InternetSettingsState.fromMap(internetSettingsStateIpv6PPPoE));
+        final state =
+            InternetSettingsState.fromMap(internetSettingsStateIpv6PPPoE);
+        final settings = state.settings.current;
+        final newState = state.copyWith(
+            settings: state.settings.copyWith(
+          current: settings.copyWith(
+            macClone: true,
+          ),
+        ));
+        when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(newState);
         when(testHelper.mockInternetSettingsNotifier.fetch())
             .thenAnswer((realInvocation) async {
           await Future.delayed(const Duration(seconds: 1));
-          return InternetSettingsState.fromMap(internetSettingsStateIpv6PPPoE)
-              .copyWith(macClone: true);
+          return newState;
         });
         await testHelper.pumpView(
           tester,

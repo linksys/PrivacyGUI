@@ -31,7 +31,7 @@ class _StaticRoutingListViewState extends ConsumerState<StaticRoutingListView> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(staticRoutingProvider);
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       title: loc(context).staticRouting,
       scrollable: true,
       child: (context, constraints) => Column(
@@ -57,8 +57,8 @@ class _StaticRoutingListViewState extends ConsumerState<StaticRoutingListView> {
             children: [
               AppText.labelLarge(loc(context).staticRoute),
               const AppGap.medium(),
-              if (state.setting.entries.isNotEmpty)
-                ...state.setting.entries.map(
+              if (state.current.entries.entries.isNotEmpty)
+                ...state.current.entries.entries.map(
                   (entry) => buildStaticRouteCard(entry),
                 )
               else
@@ -169,7 +169,6 @@ class _StaticRoutingListViewState extends ConsumerState<StaticRoutingListView> {
       RoutingSettingInterface.lan => loc(context).lanWireless,
       RoutingSettingInterface.internet =>
         RoutingSettingInterface.internet.value,
-      _ => loc(context).lanWireless,
     };
   }
 }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
@@ -16,7 +16,6 @@ import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
 class FilteredDevicesView extends ArgumentsConsumerStatefulView {
   const FilteredDevicesView({super.key, super.args});
@@ -42,16 +41,15 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(instantPrivacyProvider);
+    final state = ref.watch(wifiBundleProvider);
 
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       title: loc(context).filteredDevices,
-      scrollable: true,
       actions: [
         AppTextButton(
           loc(context).edit,
           icon: LinksysIcons.edit,
-          onTap: state.settings.denyMacAddresses.isNotEmpty
+          onTap: state.current.privacy.denyMacAddresses.isNotEmpty
               ? () {
                   _toggleEdit();
                 }
@@ -63,8 +61,8 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
               isPositiveEnabled: true,
               onPositiveTap: () {
                 ref
-                    .read(instantPrivacyProvider.notifier)
-                    .removeSelection(_selectedMACs, true);
+                    .read(wifiBundleProvider.notifier)
+                    .removeMacFilterSelection(_selectedMACs);
                 _toggleEdit();
               },
               positiveLabel: loc(context).remove,
@@ -79,38 +77,35 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
                 context.pop();
               },
               positiveLabel: loc(context).done),
-      child: (context, constraints) => AppBasicLayout(
+      child: (context, constraints) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AppListCard(
-              title: AppText.labelLarge(loc(context).selectFromMyDeviceList),
-              trailing: !_isEdit ? const Icon(LinksysIcons.add) : null,
-              onTap: !_isEdit
-                  ? () {
-                      _pickDevices();
-                    }
-                  : null,
-            ),
-            const AppGap.small2(),
-            AppListCard(
-              title: AppText.labelLarge(loc(context).manuallyAddDevice),
-              trailing: !_isEdit ? const Icon(LinksysIcons.add) : null,
-              onTap: !_isEdit
-                  ? () {
-                      _showManuallyAddModal();
-                    }
-                  : null,
-            ),
-            const AppGap.small2(),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: Spacing.medium),
-              child: AppText.labelLarge(loc(context).filteredDevices),
-            ),
-            _buildFilteredDevices(),
-          ],
-        ),
+        children: [
+          AppListCard(
+            title: AppText.labelLarge(loc(context).selectFromMyDeviceList),
+            trailing: !_isEdit ? const Icon(LinksysIcons.add) : null,
+            onTap: !_isEdit
+                ? () {
+                    _pickDevices();
+                  }
+                : null,
+          ),
+          const AppGap.small2(),
+          AppListCard(
+            title: AppText.labelLarge(loc(context).manuallyAddDevice),
+            trailing: !_isEdit ? const Icon(LinksysIcons.add) : null,
+            onTap: !_isEdit
+                ? () {
+                    _showManuallyAddModal();
+                  }
+                : null,
+          ),
+          const AppGap.small2(),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: Spacing.medium),
+            child: AppText.labelLarge(loc(context).filteredDevices),
+          ),
+          _buildFilteredDevices(),
+        ],
       ),
     );
   }
@@ -127,16 +122,16 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
         .pushNamed<List<DeviceListItem>?>(RouteNamed.devicePicker, extra: {
       'type': 'mac',
       'connection': 'wireless',
-      'selected': ref.read(instantPrivacyProvider).settings.denyMacAddresses
+      'selected': ref.read(wifiBundleProvider).current.privacy.denyMacAddresses
     });
-    final temp = ref.read(instantPrivacyProvider).settings.denyMacAddresses;
+    final temp = ref.read(wifiBundleProvider).current.privacy.denyMacAddresses;
     if (results != null) {
       final newMacs = results.map((e) => e.macAddress).toList();
       // temp and newMacs do XOR
       final added = newMacs.toSet().difference(temp.toSet());
       final removed = temp.toSet().difference(newMacs.toSet());
-      ref.read(instantPrivacyProvider.notifier).setSelection(
-          [...added, ...temp..removeWhere((e) => removed.contains(e))], true);
+      ref.read(wifiBundleProvider.notifier).setMacAddressList(
+          [...added, ...temp..removeWhere((e) => removed.contains(e))]);
     }
   }
 
@@ -237,7 +232,7 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
       checkPositiveEnabled: () => isValid && !isDuplicate,
     );
     if (result != null) {
-      ref.read(instantPrivacyProvider.notifier).setSelection([result], true);
+      ref.read(wifiBundleProvider.notifier).setMacFilterSelection([result]);
     }
   }
 }

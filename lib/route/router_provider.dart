@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,21 +13,23 @@ import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart'
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/dhcp_reservations_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
+import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_rule_view.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_view.dart';
 import 'package:privacy_gui/page/components/picker/region_picker_view.dart';
-import 'package:privacy_gui/page/components/settings_view/editable_card_list_edit_view.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/_ddns.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacy_gui/page/instant_device/views/select_device_view.dart';
 import 'package:privacy_gui/page/firmware_update/_firmware_update.dart';
 import 'package:privacy_gui/page/health_check/_health_check.dart';
+import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/views/instant_privacy_view.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_provider.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_isp_auth_view.dart';
 import 'package:privacy_gui/page/landing/_landing.dart';
-
 import 'package:privacy_gui/page/login/views/_views.dart';
 import 'package:privacy_gui/page/login/auto_parent/views/auto_parent_first_login_view.dart';
 import 'package:privacy_gui/page/login/views/local_reset_router_password_view.dart';
@@ -38,7 +39,6 @@ import 'package:privacy_gui/page/nodes/_nodes.dart';
 import 'package:privacy_gui/page/nodes/views/add_nodes_view.dart';
 import 'package:privacy_gui/page/otp_flow/providers/_providers.dart';
 import 'package:privacy_gui/page/otp_flow/views/_views.dart';
-import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
 import 'package:privacy_gui/page/instant_setup/pnp_admin_view.dart';
 import 'package:privacy_gui/page/instant_setup/pnp_setup_view.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_isp_save_settings_view.dart';
@@ -54,9 +54,10 @@ import 'package:privacy_gui/page/select_network/_select_network.dart';
 import 'package:privacy_gui/page/instant_verify/views/instant_verify_view.dart';
 import 'package:privacy_gui/page/support/faq_list_view.dart';
 import 'package:privacy_gui/page/instant_topology/views/instant_topology_view.dart';
-import 'package:privacy_gui/page/troubleshooting/_troubleshooting.dart';
 import 'package:privacy_gui/page/vpn/views/vpn_settings_page.dart';
-import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.dart';
+import 'package:privacy_gui/page/wifi_settings/views/mac_filtered_devices_view.dart';
+import 'package:privacy_gui/page/wifi_settings/views/wifi_main_view.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/auth/ra_session_provider.dart';
 import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
@@ -67,6 +68,8 @@ import 'constants.dart';
 import 'package:privacy_gui/core/jnap/providers/ip_getter/get_local_ip.dart'
     if (dart.library.io) 'package:privacy_gui/core/jnap/providers/ip_getter/mobile_get_local_ip.dart'
     if (dart.library.html) 'package:privacy_gui/core/jnap/providers/ip_getter/web_get_local_ip.dart';
+
+import 'package:privacy_gui/page/instant_safety/providers/_providers.dart';
 
 part 'route_home.dart';
 part 'route_cloud_login.dart';
@@ -165,15 +168,15 @@ class RouterNotifier extends ChangeNotifier {
     await _ref.read(connectivityProvider.notifier).forceUpdate();
     final loginType = _ref.read(authProvider
         .select((value) => value.value?.loginType ?? LoginType.none));
-    final pnp = _ref.read(pnpProvider.notifier);
+    final pnpNotifier = _ref.read(pnpProvider.notifier);
     LocalWhereToGo whereToGo = LocalWhereToGo.login;
     final routerType =
         _ref.read(connectivityProvider).connectivityInfo.routerType;
     if (BuildConfig.forceCommandType == ForceCommand.local ||
         (routerType != RouterType.others && loginType != LoginType.remote)) {
-      whereToGo = await pnp
+      whereToGo = await pnpNotifier
           .fetchDeviceInfo(false)
-          .then((_) async => await pnp.autoConfigurationCheck())
+          .then((_) async => await pnpNotifier.autoConfigurationCheck())
           .then((config) async {
         // Un supported PnP or Unable to get AutoConfigurationSettings case -
         if (config == null) {
@@ -182,7 +185,7 @@ class RouterNotifier extends ChangeNotifier {
         // If isAutoConfigurationSupported is not true, then go to Login
         if (config.isAutoConfigurationSupported != true) {
           // Retail factory reset case - Check admin password
-          final isAdminPasswordSet = await pnp.isRouterPasswordSet();
+          final isAdminPasswordSet = await pnpNotifier.isRouterPasswordSet();
           return isAdminPasswordSet == false
               ? LocalWhereToGo.pnp
               : LocalWhereToGo.login;
@@ -214,7 +217,7 @@ class RouterNotifier extends ChangeNotifier {
         // Go PnP -> isAdminPasswordDefault is true and isAdminPasswordSetByUser is false
         // Login -> else
         //
-        final isRouterPasswordSet = await pnp.isRouterPasswordSet();
+        final isRouterPasswordSet = await pnpNotifier.isRouterPasswordSet();
         return isRouterPasswordSet == false
             ? LocalWhereToGo.pnp
             : LocalWhereToGo.login;

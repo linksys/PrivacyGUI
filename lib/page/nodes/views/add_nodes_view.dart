@@ -10,8 +10,6 @@ import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/components/shared_widgets.dart';
 import 'package:privacy_gui/page/nodes/providers/add_nodes_state.dart';
-import 'package:privacy_gui/utils.dart';
-import 'package:privacygui_widgets/hook/icon_hooks.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/bullet_list/bullet_list.dart';
@@ -72,11 +70,9 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
   }
 
   Widget _resultView(AddNodesState state) {
-    return StyledAppPageView(
-      scrollable: true,
+    return StyledAppPageView.withSliver(
       title: loc(context).addNodes,
-      child: (context, constraints) => AppBasicLayout(
-          content: Column(
+      child: (context, constraints) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Wrap(
@@ -118,7 +114,8 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
                       return AppNodeListCard(
                           leading: CustomTheme.of(context).getRouterImage(
                               routerIconTestByModel(
-                                  modelNumber: node.modelNumber ?? ''), false),
+                                  modelNumber: node.modelNumber ?? ''),
+                              false),
                           title: e.getDeviceLocation(),
                           trailing: SharedWidgets.resolveSignalStrengthIcon(
                             context,
@@ -156,16 +153,15 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
             },
           )
         ],
-      )),
+      ),
     );
   }
 
   Widget _contentView() {
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       scrollable: true,
       title: loc(context).addNodes,
-      child: (context, constraints) => AppBasicLayout(
-          content: Column(
+      child: (context, constraints) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppStyledText.bold(loc(context).addNodesDesc,
@@ -199,7 +195,7 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
             },
           )
         ],
-      )),
+      ),
     );
   }
 

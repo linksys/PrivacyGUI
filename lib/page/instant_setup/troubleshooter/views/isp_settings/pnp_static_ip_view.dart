@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/advanced_settings/internet_settings/models/internet_settings_enums.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/_providers.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -52,7 +53,7 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
 
   @override
   Widget build(BuildContext context) {
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       scrollable: true,
       title: loc(context).staticIPAddress,
       child: (context, constraints) => Column(
@@ -233,9 +234,8 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
 
   void onNext() async {
     logger.i('[PnP Troubleshooter]: Set the router into Static IP mode');
-    var newState = ref.read(internetSettingsProvider).copyWith();
-    newState = newState.copyWith(
-      ipv4Setting: newState.ipv4Setting.copyWith(
+    var newState = ref.read(internetSettingsProvider).current.copyWith(
+      ipv4Setting: ref.read(internetSettingsProvider).current.ipv4Setting.copyWith(
         ipv4ConnectionType: WanType.static.type,
         staticIpAddress: () => _ipController.text,
         networkPrefixLength: () => NetworkUtils.subnetMaskToPrefixLength(

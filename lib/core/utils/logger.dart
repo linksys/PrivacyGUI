@@ -1,18 +1,12 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:collection/collection.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
-import 'package:privacy_gui/constants/_constants.dart';
-import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
-import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/utils/storage.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 /// A global logger instance for application-wide logging.
 ///
@@ -187,10 +181,11 @@ Future<String> outputFullWebLog(BuildContext context) async {
   final keys = List.from(_webLogCache.keys)
     ..remove(appLogTag)
     ..remove(routeLogTag);
+  final screenInfo = getScreenInfo(context);
 
   return '''
 ${await getPackageInfo()}
-${getScreenInfo(context)}
+$screenInfo
 ================================ View History ==================================
 ${_getWebLogByTag(tag: routeLogTag)}
 ============================== Custom Tag Summary ==============================
@@ -310,38 +305,4 @@ String getScreenInfo(BuildContext context) {
     'Bottom padding of safe area: ${MediaQueryUtils.getBottomSafeAreaPadding(context)}',
   ];
   return data.join('\n');
-}
-
-/// Retrieves and formats cached JNAP action data for the current device.
-///
-/// This function is intended for debugging. It reads the current device's serial
-/// number, accesses its specific cache, and extracts the results for a predefined
-/// list of target JNAP actions.
-///
-/// Returns a `Future<String>` that completes with the JSON-encoded cache data,
-/// or a "Not available" message if the serial number or cache is not found.
-Future<String> _getLinksysCacheData() async {
-  final targetActions = [
-    JNAPAction.getWANStatus,
-    JNAPAction.getBackhaulInfo,
-    JNAPAction.getDevices,
-  ];
-
-  final sharedPreferences = await SharedPreferences.getInstance();
-  final currentSN = sharedPreferences.getString(pCurrentSN);
-  if (currentSN == null) {
-    return 'Not available: No serial number';
-  }
-  final linksysCache = await ProviderContainer()
-      .read(linksysCacheManagerProvider)
-      .getCache(currentSN);
-  if (linksysCache == null) {
-    return 'Not available: No cached data';
-  }
-  final dataList = targetActions.map<String>((action) {
-    final cachedData =
-        linksysCache[action.actionValue] as Map<String, dynamic>? ?? {};
-    return jsonEncode(cachedData);
-  });
-  return dataList.join('\n\n');
 }

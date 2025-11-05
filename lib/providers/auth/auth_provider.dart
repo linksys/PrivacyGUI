@@ -102,7 +102,7 @@ final authProvider =
     AsyncNotifierProvider<AuthNotifier, AuthState>(() => AuthNotifier());
 
 class AuthNotifier extends AsyncNotifier<AuthState> {
-  bool _isInit = false;
+  // bool _isInit = false;
 
   AuthNotifier() : super() {
     LinksysHttpClient.onError = (error) async {
@@ -165,6 +165,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       logger.d(
           '[Auth]: Existence: cloud user name: ${username != null}, cloud pwd: ${password != null}, admin password: ${localPassword != null}. Login type = $loginType');
       return AuthState(
+        localPasswordHint: state.value?.localPasswordHint,
         username: username ?? '',
         loginType: loginType,
         sessionToken: sessionToken,

@@ -29,7 +29,9 @@ import 'package:privacy_gui/page/instant_device/providers/external_device_detail
 import 'package:privacy_gui/page/instant_device/providers/external_device_detail_state.dart';
 import 'package:privacy_gui/page/instant_safety/providers/instant_safety_provider.dart';
 import 'package:privacy_gui/page/instant_safety/providers/instant_safety_state.dart';
-import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
+import 'package:privacy_gui/page/instant_setup/models/pnp_ui_models.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_provider.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_troubleshooter_provider.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_provider.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_state.dart';
@@ -37,12 +39,13 @@ import 'package:privacy_gui/page/nodes/providers/add_nodes_provider.dart';
 import 'package:privacy_gui/page/nodes/providers/add_nodes_state.dart';
 import 'package:privacy_gui/page/nodes/providers/node_detail_provider.dart';
 import 'package:privacy_gui/page/nodes/providers/node_detail_state.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/wifi_advanced_state.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/wifi_state.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_state.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_info.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_provider.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_state.dart';
+import 'package:privacy_gui/providers/preservable.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -56,6 +59,7 @@ import '../mocks/power_table_notifier_mocks.dart';
 import '../mocks/static_routing_rule_notifier_mocks.dart';
 import '../test_data/instant_verify_test_state.dart';
 import '../test_data/power_table_test_state.dart';
+import '../test_data/wifi_bundle_test_state.dart';
 import 'di.dart';
 import 'testable_router.dart';
 
@@ -69,9 +73,6 @@ import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_provide
 import 'package:privacy_gui/core/jnap/providers/node_light_settings_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/page/vpn/providers/vpn_notifier.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/wifi_list_provider.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/wifi_advanced_provider.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/wifi_view_provider.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_provider.dart';
 import '../test_data/_index.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/providers/apps_and_gaming_state.dart';
@@ -94,7 +95,7 @@ class TestHelper {
   late MockPortRangeForwardingRuleNotifier mockPortRangeForwardingRuleNotifier;
   late MockPortRangeTriggeringListNotifier mockPortRangeTriggeringListNotifier;
   late MockPortRangeTriggeringRuleNotifier mockPortRangeTriggeringRuleNotifier;
-  late MockDMZSettingNotifier mockDMZSettingNotifier;
+  late MockDMZSettingsNotifier mockDMZSettingsNotifier;
   late MockDashboardHomeNotifier mockDashboardHomeNotifier;
   late MockDashboardManagerNotifier mockDashboardManagerNotifier;
   late MockFirmwareUpdateNotifier mockFirmwareUpdateNotifier;
@@ -105,9 +106,7 @@ class TestHelper {
   late MockNodeLightSettingsNotifier mockNodeLightSettingsNotifier;
   late MockPollingNotifier mockPollingNotifier;
   late MockVPNNotifier mockVPNNotifier;
-  late MockWifiListNotifier mockWiFiListNotifier;
-  late MockWifiAdvancedSettingsNotifier mockWiFiAdvancedSettingsNotifier;
-  late MockWiFiViewNotifier mockWiFiViewNotifier;
+  late MockWifiBundleNotifier mockWiFiBundleNotifier;
   late MockDeviceListNotifier mockDeviceListNotifier;
   late ServiceHelper mockServiceHelper;
   late MockHealthCheckProvider mockHealthCheckProvider;
@@ -134,6 +133,7 @@ class TestHelper {
   late MockAddNodesNotifier mockAddNodesNotifier;
   late MockNodeDetailNotifier mockNodeDetailNotifier;
 
+
   void setup() {
     mockAdministrationSettingsNotifier = MockAdministrationSettingsNotifier();
     mockAppsAndGamingViewNotifier = MockAppsAndGamingViewNotifier();
@@ -146,7 +146,7 @@ class TestHelper {
     mockPortRangeForwardingListNotifier = MockPortRangeForwardingListNotifier();
     mockPortRangeTriggeringListNotifier = MockPortRangeTriggeringListNotifier();
     mockPortRangeTriggeringRuleNotifier = MockPortRangeTriggeringRuleNotifier();
-    mockDMZSettingNotifier = MockDMZSettingNotifier();
+    mockDMZSettingsNotifier = MockDMZSettingsNotifier();
     mockDashboardHomeNotifier = MockDashboardHomeNotifier();
     mockDashboardManagerNotifier = MockDashboardManagerNotifier();
     mockFirmwareUpdateNotifier = MockFirmwareUpdateNotifier();
@@ -157,9 +157,7 @@ class TestHelper {
     mockNodeLightSettingsNotifier = MockNodeLightSettingsNotifier();
     mockPollingNotifier = MockPollingNotifier();
     mockVPNNotifier = MockVPNNotifier();
-    mockWiFiListNotifier = MockWifiListNotifier();
-    mockWiFiAdvancedSettingsNotifier = MockWifiAdvancedSettingsNotifier();
-    mockWiFiViewNotifier = MockWiFiViewNotifier();
+    mockWiFiBundleNotifier = MockWifiBundleNotifier();
     mockDeviceListNotifier = MockDeviceListNotifier();
     mockHealthCheckProvider = MockHealthCheckProvider();
     mockFirewallNotifier = MockFirewallNotifier();
@@ -211,7 +209,7 @@ class TestHelper {
           administrationSettingsTestState);
     });
     when(mockAppsAndGamingViewNotifier.build())
-        .thenReturn(AppsAndGamingViewState.fromMap(const {}));
+        .thenReturn(AppsAndGamingViewState.fromMap(appsAndGamingTestState));
     when(mockDDNSNotifier.build()).thenReturn(DDNSState.fromMap(ddnsTestState));
     when(mockSinglePortForwardingListNotifier.build()).thenReturn(
         SinglePortForwardingListState.fromMap(
@@ -228,7 +226,7 @@ class TestHelper {
         PortRangeTriggeringListState.fromMap(portRangeTriggerListTestState));
     when(mockPortRangeTriggeringRuleNotifier.build())
         .thenReturn(const PortRangeTriggeringRuleState());
-    when(mockDMZSettingNotifier.build())
+    when(mockDMZSettingsNotifier.build())
         .thenReturn(DMZSettingsState.fromMap(dmzSettingsTestState));
     when(mockDashboardHomeNotifier.build())
         .thenReturn(DashboardHomeState.fromMap(dashboardHomePinnacleTestState));
@@ -249,11 +247,19 @@ class TestHelper {
     when(mockPollingNotifier.build()).thenReturn(
         CoreTransactionData(lastUpdate: 0, isReady: true, data: const {}));
     when(mockVPNNotifier.build()).thenReturn(VPNTestState.defaultState);
-    when(mockWiFiListNotifier.build())
-        .thenReturn(WiFiState.fromMap(wifiListTestState));
-    when(mockWiFiAdvancedSettingsNotifier.build()).thenReturn(
-        WifiAdvancedSettingsState.fromMap(wifiAdvancedSettingsTestState));
-    when(mockWiFiViewNotifier.build()).thenReturn(WiFiViewState());
+    final wifiBundleTestStateSettings = WifiBundleSettings.fromMap(
+        wifiBundleTestState['settings'] as Map<String, dynamic>);
+    final wifiBundleTestStateStatus = WifiBundleStatus.fromMap(
+        wifiBundleTestState['status'] as Map<String, dynamic>);
+
+    final wifiBundleTestStateInitialState = WifiBundleState(
+      settings: Preservable(original: wifiBundleTestStateSettings, current: wifiBundleTestStateSettings),
+      status: wifiBundleTestStateStatus,
+    );
+    when(mockWiFiBundleNotifier.build())
+        .thenReturn(wifiBundleTestStateInitialState);
+    when(mockWiFiBundleNotifier.state).thenReturn(wifiBundleTestStateInitialState);
+    when(mockWiFiBundleNotifier.isDirty()).thenReturn(false);
     when(mockDeviceListNotifier.build())
         .thenReturn(DeviceListState.fromMap(deviceListTestState));
     when(mockHealthCheckProvider.build())
@@ -269,7 +275,7 @@ class TestHelper {
     when(mockLocalNetworkSettingsNotifier.build()).thenReturn(
         LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState));
     when(mockStaticRoutingNotifier.build())
-        .thenReturn(StaticRoutingState.fromMap(staticRoutingEmptyState));
+        .thenReturn(StaticRoutingState.fromMap(staticRoutingTestStateEmpty));
     when(mockStaticRoutingRuleNotifier.build()).thenReturn(
         StaticRoutingRuleState(
             routerIp: '192.168.1.1', subnetMask: '255.255.255.0'));
@@ -302,6 +308,14 @@ class TestHelper {
     when(mockAddNodesNotifier.build()).thenReturn(const AddNodesState());
     when(mockNodeDetailNotifier.build())
         .thenReturn(NodeDetailState.fromMap(nodeDetailsCherry7TestState));
+    when(mockPnpNotifier.build()).thenReturn(PnpState(
+        deviceInfo: PnpDeviceInfoUIModel(
+          modelName: 'LN16',
+          image: 'routerLn16',
+          serialNumber: 'serialNumber',
+          firmwareVersion: 'firmwareVersion',
+        ),
+        isUnconfigured: true));
   }
 
   List<Override> get defaultOverrides => [
@@ -321,7 +335,7 @@ class TestHelper {
             .overrideWith(() => mockPortRangeTriggeringListNotifier),
         portRangeTriggeringRuleProvider
             .overrideWith(() => mockPortRangeTriggeringRuleNotifier),
-        dmzSettingsProvider.overrideWith(() => mockDMZSettingNotifier),
+        dmzSettingsProvider.overrideWith(() => mockDMZSettingsNotifier),
         dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
         dashboardManagerProvider
             .overrideWith(() => mockDashboardManagerNotifier),
@@ -334,10 +348,7 @@ class TestHelper {
             .overrideWith(() => mockNodeLightSettingsNotifier),
         pollingProvider.overrideWith(() => mockPollingNotifier),
         vpnProvider.overrideWith(() => mockVPNNotifier),
-        wifiListProvider.overrideWith(() => mockWiFiListNotifier),
-        wifiAdvancedProvider
-            .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
-        wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
+        wifiBundleProvider.overrideWith(() => mockWiFiBundleNotifier),
         deviceListProvider.overrideWith(() => mockDeviceListNotifier),
         internetStatusProvider.overrideWith((ref) => InternetStatus.online),
         firewallProvider.overrideWith(() => mockFirewallNotifier),

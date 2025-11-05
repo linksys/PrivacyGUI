@@ -9,7 +9,8 @@ import 'package:privacygui_widgets/widgets/card/device_list_card.dart';
 import '../../../../common/config.dart';
 import '../../../../common/test_helper.dart';
 import '../../../../common/test_responsive_widget.dart';
-import '../../../../test_data/_index.dart';
+import '../../../../test_data/device_filter_config_test_state.dart';
+import '../../../../test_data/device_filtered_list_test_data.dart';
 
 void main() {
   final testHelper = TestHelper();

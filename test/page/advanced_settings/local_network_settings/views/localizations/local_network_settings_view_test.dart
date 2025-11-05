@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
+import 'package:privacy_gui/providers/preservable.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 
 import '../../../../../common/config.dart';
@@ -17,7 +18,7 @@ void main() {
   });
 
   testLocalizations('LocalNetwork - host name', (tester, locale) async {
-    when(testHelper.mockLocalNetworkSettingsNotifier.fetch(fetchRemote: true))
+    when(testHelper.mockLocalNetworkSettingsNotifier.fetch(forceRemote: true))
         .thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 1));
       return LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState);
@@ -33,9 +34,10 @@ void main() {
     when(testHelper.mockLocalNetworkSettingsNotifier.build()).thenReturn(
         LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsErrorState)
             .copyWith(
-      hasErrorOnHostNameTab: true,
+      status: LocalNetworkStatus.fromMap(mockLocalNetworkErrorStatus)
+          .copyWith(hasErrorOnHostNameTab: true),
     ));
-    when(testHelper.mockLocalNetworkSettingsNotifier.fetch(fetchRemote: true))
+    when(testHelper.mockLocalNetworkSettingsNotifier.fetch(forceRemote: true))
         .thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 1));
       return LocalNetworkSettingsState.fromMap(
@@ -49,7 +51,7 @@ void main() {
   });
 
   testLocalizations('LocalNetwork - lan ip address', (tester, locale) async {
-    when(testHelper.mockLocalNetworkSettingsNotifier.fetch(fetchRemote: true))
+    when(testHelper.mockLocalNetworkSettingsNotifier.fetch(forceRemote: true))
         .thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 1));
       return LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState);
@@ -70,9 +72,10 @@ void main() {
     when(testHelper.mockLocalNetworkSettingsNotifier.build()).thenReturn(
         LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsErrorState)
             .copyWith(
-      hasErrorOnIPAddressTab: true,
+      status: LocalNetworkStatus.fromMap(mockLocalNetworkErrorStatus)
+          .copyWith(hasErrorOnIPAddressTab: true),
     ));
-    when(testHelper.mockLocalNetworkSettingsNotifier.fetch(fetchRemote: true))
+    when(testHelper.mockLocalNetworkSettingsNotifier.fetch(forceRemote: true))
         .thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 1));
       return LocalNetworkSettingsState.fromMap(
@@ -92,7 +95,7 @@ void main() {
   testLocalizations(
     'LocalNetwork - dhcp server',
     (tester, locale) async {
-      when(testHelper.mockLocalNetworkSettingsNotifier.fetch(fetchRemote: true))
+      when(testHelper.mockLocalNetworkSettingsNotifier.fetch(forceRemote: true))
           .thenAnswer((_) async {
         await Future.delayed(const Duration(seconds: 1));
         return LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState);
@@ -119,9 +122,10 @@ void main() {
       when(testHelper.mockLocalNetworkSettingsNotifier.build()).thenReturn(
           LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsErrorState)
               .copyWith(
-        hasErrorOnDhcpServerTab: true,
+        status: LocalNetworkStatus.fromMap(mockLocalNetworkErrorStatus)
+            .copyWith(hasErrorOnDhcpServerTab: true),
       ));
-      when(testHelper.mockLocalNetworkSettingsNotifier.fetch(fetchRemote: true))
+      when(testHelper.mockLocalNetworkSettingsNotifier.fetch(forceRemote: true))
           .thenAnswer((_) async {
         await Future.delayed(const Duration(seconds: 1));
         return LocalNetworkSettingsState.fromMap(
@@ -149,10 +153,13 @@ void main() {
       when(testHelper.mockLocalNetworkSettingsNotifier.build()).thenReturn(
           LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsErrorState)
               .copyWith(
-        errorTextMap: {"startIpAddress": "startIpAddressRange"},
-        hasErrorOnDhcpServerTab: true,
+        status:
+            LocalNetworkStatus.fromMap(mockLocalNetworkErrorStatus).copyWith(
+          errorTextMap: {"startIpAddress": "startIpAddressRange"},
+          hasErrorOnDhcpServerTab: true,
+        ),
       ));
-      when(testHelper.mockLocalNetworkSettingsNotifier.fetch(fetchRemote: true))
+      when(testHelper.mockLocalNetworkSettingsNotifier.fetch(forceRemote: true))
           .thenAnswer((_) async {
         await Future.delayed(const Duration(seconds: 1));
         return LocalNetworkSettingsState.fromMap(
@@ -177,12 +184,15 @@ void main() {
   testLocalizations(
     'LocalNetwork - dhcp server off',
     (tester, locale) async {
+      final original = LocalNetworkSettings.fromMap(mockLocalNetworkSettings);
+      final current = LocalNetworkSettings.fromMap(mockLocalNetworkSettings)
+          .copyWith(isDHCPEnabled: false);
       when(testHelper.mockLocalNetworkSettingsNotifier.build()).thenReturn(
           LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState)
               .copyWith(
-        isDHCPEnabled: false,
+        settings: Preservable(original: original, current: current),
       ));
-      when(testHelper.mockLocalNetworkSettingsNotifier.fetch(fetchRemote: true))
+      when(testHelper.mockLocalNetworkSettingsNotifier.fetch(forceRemote: true))
           .thenAnswer((_) async {
         await Future.delayed(const Duration(seconds: 1));
         return LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState);
@@ -206,14 +216,23 @@ void main() {
   testLocalizations(
     'LocalNetwork - save change dialog before enter dhcp reservertion view',
     (tester, locale) async {
+      final original = LocalNetworkSettings.fromMap(mockLocalNetworkSettings);
+      final current = LocalNetworkSettings.fromMap(mockLocalNetworkSettings)
+          .copyWith(firstIPAddress: "10.11.1.15");
       when(testHelper.mockLocalNetworkSettingsNotifier.build()).thenReturn(
           LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState)
-              .copyWith(firstIPAddress: "10.11.1.15"));
-      when(testHelper.mockLocalNetworkSettingsNotifier.fetch(fetchRemote: true))
+              .copyWith(
+        settings: Preservable(original: original, current: current),
+      ));
+      when(testHelper.mockLocalNetworkSettingsNotifier.fetch(forceRemote: true))
           .thenAnswer((_) async {
         await Future.delayed(const Duration(seconds: 1));
-        return LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState);
+        return LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState)
+            .copyWith(
+          settings: Preservable(original: original, current: current),
+        );
       });
+      when(testHelper.mockLocalNetworkSettingsNotifier.isDirty()).thenReturn(true);
       await testHelper.pumpView(
         tester,
         locale: locale,

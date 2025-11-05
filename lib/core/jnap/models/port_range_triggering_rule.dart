@@ -82,3 +82,41 @@ class PortRangeTriggeringRule extends Equatable {
       PortRangeTriggeringRule.fromMap(
           json.decode(source) as Map<String, dynamic>);
 }
+
+class PortRangeTriggeringRuleList extends Equatable {
+  final List<PortRangeTriggeringRule> rules;
+
+  const PortRangeTriggeringRuleList({required this.rules});
+
+  @override
+  List<Object> get props => [rules];
+
+  PortRangeTriggeringRuleList copyWith({
+    List<PortRangeTriggeringRule>? rules,
+  }) {
+    return PortRangeTriggeringRuleList(
+      rules: rules ?? this.rules,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'rules': rules.map((x) => x.toMap()).toList(),
+    };
+  }
+
+  factory PortRangeTriggeringRuleList.fromMap(Map<String, dynamic> map) {
+    return PortRangeTriggeringRuleList(
+      rules: List<PortRangeTriggeringRule>.from(
+        map['rules']?.map<PortRangeTriggeringRule>(
+          (x) => PortRangeTriggeringRule.fromMap(x as Map<String, dynamic>),
+        ) ?? [],
+      ),
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory PortRangeTriggeringRuleList.fromJson(String source) =>
+      PortRangeTriggeringRuleList.fromMap(json.decode(source) as Map<String, dynamic>);
+}
