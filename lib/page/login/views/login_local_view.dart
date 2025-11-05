@@ -119,8 +119,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
       //The error message should not be set again when countdown is terminated
       if (!isCountdownJustFinished) {
         // Just get the error and the countdown has yet to be triggered
-        final JNAPError? jnapError = (error is JNAPError) ? error : null;
-        setErrorMessage(jnapError);
+        setErrorMessage(error);
       }
       return contentView();
     }, data: (state) {
@@ -132,8 +131,8 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
     });
   }
 
-  void setErrorMessage(JNAPError? error) {
-    if (error != null) {
+  void setErrorMessage(dynamic error) {
+    if (error != null && error is JNAPError) {
       // Check if it's the invalid admin password error from CheckAdminPassword3
       if (error.result == errorInvalidAdminPassword ||
           error.result == errorPasswordCheckDelayed) {
@@ -164,7 +163,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
     } else {
       // Should not be here
       setState(() {
-        _errorMessage = errorCodeHelper(context, '');
+        _errorMessage = loc(context).generalError;
       });
     }
   }
