@@ -28,9 +28,6 @@ class WiFiListView extends ArgumentsConsumerStatefulView {
 class _WiFiListViewState extends ConsumerState<WiFiListView>
     with PageSnackbarMixin {
   WiFiState? _preservedMainWiFiState;
-  // Simple mode
-  final _simpleWifiNameController = TextEditingController();
-  final _simpleWifiPasswordController = TextEditingController();
 
   @override
   void initState() {
@@ -56,8 +53,6 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
   @override
   void dispose() {
     super.dispose();
-    _simpleWifiNameController.dispose();
-    _simpleWifiPasswordController.dispose();
   }
 
   @override
@@ -66,33 +61,20 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
 
     ref.listen(wifiListProvider, (previous, next) {
       if (_preservedMainWiFiState != null) {
-        ref
-            .read(wifiViewProvider.notifier)
-            .setWifiListViewStateChanged(next != _preservedMainWiFiState);
+        ref.read(wifiViewProvider.notifier).setWifiListViewStateChanged(
+            _stateHasChanged(state: next, preserved: _preservedMainWiFiState));
       }
     });
+
     // The "Save" button is enabled if settings have changed and the data is valid.
     // A change is detected if:
-    // - The main WiFi list has been modified.
+    // - The main WiFi list has been modified. (Only if not in simple mode)
     // - The guest WiFi settings have changed.
     // - The user has switched to simple mode.
-    // - The simple mode WiFi settings have been modified.
+    // - The simple mode WiFi settings have been modified. (Only if in simple mode)
     // The data is considered valid if no secured WiFi network has an empty password.
-    final mainWiFiChanged = !const ListEquality()
-        .equals(_preservedMainWiFiState?.mainWiFi, state.mainWiFi);
-    final guestWiFiChanged =
-        _preservedMainWiFiState?.guestWiFi != state.guestWiFi;
-    final switchedToSimpleMode =
-        _preservedMainWiFiState?.isSimpleMode != state.isSimpleMode &&
-            state.isSimpleMode == true;
-    final simpleModeWifiChanged =
-        _preservedMainWiFiState?.simpleModeWifi != state.simpleModeWifi;
-
-    final hasChanged = mainWiFiChanged ||
-        guestWiFiChanged ||
-        switchedToSimpleMode ||
-        simpleModeWifiChanged;
-
+    final hasChanged =
+        _stateHasChanged(state: state, preserved: _preservedMainWiFiState);
     final isPositiveEnabled = hasChanged && _dataVerify(state);
 
     final wifiBands =
@@ -132,13 +114,8 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
             Expanded(
               child: state.isSimpleMode
                   ? SimpleModeView(
-                      simpleWifiNameController: _simpleWifiNameController,
-                      simpleWifiPasswordController:
-                          _simpleWifiPasswordController,
-                      simpleSecurityType: state.simpleModeWifi.securityType,
                       onWifiNameEdited: (value) {
                         setState(() {
-                          _simpleWifiNameController.text = value;
                           final wifiItem =
                               state.simpleModeWifi.copyWith(ssid: value);
                           ref
@@ -148,7 +125,6 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
                       },
                       onWifiPasswordEdited: (value) {
                         setState(() {
-                          _simpleWifiPasswordController.text = value;
                           final wifiItem =
                               state.simpleModeWifi.copyWith(password: value);
                           ref
@@ -225,12 +201,6 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
             onChanged: (value) {
               setState(() {
                 ref.read(wifiListProvider.notifier).setSimpleMode(value);
-                if (value) {
-                  _initSimpleModeSettings(ref.read(wifiListProvider));
-                } else {
-                  ref.read(wifiListProvider.notifier).setSimpleModeWifi(
-                      _preservedMainWiFiState!.simpleModeWifi);
-                }
               });
             },
           ),
@@ -253,7 +223,12 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
       // Password
       notifier.setWiFiPassword(password, radio.radioID);
       // Security type
-      notifier.setWiFiSecurityType(securityType, radio.radioID);
+      if (radio.radioID == WifiRadioBand.radio_6 && securityType == WifiSecurityType.wpa2Or3MixedPersonal) {
+        // Set to WPA3 Personal if WPA2 or WPA3 mixed personal is selected for 6G band
+        notifier.setWiFiSecurityType(WifiSecurityType.wpa3Personal, radio.radioID);
+      } else {
+        notifier.setWiFiSecurityType(securityType, radio.radioID);
+      }
       // Enable wifi
       notifier.setWiFiEnabled(true, radio.radioID);
     }
@@ -330,11 +305,41 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
     return result;
   }
 
+  bool _stateHasChanged({required WiFiState state, WiFiState? preserved}) {
+    if (preserved == null) return false;
+
+    // A change is detected if:
+    // - The main WiFi list has been modified. (Only if not in simple mode)
+    // - The guest WiFi settings have changed.
+    // - The user has switched to simple mode.
+    // - The simple mode WiFi settings have been modified. (Only if in simple mode)
+    final mainWiFiChanged = state.isSimpleMode
+        ? false
+        : !const ListEquality().equals(preserved.mainWiFi, state.mainWiFi);
+    final guestWiFiChanged = preserved.guestWiFi != state.guestWiFi;
+    final switchedToSimpleMode = preserved.isSimpleMode != state.isSimpleMode &&
+        state.isSimpleMode == true;
+    final simpleModeWifiChanged = state.isSimpleMode
+        ? preserved.simpleModeWifi != state.simpleModeWifi
+        : false;
+
+    return mainWiFiChanged ||
+        guestWiFiChanged ||
+        switchedToSimpleMode ||
+        simpleModeWifiChanged;
+  }
+
   bool _dataVerify(WiFiState state) {
     // Password verify
-    final hasEmptyPassword = state.mainWiFi
-        .any((e) => !e.securityType.isOpenVariant && e.password.isEmpty);
-    return !hasEmptyPassword;
+    if (state.isSimpleMode) {
+      final emptyPassword = !state.simpleModeWifi.securityType.isOpenVariant &&
+          state.simpleModeWifi.password.isEmpty;
+      return !emptyPassword;
+    } else {
+      final hasEmptyPassword = state.mainWiFi
+          .any((e) => !e.securityType.isOpenVariant && e.password.isEmpty);
+      return !hasEmptyPassword;
+    }
   }
 
   void update(WiFiState? state) {
@@ -349,14 +354,6 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
       ref
           .read(wifiViewProvider.notifier)
           .setWifiListViewStateChanged(state != _preservedMainWiFiState);
-      _initSimpleModeSettings(state);
-    });
-  }
-
-  void _initSimpleModeSettings(WiFiState state) {
-    setState(() {
-      _simpleWifiNameController.text = state.simpleModeWifi.ssid;
-      _simpleWifiPasswordController.text = state.simpleModeWifi.password;
     });
   }
 
@@ -448,9 +445,5 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
       ),
     );
     return advanced;
-  }
-
-  WiFiItem _getFirstEnabledWifi(List<WiFiItem> mainWiFi) {
-    return mainWiFi.firstWhereOrNull((e) => e.isEnabled) ?? mainWiFi.first;
   }
 }
