@@ -1,43 +1,33 @@
 // ignore_for_file: invalid_use_of_protected_member
 
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
-import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_ui_models.dart';
 import 'package:privacy_gui/page/instant_setup/pnp_setup_view.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_exception.dart';
-import 'package:privacy_gui/page/instant_setup/providers/pnp_provider.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_step_state.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
-import '../../../common/di.dart';
-import '../../../mocks/firmware_update_notifier_mocks.dart';
-import '../../../mocks/pnp_notifier_mocks.dart' as Mock;
+
+import '../../../common/test_helper.dart';
 import '../../../common/test_responsive_widget.dart';
-import '../../../common/testable_router.dart';
-import '../../../test_data/device_info_test_data.dart';
 
 void main() async {
-  late Mock.MockPnpNotifier mockPnpNotifier;
-  mockDependencyRegister();
-  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
+  final testHelper = TestHelper();
 
   setUp(() {
-    mockPnpNotifier = Mock.MockPnpNotifier();
+    testHelper.setup();
 
-    when(mockServiceHelper.isSupportGuestNetwork(any)).thenReturn(true);
-    when(mockServiceHelper.isSupportLedMode(any)).thenReturn(true);
+    when(testHelper.mockServiceHelper.isSupportGuestNetwork(any)).thenReturn(true);
+    when(testHelper.mockServiceHelper.isSupportLedMode(any)).thenReturn(true);
 
-    when(mockPnpNotifier.build()).thenReturn(PnpState(
+    when(testHelper.mockPnpNotifier.build()).thenReturn(PnpState(
         deviceInfo: PnpDeviceInfoUIModel(
           modelName: 'LN16',
           image: 'routerLn16',
@@ -53,16 +43,16 @@ void main() async {
           PnpStepId.nightMode:
               PnpStepState(status: StepViewStatus.data, data: {}),
         }));
-    when(mockPnpNotifier.checkAdminPassword(null)).thenAnswer((_) {
+    when(testHelper.mockPnpNotifier.checkAdminPassword(null)).thenAnswer((_) {
       throw ExceptionInvalidAdminPassword();
     });
-    when(mockPnpNotifier.fetchDeviceInfo()).thenAnswer((_) async {});
-    when(mockPnpNotifier.getDefaultWiFiNameAndPassphrase()).thenReturn((
+    when(testHelper.mockPnpNotifier.fetchDeviceInfo()).thenAnswer((_) async {});
+    when(testHelper.mockPnpNotifier.getDefaultWiFiNameAndPassphrase()).thenReturn(( 
       name: 'Linksys1234567',
       password: 'Linksys123456@',
       security: 'WPA2/WPA3-Mixed-Personal'
     ));
-    when(mockPnpNotifier.getDefaultGuestWiFiNameAndPassPhrase()).thenReturn((
+    when(testHelper.mockPnpNotifier.getDefaultGuestWiFiNameAndPassPhrase()).thenReturn(( 
       name: 'Guest-Linksys1234567',
       password: 'GuestLinksys123456@',
     ));
@@ -70,35 +60,32 @@ void main() async {
 
   testLocalizations('Instant Setup - PnP: Collecting data',
       (tester, locale) async {
-    when(mockPnpNotifier.fetchDeviceInfo()).thenAnswer((_) async {
+    when(testHelper.mockPnpNotifier.fetchDeviceInfo()).thenAnswer((_) async {
       await Future.delayed(Duration(seconds: 5));
     });
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const PnpSetupView(),
-        config: LinksysRouteConfig(
-          column: ColumnGrid(column: 6, centered: true),
-          noNaviRail: true,
-        ),
-        locale: locale,
-        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
+    await testHelper.pumpView(
+      tester,
+      child: const PnpSetupView(),
+      config: LinksysRouteConfig(
+        column: ColumnGrid(column: 6, centered: true),
+        noNaviRail: true,
       ),
+      locale: locale,
     );
     await tester.pump(const Duration(seconds: 1));
   });
 
   testLocalizations('Instant Setup - PnP: Personalize your wifi',
       (tester, locale) async {
-    final view = testableSingleRoute(
+    await testHelper.pumpView(
+      tester,
       child: PnpSetupView(),
       config: LinksysRouteConfig(
         column: ColumnGrid(column: 6, centered: true),
         noNaviRail: true,
       ),
       locale: locale,
-      overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
     );
-    await tester.pumpWidget(view);
     await tester.pump(const Duration(seconds: 3));
     // Trick - setState to trigger build
     final state =
@@ -109,17 +96,15 @@ void main() async {
 
   testLocalizations('Instant Setup - PnP: Personalize your wifi and tap info',
       (tester, locale) async {
-    when(mockPnpNotifier.fetchDeviceInfo()).thenAnswer((_) async {
+    when(testHelper.mockPnpNotifier.fetchDeviceInfo()).thenAnswer((_) async {
       await Future.delayed(Duration(seconds: 5));
     });
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const PnpSetupView(),
-        config: LinksysRouteConfig(
-            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
-        locale: locale,
-        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
-      ),
+    await testHelper.pumpView(
+      tester,
+      child: const PnpSetupView(),
+      config: LinksysRouteConfig(
+          column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
+      locale: locale,
     );
     await tester.pump(const Duration(seconds: 6));
     // Trick - setState to trigger build
@@ -134,14 +119,12 @@ void main() async {
 
   testLocalizations('Instant Setup - PnP: Guest wifi disabled',
       (tester, locale) async {
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const PnpSetupView(),
-        config: LinksysRouteConfig(
-            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
-        locale: locale,
-        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
-      ),
+    await testHelper.pumpView(
+      tester,
+      child: const PnpSetupView(),
+      config: LinksysRouteConfig(
+          column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
+      locale: locale,
     );
     await tester.pump(const Duration(seconds: 6));
     // Trick - setState to trigger build
@@ -162,14 +145,12 @@ void main() async {
 
   testLocalizations('Instant Setup - PnP: Guest wifi enabled',
       (tester, locale) async {
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const PnpSetupView(),
-        config: LinksysRouteConfig(
-            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
-        locale: locale,
-        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
-      ),
+    await testHelper.pumpView(
+      tester,
+      child: const PnpSetupView(),
+      config: LinksysRouteConfig(
+          column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
+      locale: locale,
     );
     await tester.pump(const Duration(seconds: 6));
 
@@ -194,14 +175,12 @@ void main() async {
 
   testLocalizations('Instant Setup - PnP: Night mode disabled',
       (tester, locale) async {
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const PnpSetupView(),
-        config: LinksysRouteConfig(
-            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
-        locale: locale,
-        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
-      ),
+    await testHelper.pumpView(
+      tester,
+      child: const PnpSetupView(),
+      config: LinksysRouteConfig(
+          column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
+      locale: locale,
     );
     await tester.pump(const Duration(seconds: 6));
     // Trick - setState to trigger build
@@ -224,14 +203,12 @@ void main() async {
   });
   testLocalizations('Instant Setup - PnP: Night mode enabled',
       (tester, locale) async {
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const PnpSetupView(),
-        config: LinksysRouteConfig(
-            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
-        locale: locale,
-        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
-      ),
+    await testHelper.pumpView(
+      tester,
+      child: const PnpSetupView(),
+      config: LinksysRouteConfig(
+          column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
+      locale: locale,
     );
     await tester.pump(const Duration(seconds: 6));
     // Trick - setState to trigger build
@@ -258,18 +235,16 @@ void main() async {
 
   testLocalizations('Instant Setup - PnP: Saving changes',
       (tester, locale) async {
-    when(mockPnpNotifier.savePnpSettings()).thenAnswer((_) async {
+    when(testHelper.mockPnpNotifier.savePnpSettings()).thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 2));
     });
 
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const PnpSetupView(),
-        config: LinksysRouteConfig(
-            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
-        locale: locale,
-        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
-      ),
+    await testHelper.pumpView(
+      tester,
+      child: const PnpSetupView(),
+      config: LinksysRouteConfig(
+          column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
+      locale: locale,
     );
     await tester.pump(const Duration(seconds: 6));
     // Trick - setState to trigger build
@@ -296,7 +271,7 @@ void main() async {
 
   testLocalizations('Instant Setup - PnP: Your network',
       (tester, locale) async {
-    when(mockPnpNotifier.build()).thenReturn(PnpState(
+    when(testHelper.mockPnpNotifier.build()).thenReturn(PnpState(
       deviceInfo: PnpDeviceInfoUIModel(
         modelName: 'LN16',
         image: 'routerLn16',
@@ -315,17 +290,15 @@ void main() async {
             PnpStepState(status: StepViewStatus.data, data: {}),
       },
     ));
-    when(mockPnpNotifier.savePnpSettings()).thenAnswer((_) async {
+    when(testHelper.mockPnpNotifier.savePnpSettings()).thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 1));
     });
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const PnpSetupView(),
-        config: LinksysRouteConfig(
-            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
-        locale: locale,
-        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
-      ),
+    await testHelper.pumpView(
+      tester,
+      child: const PnpSetupView(),
+      config: LinksysRouteConfig(
+          column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
+      locale: locale,
     );
     await tester.pump(const Duration(seconds: 6));
     // Trick - setState to trigger build
@@ -351,18 +324,16 @@ void main() async {
   });
 
   testLocalizations('Instant Setup - PnP: Saved', (tester, locale) async {
-    when(mockPnpNotifier.savePnpSettings()).thenAnswer((_) async {
+    when(testHelper.mockPnpNotifier.savePnpSettings()).thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 3));
     });
 
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const PnpSetupView(),
-        config: LinksysRouteConfig(
-            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
-        locale: locale,
-        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
-      ),
+    await testHelper.pumpView(
+      tester,
+      child: const PnpSetupView(),
+      config: LinksysRouteConfig(
+          column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
+      locale: locale,
     );
     await tester.pump(const Duration(seconds: 6));
     // Trick - setState to trigger build
@@ -392,23 +363,20 @@ void main() async {
 
   testLocalizations('Instant Setup - PnP: Check and update firmware version',
       (tester, locale) async {
-    final mockFirmwareUpdateNotifier = MockFirmwareUpdateNotifier();
-    when(mockPnpNotifier.savePnpSettings()).thenAnswer((_) async {
+    when(testHelper.mockPnpNotifier.savePnpSettings()).thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 3));
     });
-    when(mockFirmwareUpdateNotifier.getAvailableUpdateNumber()).thenReturn(1);
+    when(testHelper.mockFirmwareUpdateNotifier.getAvailableUpdateNumber()).thenReturn(1);
 
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const PnpSetupView(),
-        config: LinksysRouteConfig(
-            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
-        locale: locale,
-        overrides: [
-          pnpProvider.overrideWith(() => mockPnpNotifier),
-          firmwareUpdateProvider.overrideWith(() => mockFirmwareUpdateNotifier),
-        ],
-      ),
+    await testHelper.pumpView(
+      tester,
+      child: const PnpSetupView(),
+      config: LinksysRouteConfig(
+          column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
+      locale: locale,
+      overrides: [
+        firmwareUpdateProvider.overrideWith(() => testHelper.mockFirmwareUpdateNotifier),
+      ],
     );
     await tester.pump(const Duration(seconds: 6));
     // Trick - setState to trigger build
@@ -435,7 +403,7 @@ void main() async {
   });
 
   testLocalizations('Instant Setup - PnP: Wifi ready', (tester, locale) async {
-    when(mockPnpNotifier.build()).thenReturn(PnpState(
+    when(testHelper.mockPnpNotifier.build()).thenReturn(PnpState(
       deviceInfo: PnpDeviceInfoUIModel(
         modelName: 'LN16',
         image: 'routerLn16',
@@ -455,18 +423,16 @@ void main() async {
       },
     ));
 
-    when(mockPnpNotifier.savePnpSettings()).thenAnswer((_) async {
+    when(testHelper.mockPnpNotifier.savePnpSettings()).thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 3));
     });
 
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const PnpSetupView(),
-        config: LinksysRouteConfig(
-            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
-        locale: locale,
-        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
-      ),
+    await testHelper.pumpView(
+      tester,
+      child: const PnpSetupView(),
+      config: LinksysRouteConfig(
+          column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
+      locale: locale,
     );
     await tester.pump(const Duration(seconds: 6));
     // Trick - setState to trigger build
@@ -494,7 +460,7 @@ void main() async {
 
   testLocalizations('Instant Setup - PnP: Reconnect to your router wifi',
       (tester, locale) async {
-    when(mockPnpNotifier.build()).thenReturn(PnpState(
+    when(testHelper.mockPnpNotifier.build()).thenReturn(PnpState(
         deviceInfo: PnpDeviceInfoUIModel(
           modelName: 'LN16',
           image: 'routerLn16',
@@ -512,20 +478,18 @@ void main() async {
           PnpStepId.yourNetwork:
               PnpStepState(status: StepViewStatus.data, data: {}),
         }));
-    when(mockPnpNotifier.savePnpSettings()).thenAnswer((_) async {
+    when(testHelper.mockPnpNotifier.savePnpSettings()).thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 1));
       throw ExceptionNeedToReconnect();
     });
-    when(mockPnpNotifier.fetchDevices()).thenAnswer((_) async {});
+    when(testHelper.mockPnpNotifier.fetchDevices()).thenAnswer((_) async {});
 
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const PnpSetupView(),
-        config: LinksysRouteConfig(
-            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
-        locale: locale,
-        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
-      ),
+    await testHelper.pumpView(
+      tester,
+      child: const PnpSetupView(),
+      config: LinksysRouteConfig(
+          column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
+      locale: locale,
     );
     await tester.pump(const Duration(seconds: 6));
     // Trick - setState to trigger build

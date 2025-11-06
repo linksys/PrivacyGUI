@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
-import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/nodes/providers/add_nodes_provider.dart';
 import 'package:privacy_gui/page/nodes/providers/add_nodes_state.dart';
 import 'package:privacy_gui/page/nodes/views/add_nodes_view.dart';
@@ -11,159 +9,127 @@ import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
-import '../../../../common/di.dart';
+import '../../../../common/config.dart';
+import '../../../../common/test_helper.dart';
 import '../../../../common/test_responsive_widget.dart';
-import '../../../../common/testable_router.dart';
 import '../../../../common/utils.dart';
 import '../../../../test_data/device_test_data.dart';
-import '../../../../mocks/add_nodes_notifier_mocks.dart';
 
 void main() async {
-  late MockAddNodesNotifier mockAddNodesNotifier;
-  mockDependencyRegister();
-  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
-  
+  final testHelper = TestHelper();
+  final screens = responsiveAllScreens;
+
   setUp(() {
-    mockAddNodesNotifier = MockAddNodesNotifier();
-    when(mockAddNodesNotifier.build()).thenReturn(const AddNodesState());
+    testHelper.setup();
   });
 
   testLocalizations('Instant-Piar - add nodes view', (tester, locale) async {
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const AddNodesView(),
-        config:
-            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
-        locale: locale,
-        overrides: [
-          addNodesProvider.overrideWith(() => mockAddNodesNotifier),
-        ],
-      ),
+    await testHelper.pumpView(
+      tester,
+      child: const AddNodesView(),
+      config:
+          LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
+      locale: locale,
     );
-    await tester.pumpAndSettle();
-  });
+  }, screens: screens);
 
   testLocalizations('Instant-Piar - lights has different color modal',
       (tester, locale) async {
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const AddNodesView(),
-        config:
-            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
-        locale: locale,
-        overrides: [
-          addNodesProvider.overrideWith(() => mockAddNodesNotifier),
-        ],
-      ),
+    await testHelper.pumpView(
+      tester,
+      child: const AddNodesView(),
+      config:
+          LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
+      locale: locale,
     );
-    await tester.pumpAndSettle();
     final btnFinder = find.byType(AppTextButton);
     await tester.tap(btnFinder);
     await tester.pumpAndSettle();
-  });
+  }, screens: screens);
 
   testLocalizations('Instant-Piar - searching nodes', (tester, locale) async {
     final simple = SearchingMockAddNodesNotifier();
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const AddNodesView(),
-        config:
-            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
-        locale: locale,
-        overrides: [
-          addNodesProvider.overrideWith(() => simple),
-        ],
-      ),
+    await testHelper.pumpView(
+      tester,
+      child: const AddNodesView(),
+      config:
+          LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
+      locale: locale,
+      overrides: [
+        addNodesProvider.overrideWith(() => simple),
+      ],
     );
 
-    await tester.pumpAndSettle();
     final btnFinder = find.byType(AppFilledButton);
     await tester.tap(btnFinder);
     await tester.pump(const Duration(seconds: 2));
-  });
+  }, screens: screens);
 
   testLocalizations('Instant-Piar - onboarding nodes', (tester, locale) async {
     final simple = OnboardingMockAddNodesNotifier();
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const AddNodesView(),
-        config:
-            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
-        locale: locale,
-        overrides: [
-          addNodesProvider.overrideWith(() => simple),
-        ],
-      ),
+    await testHelper.pumpView(
+      tester,
+      child: const AddNodesView(),
+      config:
+          LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
+      locale: locale,
+      overrides: [
+        addNodesProvider.overrideWith(() => simple),
+      ],
     );
 
-    await tester.pumpAndSettle();
     final btnFinder = find.byType(AppFilledButton);
     await tester.tap(btnFinder);
     await tester.pump(const Duration(seconds: 2));
-  });
+  }, screens: screens);
 
   testLocalizations('Instant-Piar - no nodes found results',
       (tester, locale) async {
-    when(mockAddNodesNotifier.build()).thenReturn(
+    when(testHelper.mockAddNodesNotifier.build()).thenReturn(
         const AddNodesState(onboardingProceed: true, addedNodes: []));
 
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const AddNodesView(),
-        config:
-            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
-        locale: locale,
-        overrides: [
-          addNodesProvider.overrideWith(() => mockAddNodesNotifier),
-        ],
-      ),
+    await testHelper.pumpView(
+      tester,
+      child: const AddNodesView(),
+      config:
+          LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
+      locale: locale,
     );
-    await tester.pumpAndSettle();
-  });
+  }, screens: screens);
 
   testLocalizations('Instant-Piar - troubleshoot modal',
       (tester, locale) async {
-    when(mockAddNodesNotifier.build()).thenReturn(
+    when(testHelper.mockAddNodesNotifier.build()).thenReturn(
         const AddNodesState(onboardingProceed: true, addedNodes: []));
 
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const AddNodesView(),
-        config:
-            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
-        locale: locale,
-        overrides: [
-          addNodesProvider.overrideWith(() => mockAddNodesNotifier),
-        ],
-      ),
+    await testHelper.pumpView(
+      tester,
+      child: const AddNodesView(),
+      config:
+          LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
+      locale: locale,
     );
 
-    await tester.pumpAndSettle();
     final styledTextFinder = find.byKey(ValueKey('troubleshoot')).first;
     // await tester.tap(styledTextFinder);
     fireOnTapByIndex(styledTextFinder, 0);
     await tester.pumpAndSettle();
-  });
+  }, screens: screens);
 
   testLocalizations(
       'Instant-Piar - troubleshoot light is a different color modal',
       (tester, locale) async {
-    when(mockAddNodesNotifier.build()).thenReturn(
+    when(testHelper.mockAddNodesNotifier.build()).thenReturn(
         const AddNodesState(onboardingProceed: true, addedNodes: []));
 
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const AddNodesView(),
-        config:
-            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
-        locale: locale,
-        overrides: [
-          addNodesProvider.overrideWith(() => mockAddNodesNotifier),
-        ],
-      ),
+    await testHelper.pumpView(
+      tester,
+      child: const AddNodesView(),
+      config:
+          LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
+      locale: locale,
     );
 
-    await tester.pumpAndSettle();
     final styledTextFinder = find.byKey(ValueKey('troubleshoot')).first;
     // await tester.tap(styledTextFinder);
     fireOnTapByIndex(styledTextFinder, 0);
@@ -174,10 +140,10 @@ void main() async {
         .at(0);
     await tester.tap(textBtnFinder);
     await tester.pumpAndSettle();
-  });
+  }, screens: screens);
 
   testLocalizations('Instant-Piar - results', (tester, locale) async {
-    when(mockAddNodesNotifier.build()).thenReturn(AddNodesState(
+    when(testHelper.mockAddNodesNotifier.build()).thenReturn(AddNodesState(
       onboardingProceed: true,
       childNodes: [
         LinksysDevice.fromJson(singleDeviceData),
@@ -197,23 +163,19 @@ void main() async {
 
     // Pre-cached images to make image display proporly
     await tester.runAsync(() async {
-      await tester.pumpWidget(
-        testableSingleRoute(
-          child: const AddNodesView(),
-          config:
-              LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
-          locale: locale,
-          overrides: [
-            addNodesProvider.overrideWith(() => mockAddNodesNotifier),
-          ],
-        ),
+      await testHelper.pumpView(
+        tester,
+        child: const AddNodesView(),
+        config:
+            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
+        locale: locale,
       );
       final context = tester.element(find.byType(AddNodesView));
       await precacheImage(
           CustomTheme.of(context).images.devices.routerMx6200, context);
       await tester.pumpAndSettle();
     });
-  });
+  }, screens: screens);
 }
 
 class SearchingMockAddNodesNotifier extends AddNodesNotifier with Mock {

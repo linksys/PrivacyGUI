@@ -12,7 +12,6 @@ import 'package:mockito/mockito.dart';
 
 import '../../../common/_index.dart';
 import '../../../common/di.dart';
-import '../../../mocks/jnap_service_supported_mocks.dart';
 import '../../../test_data/topology_data.dart';
 import '../../../mocks/instant_topology_notifier_mocks.dart';
 

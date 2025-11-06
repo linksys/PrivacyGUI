@@ -29,7 +29,7 @@ class _WifiNameFieldState extends State<WifiNameField> {
   @override
   Widget build(BuildContext context) {
     return AppTextField(
-      semanticLabel: '${widget.semanticLabel} wifi name',
+      semanticLabel: widget.semanticLabel,
       controller: widget.controller,
       border: const OutlineInputBorder(),
       onChanged: widget.onChanged,

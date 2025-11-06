@@ -1,61 +1,50 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
-import 'package:privacy_gui/di.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_state.dart';
 import 'package:privacy_gui/page/wifi_settings/views/wifi_main_view.dart';
 import 'package:privacy_gui/providers/preservable.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 import '../../../common/_index.dart';
-import '../../../common/di.dart';
-import '../../../mocks/wifi_bundle_settings_notifier_mocks.dart';
+import '../../../common/test_helper.dart';
 import '../../../test_data/wifi_bundle_test_state.dart';
 
 void main() {
-  mockDependencyRegister();
-  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
-
-  late MockWifiBundleNotifier mockWifiBundleNotifier;
+  final testHelper = TestHelper();
   late WifiBundleState initialState;
 
   setUp(() {
-    mockWifiBundleNotifier = MockWifiBundleNotifier();
+    testHelper.setup();
     final settings = WifiBundleSettings.fromMap(wifiBundleTestState['settings'] as Map<String, dynamic>);
     final status = WifiBundleStatus.fromMap(wifiBundleTestState['status'] as Map<String, dynamic>);
     initialState = WifiBundleState(
       settings: Preservable(original: settings, current: settings),
       status: status,
     );
-    when(mockWifiBundleNotifier.build()).thenReturn(initialState);
-    when(mockWifiBundleNotifier.state).thenReturn(initialState);
-    when(mockWifiBundleNotifier.isDirty()).thenReturn(false);
+    when(testHelper.mockWiFiBundleNotifier.build()).thenReturn(initialState);
+    when(testHelper.mockWiFiBundleNotifier.state).thenReturn(initialState);
+    when(testHelper.mockWiFiBundleNotifier.isDirty()).thenReturn(false);
   });
 
   testLocalizations('Dialog - Router Not Found', (tester, locale) async {
-    when(mockWifiBundleNotifier.save()).thenAnswer((_) async {
+    when(testHelper.mockWiFiBundleNotifier.save()).thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 1));
       throw JNAPSideEffectError();
     });
 
-    final widget = testableSingleRoute(
-      overrides: [
-        wifiBundleProvider.overrideWith(() => mockWifiBundleNotifier),
-      ],
-      locale: locale,
+    await testHelper.pumpView(
+      tester,
       child: const WiFiMainView(),
+      locale: locale,
     );
-    await tester.pumpWidget(widget);
-    await tester.pumpAndSettle();
 
     // Simulate a change to enable the save button
     final dirtyState = initialState.copyWith(
         settings: initialState.settings.update(initialState.settings.current.copyWith(advanced: initialState.settings.current.advanced.copyWith(isIptvEnabled: true)))
     );
-    when(mockWifiBundleNotifier.isDirty()).thenReturn(true);
-    when(mockWifiBundleNotifier.state).thenReturn(dirtyState);
+    when(testHelper.mockWiFiBundleNotifier.isDirty()).thenReturn(true);
+    when(testHelper.mockWiFiBundleNotifier.state).thenReturn(dirtyState);
     await tester.pump();
 
     // Tap save button
@@ -74,17 +63,14 @@ void main() {
         status: status,
     );
 
-    when(mockWifiBundleNotifier.isDirty()).thenReturn(true);
-    when(mockWifiBundleNotifier.state).thenReturn(dirtyState);
+    when(testHelper.mockWiFiBundleNotifier.isDirty()).thenReturn(true);
+    when(testHelper.mockWiFiBundleNotifier.state).thenReturn(dirtyState);
 
-    final widget = testableSingleRoute(
-      overrides: [
-        wifiBundleProvider.overrideWith(() => mockWifiBundleNotifier),
-      ],
-      locale: locale,
+    await testHelper.pumpView(
+      tester,
       child: const WiFiMainView(),
+      locale: locale,
     );
-    await tester.pumpWidget(widget);
     await tester.pumpAndSettle();
 
     // Tap back button

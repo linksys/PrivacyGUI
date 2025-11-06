@@ -1,73 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/models/internet_settings_enums.dart';
-import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_form_provider.dart';
-import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/views/internet_settings_view.dart';
-import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 import '../../../../../common/config.dart';
-import '../../../../../common/di.dart';
+import '../../../../../common/test_helper.dart';
 import '../../../../../common/test_responsive_widget.dart';
-import '../../../../../common/testable_router.dart';
-import '../../../../../mocks/internet_settings_form_notifier_mocks.dart';
 import '../../../../../test_data/internet_settings_state_data.dart';
-import '../../../../../mocks/internet_settings_notifier_mocks.dart';
 
 Future<void> main() async {
-  late MockInternetSettingsNotifier mockInternetSettingsNotifier;
-  late MockInternetSettingsIPv4FormValidityNotifier
-      mockInternetSettingsIPv4FormValidityNotifier;
-  late MockInternetSettingsIPv6FormValidityNotifier
-      mockInternetSettingsIPv6FormValidityNotifier;
-  late MockOptionalSettingsFormValidityNotifier
-      mockOptionalSettingsFormValidityNotifier;
-
-  mockDependencyRegister();
-  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
+  final testHelper = TestHelper();
 
   setUp(() {
-    mockInternetSettingsNotifier = MockInternetSettingsNotifier();
-    mockInternetSettingsIPv4FormValidityNotifier =
-        MockInternetSettingsIPv4FormValidityNotifier();
-    mockInternetSettingsIPv6FormValidityNotifier =
-        MockInternetSettingsIPv6FormValidityNotifier();
-    mockOptionalSettingsFormValidityNotifier =
-        MockOptionalSettingsFormValidityNotifier();
+    testHelper.setup();
   });
 
   group('InternetSettings - Ipv4', () {
     testLocalizations(
       'InternetSettings - dhcp',
       (tester, locale) async {
-        when(mockInternetSettingsNotifier.build()).thenReturn(
+        when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateDHCP));
-        when(mockInternetSettingsNotifier.fetch())
+        when(testHelper.mockInternetSettingsNotifier.fetch())
             .thenAnswer((realInvocation) async {
           await Future.delayed(const Duration(seconds: 1));
           return InternetSettingsState.fromMap(internetSettingsStateDHCP);
         });
-        final widget = testableSingleRoute(
-          overrides: [
-            internetSettingsProvider
-                .overrideWith(() => mockInternetSettingsNotifier),
-            internetSettingsIPv4FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv4FormValidityNotifier),
-            internetSettingsIPv6FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv6FormValidityNotifier),
-            optionalSettingsFormValidityProvider
-                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const InternetSettingsView(),
         );
-        await tester.pumpWidget(widget);
       },
       screens: [
         ...responsiveMobileScreens
@@ -82,28 +49,18 @@ Future<void> main() async {
     testLocalizations(
       'InternetSettings - static',
       (tester, locale) async {
-        when(mockInternetSettingsNotifier.build()).thenReturn(
+        when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateStatic));
-        when(mockInternetSettingsNotifier.fetch())
+        when(testHelper.mockInternetSettingsNotifier.fetch())
             .thenAnswer((realInvocation) async {
           await Future.delayed(const Duration(seconds: 1));
           return InternetSettingsState.fromMap(internetSettingsStateStatic);
         });
-        final widget = testableSingleRoute(
-          overrides: [
-            internetSettingsProvider
-                .overrideWith(() => mockInternetSettingsNotifier),
-            internetSettingsIPv4FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv4FormValidityNotifier),
-            internetSettingsIPv6FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv6FormValidityNotifier),
-            optionalSettingsFormValidityProvider
-                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const InternetSettingsView(),
         );
-        await tester.pumpWidget(widget);
       },
       screens: [
         ...responsiveMobileScreens
@@ -118,28 +75,18 @@ Future<void> main() async {
     testLocalizations(
       'InternetSettings - pppoe',
       (tester, locale) async {
-        when(mockInternetSettingsNotifier.build()).thenReturn(
+        when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStatePppoe));
-        when(mockInternetSettingsNotifier.fetch())
+        when(testHelper.mockInternetSettingsNotifier.fetch())
             .thenAnswer((realInvocation) async {
           await Future.delayed(const Duration(seconds: 1));
           return InternetSettingsState.fromMap(internetSettingsStatePppoe);
         });
-        final widget = testableSingleRoute(
-          overrides: [
-            internetSettingsProvider
-                .overrideWith(() => mockInternetSettingsNotifier),
-            internetSettingsIPv4FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv4FormValidityNotifier),
-            internetSettingsIPv6FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv6FormValidityNotifier),
-            optionalSettingsFormValidityProvider
-                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const InternetSettingsView(),
         );
-        await tester.pumpWidget(widget);
       },
       screens: [
         ...responsiveMobileScreens
@@ -154,28 +101,18 @@ Future<void> main() async {
     testLocalizations(
       'InternetSettings - pptp',
       (tester, locale) async {
-        when(mockInternetSettingsNotifier.build()).thenReturn(
+        when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStatePptp));
-        when(mockInternetSettingsNotifier.fetch())
+        when(testHelper.mockInternetSettingsNotifier.fetch())
             .thenAnswer((realInvocation) async {
           await Future.delayed(const Duration(seconds: 1));
           return InternetSettingsState.fromMap(internetSettingsStatePptp);
         });
-        final widget = testableSingleRoute(
-          overrides: [
-            internetSettingsProvider
-                .overrideWith(() => mockInternetSettingsNotifier),
-            internetSettingsIPv4FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv4FormValidityNotifier),
-            internetSettingsIPv6FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv6FormValidityNotifier),
-            optionalSettingsFormValidityProvider
-                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const InternetSettingsView(),
         );
-        await tester.pumpWidget(widget);
       },
       screens: [
         ...responsiveMobileScreens
@@ -190,30 +127,20 @@ Future<void> main() async {
     testLocalizations(
       'InternetSettings - pptp with static ip',
       (tester, locale) async {
-        when(mockInternetSettingsNotifier.build()).thenReturn(
+        when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(
                 internetSettingsStatePptpWithStaticIp));
-        when(mockInternetSettingsNotifier.fetch())
+        when(testHelper.mockInternetSettingsNotifier.fetch())
             .thenAnswer((realInvocation) async {
           await Future.delayed(const Duration(seconds: 1));
           return InternetSettingsState.fromMap(
               internetSettingsStatePptpWithStaticIp);
         });
-        final widget = testableSingleRoute(
-          overrides: [
-            internetSettingsProvider
-                .overrideWith(() => mockInternetSettingsNotifier),
-            internetSettingsIPv4FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv4FormValidityNotifier),
-            internetSettingsIPv6FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv6FormValidityNotifier),
-            optionalSettingsFormValidityProvider
-                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const InternetSettingsView(),
         );
-        await tester.pumpWidget(widget);
       },
       screens: [
         ...responsiveMobileScreens
@@ -228,28 +155,18 @@ Future<void> main() async {
     testLocalizations(
       'InternetSettings - l2tp',
       (tester, locale) async {
-        when(mockInternetSettingsNotifier.build()).thenReturn(
+        when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateL2tp));
-        when(mockInternetSettingsNotifier.fetch())
+        when(testHelper.mockInternetSettingsNotifier.fetch())
             .thenAnswer((realInvocation) async {
           await Future.delayed(const Duration(seconds: 1));
           return InternetSettingsState.fromMap(internetSettingsStateL2tp);
         });
-        final widget = testableSingleRoute(
-          overrides: [
-            internetSettingsProvider
-                .overrideWith(() => mockInternetSettingsNotifier),
-            internetSettingsIPv4FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv4FormValidityNotifier),
-            internetSettingsIPv6FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv6FormValidityNotifier),
-            optionalSettingsFormValidityProvider
-                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const InternetSettingsView(),
         );
-        await tester.pumpWidget(widget);
       },
       screens: [
         ...responsiveMobileScreens
@@ -267,28 +184,18 @@ Future<void> main() async {
         final state =
             InternetSettingsState.fromMap(internetSettingsStateBridge);
         final status = state.status.copyWith(hostname: () => 'Linksys00000');
-        when(mockInternetSettingsNotifier.build())
+        when(testHelper.mockInternetSettingsNotifier.build())
             .thenReturn(state.copyWith(status: status));
-        when(mockInternetSettingsNotifier.fetch())
+        when(testHelper.mockInternetSettingsNotifier.fetch())
             .thenAnswer((realInvocation) async {
           await Future.delayed(const Duration(seconds: 1));
-          return state.copyWith(status: status);
+          return InternetSettingsState.fromMap(internetSettingsStateBridge);
         });
-        final widget = testableSingleRoute(
-          overrides: [
-            internetSettingsProvider
-                .overrideWith(() => mockInternetSettingsNotifier),
-            internetSettingsIPv4FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv4FormValidityNotifier),
-            internetSettingsIPv6FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv6FormValidityNotifier),
-            optionalSettingsFormValidityProvider
-                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const InternetSettingsView(),
         );
-        await tester.pumpWidget(widget);
       },
       screens: [
         ...responsiveMobileScreens
@@ -303,28 +210,18 @@ Future<void> main() async {
     testLocalizations(
       'InternetSettings - dhcp editing',
       (tester, locale) async {
-        when(mockInternetSettingsNotifier.build()).thenReturn(
+        when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateDHCP));
-        when(mockInternetSettingsNotifier.fetch())
+        when(testHelper.mockInternetSettingsNotifier.fetch())
             .thenAnswer((realInvocation) async {
           await Future.delayed(const Duration(seconds: 1));
           return InternetSettingsState.fromMap(internetSettingsStateDHCP);
         });
-        final widget = testableSingleRoute(
-          overrides: [
-            internetSettingsProvider
-                .overrideWith(() => mockInternetSettingsNotifier),
-            internetSettingsIPv4FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv4FormValidityNotifier),
-            internetSettingsIPv6FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv6FormValidityNotifier),
-            optionalSettingsFormValidityProvider
-                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const InternetSettingsView(),
         );
-        await tester.pumpWidget(widget);
 
         final editBtnFinder = find.byIcon(LinksysIcons.edit);
         await tester.tap(editBtnFinder);
@@ -343,28 +240,18 @@ Future<void> main() async {
     testLocalizations(
       'InternetSettings - static editing',
       (tester, locale) async {
-        when(mockInternetSettingsNotifier.build()).thenReturn(
+        when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateStatic));
-        when(mockInternetSettingsNotifier.fetch())
+        when(testHelper.mockInternetSettingsNotifier.fetch())
             .thenAnswer((realInvocation) async {
           await Future.delayed(const Duration(seconds: 1));
           return InternetSettingsState.fromMap(internetSettingsStateStatic);
         });
-        final widget = testableSingleRoute(
-          overrides: [
-            internetSettingsProvider
-                .overrideWith(() => mockInternetSettingsNotifier),
-            internetSettingsIPv4FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv4FormValidityNotifier),
-            internetSettingsIPv6FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv6FormValidityNotifier),
-            optionalSettingsFormValidityProvider
-                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const InternetSettingsView(),
         );
-        await tester.pumpWidget(widget);
 
         final editBtnFinder = find.byIcon(LinksysIcons.edit);
         await tester.tap(editBtnFinder);
@@ -383,28 +270,18 @@ Future<void> main() async {
     testLocalizations(
       'InternetSettings - pppoe editing',
       (tester, locale) async {
-        when(mockInternetSettingsNotifier.build()).thenReturn(
+        when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStatePppoe));
-        when(mockInternetSettingsNotifier.fetch())
+        when(testHelper.mockInternetSettingsNotifier.fetch())
             .thenAnswer((realInvocation) async {
           await Future.delayed(const Duration(seconds: 1));
           return InternetSettingsState.fromMap(internetSettingsStatePppoe);
         });
-        final widget = testableSingleRoute(
-          overrides: [
-            internetSettingsProvider
-                .overrideWith(() => mockInternetSettingsNotifier),
-            internetSettingsIPv4FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv4FormValidityNotifier),
-            internetSettingsIPv6FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv6FormValidityNotifier),
-            optionalSettingsFormValidityProvider
-                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const InternetSettingsView(),
         );
-        await tester.pumpWidget(widget);
 
         final editBtnFinder = find.byIcon(LinksysIcons.edit);
         await tester.tap(editBtnFinder);
@@ -423,28 +300,18 @@ Future<void> main() async {
     testLocalizations(
       'InternetSettings - pptp editing',
       (tester, locale) async {
-        when(mockInternetSettingsNotifier.build()).thenReturn(
+        when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStatePptp));
-        when(mockInternetSettingsNotifier.fetch())
+        when(testHelper.mockInternetSettingsNotifier.fetch())
             .thenAnswer((realInvocation) async {
           await Future.delayed(const Duration(seconds: 1));
           return InternetSettingsState.fromMap(internetSettingsStatePptp);
         });
-        final widget = testableSingleRoute(
-          overrides: [
-            internetSettingsProvider
-                .overrideWith(() => mockInternetSettingsNotifier),
-            internetSettingsIPv4FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv4FormValidityNotifier),
-            internetSettingsIPv6FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv6FormValidityNotifier),
-            optionalSettingsFormValidityProvider
-                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const InternetSettingsView(),
         );
-        await tester.pumpWidget(widget);
 
         final editBtnFinder = find.byIcon(LinksysIcons.edit);
         await tester.tap(editBtnFinder);
@@ -463,28 +330,18 @@ Future<void> main() async {
     testLocalizations(
       'InternetSettings - l2tp editing',
       (tester, locale) async {
-        when(mockInternetSettingsNotifier.build()).thenReturn(
+        when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateL2tp));
-        when(mockInternetSettingsNotifier.fetch())
+        when(testHelper.mockInternetSettingsNotifier.fetch())
             .thenAnswer((realInvocation) async {
           await Future.delayed(const Duration(seconds: 1));
           return InternetSettingsState.fromMap(internetSettingsStateL2tp);
         });
-        final widget = testableSingleRoute(
-          overrides: [
-            internetSettingsProvider
-                .overrideWith(() => mockInternetSettingsNotifier),
-            internetSettingsIPv4FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv4FormValidityNotifier),
-            internetSettingsIPv6FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv6FormValidityNotifier),
-            optionalSettingsFormValidityProvider
-                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const InternetSettingsView(),
         );
-        await tester.pumpWidget(widget);
 
         final editBtnFinder = find.byIcon(LinksysIcons.edit);
         await tester.tap(editBtnFinder);
@@ -506,28 +363,18 @@ Future<void> main() async {
         final state =
             InternetSettingsState.fromMap(internetSettingsStateBridge);
         final status = state.status.copyWith(hostname: () => 'Linksys00000');
-        when(mockInternetSettingsNotifier.build())
+        when(testHelper.mockInternetSettingsNotifier.build())
             .thenReturn(state.copyWith(status: status));
-        when(mockInternetSettingsNotifier.fetch())
+        when(testHelper.mockInternetSettingsNotifier.fetch())
             .thenAnswer((realInvocation) async {
           await Future.delayed(const Duration(seconds: 1));
           return state.copyWith(status: status);
         });
-        final widget = testableSingleRoute(
-          overrides: [
-            internetSettingsProvider
-                .overrideWith(() => mockInternetSettingsNotifier),
-            internetSettingsIPv4FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv4FormValidityNotifier),
-            internetSettingsIPv6FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv6FormValidityNotifier),
-            optionalSettingsFormValidityProvider
-                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const InternetSettingsView(),
         );
-        await tester.pumpWidget(widget);
 
         final editBtnFinder = find.byIcon(LinksysIcons.edit);
         await tester.tap(editBtnFinder);
@@ -546,28 +393,18 @@ Future<void> main() async {
     testLocalizations(
       'InternetSettings - domain name, mtu and mac address clone editing',
       (tester, locale) async {
-        when(mockInternetSettingsNotifier.build()).thenReturn(
+        when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateStatic));
-        when(mockInternetSettingsNotifier.fetch())
+        when(testHelper.mockInternetSettingsNotifier.fetch())
             .thenAnswer((realInvocation) async {
           await Future.delayed(const Duration(seconds: 1));
           return InternetSettingsState.fromMap(internetSettingsStateStatic);
         });
-        final widget = testableSingleRoute(
-          overrides: [
-            internetSettingsProvider
-                .overrideWith(() => mockInternetSettingsNotifier),
-            internetSettingsIPv4FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv4FormValidityNotifier),
-            internetSettingsIPv6FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv6FormValidityNotifier),
-            optionalSettingsFormValidityProvider
-                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const InternetSettingsView(),
         );
-        await tester.pumpWidget(widget);
 
         final editBtnFinder = find.byIcon(LinksysIcons.edit);
         await tester.tap(editBtnFinder);
@@ -588,29 +425,19 @@ Future<void> main() async {
     testLocalizations(
       'InternetSettings - ipv6 automatic',
       (tester, locale) async {
-        when(mockInternetSettingsNotifier.build()).thenReturn(
+        when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateIpv6Automatic));
-        when(mockInternetSettingsNotifier.fetch())
+        when(testHelper.mockInternetSettingsNotifier.fetch())
             .thenAnswer((realInvocation) async {
           await Future.delayed(const Duration(seconds: 1));
           return InternetSettingsState.fromMap(
               internetSettingsStateIpv6Automatic);
         });
-        final widget = testableSingleRoute(
-          overrides: [
-            internetSettingsProvider
-                .overrideWith(() => mockInternetSettingsNotifier),
-            internetSettingsIPv4FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv4FormValidityNotifier),
-            internetSettingsIPv6FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv6FormValidityNotifier),
-            optionalSettingsFormValidityProvider
-                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const InternetSettingsView(),
         );
-        await tester.pumpWidget(widget);
 
         final ipv6TabFinder = find.byType(Tab);
         await tester.tap(ipv6TabFinder.at(1));
@@ -629,29 +456,19 @@ Future<void> main() async {
     testLocalizations(
       'InternetSettings - ipv6 automatic editing',
       (tester, locale) async {
-        when(mockInternetSettingsNotifier.build()).thenReturn(
+        when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateIpv6Automatic));
-        when(mockInternetSettingsNotifier.fetch())
+        when(testHelper.mockInternetSettingsNotifier.fetch())
             .thenAnswer((realInvocation) async {
           await Future.delayed(const Duration(seconds: 1));
           return InternetSettingsState.fromMap(
               internetSettingsStateIpv6Automatic);
         });
-        final widget = testableSingleRoute(
-          overrides: [
-            internetSettingsProvider
-                .overrideWith(() => mockInternetSettingsNotifier),
-            internetSettingsIPv4FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv4FormValidityNotifier),
-            internetSettingsIPv6FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv6FormValidityNotifier),
-            optionalSettingsFormValidityProvider
-                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const InternetSettingsView(),
         );
-        await tester.pumpWidget(widget);
 
         final ipv6TabFinder = find.byType(Tab);
         await tester.tap(ipv6TabFinder.at(1));
@@ -686,27 +503,17 @@ Future<void> main() async {
             ),
           ),
         ));
-        when(mockInternetSettingsNotifier.build()).thenReturn(newState);
-        when(mockInternetSettingsNotifier.fetch())
+        when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(newState);
+        when(testHelper.mockInternetSettingsNotifier.fetch())
             .thenAnswer((realInvocation) async {
           await Future.delayed(const Duration(seconds: 1));
           return newState;
         });
-        final widget = testableSingleRoute(
-          overrides: [
-            internetSettingsProvider
-                .overrideWith(() => mockInternetSettingsNotifier),
-            internetSettingsIPv4FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv4FormValidityNotifier),
-            internetSettingsIPv6FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv6FormValidityNotifier),
-            optionalSettingsFormValidityProvider
-                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const InternetSettingsView(),
         );
-        await tester.pumpWidget(widget);
 
         final ipv6TabFinder = find.byType(Tab);
         await tester.tap(ipv6TabFinder.at(1));
@@ -741,27 +548,17 @@ Future<void> main() async {
             ),
           ),
         ));
-        when(mockInternetSettingsNotifier.build()).thenReturn(newState);
-        when(mockInternetSettingsNotifier.fetch())
+        when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(newState);
+        when(testHelper.mockInternetSettingsNotifier.fetch())
             .thenAnswer((realInvocation) async {
           await Future.delayed(const Duration(seconds: 1));
           return newState;
         });
-        final widget = testableSingleRoute(
-          overrides: [
-            internetSettingsProvider
-                .overrideWith(() => mockInternetSettingsNotifier),
-            internetSettingsIPv4FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv4FormValidityNotifier),
-            internetSettingsIPv6FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv6FormValidityNotifier),
-            optionalSettingsFormValidityProvider
-                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const InternetSettingsView(),
         );
-        await tester.pumpWidget(widget);
 
         final ipv6TabFinder = find.byType(Tab);
         await tester.tap(ipv6TabFinder.at(1));
@@ -796,27 +593,17 @@ Future<void> main() async {
             ),
           ),
         ));
-        when(mockInternetSettingsNotifier.build()).thenReturn(newState);
-        when(mockInternetSettingsNotifier.fetch())
+        when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(newState);
+        when(testHelper.mockInternetSettingsNotifier.fetch())
             .thenAnswer((realInvocation) async {
           await Future.delayed(const Duration(seconds: 1));
           return newState;
         });
-        final widget = testableSingleRoute(
-          overrides: [
-            internetSettingsProvider
-                .overrideWith(() => mockInternetSettingsNotifier),
-            internetSettingsIPv4FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv4FormValidityNotifier),
-            internetSettingsIPv6FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv6FormValidityNotifier),
-            optionalSettingsFormValidityProvider
-                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const InternetSettingsView(),
         );
-        await tester.pumpWidget(widget);
 
         final ipv6TabFinder = find.byType(Tab);
         await tester.tap(ipv6TabFinder.at(1));
@@ -839,30 +626,20 @@ Future<void> main() async {
     testLocalizations(
       'InternetSettings - ipv6 pass-through',
       (tester, locale) async {
-        when(mockInternetSettingsNotifier.build()).thenReturn(
+        when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(
                 internetSettingsStateIpv6PassThrough));
-        when(mockInternetSettingsNotifier.fetch())
+        when(testHelper.mockInternetSettingsNotifier.fetch())
             .thenAnswer((realInvocation) async {
           await Future.delayed(const Duration(seconds: 1));
           return InternetSettingsState.fromMap(
               internetSettingsStateIpv6PassThrough);
         });
-        final widget = testableSingleRoute(
-          overrides: [
-            internetSettingsProvider
-                .overrideWith(() => mockInternetSettingsNotifier),
-            internetSettingsIPv4FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv4FormValidityNotifier),
-            internetSettingsIPv6FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv6FormValidityNotifier),
-            optionalSettingsFormValidityProvider
-                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const InternetSettingsView(),
         );
-        await tester.pumpWidget(widget);
 
         final ipv6TabFinder = find.byType(Tab);
         await tester.tap(ipv6TabFinder.at(1));
@@ -881,30 +658,20 @@ Future<void> main() async {
     testLocalizations(
       'InternetSettings - ipv6 pass-through editing',
       (tester, locale) async {
-        when(mockInternetSettingsNotifier.build()).thenReturn(
+        when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(
                 internetSettingsStateIpv6PassThrough));
-        when(mockInternetSettingsNotifier.fetch())
+        when(testHelper.mockInternetSettingsNotifier.fetch())
             .thenAnswer((realInvocation) async {
           await Future.delayed(const Duration(seconds: 1));
           return InternetSettingsState.fromMap(
               internetSettingsStateIpv6PassThrough);
         });
-        final widget = testableSingleRoute(
-          overrides: [
-            internetSettingsProvider
-                .overrideWith(() => mockInternetSettingsNotifier),
-            internetSettingsIPv4FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv4FormValidityNotifier),
-            internetSettingsIPv6FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv6FormValidityNotifier),
-            optionalSettingsFormValidityProvider
-                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const InternetSettingsView(),
         );
-        await tester.pumpWidget(widget);
 
         final ipv6TabFinder = find.byType(Tab);
         await tester.tap(ipv6TabFinder.at(1));
@@ -927,28 +694,18 @@ Future<void> main() async {
     testLocalizations(
       'InternetSettings - ipv6 pppoe',
       (tester, locale) async {
-        when(mockInternetSettingsNotifier.build()).thenReturn(
+        when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateIpv6PPPoE));
-        when(mockInternetSettingsNotifier.fetch())
+        when(testHelper.mockInternetSettingsNotifier.fetch())
             .thenAnswer((realInvocation) async {
           await Future.delayed(const Duration(seconds: 1));
           return InternetSettingsState.fromMap(internetSettingsStateIpv6PPPoE);
         });
-        final widget = testableSingleRoute(
-          overrides: [
-            internetSettingsProvider
-                .overrideWith(() => mockInternetSettingsNotifier),
-            internetSettingsIPv4FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv4FormValidityNotifier),
-            internetSettingsIPv6FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv6FormValidityNotifier),
-            optionalSettingsFormValidityProvider
-                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const InternetSettingsView(),
         );
-        await tester.pumpWidget(widget);
 
         final ipv6TabFinder = find.byType(Tab);
         await tester.tap(ipv6TabFinder.at(1));
@@ -967,28 +724,18 @@ Future<void> main() async {
     testLocalizations(
       'InternetSettings - ipv6 pppoe editing',
       (tester, locale) async {
-        when(mockInternetSettingsNotifier.build()).thenReturn(
+        when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateIpv6PPPoE));
-        when(mockInternetSettingsNotifier.fetch())
+        when(testHelper.mockInternetSettingsNotifier.fetch())
             .thenAnswer((realInvocation) async {
           await Future.delayed(const Duration(seconds: 1));
           return InternetSettingsState.fromMap(internetSettingsStateIpv6PPPoE);
         });
-        final widget = testableSingleRoute(
-          overrides: [
-            internetSettingsProvider
-                .overrideWith(() => mockInternetSettingsNotifier),
-            internetSettingsIPv4FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv4FormValidityNotifier),
-            internetSettingsIPv6FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv6FormValidityNotifier),
-            optionalSettingsFormValidityProvider
-                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const InternetSettingsView(),
         );
-        await tester.pumpWidget(widget);
 
         final ipv6TabFinder = find.byType(Tab);
         await tester.tap(ipv6TabFinder.at(1));
@@ -1013,28 +760,18 @@ Future<void> main() async {
     testLocalizations(
       'InternetSettings - release & renew',
       (tester, locale) async {
-        when(mockInternetSettingsNotifier.build()).thenReturn(
+        when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateDHCP));
-        when(mockInternetSettingsNotifier.fetch())
+        when(testHelper.mockInternetSettingsNotifier.fetch())
             .thenAnswer((realInvocation) async {
           await Future.delayed(const Duration(seconds: 1));
           return InternetSettingsState.fromMap(internetSettingsStateDHCP);
         });
-        final widget = testableSingleRoute(
-          overrides: [
-            internetSettingsProvider
-                .overrideWith(() => mockInternetSettingsNotifier),
-            internetSettingsIPv4FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv4FormValidityNotifier),
-            internetSettingsIPv6FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv6FormValidityNotifier),
-            optionalSettingsFormValidityProvider
-                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const InternetSettingsView(),
         );
-        await tester.pumpWidget(widget);
 
         final releaseAndRenewTabFinder = find.byType(Tab);
         await tester.tap(releaseAndRenewTabFinder.at(2));
@@ -1045,28 +782,18 @@ Future<void> main() async {
     testLocalizations(
       'InternetSettings - release & renew with bridge mode',
       (tester, locale) async {
-        when(mockInternetSettingsNotifier.build()).thenReturn(
+        when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateBridge));
-        when(mockInternetSettingsNotifier.fetch())
+        when(testHelper.mockInternetSettingsNotifier.fetch())
             .thenAnswer((realInvocation) async {
           await Future.delayed(const Duration(seconds: 1));
           return InternetSettingsState.fromMap(internetSettingsStateBridge);
         });
-        final widget = testableSingleRoute(
-          overrides: [
-            internetSettingsProvider
-                .overrideWith(() => mockInternetSettingsNotifier),
-            internetSettingsIPv4FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv4FormValidityNotifier),
-            internetSettingsIPv6FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv6FormValidityNotifier),
-            optionalSettingsFormValidityProvider
-                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const InternetSettingsView(),
         );
-        await tester.pumpWidget(widget);
 
         final releaseAndRenewTabFinder = find.byType(Tab);
         await tester.tap(releaseAndRenewTabFinder.at(2));
@@ -1077,28 +804,18 @@ Future<void> main() async {
     testLocalizations(
       'InternetSettings - release & renew dialog',
       (tester, locale) async {
-        when(mockInternetSettingsNotifier.build()).thenReturn(
+        when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateDHCP));
-        when(mockInternetSettingsNotifier.fetch())
+        when(testHelper.mockInternetSettingsNotifier.fetch())
             .thenAnswer((realInvocation) async {
           await Future.delayed(const Duration(seconds: 1));
           return InternetSettingsState.fromMap(internetSettingsStateDHCP);
         });
-        final widget = testableSingleRoute(
-          overrides: [
-            internetSettingsProvider
-                .overrideWith(() => mockInternetSettingsNotifier),
-            internetSettingsIPv4FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv4FormValidityNotifier),
-            internetSettingsIPv6FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv6FormValidityNotifier),
-            optionalSettingsFormValidityProvider
-                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const InternetSettingsView(),
         );
-        await tester.pumpWidget(widget);
 
         final releaseAndRenewTabFinder = find.byType(Tab);
         await tester.tap(releaseAndRenewTabFinder.at(2));
@@ -1124,27 +841,17 @@ Future<void> main() async {
             macClone: true,
           ),
         ));
-        when(mockInternetSettingsNotifier.build()).thenReturn(newState);
-        when(mockInternetSettingsNotifier.fetch())
+        when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(newState);
+        when(testHelper.mockInternetSettingsNotifier.fetch())
             .thenAnswer((realInvocation) async {
           await Future.delayed(const Duration(seconds: 1));
           return newState;
         });
-        final widget = testableSingleRoute(
-          overrides: [
-            internetSettingsProvider
-                .overrideWith(() => mockInternetSettingsNotifier),
-            internetSettingsIPv4FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv4FormValidityNotifier),
-            internetSettingsIPv6FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv6FormValidityNotifier),
-            optionalSettingsFormValidityProvider
-                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const InternetSettingsView(),
         );
-        await tester.pumpWidget(widget);
 
         final editBtnFinder = find.byIcon(LinksysIcons.edit);
         await tester.tap(editBtnFinder);
@@ -1180,27 +887,17 @@ Future<void> main() async {
             macClone: true,
           ),
         ));
-        when(mockInternetSettingsNotifier.build()).thenReturn(newState);
-        when(mockInternetSettingsNotifier.fetch())
+        when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(newState);
+        when(testHelper.mockInternetSettingsNotifier.fetch())
             .thenAnswer((realInvocation) async {
           await Future.delayed(const Duration(seconds: 1));
           return newState;
         });
-        final widget = testableSingleRoute(
-          overrides: [
-            internetSettingsProvider
-                .overrideWith(() => mockInternetSettingsNotifier),
-            internetSettingsIPv4FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv4FormValidityNotifier),
-            internetSettingsIPv6FormValidityProvider.overrideWith(
-                () => mockInternetSettingsIPv6FormValidityNotifier),
-            optionalSettingsFormValidityProvider
-                .overrideWith(() => mockOptionalSettingsFormValidityNotifier),
-          ],
+        await testHelper.pumpView(
+          tester,
           locale: locale,
           child: const InternetSettingsView(),
         );
-        await tester.pumpWidget(widget);
 
         final editBtnFinder = find.byIcon(LinksysIcons.edit);
         await tester.tap(editBtnFinder);

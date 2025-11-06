@@ -3,12 +3,14 @@ import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/providers/preservable.dart';
 
+import '../../../../../common/config.dart';
 import '../../../../../common/test_helper.dart';
 import '../../../../../common/test_responsive_widget.dart';
 import '../../../../../test_data/administration_settings_test_state.dart';
 
 void main() {
   final testHelper = TestHelper();
+  final screens = responsiveAllScreens;
 
   setUp(() {
     testHelper.setup();
@@ -26,7 +28,7 @@ void main() {
       child: const AdministrationSettingsView(),
       locale: locale,
     );
-  });
+  }, screens: screens);
 
   testLocalizations('Administration settings view - no LAN ports',
       (tester, locale) async {
@@ -43,5 +45,5 @@ void main() {
       child: const AdministrationSettingsView(),
       locale: locale,
     );
-  });
+  }, screens: screens);
 }

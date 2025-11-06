@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/instant_topology/_instant_topology.dart';
 import 'package:mockito/mockito.dart';
@@ -11,25 +9,20 @@ import 'package:privacy_gui/page/instant_topology/views/widgets/tree_node_item.d
 import 'package:privacy_gui/page/nodes/providers/add_wired_nodes_provider.dart';
 import 'package:privacy_gui/page/nodes/providers/add_wired_nodes_state.dart';
 
-import '../../../common/di.dart';
+import '../../../common/test_helper.dart';
 import '../../../common/test_responsive_widget.dart';
-import '../../../common/testable_router.dart';
-import '../../../mocks/add_wired_nodes_notifier_mocks.dart';
 import '../../../test_data/topology_data.dart';
-import '../../../mocks/instant_topology_notifier_mocks.dart';
 
 void main() async {
-  late InstantTopologyNotifier mockTopologyNotifier;
-  mockDependencyRegister();
-  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
+  final testHelper = TestHelper();
 
   setUp(() {
-    mockTopologyNotifier = MockInstantTopologyNotifier();
+    testHelper.setup();
     initBetterActions();
-    when(mockServiceHelper.isSupportAutoOnboarding()).thenReturn(true);
-    when(mockServiceHelper.isSupportLedBlinking()).thenReturn(true);
-    when(mockServiceHelper.isSupportChildFactoryReset()).thenReturn(true);
-    when(mockServiceHelper.isSupportChildReboot()).thenReturn(true);
+    when(testHelper.mockServiceHelper.isSupportAutoOnboarding()).thenReturn(true);
+    when(testHelper.mockServiceHelper.isSupportLedBlinking()).thenReturn(true);
+    when(testHelper.mockServiceHelper.isSupportChildFactoryReset()).thenReturn(true);
+    when(testHelper.mockServiceHelper.isSupportChildReboot()).thenReturn(true);
   });
 
   group('Instant topology view - add wired node', () {
@@ -56,52 +49,60 @@ void main() async {
       await tester.tap(subPopupMenuFinder);
     }
 
-    Widget createAddWiredNodeWidget(
-        WidgetTester tester, Locale locale, AddWiredNodesNotifier notifier) {
-      return testableSingleRoute(
+    testLocalizations('Instant-Topology view - add wired node processing',
+        (tester, locale) async {
+      when(testHelper.mockInstantTopologyNotifier.build())
+          .thenReturn(TopologyTestData().testTopology1SlaveState);
+      final simple = SimpleAddWiredNodesNotifier();
+      await testHelper.pumpView(
+        tester,
         overrides: [
-          instantTopologyProvider.overrideWith(() => mockTopologyNotifier),
-          addWiredNodesProvider.overrideWith(() => notifier),
+          addWiredNodesProvider.overrideWith(() => simple),
         ],
         locale: locale,
         child: const InstantTopologyView(),
       );
-    }
-
-    testLocalizations('Instant-Topology view - add wired node processing',
-        (tester, locale) async {
-      when(mockTopologyNotifier.build())
-          .thenReturn(TopologyTestData().testTopology1SlaveState);
-      final simple = SimpleAddWiredNodesNotifier();
-      final widget = createAddWiredNodeWidget(tester, locale, simple);
-      await tester.pumpWidget(widget);
       await operateForShowingAddWiredNode(tester);
-      await tester.pumpFrames(widget, Duration(seconds: 2));
+      await tester.pump(const Duration(seconds: 2));
     });
 
     testLocalizations('Instant-Topology view - add wired node success',
         (tester, locale) async {
-      when(mockTopologyNotifier.build())
+      when(testHelper.mockInstantTopologyNotifier.build())
           .thenReturn(TopologyTestData().testTopology1SlaveState);
       final simple = SimpleSuccessAddWiredNodesNotifier();
-      final widget = createAddWiredNodeWidget(tester, locale, simple);
-      await tester.pumpWidget(widget);
+      await testHelper.pumpView(
+        tester,
+        overrides: [
+          addWiredNodesProvider.overrideWith(() => simple),
+        ],
+        locale: locale,
+        child: const InstantTopologyView(),
+      );
       await operateForShowingAddWiredNode(tester);
-      await tester.pumpFrames(widget, Duration(seconds: 2));
-      await tester.pumpFrames(widget, Duration(seconds: 5));
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pump(const Duration(seconds: 5));
     });
 
     testLocalizations('Instant-Topology view - add wired node failed',
         (tester, locale) async {
-      when(mockTopologyNotifier.build())
+      when(testHelper.mockInstantTopologyNotifier.build())
           .thenReturn(TopologyTestData().testTopology1SlaveState);
       final simple = SimpleAddWiredNodesNotifier();
-      final widget = createAddWiredNodeWidget(tester, locale, simple);
-      await tester.pumpWidget(widget);
+      await testHelper.pumpView(
+        tester,
+        overrides: [
+          addWiredNodesProvider.overrideWith(() => simple),
+        ],
+        locale: locale,
+        child: const InstantTopologyView(),
+      );
+      await tester.pumpAndSettle();
       await operateForShowingAddWiredNode(tester);
-      await tester.pumpFrames(widget, Duration(seconds: 2));
-      await tester.pumpFrames(widget, Duration(seconds: 5));
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pump(const Duration(seconds: 5));
     });
+
   });
 }
 
