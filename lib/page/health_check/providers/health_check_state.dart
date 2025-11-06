@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/page/health_check/models/health_check_enum.dart';
 import 'package:privacy_gui/page/health_check/models/speed_test_ui_model.dart';
@@ -46,7 +48,8 @@ class HealthCheckState extends Equatable {
   });
 
   /// A getter to easily check if the 'SpeedTest' module is supported.
-  bool get isSpeedTestModuleSupported => healthCheckModules.contains('SpeedTest');
+  bool get isSpeedTestModuleSupported =>
+      healthCheckModules.contains('SpeedTest');
 
   @override
   List<Object?> get props => [
@@ -91,6 +94,54 @@ class HealthCheckState extends Equatable {
     );
   }
 
+  Map<String, dynamic> toMap() {
+    return {
+      'step': step.name,
+      'status': status.name,
+      'meterValue': meterValue,
+      'result': result?.toMap(),
+      'errorCode': errorCode?.name,
+      'latestSpeedTest': latestSpeedTest?.toMap(),
+      'historicalSpeedTests':
+          historicalSpeedTests.map((x) => x.toMap()).toList(),
+      'healthCheckModules': healthCheckModules,
+    };
+  }
+
+  factory HealthCheckState.fromMap(Map<String, dynamic> map) {
+    return HealthCheckState(
+      step: HealthCheckStep.values.byName(map['step'] as String),
+      status: HealthCheckStatus.values.byName(map['status'] as String),
+      meterValue: map['meterValue'] as double,
+      result: map['result'] != null
+          ? SpeedTestUIModel.fromMap(map['result'] as Map<String, dynamic>)
+          : null,
+      errorCode: map['errorCode'] != null
+          ? SpeedTestError.values.byName(map['errorCode'] as String)
+          : null,
+      latestSpeedTest: map['latestSpeedTest'] != null
+          ? SpeedTestUIModel.fromMap(
+              map['latestSpeedTest'] as Map<String, dynamic>)
+          : null,
+      historicalSpeedTests: map['historicalSpeedTests'] != null
+          ? List<SpeedTestUIModel>.from(
+              (map['historicalSpeedTests'] as List<dynamic>)
+                  .map<SpeedTestUIModel>(
+                (x) => SpeedTestUIModel.fromMap(x as Map<String, dynamic>),
+              ),
+            )
+          : const [],
+      healthCheckModules: map['healthCheckModules'] != null
+          ? List<String>.from(map['healthCheckModules'] as List<dynamic>)
+          : const [],
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory HealthCheckState.fromJson(String source) =>
+      HealthCheckState.fromMap(json.decode(source) as Map<String, dynamic>);
+
   @override
   bool get stringify => true;
 
@@ -101,6 +152,7 @@ class HealthCheckState extends Equatable {
             : 'Ookla')
         : null;
   }
+
   bool get isOoklaSpeedTestModule => moduleName == 'Ookla';
   bool get isSamKnowsSpeedTestModule => moduleName == 'SamKnows';
 }

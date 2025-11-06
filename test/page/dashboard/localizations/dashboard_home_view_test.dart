@@ -114,13 +114,7 @@ void main() async {
 
     testLocalizations('Dashboard Home View - no LAN ports with speed check',
         (tester, locale) async {
-      when(testHelper.mockDashboardHomeNotifier.build()).thenReturn(
-          DashboardHomeState.fromMap(dashboardHomeCherry7TestState).copyWith(
-        isHealthCheckSupported: true,
-        uploadResult: () => DashboardSpeedItem(unit: 'M', value: '505'),
-        downloadResult: () => DashboardSpeedItem(unit: 'M', value: '509'),
-        speedCheckTimestamp: () => 1719802401000,
-      ));
+      
       await testHelper.pumpShellView(
         tester,
         child: const DashboardHomeView(),
@@ -281,13 +275,7 @@ void main() async {
 
     testLocalizations('Dashboard Home View - Vertical Ports with speed check',
         (tester, locale) async {
-      when(testHelper.mockDashboardHomeNotifier.build()).thenReturn(
-          DashboardHomeState.fromMap(dashboardHomePinnacleTestState).copyWith(
-        isHealthCheckSupported: true,
-        uploadResult: () => DashboardSpeedItem(unit: 'M', value: '505'),
-        downloadResult: () => DashboardSpeedItem(unit: 'M', value: '509'),
-        speedCheckTimestamp: () => 1719802401000,
-      ));
+      
       when(testHelper.mockHealthCheckProvider.build())
           .thenReturn(HealthCheckState.fromJson(healthCheckStateSuccessGood));
       await testHelper.pumpShellView(

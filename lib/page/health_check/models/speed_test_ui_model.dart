@@ -1,4 +1,6 @@
 
+import 'dart:convert';
+
 import 'package:equatable/equatable.dart';
 
 /// A data model representing the speed test results formatted for display in the UI.
@@ -59,6 +61,41 @@ class SpeedTestUIModel extends Equatable {
         uploadBandwidthKbps,
         downloadBandwidthKbps,
       ];
+
+  Map<String, dynamic> toMap() {
+    return {
+      'downloadSpeed': downloadSpeed,
+      'downloadUnit': downloadUnit,
+      'uploadSpeed': uploadSpeed,
+      'uploadUnit': uploadUnit,
+      'latency': latency,
+      'timestamp': timestamp,
+      'serverId': serverId,
+      'timestampEpoch': timestampEpoch,
+      'uploadBandwidthKbps': uploadBandwidthKbps,
+      'downloadBandwidthKbps': downloadBandwidthKbps,
+    };
+  }
+
+  factory SpeedTestUIModel.fromMap(Map<String, dynamic> map) {
+    return SpeedTestUIModel(
+      downloadSpeed: map['downloadSpeed'] ?? '--',
+      downloadUnit: map['downloadUnit'] ?? 'Mbps',
+      uploadSpeed: map['uploadSpeed'] ?? '--',
+      uploadUnit: map['uploadUnit'] ?? 'Mbps',
+      latency: map['latency'] ?? '--',
+      timestamp: map['timestamp'] ?? '--',
+      serverId: map['serverId'] ?? '--',
+      timestampEpoch: map['timestampEpoch'],
+      uploadBandwidthKbps: map['uploadBandwidthKbps'],
+      downloadBandwidthKbps: map['downloadBandwidthKbps'],
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory SpeedTestUIModel.fromJson(String source) =>
+      SpeedTestUIModel.fromMap(json.decode(source) as Map<String, dynamic>);
 
   /// Creates an empty model with default placeholder values.
   factory SpeedTestUIModel.empty() {

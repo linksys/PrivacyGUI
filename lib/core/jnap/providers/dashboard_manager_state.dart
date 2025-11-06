@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
@@ -76,8 +78,54 @@ class DashboardManagerState extends Equatable {
     );
   }
 
-  // NOTE: fromMap, toMap, and fromJson are intentionally omitted as they depend on the old data structure
-  // and are not critical for this refactoring step. They can be updated later if serialization is needed.
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'deviceInfo': deviceInfo?.toJson(),
+      'mainRadios': mainRadios.map((x) => x.toMap()).toList(),
+      'guestRadios': guestRadios.map((x) => x.toMap()).toList(),
+      'isGuestNetworkEnabled': isGuestNetworkEnabled,
+      'uptimes': uptimes,
+      'skuModelNumber': skuModelNumber,
+      'localTime': localTime,
+      'cpuLoad': cpuLoad,
+      'memoryLoad': memoryLoad,
+    }..removeWhere((key, value) => value == null);
+  }
+
+  factory DashboardManagerState.fromMap(Map<String, dynamic> map) {
+    return DashboardManagerState(
+      deviceInfo: map['deviceInfo'] != null
+          ? NodeDeviceInfo.fromJson(map['deviceInfo'])
+          : null,
+      mainRadios: map['mainRadios'] != null
+          ? List<RouterRadio>.from(
+              map['mainRadios'].map<RouterRadio>(
+                (x) => RouterRadio.fromMap(x),
+              ),
+            )
+          : [],
+      guestRadios: map['guestRadios'] != null
+          ? List<GuestRadioInfo>.from(
+              map['guestRadios'].map<GuestRadioInfo>(
+                (x) => GuestRadioInfo.fromMap(x),
+              ),
+            )
+          : [],
+      isGuestNetworkEnabled: map['isGuestNetworkEnabled'] as bool,
+      uptimes: map['uptimes'] as int,
+      skuModelNumber: map['skuModelNumber'],
+      localTime: map['localTime'],
+      cpuLoad: map['cpuLoad'],
+      memoryLoad: map['memoryLoad'],
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory DashboardManagerState.fromJson(String source) =>
+      DashboardManagerState.fromMap(
+          json.decode(source) as Map<String, dynamic>);
+
 
   @override
   bool get stringify => true;
