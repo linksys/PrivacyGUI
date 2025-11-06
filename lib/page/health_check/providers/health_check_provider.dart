@@ -7,7 +7,7 @@ import 'package:privacy_gui/page/health_check/models/health_check_enum.dart';
 import 'package:privacy_gui/page/health_check/models/speed_test_event.dart';
 import 'package:privacy_gui/page/health_check/models/speed_test_ui_model.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_state.dart';
-import 'package:privacy_gui/page/health_check/services/speed_test_service.dart';
+import 'package:privacy_gui/page/health_check/services/health_check_service.dart';
 
 /// Defines the modules available for health checks.
 enum Module {
@@ -34,13 +34,13 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
       _streamSubscription?.cancel();
     });
     // Asynchronously load persistent data when the provider is first initialized.
-    _loadInitialData();
+    loadData();
     // Return the default initial state. The UI will update once data is loaded.
     return HealthCheckState.init();
   }
 
   /// Loads persistent data like historical tests and supported modules.
-  Future<void> _loadInitialData() async {
+  Future<void> loadData() async {
     final service = ref.read(speedTestServiceProvider);
     final historical = await service.getInitialSpeedTestState();
     final latest = historical.isNotEmpty ? historical.first : null;

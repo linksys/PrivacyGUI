@@ -121,6 +121,10 @@ class SpeedTestWidget extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         meter,
+        if (showStepDescriptions) ...[
+          const AppGap.medium(),
+          _descriptionCard(context, state.step),
+        ],
         if (showInfoPanel) ...[const AppGap.large1(), info]
       ],
     );
