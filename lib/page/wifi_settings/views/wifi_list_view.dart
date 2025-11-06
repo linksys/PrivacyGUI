@@ -223,7 +223,12 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
       // Password
       notifier.setWiFiPassword(password, radio.radioID);
       // Security type
-      notifier.setWiFiSecurityType(securityType, radio.radioID);
+      if (radio.radioID == WifiRadioBand.radio_6 && securityType == WifiSecurityType.wpa2Or3MixedPersonal) {
+        // Set to WPA3 Personal if WPA2 or WPA3 mixed personal is selected for 6G band
+        notifier.setWiFiSecurityType(WifiSecurityType.wpa3Personal, radio.radioID);
+      } else {
+        notifier.setWiFiSecurityType(securityType, radio.radioID);
+      }
       // Enable wifi
       notifier.setWiFiEnabled(true, radio.radioID);
     }

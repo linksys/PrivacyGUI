@@ -448,7 +448,17 @@ class WifiListNotifier extends Notifier<WiFiState> {
     return wifiList.isEmpty
         ? <WifiSecurityType>[]
         : wifiList
-            .map((e) => e.availableSecurityTypes.toSet())
+            .map((e) {
+              // Add wpa2Or3MixedPersonal to the available security types for 6GHz band
+              if (e.radioID == WifiRadioBand.radio_6) {
+                final list = [
+                  ...e.availableSecurityTypes,
+                  WifiSecurityType.wpa2Or3MixedPersonal
+                ];
+                return list.toSet();
+              }
+              return e.availableSecurityTypes.toSet();
+            })
             .reduce((value, element) => value.intersection(element))
             .toList();
   }
