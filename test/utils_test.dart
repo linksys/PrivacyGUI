@@ -1,5 +1,6 @@
 import 'package:privacy_gui/utils.dart';
 import 'package:test/test.dart';
+import 'package:privacy_gui/core/utils/fernet_manager.dart';
 
 import 'test_data/const_test_data.dart';
 
@@ -1040,6 +1041,53 @@ void main() {
       expect(NetworkUtils.isMtuValid('unknown', 1000), false);
       expect(
           NetworkUtils.isMtuValid('', 576), false); // Empty string as unknown
+    });
+  });
+
+  group('encryptJNAPAuth', () {
+    setUp(() {
+      // Reset the fernet manager before each test in this group
+      FernetManager().resetForTest();
+    });
+
+    test('should encrypt the JNAP authorization password when key is available', () {
+      // Arrange
+      FernetManager().updateKeyFromSerial('a-test-serial');
+      const rawLog = 'Some log line... X-JNAP-Authorization: Basic YWRtaW46VmVsb3BAMTIzNA== ... some other log';
+      const originalPassword = 'YWRtaW46VmVsb3BAMTIzNA==';
+      
+      // Act
+      final processedLog = Utils.encryptJNAPAuth(rawLog);
+
+      // Assert
+      expect(processedLog, isNot(contains(originalPassword)));
+      expect(processedLog, contains('X-JNAP-Authorization: Basic '));
+      // The encrypted string will be long
+      expect(processedLog.length, greaterThan(rawLog.length)); 
+    });
+
+    test('should mask the JNAP authorization password when key is NOT available', () {
+      // Arrange
+      // Key is not set, because of setUp call
+      const rawLog = 'Another log... X-JNAP-Authorization: Basic YWRtaW46VmVsb3BAMTIzNA== ... end of log';
+      const expectedLog = 'Another log... X-JNAP-Authorization: Basic ************ ... end of log';
+
+      // Act
+      final processedLog = Utils.encryptJNAPAuth(rawLog);
+
+      // Assert
+      expect(processedLog, expectedLog);
+    });
+
+    test('should not change the string if the pattern is not found', () {
+      // Arrange
+      const rawLog = 'This is a log line without any authorization header.';
+
+      // Act
+      final processedLog = Utils.encryptJNAPAuth(rawLog);
+
+      // Assert
+      expect(processedLog, rawLog);
     });
   });
 }
