@@ -304,7 +304,7 @@ class RouterNotifier extends ChangeNotifier {
   Future<String?> _authCheck(GoRouterState state) {
     return _ref.read(authProvider.notifier).init().then((authState) async {
       logger.i(
-          '[Route]: Check credentials done: Login type = ${authState?.loginType}, ${authState?.localPassword}');
+          '[Route]: Check credentials done: Login type = ${authState?.loginType}');
 
       // check query parameter in remote login
       // if session is not null and different with current session which stores in pref,
