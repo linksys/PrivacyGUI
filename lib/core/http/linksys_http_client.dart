@@ -121,15 +121,18 @@ class LinksysHttpClient extends http.BaseClient
     var i = 0;
     for (;;) {
       StreamedResponse? response;
+      final requestTag =
+          'LNR-${math.Random().nextInt(99999).toString().padLeft(5, '0')}';
       try {
-        _logRequest(request, retry: i);
+        _logRequest(request, retry: i, tag: requestTag);
         final copied = _copyRequest(request, splitter.split());
+        copied.headers['X-Request-Tag'] = requestTag;
 
         response = await _inner
             .send(copied)
             .timeout(Duration(milliseconds: timeoutMs));
       } catch (error, stackTrace) {
-        logger.e('Http Request Error: $error');
+        _logError(request, requestTag, error, stackTrace);
         if (i == retries || !await _whenError(error, stackTrace)) {
           //
           onError?.call(ErrorResponse.convert(error));
@@ -262,10 +265,22 @@ class LinksysHttpClient extends http.BaseClient
     return Response.fromStream(await send(request));
   }
 
-  _logRequest(http.BaseRequest request, {int retry = 0}) {
+  _logError(http.BaseRequest request, String tag, error, stackTrace) {
+    logger.e(
+        '\nERROR-------------------------------------------------------------------------\n'
+        'TAG: $tag\n'
+        'URL: ${request.url}, METHOD: ${request.method}\n'
+        'HEADERS: ${request.headers}\n'
+        'ERROR: $error\n'
+        '${kDebugMode ? 'STACKTRACE: $stackTrace\n' : ''}'
+        '---------------------------------------------------------------------ERROR END\n');
+  }
+
+  _logRequest(http.BaseRequest request, {int retry = 0, String? tag}) {
     logger.i(
         '\nREQUEST-------------------------------------------------------------------------\n'
         '${retry == 0 ? '' : 'RETRY: $retry\n'}'
+        'TAG: ${tag ?? 'NO-TAG'}\n'
         'URL: ${request.url}, METHOD: ${request.method}\n'
         'HEADERS: ${request.headers}\n'
         '${request is http.Request ? 'BODY: ${request.body}' : request is http.MultipartRequest ? 'Content-Length: ${request.contentLength}' : ''}\n'
@@ -274,6 +289,7 @@ class LinksysHttpClient extends http.BaseClient
 
   _logResponse(http.Response response, {bool ignoreResponse = false}) {
     final request = response.request;
+    final tag = request?.headers['X-Request-Tag'];
     String responseBody = '';
     try {
       responseBody = utf8.decode(response.bodyBytes);
@@ -283,6 +299,7 @@ class LinksysHttpClient extends http.BaseClient
     if (request != null) {
       logger.i(
           '\nRESPONSE------------------------------------------------------------------------\n'
+          'TAG: ${tag ?? 'NO-TAG'}\n'
           'URL: ${request.url}, METHOD: ${request.method}\n'
           'REQUEST HEADERS: ${request.headers}\n'
           'RESPONSE HEADERS: ${response.headers}\n'
