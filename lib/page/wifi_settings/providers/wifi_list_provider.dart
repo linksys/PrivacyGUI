@@ -387,17 +387,18 @@ class WifiListNotifier extends Notifier<WiFiState> {
   }
 
   void _setupSimpleMode() {
+    // Use 2.4G band for primary security type list
     final availableSecurityTypeList =
-        getSimpleModeAvailableSecurityTypeList(state.mainWiFi);
+        getSimpleModeAvailableSecurityTypeList([state.mainWiFi.first]);
     final firstEnabledWifi =
         state.mainWiFi.firstWhereOrNull((e) => e.isEnabled) ??
             state.mainWiFi.first;
-
+    // Check if all WiFi radios have identical settings (enabled/disabled, SSID, and password)
+    // This determines if we should use simple mode, where changes apply to all radios
     final isSimple = state.mainWiFi.every((wifi) =>
         wifi.isEnabled == firstEnabledWifi.isEnabled &&
         wifi.ssid == firstEnabledWifi.ssid &&
-        wifi.password == firstEnabledWifi.password &&
-        wifi.securityType == firstEnabledWifi.securityType);
+        wifi.password == firstEnabledWifi.password);
     final simpleModeWifi = firstEnabledWifi.copyWith(
       securityType: getSimpleModeAvailableSecurityType(
           firstEnabledWifi.securityType, availableSecurityTypeList),
@@ -448,17 +449,7 @@ class WifiListNotifier extends Notifier<WiFiState> {
     return wifiList.isEmpty
         ? <WifiSecurityType>[]
         : wifiList
-            .map((e) {
-              // Add wpa2Or3MixedPersonal to the available security types for 6GHz band
-              if (e.radioID == WifiRadioBand.radio_6) {
-                final list = [
-                  ...e.availableSecurityTypes,
-                  WifiSecurityType.wpa2Or3MixedPersonal
-                ];
-                return list.toSet();
-              }
-              return e.availableSecurityTypes.toSet();
-            })
+            .map((e) => e.availableSecurityTypes.toSet())
             .reduce((value, element) => value.intersection(element))
             .toList();
   }
