@@ -113,9 +113,12 @@ void _addLogWithTag({required String message, String tag = appLogTag}) {
 
 String _getWebLogByTag({String tag = appLogTag}) {
   final logList = _webLogCache[tag] ?? [];
+  // Sort log list by timestamp in ascending order
+  // And return the log list as a string with date time prefix
   return logList
       .sorted((a, b) => a.$1.compareTo(b.$1))
-      .map((e) => e.$2)
+      .map((e) =>
+          '${DateTime.fromMillisecondsSinceEpoch(e.$1).toIso8601String()}: ${e.$2}')
       .join('\n');
 }
 
@@ -151,10 +154,10 @@ Future<String> getPackageInfo() async {
     'OS: ${defaultTargetPlatform.name}',
   ];
 
-    appInfo.add(
-      '================================= Device Info ==================================',
-    );
-    appInfo.add(await _getDeviceInfo(DeviceInfoPlugin()));
+  appInfo.add(
+    '================================= Device Info ==================================',
+  );
+  appInfo.add(await _getDeviceInfo(DeviceInfoPlugin()));
 
   return appInfo.join('\n');
 }
