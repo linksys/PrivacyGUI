@@ -182,16 +182,20 @@ class WifiBundleNotifier extends Notifier<WifiBundleState>
       numOfDevices: deviceManagerState.guestWifiDevices.length,
     );
 
-    final availableSecurityTypeList =
-        getSimpleModeAvailableSecurityTypeList(wifiItems);
+    // Use 2.4G band for primary security type list
+    final wifiForSecurityList = wifiItems.firstWhere(
+      (wifi) => wifi.radioID == WifiRadioBand.radio_24,
+      orElse: () => wifiItems.first, // Fallback, or handle error
+    );
+    final availableSecurityTypeList = getSimpleModeAvailableSecurityTypeList(
+        wifiForSecurityList != null ? [wifiForSecurityList] : wifiItems);
     final firstEnabledWifi =
         wifiItems.firstWhereOrNull((e) => e.isEnabled) ?? wifiItems.first;
 
     final isSimpleMode = wifiItems.every((wifi) =>
         wifi.isEnabled == firstEnabledWifi.isEnabled &&
         wifi.ssid == firstEnabledWifi.ssid &&
-        wifi.password == firstEnabledWifi.password &&
-        wifi.securityType == firstEnabledWifi.securityType);
+        wifi.password == firstEnabledWifi.password);
     final simpleModeWifi = firstEnabledWifi.copyWith(
       securityType: getSimpleModeAvailableSecurityType(
           firstEnabledWifi.securityType, availableSecurityTypeList),

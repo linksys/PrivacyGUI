@@ -110,11 +110,6 @@ class WiFiListView extends ArgumentsConsumerStatelessView {
             value: isSimpleMode,
             onChanged: (value) {
               notifier.setSimpleMode(value);
-              if (value) {
-                // Logic to init simple mode settings if needed can be called here
-              } else {
-                // Logic to revert to advanced settings if needed
-              }
             },
           ),
         ],
