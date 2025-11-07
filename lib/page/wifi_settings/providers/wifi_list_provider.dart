@@ -387,9 +387,16 @@ class WifiListNotifier extends Notifier<WiFiState> {
   }
 
   void _setupSimpleMode() {
+    if (state.mainWiFi.isEmpty) {
+      return;
+    }
     // Use 2.4G band for primary security type list
+    final wifiForSecurityList = state.mainWiFi.firstWhere(
+      (wifi) => wifi.radioID == WifiRadioBand.radio_24,
+      orElse: () => state.mainWiFi.first, // Fallback, or handle error
+    );
     final availableSecurityTypeList =
-        getSimpleModeAvailableSecurityTypeList([state.mainWiFi.first]);
+        getSimpleModeAvailableSecurityTypeList([wifiForSecurityList]);
     final firstEnabledWifi =
         state.mainWiFi.firstWhereOrNull((e) => e.isEnabled) ??
             state.mainWiFi.first;
