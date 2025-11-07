@@ -15,6 +15,7 @@ import 'package:privacy_gui/page/health_check/providers/health_check_provider.da
 import 'package:privacy_gui/page/vpn/providers/vpn_notifier.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
+import 'package:privacy_gui/core/utils/fernet_manager.dart';
 
 const int pollFirstDelayInSec = 1;
 
@@ -88,6 +89,24 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
         .map((command) => MapEntry(command.key,
             JNAPSuccess.fromJson(cache[command.key.actionValue]['data'])))
         .toList();
+
+    // Update Fernet key from cached device info
+    try {
+      final deviceInfoEntry = cacheDataList.firstWhere(
+        (entry) => entry.key == JNAPAction.getDeviceInfo,
+      );
+      final deviceInfoResult = deviceInfoEntry.value;
+
+      final serialNumber = deviceInfoResult.output['serialNumber'] as String?;
+      if (serialNumber != null && serialNumber.isNotEmpty) {
+        FernetManager().updateKeyFromSerial(serialNumber);
+        logger.d('Fernet key updated from cached serial number.');
+      }
+    } catch (e) {
+      // Could be a StateError if not found, or other errors.
+      logger.i('Device info not found in cache, cannot update Fernet key yet.');
+    }
+
     final previousSnapshot = state.value;
     state = AsyncValue.data(CoreTransactionData(
         lastUpdate: 0,
@@ -122,6 +141,23 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     state = await AsyncValue.guard(
       () => fetchFuture.then(
         (result) async {
+          // Update Fernet key from device info
+          try {
+            final deviceInfoResult = result.data[JNAPAction.getDeviceInfo];
+            if (deviceInfoResult is JNAPSuccess) {
+              final serialNumber =
+                  deviceInfoResult.output['serialNumber'] as String?;
+              if (serialNumber != null && serialNumber.isNotEmpty) {
+                FernetManager().updateKeyFromSerial(serialNumber);
+              } else {
+                logger.w(
+                    'Serial number not found in getDeviceInfo response, cannot update Fernet key.');
+              }
+            }
+          } catch (e) {
+            logger.e('Failed to update Fernet key: $e');
+          }
+
           await _additionalPolling();
           return result.copyWith(isReady: true);
         },
