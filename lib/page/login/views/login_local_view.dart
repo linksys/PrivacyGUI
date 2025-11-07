@@ -7,12 +7,10 @@ import 'package:privacy_gui/constants/error_code.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/bottom_bar.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
-import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
@@ -270,7 +268,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
                         ),
                       ),
                     ),
-                  const AppGap.large3(),
+                  const AppGap.small3(),
                   AppTextButton.noPadding(
                     loc(context).forgotPassword,
                     onTap: () {

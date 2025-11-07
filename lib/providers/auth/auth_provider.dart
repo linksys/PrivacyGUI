@@ -165,6 +165,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       logger.d(
           '[Auth]: Existence: cloud user name: ${username != null}, cloud pwd: ${password != null}, admin password: ${localPassword != null}. Login type = $loginType');
       return AuthState(
+        localPasswordHint: state.value?.localPasswordHint,
         username: username ?? '',
         loginType: loginType,
         sessionToken: sessionToken,
