@@ -20,6 +20,7 @@ import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:share_plus/share_plus.dart';
 import 'core/utils/logger.dart';
 import 'core/utils/storage.dart';
+import 'core/utils/fernet_manager.dart';
 import '../../../util/export_selector/export_base.dart'
     if (dart.library.io) '../../../util/export_selector/export_mobile.dart'
     if (dart.library.html) '../../../util/export_selector/export_web.dart';
@@ -91,6 +92,24 @@ class Utils {
       'passphrase',
     ];
     return maskJsonValue(raw, keys);
+  }
+
+  static String encryptJNAPAuth(String raw) {
+    final pattern = RegExp(r'(X-JNAP-Authorization: Basic )([a-zA-Z0-9=+/]+)');
+    return raw.replaceAllMapped(pattern, (match) {
+      final header = match.group(1)!;
+      final encodedPassword = match.group(2)!;
+
+      // Encrypt the password
+      final encryptedPassword = FernetManager().encrypt(encodedPassword);
+
+      if (encryptedPassword != null) {
+        return '$header$encryptedPassword';
+      } else {
+        // If encryption fails, return the original match, but mask the password
+        return '${header}************';
+      }
+    });
   }
 
   static String replaceHttpScheme(String raw) {

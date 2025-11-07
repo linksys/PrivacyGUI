@@ -40,19 +40,18 @@ class CustomOutput extends LogOutput {
       }
     }
     if (!kIsWeb && output.isNotEmpty && _file.existsSync()) {
-      await _file.writeAsBytes(
-          "${Utils.maskSensitiveJsonValues(Utils.replaceHttpScheme(output.toString()))}\n"
-              .codeUnits,
+      final processedOutput = Utils.encryptJNAPAuth(
+          Utils.maskSensitiveJsonValues(
+              Utils.replaceHttpScheme(output.toString())));
+      await _file.writeAsBytes("$processedOutput\n".codeUnits,
           mode: FileMode.writeOnlyAppend);
     } else if (kIsWeb && output.isNotEmpty) {
-      // final SharedPreferences sp = await SharedPreferences.getInstance();
-      // String content = sp.getString(pWebLog) ?? '';
-      // await sp.setString(pWebLog,
-      //     '$content\n${Utils.maskSensitiveJsonValues(Utils.replaceHttpScheme(output.toString()))}\n');
       _recordLog(
-        Utils.maskUsernamePasswordBodyValue(
-          Utils.maskSensitiveJsonValues(
-            Utils.replaceHttpScheme(output.toString()),
+        Utils.encryptJNAPAuth(
+          Utils.maskUsernamePasswordBodyValue(
+            Utils.maskSensitiveJsonValues(
+              Utils.replaceHttpScheme(output.toString()),
+            ),
           ),
         ),
       );
