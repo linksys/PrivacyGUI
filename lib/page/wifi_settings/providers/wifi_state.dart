@@ -5,8 +5,6 @@ import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/guest_wifi_item.dart';
 
-
-
 class WiFiListSettings extends Equatable {
   final List<WiFiItem> mainWiFi;
   final GuestWiFiItem guestWiFi;
@@ -68,14 +66,17 @@ class WiFiListSettings extends Equatable {
   List<WiFiItem> getMainWifiItemsWithSimpleSettings() {
     return mainWiFi.map((wifiItem) {
       final isEnabled = isSimpleMode ? true : wifiItem.isEnabled;
-      final ssid =
-          isSimpleMode ? simpleModeWifi.ssid : wifiItem.ssid;
+      final ssid = isSimpleMode ? simpleModeWifi.ssid : wifiItem.ssid;
       final security = isSimpleMode
-          ? simpleModeWifi.securityType
+          // Handle security type for 6G band
+          ? wifiItem.radioID == WifiRadioBand.radio_6
+              ? simpleModeWifi.securityType.isOpenVariant
+                  ? WifiSecurityType.enhancedOpenOnly
+                  : WifiSecurityType.wpa3Personal
+              : simpleModeWifi.securityType
           : wifiItem.securityType;
-      final password = isSimpleMode
-          ? simpleModeWifi.password
-          : wifiItem.password;
+      final password =
+          isSimpleMode ? simpleModeWifi.password : wifiItem.password;
 
       return wifiItem.copyWith(
         isEnabled: isEnabled,
