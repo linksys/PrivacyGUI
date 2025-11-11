@@ -279,7 +279,7 @@ void main() {
           expect(infoButton, findsOneWidget);
           await tester.tap(infoButton);
           await tester.pumpAndSettle();
-          await TestHelper.takeScreenshot(
+          await testHelper.takeScreenshot(
               tester, 'PNPS-STEP1_WIFI_01_info_dialog');
           final closeButton =
               find.byKey(const Key('pnp_wifi_info_close_button'));
@@ -293,7 +293,7 @@ void main() {
           await tester.enterText(ssidField, '');
           await tester
               .pumpAndSettle(); // Use pumpAndSettle to wait for UI to update
-          await TestHelper.takeScreenshot(
+          await testHelper.takeScreenshot(
               tester, 'PNPS-STEP1_WIFI_02_ssid_error');
 
           // --- Test Invalid Password ---
@@ -302,7 +302,7 @@ void main() {
           await tester.enterText(passwordField, '123');
           await tester
               .pumpAndSettle(); // Use pumpAndSettle to wait for UI to update
-          await TestHelper.takeScreenshot(
+          await testHelper.takeScreenshot(
               tester, 'PNPS-STEP1_WIFI_03_password_error');
 
           // --- Restore to valid state for final screenshot ---
@@ -343,7 +343,7 @@ void main() {
           expect(guestSwitch, findsOneWidget);
           await tester.tap(guestSwitch);
           await tester.pumpAndSettle();
-          await TestHelper.takeScreenshot(
+          await testHelper.takeScreenshot(
               tester, 'PNPS-STEP2_GUEST_01_switch_on');
 
           // --- Test Invalid SSID ---
@@ -352,7 +352,7 @@ void main() {
           await tester.enterText(guestSsidField, '');
           await tester
               .pumpAndSettle(); // Use pumpAndSettle to wait for UI to update
-          await TestHelper.takeScreenshot(
+          await testHelper.takeScreenshot(
               tester, 'PNPS-STEP2_GUEST_02_ssid_error');
 
           // --- Test Invalid Password ---
@@ -361,7 +361,7 @@ void main() {
           await tester.enterText(guestPasswordField, '123');
           await tester
               .pumpAndSettle(); // Use pumpAndSettle to wait for UI to update
-          await TestHelper.takeScreenshot(
+          await testHelper.takeScreenshot(
               tester, 'PNPS-STEP2_GUEST_03_password_error');
 
           // --- Restore to valid state for final screenshot ---
@@ -408,7 +408,7 @@ void main() {
           expect(nightModeSwitch, findsOneWidget);
           await tester.tap(nightModeSwitch);
           await tester.pumpAndSettle();
-          await TestHelper.takeScreenshot(
+          await testHelper.takeScreenshot(
               tester, 'PNPS-STEP3_NIGHT_01_switch_on');
 
           // --- Restore to off state for final screenshot ---

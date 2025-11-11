@@ -45,6 +45,7 @@ if [ -z "$file" ]; then
 else
   echo "Target file: $file"
   flutter test $file --tags=loc --update-goldens --dart-define=locales="$locales" --dart-define=screens="$screens" --dart-define=overlay="$overlay"
+  exit $? # Exit with the status of the last command (flutter test)
 fi
 echo 'Generating Localization snapshots Finished!******************************************'
 
