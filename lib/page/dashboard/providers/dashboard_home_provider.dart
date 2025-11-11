@@ -1,6 +1,5 @@
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:privacy_gui/core/jnap/models/radio_info.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_state.dart';
@@ -10,7 +9,8 @@ import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
-import 'package:privacy_gui/utils.dart';
+import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
+import 'package:privacy_gui/page/health_check/providers/health_check_state.dart';
 
 final dashboardHomeProvider =
     NotifierProvider<DashboardHomeNotifier, DashboardHomeState>(
@@ -22,21 +22,20 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
   DashboardHomeState build() {
     final dashboardManagerState = ref.watch(dashboardManagerProvider);
     final deviceManagerState = ref.watch(deviceManagerProvider);
-    return createState(dashboardManagerState, deviceManagerState);
+    final healthCheckState = ref.watch(healthCheckProvider);
+    return createState(
+        dashboardManagerState, deviceManagerState, healthCheckState);
   }
 
   DashboardHomeState createState(
     DashboardManagerState dashboardManagerState,
     DeviceManagerState deviceManagerState,
+    HealthCheckState healthCheckState,
   ) {
     var newState = const DashboardHomeState();
     // Get WiFi list
     final wifiList = dashboardManagerState.mainRadios
-        .groupFoldBy<String, List<RouterRadio>>(
-            (element) =>
-                // element.settings.ssid +
-                // (element.settings.wpaPersonalSettings?.passphrase ?? ''),
-                element.band,
+        .groupFoldBy<String, List<RouterRadio>>((element) => element.band,
             (previous, element) => [...(previous ?? []), element])
         .entries
         .map((e) => DashboardWiFiItem.fromMainRadios(
@@ -58,7 +57,6 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
                   .length)
           .copyWith(isEnabled: dashboardManagerState.isGuestNetworkEnabled));
     }
-    // Guest WiFi
 
     // Get Node list
     final isAnyNodesOffline =
@@ -76,28 +74,7 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
       modelNumber: sortedDeviceList.firstOrNull?.model.modelNumber ?? '',
       hardwareVersion: sortedDeviceList.firstOrNull?.model.hardwareVersion,
     );
-    // Get the formatted upload and download test
-    final latestSpeedTest = dashboardManagerState.latestSpeedTest;
-    final uploadResult = _formatHealthCheckResult(
-      speed: latestSpeedTest?.speedTestResult?.uploadBandwidth ?? 0,
-    );
-    final downloadResult = _formatHealthCheckResult(
-      speed: latestSpeedTest?.speedTestResult?.downloadBandwidth ?? 0,
-    );
-
-    final speedTestTimeStamp = DateFormat("yyyy-MM-ddThh:mm:ssZ")
-        .tryParse(latestSpeedTest?.timestamp ?? '', true)
-        ?.millisecondsSinceEpoch;
-
-    final isSpeedCheckSupported =
-        dashboardManagerState.healthCheckModules.contains('SpeedTest');
-    final healthCheckModule = isSpeedCheckSupported
-        ? (dashboardManagerState.healthCheckModules
-                .contains('SpeedTestSamKnows')
-            ? 'SamKnows'
-            : 'Ookla')
-        : null;
-
+    
     final deviceInfo = dashboardManagerState.deviceInfo;
     final horizontalPortLayout = isHorizontalPorts(
         modelNumber: deviceInfo?.modelNumber ?? '',
@@ -111,33 +88,11 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
       isFirstPolling: isFirstPolling,
       masterIcon: masterIcon,
       isAnyNodesOffline: isAnyNodesOffline,
-      uploadResult: () => uploadResult,
-      downloadResult: () => downloadResult,
-      speedCheckTimestamp: () => speedTestTimeStamp,
       isHorizontalLayout: horizontalPortLayout,
-      isHealthCheckSupported: isSpeedCheckSupported,
       wanType: () => wanType,
       detectedWANType: () => detectedWANType,
-      healthCheckModule: () => healthCheckModule,
     );
 
-    final json = newState.toJson();
-    DashboardHomeState.fromJson(json);
     return newState;
-  }
-
-  DashboardSpeedItem _formatHealthCheckResult({required int speed}) {
-    if (speed == 0) {
-      return DashboardSpeedItem(
-        value: '--',
-        unit: '',
-      );
-    }
-    // The speed is in kilobits per second
-    String speedText = NetworkUtils.formatBits(speed * 1024);
-    return DashboardSpeedItem(
-      value: speedText.split(' ').first,
-      unit: speedText.split(' ').last,
-    );
   }
 }

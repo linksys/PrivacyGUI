@@ -28,8 +28,8 @@ import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dar
 import 'package:privacy_gui/page/health_check/_health_check.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_provider.dart';
 import 'package:privacy_gui/page/instant_verify/views/components/ping_network_modal.dart';
-import 'package:privacy_gui/page/instant_verify/views/components/speed_test_external_widget.dart';
-import 'package:privacy_gui/page/instant_verify/views/components/speed_test_widget.dart';
+import 'package:privacy_gui/page/health_check/widgets/speed_test_external_widget.dart';
+import 'package:privacy_gui/page/health_check/widgets/speed_test_widget.dart';
 import 'package:privacy_gui/page/instant_verify/views/components/traceroute_modal.dart';
 import 'package:privacy_gui/page/instant_topology/_instant_topology.dart';
 import 'package:privacy_gui/page/instant_topology/views/model/tree_view_node.dart';
@@ -123,7 +123,8 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
   }
 
   Widget _instantInfo(BuildContext context, WidgetRef ref) {
-    final dashboardHomeState = ref.watch(dashboardHomeProvider);
+    final isHealthCheckSupported =
+        ref.watch(healthCheckProvider).isSpeedTestModuleSupported;
     final desktopCol = 4.col;
     return SingleChildScrollView(
       child: Padding(
@@ -143,7 +144,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
               )
             : Column(
                 children: [
-                  dashboardHomeState.isHealthCheckSupported
+                  isHealthCheckSupported
                       ? IntrinsicHeight(
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -723,8 +724,8 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
   }
 
   Widget _speedTestContent(BuildContext context) {
-    final dashboardState = ref.watch(dashboardHomeProvider);
-
+    final isHealthCheckSupported =
+        ref.watch(healthCheckProvider).isSpeedTestModuleSupported;
     return AppCard(
       key: const ValueKey('speedTestCard'),
       padding: const EdgeInsets.all(Spacing.large2),
@@ -732,7 +733,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
         children: [
           _headerWidget(loc(context).speedTest),
           const AppGap.large2(),
-          dashboardState.isHealthCheckSupported
+          isHealthCheckSupported
               ? const SpeedTestWidget()
               : AppCard(
                   child: Tooltip(
@@ -838,7 +839,6 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
 
   List<pw.Widget> _buildInfo(BuildContext context, WidgetRef ref) {
     final dashboardState = ref.read(dashboardManagerProvider);
-    final dashboardHomeState = ref.read(dashboardHomeProvider);
     final deviceManagerState = ref.read(deviceManagerProvider);
     final devicesState = ref.read(deviceManagerProvider);
     final healthCheckState = ref.read(healthCheckProvider);
@@ -849,7 +849,8 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
     final master = devicesState.masterDevice;
     final guestWiFi =
         systemConnectivityState.guestRadioSettings.radios.firstOrNull;
-    final isSupportHealthCheck = dashboardHomeState.isHealthCheckSupported;
+    final isSupportHealthCheck =
+        ref.watch(healthCheckProvider).isSpeedTestModuleSupported;
     final cpuLoad = dashboardState.cpuLoad;
     final memoryLoad = dashboardState.memoryLoad;
     return [
@@ -899,7 +900,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
       pw.Divider(height: Spacing.medium),
       if (isSupportHealthCheck) ...[
         pw.Text(loc(context).speedTest),
-        pw.Text(healthCheckState.result.firstOrNull?.toString() ?? ''),
+        pw.Text(healthCheckState.result?.toString() ?? ''),
         pw.Divider(height: Spacing.medium),
       ],
       ..._createBackhaulInfoData(devicesState.backhaulInfoData),

@@ -123,9 +123,7 @@ void main() async {
 
   testLocalizations('Dashboard Menu View - Supports internal speedtest',
       (tester, locale) async {
-    when(testHelper.mockDashboardHomeNotifier.build()).thenReturn(
-        DashboardHomeState.fromMap(dashboardHomeCherry7TestState)
-            .copyWith(isHealthCheckSupported: true));
+    
     await testHelper.pumpShellView(
       tester,
       child: const DashboardMenuView(),
@@ -139,9 +137,7 @@ void main() async {
   testLocalizations('Dashboard Menu View - Supports VPN',
       (tester, locale) async {
     when(testHelper.mockServiceHelper.isSupportVPN()).thenReturn(true);
-    when(testHelper.mockDashboardHomeNotifier.build()).thenReturn(
-        DashboardHomeState.fromMap(dashboardHomePinnacleTestState)
-            .copyWith(isHealthCheckSupported: true));
+   
     await testHelper.pumpShellView(
       tester,
       child: const DashboardMenuView(),
