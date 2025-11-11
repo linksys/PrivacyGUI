@@ -50,9 +50,9 @@ void testResponsiveWidgets(
     (tester) async {
       await tester.setScreenSize(variant.currentValue!);
       await callback(tester);
-      if (goldenCallback != null) {
+      if (goldenCallback != null && goldenFilename != null) {
         await goldenCallback(
-            '${goldenFilename ?? description}-${variant.currentValue!.toShort()}',
+            '$goldenFilename-${variant.currentValue!.toShort()}',
             tester);
       }
       if (onCompleted != null) {

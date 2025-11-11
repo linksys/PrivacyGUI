@@ -7,6 +7,7 @@ import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/di.dart';
+import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/dhcp_reservations_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_provider.dart';
@@ -47,7 +48,9 @@ import 'package:privacy_gui/providers/connectivity/connectivity_provider.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_state.dart';
 import 'package:privacy_gui/providers/preservable.dart';
 import 'package:privacy_gui/route/route_model.dart';
+import 'package:privacygui_widgets/theme/custom_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:privacy_gui/localization/localization_hook.dart' as hook;
 
 import '../mocks/_index.dart';
 import '../mocks/connectivity_notifier_mocks.dart';
@@ -133,6 +136,9 @@ class TestHelper {
   late MockAddNodesNotifier mockAddNodesNotifier;
   late MockNodeDetailNotifier mockNodeDetailNotifier;
 
+  AppLocalizations loc(BuildContext context) {
+    return hook.loc(context);
+  }
 
   void setup() {
     mockAdministrationSettingsNotifier = MockAdministrationSettingsNotifier();
@@ -253,12 +259,15 @@ class TestHelper {
         wifiBundleTestState['status'] as Map<String, dynamic>);
 
     final wifiBundleTestStateInitialState = WifiBundleState(
-      settings: Preservable(original: wifiBundleTestStateSettings, current: wifiBundleTestStateSettings),
+      settings: Preservable(
+          original: wifiBundleTestStateSettings,
+          current: wifiBundleTestStateSettings),
       status: wifiBundleTestStateStatus,
     );
     when(mockWiFiBundleNotifier.build())
         .thenReturn(wifiBundleTestStateInitialState);
-    when(mockWiFiBundleNotifier.state).thenReturn(wifiBundleTestStateInitialState);
+    when(mockWiFiBundleNotifier.state)
+        .thenReturn(wifiBundleTestStateInitialState);
     when(mockWiFiBundleNotifier.isDirty()).thenReturn(false);
     when(mockDeviceListNotifier.build())
         .thenReturn(DeviceListState.fromMap(deviceListTestState));
@@ -311,7 +320,7 @@ class TestHelper {
     when(mockPnpNotifier.build()).thenReturn(PnpState(
         deviceInfo: PnpDeviceInfoUIModel(
           modelName: 'LN16',
-          image: 'routerLn16',
+          image: 'routerLn12',
           serialNumber: 'serialNumber',
           firmwareVersion: 'firmwareVersion',
         ),
@@ -383,7 +392,7 @@ class TestHelper {
         nodeDetailProvider.overrideWith(() => mockNodeDetailNotifier),
       ];
 
-  Future<void> pumpView(
+  Future<BuildContext> pumpView(
     WidgetTester tester, {
     required Widget child,
     List<Override> overrides = const [],
@@ -391,6 +400,8 @@ class TestHelper {
     LinksysRouteConfig? config,
     ThemeMode themeMode = ThemeMode.system,
     GlobalKey<NavigatorState>? navigatorKey,
+    List<ImageProvider> preCacheImages = const [],
+    List<String> preCacheCustomImages = const [],
   }) async {
     await tester.pumpWidget(
       testableSingleRoute(
@@ -402,17 +413,29 @@ class TestHelper {
         child: child,
       ),
     );
-    // await tester.pumpAndSettle();
+    final context = tester.element(find.byType(child.runtimeType));
+    await tester.runAsync(() async {
+      for (final image in preCacheImages) {
+        await precacheImage(image, context);
+      }
+      for (final image in preCacheCustomImages) {
+        await precacheImage(
+            CustomTheme.of(context).getRouterImage(image), context);
+      }
+    });
+    return context;
   }
 
   /// Pump a widget with a shell widget
-  Future<void> pumpShellView(
+  Future<BuildContext> pumpShellView(
     WidgetTester tester, {
     required Widget child,
     List<Override> overrides = const [],
     Locale locale = const Locale('en'),
     LinksysRouteConfig? config,
     ThemeMode themeMode = ThemeMode.system,
+    List<ImageProvider> preCacheImages = const [],
+    List<String> preCacheCustomImages = const [],
   }) async {
     await tester.pumpWidget(
       testableRouteShellWidget(
@@ -423,6 +446,21 @@ class TestHelper {
         child: child,
       ),
     );
-    // await tester.pumpAndSettle();
+    final context = tester.element(find.byType(child.runtimeType));
+    await tester.runAsync(() async {
+      for (final image in preCacheImages) {
+        await precacheImage(image, context);
+      }
+      for (final image in preCacheCustomImages) {
+        await precacheImage(
+            CustomTheme.of(context).getRouterImage(image), context);
+      }
+    });
+    return context;
+  }
+
+  static Future takeScreenshot(WidgetTester tester, String filename) async {
+    final actualFinder = find.byWidgetPredicate((w) => true).first;
+    await expectLater(actualFinder, matchesGoldenFile('goldens/$filename.png'));
   }
 }

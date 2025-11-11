@@ -188,6 +188,7 @@ class PersonalWiFiStep extends PnpStep {
           actions: [
             AppTextButton(
               loc(context).close,
+              key: const Key('pnp_wifi_info_close_button'),
               onTap: () {
                 context.pop();
               },
