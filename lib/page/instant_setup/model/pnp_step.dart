@@ -139,6 +139,7 @@ abstract class PnpStep {
                   const AppGap.medium(),
                 ],
                 AppFilledButton(
+                  key: const Key('pnp_stepper_next_button'),
                   nextLable(context),
                   onTap: status != StepViewStatus.data
                       ? null

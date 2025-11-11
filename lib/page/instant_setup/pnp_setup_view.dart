@@ -221,7 +221,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Center(child: AppSpinner()),
+              const Center(child: AppSpinner(key: Key('pnp_fw_update_spinner'))),
               const AppGap.medium(),
               AppText.titleLarge(loc(context).pnpFwUpdateTitle),
               const AppGap.medium(),
@@ -242,7 +242,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const Center(child: AppSpinner()),
+            const Center(child: AppSpinner(key: Key('pnp_loading_spinner'))),
             const AppGap.medium(),
             AppText.headlineSmall(message),
           ],
@@ -425,6 +425,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
               AppText.headlineSmall(loc(context).pnpReconnectWiFi),
               const AppGap.large5(),
               AppFilledButtonWithLoading(
+                key: const Key('pnp_reconnect_next_button'),
                 loc(context).next,
                 onTap: () async {
                   await ref.read(pnpProvider.notifier).testPnpReconnect();

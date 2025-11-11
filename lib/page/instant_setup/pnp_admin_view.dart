@@ -21,6 +21,45 @@ import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
 /// This widget handles checking the router's status (configured/unconfigured,
 /// internet connection), prompting for admin password if necessary, and
 /// navigating to the appropriate next step in the PnP wizard or troubleshooter.
+///
+/// **Test Scenarios (PnpFlowStatus):**
+///
+/// - **`adminInitializing`**:
+///   - Displays a loading spinner and "Processing..." text.
+///   - Elements: `AppSpinner`, `AppText` (`loc(context).processing`).
+///
+/// - **`adminCheckingInternet`**:
+///   - Displays a loading spinner and "Checking Internet Connection..." text.
+///   - Elements: `AppSpinner`, `AppText` (`loc(context).launchCheckInternet`).
+///
+/// - **`adminInternetConnected`**:
+///   - Displays a globe icon and "Internet Connected" text.
+///   - Elements: `LinksysIcons.globe`, `AppText` (`loc(context).launchInternetConnected`).
+///
+/// - **`adminError`**:
+///   - Displays a generic error page with "An Error Occurred" text and a "Try Again" button.
+///   - Elements: `AppText` (`loc(context).generalError`), `AppFilledButton` (`loc(context).tryAgain`).
+///
+/// - **`adminUnconfigured`**:
+///   - Displays router image, model name, "Router Unconfigured" title, description, and a "Start Setup" button.
+///   - Elements: `Image` (router), `AppText` (`deviceInfo.modelName`, `loc(context).pnpFactoryResetTitle`, `loc(context).factoryResetDesc`), `AppFilledButton` (`loc(context).textContinue`).
+///
+/// - **`adminAwaitingPassword`**:
+///   - Displays router image, model name, "Welcome" title, description, password input field, "Where is it?" button, and "Login" button.
+///   - Elements: `Image` (router), `AppText` (`deviceInfo.modelName`, `loc(context).welcome`, `loc(context).pnpRouterLoginDesc`), `AppPasswordField` (key: `admin_password_input_field`), `AppTextButton` (`loc(context).pnpRouterLoginWhereIsIt`), `AppFilledButton` (`loc(context).login`).
+///
+/// - **`adminLoggingIn`**:
+///   - Similar to `adminAwaitingPassword`, but the "Login" button is disabled (processing state).
+///   - Elements: Same as `adminAwaitingPassword`, `AppFilledButton` is disabled.
+///
+/// - **`adminLoginFailed`**:
+///   - Similar to `adminAwaitingPassword`, but displays an "Incorrect Password" error message.
+///   - Elements: Same as `adminAwaitingPassword`, plus `AppText` (`loc(context).incorrectPassword`).
+///
+/// - **Modal Dialog (`_showRouterPasswordModal`)**:
+///   - Triggered by tapping "Where is it?" button.
+///   - Displays an `AlertDialog` with "Router Password" title, location description, and a "Close" button.
+///   - Elements: `AlertDialog`, `AppText` (`loc(context).routerPassword`, `loc(context).modalRouterPasswordLocation`), `AppTextButton` (`loc(context).close`).
 class PnpAdminView extends ArgumentsBaseConsumerStatefulView {
   const PnpAdminView({super.key, super.args});
 
@@ -277,6 +316,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
         AppText.bodyLarge(loc(context).pnpRouterLoginDesc),
         const AppGap.large3(),
         AppPasswordField(
+          key: const Key('admin_password_input_field'),
           hintText: loc(context).routerPassword,
           border: const OutlineInputBorder(),
           controller: _textEditController,
