@@ -64,6 +64,7 @@ import '../test_data/instant_verify_test_state.dart';
 import '../test_data/power_table_test_state.dart';
 import '../test_data/wifi_bundle_test_state.dart';
 import 'di.dart';
+import 'screen.dart';
 import 'testable_router.dart';
 
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
@@ -135,6 +136,9 @@ class TestHelper {
   late MockInstantVerifyNotifier mockInstantVerifyNotifier;
   late MockAddNodesNotifier mockAddNodesNotifier;
   late MockNodeDetailNotifier mockNodeDetailNotifier;
+
+  // Screen Size
+  LocalizedScreen? current;
 
   AppLocalizations loc(BuildContext context) {
     return hook.loc(context);
@@ -459,8 +463,10 @@ class TestHelper {
     return context;
   }
 
-  static Future takeScreenshot(WidgetTester tester, String filename) async {
+  Future takeScreenshot(WidgetTester tester, String filename) async {
     final actualFinder = find.byWidgetPredicate((w) => true).first;
-    await expectLater(actualFinder, matchesGoldenFile('goldens/$filename.png'));
+    final name = current != null ? '$filename-${current!.toShort()}' : filename;
+    await expectLater(actualFinder, matchesGoldenFile('goldens/$name.png'));
   }
 }
+
