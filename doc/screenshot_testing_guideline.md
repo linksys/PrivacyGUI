@@ -52,6 +52,14 @@ Properly preparing the state for each test is critical for isolation and determi
 
 Verification should be precise and robust.
 
+- **Prerequisite: Understand Implementation Code**: Before writing any `expect` assertions, it is **critical** to thoroughly read and understand the actual UI implementation file (e.g., `lib/page/instant_setup/pnp_setup_view.dart`). This step is essential to accurately identify:
+    - The types of widgets used (e.g., `AppText`, `AppFilledButton`, `TextButton`).
+    - Any unique `Key`s assigned to widgets (e.g., `Key('pnp_loading_spinner')`).
+    - The exact localization keys used for text content (e.g., `loc(context).pnpModemLightsOffTitle`).
+    - The presence and `semanticsLabel` of images (e.g., `find.bySemanticsLabel('modem Device image')`).
+    - The overall structure and hierarchy of the UI.
+  Failing to do so can lead to brittle or incorrect assertions.
+
 - **Precise UI Verification**: Do not rely solely on screenshots. Each test case must include a series of `expect` assertions to programmatically verify that all critical UI elements are in the correct state. These assertions must be rigorously cross-referenced with the actual implementation code (e.g., `lib/page/instant_setup/pnp_setup_view.dart`) to ensure they accurately reflect the UI elements, text content (using localization keys where applicable), and icons used in the production code.
 
 - **In-Test Screenshots**: For a test case that involves a sequence of user interactions (e.g., open dialog -> enter invalid text -> show error), use a custom helper (like `TestHelper.takeScreenshot`) to capture screenshots at multiple points within the **same `testLocalizations` block**. This is more efficient than creating a separate test case for each intermediate state.
