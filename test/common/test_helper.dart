@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_state.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
@@ -396,6 +397,36 @@ class TestHelper {
         nodeDetailProvider.overrideWith(() => mockNodeDetailNotifier),
       ];
 
+  Future<BuildContext> pumpRouter(
+    WidgetTester tester,
+    GoRouter router, {
+    required Type baseViewType,
+    List<Override> overrides = const [],
+    Locale locale = const Locale('en'),
+    ThemeMode themeMode = ThemeMode.system,
+    GlobalKey<NavigatorState>? navigatorKey,
+    List<ImageProvider> preCacheImages = const [],
+    List<String> preCacheCustomImages = const [],
+  }) async {
+    await tester.pumpWidget(testableRouter(
+      router: router,
+      overrides: [...defaultOverrides, ...overrides],
+      themeMode: themeMode,
+      locale: locale,
+    ));
+    final context = tester.element(find.byType(baseViewType));
+    await tester.runAsync(() async {
+      for (final image in preCacheImages) {
+        await precacheImage(image, context);
+      }
+      for (final image in preCacheCustomImages) {
+        await precacheImage(
+            CustomTheme.of(context).getRouterImage(image), context);
+      }
+    });
+    return context;
+  }
+
   Future<BuildContext> pumpView(
     WidgetTester tester, {
     required Widget child,
@@ -469,4 +500,3 @@ class TestHelper {
     await expectLater(actualFinder, matchesGoldenFile('goldens/$name.png'));
   }
 }
-

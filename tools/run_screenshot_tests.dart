@@ -3,11 +3,16 @@ import 'package:path/path.dart' as p;
 import 'package:args/args.dart'; // Import the args package
 
 // Custom log function to handle output redirection
-void _log(String message, IOSink? sink) {
-  if (sink != null) {
-    sink.writeln(message);
-  } else {
+void _log(String message, IOSink? sink, [bool both = false]) {
+  if (both) {
+    sink?.writeln(message);
     print(message);
+  } else {
+    if (sink != null) {
+      sink.writeln(message);
+    } else {
+      print(message);
+    }
   }
 }
 
@@ -26,7 +31,9 @@ void main(List<String> arguments) async {
             'Comma-separated list of resolutions (e.g., 480,1280). Requires -c.')
     ..addOption('output',
         abbr: 'o',
-        help: 'Path to an output file to write logs to instead of stdout.');
+        help: 'Path to an output file to write logs to instead of stdout.')
+    ..addOption('filter',
+        abbr: 'f', help: 'Filter test paths by key (e.g., "pnp").');
 
   ArgResults argResults = parser.parse(arguments);
 
@@ -34,34 +41,49 @@ void main(List<String> arguments) async {
   if (argResults['output'] != null) {
     final outputFile = File(argResults['output'] as String);
     outputSink = outputFile.openWrite(mode: FileMode.writeOnlyAppend);
-    _log('Output will be written to: ${outputFile.path}', null); // Log to console about redirection
+    _log('Output will be written to: ${outputFile.path}',
+        null); // Log to console about redirection
   }
 
-  _log('Starting screenshot test runner...', outputSink);
+  String? filterKey;
+  if (argResults['filter'] != null) {
+    filterKey = argResults['filter'] as String;
+    _log('Filtering test paths by key: $filterKey', outputSink, true);
+  }
+
+  _log('Starting screenshot test runner...', outputSink, true);
 
   final projectRoot = Directory.current.path;
   final testDir = Directory(p.join(projectRoot, 'test', 'page'));
 
   try {
-    final allTestFiles = await _findTestFiles(testDir);
+    final allTestFiles = await _findTestFiles(testDir, filterKey);
     if (allTestFiles.isEmpty) {
-      _log('No screenshot test files found matching the pattern.', outputSink);
+      _log('No screenshot test files found matching the pattern.', outputSink,
+          true);
       return;
     }
 
-    _log('Found ${allTestFiles.length} test files:', outputSink);
+    _log('Found ${allTestFiles.length} test files:', outputSink, true);
     for (int i = 0; i < allTestFiles.length; i++) {
-      _log('${i + 1}. ${p.relative(allTestFiles[i].path, from: testDir.path)}', outputSink);
+      _log('${i + 1}. ${p.relative(allTestFiles[i].path, from: testDir.path)}',
+          outputSink, true);
     }
 
-    final selectedFiles = _promptForFileSelection(allTestFiles, outputSink);
+    // skip prompt file selection if allTestFiles length is 1
+    final skipPrompt = allTestFiles.length == 1;
+
+    final selectedFiles = skipPrompt
+        ? allTestFiles
+        : _promptForFileSelection(allTestFiles, outputSink);
     if (selectedFiles.isEmpty) {
-      _log('No test files selected. Exiting.', outputSink);
+      _log('No test files selected. Exiting.', outputSink, true);
       return;
     }
-    _log('Selected ${selectedFiles.length} files for execution.', outputSink);
+    _log('Selected ${selectedFiles.length} files for execution.', outputSink,
+        true);
     for (var file in selectedFiles) {
-      _log('- ${p.relative(file.path, from: projectRoot)}', outputSink);
+      _log('- ${p.relative(file.path, from: projectRoot)}', outputSink, true);
     }
 
     List<String> selectedLanguages;
@@ -107,17 +129,20 @@ void main(List<String> arguments) async {
         for (var part in parts) {
           if (!validLanguages.contains(part)) {
             _log(
-                'Invalid language code provided via --languages: $part. Valid codes are: ${validLanguages.join(', ')}', outputSink);
+                'Invalid language code provided via --languages: $part. Valid codes are: ${validLanguages.join(', ')}',
+                outputSink);
             isValid = false;
             break;
           }
         }
         if (isValid) {
           selectedLanguages = parts;
-          _log('Languages from arguments: ${selectedLanguages.join(', ')}', outputSink);
+          _log('Languages from arguments: ${selectedLanguages.join(', ')}',
+              outputSink);
         } else {
           _log(
-              'Falling back to interactive language selection due to invalid --languages argument.', outputSink);
+              'Falling back to interactive language selection due to invalid --languages argument.',
+              outputSink);
           selectedLanguages = _promptForLanguages(outputSink);
         }
       } else {
@@ -141,7 +166,8 @@ void main(List<String> arguments) async {
           final resolution = int.tryParse(part);
           if (resolution == null || resolution <= 0) {
             _log(
-                'Invalid resolution provided via --resolutions: $part. Please enter positive numbers.', outputSink);
+                'Invalid resolution provided via --resolutions: $part. Please enter positive numbers.',
+                outputSink);
             isValid = false;
             break;
           }
@@ -149,11 +175,12 @@ void main(List<String> arguments) async {
         }
         if (isValid) {
           selectedResolutions = parsedResolutions;
-          _log(
-              'Resolutions from arguments: ${selectedResolutions.join(', ')}', outputSink);
+          _log('Resolutions from arguments: ${selectedResolutions.join(', ')}',
+              outputSink);
         } else {
           _log(
-              'Falling back to interactive resolution selection due to invalid --resolutions argument.', outputSink);
+              'Falling back to interactive resolution selection due to invalid --resolutions argument.',
+              outputSink);
           selectedResolutions = _promptForResolutions(outputSink);
         }
       } else {
@@ -167,7 +194,8 @@ void main(List<String> arguments) async {
     } else {
       // Customization is NOT enabled, use defaults
       _log(
-          'Customization not enabled. Using default languages and resolutions.', outputSink);
+          'Customization not enabled. Using default languages and resolutions.',
+          outputSink);
       selectedLanguages = ['en'];
       selectedResolutions = [480, 1280];
     }
@@ -175,8 +203,8 @@ void main(List<String> arguments) async {
     _log('Selected languages: ${selectedLanguages.join(', ')}', outputSink);
     _log('Selected resolutions: ${selectedResolutions.join(', ')}', outputSink);
 
-    await _runTests(
-        selectedFiles, selectedLanguages, selectedResolutions, projectRoot, outputSink);
+    await _runTests(selectedFiles, selectedLanguages, selectedResolutions,
+        projectRoot, outputSink);
   } catch (e) {
     _log('An error occurred: $e', outputSink);
     exit(1);
@@ -186,7 +214,7 @@ void main(List<String> arguments) async {
 }
 
 /// Recursively finds files matching `localizations/.*_test.dart`.
-Future<List<File>> _findTestFiles(Directory startDir) async {
+Future<List<File>> _findTestFiles(Directory startDir, String? filterKey) async {
   final files = <File>[];
   final pattern = RegExp(r'localizations[\/].*_test\.dart$');
 
@@ -197,14 +225,21 @@ Future<List<File>> _findTestFiles(Directory startDir) async {
   await for (final entity
       in startDir.list(recursive: true, followLinks: false)) {
     if (entity is File && pattern.hasMatch(entity.path)) {
-      files.add(entity);
+      if (filterKey != null && filterKey.isNotEmpty) {
+        if (entity.path.contains(filterKey)) {
+          files.add(entity);
+        }
+      } else {
+        files.add(entity);
+      }
     }
   }
   return files;
 }
 
 /// Prompts the user to select test files from a list.
-List<File> _promptForFileSelection(List<File> allTestFiles, [IOSink? outputSink]) {
+List<File> _promptForFileSelection(List<File> allTestFiles,
+    [IOSink? outputSink]) {
   List<File> selectedFiles = [];
   while (selectedFiles.isEmpty) {
     stdout.write(
@@ -233,7 +268,8 @@ List<File> _promptForFileSelection(List<File> allTestFiles, [IOSink? outputSink]
         final index = int.tryParse(part);
         if (index == null || index < 1 || index > allTestFiles.length) {
           _log(
-              'Invalid file number: $part. Please enter numbers between 1 and ${allTestFiles.length}.', outputSink);
+              'Invalid file number: $part. Please enter numbers between 1 and ${allTestFiles.length}.',
+              outputSink);
           isValid = false;
           break;
         }
@@ -296,7 +332,8 @@ List<String> _promptForLanguages([IOSink? outputSink]) {
       for (var part in parts) {
         if (!validLanguages.contains(part)) {
           _log(
-              'Invalid language code: $part. Valid codes are: ${validLanguages.join(', ')}', outputSink);
+              'Invalid language code: $part. Valid codes are: ${validLanguages.join(', ')}',
+              outputSink);
           isValid = false;
           break;
         }
@@ -331,7 +368,8 @@ List<int> _promptForResolutions([IOSink? outputSink]) {
       for (var part in parts) {
         final resolution = int.tryParse(part);
         if (resolution == null || resolution <= 0) {
-          _log('Invalid resolution: $part. Please enter positive numbers.', outputSink);
+          _log('Invalid resolution: $part. Please enter positive numbers.',
+              outputSink);
           isValid = false;
           break;
         }
@@ -373,7 +411,8 @@ Future<void> _runTests(List<File> files, List<String> languages,
     final relativeFilePath = p.relative(file.path, from: projectRoot);
     for (final lang in languages) {
       _log(
-          '\nRunning test: $relativeFilePath, Language: $lang, Resolutions: $resolutionsString', outputSink);
+          '\nRunning test: $relativeFilePath, Language: $lang, Resolutions: $resolutionsString',
+          outputSink);
       final process = await Process.run(
         'sh',
         [
@@ -395,7 +434,8 @@ Future<void> _runTests(List<File> files, List<String> languages,
 
       if (process.exitCode != 0) {
         _log(
-            'Test failed for $relativeFilePath (Language: $lang, Resolutions: $resolutionsString)', outputSink);
+            'Test failed for $relativeFilePath (Language: $lang, Resolutions: $resolutionsString)',
+            outputSink);
 
         String rawOutput =
             process.stdout.toString() + process.stderr.toString();
@@ -481,7 +521,8 @@ Future<void> _runTests(List<File> files, List<String> languages,
         }
       } else {
         _log(
-            'Test passed for $relativeFilePath (Language: $lang, Resolutions: $resolutionsString)', outputSink);
+            'Test passed for $relativeFilePath (Language: $lang, Resolutions: $resolutionsString)',
+            outputSink);
       }
     }
   }
@@ -493,7 +534,8 @@ Future<void> _runTests(List<File> files, List<String> languages,
       final f = failures[i];
       _log('\n${i + 1}. File: ${f.filePath}', outputSink);
       _log(
-          '   Language: ${f.language}, Resolution: ${f.resolution == -1 ? 'Unknown' : f.resolution}', outputSink);
+          '   Language: ${f.language}, Resolution: ${f.resolution == -1 ? 'Unknown' : f.resolution}',
+          outputSink);
       if (f.testDescription != null) {
         _log('   Test: ${f.testDescription}', outputSink);
       }
