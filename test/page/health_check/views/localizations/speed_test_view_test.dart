@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/health_check/_health_check.dart';
+import 'package:privacy_gui/page/health_check/models/health_check_enum.dart';
 import 'package:privacygui_widgets/theme/custom_theme.dart';
 
 import '../../../../common/test_helper.dart';
@@ -31,10 +32,7 @@ void main() {
   testLocalizations('Speedtest - init with Ookla logo', (tester, locale) async {
     when(testHelper.mockHealthCheckProvider.build())
         .thenReturn(HealthCheckState.fromJson(healthCheckInitState));
-    when(testHelper.mockDashboardHomeNotifier.build()).thenReturn(
-        DashboardHomeState.fromMap(dashboardHomeCherry7TestState)
-            .copyWith(healthCheckModule: () => 'Ookla'));
-
+   
     await testHelper.pumpView(
       tester,
       child: const SpeedTestView(),
@@ -200,7 +198,7 @@ class MockHealthCheckSuccessProvider extends HealthCheckProvider with Mock {
   @override
   Future runHealthCheck(Module module) async {
     await Future.delayed(const Duration(seconds: 1));
-    state = state.copyWith(step: 'success');
+    state = state.copyWith(step: HealthCheckStep.success);
   }
 }
 

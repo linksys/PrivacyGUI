@@ -1,20 +1,15 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
-import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/page/health_check/models/health_check_enum.dart';
+import 'package:privacy_gui/page/health_check/models/speed_test_event.dart';
+import 'package:privacy_gui/page/health_check/models/speed_test_ui_model.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_state.dart';
+import 'package:privacy_gui/page/health_check/services/health_check_service.dart';
 
-import '../../../core/jnap/actions/better_action.dart';
-import '../../../core/jnap/models/health_check_result.dart';
-import '../../../core/jnap/router_repository.dart';
-
-const int delayHealthCheckMonitor = 3;
-
+/// Defines the modules available for health checks.
 enum Module {
   speedtest(value: "SpeedTest");
 
@@ -22,218 +17,188 @@ enum Module {
   final String value;
 }
 
+/// Provider for managing the state of the health check feature.
 final healthCheckProvider =
     NotifierProvider<HealthCheckProvider, HealthCheckState>(
-        () => HealthCheckProvider());
+        HealthCheckProvider.new);
 
+/// Manages both the transient state of a running test and the persistent state
+/// of historical results and supported modules for the health check feature.
 class HealthCheckProvider extends Notifier<HealthCheckState> {
   StreamSubscription? _streamSubscription;
+  final Random _random = Random();
 
   @override
-  HealthCheckState build() => HealthCheckState.init();
-
-  Future<void> runHealthCheck(Module module) async {
-    if (module == Module.speedtest) {
-      // Reset state
-      state = HealthCheckState.init();
-      final repo = ref.read(routerRepositoryProvider);
-      final result = await repo.send(
-        JNAPAction.runHealthCheck,
-        data: {"runHealthCheckModule": module.value},
-        auth: true,
-        fetchRemote: true,
-        cacheLevel: CacheLevel.noCache,
-      );
-      if (result.output['resultID'] == null) {
-        state = state.copyWith(
-          step: 'error',
-          error: const JNAPError(result: 'Empty resultID'),
-        );
-        return;
-      }
+  HealthCheckState build() {
+    ref.onDispose(() {
       _streamSubscription?.cancel();
-      _streamSubscription = repo
-          .scheduledCommand(
-              action: JNAPAction.getHealthCheckStatus,
-              auth: true,
-              firstDelayInMilliSec: 0,
-              retryDelayInMilliSec: 100,
-              maxRetry: -1,
-              condition: (result) {
-                return result is JNAPSuccess &&
-                        result.output['speedTestResult']['exitCode'] !=
-                            'Unavailable' ||
-                    result is JNAPError;
-              },
-              onCompleted: (_) async {
-                final resultId = state.result.firstOrNull?.resultID;
-                // Get health check result with resultId
-                final result = await getHealthCheckResults(module, 1, resultId);
-                // Set state
-                if (result is JNAPSuccess) {
-                  final speedtestTempResult = state.result
-                      .firstWhereOrNull((e) => e.timestamp == state.timestamp)
-                      ?.speedTestResult;
-                  state = state.copyWith(
-                      step: 'success',
-                      status: 'COMPLETE',
-                      meterValue:
-                          speedtestTempResult?.uploadBandwidth?.toDouble() ??
-                              0.0);
-                  ref.read(pollingProvider.notifier).forcePolling();
-                } else if (result is JNAPError) {
-                  state = state.copyWith(step: 'error', status: 'COMPLETE');
-                }
-              })
-          .listen((result) {
-        logger.d('[SpeedTest] Get Health Check Result - $result');
-        if (result is JNAPError) {
-          state = state.copyWith(error: result);
-          return;
-        }
-        final step = _getCurrentStep(result);
-        if (step.isNotEmpty) {
-          final randomValue = _randomDouble(-3, 15) * 1024;
-          final speedtestTempResult = SpeedTestResult.fromJson(
-              (result as JNAPSuccess).output['speedTestResult']);
-          var meterValue = 0.0;
-          if (step == 'latency') {
-            // Enter to collect latency
-            meterValue = 0.0;
-          } else if (step == 'downloadBandwidth' && state.step == 'latency') {
-            // Enter to collect download bandwidth
-            meterValue = 0.0;
-          } else if (step == 'uploadBandwidth' &&
-              state.step == 'downloadBandwidth') {
-            // Enter to collect upload bandwidth, show download bandwidth and reset to 0 after 1 second
-            meterValue =
-                speedtestTempResult.downloadBandwidth?.toDouble() ?? 0.0;
-            Future.delayed(const Duration(milliseconds: 1000), () {
-              state = state.copyWith(meterValue: 0.0);
-            });
-          } else {
-            meterValue = state.meterValue + randomValue;
-          }
-          state = state.copyWith(
-            step: step,
-            status: 'RUNNING',
-            meterValue: meterValue < 0 ? 0 : meterValue,
-            randomValue: randomValue,
-          );
-          Future.delayed(const Duration(milliseconds: 400), () {
-            state = state.copyWith(
-              result: [
-                HealthCheckResult(
-                  resultID: speedtestTempResult.resultID,
-                  timestamp: '',
-                  healthCheckModulesRequested: const ['SpeedTest'],
-                  speedTestResult: speedtestTempResult,
-                ),
-              ],
-            );
-          });
-        }
-      });
-    }
+    });
+    // Asynchronously load persistent data when the provider is first initialized.
+    loadData();
+    // Return the default initial state. The UI will update once data is loaded.
+    return HealthCheckState.init();
   }
 
-  // void updateMeterValue(double meterValue) {
-  //   state = state.copyWith(
-  //     meterValue: meterValue,
-  //   );
-  // }
+  /// Loads persistent data like historical tests and supported modules.
+  Future<void> loadData() async {
+    final service = ref.read(speedTestServiceProvider);
+    final historical = await service.getInitialSpeedTestState();
+    final latest = historical.isNotEmpty ? historical.first : null;
 
-  // void updateRandomValue(double randomValue) {
-  //   state = state.copyWith(
-  //     randomValue: randomValue,
-  //   );
-  // }
+    final supportedModules = await service.getSupportedHealthCheckModules();
 
-  double _randomDouble(double min, double max) {
-    return (Random().nextDouble() * (max - min) + min);
-  }
-
-  Future<JNAPResult> getHealthCheckResults(
-    Module module,
-    int numberOfMostRecentResults,
-    int? resultId,
-  ) async {
-    final repo = ref.read(routerRepositoryProvider);
-    late JNAPResult result;
-    try {
-      result = await repo.send(
-        JNAPAction.getHealthCheckResults,
-        data: {
-          "includeModuleResults": true,
-          "healthCheckModule": module.value,
-          "lastNumberOfResults": numberOfMostRecentResults,
-          'resultIDs': resultId != null ? [resultId] : null,
-        }..removeWhere((key, value) => value == null),
-        auth: true,
-        fetchRemote: true,
-        cacheLevel: CacheLevel.noCache,
-      );
-    } on JNAPError catch (e) {
-      // JNAP error
-      result = e;
-    } on TimeoutException catch (e) {
-      // Timeout exception
-      result = JNAPError(result: e.runtimeType.toString());
-    } catch (e) {
-      // Unknown Exception
-      result = JNAPError(
-        result: 'UNKNOWN',
-        error: e.runtimeType.toString(),
-      );
-    }
-
-    if (result is JNAPSuccess) {
-      final healthCheckResults = List.from(result.output['healthCheckResults'])
-          .map((e) => HealthCheckResult.fromJson(e))
-          .toList();
-      _handleHealthCheckResults(healthCheckResults);
-    } else if (result is JNAPError) {
-      state = state.copyWith(error: result);
-    }
-    return result;
-  }
-
-  _handleHealthCheckResults(List<HealthCheckResult> healthCheckResults) {
-    final timestamp = healthCheckResults.firstOrNull?.timestamp;
-    state = state.copyWith(result: healthCheckResults, timestamp: timestamp);
-  }
-
-  Future<void> stopHealthCheck() async {
-    final repo = ref.read(routerRepositoryProvider);
-    await repo.send(
-      JNAPAction.stopHealthCheck,
-      auth: true,
-      fetchRemote: true,
-      cacheLevel: CacheLevel.noCache,
+    state = state.copyWith(
+      historicalSpeedTests: historical,
+      latestSpeedTest: latest,
+      healthCheckModules: supportedModules,
     );
   }
 
-  String _getCurrentStep(JNAPResult result) {
-    if (result is JNAPSuccess) {
-      final speedTestResult =
-          SpeedTestResult.fromJson(result.output['speedTestResult']);
-      if (result.output['healthCheckModuleCurrentlyRunning'] == 'SpeedTest') {
-        // SpeedTest
-        final latency = speedTestResult.latency;
-        final downloadBandwidth = speedTestResult.downloadBandwidth;
-        if (downloadBandwidth != null && downloadBandwidth != 0) {
-          return 'uploadBandwidth';
-        } else if (latency != null && latency != 0) {
-          return 'downloadBandwidth';
-        } else {
-          return 'latency';
-        }
-      } else {
-        // TODO: Others module
-        return '';
-      }
-    } else {
-      return '';
+  /// Starts the health check process for a given [module].
+  Future<void> runHealthCheck(Module module) async {
+    if (module != Module.speedtest) return;
+
+    _streamSubscription?.cancel();
+
+    // Reset only the transient state for the new test run,
+    // preserving the persistent historical data.
+    state = state.copyWith(
+      status: HealthCheckStatus.running,
+      step: HealthCheckStep.latency,
+      meterValue: 0.0,
+      result: null,
+      errorCode: null,
+      clearError: true,
+    );
+
+    final service = ref.read(speedTestServiceProvider);
+
+    _streamSubscription = service.runHealthCheck(module).listen((event) {
+      _handleStreamEvent(event);
+    });
+  }
+
+  /// Handles events from the [SpeedTestService] stream.
+  void _handleStreamEvent(SpeedTestStreamEvent event) {
+    switch (event) {
+      case SpeedTestProgress():
+        _updateProgress(event.partialResult);
+        break;
+      case SpeedTestSuccess():
+        _updateSuccess(event.finalResult);
+        break;
+      case SpeedTestFailure():
+        _updateFailure(event.error);
+        break;
     }
+  }
+
+  /// Updates the state to reflect the progress of the speed test.
+  void _updateProgress(SpeedTestUIModel partialResult) {
+    final step = _getCurrentStep(partialResult);
+    double meterValue = state.meterValue;
+
+    // Logic to control the animated meter's value based on the current step.
+    if (step == HealthCheckStep.latency) {
+      meterValue = 0.0;
+    } else if (step == HealthCheckStep.downloadBandwidth &&
+        state.step == HealthCheckStep.latency) {
+      // Reset meter when moving from latency to download.
+      meterValue = 0.0;
+    } else if (step == HealthCheckStep.uploadBandwidth &&
+        state.step == HealthCheckStep.downloadBandwidth) {
+      // Set meter to final download speed before resetting for upload.
+      meterValue = (partialResult.downloadBandwidthKbps ?? 0).toDouble();
+      Future.delayed(const Duration(milliseconds: 1000), () {
+        state = state.copyWith(meterValue: 0.0);
+      });
+    } else {
+      // Add a random value to simulate a fluctuating meter during tests.
+      final randomValue = (_random.nextDouble() * (15 - (-3)) + (-3)) * 1024;
+      meterValue += randomValue;
+    }
+
+    state = state.copyWith(
+      step: step,
+      status: HealthCheckStatus.running,
+      meterValue: meterValue < 0 ? 0 : meterValue,
+      result: partialResult,
+      clearError: true,
+    );
+  }
+
+  /// Updates the state to reflect the successful completion of the speed test.
+  void _updateSuccess(SpeedTestUIModel finalResult) {
+    // Prepend the new result to the historical list.
+    final newHistory = [finalResult, ...state.historicalSpeedTests];
+    // Ensure the history list doesn't grow indefinitely.
+    if (newHistory.length > 5) {
+      newHistory.removeLast();
+    }
+
+    state = state.copyWith(
+      // Transient state
+      status: HealthCheckStatus.complete,
+      step: HealthCheckStep.success,
+      result: finalResult,
+      meterValue: (finalResult.uploadBandwidthKbps ?? 0).toDouble(),
+      clearError: true,
+      // Persistent state
+      latestSpeedTest: finalResult,
+      historicalSpeedTests: newHistory,
+    );
+
+    // Force a refresh of other dashboard data if needed.
+    ref.read(pollingProvider.notifier).forcePolling();
+  }
+
+  /// Updates the state to reflect a failure in the speed test.
+  void _updateFailure(String error) {
+    state = state.copyWith(
+      status: HealthCheckStatus.complete,
+      step: HealthCheckStep.error,
+      errorCode: _mapStringToError(error),
+    );
+  }
+
+  /// Determines the current step of the test based on the available data in [result].
+  HealthCheckStep _getCurrentStep(SpeedTestUIModel result) {
+    if (result.downloadSpeed != '--' && result.downloadSpeed != '0.0') {
+      return HealthCheckStep.uploadBandwidth;
+    } else if (result.latency != '--' && result.latency != '0') {
+      return HealthCheckStep.downloadBandwidth;
+    } else {
+      return HealthCheckStep.latency;
+    }
+  }
+
+  /// Maps an error string from the JNAP response to a [SpeedTestError] enum.
+  SpeedTestError? _mapStringToError(String? errorCode) {
+    return switch (errorCode) {
+      'Success' => null,
+      'Unavailable' => null,
+      'SpeedTestConfigurationError' => SpeedTestError.configuration,
+      'SpeedTestLicenseError' => SpeedTestError.license,
+      'SpeedTestExecutionError' => SpeedTestError.execution,
+      'AbortedByUser' => SpeedTestError.aborted,
+      'DBError' => SpeedTestError.dbError,
+      'TimeoutException' => SpeedTestError.timeout,
+      'Empty resultID' => SpeedTestError.emptyResultId,
+      'NoSpeedTestResultInResponse' => SpeedTestError.unknown,
+      _ => SpeedTestError.unknown,
+    };
+  }
+
+  /// Stops the health check process and resets the transient state.
+  Future<void> stopHealthCheck() async {
+    await ref.read(speedTestServiceProvider).stopHealthCheck();
+    _streamSubscription?.cancel();
+    state = state.copyWith(
+      status: HealthCheckStatus.idle,
+      step: HealthCheckStep.latency,
+      meterValue: 0.0,
+      result: null,
+      errorCode: null,
+    );
   }
 }

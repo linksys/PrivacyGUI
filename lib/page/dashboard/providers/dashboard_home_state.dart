@@ -160,55 +160,40 @@ class DashboardWiFiItem extends Equatable {
 class DashboardHomeState extends Equatable {
   final bool isFirstPolling;
   final bool isHorizontalLayout;
-  final bool isHealthCheckSupported;
   final String masterIcon;
   final bool isAnyNodesOffline;
-  final DashboardSpeedItem? uploadResult;
-  final DashboardSpeedItem? downloadResult;
-  final int? speedCheckTimestamp;
   final int? uptime;
   final String? wanPortConnection;
   final List<String> lanPortConnections;
   final List<DashboardWiFiItem> wifis;
   final String? wanType;
   final String? detectedWANType;
-  final String? healthCheckModule;
 
   const DashboardHomeState({
     this.isFirstPolling = false,
     this.isHorizontalLayout = false,
-    this.isHealthCheckSupported = false,
     this.masterIcon = '',
     this.isAnyNodesOffline = false,
-    this.uploadResult,
-    this.downloadResult,
-    this.speedCheckTimestamp,
     this.uptime,
     this.wanPortConnection,
     this.lanPortConnections = const [],
     this.wifis = const [],
     this.wanType,
     this.detectedWANType,
-    this.healthCheckModule,
   });
 
   Map<String, dynamic> toMap() {
     return {
       'isFirstPolling': isFirstPolling,
       'isHorizontalLayout': isHorizontalLayout,
-      'isHealthCheckSupported': isHealthCheckSupported,
       'masterIcon': masterIcon,
       'isAnyNodesOffline': isAnyNodesOffline,
-      'uploadResult': uploadResult?.toMap(),
-      'downloadResult': downloadResult?.toMap(),
-      'speedCheckTimestamp': speedCheckTimestamp,
       'uptime': uptime,
       'wanPortConnection': wanPortConnection,
       'lanPortConnections': lanPortConnections,
       'wifis': wifis.map((x) => x.toMap()).toList(),
       'wanType': wanType,
       'detectedWANType': detectedWANType,
-      'healthCheckModule': healthCheckModule,
     };
   }
 
@@ -216,19 +201,15 @@ class DashboardHomeState extends Equatable {
     return DashboardHomeState(
       isFirstPolling: map['isFirstPolling'] ?? false,
       isHorizontalLayout: map['isHorizontalLayout'] ?? false,
-      isHealthCheckSupported: map['isHealthCheckSupported'] ?? false,
       masterIcon: map['masterIcon'] ?? '',
       isAnyNodesOffline: map['isAnyNodesOffline'] ?? false,
-      uploadResult: map['uploadResult'] != null ? DashboardSpeedItem.fromMap(map['uploadResult']) : null,
-      downloadResult: map['downloadResult'] != null ? DashboardSpeedItem.fromMap(map['downloadResult']) : null,
-      speedCheckTimestamp: map['speedCheckTimestamp']?.toInt(),
       uptime: map['uptime']?.toInt(),
       wanPortConnection: map['wanPortConnection'],
       lanPortConnections: List<String>.from(map['lanPortConnections']),
-      wifis: List<DashboardWiFiItem>.from(map['wifis']?.map((x) => DashboardWiFiItem.fromMap(x))),
+      wifis: List<DashboardWiFiItem>.from(
+          map['wifis']?.map((x) => DashboardWiFiItem.fromMap(x))),
       wanType: map['wanType'],
       detectedWANType: map['detectedWANType'],
-      healthCheckModule: map['healthCheckModule'],
     );
   }
 
@@ -245,61 +226,49 @@ class DashboardHomeState extends Equatable {
     return [
       isFirstPolling,
       isHorizontalLayout,
-      isHealthCheckSupported,
       masterIcon,
       isAnyNodesOffline,
-      uploadResult,
-      downloadResult,
-      speedCheckTimestamp,
       uptime,
       wanPortConnection,
       lanPortConnections,
       wifis,
       wanType,
       detectedWANType,
-      healthCheckModule,
     ];
   }
 
   DashboardHomeState copyWith({
     bool? isFirstPolling,
     bool? isHorizontalLayout,
-    bool? isHealthCheckSupported,
     String? masterIcon,
     bool? isAnyNodesOffline,
-    ValueGetter<DashboardSpeedItem?>? uploadResult,
-    ValueGetter<DashboardSpeedItem?>? downloadResult,
-    ValueGetter<int?>? speedCheckTimestamp,
     ValueGetter<int?>? uptime,
     ValueGetter<String?>? wanPortConnection,
     List<String>? lanPortConnections,
     List<DashboardWiFiItem>? wifis,
     ValueGetter<String?>? wanType,
     ValueGetter<String?>? detectedWANType,
-    ValueGetter<String?>? healthCheckModule,
   }) {
     return DashboardHomeState(
       isFirstPolling: isFirstPolling ?? this.isFirstPolling,
       isHorizontalLayout: isHorizontalLayout ?? this.isHorizontalLayout,
-      isHealthCheckSupported: isHealthCheckSupported ?? this.isHealthCheckSupported,
       masterIcon: masterIcon ?? this.masterIcon,
       isAnyNodesOffline: isAnyNodesOffline ?? this.isAnyNodesOffline,
-      uploadResult: uploadResult != null ? uploadResult() : this.uploadResult,
-      downloadResult: downloadResult != null ? downloadResult() : this.downloadResult,
-      speedCheckTimestamp: speedCheckTimestamp != null ? speedCheckTimestamp() : this.speedCheckTimestamp,
       uptime: uptime != null ? uptime() : this.uptime,
-      wanPortConnection: wanPortConnection != null ? wanPortConnection() : this.wanPortConnection,
+      wanPortConnection: wanPortConnection != null
+          ? wanPortConnection()
+          : this.wanPortConnection,
       lanPortConnections: lanPortConnections ?? this.lanPortConnections,
       wifis: wifis ?? this.wifis,
       wanType: wanType != null ? wanType() : this.wanType,
-      detectedWANType: detectedWANType != null ? detectedWANType() : this.detectedWANType,
-      healthCheckModule: healthCheckModule != null ? healthCheckModule() : this.healthCheckModule,
+      detectedWANType:
+          detectedWANType != null ? detectedWANType() : this.detectedWANType,
     );
   }
 
   @override
   String toString() {
-    return 'DashboardHomeState(isFirstPolling: $isFirstPolling, isHorizontalLayout: $isHorizontalLayout, isHealthCheckSupported: $isHealthCheckSupported, masterIcon: $masterIcon, isAnyNodesOffline: $isAnyNodesOffline, uploadResult: $uploadResult, downloadResult: $downloadResult, speedCheckTimestamp: $speedCheckTimestamp, uptime: $uptime, wanPortConnection: $wanPortConnection, lanPortConnections: $lanPortConnections, wifis: $wifis, wanType: $wanType, detectedWANType: $detectedWANType, healthCheckModule: $healthCheckModule)';
+    return 'DashboardHomeState(isFirstPolling: $isFirstPolling, isHorizontalLayout: $isHorizontalLayout, masterIcon: $masterIcon, isAnyNodesOffline: $isAnyNodesOffline, uptime: $uptime, wanPortConnection: $wanPortConnection, lanPortConnections: $lanPortConnections, wifis: $wifis, wanType: $wanType, detectedWANType: $detectedWANType)';
   }
 }
 

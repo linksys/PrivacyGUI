@@ -80,9 +80,6 @@ void main() {
 
   testLocalizations('Instant-Verify view - Internal speed test tile',
       (tester, locale) async {
-    when(testHelper.mockDashboardHomeNotifier.build()).thenReturn(
-        DashboardHomeState.fromMap(dashboardHomeCherry7TestState).copyWith(
-            isHealthCheckSupported: true, healthCheckModule: () => 'Ookla'));
     await tester.runAsync(() async {
       await testHelper.pumpShellView(
         tester,
@@ -176,8 +173,7 @@ void main() {
           child: const InstantVerifyView(),
           locale: locale,
           overrides: [
-            internetStatusProvider
-                .overrideWith((ref) => InternetStatus.online),
+            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
           ],
         );
         final context = tester.element(find.byType(InstantVerifyView));
@@ -211,8 +207,7 @@ void main() {
           child: const InstantVerifyView(),
           locale: locale,
           overrides: [
-            internetStatusProvider
-                .overrideWith((ref) => InternetStatus.online),
+            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
           ],
         );
         final context = tester.element(find.byType(InstantVerifyView));
@@ -244,8 +239,7 @@ void main() {
           child: const InstantVerifyView(),
           locale: locale,
           overrides: [
-            internetStatusProvider
-                .overrideWith((ref) => InternetStatus.online),
+            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
           ],
         );
         final context = tester.element(find.byType(InstantVerifyView));

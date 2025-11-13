@@ -11,6 +11,7 @@ import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/bench_mark.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
 import 'package:privacy_gui/page/vpn/providers/vpn_notifier.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
@@ -139,6 +140,10 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     }
     if (serviceHelper.isSupportVPN()) {
       await ref.read(vpnProvider.notifier).fetch(false, true);
+    }
+
+    if (serviceHelper.isSupportHealthCheck()) {
+      await ref.read(healthCheckProvider.notifier).loadData();
     }
 
     await ref.read(instantPrivacyProvider.notifier).fetch(updateStatusOnly: true);
