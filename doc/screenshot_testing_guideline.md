@@ -11,16 +11,16 @@ Clear documentation is crucial for test maintainability and traceability.
 - **Reference to Implementation File**: At the top of the test file, explicitly state the path to the implementation file under test (e.g., `lib/page/instant_setup/pnp_admin_view.dart`). This helps developers quickly locate the corresponding source code.
     - **Placement**: This comment, along with the View ID and File-Level Summary, should be placed after all `import` statements and before the `main()` function.
 
-- **View ID**: At the very beginning of the file, specify a unique ID for the view being tested (e.g., `// View ID: PNPS`). This is used for high-level test management and reporting.
+- **View ID**: At the very beginning of the file, specify a unique ID for the view being tested (e.g., `// View ID: PNPS`). The View ID must consist of up to five uppercase English letters and must not contain hyphens (`-`) or underscores (`_`). This is used for high-level test management and reporting.
     - **Placement**: This comment, along with the Reference to Implementation File and File-Level Summary, should be placed after all `import` statements and before the `main()` function.
 
-- **Test ID**: Assign a unique, hierarchical ID to each test case (e.g., `// Test ID: PNPS-WIZ_INIT`). This ID represents the logical test scenario. All golden files associated with this test case will use this Test ID as a prefix.
+- **Test ID**: Assign a unique, hierarchical ID to each test case. The Test ID must follow the format `{View ID}-{SHORT_DESCRIPTION}`, where the description is a short, uppercase string of at most 10 characters, using underscores (`_`) to connect words (e.g., `// Test ID: PNPS-WIZ_INIT`). This ID represents the logical test scenario. All golden files associated with this test case will use this Test ID as a prefix.
 
-- **Golden File Naming Convention**: All golden files (both the main `goldenFilename` in `testLocalizations` and intermediate screenshots from `TestHelper.takeScreenshot`) must follow the convention: `[TestID]_[number]_[description]`.
+- **Golden File Naming Convention**: All golden files (both the main `goldenFilename` in `testLocalizations` and intermediate screenshots from `TestHelper.takeScreenshot`) must follow the convention: `[TestID]-[number]-[description]`.
     - `[TestID]`: The base Test ID (e.g., `PNPS-WIZ_INIT`).
     - `[number]`: A two-digit incremental number (e.g., `01`, `02`) to order screenshots within a single test case.
     - `[description]`: A short, descriptive string (e.g., `initial_state`, `info_dialog`, `ssid_error`).
-    - **Example**: `PNPS-STEP1_WIFI_01_info_dialog`
+    - **Example**: `PNPS-WIZ_INIT-01-initial_state`
 
 - **Descriptive Titles**: Test descriptions should be colloquial and clear English (e.g., `'Verify admin password prompt with login and "Where is it?" buttons'`). The title should explain the purpose of the test, not just state the condition.
 
@@ -69,3 +69,10 @@ Verification should be precise and robust.
 - **Handling Asynchronicity**:
     - **Image Pre-caching**: For tests that display images, use the `preCacheRouterImages` parameter or `tester.runAsync` with `precacheImage` to prevent flaky tests caused by image loading delays.
     - **UI Stabilization**: After triggering a state change or UI animation (e.g., tapping a button that shows a dialog), use `await tester.pumpAndSettle()` to ensure the UI has reached a stable state before making assertions or taking a screenshot.
+
+### 5. Test-Related File Locations
+
+This section lists common test-related files and their locations for quick reference.
+
+- `@test/common/test_helper.dart`: Contains the `TestHelper` class, which centralizes setup, mocks, and utility functions for screenshot tests.
+- `@test/common/test_responsive_widget.dart`: Provides utilities for testing responsive widgets across different screen sizes and locales, including `testResponsiveWidgets` and `testLocalizations`.
