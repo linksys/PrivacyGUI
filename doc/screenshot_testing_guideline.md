@@ -24,8 +24,19 @@ Clear documentation is crucial for test maintainability and traceability.
 
 - **Descriptive Titles**: Test descriptions should be colloquial and clear English (e.g., `'Verify admin password prompt with login and "Where is it?" buttons'`). The title should explain the purpose of the test, not just state the condition.
 
-- **File-Level Summary**: Provide a summary block at the top of the file indexing all covered test cases and their brief descriptions.
+- **File-Level Summary**: Provide a summary block at the top of the file indexing all covered test cases and their brief descriptions. It is recommended to use a Markdown table for clarity and readability.
     - **Placement**: This summary, along with the View ID and Reference to Implementation File, should be placed after all `import` statements and before the `main()` function.
+    - **Example Table Format**:
+      ```markdown
+      /// | Test ID             | Description                                                                 |
+      /// | :------------------ | :-------------------------------------------------------------------------- |
+      /// | `PNPA-INIT`         | Verifies loading spinner and "Initializing Admin" message on startup.       |
+      /// | `PNPA-NETCHK`       | Verifies "Checking Internet Connection" message while network is being checked. |
+      /// | `PNPA-NETOK`        | Verifies "Internet Connected" message and continue button when online.      |
+      /// | `PNPA-UNCONF`       | Verifies unconfigured router view with "Start Setup" button.                |
+      /// | `PNPA-PASSWD`       | Verifies admin password prompt with login and "Where is it?" buttons.       |
+      /// | `PNPA-PASSWD_MODAL` | Verifies "Where is it?" modal appears when button is tapped on password screen. |
+      ```
 
 ### 2. Centralized Test Helper (`TestHelper`)
 
