@@ -20,26 +20,17 @@ import '../../../common/test_responsive_widget.dart';
 /// This file contains screenshot tests for the `PnpAdminView` widget,
 /// covering various `PnpFlowStatus` states and user interactions.
 ///
-/// **Covered Test Scenarios:**
-///
-/// - **`PNPA-INIT`**: Verifies loading spinner and "Initializing Admin" message on startup.
-///   - `PNPA-INIT_01_initial_state`: Initial loading screen displayed.
-/// - **`PNPA-NETCHK`**: Verifies "Checking Internet Connection" message while network is being checked.
-///   - `PNPA-NETCHK_01_checking_internet_screen`: Checking internet connection screen displayed.
-/// - **`PNPA-NETOK`**: Verifies "Internet Connected" message and continue button when online.
-///   - `PNPA-NETOK_01_internet_connected_screen`: Internet connected screen displayed.
-/// - **`PNPA-UNCONF`**: Verifies unconfigured router view with "Start Setup" button.
-///   - `PNPA-UNCONF_01_unconfigured_router_screen`: Unconfigured router screen displayed.
-/// - **`PNPA-PASSWD`**: Verifies admin password prompt with login and "Where is it?" buttons.
-///   - `PNPA-PASSWD_01_password_prompt_screen`: Password prompt screen displayed.
-/// - **`PNPA-PASSWD_LOGGING_IN`**: Verifies login button is disabled and processing state is shown when logging in.
-///   - `PNPA-PASSWD_LOGGING_IN_01_logging_in_screen`: Logging in screen displayed.
-/// - **`PNPA-PASSWD_LOGIN_FAILED`**: Verifies "Incorrect Password" error message after a failed login attempt.
-///   - `PNPA-PASSWD_LOGIN_FAILED_01_failed_login_screen`: Failed login screen displayed.
-/// - **`PNPA-ERROR`**: Verifies generic error page with a "Try Again" button.
-///   - `PNPA-ERROR_01_generic_error_screen`: Generic error screen displayed.
-/// - **`PNPA-PASSWD_MODAL`**: Verifies "Where is it?" modal appears when button is tapped on password screen.
-///   - `PNPA-PASSWD_MODAL_01_where_is_it_modal`: "Where is it?" modal dialog displayed.
+/// | Test ID                  | Description                                                                 |
+/// | :----------------------- | :-------------------------------------------------------------------------- |
+/// | `PNPA-INIT`              | Verifies loading spinner and "Initializing Admin" message on startup.       |
+/// | `PNPA-NETCHK`            | Verifies "Checking Internet Connection" message while network is being checked. |
+/// | `PNPA-NETOK`             | Verifies "Internet Connected" message and continue button when online.      |
+/// | `PNPA-UNCONF`            | Verifies unconfigured router view with "Start Setup" button.                |
+/// | `PNPA-PASSWD`            | Verifies admin password prompt with login and "Where is it?" buttons.       |
+/// | `PNPA-PASSWD_LOGGING_IN` | Verifies login button is disabled and processing state is shown when logging in. |
+/// | `PNPA-PASSWD_LOGIN_FAILED` | Verifies "Incorrect Password" error message after a failed login attempt.   |
+/// | `PNPA-ERROR`             | Verifies generic error page with a "Try Again" button.                      |
+/// | `PNPA-PASSWD_MODAL`      | Verifies "Where is it?" modal appears when button is tapped on password screen. |
 void main() {
   final testHelper = TestHelper();
   final screens = responsiveAllScreens;

@@ -90,17 +90,6 @@ final pnpTroubleshootingRoute = LinksysRoute(
       ),
     ),
     LinksysRoute(
-      name: RouteNamed.pnpIspSaveSettings,
-      path: RoutePath.pnpIspSaveSettings,
-      config: LinksysRouteConfig(
-        column: ColumnGrid(column: 6, centered: true),
-        noNaviRail: true,
-      ),
-      builder: (context, state) => PnpIspSaveSettingsView(
-        args: state.extra as Map<String, dynamic>? ?? {},
-      ),
-    ),
-    LinksysRoute(
       name: RouteNamed.pnpIspTypeSelection,
       path: RoutePath.pnpIspTypeSelection,
       config: LinksysRouteConfig(

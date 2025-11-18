@@ -41,7 +41,6 @@ import 'package:privacy_gui/page/otp_flow/providers/_providers.dart';
 import 'package:privacy_gui/page/otp_flow/views/_views.dart';
 import 'package:privacy_gui/page/instant_setup/pnp_admin_view.dart';
 import 'package:privacy_gui/page/instant_setup/pnp_setup_view.dart';
-import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_isp_save_settings_view.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_pppoe_view.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_isp_type_selection_view.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_static_ip_view.dart';

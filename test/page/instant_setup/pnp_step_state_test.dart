@@ -4,10 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_provider.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_step_state.dart';
-import 'package:privacy_gui/page/instant_setup/services/pnp_service.dart';
-import 'package:mockito/annotations.dart';
 
-@GenerateMocks([PnpService])
 void main() {
   group('PnpNotifier Step State Management Tests', () {
     late ProviderContainer container;

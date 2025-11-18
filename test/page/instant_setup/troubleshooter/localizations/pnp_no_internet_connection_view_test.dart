@@ -1,13 +1,22 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/pnp_no_internet_connection_view.dart';
 import 'package:privacy_gui/route/route_model.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
 
 import '../../../../common/config.dart';
 import '../../../../common/test_helper.dart';
 import '../../../../common/test_responsive_widget.dart';
 
+/// View ID: PNPNI
+/// Implementation file under test: lib/page/instant_setup/troubleshooter/views/pnp_no_internet_connection_view.dart
+///
+/// | Test ID          | Description                                           |
+/// | :--------------- | :---------------------------------------------------- |
+/// | `PNPNI-NO_SSID`  | Verifies the view when no SSID is provided.           |
+/// | `PNPNI-HAS_SSID` | Verifies the view when a specific SSID is provided.   |
 void main() async {
   final testHelper = TestHelper();
   final screens = responsiveAllScreens;
@@ -19,41 +28,103 @@ void main() async {
     });
   });
 
-  testLocalizations('Troubleshooter - PnP no internet connection: no SSID',
-      (tester, locale) async {
-    await testHelper.pumpView(
-      tester,
-      child: const PnpNoInternetConnectionView(),
-      config: LinksysRouteConfig(
-          column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
-      locale: locale,
-    );
-  }, screens: screens);
+  // Test ID: PNPNI-NO_SSID
+  testLocalizationsV2(
+    'Verify the no internet connection view without a specific SSID',
+    (tester, localizedScreen) async {
+      final context = await testHelper.pumpView(
+        tester,
+        child: const PnpNoInternetConnectionView(),
+        config: LinksysRouteConfig(
+            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
+        locale: localizedScreen.locale,
+      );
 
-  testLocalizations('Troubleshooter - PnP no internet connection: has SSID',
-      (tester, locale) async {
-    await testHelper.pumpView(
-      tester,
-      child: const PnpNoInternetConnectionView(
-        args: {'ssid': 'AwesomeSSID'},
-      ),
-      config: LinksysRouteConfig(
-          column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
-      locale: locale,
-    );
-  }, screens: screens);
+      // Verify title and description
+      expect(find.text(testHelper.loc(context).noInternetConnectionTitle),
+          findsOneWidget);
+      expect(find.text(testHelper.loc(context).noInternetConnectionDescription),
+          findsOneWidget);
 
-  testLocalizations(
-      'Troubleshooter - PnP no internet connection: has SSID and need help',
-      (tester, locale) async {
-    await testHelper.pumpView(
-      tester,
-      child: const PnpNoInternetConnectionView(
-        args: {'ssid': 'AwesomeSSID'},
-      ),
-      config: LinksysRouteConfig(
-          column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
-      locale: locale,
-    );
-  }, screens: screens);
+      // Verify icon
+      expect(find.byIcon(LinksysIcons.publicOff), findsOneWidget);
+
+      // Verify action cards
+      expect(
+          find.text(
+              testHelper.loc(context).pnpNoInternetConnectionRestartModem),
+          findsOneWidget);
+      expect(
+          find.text(
+              testHelper.loc(context).pnpNoInternetConnectionRestartModemDesc),
+          findsOneWidget);
+      expect(
+          find.text(testHelper.loc(context).pnpNoInternetConnectionEnterISP),
+          findsOneWidget);
+      expect(
+          find.text(
+              testHelper.loc(context).pnpNoInternetConnectionEnterISPDesc),
+          findsOneWidget);
+
+      // Verify buttons
+      expect(find.text(testHelper.loc(context).logIntoRouter), findsOneWidget);
+      expect(find.text(testHelper.loc(context).tryAgain), findsOneWidget);
+    },
+    helper: testHelper,
+    screens: screens,
+    goldenFilename: 'PNPNI-NO_SSID_01_initial_state',
+  );
+
+  // Test ID: PNPNI-HAS_SSID
+  testLocalizationsV2(
+    'Verify the no internet connection view with a specific SSID',
+    (tester, localizedScreen) async {
+      const ssid = 'AwesomeSSID';
+      final context = await testHelper.pumpView(
+        tester,
+        child: const PnpNoInternetConnectionView(
+          args: {'ssid': ssid},
+        ),
+        config: LinksysRouteConfig(
+            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
+        locale: localizedScreen.locale,
+      );
+
+      // Verify title and description
+      expect(
+          find.text(testHelper
+              .loc(context)
+              .noInternetConnectionWithSSIDTitle(ssid)),
+          findsOneWidget);
+      expect(find.text(testHelper.loc(context).noInternetConnectionDescription),
+          findsOneWidget);
+
+      // Verify icon
+      expect(find.byIcon(LinksysIcons.publicOff), findsOneWidget);
+
+      // Verify action cards
+      expect(
+          find.text(
+              testHelper.loc(context).pnpNoInternetConnectionRestartModem),
+          findsOneWidget);
+      expect(
+          find.text(
+              testHelper.loc(context).pnpNoInternetConnectionRestartModemDesc),
+          findsOneWidget);
+      expect(
+          find.text(testHelper.loc(context).pnpNoInternetConnectionEnterISP),
+          findsOneWidget);
+      expect(
+          find.text(
+              testHelper.loc(context).pnpNoInternetConnectionEnterISPDesc),
+          findsOneWidget);
+
+      // Verify buttons
+      expect(find.text(testHelper.loc(context).logIntoRouter), findsOneWidget);
+      expect(find.text(testHelper.loc(context).tryAgain), findsOneWidget);
+    },
+    helper: testHelper,
+    screens: screens,
+    goldenFilename: 'PNPNI-HAS_SSID_01_initial_state',
+  );
 }

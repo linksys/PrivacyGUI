@@ -1,6 +1,6 @@
 /// A sealed class for custom exceptions specific to the PnP flow.
 /// Using custom exceptions allows for cleaner, more specific error handling.
-sealed class PnpException {
+sealed class PnpException implements Exception {
   final String? message;
 
   PnpException({required this.message});

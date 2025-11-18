@@ -7,7 +7,6 @@ import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/models/auto_configuration_settings.dart';
-import 'package:privacy_gui/core/jnap/models/device.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/models/firmware_update_settings.dart';
 import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
