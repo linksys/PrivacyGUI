@@ -26,7 +26,11 @@ final healthCheckProvider =
 /// of historical results and supported modules for the health check feature.
 class HealthCheckProvider extends Notifier<HealthCheckState> {
   StreamSubscription? _streamSubscription;
-  final Random _random = Random();
+  late final Random _random;
+
+  HealthCheckProvider({Random? random}) {
+    _random = random ?? Random();
+  }
 
   @override
   HealthCheckState build() {
@@ -49,7 +53,7 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
 
     state = state.copyWith(
       historicalSpeedTests: historical,
-      latestSpeedTest: latest,
+      latestSpeedTest: () => latest,
       healthCheckModules: supportedModules,
     );
   }
@@ -66,9 +70,8 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
       status: HealthCheckStatus.running,
       step: HealthCheckStep.latency,
       meterValue: 0.0,
-      result: null,
-      errorCode: null,
-      clearError: true,
+      result: () => null,
+      errorCode: () => null,
     );
 
     final service = ref.read(speedTestServiceProvider);
@@ -110,7 +113,9 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
       // Set meter to final download speed before resetting for upload.
       meterValue = (partialResult.downloadBandwidthKbps ?? 0).toDouble();
       Future.delayed(const Duration(milliseconds: 1000), () {
-        state = state.copyWith(meterValue: 0.0);
+        if (state.status == HealthCheckStatus.running) {
+          state = state.copyWith(meterValue: 0.0);
+        }
       });
     } else {
       // Add a random value to simulate a fluctuating meter during tests.
@@ -122,8 +127,8 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
       step: step,
       status: HealthCheckStatus.running,
       meterValue: meterValue < 0 ? 0 : meterValue,
-      result: partialResult,
-      clearError: true,
+      result: () => partialResult,
+      errorCode: () => null,
     );
   }
 
@@ -140,11 +145,11 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
       // Transient state
       status: HealthCheckStatus.complete,
       step: HealthCheckStep.success,
-      result: finalResult,
+      result: () => finalResult,
       meterValue: (finalResult.uploadBandwidthKbps ?? 0).toDouble(),
-      clearError: true,
+      errorCode: () => null,
       // Persistent state
-      latestSpeedTest: finalResult,
+      latestSpeedTest: () => finalResult,
       historicalSpeedTests: newHistory,
     );
 
@@ -157,7 +162,7 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
     state = state.copyWith(
       status: HealthCheckStatus.complete,
       step: HealthCheckStep.error,
-      errorCode: _mapStringToError(error),
+      errorCode: () => _mapStringToError(error),
     );
   }
 
@@ -197,8 +202,8 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
       status: HealthCheckStatus.idle,
       step: HealthCheckStep.latency,
       meterValue: 0.0,
-      result: null,
-      errorCode: null,
+      result: () => null,
+      errorCode: () => null,
     );
   }
 }

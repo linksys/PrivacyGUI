@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 import 'package:privacy_gui/page/health_check/models/health_check_enum.dart';
 import 'package:privacy_gui/page/health_check/models/speed_test_ui_model.dart';
 
@@ -75,10 +76,9 @@ class HealthCheckState extends Equatable {
     HealthCheckStep? step,
     HealthCheckStatus? status,
     double? meterValue,
-    SpeedTestUIModel? result,
-    SpeedTestError? errorCode,
-    bool clearError = false,
-    SpeedTestUIModel? latestSpeedTest,
+    ValueGetter<SpeedTestUIModel?>? result,
+    ValueGetter<SpeedTestError?>? errorCode,
+    ValueGetter<SpeedTestUIModel?>? latestSpeedTest,
     List<SpeedTestUIModel>? historicalSpeedTests,
     List<String>? healthCheckModules,
   }) {
@@ -86,9 +86,10 @@ class HealthCheckState extends Equatable {
       step: step ?? this.step,
       status: status ?? this.status,
       meterValue: meterValue ?? this.meterValue,
-      result: result ?? this.result,
-      errorCode: clearError ? null : errorCode ?? this.errorCode,
-      latestSpeedTest: latestSpeedTest ?? this.latestSpeedTest,
+      result: result != null ? result() : this.result,
+      errorCode: errorCode != null ? errorCode() : this.errorCode,
+      latestSpeedTest:
+          latestSpeedTest != null ? latestSpeedTest() : this.latestSpeedTest,
       historicalSpeedTests: historicalSpeedTests ?? this.historicalSpeedTests,
       healthCheckModules: healthCheckModules ?? this.healthCheckModules,
     );

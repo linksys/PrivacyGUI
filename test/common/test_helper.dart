@@ -15,6 +15,7 @@ import 'package:privacy_gui/page/advanced_settings/static_routing/providers/stat
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_rule_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_rule_state.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_state.dart';
+import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_state.dart';
 import 'package:privacy_gui/page/instant_admin/providers/manual_firmware_update_provider.dart';
 import 'package:privacy_gui/page/instant_admin/providers/manual_firmware_update_state.dart';
@@ -391,6 +392,7 @@ class TestHelper {
         staticRoutingProvider.overrideWith(() => mockStaticRoutingNotifier),
         staticRoutingRuleProvider
             .overrideWith(() => mockStaticRoutingRuleNotifier),
+        healthCheckProvider.overrideWith(() => mockHealthCheckProvider),
         authProvider.overrideWith(() => mockAuthNotifier),
         instantSafetyProvider.overrideWith(() => mockInstantSafetyNotifier),
         connectivityProvider.overrideWith(() => mockConnectivityNotifier),

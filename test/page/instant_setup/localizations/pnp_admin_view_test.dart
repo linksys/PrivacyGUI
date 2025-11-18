@@ -72,7 +72,7 @@ void main() {
 
       expect(find.byType(AppSpinner), findsOneWidget);
       expect(find.text(testHelper.loc(context).processing), findsOneWidget);
-    }, screens: screens, goldenFilename: 'PNPA-INIT_01_initial_state');
+    }, screens: screens, goldenFilename: 'PNPA-INIT_01-initial_state');
 
     // Test ID: PNPA-NETCHK
     testLocalizations(
@@ -100,7 +100,7 @@ void main() {
           findsOneWidget);
     },
         screens: screens,
-        goldenFilename: 'PNPA-NETCHK_01_checking_internet_screen');
+        goldenFilename: 'PNPA-NETCHK_01-checking_internet_screen');
 
     // Test ID: PNPA-NETOK
     testLocalizations(
@@ -128,7 +128,7 @@ void main() {
           findsOneWidget);
     },
         screens: screens,
-        goldenFilename: 'PNPA-NETOK_01_internet_connected_screen');
+        goldenFilename: 'PNPA-NETOK_01-internet_connected_screen');
 
     // Test ID: PNPA-UNCONF
     testLocalizations(
@@ -165,7 +165,7 @@ void main() {
           findsOneWidget);
     },
         screens: screens,
-        goldenFilename: 'PNPA-UNCONF_01_unconfigured_router_screen');
+        goldenFilename: 'PNPA-UNCONF_01-unconfigured_router_screen');
 
     // Test ID: PNPA-PASSWD
     testLocalizations(
@@ -211,9 +211,9 @@ void main() {
           findsOneWidget);
     },
         screens: screens,
-        goldenFilename: 'PNPA-PASSWD_01_password_prompt_screen');
+        goldenFilename: 'PNPA-PASSWD_01-password_prompt_screen');
 
-    // Test ID: PNPA-PASSWD_LOGGING_IN
+    // Test ID: PNPA-LOGIN_IN
     testLocalizations(
         'Verify login button is disabled and processing state is shown when logging in',
         (tester, locale) async {
@@ -260,9 +260,9 @@ void main() {
       expect((widget as AppFilledButton).onTap, null);
     },
         screens: screens,
-        goldenFilename: 'PNPA-PASSWD_LOGGING_IN_01_logging_in_screen');
+        goldenFilename: 'PNPA-LOGIN_IN_01-logging_in_screen');
 
-    // Test ID: PNPA-PASSWD_LOGIN_FAILED
+    // Test ID: PNPA-LOGIN_FAIL
     testLocalizations(
         'Verify "Incorrect Password" error message after a failed login attempt',
         (tester, locale) async {
@@ -309,7 +309,7 @@ void main() {
           find.text(testHelper.loc(context).incorrectPassword), findsOneWidget);
     },
         screens: screens,
-        goldenFilename: 'PNPA-PASSWD_LOGIN_FAILED_01_failed_login_screen');
+        goldenFilename: 'PNPA-LOGIN_FAIL_01-failed_login_screen');
 
     // Test ID: PNPA-ERROR
     testLocalizations('Verify generic error page with a "Try Again" button',
@@ -339,9 +339,9 @@ void main() {
           find.widgetWithText(
               AppFilledButton, testHelper.loc(context).tryAgain),
           findsOneWidget);
-    }, screens: screens, goldenFilename: 'PNPA-ERROR_01_generic_error_screen');
+    }, screens: screens, goldenFilename: 'PNPA-ERROR_01-generic_error_screen');
 
-    // Test ID: PNPA-PASSWD_MODAL
+    // Test ID: PNPA-PASS_MOD
     testLocalizations(
         'Verify "Where is it?" modal appears when button is tapped on password screen',
         (tester, locale) async {
@@ -400,6 +400,6 @@ void main() {
           findsOneWidget);
     },
         screens: screens,
-        goldenFilename: 'PNPA-PASSWD_MODAL_01_where_is_it_modal');
+        goldenFilename: 'PNPA-PASS_MOD_01-where_is_it_modal');
   });
 }

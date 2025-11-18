@@ -22,28 +22,30 @@ import '../../../common/test_helper.dart';
 import '../../../common/test_responsive_widget.dart';
 
 // View ID: PNPS
-/// Implementation file under test: lib/page/instant_setup/pnp_setup_view.dart
-///
-/// This file contains screenshot tests for the `PnpSetupView` widget, which handles
-/// the multi-step wizard for device configuration.
-///
-/// | Test ID               | Description                                                              |
-/// | :-------------------- | :----------------------------------------------------------------------- |
-/// | `PNPS-WIZ_INIT`       | Verifies the initial loading screen of the wizard.                       |
-/// | `PNPS-STEP1_WIFI`     | Verifies interactions on the "Personal WiFi" step.                       |
-/// | `PNPS-STEP2_GUEST`    | Verifies interactions on the "Guest WiFi" step.                          |
-/// | `PNPS-STEP3_NIGHT`    | Verifies interactions on the "Night Mode" step.                          |
-/// | `PNPS-STEP4_NET`      | Verifies the "Your Network" step with no child nodes.                    |
-/// | `PNPS-STEP4_NET_CHILD`| Verifies the "Your Network" step with child nodes displayed.             |
-/// | `PNPS-WIZ_SAVE`       | Verifies the "Saving" screen.                                            |
-/// | `PNPS-WIZ_SAVED`      | Verifies the "Saved" confirmation screen.                                |
-/// | `PNPS-WIZ_RECONN`     | Verifies the "Needs Reconnect" screen.                                   |
-/// | `PNPS-WIZ_TEST_RECONN`| Verifies the "Testing Reconnect" screen.                                 |
-/// | `PNPS-WIZ_FW_CHK`     | Verifies the "Checking Firmware" screen.                                 |
-/// | `PNPS-WIZ_FW_UPD`     | Verifies the "Updating Firmware" screen.                                 |
-/// | `PNPS-WIZ_WIFI_RDY`   | Verifies the "WiFi Ready" screen.                                        |
-/// | `PNPS-WIZ_INIT_FAIL`  | Verifies the wizard initialization failure screen.                       |
-/// | `PNPS-WIZ_SAVE_FAIL`  | Verifies the wizard save failure screen.                                 |
+// Reference: lib/page/instant_setup/pnp_setup_view.dart
+//
+// This file contains screenshot tests for the `PnpSetupView` widget, which handles
+// the multi-step wizard for device configuration.
+//
+// ## Test Cases
+//
+// | Test ID          | Description                                                                     |
+// |------------------|---------------------------------------------------------------------------------|
+// | PNPS-WIZ_INIT    | Verifies the initial loading screen of the wizard.                              |
+// | PNPS-STEP1_WIFI  | Verifies interactions on the "Personal WiFi" step.                              |
+// | PNPS-STEP2_GST   | Verifies interactions on the "Guest WiFi" step.                                 |
+// | PNPS-STEP3_NIT   | Verifies interactions on the "Night Mode" step.                                 |
+// | PNPS-STEP4_NET   | Verifies the "Your Network" step with no child nodes.                           |
+// | PNPS-NET_CHILD   | Verifies the "Your Network" step with child nodes displayed.                    |
+// | PNPS-WIZ_SAVE    | Verifies the "Saving" screen.                                                   |
+// | PNPS-WIZ_SAVED   | Verifies the "Saved" confirmation screen.                                       |
+// | PNPS-WIZ_RECONN  | Verifies the "Needs Reconnect" screen.                                          |
+// | PNPS-WIZ_TST_REC | Verifies the "Testing Reconnect" screen.                                        |
+// | PNPS-WIZ_FW_CHK  | Verifies the "Checking Firmware" screen.                                        |
+// | PNPS-WIZ_FW_UPD  | Verifies the "Updating Firmware" screen.                                        |
+// | PNPS-WIZ_RDY     | Verifies the "WiFi Ready" screen.                                               |
+// | PNPS-INIT_FAIL   | Verifies the wizard initialization failure screen.                              |
+// | PNPS-SAVE_FAIL   | Verifies the wizard save failure screen.                                        |
 
 // A stateful fake notifier for testing the complex navigation flow.
 class FakePnpNotifier extends BasePnpNotifier {
@@ -228,7 +230,7 @@ void main() {
         expect(find.byKey(const Key('pnp_loading_spinner')), findsOneWidget);
       },
       screens: screens,
-      goldenFilename: 'PNPS-WIZ_INIT_01_initial_state',
+      goldenFilename: 'PNPS-WIZ_INIT_01-initial_state',
     );
 
     group('status: wizardConfiguring', () {
@@ -258,7 +260,7 @@ void main() {
           await tester.tap(infoButton);
           await tester.pumpAndSettle();
           await testHelper.takeScreenshot(
-              tester, 'PNPS-STEP1_WIFI_01_info_dialog');
+              tester, 'PNPS-STEP1_WIFI_01-info_dialog');
           final closeButton =
               find.byKey(const Key('pnp_wifi_info_close_button'));
           expect(closeButton, findsOneWidget);
@@ -272,7 +274,7 @@ void main() {
           await tester
               .pumpAndSettle(); // Use pumpAndSettle to wait for UI to update
           await testHelper.takeScreenshot(
-              tester, 'PNPS-STEP1_WIFI_02_ssid_error');
+              tester, 'PNPS-STEP1_WIFI_02-ssid_error');
 
           // --- Test Invalid Password ---
           final passwordField = find.byType(WiFiPasswordField);
@@ -281,7 +283,7 @@ void main() {
           await tester
               .pumpAndSettle(); // Use pumpAndSettle to wait for UI to update
           await testHelper.takeScreenshot(
-              tester, 'PNPS-STEP1_WIFI_03_password_error');
+              tester, 'PNPS-STEP1_WIFI_03-password_error');
 
           // --- Restore to valid state for final screenshot ---
           await tester.enterText(ssidField, 'MyTestWiFi');
@@ -289,10 +291,10 @@ void main() {
           await tester.pumpAndSettle();
         },
         screens: screens,
-        goldenFilename: 'PNPS-STEP1_WIFI_04_final_state',
+        goldenFilename: 'PNPS-STEP1_WIFI_04-final_state',
       );
 
-      // Test ID: PNPS-STEP2_GUEST
+      // Test ID: PNPS-STEP2_GST
       testLocalizations(
         'Verify interactions on the "Guest WiFi" step',
         (tester, locale) async {
@@ -322,7 +324,7 @@ void main() {
           await tester.tap(guestSwitch);
           await tester.pumpAndSettle();
           await testHelper.takeScreenshot(
-              tester, 'PNPS-STEP2_GUEST_01_switch_on');
+              tester, 'PNPS-STEP2_GST_01-switch_on');
 
           // --- Test Invalid SSID ---
           final guestSsidField = find.byType(WiFiSSIDField);
@@ -331,7 +333,7 @@ void main() {
           await tester
               .pumpAndSettle(); // Use pumpAndSettle to wait for UI to update
           await testHelper.takeScreenshot(
-              tester, 'PNPS-STEP2_GUEST_02_ssid_error');
+              tester, 'PNPS-STEP2_GST_02-ssid_error');
 
           // --- Test Invalid Password ---
           final guestPasswordField = find.byType(WiFiPasswordField);
@@ -340,7 +342,7 @@ void main() {
           await tester
               .pumpAndSettle(); // Use pumpAndSettle to wait for UI to update
           await testHelper.takeScreenshot(
-              tester, 'PNPS-STEP2_GUEST_03_password_error');
+              tester, 'PNPS-STEP2_GST_03-password_error');
 
           // --- Restore to valid state for final screenshot ---
           await tester.enterText(guestSsidField, 'MyGuestWiFi');
@@ -352,10 +354,10 @@ void main() {
           await tester.pumpAndSettle();
         },
         screens: screens,
-        goldenFilename: 'PNPS-STEP2_GUEST_04_final_state',
+        goldenFilename: 'PNPS-STEP2_GST_04-final_state',
       );
 
-      // Test ID: PNPS-STEP3_NIGHT
+      // Test ID: PNPS-STEP3_NIT
       testLocalizations(
         'Verify interactions on the "Night Mode" step',
         (tester, locale) async {
@@ -387,14 +389,14 @@ void main() {
           await tester.tap(nightModeSwitch);
           await tester.pumpAndSettle();
           await testHelper.takeScreenshot(
-              tester, 'PNPS-STEP3_NIGHT_01_switch_on');
+              tester, 'PNPS-STEP3_NIT_01-switch_on');
 
           // --- Restore to off state for final screenshot ---
           await tester.tap(nightModeSwitch);
           await tester.pumpAndSettle();
         },
         screens: screens,
-        goldenFilename: 'PNPS-STEP3_NIGHT_02_final_state',
+        goldenFilename: 'PNPS-STEP3_NIT_02-final_state',
       );
 
       // Test ID: PNPS-STEP4_NET
@@ -435,10 +437,10 @@ void main() {
               findsOneWidget);
         },
         screens: screens,
-        goldenFilename: 'PNPS-STEP4_NET_01_final_state',
+        goldenFilename: 'PNPS-STEP4_NET_01-final_state',
       );
 
-      // Test ID: PNPS-STEP4_NET_CHILD
+      // Test ID: PNPS-NET_CHILD
       testLocalizations(
         'Verify the "Your Network" step with child nodes displayed',
         (tester, locale) async {
@@ -486,7 +488,7 @@ void main() {
               findsOneWidget);
         },
         screens: screens,
-        goldenFilename: 'PNPS-STEP4_NET_CHILD_01_final_state',
+        goldenFilename: 'PNPS-NET_CHILD_01-final_state',
       );
     });
 
@@ -513,7 +515,7 @@ void main() {
         expect(find.byKey(const Key('pnp_loading_spinner')), findsOneWidget);
       },
       screens: screens,
-      goldenFilename: 'PNPS-WIZ_SAVE_01_saving_screen',
+      goldenFilename: 'PNPS-WIZ_SAVE_01-saving_screen',
     );
 
     // Test ID: PNPS-WIZ_SAVED
@@ -539,7 +541,7 @@ void main() {
         expect(find.text(testHelper.loc(context).saved), findsOneWidget);
       },
       screens: screens,
-      goldenFilename: 'PNPS-WIZ_SAVED_01_confirmation_screen',
+      goldenFilename: 'PNPS-WIZ_SAVED_01-confirmation_screen',
     );
 
     // Test ID: PNPS-WIZ_RECONN
@@ -571,10 +573,10 @@ void main() {
             find.byKey(const Key('pnp_reconnect_next_button')), findsOneWidget);
       },
       screens: screens,
-      goldenFilename: 'PNPS-WIZ_RECONN_01_needs_reconnect_screen',
+      goldenFilename: 'PNPS-WIZ_RECONN_01-needs_reconnect_screen',
     );
 
-    // Test ID: PNPS-WIZ_TEST_RECONN
+    // Test ID: PNPS-WIZ_TST_REC
     testLocalizations(
       'Verify the "Testing Reconnect" screen',
       (tester, locale) async {
@@ -597,7 +599,7 @@ void main() {
         expect(find.byKey(const Key('pnp_loading_spinner')), findsOneWidget);
       },
       screens: screens,
-      goldenFilename: 'PNPS-WIZ_TEST_RECONN_01_testing_reconnect_screen',
+      goldenFilename: 'PNPS-WIZ_TST_REC_01-testing_reconnect_screen',
     );
 
     // Test ID: PNPS-WIZ_FW_CHK
@@ -628,7 +630,7 @@ void main() {
             find.text(testHelper.loc(context).pnpFwUpdateDesc), findsOneWidget);
       },
       screens: screens,
-      goldenFilename: 'PNPS-WIZ_FW_CHK_01_checking_firmware_screen',
+      goldenFilename: 'PNPS-WIZ_FW_CHK_01-checking_firmware_screen',
     );
 
     // Test ID: PNPS-WIZ_FW_UPD
@@ -659,10 +661,10 @@ void main() {
             find.text(testHelper.loc(context).pnpFwUpdateDesc), findsOneWidget);
       },
       screens: screens,
-      goldenFilename: 'PNPS-WIZ_FW_UPD_01_updating_firmware_screen',
+      goldenFilename: 'PNPS-WIZ_FW_UPD_01-updating_firmware_screen',
     );
 
-    // Test ID: PNPS-WIZ_WIFI_RDY
+    // Test ID: PNPS-WIZ_RDY
 
     testLocalizations(
       'Verify the "WiFi Ready" screen',
@@ -693,10 +695,10 @@ void main() {
             findsOneWidget);
       },
       screens: screens,
-      goldenFilename: 'PNPS-WIZ_WIFI_RDY_01_wifi_ready_screen',
+      goldenFilename: 'PNPS-WIZ_RDY_01-wifi_ready_screen',
     );
 
-    // Test ID: PNPS-WIZ_INIT_FAIL
+    // Test ID: PNPS-INIT_FAIL
 
     testLocalizations(
       'Verify the wizard initialization failure screen',
@@ -725,10 +727,10 @@ void main() {
             findsOneWidget);
       },
       screens: screens,
-      goldenFilename: 'PNPS-WIZ_INIT_FAIL_01_failure_screen',
+      goldenFilename: 'PNPS-INIT_FAIL_01-failure_screen',
     );
 
-    // Test ID: PNPS-WIZ_SAVE_FAIL
+    // Test ID: PNPS-SAVE_FAIL
     testLocalizations(
       'Verify the wizard save failure screen',
       (tester, locale) async {
@@ -752,7 +754,7 @@ void main() {
         expect(find.byType(PnpStepper), findsOneWidget);
       },
       screens: screens,
-      goldenFilename: 'PNPS-WIZ_SAVE_FAIL_01_failure_screen',
+      goldenFilename: 'PNPS-SAVE_FAIL_01-failure_screen',
     );
   });
 }

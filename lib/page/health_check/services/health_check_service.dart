@@ -172,12 +172,15 @@ class SpeedTestService {
     String? timestamp,
     bool isProgress = false,
   }) {
+    if (speedTestResult == null) {
+      return SpeedTestUIModel.empty();
+    }
     final download = NetworkUtils.formatBitsWithUnit(
-      (speedTestResult?.downloadBandwidth ?? 0) * 1024,
+      (speedTestResult.downloadBandwidth ?? 0) * 1024,
       decimals: 1,
     );
     final upload = NetworkUtils.formatBitsWithUnit(
-      (speedTestResult?.uploadBandwidth ?? 0) * 1024,
+      (speedTestResult.uploadBandwidth ?? 0) * 1024,
       decimals: 1,
     );
     final (formattedTimestamp, _) = _formatTimestamp(timestamp ?? '');
@@ -188,11 +191,11 @@ class SpeedTestService {
       downloadUnit: download.unit,
       uploadSpeed: isProgress && upload.value == '0' ? '--' : upload.value,
       uploadUnit: upload.unit,
-      latency: speedTestResult?.latency?.toString() ?? '--',
+      latency: speedTestResult.latency?.toString() ?? '--',
       timestamp: formattedTimestamp,
-      serverId: speedTestResult?.serverID ?? '--',
-      downloadBandwidthKbps: speedTestResult?.downloadBandwidth,
-      uploadBandwidthKbps: speedTestResult?.uploadBandwidth,
+      serverId: speedTestResult.serverID ?? '--',
+      downloadBandwidthKbps: speedTestResult.downloadBandwidth,
+      uploadBandwidthKbps: speedTestResult.uploadBandwidth,
     );
   }
 

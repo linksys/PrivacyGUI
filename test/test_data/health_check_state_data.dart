@@ -1,49 +1,109 @@
-const healthCheckInitState = '''{"status": "IDLE", 
+const healthCheckInitState = '''{"status": "idle", 
     "meterValue": 0.0,
     "randomValue": 0.0,
-     "step":"latency","result":[]}''';
-const healthCheckStatePingInit =
-    '''{"status": "RUNNING", 
+     "step":"latency",
+     "result": null
+}''';
+const healthCheckStatePingInit = '''{"status": "running", 
     "meterValue": 0.0,
     "randomValue": 0.0,
-     "step":"latency","result":[{"resultID":30736,"timestamp":"","healthCheckModulesRequested":["SpeedTest"],"speedTestResult":{"resultID":30736,"exitCode":"Unavailable","serverID":"3967","latency":0,"uploadBandwidth":0,"downloadBandwidth":0}}]}''';
-const healthCheckStatePing =
-    '''{"status": "RUNNING", 
+     "step":"latency",
+     "result":{
+        "latency": "0",
+        "serverId": "3967"
+     }
+}''';
+const healthCheckStatePing = '''{"status": "running", 
     "meterValue": 0.0,
     "randomValue": 0.0,
-     "step":"downloadBandwidth","result":[{"resultID":30736,"timestamp":"","healthCheckModulesRequested":["SpeedTest"],"speedTestResult":{"resultID":30736,"exitCode":"Unavailable","serverID":"3967","latency":10,"uploadBandwidth":0,"downloadBandwidth":0}}]}''';
-const healthCheckStateDownload =
-    '''{"status": "RUNNING", 
+     "step":"downloadBandwidth",
+     "result":{
+        "downloadSpeed": "0.0",
+        "downloadUnit": "Mbps",
+        "uploadSpeed": "0.0",
+        "uploadUnit": "Mbps",
+        "latency": "13",
+        "timestamp": "",
+        "serverId": "3967"
+     }
+}''';
+const healthCheckStateDownload = '''{"status": "running", 
     "meterValue": 0.0,
     "randomValue": 0.0,
-     "step":"downloadBandwidth","result":[{"resultID":30736,"timestamp":"","healthCheckModulesRequested":["SpeedTest"],"speedTestResult":{"resultID":30736,"exitCode":"Unavailable","serverID":"3967","latency":1,"uploadBandwidth":0,"downloadBandwidth":317412}}]}''';
-const healthCheckStateUpload =
-    '''{"status": "RUNNING", 
+     "step":"downloadBandwidth",
+     "result":{
+        "downloadSpeed": "567.8",
+        "latency": "1",
+        "serverId": "3967"
+     }
+}''';
+const healthCheckStateUpload = '''{"status": "running", 
     "meterValue": 0.0,
     "randomValue": 0.0,
-     "step":"uploadBandwidth","result":[{"resultID":30736,"timestamp":"","healthCheckModulesRequested":["SpeedTest"],"speedTestResult":{"resultID":30736,"exitCode":"Success","serverID":"3967","latency":1,"uploadBandwidth":321267,"downloadBandwidth":317412}}]}''';
-const healthCheckStateSuccessUltra =
-    '''{"status": "COMPLETE", 
+     "step":"uploadBandwidth",
+     "result":{
+        "downloadSpeed": "567.8",
+        "uploadSpeed": "12.3",
+        "latency": "1",
+        "serverId": "3967"
+     }
+}''';
+const healthCheckStateSuccessUltra = '''{"status": "complete", 
     "meterValue": 0.0,
     "randomValue": 0.0,
-     "step":"uploadBandwidth","timestamp":"2024-06-24T09:20:09Z","result":[{"resultID":30736,"timestamp":"2024-06-24T09:20:09Z","healthCheckModulesRequested":["SpeedTest"],"speedTestResult":{"resultID":30736,"exitCode":"Success","serverID":"3967","latency":1,"uploadBandwidth":321267,"downloadBandwidth":317412}}]}''';
-const healthCheckStateSuccessOptimal =
-    '''{"status": "COMPLETE", 
+     "step":"success",
+     "timestamp":"2024-06-24T09:20:09Z",
+     "result":{
+        "downloadSpeed": "567.8",
+        "uploadSpeed": "12.3",
+        "latency": "1",
+        "timestamp": "2024-06-24T09:20:09Z",
+        "serverId": "3967"
+     }
+}''';
+const healthCheckStateSuccessOptimal = '''{"status": "complete", 
     "meterValue": 0.0,
     "randomValue": 0.0,
-     "step":"uploadBandwidth","timestamp":"2024-06-24T09:20:09Z","result":[{"resultID":30736,"timestamp":"2024-06-24T09:20:09Z","healthCheckModulesRequested":["SpeedTest"],"speedTestResult":{"resultID":30736,"exitCode":"Success","serverID":"3967","latency":1,"uploadBandwidth":121267,"downloadBandwidth":117412}}]}''';
-const healthCheckStateSuccessGood =
-    '''{"status": "COMPLETE", 
+     "step":"success",
+     "timestamp":"2024-06-24T09:20:09Z",
+     "result":{
+        "downloadSpeed": "117.4",
+        "uploadSpeed": "121.2",
+        "latency": "1",
+        "timestamp": "2024-06-24T09:20:09Z",
+        "serverId": "3967"
+     }
+}''';
+const healthCheckStateSuccessGood = '''{"status": "complete", 
     "meterValue": 0.0,
     "randomValue": 0.0,
-     "step":"uploadBandwidth","timestamp":"2024-06-24T09:20:09Z","result":[{"resultID":30736,"timestamp":"2024-06-24T09:20:09Z","healthCheckModulesRequested":["SpeedTest"],"speedTestResult":{"resultID":30736,"exitCode":"Success","serverID":"3967","latency":1,"uploadBandwidth":91267,"downloadBandwidth":97412}}]}''';
-const healthCheckStateSuccessOkay =
-    '''{"status": "COMPLETE", 
+     "step":"success",
+     "timestamp":"2024-06-24T09:20:09Z",
+     "result":{
+        "downloadSpeed": "97.4",
+        "uploadSpeed": "91.2",
+        "latency": "1",
+        "timestamp": "2024-06-24T09:20:09Z",
+        "serverId": "3967"
+     }
+}''';
+const healthCheckStateSuccessOkay = '''{"status": "complete", 
     "meterValue": 0.0,
     "randomValue": 0.0,
-     "step":"uploadBandwidth","timestamp":"2024-06-24T09:20:09Z","result":[{"resultID":30736,"timestamp":"2024-06-24T09:20:09Z","healthCheckModulesRequested":["SpeedTest"],"speedTestResult":{"resultID":30736,"exitCode":"Success","serverID":"3967","latency":1,"uploadBandwidth":21267,"downloadBandwidth":17412}}]}''';
-const healthCheckStateError =
-    '''{"status": "COMPLETE", 
+     "step":"success",
+     "timestamp":"2024-06-24T09:20:09Z",
+     "result":{
+        "downloadSpeed": "17.4",
+        "uploadSpeed": "21.2",
+        "latency": "1",
+        "timestamp": "2024-06-24T09:20:09Z",
+        "serverId": "3967"
+     }
+}''';
+const healthCheckStateError = '''{"status": "complete", 
     "meterValue": 0.0,
     "randomValue": 0.0,
-     "step":"error","result":[],"error":{"result":"Empty resultID","error":null}}''';
+     "step":"error",
+     "result":null,
+     "error":{"result":"Empty resultID","error":null}
+}''';
