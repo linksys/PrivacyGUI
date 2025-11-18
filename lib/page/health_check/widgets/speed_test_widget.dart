@@ -63,7 +63,6 @@ class SpeedTestWidget extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final healthCheckState = ref.watch(healthCheckProvider);
     final latestPolledResult = healthCheckState.latestSpeedTest;
-
     // Determine the main content based on the current health check status.
     final mainContent = switch (healthCheckState.status) {
       HealthCheckStatus.idle => (showLatestOnIdle && latestPolledResult != null)
@@ -187,7 +186,6 @@ class SpeedTestWidget extends ConsumerWidget {
   Widget meterView(
       BuildContext context, HealthCheckState state, WidgetRef ref) {
     final result = state.result ?? SpeedTestUIModel.empty();
-
     // Format the live meter value for display.
     final formattedLiveValue = NetworkUtils.formatBitsWithUnit(
         (state.meterValue * 1024).toInt(),
@@ -277,11 +275,9 @@ class SpeedTestWidget extends ConsumerWidget {
                   fontColor: Theme.of(context).colorScheme.primary)
             else ...[
               // Show the final latency value.
-              AppText.bodyMedium(latency,
+              AppText.bodyMedium('$latency ms',
                   color: Theme.of(context).colorScheme.primary),
             ],
-            AppText.bodyMedium('ms',
-                color: Theme.of(context).colorScheme.primary),
           ],
         ),
       ],
@@ -433,28 +429,26 @@ class SpeedTestWidget extends ConsumerWidget {
         markerRadius: 2,
         centerBuilder: (context, value) {
           return SizedBox(
-            width: 102,
-            height: 102,
-            child: InkWell(
-              key: const Key('goBtn'),
-              borderRadius:
-                  CustomTheme.of(context).radius.asBorderRadius().extraLarge,
-              onTap: () {
-                final isSpeedCheckSupported = ref.watch(healthCheckProvider
-                    .select((s) => s.isSpeedTestModuleSupported));
-                if (isSpeedCheckSupported) {
-                  ref
-                      .read(healthCheckProvider.notifier)
-                      .runHealthCheck(Module.speedtest);
-                } else {
-                  // If not supported, navigate to the external test page.
-                  context.pushNamed(RouteNamed.speedTestExternal);
-                }
-              },
-              child: Ink(
-                decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Theme.of(context).colorScheme.primary),
+            width: meterSize == null ? 102 : meterSize! / 2.0,
+            height: meterSize == null ? 102 : meterSize! / 2.0,
+            child: Material(
+              shape: const CircleBorder(),
+              color: Theme.of(context).colorScheme.primary,
+              child: InkWell(
+                key: const Key('goBtn'),
+                customBorder: const CircleBorder(),
+                onTap: () {
+                  final isSpeedCheckSupported = ref.watch(healthCheckProvider
+                      .select((s) => s.isSpeedTestModuleSupported));
+                  if (isSpeedCheckSupported) {
+                    ref
+                        .read(healthCheckProvider.notifier)
+                        .runHealthCheck(Module.speedtest);
+                  } else {
+                    // If not supported, navigate to the external test page.
+                    context.pushNamed(RouteNamed.speedTestExternal);
+                  }
+                },
                 child: Center(
                   child: AppText.bodyLarge(loc(context).go,
                       color: Theme.of(context).colorScheme.onPrimary),

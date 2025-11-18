@@ -5,6 +5,7 @@ import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/health_check/models/speed_test_ui_model.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
 import 'package:privacy_gui/page/health_check/widgets/speed_test_widget.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
@@ -21,9 +22,9 @@ class SpeedTestView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final historicalTests = ref
-        .watch(healthCheckProvider.select((s) => s.historicalSpeedTests));
-
+    final historicalTests =
+        ref.watch(healthCheckProvider.select((s) => s.historicalSpeedTests));
+    final healthCheckState = ref.watch(healthCheckProvider);
     final mainWidget = SpeedTestWidget(
       showDetails: true,
       showInfoPanel: true,
@@ -33,6 +34,14 @@ class SpeedTestView extends ConsumerWidget {
           ? 3.col
           : 5.col, // Make it larger on desktop
     );
+
+    final latestSpeedTest = healthCheckState.result;
+    final (resultTitle, resultDesc) =
+        _getTestResultDesc(context, latestSpeedTest);
+    final performanceDescriptionCard = latestSpeedTest != null
+        ? _performanceDescriptionCard(
+            context, resultTitle, resultDesc, latestSpeedTest.timestamp)
+        : SizedBox.shrink();
 
     final historyWidget = _buildHistoryPanel(context, historicalTests);
 
@@ -44,6 +53,8 @@ class SpeedTestView extends ConsumerWidget {
           children: [
             mainWidget,
             const AppGap.large5(),
+            performanceDescriptionCard,
+            const AppGap.large5(),
             historyWidget,
           ],
         ),
@@ -52,7 +63,15 @@ class SpeedTestView extends ConsumerWidget {
           children: [
             Expanded(flex: 6, child: mainWidget),
             const AppGap.gutter(),
-            Expanded(flex: 6, child: historyWidget),
+            Expanded(
+                flex: 6,
+                child: Column(
+                  children: [
+                    performanceDescriptionCard,
+                    const AppGap.large5(),
+                    historyWidget,
+                  ],
+                )),
           ],
         ),
       ),
@@ -127,5 +146,45 @@ class SpeedTestView extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Widget _performanceDescriptionCard(BuildContext context, String resultTitle,
+      String resultDesc, String date) {
+    return AppCard(
+      color: ResponsiveLayout.isMobileLayout(context)
+          ? Theme.of(context).colorScheme.surface
+          : null,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(LinksysIcons.bolt),
+          const AppGap.medium(),
+          AppText.titleSmall(resultTitle),
+          const AppGap.small2(),
+          AppText.bodyMedium(resultDesc),
+          const AppGap.small2(),
+          AppText.bodySmall(date),
+        ],
+      ),
+    );
+  }
+
+  (String, String) _getTestResultDesc(
+      BuildContext context, SpeedTestUIModel? result) {
+    var downloadBandWidth = double.parse(result?.downloadSpeed ?? '0');
+    var resultTitle = switch (downloadBandWidth) {
+      < 50 => loc(context).speedOkay,
+      < 100 => loc(context).speedGood,
+      < 150 => loc(context).speedOptimal,
+      _ => loc(context).speedUltra,
+    };
+    var resultDesc = switch (downloadBandWidth) {
+      < 50 => loc(context).speedOkayDescription,
+      < 100 => loc(context).speedGoodDescription,
+      < 150 => loc(context).speedOptimalDescription,
+      _ => loc(context).speedUltraDescription,
+    };
+    return (resultTitle, resultDesc);
   }
 }

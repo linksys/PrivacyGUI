@@ -9,6 +9,16 @@ import 'package:privacy_gui/main.dart';
 import 'actions/base_actions.dart';
 import 'config/integration_test_config.dart';
 
+// Reference: lib/page/health_check/views/speed_test_view.dart
+// View ID: SPDTST
+//
+// ## Test Cases
+//
+// | Test ID    | Description                                  |
+// |------------|----------------------------------------------|
+// | SPDTST-LOGIN | Logs into the app.                           |
+// | SPDTST-RUN   | Navigates to the speed test page and runs the test. |
+
 void main() {
   integrationDriver();
   final widgetsBinding =
@@ -22,6 +32,7 @@ void main() {
   });
 
   group('Speed Test', () {
+    // Test ID: SPDTST-LOGIN
     testWidgets('Speed Test - Log in ', (tester) async {
       await tester.pumpFrames(app(), const Duration(seconds: 3));
       final login = TestLocalLoginActions(tester);
@@ -29,6 +40,7 @@ void main() {
       await login.tapLoginButton();
     });
 
+    // Test ID: SPDTST-RUN
     testWidgets('Speed Test - Run speed test', (tester) async {
       await tester.pumpFrames(app(), const Duration(seconds: 5));
       // Enter the menu screen
