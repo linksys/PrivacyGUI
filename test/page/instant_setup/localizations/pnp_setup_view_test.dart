@@ -27,45 +27,23 @@ import '../../../common/test_responsive_widget.dart';
 /// This file contains screenshot tests for the `PnpSetupView` widget, which handles
 /// the multi-step wizard for device configuration.
 ///
-/// **Covered Test Scenarios:**
-///
-/// - **`PNPS-WIZ_INIT`**: Verifies the initial loading screen of the wizard.
-///   - `PNPS-WIZ_INIT_01_initial_state`: Initial loading screen displayed.
-/// - **`PNPS-STEP1_WIFI`**: Verifies interactions on the "Personal WiFi" step.
-///   - `PNPS-STEP1_WIFI_01_info_dialog`: Info button tapped, dialog shown.
-///   - `PNPS-STEP1_WIFI_02_ssid_error`: Invalid SSID entered, error shown.
-///   - `PNPS-STEP1_WIFI_03_password_error`: Invalid password entered, error shown.
-///   - `PNPS-STEP1_WIFI_04_final_state`: Final state after valid input.
-/// - **`PNPS-STEP2_GUEST`**: Verifies interactions on the "Guest WiFi" step.
-///   - `PNPS-STEP2_GUEST_01_switch_on`: Guest WiFi switch turned on.
-///   - `PNPS-STEP2_GUEST_02_ssid_error`: Invalid SSID entered, error shown.
-///   - `PNPS-STEP2_GUEST_03_password_error`: Invalid password entered, error shown.
-///   - `PNPS-STEP2_GUEST_04_final_state`: Final state after valid input and switch off.
-/// - **`PNPS-STEP3_NIGHT`**: Verifies interactions on the "Night Mode" step.
-///   - `PNPS-STEP3_NIGHT_01_switch_on`: Night Mode switch turned on.
-///   - `PNPS-STEP3_NIGHT_02_final_state`: Final state after switch off.
-/// - **`PNPS-STEP4_NET`**: Verifies the "Your Network" step with no child nodes.
-///   - `PNPS-STEP4_NET_01_final_state`: Final state of Your Network screen.
-/// - **`PNPS-STEP4_NET_CHILD`**: Verifies the "Your Network" step with child nodes displayed.
-///   - `PNPS-STEP4_NET_CHILD_01_final_state`: Final state of Your Network screen with child nodes.
-/// - **`PNPS-WIZ_SAVE`**: Verifies the "Saving" screen.
-///   - `PNPS-WIZ_SAVE_01_saving_screen`: Saving screen displayed.
-/// - **`PNPS-WIZ_SAVED`**: Verifies the "Saved" confirmation screen.
-///   - `PNPS-WIZ_SAVED_01_confirmation_screen`: Saved confirmation screen displayed.
-/// - **`PNPS-WIZ_RECONN`**: Verifies the "Needs Reconnect" screen.
-///   - `PNPS-WIZ_RECONN_01_needs_reconnect_screen`: Needs Reconnect screen displayed.
-/// - **`PNPS-WIZ_TEST_RECONN`**: Verifies the "Testing Reconnect" screen.
-///   - `PNPS-WIZ_TEST_RECONN_01_testing_reconnect_screen`: Testing Reconnect screen displayed.
-/// - **`PNPS-WIZ_FW_CHK`**: Verifies the "Checking Firmware" screen.
-///   - `PNPS-WIZ_FW_CHK_01_checking_firmware_screen`: Checking Firmware screen displayed.
-/// - **`PNPS-WIZ_FW_UPD`**: Verifies the "Updating Firmware" screen.
-///   - `PNPS-WIZ_FW_UPD_01_updating_firmware_screen`: Updating Firmware screen displayed.
-/// - **`PNPS-WIZ_WIFI_RDY`**: Verifies the "WiFi Ready" screen.
-///   - `PNPS-WIZ_WIFI_RDY_01_wifi_ready_screen`: WiFi Ready screen displayed.
-/// - **`PNPS-WIZ_INIT_FAIL`**: Verifies the wizard initialization failure screen.
-///   - `PNPS-WIZ_INIT_FAIL_01_failure_screen`: Initialization failure screen displayed.
-/// - **`PNPS-WIZ_SAVE_FAIL`**: Verifies the wizard save failure screen.
-///   - `PNPS-WIZ_SAVE_FAIL_01_failure_screen`: Save failure screen displayed.
+/// | Test ID               | Description                                                              |
+/// | :-------------------- | :----------------------------------------------------------------------- |
+/// | `PNPS-WIZ_INIT`       | Verifies the initial loading screen of the wizard.                       |
+/// | `PNPS-STEP1_WIFI`     | Verifies interactions on the "Personal WiFi" step.                       |
+/// | `PNPS-STEP2_GUEST`    | Verifies interactions on the "Guest WiFi" step.                          |
+/// | `PNPS-STEP3_NIGHT`    | Verifies interactions on the "Night Mode" step.                          |
+/// | `PNPS-STEP4_NET`      | Verifies the "Your Network" step with no child nodes.                    |
+/// | `PNPS-STEP4_NET_CHILD`| Verifies the "Your Network" step with child nodes displayed.             |
+/// | `PNPS-WIZ_SAVE`       | Verifies the "Saving" screen.                                            |
+/// | `PNPS-WIZ_SAVED`      | Verifies the "Saved" confirmation screen.                                |
+/// | `PNPS-WIZ_RECONN`     | Verifies the "Needs Reconnect" screen.                                   |
+/// | `PNPS-WIZ_TEST_RECONN`| Verifies the "Testing Reconnect" screen.                                 |
+/// | `PNPS-WIZ_FW_CHK`     | Verifies the "Checking Firmware" screen.                                 |
+/// | `PNPS-WIZ_FW_UPD`     | Verifies the "Updating Firmware" screen.                                 |
+/// | `PNPS-WIZ_WIFI_RDY`   | Verifies the "WiFi Ready" screen.                                        |
+/// | `PNPS-WIZ_INIT_FAIL`  | Verifies the wizard initialization failure screen.                       |
+/// | `PNPS-WIZ_SAVE_FAIL`  | Verifies the wizard save failure screen.                                 |
 
 // A stateful fake notifier for testing the complex navigation flow.
 class FakePnpNotifier extends BasePnpNotifier {

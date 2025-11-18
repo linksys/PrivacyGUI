@@ -34,7 +34,7 @@ When no internet connection is detected, this flow is initiated to provide the u
     1.  **Option A - Restart Modem**: Guides the user through a physical power cycle of their modem.
         *   **Flow**: `PnpUnplugModemView` (Unplug) ➔ `PnpModemLightsOffView` (Check lights) ➔ `PnpWaitingModemView` (Wait for reboot and reconnect).
     2.  **Option B - Manual ISP Settings**: Allows the user to manually enter connection information provided by their Internet Service Provider (ISP).
-        *   **Flow**: `PnpIspTypeSelectionView` (Select connection type) ➔ `PnpStaticIpView` / `PnpPPPOEView` (Enter corresponding info) ➔ `PnpIspSaveSettingsView` (Save and validate settings).
+        *   **Flow**: `PnpIspTypeSelectionView` (Select connection type) ➔ `PnpStaticIpView` / `PnpPPPOEView` (Enter corresponding info). The saving and validation logic is handled within each of these views, which show a spinner during the process.
 *   **Flow Outcome**: Both options will eventually re-attempt to check the internet connection. Success may lead back to the main flow; failure may keep the user in the troubleshooter flow.
 
 ### 3.3. First-Time Setup Wizard Flow (`PnpSetupView` - Unconfigured Mode)

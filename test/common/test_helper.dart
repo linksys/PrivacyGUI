@@ -34,6 +34,8 @@ import 'package:privacy_gui/page/instant_safety/providers/instant_safety_state.d
 import 'package:privacy_gui/page/instant_setup/models/pnp_ui_models.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_provider.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_state.dart';
+import 'package:privacy_gui/page/instant_setup/services/pnp_service.dart';
+import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/_providers.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_troubleshooter_provider.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_provider.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_state.dart';
@@ -58,7 +60,11 @@ import '../mocks/connectivity_notifier_mocks.dart';
 import '../mocks/dhcp_reservations_notifier_mocks.dart';
 import '../mocks/instant_verify_notifier_mocks.dart';
 import '../mocks/manual_firmware_update_notifier_mocks.dart';
+import '../mocks/pnp_isp_service_notifier_mocks.dart';
 import '../mocks/pnp_notifier_mocks.dart' as Mock;
+import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_isp_settings_provider.dart';
+import '../mocks/pnp_isp_settings_notifier_mocks.dart';
+import '../mocks/pnp_service_mocks.dart';
 import '../mocks/power_table_notifier_mocks.dart';
 import '../mocks/static_routing_rule_notifier_mocks.dart';
 import '../test_data/instant_verify_test_state.dart';
@@ -137,6 +143,9 @@ class TestHelper {
   late MockInstantVerifyNotifier mockInstantVerifyNotifier;
   late MockAddNodesNotifier mockAddNodesNotifier;
   late MockNodeDetailNotifier mockNodeDetailNotifier;
+  late MockPnpIspSettingsNotifier mockPnpIspSettingsNotifier;
+  late MockPnpIspService mockPnpIspService;
+  late MockPnpService mockPnpService;
 
   // Screen Size
   LocalizedScreen? current;
@@ -193,6 +202,9 @@ class TestHelper {
     mockInstantVerifyNotifier = MockInstantVerifyNotifier();
     mockAddNodesNotifier = MockAddNodesNotifier();
     mockNodeDetailNotifier = MockNodeDetailNotifier();
+    mockPnpIspSettingsNotifier = MockPnpIspSettingsNotifier();
+    mockPnpIspService = MockPnpIspService();
+    mockPnpService = MockPnpService();
     SharedPreferences.setMockInitialValues({});
 
     _setupServiceHelper();
@@ -395,6 +407,9 @@ class TestHelper {
         instantVerifyProvider.overrideWith(() => mockInstantVerifyNotifier),
         addNodesProvider.overrideWith(() => mockAddNodesNotifier),
         nodeDetailProvider.overrideWith(() => mockNodeDetailNotifier),
+        pnpIspSettingsProvider.overrideWith(() => mockPnpIspSettingsNotifier),
+        pnpServiceProvider.overrideWithValue(mockPnpService),
+        pnpIspServiceProvider.overrideWithValue(mockPnpIspService),
       ];
 
   Future<BuildContext> pumpRouter(
@@ -402,6 +417,7 @@ class TestHelper {
     GoRouter router, {
     required Type baseViewType,
     List<Override> overrides = const [],
+    bool forceOverride = false,
     Locale locale = const Locale('en'),
     ThemeMode themeMode = ThemeMode.system,
     GlobalKey<NavigatorState>? navigatorKey,
@@ -410,7 +426,8 @@ class TestHelper {
   }) async {
     await tester.pumpWidget(testableRouter(
       router: router,
-      overrides: [...defaultOverrides, ...overrides],
+      overrides:
+          forceOverride ? overrides : [...defaultOverrides, ...overrides],
       themeMode: themeMode,
       locale: locale,
     ));
@@ -427,10 +444,12 @@ class TestHelper {
     return context;
   }
 
+
   Future<BuildContext> pumpView(
     WidgetTester tester, {
     required Widget child,
     List<Override> overrides = const [],
+    bool forceOverride = false,
     Locale locale = const Locale('en'),
     LinksysRouteConfig? config,
     ThemeMode themeMode = ThemeMode.system,
@@ -442,7 +461,8 @@ class TestHelper {
       testableSingleRoute(
         config: config ?? LinksysRouteConfig(column: ColumnGrid(column: 9)),
         locale: locale,
-        overrides: [...defaultOverrides, ...overrides],
+        overrides:
+            forceOverride ? overrides : [...defaultOverrides, ...overrides],
         themeMode: themeMode,
         navigatorKey: navigatorKey,
         child: child,
@@ -466,6 +486,7 @@ class TestHelper {
     WidgetTester tester, {
     required Widget child,
     List<Override> overrides = const [],
+    bool forceOverride = false,
     Locale locale = const Locale('en'),
     LinksysRouteConfig? config,
     ThemeMode themeMode = ThemeMode.system,
@@ -477,7 +498,8 @@ class TestHelper {
         config: config ?? LinksysRouteConfig(column: ColumnGrid(column: 9)),
         locale: locale,
         themeMode: themeMode,
-        overrides: [...defaultOverrides, ...overrides],
+        overrides:
+            forceOverride ? overrides : [...defaultOverrides, ...overrides],
         child: child,
       ),
     );
