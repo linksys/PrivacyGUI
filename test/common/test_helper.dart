@@ -147,6 +147,8 @@ class TestHelper {
   late MockPnpIspSettingsNotifier mockPnpIspSettingsNotifier;
   late MockPnpIspService mockPnpIspService;
   late MockPnpService mockPnpService;
+  late MockFirmwareUpdateService mockFirmwareUpdateService;
+  late MockManualFirmwareUpdateService mockManualFirmwareUpdateService;
 
   // Screen Size
   LocalizedScreen? current;
@@ -206,6 +208,9 @@ class TestHelper {
     mockPnpIspSettingsNotifier = MockPnpIspSettingsNotifier();
     mockPnpIspService = MockPnpIspService();
     mockPnpService = MockPnpService();
+    mockFirmwareUpdateService = MockFirmwareUpdateService();
+    mockManualFirmwareUpdateService = MockManualFirmwareUpdateService();
+    
     SharedPreferences.setMockInitialValues({});
 
     _setupServiceHelper();

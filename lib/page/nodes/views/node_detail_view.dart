@@ -471,15 +471,9 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
   }
 
   Widget _detailSection(NodeDetailState state) {
-    final updateInfo = (ref.read(firmwareUpdateProvider).nodesStatus?.length ??
-                0) >
-            1
-        ? ref.watch(firmwareUpdateProvider.select((value) => value.nodesStatus
-            ?.firstWhereOrNull((element) => element is NodesFirmwareUpdateStatus
-                ? element.deviceUUID == state.deviceId
-                : false)))
-        : ref.watch(firmwareUpdateProvider
-            .select((value) => value.nodesStatus?.firstOrNull));
+    final updateInfo = ref.watch(firmwareUpdateProvider.select((value) => value
+        .nodesStatus
+        ?.firstWhereOrNull((element) => element.deviceId == state.deviceId)));
     final isFwUpToDate = updateInfo?.availableUpdate == null;
     return _nodeDetailBackgroundCard(
       child: SelectionArea(

@@ -12,11 +12,11 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/customs/rotating_icon.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
-import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_admin/providers/manual_firmware_update_provider.dart';
 import 'package:privacy_gui/page/instant_admin/providers/manual_firmware_update_state.dart';
+import 'package:privacy_gui/page/instant_admin/services/manual_firmware_update_service.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
@@ -45,7 +45,6 @@ class _ManualFirmwareUpdateViewState
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(manualFirmwareUpdateProvider);
-    return _processingView(state.status);
     return state.status == null
         ? _mainContent(state.file)
         : _processingView(state.status);
@@ -94,7 +93,7 @@ class _ManualFirmwareUpdateViewState
                         .setStatus(status);
                     status.start(setState);
                     ref
-                        .read(firmwareUpdateProvider.notifier)
+                        .read(manualFirmwareUpdateProvider.notifier)
                         .manualFirmwareUpdate(file.name, file.bytes)
                         .then((value) {
                       status?.stop();
@@ -103,7 +102,7 @@ class _ManualFirmwareUpdateViewState
                           .read(manualFirmwareUpdateProvider.notifier)
                           .setStatus(status);
                       ref
-                          .read(firmwareUpdateProvider.notifier)
+                          .read(manualFirmwareUpdateProvider.notifier)
                           .waitForRouterBackOnline()
                           .then((_) {
                         handleSuccessUpdated();

@@ -486,7 +486,8 @@ const firmwareUpdateTestData = {
     }
   ],
   "isUpdating": false,
-  "isChecking": false
+  "isRetryMaxReached": false,
+  "isWaitingChildrenAfterUpdating": false
 };
 
 const firmwareUpdateHasFirmwareCherry7TestState = {
