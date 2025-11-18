@@ -40,7 +40,7 @@ class FirmwareUpdateStatus extends Equatable {
 
   factory FirmwareUpdateStatus.fromMap(Map<String, dynamic> map) {
     return FirmwareUpdateStatus(
-      lastSuccessfulCheckTime: map['lastSuccessfulCheckTime'] as String,
+      lastSuccessfulCheckTime: map['lastSuccessfulCheckTime'] as String? ?? '',
       availableUpdate: map['availableUpdate'] != null ? FirmwareUpdateData.fromMap(map['availableUpdate'] as Map<String,dynamic>) : null,
       pendingOperation: map['pendingOperation'] != null ? FirmwareUpdateOperationStatus.fromMap(map['pendingOperation'] as Map<String,dynamic>) : null,
       lastOperationFailure: map['lastOperationFailure'] != null ? map['lastOperationFailure'] as String : null,

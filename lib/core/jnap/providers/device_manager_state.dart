@@ -165,6 +165,10 @@ class LinksysDevice extends RawDevice {
 
   factory LinksysDevice.fromJson(String source) =>
       LinksysDevice.fromMap(json.decode(source) as Map<String, dynamic>);
+
+  bool get isMaster {
+    return isAuthority == true || nodeType == 'Master';
+  }
 }
 
 class DeviceManagerState extends Equatable {
@@ -207,7 +211,7 @@ class DeviceManagerState extends Equatable {
 
   LinksysDevice get masterDevice {
     return nodeDevices.firstWhere(
-        (device) => device.isAuthority == true || device.nodeType == 'Master');
+        (device) => device.isMaster);
   }
 
   List<LinksysDevice> get slaveDevices {
