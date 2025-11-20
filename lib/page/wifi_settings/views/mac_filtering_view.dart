@@ -138,18 +138,21 @@ class MacFilteringView extends ConsumerWidget {
       BuildContext context, WidgetRef ref, InstantPrivacySettings state) {
     final notifier = ref.read(wifiBundleProvider.notifier);
     return AppCard(
-        child: Row(
-      children: [
-        Expanded(child: AppText.labelLarge(loc(context).wifiMacFiltering)),
-        AppSwitch(
-          semanticLabel: 'wifi mac filtering',
-          value: state.mode == MacFilterMode.deny,
-          onChanged: (value) {
-            notifier.setMacFilterMode(
-                value ? MacFilterMode.deny : MacFilterMode.disabled);
-          },
-        )
-      ],
-    ));
+      key: const Key('macFilteringEnableTile'),
+      child: Row(
+        children: [
+          Expanded(child: AppText.labelLarge(loc(context).wifiMacFiltering)),
+          AppSwitch(
+            semanticLabel: 'wifi mac filtering',
+            key: const Key('macFilteringEnableSwitch'),
+            value: state.mode == MacFilterMode.deny,
+            onChanged: (value) {
+              notifier.setMacFilterMode(
+                  value ? MacFilterMode.deny : MacFilterMode.disabled);
+            },
+          )
+        ],
+      ),
+    );
   }
 }

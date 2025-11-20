@@ -138,6 +138,7 @@ class _L2tpFormState extends BaseWanFormState<L2tpForm> {
               if (!hasFocus) setState(() => _serverIpTouched = true);
             },
             child: buildIpFormField(
+              key: const ValueKey('serverIp'),
               semanticLabel: 'server ip address',
               header: loc(context).serverIpv4Address,
               controller: _serverIpController,

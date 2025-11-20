@@ -1,17 +1,56 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
+import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/models/internet_settings_enums.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/views/internet_settings_view.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/card/list_card.dart';
 
 import '../../../../../common/config.dart';
 import '../../../../../common/test_helper.dart';
 import '../../../../../common/test_responsive_widget.dart';
 import '../../../../../test_data/internet_settings_state_data.dart';
 
+// View ID: ISET
+// Implementation file under test: lib/page/advanced_settings/internet_settings/views/internet_settings_view.dart
+///
+/// This file contains screenshot tests for the `InternetSettingsView` widget,
+/// covering various WAN configurations for both IPv4 and IPv6, as well as
+/// different UI states (viewing, editing, dialogs).
+///
+/// **Covered Test Scenarios:**
+///
+/// - **`ISET-DHCP_VIEW`**: Verifies the initial state of the DHCP connection type view.
+/// - **`ISET-STATIC_VIEW`**: Verifies the initial state of the Static IP connection type view.
+/// - **`ISET-PPPOE_VIEW`**: Verifies the initial state of the PPPoE connection type view.
+/// - **`ISET-PPTP_VIEW`**: Verifies the initial state of the PPTP connection type view.
+/// - **`ISET-PPTP_STATIC_VIEW`**: Verifies the initial state of the PPTP connection with a static IP.
+/// - **`ISET-L2TP_VIEW`**: Verifies the initial state of the L2TP connection type view.
+/// - **`ISET-BRIDGE_VIEW`**: Verifies the initial state of the Bridge mode view.
+/// - **`ISET-DHCP_EDIT`**: Verifies the editing state of the DHCP connection type view.
+/// - **`ISET-STATIC_EDIT`**: Verifies the editing state of the Static IP connection type view.
+/// - **`ISET-PPPOE_EDIT`**: Verifies the editing state of the PPPoE connection type view.
+/// - **`ISET-PPTP_EDIT`**: Verifies the editing state of the PPTP connection type view.
+/// - **`ISET-L2TP_EDIT`**: Verifies the editing state of the L2TP connection type view.
+/// - **`ISET-BRIDGE_EDIT`**: Verifies the editing state of the Bridge mode view.
+/// - **`ISET-OPTIONAL_EDIT`**: Verifies the editing state for optional settings (Domain Name, MTU, MAC Clone).
+/// - **`ISET-IPV6_AUTO_VIEW`**: Verifies the initial state of the IPv6 Automatic connection view.
+/// - **`ISET-IPV6_AUTO_EDIT`**: Verifies the editing state of the IPv6 Automatic connection view.
+/// - **`ISET-IPV6_6RD_DIS_EDIT`**: Verifies the editing state for IPv6 Automatic with 6rd Tunnel disabled.
+/// - **`ISET-IPV6_6RD_AUTO_EDIT`**: Verifies the editing state for IPv6 Automatic with 6rd Tunnel set to automatic.
+/// - **`ISET-IPV6_6RD_MAN_EDIT`**: Verifies the editing state for IPv6 Automatic with 6rd Tunnel set to manual.
+/// - **`ISET-IPV6_PASS_VIEW`**: Verifies the initial state of the IPv6 Pass-Through connection view.
+/// - **`ISET-IPV6_PASS_EDIT`**: Verifies the editing state of the IPv6 Pass-Through connection view.
+/// - **`ISET-IPV6_PPPOE_VIEW`**: Verifies the initial state of the IPv6 PPPoE connection view.
+/// - **`ISET-IPV6_PPPOE_EDIT`**: Verifies the editing state of the IPv6 PPPoE connection view.
+/// - **`ISET-RR_VIEW`**: Verifies the Release & Renew tab.
+/// - **`ISET-RR_BRIDGE_VIEW`**: Verifies the Release & Renew tab in Bridge mode.
+/// - **`ISET-RR_DIALOG`**: Verifies the confirmation dialog for Release & Renew.
+/// - **`ISET-SAVE_RESTART_DIALOG`**: Verifies the restart confirmation dialog when saving changes.
+/// - **`ISET-SAVE_COMBO_DIALOG`**: Verifies the invalid WAN combination error dialog.
 Future<void> main() async {
   final testHelper = TestHelper();
 
@@ -20,8 +59,9 @@ Future<void> main() async {
   });
 
   group('InternetSettings - Ipv4', () {
+    // Test ID: ISET-DHCP_VIEW
     testLocalizations(
-      'InternetSettings - dhcp',
+      'Verifies the initial state of the DHCP connection type view',
       (tester, locale) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateDHCP));
@@ -30,11 +70,46 @@ Future<void> main() async {
           await Future.delayed(const Duration(seconds: 1));
           return InternetSettingsState.fromMap(internetSettingsStateDHCP);
         });
-        await testHelper.pumpView(
+        final context = await testHelper.pumpView(
           tester,
           locale: locale,
           child: const InternetSettingsView(),
         );
+        await tester.pumpAndSettle();
+
+        // Verify title and tabs
+        expect(
+            find.text(
+                testHelper.loc(context).internetSettings.capitalizeWords()),
+            findsOneWidget);
+        expect(find.widgetWithText(Tab, testHelper.loc(context).ipv4),
+            findsOneWidget);
+        expect(find.widgetWithText(Tab, testHelper.loc(context).ipv6),
+            findsOneWidget);
+        expect(
+            find.widgetWithText(Tab, testHelper.loc(context).releaseAndRenew),
+            findsOneWidget);
+
+        // Verify IPv4 connection type
+        expect(
+            find.text(testHelper
+                .loc(context)
+                .internetConnectionType
+                .capitalizeWords()),
+            findsOneWidget);
+        expect(find.text(testHelper.loc(context).connectionTypeDhcp),
+            findsOneWidget);
+
+        // Verify Optional Settings
+        expect(find.text(testHelper.loc(context).optional), findsOneWidget);
+        expect(find.text(testHelper.loc(context).domainName.capitalizeWords()),
+            findsOneWidget);
+        expect(find.text(testHelper.loc(context).mtu), findsOneWidget);
+        expect(find.text(testHelper.loc(context).auto), findsOneWidget);
+        expect(
+            find.text(
+                testHelper.loc(context).macAddressClone.capitalizeWords()),
+            findsOneWidget);
       },
       screens: [
         ...responsiveMobileScreens
@@ -44,10 +119,12 @@ Future<void> main() async {
             .map((e) => e.copyWith(height: 1280))
             .toList()
       ],
+      goldenFilename: 'ISET-DHCP_VIEW-01-initial_state',
     );
 
+    // Test ID: ISET-STATIC_VIEW
     testLocalizations(
-      'InternetSettings - static',
+      'Verifies the initial state of the Static IP connection type view',
       (tester, locale) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateStatic));
@@ -56,11 +133,18 @@ Future<void> main() async {
           await Future.delayed(const Duration(seconds: 1));
           return InternetSettingsState.fromMap(internetSettingsStateStatic);
         });
-        await testHelper.pumpView(
+        final context = await testHelper.pumpView(
           tester,
           locale: locale,
           child: const InternetSettingsView(),
         );
+        await tester.pumpAndSettle();
+
+        expect(find.text(testHelper.loc(context).connectionTypeStatic),
+            findsOneWidget);
+        expect(find.text('111.222.111.123'), findsOneWidget);
+        expect(find.text('255.255.255.0'), findsOneWidget);
+        expect(find.text('linksys.com'), findsOneWidget);
       },
       screens: [
         ...responsiveMobileScreens
@@ -70,10 +154,12 @@ Future<void> main() async {
             .map((e) => e.copyWith(height: 1680))
             .toList()
       ],
+      goldenFilename: 'ISET-STATIC_VIEW-01-initial_state',
     );
 
+    // Test ID: ISET-PPPOE_VIEW
     testLocalizations(
-      'InternetSettings - pppoe',
+      'Verifies the initial state of the PPPoE connection type view',
       (tester, locale) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStatePppoe));
@@ -82,11 +168,18 @@ Future<void> main() async {
           await Future.delayed(const Duration(seconds: 1));
           return InternetSettingsState.fromMap(internetSettingsStatePppoe);
         });
-        await testHelper.pumpView(
+        final context = await testHelper.pumpView(
           tester,
           locale: locale,
           child: const InternetSettingsView(),
         );
+        await tester.pumpAndSettle();
+
+        expect(find.text(testHelper.loc(context).connectionTypePppoe),
+            findsOneWidget);
+        expect(find.text('user'), findsOneWidget);
+        expect(
+            find.text(testHelper.loc(context).vlanIdOptional), findsOneWidget);
       },
       screens: [
         ...responsiveMobileScreens
@@ -96,10 +189,12 @@ Future<void> main() async {
             .map((e) => e.copyWith(height: 1280))
             .toList()
       ],
+      goldenFilename: 'ISET-PPPOE_VIEW-01-initial_state',
     );
 
+    // Test ID: ISET-PPTP_VIEW
     testLocalizations(
-      'InternetSettings - pptp',
+      'Verifies the initial state of the PPTP connection type view',
       (tester, locale) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStatePptp));
@@ -108,11 +203,17 @@ Future<void> main() async {
           await Future.delayed(const Duration(seconds: 1));
           return InternetSettingsState.fromMap(internetSettingsStatePptp);
         });
-        await testHelper.pumpView(
+        final context = await testHelper.pumpView(
           tester,
           locale: locale,
           child: const InternetSettingsView(),
         );
+        await tester.pumpAndSettle();
+
+        expect(find.text(testHelper.loc(context).connectionTypePptp),
+            findsOneWidget);
+        expect(find.text('user'), findsOneWidget);
+        expect(find.text('111.222.111.1'), findsOneWidget);
       },
       screens: [
         ...responsiveMobileScreens
@@ -122,10 +223,12 @@ Future<void> main() async {
             .map((e) => e.copyWith(height: 1280))
             .toList()
       ],
+      goldenFilename: 'ISET-PPTP_VIEW-01-initial_state',
     );
 
+    // Test ID: ISET-PPTP_STATIC_VIEW
     testLocalizations(
-      'InternetSettings - pptp with static ip',
+      'Verifies the initial state of the PPTP connection with a static IP',
       (tester, locale) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(
@@ -141,6 +244,7 @@ Future<void> main() async {
           locale: locale,
           child: const InternetSettingsView(),
         );
+        await tester.pumpAndSettle();
       },
       screens: [
         ...responsiveMobileScreens
@@ -150,10 +254,12 @@ Future<void> main() async {
             .map((e) => e.copyWith(height: 1280))
             .toList()
       ],
+      goldenFilename: 'ISET-PPTP_STATIC_VIEW-01-initial_state',
     );
 
+    // Test ID: ISET-L2TP_VIEW
     testLocalizations(
-      'InternetSettings - l2tp',
+      'Verifies the initial state of the L2TP connection type view',
       (tester, locale) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateL2tp));
@@ -162,11 +268,17 @@ Future<void> main() async {
           await Future.delayed(const Duration(seconds: 1));
           return InternetSettingsState.fromMap(internetSettingsStateL2tp);
         });
-        await testHelper.pumpView(
+        final context = await testHelper.pumpView(
           tester,
           locale: locale,
           child: const InternetSettingsView(),
         );
+        await tester.pumpAndSettle();
+
+        expect(find.text(testHelper.loc(context).connectionTypeL2tp),
+            findsOneWidget);
+        expect(find.text('user'), findsOneWidget);
+        expect(find.text('111.222.111.1'), findsOneWidget);
       },
       screens: [
         ...responsiveMobileScreens
@@ -176,10 +288,12 @@ Future<void> main() async {
             .map((e) => e.copyWith(height: 1280))
             .toList()
       ],
+      goldenFilename: 'ISET-L2TP_VIEW-01-initial_state',
     );
 
+    // Test ID: ISET-BRIDGE_VIEW
     testLocalizations(
-      'InternetSettings - bridge',
+      'Verifies the initial state of the Bridge mode view',
       (tester, locale) async {
         final state =
             InternetSettingsState.fromMap(internetSettingsStateBridge);
@@ -191,11 +305,15 @@ Future<void> main() async {
           await Future.delayed(const Duration(seconds: 1));
           return InternetSettingsState.fromMap(internetSettingsStateBridge);
         });
-        await testHelper.pumpView(
+        final context = await testHelper.pumpView(
           tester,
           locale: locale,
           child: const InternetSettingsView(),
         );
+        await tester.pumpAndSettle();
+
+        expect(find.text(testHelper.loc(context).connectionTypeBridge),
+            findsOneWidget);
       },
       screens: [
         ...responsiveMobileScreens
@@ -205,10 +323,12 @@ Future<void> main() async {
             .map((e) => e.copyWith(height: 1280))
             .toList()
       ],
+      goldenFilename: 'ISET-BRIDGE_VIEW-01-initial_state',
     );
 
+    // Test ID: ISET-DHCP_EDIT
     testLocalizations(
-      'InternetSettings - dhcp editing',
+      'Verifies the editing state of the DHCP connection type view',
       (tester, locale) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateDHCP));
@@ -224,8 +344,13 @@ Future<void> main() async {
         );
 
         final editBtnFinder = find.byIcon(LinksysIcons.edit);
+        expect(editBtnFinder, findsOneWidget);
         await tester.tap(editBtnFinder);
         await tester.pumpAndSettle();
+
+        expect(find.byIcon(LinksysIcons.close), findsOneWidget);
+        expect(find.byKey(const ValueKey('ipv4ConnectionDropdown')),
+            findsOneWidget);
       },
       screens: [
         ...responsiveMobileScreens
@@ -235,10 +360,12 @@ Future<void> main() async {
             .map((e) => e.copyWith(height: 1280))
             .toList()
       ],
+      goldenFilename: 'ISET-DHCP_EDIT-01-editing_state',
     );
 
+    // Test ID: ISET-STATIC_EDIT
     testLocalizations(
-      'InternetSettings - static editing',
+      'Verifies the editing state of the Static IP connection type view',
       (tester, locale) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateStatic));
@@ -256,6 +383,13 @@ Future<void> main() async {
         final editBtnFinder = find.byIcon(LinksysIcons.edit);
         await tester.tap(editBtnFinder);
         await tester.pumpAndSettle();
+
+        expect(find.byKey(const ValueKey('ipAddress')), findsOneWidget);
+        expect(find.byKey(const ValueKey('subnetMask')), findsOneWidget);
+        expect(find.byKey(const ValueKey('gateway')), findsOneWidget);
+        expect(find.byKey(const ValueKey('dns1')), findsOneWidget);
+        expect(find.byKey(const ValueKey('dns2')), findsOneWidget);
+        expect(find.byKey(const ValueKey('dns3')), findsOneWidget);
       },
       screens: [
         ...responsiveMobileScreens
@@ -265,10 +399,12 @@ Future<void> main() async {
             .map((e) => e.copyWith(height: 1680))
             .toList()
       ],
+      goldenFilename: 'ISET-STATIC_EDIT-01-editing_state',
     );
 
+    // Test ID: ISET-PPPOE_EDIT
     testLocalizations(
-      'InternetSettings - pppoe editing',
+      'Verifies the editing state of the PPPoE connection type view',
       (tester, locale) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStatePppoe));
@@ -277,7 +413,7 @@ Future<void> main() async {
           await Future.delayed(const Duration(seconds: 1));
           return InternetSettingsState.fromMap(internetSettingsStatePppoe);
         });
-        await testHelper.pumpView(
+        final context = await testHelper.pumpView(
           tester,
           locale: locale,
           child: const InternetSettingsView(),
@@ -286,6 +422,21 @@ Future<void> main() async {
         final editBtnFinder = find.byIcon(LinksysIcons.edit);
         await tester.tap(editBtnFinder);
         await tester.pumpAndSettle();
+
+        expect(
+            find.widgetWithText(AppTextField, testHelper.loc(context).username),
+            findsOneWidget);
+        expect(
+            find.widgetWithText(AppTextField, testHelper.loc(context).password),
+            findsOneWidget);
+        expect(
+            find.widgetWithText(
+                AppTextField, testHelper.loc(context).vlanIdOptional),
+            findsOneWidget);
+        expect(
+            find.widgetWithText(
+                AppTextField, testHelper.loc(context).serviceNameOptional),
+            findsOneWidget);
       },
       screens: [
         ...responsiveMobileScreens
@@ -295,10 +446,12 @@ Future<void> main() async {
             .map((e) => e.copyWith(height: 1680))
             .toList()
       ],
+      goldenFilename: 'ISET-PPPOE_EDIT-01-editing_state',
     );
 
+    // Test ID: ISET-PPTP_EDIT
     testLocalizations(
-      'InternetSettings - pptp editing',
+      'Verifies the editing state of the PPTP connection type view',
       (tester, locale) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStatePptp));
@@ -307,7 +460,7 @@ Future<void> main() async {
           await Future.delayed(const Duration(seconds: 1));
           return InternetSettingsState.fromMap(internetSettingsStatePptp);
         });
-        await testHelper.pumpView(
+        final context = await testHelper.pumpView(
           tester,
           locale: locale,
           child: const InternetSettingsView(),
@@ -316,6 +469,14 @@ Future<void> main() async {
         final editBtnFinder = find.byIcon(LinksysIcons.edit);
         await tester.tap(editBtnFinder);
         await tester.pumpAndSettle();
+
+        expect(
+            find.widgetWithText(AppTextField, testHelper.loc(context).username),
+            findsOneWidget);
+        expect(
+            find.widgetWithText(AppTextField, testHelper.loc(context).password),
+            findsOneWidget);
+        expect(find.byKey(const ValueKey('serverIp')), findsOneWidget);
       },
       screens: [
         ...responsiveMobileScreens
@@ -325,10 +486,12 @@ Future<void> main() async {
             .map((e) => e.copyWith(height: 1680))
             .toList()
       ],
+      goldenFilename: 'ISET-PPTP_EDIT-01-editing_state',
     );
 
+    // Test ID: ISET-L2TP_EDIT
     testLocalizations(
-      'InternetSettings - l2tp editing',
+      'Verifies the editing state of the L2TP connection type view',
       (tester, locale) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateL2tp));
@@ -337,7 +500,7 @@ Future<void> main() async {
           await Future.delayed(const Duration(seconds: 1));
           return InternetSettingsState.fromMap(internetSettingsStateL2tp);
         });
-        await testHelper.pumpView(
+        final context = await testHelper.pumpView(
           tester,
           locale: locale,
           child: const InternetSettingsView(),
@@ -346,6 +509,14 @@ Future<void> main() async {
         final editBtnFinder = find.byIcon(LinksysIcons.edit);
         await tester.tap(editBtnFinder);
         await tester.pumpAndSettle();
+
+        expect(
+            find.widgetWithText(AppTextField, testHelper.loc(context).username),
+            findsOneWidget);
+        expect(
+            find.widgetWithText(AppTextField, testHelper.loc(context).password),
+            findsOneWidget);
+        expect(find.byKey(const ValueKey('serverIp')), findsOneWidget);
       },
       screens: [
         ...responsiveMobileScreens
@@ -355,10 +526,12 @@ Future<void> main() async {
             .map((e) => e.copyWith(height: 1680))
             .toList()
       ],
+      goldenFilename: 'ISET-L2TP_EDIT-01-editing_state',
     );
 
+    // Test ID: ISET-BRIDGE_EDIT
     testLocalizations(
-      'InternetSettings - bridge editing',
+      'Verifies the editing state of the Bridge mode view',
       (tester, locale) async {
         final state =
             InternetSettingsState.fromMap(internetSettingsStateBridge);
@@ -370,7 +543,7 @@ Future<void> main() async {
           await Future.delayed(const Duration(seconds: 1));
           return state.copyWith(status: status);
         });
-        await testHelper.pumpView(
+        final context = await testHelper.pumpView(
           tester,
           locale: locale,
           child: const InternetSettingsView(),
@@ -379,6 +552,10 @@ Future<void> main() async {
         final editBtnFinder = find.byIcon(LinksysIcons.edit);
         await tester.tap(editBtnFinder);
         await tester.pumpAndSettle();
+
+        expect(find.byKey(ValueKey('toLogInLocallyWhileInBridgeMode')),
+            findsAtLeast(1));
+        expect(find.byKey(ValueKey('bridgeModeLocalUrl')), findsOneWidget);
       },
       screens: [
         ...responsiveMobileScreens
@@ -388,10 +565,12 @@ Future<void> main() async {
             .map((e) => e.copyWith(height: 1280))
             .toList()
       ],
+      goldenFilename: 'ISET-BRIDGE_EDIT-01-editing_state',
     );
 
+    // Test ID: ISET-OPTIONAL_EDIT
     testLocalizations(
-      'InternetSettings - domain name, mtu and mac address clone editing',
+      'Verifies the editing state for optional settings (Domain Name, MTU, MAC Clone)',
       (tester, locale) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateStatic));
@@ -400,7 +579,7 @@ Future<void> main() async {
           await Future.delayed(const Duration(seconds: 1));
           return InternetSettingsState.fromMap(internetSettingsStateStatic);
         });
-        await testHelper.pumpView(
+        final context = await testHelper.pumpView(
           tester,
           locale: locale,
           child: const InternetSettingsView(),
@@ -409,6 +588,11 @@ Future<void> main() async {
         final editBtnFinder = find.byIcon(LinksysIcons.edit);
         await tester.tap(editBtnFinder);
         await tester.pumpAndSettle();
+
+        expect(find.byKey(const ValueKey('domainName')), findsOneWidget);
+        expect(find.byKey(const ValueKey('mtuDropdown')), findsOneWidget);
+        expect(
+            find.byKey(const ValueKey('macAddressCloneCard')), findsOneWidget);
       },
       screens: [
         ...responsiveMobileScreens
@@ -418,12 +602,14 @@ Future<void> main() async {
             .map((e) => e.copyWith(height: 1680))
             .toList()
       ],
+      goldenFilename: 'ISET-OPTIONAL_EDIT-01-editing_state',
     );
   });
 
   group('InternetSettings - Ipv6', () {
+    // Test ID: ISET-IPV6_AUTO_VIEW
     testLocalizations(
-      'InternetSettings - ipv6 automatic',
+      'Verifies the initial state of the IPv6 Automatic connection view',
       (tester, locale) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateIpv6Automatic));
@@ -433,7 +619,7 @@ Future<void> main() async {
           return InternetSettingsState.fromMap(
               internetSettingsStateIpv6Automatic);
         });
-        await testHelper.pumpView(
+        final context = await testHelper.pumpView(
           tester,
           locale: locale,
           child: const InternetSettingsView(),
@@ -442,6 +628,11 @@ Future<void> main() async {
         final ipv6TabFinder = find.byType(Tab);
         await tester.tap(ipv6TabFinder.at(1));
         await tester.pumpAndSettle();
+
+        expect(find.text(testHelper.loc(context).connectionTypeAutomatic),
+            findsOneWidget);
+        expect(find.text(testHelper.loc(context).enabled), findsOneWidget);
+        expect(find.text(testHelper.loc(context).duid), findsOneWidget);
       },
       screens: [
         ...responsiveMobileScreens
@@ -451,10 +642,12 @@ Future<void> main() async {
             .map((e) => e.copyWith(height: 1680))
             .toList()
       ],
+      goldenFilename: 'ISET-IPV6_AUTO_VIEW-01-initial_state',
     );
 
+    // Test ID: ISET-IPV6_AUTO_EDIT
     testLocalizations(
-      'InternetSettings - ipv6 automatic editing',
+      'Verifies the editing state of the IPv6 Automatic connection view',
       (tester, locale) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateIpv6Automatic));
@@ -477,6 +670,10 @@ Future<void> main() async {
         final editBtnFinder = find.byIcon(LinksysIcons.edit);
         await tester.tap(editBtnFinder);
         await tester.pumpAndSettle();
+
+        expect(find.byKey(const ValueKey('ipv6ConnectionDropdown')),
+            findsOneWidget);
+        // expect(find.bySemanticsLabel('ipv6 automatic'), findsOneWidget);
       },
       screens: [
         ...responsiveMobileScreens
@@ -486,10 +683,12 @@ Future<void> main() async {
             .map((e) => e.copyWith(height: 1680))
             .toList()
       ],
+      goldenFilename: 'ISET-IPV6_AUTO_EDIT-01-editing_state',
     );
 
+    // Test ID: ISET-IPV6_6RD_DIS_EDIT
     testLocalizations(
-      'InternetSettings - ipv6 automatic ipv6rdTunnelMode diable editing',
+      'Verifies the editing state for IPv6 Automatic with 6rd Tunnel disabled',
       (tester, locale) async {
         final state =
             InternetSettingsState.fromMap(internetSettingsStateIpv6Automatic);
@@ -503,7 +702,8 @@ Future<void> main() async {
             ),
           ),
         ));
-        when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(newState);
+        when(testHelper.mockInternetSettingsNotifier.build())
+            .thenReturn(newState);
         when(testHelper.mockInternetSettingsNotifier.fetch())
             .thenAnswer((realInvocation) async {
           await Future.delayed(const Duration(seconds: 1));
@@ -522,6 +722,9 @@ Future<void> main() async {
         final editBtnFinder = find.byIcon(LinksysIcons.edit);
         await tester.tap(editBtnFinder);
         await tester.pumpAndSettle();
+
+        expect(
+            find.byKey(const ValueKey('ipv6TunnelDropdown')), findsOneWidget);
       },
       screens: [
         ...responsiveMobileScreens
@@ -531,10 +734,12 @@ Future<void> main() async {
             .map((e) => e.copyWith(height: 1680))
             .toList()
       ],
+      goldenFilename: 'ISET-IPV6_6RD_DIS_EDIT-01-editing_state',
     );
 
+    // Test ID: ISET-IPV6_6RD_AUTO_EDIT
     testLocalizations(
-      'InternetSettings - ipv6 automatic ipv6rdTunnelMode automatic editing',
+      'Verifies the editing state for IPv6 Automatic with 6rd Tunnel set to automatic',
       (tester, locale) async {
         final state =
             InternetSettingsState.fromMap(internetSettingsStateIpv6Automatic);
@@ -548,7 +753,8 @@ Future<void> main() async {
             ),
           ),
         ));
-        when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(newState);
+        when(testHelper.mockInternetSettingsNotifier.build())
+            .thenReturn(newState);
         when(testHelper.mockInternetSettingsNotifier.fetch())
             .thenAnswer((realInvocation) async {
           await Future.delayed(const Duration(seconds: 1));
@@ -567,6 +773,9 @@ Future<void> main() async {
         final editBtnFinder = find.byIcon(LinksysIcons.edit);
         await tester.tap(editBtnFinder);
         await tester.pumpAndSettle();
+
+        expect(
+            find.byKey(const ValueKey('ipv6TunnelDropdown')), findsOneWidget);
       },
       screens: [
         ...responsiveMobileScreens
@@ -576,10 +785,12 @@ Future<void> main() async {
             .map((e) => e.copyWith(height: 1680))
             .toList()
       ],
+      goldenFilename: 'ISET-IPV6_6RD_AUTO_EDIT-01-editing_state',
     );
 
+    // Test ID: ISET-IPV6_6RD_MAN_EDIT
     testLocalizations(
-      'InternetSettings - ipv6 automatic ipv6rdTunnelMode manual editing',
+      'Verifies the editing state for IPv6 Automatic with 6rd Tunnel set to manual',
       (tester, locale) async {
         final state =
             InternetSettingsState.fromMap(internetSettingsStateIpv6Automatic);
@@ -593,13 +804,14 @@ Future<void> main() async {
             ),
           ),
         ));
-        when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(newState);
+        when(testHelper.mockInternetSettingsNotifier.build())
+            .thenReturn(newState);
         when(testHelper.mockInternetSettingsNotifier.fetch())
             .thenAnswer((realInvocation) async {
           await Future.delayed(const Duration(seconds: 1));
           return newState;
         });
-        await testHelper.pumpView(
+        final context = await testHelper.pumpView(
           tester,
           locale: locale,
           child: const InternetSettingsView(),
@@ -612,6 +824,16 @@ Future<void> main() async {
         final editBtnFinder = find.byIcon(LinksysIcons.edit);
         await tester.tap(editBtnFinder);
         await tester.pumpAndSettle();
+
+        expect(
+            find.byKey(const ValueKey('ipv6TunnelDropdown')), findsOneWidget);
+        expect(
+            find.widgetWithText(AppTextField, testHelper.loc(context).prefix),
+            findsOneWidget);
+        expect(
+            find.widgetWithText(
+                AppTextField, testHelper.loc(context).prefixLength),
+            findsOneWidget);
       },
       screens: [
         ...responsiveMobileScreens
@@ -621,10 +843,49 @@ Future<void> main() async {
             .map((e) => e.copyWith(height: 1680))
             .toList()
       ],
+      goldenFilename: 'ISET-IPV6_6RD_MAN_EDIT-01-editing_state',
     );
 
+    // Test ID: ISET-IPV6_PASS_VIEW
     testLocalizations(
-      'InternetSettings - ipv6 pass-through',
+      'Verifies the initial state of the IPv6 Pass-Through connection view',
+      (tester, locale) async {
+        when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
+            InternetSettingsState.fromMap(
+                internetSettingsStateIpv6PassThrough));
+        when(testHelper.mockInternetSettingsNotifier.fetch())
+            .thenAnswer((realInvocation) async {
+          await Future.delayed(const Duration(seconds: 1));
+          return InternetSettingsState.fromMap(
+              internetSettingsStateIpv6PassThrough);
+        });
+        final context = await testHelper.pumpView(
+          tester,
+          locale: locale,
+          child: const InternetSettingsView(),
+        );
+
+        final ipv6TabFinder = find.byType(Tab);
+        await tester.tap(ipv6TabFinder.at(1));
+        await tester.pumpAndSettle();
+
+        expect(find.text(testHelper.loc(context).connectionTypePassThrough),
+            findsOneWidget);
+      },
+      screens: [
+        ...responsiveMobileScreens
+            .map((e) => e.copyWith(height: 1680))
+            .toList(),
+        ...responsiveDesktopScreens
+            .map((e) => e.copyWith(height: 1680))
+            .toList()
+      ],
+      goldenFilename: 'ISET-IPV6_PASS_VIEW-01-initial_state',
+    );
+
+    // Test ID: ISET-IPV6_PASS_EDIT
+    testLocalizations(
+      'Verifies the editing state of the IPv6 Pass-Through connection view',
       (tester, locale) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(
@@ -644,42 +905,13 @@ Future<void> main() async {
         final ipv6TabFinder = find.byType(Tab);
         await tester.tap(ipv6TabFinder.at(1));
         await tester.pumpAndSettle();
-      },
-      screens: [
-        ...responsiveMobileScreens
-            .map((e) => e.copyWith(height: 1680))
-            .toList(),
-        ...responsiveDesktopScreens
-            .map((e) => e.copyWith(height: 1680))
-            .toList()
-      ],
-    );
-
-    testLocalizations(
-      'InternetSettings - ipv6 pass-through editing',
-      (tester, locale) async {
-        when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
-            InternetSettingsState.fromMap(
-                internetSettingsStateIpv6PassThrough));
-        when(testHelper.mockInternetSettingsNotifier.fetch())
-            .thenAnswer((realInvocation) async {
-          await Future.delayed(const Duration(seconds: 1));
-          return InternetSettingsState.fromMap(
-              internetSettingsStateIpv6PassThrough);
-        });
-        await testHelper.pumpView(
-          tester,
-          locale: locale,
-          child: const InternetSettingsView(),
-        );
-
-        final ipv6TabFinder = find.byType(Tab);
-        await tester.tap(ipv6TabFinder.at(1));
-        await tester.pumpAndSettle();
 
         final editBtnFinder = find.byIcon(LinksysIcons.edit);
         await tester.tap(editBtnFinder);
         await tester.pumpAndSettle();
+
+        expect(find.byKey(const ValueKey('ipv6ConnectionDropdown')),
+            findsOneWidget);
       },
       screens: [
         ...responsiveMobileScreens
@@ -689,10 +921,12 @@ Future<void> main() async {
             .map((e) => e.copyWith(height: 1680))
             .toList()
       ],
+      goldenFilename: 'ISET-IPV6_PASS_EDIT-01-editing_state',
     );
 
+    // Test ID: ISET-IPV6_PPPOE_VIEW
     testLocalizations(
-      'InternetSettings - ipv6 pppoe',
+      'Verifies the initial state of the IPv6 PPPoE connection view',
       (tester, locale) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateIpv6PPPoE));
@@ -701,7 +935,7 @@ Future<void> main() async {
           await Future.delayed(const Duration(seconds: 1));
           return InternetSettingsState.fromMap(internetSettingsStateIpv6PPPoE);
         });
-        await testHelper.pumpView(
+        final context = await testHelper.pumpView(
           tester,
           locale: locale,
           child: const InternetSettingsView(),
@@ -710,6 +944,9 @@ Future<void> main() async {
         final ipv6TabFinder = find.byType(Tab);
         await tester.tap(ipv6TabFinder.at(1));
         await tester.pumpAndSettle();
+
+        expect(find.text(testHelper.loc(context).connectionTypePppoe),
+            findsOneWidget);
       },
       screens: [
         ...responsiveMobileScreens
@@ -719,10 +956,12 @@ Future<void> main() async {
             .map((e) => e.copyWith(height: 1680))
             .toList()
       ],
+      goldenFilename: 'ISET-IPV6_PPPOE_VIEW-01-initial_state',
     );
 
+    // Test ID: ISET-IPV6_PPPOE_EDIT
     testLocalizations(
-      'InternetSettings - ipv6 pppoe editing',
+      'Verifies the editing state of the IPv6 PPPoE connection view',
       (tester, locale) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateIpv6PPPoE));
@@ -744,6 +983,9 @@ Future<void> main() async {
         final editBtnFinder = find.byIcon(LinksysIcons.edit);
         await tester.tap(editBtnFinder);
         await tester.pumpAndSettle();
+
+        expect(find.byKey(const ValueKey('ipv6ConnectionDropdown')),
+            findsOneWidget);
       },
       screens: [
         ...responsiveMobileScreens
@@ -753,12 +995,14 @@ Future<void> main() async {
             .map((e) => e.copyWith(height: 1680))
             .toList()
       ],
+      goldenFilename: 'ISET-IPV6_PPPOE_EDIT-01-editing_state',
     );
   });
 
   group('InternetSettings - Release & Renew', () {
+    // Test ID: ISET-RR_VIEW
     testLocalizations(
-      'InternetSettings - release & renew',
+      'Verifies the Release & Renew tab',
       (tester, locale) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateDHCP));
@@ -767,7 +1011,7 @@ Future<void> main() async {
           await Future.delayed(const Duration(seconds: 1));
           return InternetSettingsState.fromMap(internetSettingsStateDHCP);
         });
-        await testHelper.pumpView(
+        final context = await testHelper.pumpView(
           tester,
           locale: locale,
           child: const InternetSettingsView(),
@@ -776,11 +1020,24 @@ Future<void> main() async {
         final releaseAndRenewTabFinder = find.byType(Tab);
         await tester.tap(releaseAndRenewTabFinder.at(2));
         await tester.pumpAndSettle();
+
+        expect(find.text(testHelper.loc(context).internetIPAddress),
+            findsOneWidget);
+        expect(find.widgetWithText(AppListCard, testHelper.loc(context).ipv4),
+            findsOneWidget);
+        expect(find.widgetWithText(AppListCard, testHelper.loc(context).ipv6),
+            findsOneWidget);
+        expect(
+            find.widgetWithText(
+                AppTextButton, testHelper.loc(context).releaseAndRenew),
+            findsNWidgets(2));
       },
+      goldenFilename: 'ISET-RR_VIEW-01-initial_state',
     );
 
+    // Test ID: ISET-RR_BRIDGE_VIEW
     testLocalizations(
-      'InternetSettings - release & renew with bridge mode',
+      'Verifies the Release & Renew tab in Bridge mode',
       (tester, locale) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateBridge));
@@ -798,11 +1055,17 @@ Future<void> main() async {
         final releaseAndRenewTabFinder = find.byType(Tab);
         await tester.tap(releaseAndRenewTabFinder.at(2));
         await tester.pumpAndSettle();
+
+        final button = tester.widget<AppTextButton>(
+            find.widgetWithText(AppTextButton, 'Release & Renew').first);
+        expect(button.onTap, isNull);
       },
+      goldenFilename: 'ISET-RR_BRIDGE_VIEW-01-initial_state',
     );
 
+    // Test ID: ISET-RR_DIALOG
     testLocalizations(
-      'InternetSettings - release & renew dialog',
+      'Verifies the confirmation dialog for Release & Renew',
       (tester, locale) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateDHCP));
@@ -811,7 +1074,7 @@ Future<void> main() async {
           await Future.delayed(const Duration(seconds: 1));
           return InternetSettingsState.fromMap(internetSettingsStateDHCP);
         });
-        await testHelper.pumpView(
+        final context = await testHelper.pumpView(
           tester,
           locale: locale,
           child: const InternetSettingsView(),
@@ -824,46 +1087,55 @@ Future<void> main() async {
         final saveBtnFinder = find.byType(AppTextButton);
         await tester.tap(saveBtnFinder.first);
         await tester.pumpAndSettle();
+
+        expect(find.byType(AlertDialog), findsOneWidget);
+        expect(find.text(testHelper.loc(context).releaseAndRenewIpAddress),
+            findsOneWidget);
+        expect(
+            find.text(
+                testHelper.loc(context).releaseAndRenewIpAddressDescription),
+            findsOneWidget);
+        expect(
+            find.widgetWithText(AppTextButton, testHelper.loc(context).cancel),
+            findsOneWidget);
       },
+      goldenFilename: 'ISET-RR_DIALOG-01-confirmation_dialog',
     );
   });
 
   group('InternetSettings - Save', () {
+    // Test ID: ISET-SAVE_RESTART_DIALOG
     testLocalizations(
-      'InternetSettings - restart dialog',
+      'Verifies the restart confirmation dialog when saving changes',
       (tester, locale) async {
-        final state =
-            InternetSettingsState.fromMap(internetSettingsStateIpv6PPPoE);
-        final settings = state.settings.current;
-        final newState = state.copyWith(
-            settings: state.settings.copyWith(
-          current: settings.copyWith(
-            macClone: true,
-          ),
-        ));
-        when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(newState);
-        when(testHelper.mockInternetSettingsNotifier.fetch())
-            .thenAnswer((realInvocation) async {
-          await Future.delayed(const Duration(seconds: 1));
-          return newState;
-        });
-        await testHelper.pumpView(
+        when(testHelper.mockInternetSettingsNotifier.isDirty())
+            .thenReturn(true);
+        final context = await testHelper.pumpView(
           tester,
           locale: locale,
           child: const InternetSettingsView(),
         );
+        await tester.pumpAndSettle();
 
         final editBtnFinder = find.byIcon(LinksysIcons.edit);
         await tester.tap(editBtnFinder);
         await tester.pumpAndSettle();
 
-        final switchBtnFinder = find.byType(AppSwitch);
-        await tester.tap(switchBtnFinder.first);
-        await tester.pumpAndSettle();
-
-        final saveBtnFinder = find.byType(AppFilledButton);
+        final saveBtnFinder = find.byKey(const Key('pageBottomPositiveButton'));
         await tester.tap(saveBtnFinder);
         await tester.pumpAndSettle();
+
+        expect(find.byType(AlertDialog), findsOneWidget);
+        expect(find.text(testHelper.loc(context).restartWifiAlertTitle),
+            findsOneWidget);
+        expect(find.text(testHelper.loc(context).restartWifiAlertDesc),
+            findsOneWidget);
+        expect(
+            find.widgetWithText(AppTextButton, testHelper.loc(context).cancel),
+            findsOneWidget);
+        expect(
+            find.widgetWithText(AppTextButton, testHelper.loc(context).restart),
+            findsOneWidget);
       },
       screens: [
         ...responsiveMobileScreens
@@ -873,27 +1145,18 @@ Future<void> main() async {
             .map((e) => e.copyWith(height: 1680))
             .toList()
       ],
+      goldenFilename: 'ISET-SAVE_RESTART_DIALOG-01-restart_dialog',
     );
 
+    // Test ID: ISET-SAVE_COMBO_DIALOG
     testLocalizations(
-      'InternetSettings - ipv4 and ipv6 combination dialog',
+      'Verifies the invalid WAN combination error dialog',
       (tester, locale) async {
-        final state =
-            InternetSettingsState.fromMap(internetSettingsStateIpv6PPPoE);
-        final settings = state.settings.current;
-        final newState = state.copyWith(
-            settings: state.settings.copyWith(
-          current: settings.copyWith(
-            macClone: true,
-          ),
-        ));
-        when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(newState);
-        when(testHelper.mockInternetSettingsNotifier.fetch())
-            .thenAnswer((realInvocation) async {
-          await Future.delayed(const Duration(seconds: 1));
-          return newState;
-        });
-        await testHelper.pumpView(
+        when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
+            InternetSettingsState.fromMap(internetSettingsStateIpv6PPPoE));
+        when(testHelper.mockInternetSettingsNotifier.isDirty())
+            .thenReturn(true);
+        final context = await testHelper.pumpView(
           tester,
           locale: locale,
           child: const InternetSettingsView(),
@@ -907,9 +1170,11 @@ Future<void> main() async {
         await tester.tap(saveBtnFinder);
         await tester.pumpAndSettle();
 
-        final restartBtnFinder = find.byType(AppTextButton);
-        await tester.tap(restartBtnFinder.last);
-        await tester.pumpAndSettle();
+        expect(find.text(testHelper.loc(context).error), findsOneWidget);
+        expect(
+            find.text(
+                '${testHelper.loc(context).selectedCombinationNotValid}:'),
+            findsOneWidget);
       },
       screens: [
         ...responsiveMobileScreens
@@ -919,6 +1184,7 @@ Future<void> main() async {
             .map((e) => e.copyWith(height: 1680))
             .toList()
       ],
+      goldenFilename: 'ISET-SAVE_COMBO_DIALOG-01-combination_error',
     );
   });
 }

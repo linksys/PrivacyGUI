@@ -52,12 +52,14 @@ class _BridgeFormState extends BaseWanFormState<BridgeForm> {
         const AppGap.small3(),
         AppStyledText.bold(
           loc(context).toLogInLocallyWhileInBridgeMode,
+          key: const ValueKey('toLogInLocallyWhileInBridgeMode'),
           defaultTextStyle: Theme.of(context).textTheme.bodyLarge!,
           tags: const ['b'],
         ),
         const AppGap.small2(),
         AppTextButton.noPadding(
           'http://${state.status.hostname}.local',
+          key: const ValueKey('bridgeModeLocalUrl'),
           icon: Icons.open_in_new,
           onTap: () {
             openUrl('http://${state.status.hostname}.local');

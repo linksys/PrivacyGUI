@@ -26,7 +26,8 @@ class GuestWiFiCard extends ConsumerStatefulWidget {
   ConsumerState<GuestWiFiCard> createState() => _GuestWiFiCardState();
 }
 
-class _GuestWiFiCardState extends ConsumerState<GuestWiFiCard> with WifiSettingModalMixin {
+class _GuestWiFiCardState extends ConsumerState<GuestWiFiCard>
+    with WifiSettingModalMixin {
   final _guestPasswordController = TextEditingController();
 
   @override
@@ -61,7 +62,7 @@ class _GuestWiFiCardState extends ConsumerState<GuestWiFiCard> with WifiSettingM
               bottom: Spacing.medium,
             ),
             child: AppCard(
-              key: const ValueKey('WiFiGuestCard'),
+              key: const Key('WiFiGuestCard'),
               padding: const EdgeInsets.symmetric(
                   vertical: Spacing.small2, horizontal: Spacing.large2),
               child: Column(
@@ -85,6 +86,7 @@ class _GuestWiFiCardState extends ConsumerState<GuestWiFiCard> with WifiSettingM
         padding: const EdgeInsets.symmetric(vertical: 8.0),
         title: AppText.labelLarge(loc(context).guest),
         trailing: AppSwitch(
+          key: Key('WiFiGuestSwitch'),
           semanticLabel: 'guest',
           value: state.isEnabled,
           onChanged: (value) {
@@ -136,5 +138,4 @@ class _GuestWiFiCardState extends ConsumerState<GuestWiFiCard> with WifiSettingM
           });
         },
       );
-  
 }

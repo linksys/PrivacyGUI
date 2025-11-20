@@ -142,6 +142,7 @@ class _StaticIpFormState extends BaseWanFormState<StaticIpForm> {
               if (!hasFocus) setState(() => _ipAddressTouched = true);
             },
             child: buildIpFormField(
+              key: const ValueKey('ipAddress'),
               semanticLabel: 'ip address',
               header: loc(context).internetIpv4Address,
               controller: _ipAddressController,
@@ -161,6 +162,7 @@ class _StaticIpFormState extends BaseWanFormState<StaticIpForm> {
               if (!hasFocus) setState(() => _subnetTouched = true);
             },
             child: buildIpFormField(
+              key: const ValueKey('subnetMask'),
               semanticLabel: 'subnet mask',
               header: loc(context).subnetMask.capitalizeWords(),
               controller: _subnetController,
@@ -183,6 +185,7 @@ class _StaticIpFormState extends BaseWanFormState<StaticIpForm> {
               if (!hasFocus) setState(() => _gatewayTouched = true);
             },
             child: buildIpFormField(
+              key: const ValueKey('gateway'),
               semanticLabel: 'default gateway',
               header: loc(context).defaultGateway,
               controller: _gatewayController,
@@ -202,6 +205,7 @@ class _StaticIpFormState extends BaseWanFormState<StaticIpForm> {
               if (!hasFocus) setState(() => _dns1Touched = true);
             },
             child: buildIpFormField(
+              key: const ValueKey('dns1'),
               semanticLabel: 'dns 1',
               header: loc(context).dns1,
               controller: _dns1Controller,
@@ -221,6 +225,7 @@ class _StaticIpFormState extends BaseWanFormState<StaticIpForm> {
               if (!hasFocus) setState(() => _dns2Touched = true);
             },
             child: buildIpFormField(
+              key: const ValueKey('dns2'),
               semanticLabel: 'dns 2 optional',
               header: loc(context).dns2Optional,
               controller: _dns2Controller,
@@ -240,6 +245,7 @@ class _StaticIpFormState extends BaseWanFormState<StaticIpForm> {
               if (!hasFocus) setState(() => _dns3Touched = true);
             },
             child: buildIpFormField(
+              key: const ValueKey('dns3'),
               semanticLabel: 'dns 3 optional',
               header: loc(context).dns3Optional,
               controller: _dns3Controller,

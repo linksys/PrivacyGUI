@@ -64,6 +64,7 @@ mixin WifiSettingModalMixin<T extends StatefulWidget> on State<T> {
           children: [
             WifiPasswordField(
               semanticLabel: 'wifi password',
+              key: ValueKey('wifi password input'),
               controller: controller,
               isLength64: isLength64,
               onChanged: (value) {

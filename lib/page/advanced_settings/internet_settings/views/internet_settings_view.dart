@@ -114,13 +114,14 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
         isBridgeMode: isBridgeMode,
       ),
     ];
+    final isDirty = ref.read(internetSettingsProvider.notifier).isDirty();
     return StyledAppPageView.withSliver(
       padding: EdgeInsets.zero,
       useMainPadding: false,
       title: loc(context).internetSettings.capitalizeWords(),
       bottomBar: isEditing
           ? PageBottomBar(
-              isPositiveEnabled: state.isDirty &&
+              isPositiveEnabled: isDirty &&
                   isIpv4FormValid &&
                   isIpv6FormValid &&
                   isOptionalFormValid,
