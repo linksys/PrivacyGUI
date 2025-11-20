@@ -81,6 +81,7 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppListCard(
+            key: const Key('selectFromMyDeviceList'),
             title: AppText.labelLarge(loc(context).selectFromMyDeviceList),
             trailing: !_isEdit ? const Icon(LinksysIcons.add) : null,
             onTap: !_isEdit
@@ -91,6 +92,7 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
           ),
           const AppGap.small2(),
           AppListCard(
+            key: const Key('manuallyAddDevice'),
             title: AppText.labelLarge(loc(context).manuallyAddDevice),
             trailing: !_isEdit ? const Icon(LinksysIcons.add) : null,
             onTap: !_isEdit
@@ -209,6 +211,7 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
         mainAxisSize: MainAxisSize.min,
         children: [
           AppTextField.macAddress(
+            key: const Key('macAddressTextField'),
             semanticLabel: 'mac address',
             border: const OutlineInputBorder(),
             controller: controller,

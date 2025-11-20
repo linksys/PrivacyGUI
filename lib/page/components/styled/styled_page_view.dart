@@ -463,12 +463,14 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
     final title = widget.title;
     final leading = widget.appBarStyle == AppBarStyle.back
         ? BackButton(
+            key: Key('appBarBackButton'),
             onPressed: isBackEnabled()
                 ? (widget.onBackTap ?? () => context.pop())
                 : null,
           )
         : widget.appBarStyle == AppBarStyle.close
             ? CloseButton(
+                key: Key('appBarCloseButton'),
                 onPressed: isBackEnabled()
                     ? (widget.onBackTap ?? () => context.pop())
                     : null,
@@ -644,6 +646,7 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
                                   child: AppOutlinedButton.fillWidth(
                                     widget.bottomBar?.negitiveLable ??
                                         loc(context).cancel,
+                                    key: const Key('pageBottomNegitiveButton'),
                                     onTap:
                                         widget.bottomBar?.isNegitiveEnabled ==
                                                 true
@@ -664,6 +667,7 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
                                 child: AppFilledButton.fillWidth(
                                   widget.bottomBar?.positiveLabel ??
                                       loc(context).save,
+                                  key: Key('pageBottomPositiveButton'),
                                   onTap: widget.bottomBar?.isPositiveEnabled ==
                                           true
                                       ? () {
@@ -685,6 +689,7 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
                                 AppOutlinedButton(
                                   widget.bottomBar?.negitiveLable ??
                                       loc(context).cancel,
+                                  key: const Key('pageBottomNegitiveButton'),
                                   color: Theme.of(context).colorScheme.outline,
                                   identifier: 'now-page-bottom-button-negitice',
                                   onTap: widget.bottomBar?.isNegitiveEnabled ==
@@ -700,6 +705,7 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
                               AppFilledButton(
                                 widget.bottomBar?.positiveLabel ??
                                     loc(context).save,
+                                key: Key('pageBottomPositiveButton'),
                                 identifier: 'now-page-bottom-button-positive',
                                 onTap: widget.bottomBar?.isPositiveEnabled ==
                                         true

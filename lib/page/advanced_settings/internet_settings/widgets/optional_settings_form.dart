@@ -142,6 +142,7 @@ class _OptionalSettingsFormState extends ConsumerState<OptionalSettingsForm> {
               vertical: Spacing.small3,
             ),
             child: AppTextField(
+              key: const ValueKey('domainName'),
               headerText: loc(context).domainName,
               hintText: '',
               semanticLabel: 'domain name',
@@ -251,6 +252,7 @@ class _OptionalSettingsFormState extends ConsumerState<OptionalSettingsForm> {
     final notifier = ref.read(internetSettingsProvider.notifier);
     final state = ref.watch(internetSettingsProvider);
     return AppCard(
+      key: const ValueKey('macAddressCloneCard'),
       padding: const EdgeInsets.symmetric(
         vertical: Spacing.small1,
         horizontal: Spacing.large2,

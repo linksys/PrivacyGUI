@@ -3,12 +3,44 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_state.dart';
+import 'package:privacy_gui/page/wifi_settings/views/wifi_list_advanced_mode_view.dart';
+import 'package:privacy_gui/page/wifi_settings/views/wifi_list_simple_mode_view.dart';
+import 'package:privacy_gui/providers/preservable.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/card/list_card.dart';
+import 'package:privacygui_widgets/widgets/switch/switch.dart';
 
 import '../../../../common/_index.dart';
 import '../../../../common/test_helper.dart';
 import '../../../../test_data/_index.dart';
+import 'wifi_main_view_test.dart';
+
+// View ID: IWWL
+/// Implementation file under test: lib/page/wifi_settings/views/wifi_list_view.dart
+///
+/// This file contains screenshot tests for the `WiFiListView`, which handles the
+/// display and configuration of WiFi networks in both "Quick Setup" (Simple) and
+/// "Advanced" modes.
+///
+/// **Covered Test Scenarios:**
+///
+/// - **`IWWL-QUICK_SETUP`**: Verifies the wifi list view in quick setup mode.
+/// - **`IWWL-QUICK_SETUP_GUEST`**: Verifies the wifi list view in quick setup mode with guest wifi enabled.
+/// - **`IWWL-ADV_INIT`**: Verifies the wifi list view in advanced mode.
+/// - **`IWWL-ADV_INIT_GUEST`**: Verifies the wifi list view in advanced mode with guest wifi enabled.
+/// - **`IWWL-SSID`**: Verifies SSID name input and validation.
+/// - **`IWWL-PASSWORD`**: Verifies password input and validation.
+/// - **`IWWL-SECURITY`**: Verifies security mode selection.
+/// - **`IWWL-WIFI_MODE`**: Verifies wifi mode selection.
+/// - **`IWWL-CHANNEL_WID`**: Verifies channel width selection.
+/// - **`IWWL-CHANNEL`**: Verifies channel selection.
+/// - **`IWWL-DISCARD`**: Verifies the discard changes modal.
+/// - **`IWWL-SAVE_CONFIRM`**: Verifies the save confirmation modal.
+/// - **`IWWL-WIFI_MODE_INVALID`**: Verifies the behavior with an invalid wifi mode value.
+/// - **`IWWL-CHANNEL_WID_UNAVAIL`**: Verifies the behavior with an unavailable channel width.
+/// - **`IWWL-SAVE_CONFIRM_DISABLE_BAND`**: Verifies the save confirmation modal with a disable band warning.
+/// - **`IWWL-SAVE_CONFIRM_MLO`**: Verifies the save confirmation modal with an MLO warning.
+/// - **`IWWL-NO_GUEST`**: Verifies the wifi list view when guest wifi is not supported.
 
 final _wifiListScreens = [
   ...responsiveMobileScreens.map((e) => e.copyWith(height: 1280)).toList(),
@@ -18,407 +50,560 @@ final _wifiListScreens = [
 void main() {
   final testHelper = TestHelper();
 
-  // setUp(() {
-  //   testHelper.setup();
+  setUp(() {
+    testHelper.setup();
+  });
 
-  //   // Support guest wifi
-  //   when(testHelper.mockServiceHelper.isSupportGuestNetwork()).thenReturn(true);
+  group('Incredible-WiFi - Wifi list view - Quick Setup', () {
+    // Test ID: IWWL-QUICK_SETUP
+    testLocalizationsV2(
+      'Verify wifi list view in quick setup mode',
+      (tester, screen) async {
+        final context = await testHelper.pumpShellView(
+          tester,
+          child: const WiFiMainView(),
+          locale: screen.locale,
+        );
 
-  //   // Default state for most tests (Advanced Mode)
-  //   when(testHelper.mockWiFiListNotifier.build())
-  //       .thenReturn(WiFiState.fromMap(wifiListAdvancedModeTestState));
-  //   when(testHelper.mockWiFiListNotifier.fetch(any)).thenAnswer((_) async {
-  //     await Future.delayed(Durations.extralong1);
-  //     return WiFiState.fromMap(wifiListAdvancedModeTestState);
-  //   });
+        await tester.pumpAndSettle();
 
-  //   when(testHelper.mockWiFiAdvancedSettingsNotifier.build()).thenReturn(
-  //       WifiAdvancedSettingsState.fromMap(wifiAdvancedSettingsTestState));
-  //   when(testHelper.mockWiFiAdvancedSettingsNotifier.fetch(any)).thenAnswer((_) async {
-  //     await Future.delayed(Durations.extralong1);
-  //     return WifiAdvancedSettingsState.fromMap(wifiAdvancedSettingsTestState);
-  //   });
+        expect(find.byType(WiFiMainView), findsOneWidget);
+        expect(
+            find.text(testHelper.loc(context).incredibleWiFi), findsOneWidget);
+        expect(find.byType(SimpleModeView), findsOneWidget);
+      },
+      helper: testHelper,
+      screens: _wifiListScreens,
+      goldenFilename: 'IWWL-QUICK_SETUP-01-initial_state',
+    );
 
-  //   when(testHelper.mockWiFiViewNotifier.build()).thenReturn(const WiFiViewState());
-  // });
+    // Test ID: IWWL-QUICK_SETUP_GUEST
+    testLocalizationsV2(
+      'Verify wifi list view in quick setup mode with guest wifi on',
+      (tester, screen) async {
+        final wifiBundleTestStateInitialState = getWifiBundleTestState(
+            wifiListTestData: wifiListGuestEnabledTestState);
+        when(testHelper.mockWiFiBundleNotifier.build())
+            .thenReturn(wifiBundleTestStateInitialState);
+        when(testHelper.mockWiFiBundleNotifier.state)
+            .thenReturn(wifiBundleTestStateInitialState);
+        final context = await testHelper.pumpShellView(
+          tester,
+          child: const WiFiMainView(),
+          locale: screen.locale,
+        );
 
-  // group('Incredible-WiFi - Wifi list view - Simple Mode', () {
-  //   testLocalizations('Incredible-WiFi - Wifi list view - simple mode',
-  //       (tester, locale) async {
-  //     when(testHelper.mockWiFiListNotifier.build())
-  //         .thenReturn(WiFiState.fromMap(wifiListTestState));
-  //     await testHelper.pumpView(
-  //       tester,
-  //       child: const WiFiMainView(),
-  //       locale: locale,
-  //     );
-  //   }, screens: _wifiListScreens);
+        await tester.pumpAndSettle();
 
-  //   testLocalizations(
-  //       'Incredible-WiFi - Wifi list view - simple mode - enable guest wifi',
-  //       (tester, locale) async {
-  //     when(testHelper.mockWiFiListNotifier.build())
-  //         .thenReturn(WiFiState.fromMap(wifiListGuestEnabledTestState));
-  //     await testHelper.pumpView(
-  //       tester, 
-  //       child: const WiFiMainView(),
-  //       locale: locale,
-  //     );
-  //   }, screens: _wifiListScreens);
-  // });
+        expect(find.byType(WiFiMainView), findsOneWidget);
+        expect(find.text(testHelper.loc(context).guest), findsOneWidget);
+        final guestSwitchFinder = find.byKey(Key('WiFiGuestSwitch'));
+        final AppSwitch guestSwitchValue = tester.widget(guestSwitchFinder);
+        expect(guestSwitchValue.value, true);
+      },
+      helper: testHelper,
+      screens: _wifiListScreens,
+      goldenFilename: 'IWWL-QUICK_SETUP_GUEST-01-initial_state',
+    );
+  });
 
-  // group('Incredible-WiFi - Wifi list view - Advanced Mode', () {
-  //   testLocalizations('Incredible-WiFi - Wifi list view - advanced mode',
-  //       (tester, locale) async {
-  //     await testHelper.pumpView(
-  //       tester,
-  //       child: const WiFiMainView(),
-  //       locale: locale,
-  //     );
-  //   }, screens: _wifiListScreens);
+  group('Incredible-WiFi - Wifi list view - Advanced Mode', () {
+    setUp(() {
+      final wifiBundleTestStateInitialState = getWifiBundleTestState(
+          wifiListTestData: wifiListAdvancedModeTestState);
+      when(testHelper.mockWiFiBundleNotifier.build())
+          .thenReturn(wifiBundleTestStateInitialState);
+    });
 
-  //   testLocalizations(
-  //       'Incredible-WiFi - Wifi list view - advanced mode - enable guest wifi',
-  //       (tester, locale) async {
-  //     final guestEnabledState =
-  //         WiFiState.fromMap(wifiListAdvancedModeTestState);
-  //     when(testHelper.mockWiFiListNotifier.build()).thenReturn(guestEnabledState.copyWith(
-  //         guestWiFi: guestEnabledState.guestWiFi.copyWith(isEnabled: true)));
-  //     await testHelper.pumpView(
-  //       tester,
-  //       child: const WiFiMainView(),
-  //       locale: locale,
-  //     );
-  //   }, screens: _wifiListScreens);
+    // Test ID: IWWL-ADV_INIT
+    testLocalizationsV2(
+      'Verify wifi list view in advanced mode',
+      (tester, screen) async {
+        await testHelper.pumpShellView(
+          tester,
+          child: const WiFiMainView(),
+          locale: screen.locale,
+        );
 
-  //   testLocalizations(
-  //       'Incredible-WiFi - Wifi list view - discard editing modal',
-  //       (tester, locale) async {
-  //     when(testHelper.mockWiFiViewNotifier.build()).thenReturn(
-  //         WiFiViewState().copyWith(isWifiListViewStateChanged: true));
-  //     await testHelper.pumpView(
-  //       tester,
-  //       child: const WiFiMainView(),
-  //       locale: locale,
-  //     );
+        await tester.pumpAndSettle();
 
-  //     final backFinder = find.byIcon(LinksysIcons.arrowBack);
-  //     await tester.tap(backFinder);
-  //     await tester.pumpAndSettle();
-  //   }, screens: _wifiListScreens);
+        expect(find.byType(AdvancedModeView), findsOneWidget);
+        expect(find.byKey(const ValueKey('WiFiCard-2.4GHz')), findsOneWidget);
+        expect(find.byKey(const ValueKey('WiFiCard-5GHz')), findsOneWidget);
+      },
+      helper: testHelper,
+      screens: _wifiListScreens,
+      goldenFilename: 'IWWL-ADV_INIT-01-initial_state',
+    );
 
-  //   testLocalizations('Incredible-WiFi - Wifi list view - edit SSID',
-  //       (tester, locale) async {
-  //     await testHelper.pumpView(
-  //       tester,
-  //       child: const WiFiMainView(),
-  //       locale: locale,
-  //     );
-  //     final editIconFinder = find.byIcon(LinksysIcons.edit);
-  //     await tester.tap(editIconFinder.first);
-  //     await tester.pumpAndSettle();
-  //   }, screens: _wifiListScreens);
+    // Test ID: IWWL-ADV_INIT_GUEST
+    testLocalizationsV2(
+      'Verify wifi list view in advanced mode with guest wifi on',
+      (tester, screen) async {
+        final wifiBundleTestStateInitialState = getWifiBundleTestState(
+            wifiListTestData: wifiListAdvancedModeGuestEnableTestState);
+        when(testHelper.mockWiFiBundleNotifier.build())
+            .thenReturn(wifiBundleTestStateInitialState);
 
-  //   testLocalizations(
-  //       'Incredible-WiFi - Wifi list view - edit SSID - empty error',
-  //       (tester, locale) async {
-  //     await testHelper.pumpView(
-  //       tester,
-  //       child: const WiFiMainView(),
-  //       locale: locale,
-  //     );
-  //     final editIconFinder = find.byIcon(LinksysIcons.edit);
-  //     await tester.tap(editIconFinder.first);
-  //     await tester.pumpAndSettle();
+        final context = await testHelper.pumpShellView(
+          tester,
+          child: const WiFiMainView(),
+          locale: screen.locale,
+        );
 
-  //     final inputFinder = find.bySemanticsLabel('wifi name');
-  //     await tester.tap(inputFinder.first);
-  //     await tester.enterText(inputFinder.first, '');
-  //     await tester.pumpAndSettle();
-  //   }, screens: _wifiListScreens);
+        await tester.pumpAndSettle();
+        expect(find.byType(AdvancedModeView), findsOneWidget);
+        expect(find.text(testHelper.loc(context).guest), findsOneWidget);
+        final guestSwitchFinder = find.byKey(Key('WiFiGuestSwitch'));
+        final AppSwitch guestSwitchValue = tester.widget(guestSwitchFinder);
+        expect(guestSwitchValue.value, true);
+      },
+      helper: testHelper,
+      screens: _wifiListScreens,
+      goldenFilename: 'IWWL-ADV_INIT_GUEST-01-initial_state',
+    );
 
-  //   testLocalizations(
-  //       'Incredible-WiFi - Wifi list view - edit SSID - surround space error',
-  //       (tester, locale) async {
-  //     await testHelper.pumpView(
-  //       tester,
-  //       child: const WiFiMainView(),
-  //       locale: locale,
-  //     );
-  //     final editIconFinder = find.byIcon(LinksysIcons.edit);
-  //     await tester.tap(editIconFinder.first);
-  //     await tester.pumpAndSettle();
+    // Test ID: IWWL-SSID
+    testLocalizationsV2(
+      'Verify SSID name input and validation',
+      (tester, screen) async {
+        final context = await testHelper.pumpShellView(
+          tester,
+          child: const WiFiMainView(),
+          locale: screen.locale,
+        );
 
-  //     final inputFinder = find.bySemanticsLabel('wifi name');
-  //     await tester.tap(inputFinder.first);
-  //     await tester.enterText(inputFinder.first, ' surround space error ');
-  //     await tester.pumpAndSettle();
-  //   }, screens: _wifiListScreens);
+        await tester.pumpAndSettle();
 
-  //   testLocalizations(
-  //       'Incredible-WiFi - Wifi list view - edit SSID - length error',
-  //       (tester, locale) async {
-  //     await testHelper.pumpView(
-  //       tester,
-  //       child: const WiFiMainView(),
-  //       locale: locale,
-  //     );
-  //     final editIconFinder = find.byIcon(LinksysIcons.edit);
-  //     await tester.tap(editIconFinder.first);
-  //     await tester.pumpAndSettle();
+        final wifiCard24GHzFinder =
+            find.byKey(const ValueKey('WiFiCard-2.4GHz'));
+        final wifiNameFinder = find.descendant(
+            of: wifiCard24GHzFinder,
+            matching: find.byKey(const ValueKey('wifiNameCard-2.4GHz')));
+        expect(wifiNameFinder, findsOneWidget);
+        await scrollAndTap(tester, wifiNameFinder);
+        await testHelper.takeScreenshot(tester, 'IWWL-SSID-01-edit_dialog');
 
-  //     final inputFinder = find.bySemanticsLabel('wifi name');
-  //     await tester.tap(inputFinder.first);
-  //     await tester.enterText(inputFinder.first,
-  //         'asdasldkjsldkja;lkj;lkjd;lakjdl;akjadjiwijo;ijojwtjiwlrijlkjfklwjlfj');
-  //     await tester.pumpAndSettle();
-  //   }, screens: _wifiListScreens);
+        final wifiNameInputFinder = find.bySemanticsLabel('wifi name');
+        expect(wifiNameInputFinder, findsOneWidget);
+        await tester.tap(wifiNameInputFinder);
+        await tester.enterText(wifiNameInputFinder, '');
+        await tester.pumpAndSettle();
+        expect(find.text(testHelper.loc(context).theNameMustNotBeEmpty),
+            findsOneWidget);
+        await testHelper.takeScreenshot(tester, 'IWWL-SSID-02-empty_error');
 
-  //   testLocalizations('Incredible-WiFi - Wifi list view - edit password',
-  //       (tester, locale) async {
-  //     await testHelper.pumpView(
-  //       tester,
-  //       child: const WiFiMainView(),
-  //       locale: locale,
-  //     );
-  //     final editIconFinder = find.byIcon(LinksysIcons.edit);
-  //     await tester.tap(editIconFinder.at(1));
-  //     await tester.pumpAndSettle();
-  //   }, screens: _wifiListScreens);
+        await tester.tap(wifiNameInputFinder);
+        await tester.enterText(wifiNameInputFinder, ' surround space error ');
+        await tester.pumpAndSettle();
+        expect(
+            find.text(
+                testHelper.loc(context).routerPasswordRuleStartEndWithSpace),
+            findsOneWidget);
+        await testHelper.takeScreenshot(
+            tester, 'IWWL-SSID-03-surround_space_error');
 
-  //   testLocalizations(
-  //       'Incredible-WiFi - Wifi list view - edit password - error state',
-  //       (tester, locale) async {
-  //     await testHelper.pumpView(
-  //       tester,
-  //       child: const WiFiMainView(),
-  //       locale: locale,
-  //     );
-  //     final editIconFinder = find.byIcon(LinksysIcons.edit);
-  //     await tester.tap(editIconFinder.at(1));
-  //     await tester.pumpAndSettle();
+        await tester.tap(wifiNameInputFinder);
+        await tester.enterText(wifiNameInputFinder,
+            'This is a looooooooooooooooooooooooooooooooooooooooooooong wifi name');
+        await tester.pumpAndSettle();
+        expect(find.text(testHelper.loc(context).wifiSSIDLengthLimit),
+            findsOneWidget);
+        await testHelper.takeScreenshot(tester, 'IWWL-SSID-04-length_error');
+      },
+      helper: testHelper,
+      screens: _wifiListScreens,
+    );
 
-  //     final inputFinder = find.bySemanticsLabel('wifi password');
-  //     // final inputFinder = find.byType(TextField);
-  //     await tester.tap(inputFinder.last);
-  //     await tester.enterText(inputFinder.last, ' 嗨');
-  //     await tester.pumpAndSettle();
-  //   }, screens: _wifiListScreens);
+    // Test ID: IWWL-PASSWORD
+    testLocalizationsV2(
+      'Verify password input and validation',
+      (tester, screen) async {
+        final context = await testHelper.pumpShellView(
+          tester,
+          child: const WiFiMainView(),
+          locale: screen.locale,
+        );
 
-  //   testLocalizations('Incredible-WiFi - Wifi list view - edit security mode',
-  //       (tester, locale) async {
-  //     await testHelper.pumpView(
-  //       tester,
-  //       child: const WiFiMainView(),
-  //       locale: locale,
-  //     );
-  //     final editIconFinder = find.byIcon(LinksysIcons.edit);
-  //     await tester.tap(editIconFinder.at(2));
-  //     await tester.pumpAndSettle();
-  //   }, screens: _wifiListScreens);
+        await tester.pumpAndSettle();
 
-  //   testLocalizations('Incredible-WiFi - Wifi list view - edit WiFi mode',
-  //       (tester, locale) async {
-  //     await testHelper.pumpView(
-  //       tester,
-  //       child: const WiFiMainView(),
-  //       locale: locale,
-  //     );
-  //     final editIconFinder = find.byIcon(LinksysIcons.edit);
-  //     await tester.scrollUntilVisible(editIconFinder.at(3), 100,
-  //         scrollable: find.byType(Scrollable).last);
-  //     await tester.tap(editIconFinder.at(3));
-  //     await tester.pumpAndSettle();
-  //   }, screens: _wifiListScreens);
+        final wifiCard5GHzFinder = find.byKey(ValueKey('WiFiCard-5GHz'));
+        final wifiPasswordFinder = find.descendant(
+            of: wifiCard5GHzFinder,
+            matching: find.byKey(ValueKey('wifiPasswordCard-5GHz')));
 
-  //   testLocalizations(
-  //       'Incredible-WiFi - Wifi list view - edit WiFi mode with invalid value',
-  //       (tester, locale) async {
-  //     when(testHelper.mockWiFiListNotifier.build())
-  //         .thenReturn(WiFiState.fromMap(wifiListInvalidWirelessModeTestState));
+        final passWidget = tester.widget<AppListCard>(wifiPasswordFinder);
+        expect(passWidget.onTap, isNotNull);
 
-  //     when(testHelper.mockWiFiListNotifier.fetch(any)).thenAnswer((realInvocation) async {
-  //       await Future.delayed(Durations.extralong1);
-  //       return WiFiState.fromMap(wifiListInvalidWirelessModeTestState);
-  //     });
-  //     await testHelper.pumpView(
-  //       tester,
-  //       child: const WiFiMainView(),
-  //       locale: locale,
-  //     );
-  //     final editIconFinder = find.byIcon(LinksysIcons.edit);
-  //     await tester.scrollUntilVisible(editIconFinder.at(3), 100,
-  //         scrollable: find.byType(Scrollable).last);
-  //     await tester.tap(editIconFinder.at(3));
-  //     await tester.pumpAndSettle();
-  //   }, screens: _wifiListScreens);
+        expect(wifiPasswordFinder, findsOneWidget);
+        await scrollAndTap(tester, wifiPasswordFinder);
+        await testHelper.takeScreenshot(tester, 'IWWL-PASSWORD-01-edit_dialog');
 
-  //   testLocalizations('Incredible-WiFi - Wifi list view - edit channel width',
-  //       (tester, locale) async {
-  //     await testHelper.pumpView(
-  //       tester,
-  //       child: const WiFiMainView(),
-  //       locale: locale,
-  //     );
-  //     final editIconFinder = find.byIcon(LinksysIcons.edit);
-  //     await tester.scrollUntilVisible(editIconFinder.at(4), 100,
-  //         scrollable: find.byType(Scrollable).last);
-  //     await tester.tap(editIconFinder.at(4));
-  //     await tester.pumpAndSettle();
-  //   }, screens: _wifiListScreens);
+        final wifiPasswordInputFinder =
+            find.byKey(ValueKey('wifi password input'));
+        expect(wifiPasswordInputFinder, findsOneWidget);
+        await scrollAndTap(tester, wifiPasswordInputFinder);
+        await tester.enterText(wifiPasswordInputFinder, ' 嗨');
+        await tester.pumpAndSettle();
+        expect(find.byIcon(LinksysIcons.close), findsExactly(3));
+        await testHelper.takeScreenshot(
+            tester, 'IWWL-PASSWORD-02-invalid_char_error');
+      },
+      helper: testHelper,
+      screens: _wifiListScreens,
+    );
 
-  //   testLocalizations(
-  //       'Incredible-WiFi - Wifi list view - edit channel width with unavailable value',
-  //       (tester, locale) async {
-  //     when(testHelper.mockWiFiListNotifier.build()).thenReturn(
-  //         WiFiState.fromMap(wifiListUnavailableChannelWidthTestState));
+    // Test ID: IWWL-SECURITY
+    testLocalizationsV2(
+      'Verify security mode selection',
+      (tester, screen) async {
+        final context = await testHelper.pumpShellView(
+          tester,
+          child: const WiFiMainView(),
+          locale: screen.locale,
+        );
 
-  //     when(testHelper.mockWiFiListNotifier.fetch(any)).thenAnswer((realInvocation) async {
-  //       await Future.delayed(Durations.extralong1);
-  //       return WiFiState.fromMap(wifiListUnavailableChannelWidthTestState);
-  //     });
-  //     await testHelper.pumpView(
-  //       tester,
-  //       child: const WiFiMainView(),
-  //       locale: locale,
-  //     );
-  //     // find wifi card
-  //     final wifiCardFinder = find.byKey(ValueKey('WiFiCard-5GHz'));
-  //     expect(wifiCardFinder, findsOneWidget);
-  //     final editIconFinder = find.descendant(
-  //         of: wifiCardFinder, matching: find.byIcon(LinksysIcons.edit));
-  //     await tester.scrollUntilVisible(editIconFinder.at(4), 100,
-  //         scrollable: find.byType(Scrollable).last);
-  //     await tester.tap(editIconFinder.at(4));
-  //     await tester.pumpAndSettle();
-  //   }, screens: [
-  //     ...responsiveMobileScreens.map((e) => e.copyWith(height: 1280)).toList(),
-  //     ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1280)).toList(),
-  //   ]);
+        await tester.pumpAndSettle();
 
-  //   testLocalizations('Incredible-WiFi - Wifi list view - edit channel',
-  //       (tester, locale) async {
-  //     await testHelper.pumpView(
-  //       tester,
-  //       child: const WiFiMainView(),
-  //       locale: locale,
-  //     );
-  //     final editIconFinder = find.byIcon(LinksysIcons.edit);
-  //     await tester.tap(editIconFinder.at(5));
-  //     await tester.pumpAndSettle();
-  //   }, screens: [
-  //     ...responsiveMobileScreens.map((e) => e.copyWith(height: 1280)).toList(),
-  //     ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1280)).toList(),
-  //   ]);
+        final wifiCard24GHzFinder =
+            find.byKey(const ValueKey('WiFiCard-2.4GHz'));
+        final securityModeFinder = find.descendant(
+            of: wifiCard24GHzFinder,
+            matching:
+                find.byKey(const ValueKey('wifiSecurityTypeCard-2.4GHz')));
+        expect(securityModeFinder, findsOneWidget);
+        await scrollAndTap(tester, securityModeFinder);
+        await tester.pumpAndSettle();
+        final alertFinder = find.byType(AlertDialog);
+        expect(alertFinder, findsOneWidget);
+        final securityModeDialogFinder = find.descendant(
+            of: alertFinder,
+            matching: find.text(testHelper.loc(context).securityMode));
+        expect(securityModeDialogFinder, findsOneWidget);
+      },
+      helper: testHelper,
+      screens: _wifiListScreens,
+      goldenFilename: 'IWWL-SECURITY-01-selection_dialog',
+    );
 
-  //   testLocalizations('Incredible-WiFi - Wifi list view - save confirm modal',
-  //       (tester, locale) async {
-  //     when(testHelper.mockWiFiListNotifier.fetch()).thenAnswer((realInvocation) async {
-  //       await Future.delayed(Durations.extralong1);
-  //       final wifiState = WiFiState.fromMap(wifiListTestState);
-  //       return wifiState.copyWith(
-  //           guestWiFi: wifiState.guestWiFi.copyWith(isEnabled: true));
-  //     });
+    // Test ID: IWWL-WIFI_MODE
+    testLocalizationsV2(
+      'Verify wifi mode selection',
+      (tester, screen) async {
+        final context = await testHelper.pumpShellView(
+          tester,
+          child: const WiFiMainView(),
+          locale: screen.locale,
+        );
 
-  //     await testHelper.pumpView(
-  //       tester,
-  //       child: const WiFiMainView(),
-  //       locale: locale,
-  //     );
+        final wifiCard24GHzFinder =
+            find.byKey(const ValueKey('WiFiCard-2.4GHz'));
+        final wifiModeFinder = find.descendant(
+            of: wifiCard24GHzFinder,
+            matching:
+                find.byKey(const ValueKey('wifiWirelessModeCard-2.4GHz')));
+        await scrollAndTap(tester, wifiModeFinder);
+        await tester.pumpAndSettle();
+        final alertFinder = find.byType(AlertDialog);
+        expect(alertFinder, findsOneWidget);
+        final wifiModeDialogFinder = find.descendant(
+            of: alertFinder,
+            matching: find.text(testHelper.loc(context).wifiMode));
+        expect(wifiModeDialogFinder, findsOneWidget);
+      },
+      helper: testHelper,
+      screens: _wifiListScreens,
+      goldenFilename: 'IWWL-WIFI_MODE-01-selection_dialog',
+    );
 
-  //     final saveButtonFinder = find.byType(AppFilledButton);
-  //     await tester.tap(saveButtonFinder);
-  //     await tester.pumpAndSettle();
-  //   }, screens: [
-  //     ...responsiveMobileScreens.map((e) => e.copyWith(height: 1280)).toList(),
-  //     ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1280)).toList(),
-  //   ]);
+    // Test ID: IWWL-CHANNEL_WID
+    testLocalizationsV2(
+      'Verify channel width selection',
+      (tester, screen) async {
+        final context = await testHelper.pumpShellView(
+          tester,
+          child: const WiFiMainView(),
+          locale: screen.locale,
+        );
 
-  //   testLocalizations(
-  //       'Incredible-WiFi - Wifi list view - save confirm modal - disable band warning',
-  //       (tester, locale) async {
-  //     when(testHelper.mockWiFiListNotifier.build()).thenReturn(() {
-  //       final wifiState = WiFiState.fromMap(wifiListGuestEnabledTestState);
-  //       final changedMainWiFi =
-  //           List<WiFiItem>.from(wifiState.mainWiFi).map((e) {
-  //         if (e.radioID == WifiRadioBand.radio_24) {
-  //           return e.copyWith(isEnabled: false);
-  //         }
-  //         return e;
-  //       }).toList();
-  //       return wifiState.copyWith(mainWiFi: changedMainWiFi);
-  //     }.call());
+        await tester.pumpAndSettle();
 
-  //     when(testHelper.mockWiFiListNotifier.fetch()).thenAnswer((realInvocation) async {
-  //       await Future.delayed(Durations.extralong1);
-  //       final wifiState = WiFiState.fromMap(wifiListTestState);
+        final wifiCard24GHzFinder =
+            find.byKey(const ValueKey('WiFiCard-2.4GHz'));
+        final channelWidthFinder = find.descendant(
+            of: wifiCard24GHzFinder,
+            matching:
+                find.byKey(const ValueKey('wifiChannelWidthCard-2.4GHz')));
+        await scrollAndTap(tester, channelWidthFinder);
+        await tester.pumpAndSettle();
+        final alertFinder = find.byType(AlertDialog);
+        expect(alertFinder, findsOneWidget);
+        final channelWidthDialogFinder = find.descendant(
+            of: alertFinder,
+            matching: find.text(testHelper.loc(context).channelWidth));
+        expect(channelWidthDialogFinder, findsOneWidget);
+      },
+      helper: testHelper,
+      screens: _wifiListScreens,
+      goldenFilename: 'IWWL-CHANNEL_WID-01-selection_dialog',
+    );
 
-  //       return wifiState.copyWith(
-  //           guestWiFi: wifiState.guestWiFi.copyWith(isEnabled: true));
-  //     });
+    // Test ID: IWWL-CHANNEL
+    testLocalizationsV2(
+      'Verify channel selection',
+      (tester, screen) async {
+        final context = await testHelper.pumpShellView(
+          tester,
+          child: const WiFiMainView(),
+          locale: screen.locale,
+        );
 
-  //     await testHelper.pumpView(
-  //       tester,
-  //       child: const WiFiMainView(),
-  //       locale: locale,
-  //     );
+        await tester.pumpAndSettle();
 
-  //     final saveButtonFinder = find.byType(AppFilledButton);
-  //     await tester.tap(saveButtonFinder);
-  //     await tester.pumpAndSettle();
-  //   }, screens: [
-  //     ...responsiveMobileScreens.map((e) => e.copyWith(height: 1280)).toList(),
-  //     ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1280)).toList(),
-  //   ]);
+        final wifiCard24GHzFinder =
+            find.byKey(const ValueKey('WiFiCard-2.4GHz'));
+        final channelFinder = find.descendant(
+            of: wifiCard24GHzFinder,
+            matching: find.byKey(const ValueKey('wifiChannelCard-2.4GHz')));
+        await scrollAndTap(tester, channelFinder);
+        await tester.pumpAndSettle();
+        final alertFinder = find.byType(AlertDialog);
+        expect(alertFinder, findsOneWidget);
+        final channelDialogFinder = find.descendant(
+            of: alertFinder,
+            matching: find.text(testHelper.loc(context).channel));
+        expect(channelDialogFinder, findsOneWidget);
+      },
+      helper: testHelper,
+      screens: _wifiListScreens,
+      goldenFilename: 'IWWL-CHANNEL-01-selection_dialog',
+    );
 
-  //   testLocalizations(
-  //       'Incredible-WiFi - Wifi list view - save confirm modal - MLO warning',
-  //       (tester, locale) async {
-  //     final wifiState = WiFiState.fromMap(wifiListGuestEnabledTestState);
-  //     when(testHelper.mockWiFiListNotifier.build()).thenReturn(wifiState);
+    // Test ID: IWWL-DISCARD
+    testLocalizationsV2(
+      'Verify discard changes modal',
+      (tester, screen) async {
+        when(testHelper.mockWiFiBundleNotifier.isDirty()).thenReturn(true);
 
-  //     when(testHelper.mockWiFiListNotifier.fetch()).thenAnswer((realInvocation) async {
-  //       await Future.delayed(Durations.extralong1);
-  //       final wifiState = WiFiState.fromMap(wifiListTestState);
+        final context = await testHelper.pumpShellView(
+          tester,
+          child: const WiFiMainView(),
+          locale: screen.locale,
+        );
 
-  //       return wifiState.copyWith(
-  //           guestWiFi: wifiState.guestWiFi.copyWith(isEnabled: false));
-  //     });
-  //     final radios = Map.fromIterables(
-  //         wifiState.mainWiFi.map((e) => e.radioID), wifiState.mainWiFi);
-  //     when(testHelper.mockWiFiListNotifier.checkingMLOSettingsConflicts(radios,
-  //             isMloEnabled: true))
-  //         .thenReturn(true);
+        await tester.pumpAndSettle();
+        final advancedTabFinder = find.text(testHelper.loc(context).advanced);
+        await tester.tap(advancedTabFinder);
+        await tester.pumpAndSettle();
 
-  //     await testHelper.pumpView(
-  //       tester,
-  //       child: const WiFiMainView(),
-  //       locale: locale,
-  //     );
+        expect(find.text(testHelper.loc(context).unsavedChangesTitle),
+            findsOneWidget);
+        expect(
+            find.text(testHelper.loc(context).discardChanges), findsOneWidget);
+      },
+      helper: testHelper,
+      screens: _wifiListScreens,
+      goldenFilename: 'IWWL-DISCARD-01-modal_shown',
+    );
 
-  //     final saveButtonFinder = find.byType(AppFilledButton);
-  //     await tester.tap(saveButtonFinder);
-  //     await tester.pumpAndSettle();
-  //   }, screens: [
-  //     ...responsiveMobileScreens.map((e) => e.copyWith(height: 1280)).toList(),
-  //     ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1280)).toList(),
-  //   ]);
+    // Test ID: IWWL-SAVE_CONFIRM
+    testLocalizationsV2(
+      'Verify save confirmation modal',
+      (tester, screen) async {
+        final context = await testHelper.pumpShellView(
+          tester,
+          child: const WiFiMainView(),
+          locale: screen.locale,
+        );
 
-  //   testLocalizations('Incredible-WiFi - Wifi list view - No Guest WiFi',
-  //     (tester, locale) async {
-  //   when(testHelper.mockServiceHelper.isSupportGuestNetwork()).thenReturn(false);
-  //   when(testHelper.mockServiceHelper.isSupportLedMode()).thenReturn(false);
-  //   when(testHelper.mockWiFiListNotifier.build()).thenReturn(
-  //       WiFiState.fromMap(wifiListGuestEnabledTestState).copyWith());
-  //   when(testHelper.mockWiFiListNotifier.fetch()).thenAnswer((realInvocation) async {
-  //     await Future.delayed(Durations.extralong1);
-  //     return WiFiState.fromMap(wifiListGuestEnabledTestState);
-  //   });
-  //   await testHelper.pumpView(
-  //     tester,
-  //     locale: locale,
-  //     child: const WiFiMainView(),
-  //   );
-  // }, screens: [...responsiveMobileScreens, ...responsiveDesktopScreens]);
-  // });
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(Key('pageBottomPositiveButton')));
+        await tester.pumpAndSettle();
+
+        expect(find.text(testHelper.loc(context).wifiListSaveModalTitle),
+            findsOneWidget);
+      },
+      helper: testHelper,
+      screens: _wifiListScreens,
+      goldenFilename: 'IWWL-SAVE_CONFIRM-01-modal_shown',
+    );
+
+    // Test ID: IWWL-WIFI_MODE_INVALID
+    testLocalizationsV2(
+      'Verify wifi mode with invalid value',
+      (tester, screen) async {
+        final wifiBundleTestStateInitialState = getWifiBundleTestState(
+            wifiListTestData: wifiListInvalidWirelessModeTestState);
+        when(testHelper.mockWiFiBundleNotifier.build())
+            .thenReturn(wifiBundleTestStateInitialState);
+        final context = await testHelper.pumpShellView(
+          tester,
+          child: const WiFiMainView(),
+          locale: screen.locale,
+        );
+        final wifiCard24GHzFinder =
+            find.byKey(const ValueKey('WiFiCard-2.4GHz'));
+        final wifiModeFinder = find.descendant(
+            of: wifiCard24GHzFinder,
+            matching:
+                find.byKey(const ValueKey('wifiWirelessModeCard-2.4GHz')));
+        await scrollAndTap(tester, wifiModeFinder);
+        await tester.pumpAndSettle();
+
+        final alertFinder = find.byType(AlertDialog);
+        expect(alertFinder, findsOneWidget);
+        final wifiModeAlertFinder = find.descendant(
+            of: alertFinder,
+            matching: find.text(testHelper.loc(context).wifiMode));
+
+        expect(wifiModeAlertFinder, findsOneWidget);
+        expect(find.text(testHelper.loc(context).wifiModeNotAvailable),
+            findsAtLeast(1));
+      },
+      helper: testHelper,
+      screens: _wifiListScreens,
+      goldenFilename: 'IWWL-WIFI_MODE_INVALID-01-dialog_shown',
+    );
+
+    // Test ID: IWWL-CHANNEL_WID_UNAVAIL
+    testLocalizationsV2(
+      'Verify channel width with unavailable value',
+      (tester, screen) async {
+        final wifiBundleTestStateInitialState = getWifiBundleTestState(
+            wifiListTestData: wifiListUnavailableChannelWidthTestState);
+        when(testHelper.mockWiFiBundleNotifier.build())
+            .thenReturn(wifiBundleTestStateInitialState);
+        when(testHelper.mockWiFiBundleNotifier.state)
+            .thenReturn(wifiBundleTestStateInitialState);
+        final context = await testHelper.pumpShellView(
+          tester,
+          child: const WiFiMainView(),
+          locale: screen.locale,
+        );
+        final wifiCardFinder = find.byKey(const ValueKey('WiFiCard-5GHz'));
+
+        final channelWidthFinder = find.descendant(
+            of: wifiCardFinder,
+            matching: find.byKey(const ValueKey('wifiChannelWidthCard-5GHz')));
+        await scrollAndTap(tester, channelWidthFinder);
+        await tester.pumpAndSettle();
+
+        final alertFinder = find.byType(AlertDialog);
+        expect(alertFinder, findsOneWidget);
+        final channelWidthAlertFinder = find.descendant(
+            of: alertFinder,
+            matching: find.text(testHelper.loc(context).channelWidth));
+
+        expect(channelWidthAlertFinder, findsOneWidget);
+      },
+      helper: testHelper,
+      screens: _wifiListScreens,
+      goldenFilename: 'IWWL-CHANNEL_WID_UNAVAIL-01-dialog_shown',
+    );
+
+    // Test ID: IWWL-SAVE_CONFIRM_DISABLE_BAND
+    testLocalizationsV2(
+      'Verify save confirmation modal with disable band warning',
+      (tester, screen) async {
+        final wifiBundleTestStateInitialState = getWifiBundleTestState(
+            wifiListTestData: wifiListAdvancedModeGuestEnableTestState);
+        final wifiState =
+            WiFiListSettings.fromMap(wifiListAdvancedModeGuestEnableTestState);
+        final changedMainWiFi =
+            List<WiFiItem>.from(wifiState.mainWiFi).map((e) {
+          if (e.radioID == WifiRadioBand.radio_24) {
+            return e.copyWith(isEnabled: false);
+          }
+          return e;
+        }).toList();
+        final updatedWifiState = wifiState.copyWith(mainWiFi: changedMainWiFi);
+        final updatedWifiBundleTestStateInitialState =
+            wifiBundleTestStateInitialState.copyWith(
+          settings: Preservable(
+            original: wifiBundleTestStateInitialState.settings.original,
+            current: wifiBundleTestStateInitialState.settings.current
+                .copyWith(wifiList: updatedWifiState),
+          ),
+        );
+
+        when(testHelper.mockWiFiBundleNotifier.build())
+            .thenReturn(updatedWifiBundleTestStateInitialState);
+
+        final context = await testHelper.pumpShellView(
+          tester,
+          child: const WiFiMainView(),
+          locale: screen.locale,
+        );
+
+        await tester.tap(find.byKey(Key('pageBottomPositiveButton')));
+        await tester.pumpAndSettle();
+
+        expect(find.text(testHelper.loc(context).wifiListSaveModalTitle),
+            findsOneWidget);
+        expect(
+            find.text(testHelper
+                .loc(context)
+                .disableBandWarning(WifiRadioBand.radio_24.bandName)),
+            findsOneWidget);
+      },
+      helper: testHelper,
+      screens: _wifiListScreens,
+      goldenFilename: 'IWWL-SAVE_CONFIRM_DISABLE_BAND-01-warning_shown',
+    );
+
+    // Test ID: IWWL-SAVE_CONFIRM_MLO
+    testLocalizationsV2(
+      'Verify save confirmation modal with MLO warning',
+      (tester, screen) async {
+        when(testHelper.mockWiFiBundleNotifier.checkingMLOSettingsConflicts(any,
+              isMloEnabled: anyNamed('isMloEnabled')))
+          .thenReturn(true);
+
+        final context = await testHelper.pumpShellView(
+          tester,
+          child: const WiFiMainView(),
+          locale: screen.locale,
+        );
+
+        await tester.tap(find.byKey(Key('pageBottomPositiveButton')));
+        await tester.pumpAndSettle();
+
+        expect(find.text(testHelper.loc(context).wifiListSaveModalTitle),
+            findsOneWidget);
+        expect(find.text(testHelper.loc(context).mloWarning), findsOneWidget);
+      },
+      helper: testHelper,
+      screens: _wifiListScreens,
+      goldenFilename: 'IWWL-SAVE_CONFIRM_MLO-01-warning_shown',
+    );
+
+    // Test ID: IWWL-NO_GUEST
+    testLocalizationsV2(
+      'Verify wifi list view when guest wifi is not supported',
+      (tester, screen) async {
+        when(testHelper.mockServiceHelper.isSupportGuestNetwork())
+            .thenReturn(false);
+        when(testHelper.mockServiceHelper.isSupportLedMode()).thenReturn(false);
+        final wifiBundleTestStateInitialState = getWifiBundleTestState(
+            wifiListTestData: wifiListGuestEnabledTestState);
+        when(testHelper.mockWiFiBundleNotifier.build())
+            .thenReturn(wifiBundleTestStateInitialState);
+        when(testHelper.mockWiFiBundleNotifier.state)
+            .thenReturn(wifiBundleTestStateInitialState);
+
+        await testHelper.pumpShellView(
+          tester,
+          locale: screen.locale,
+          child: const WiFiMainView(),
+        );
+
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('WiFiGuestCard')), findsNothing);
+      },
+      helper: testHelper,
+      screens: _wifiListScreens,
+      goldenFilename: 'IWWL-NO_GUEST-01-initial_state',
+    );
+  });
 }

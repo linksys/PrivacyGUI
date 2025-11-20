@@ -180,6 +180,7 @@ class _PptpFormState extends BaseWanFormState<PptpForm> {
               if (!hasFocus) setState(() => _serverIpTouched = true);
             },
             child: buildIpFormField(
+              key: const ValueKey('serverIp'),
               semanticLabel: 'server ip address',
               header: loc(context).serverIpv4Address,
               controller: _serverIpController,

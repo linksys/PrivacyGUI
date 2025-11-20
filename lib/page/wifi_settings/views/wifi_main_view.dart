@@ -87,15 +87,26 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView>
         isPositiveEnabled: bundleState.isDirty &&
             bundleState.current.wifiList.isSettingsValid(),
         onPositiveTap: () async {
-          // if current tab is wifi list settings, show save confirm modal
           if (_tabController.index == 0) {
-            final shouldSave = await _showSaveConfirmModal();
-            if (shouldSave) {
-              await ref.read(wifiBundleProvider.notifier).save();
+            // if current tab is wifi list settings, show save confirm modal
+            _showSaveConfirmModal();
+          } else if (_tabController.index == 1) {
+            // if current tab is advanced settings, show dfs confirm modal if dfs is enabled
+            if (bundleState.current.advanced.isDFSEnabled == true) {
+              final shouldSave = await _showConfirmDFSModal();
+              if (shouldSave == true) {
+                await _doSave();
+              }
+            } else {
+              await _doSave();
             }
           } else {
-            // if current tab is advanced settings, save advanced settings
-            await _doSave();
+            // if current tab is mac filtering, save mac filtering settings
+            final enableMacFiltering = bundleState.current.privacy.mode.isEnabled;
+            final shouldSave = await showMacFilteringConfirmDialog(context, enableMacFiltering);
+            if (shouldSave == true) {
+              await _doSave();
+            }
           }
         },
       ),
@@ -175,6 +186,24 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView>
       await _doSave();
     }
     return result;
+  }
+
+  Future<bool?> _showConfirmDFSModal() {
+    return showMessageAppDialog(
+      context,
+      title: loc(context).dfs,
+      message: loc(context).modalDFSDesc,
+      actions: [
+        AppTextButton(
+          loc(context).cancel,
+          onTap: () => context.pop(),
+        ),
+        AppTextButton(
+          loc(context).ok,
+          onTap: () => context.pop(true),
+        ),
+      ],
+    );
   }
 
   // void update(WiFiListSettings? state) {
