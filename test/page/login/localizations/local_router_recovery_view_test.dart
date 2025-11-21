@@ -1,12 +1,23 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/instant_admin/_instant_admin.dart';
 import 'package:privacy_gui/page/login/views/local_router_recovery_view.dart';
 import 'package:privacy_gui/route/route_model.dart';
+import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:privacygui_widgets/widgets/input_field/pin_code_input.dart';
 import '../../../common/test_helper.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../test_data/_index.dart';
+
+// View ID: LRRV
+// Implementation: lib/page/login/views/local_router_recovery_view.dart
+// Summary:
+// - LRRV-INIT: Default page layout with empty pin inputs and disabled CTA.
+// - LRRV-PIN: User enters full recovery code, enabling Continue button.
+// - LRRV-ERR_WARN: Warns user with remaining attempts > 1.
+// - LRRV-ERR_LAST: Shows last-chance warning when only one attempt remains.
+// - LRRV-ERR_LOCK: Locks user out when no attempts remain.
 
 void main() {
   final testHelper = TestHelper();
@@ -15,87 +26,144 @@ void main() {
     testHelper.setup();
   });
 
-  testLocalizations('local router recovery view - init state',
-      (tester, locale) async {
-    when(testHelper.mockRouterPasswordNotifier.build())
-        .thenReturn(RouterPasswordState.fromMap(routerPasswordTestState1));
+  RouterPasswordState baseState() =>
+      RouterPasswordState.fromMap(routerPasswordTestState1);
 
-    await testHelper.pumpView(
-      tester,
-      child: const LocalRouterRecoveryView(),
-      locale: locale,
-      config: LinksysRouteConfig(noNaviRail: true),
-    );
+  // Test ID: LRRV-INIT
+  testLocalizationsV2(
+    'local router recovery view - initial layout',
+    (tester, screen) async {
+      when(testHelper.mockRouterPasswordNotifier.build())
+          .thenReturn(baseState());
 
-    await tester.pump(Duration(seconds: 1));
-  });
+      final context = await testHelper.pumpView(
+        tester,
+        child: const LocalRouterRecoveryView(),
+        locale: screen.locale,
+        config: LinksysRouteConfig(noNaviRail: true),
+      );
+      await tester.pumpAndSettle();
+      final loc = testHelper.loc(context);
 
-  testLocalizations('local router recovery view - input code',
-      (tester, locale) async {
-    when(testHelper.mockRouterPasswordNotifier.build())
-        .thenReturn(RouterPasswordState.fromMap(routerPasswordTestState1));
+      expect(find.text(loc.forgotPassword), findsOneWidget);
+      expect(find.text(loc.localRouterRecoveryDescription), findsOneWidget);
+      expect(find.byType(AppPinCodeInput), findsOneWidget);
+      final continueButton =
+          tester.widget<AppFilledButton>(find.byType(AppFilledButton));
+      expect(continueButton.onTap, isNull);
+    },
+    goldenFilename: 'LRRV-INIT_01_initial_state',
+    helper: testHelper,
+  );
 
-    await testHelper.pumpView(
-      tester,
-      child: const LocalRouterRecoveryView(),
-      locale: locale,
-      config: LinksysRouteConfig(noNaviRail: true),
-    );
+  // Test ID: LRRV-PIN
+  testLocalizationsV2(
+    'local router recovery view - enter recovery code',
+    (tester, screen) async {
+      when(testHelper.mockRouterPasswordNotifier.build())
+          .thenReturn(baseState());
 
-    await tester.pump(Duration(seconds: 1));
+      await testHelper.pumpView(
+        tester,
+        child: const LocalRouterRecoveryView(),
+        locale: screen.locale,
+        config: LinksysRouteConfig(noNaviRail: true),
+      );
+      await tester.pumpAndSettle();
 
-    tester.widget<AppPinCodeInput>(find.byType(AppPinCodeInput)).controller?.text = '12345';
-    await tester.pumpAndSettle();
-  });
+      final fields = find.descendant(
+          of: find.byType(AppPinCodeInput), matching: find.byType(TextFormField));
+      for (var i = 0; i < fields.evaluate().length; i++) {
+        await tester.enterText(fields.at(i), '1');
+      }
+      await tester.pumpAndSettle();
 
-  testLocalizations('local router recovery view - wrong input code',
-      (tester, locale) async {
-    when(testHelper.mockRouterPasswordNotifier.build()).thenReturn(
-      RouterPasswordState.fromMap(routerPasswordTestState1)
-          .copyWith(remainingErrorAttempts: 2),
-    );
+      final buttonFinder = find.byType(AppFilledButton);
+      final continueButton = tester.widget<AppFilledButton>(buttonFinder);
+      expect(continueButton.onTap, isNotNull);
+    },
+    goldenFilename: 'LRRV-PIN_01_code_entered',
+    helper: testHelper,
+  );
 
-    await testHelper.pumpView(
-      tester,
-      child: const LocalRouterRecoveryView(),
-      locale: locale,
-      config: LinksysRouteConfig(noNaviRail: true),
-    );
+  // Test ID: LRRV-ERR_WARN
+  testLocalizationsV2(
+    'local router recovery view - warning with attempts remaining',
+    (tester, screen) async {
+      when(testHelper.mockRouterPasswordNotifier.build()).thenReturn(
+        baseState().copyWith(remainingErrorAttempts: 2),
+      );
 
-    await tester.pump(Duration(seconds: 1));
-  });
+      final context = await testHelper.pumpView(
+        tester,
+        child: const LocalRouterRecoveryView(),
+        locale: screen.locale,
+        config: LinksysRouteConfig(noNaviRail: true),
+      );
+      await tester.pumpAndSettle();
+      final loc = testHelper.loc(context);
 
-  testLocalizations('local router recovery view - last chance',
-      (tester, locale) async {
-    when(testHelper.mockRouterPasswordNotifier.build()).thenReturn(
-      RouterPasswordState.fromMap(routerPasswordTestState1)
-          .copyWith(remainingErrorAttempts: 1),
-    );
+      final expectedMessage = [
+        loc.localRouterRecoveryKeyErorr,
+        loc.localLoginRemainingAttempts(2),
+      ].join('\n');
+      expect(find.text(expectedMessage), findsOneWidget);
+    },
+    goldenFilename: 'LRRV-ERR_WARN_01_attempts_remaining',
+    helper: testHelper,
+  );
 
-    await testHelper.pumpView(
-      tester,
-      child: const LocalRouterRecoveryView(),
-      locale: locale,
-      config: LinksysRouteConfig(noNaviRail: true),
-    );
+  // Test ID: LRRV-ERR_LAST
+  testLocalizationsV2(
+    'local router recovery view - last chance warning',
+    (tester, screen) async {
+      when(testHelper.mockRouterPasswordNotifier.build()).thenReturn(
+        baseState().copyWith(remainingErrorAttempts: 1),
+      );
 
-    await tester.pump(Duration(seconds: 1));
-  });
+      final context = await testHelper.pumpView(
+        tester,
+        child: const LocalRouterRecoveryView(),
+        locale: screen.locale,
+        config: LinksysRouteConfig(noNaviRail: true),
+      );
+      await tester.pumpAndSettle();
+      final loc = testHelper.loc(context);
 
-  testLocalizations('local router recovery view - being locked',
-      (tester, locale) async {
-    when(testHelper.mockRouterPasswordNotifier.build()).thenReturn(
-      RouterPasswordState.fromMap(routerPasswordTestState1)
-          .copyWith(remainingErrorAttempts: 0),
-    );
+      final expectedMessage = [
+        loc.localRouterRecoveryKeyErorr,
+        loc.localRouterRecoveryKeyLastChance,
+      ].join('\n');
+      expect(find.text(expectedMessage), findsOneWidget);
+    },
+    goldenFilename: 'LRRV-ERR_LAST_01_last_chance',
+    helper: testHelper,
+  );
 
-    await testHelper.pumpView(
-      tester,
-      child: const LocalRouterRecoveryView(),
-      locale: locale,
-      config: LinksysRouteConfig(noNaviRail: true),
-    );
+  // Test ID: LRRV-ERR_LOCK
+  testLocalizationsV2(
+    'local router recovery view - locked out state',
+    (tester, screen) async {
+      when(testHelper.mockRouterPasswordNotifier.build()).thenReturn(
+        baseState().copyWith(remainingErrorAttempts: 0),
+      );
 
-    await tester.pump(Duration(seconds: 1));
-  });
+      final context = await testHelper.pumpView(
+        tester,
+        child: const LocalRouterRecoveryView(),
+        locale: screen.locale,
+        config: LinksysRouteConfig(noNaviRail: true),
+      );
+      await tester.pumpAndSettle();
+      final loc = testHelper.loc(context);
+
+      final expectedMessage = [
+        loc.localRouterRecoveryKeyErorr,
+        loc.localRouterRecoveryKeyLocked,
+      ].join('\n');
+      expect(find.text(expectedMessage), findsOneWidget);
+    },
+    goldenFilename: 'LRRV-ERR_LOCK_01_locked_state',
+    helper: testHelper,
+  );
 }
