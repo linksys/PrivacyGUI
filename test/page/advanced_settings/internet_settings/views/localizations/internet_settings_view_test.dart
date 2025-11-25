@@ -60,9 +60,9 @@ Future<void> main() async {
 
   group('InternetSettings - Ipv4', () {
     // Test ID: ISET-DHCP_VIEW
-    testLocalizations(
+    testLocalizationsV2(
       'Verifies the initial state of the DHCP connection type view',
-      (tester, locale) async {
+      (tester, screen) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateDHCP));
         when(testHelper.mockInternetSettingsNotifier.fetch())
@@ -72,7 +72,7 @@ Future<void> main() async {
         });
         final context = await testHelper.pumpView(
           tester,
-          locale: locale,
+          locale: screen.locale,
           child: const InternetSettingsView(),
         );
         await tester.pumpAndSettle();
@@ -123,9 +123,9 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-STATIC_VIEW
-    testLocalizations(
+    testLocalizationsV2(
       'Verifies the initial state of the Static IP connection type view',
-      (tester, locale) async {
+      (tester, screen) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateStatic));
         when(testHelper.mockInternetSettingsNotifier.fetch())
@@ -135,7 +135,7 @@ Future<void> main() async {
         });
         final context = await testHelper.pumpView(
           tester,
-          locale: locale,
+          locale: screen.locale,
           child: const InternetSettingsView(),
         );
         await tester.pumpAndSettle();
@@ -158,9 +158,9 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-PPPOE_VIEW
-    testLocalizations(
+    testLocalizationsV2(
       'Verifies the initial state of the PPPoE connection type view',
-      (tester, locale) async {
+      (tester, screen) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStatePppoe));
         when(testHelper.mockInternetSettingsNotifier.fetch())
@@ -170,7 +170,7 @@ Future<void> main() async {
         });
         final context = await testHelper.pumpView(
           tester,
-          locale: locale,
+          locale: screen.locale,
           child: const InternetSettingsView(),
         );
         await tester.pumpAndSettle();
@@ -193,9 +193,9 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-PPTP_VIEW
-    testLocalizations(
+    testLocalizationsV2(
       'Verifies the initial state of the PPTP connection type view',
-      (tester, locale) async {
+      (tester, screen) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStatePptp));
         when(testHelper.mockInternetSettingsNotifier.fetch())
@@ -205,7 +205,7 @@ Future<void> main() async {
         });
         final context = await testHelper.pumpView(
           tester,
-          locale: locale,
+          locale: screen.locale,
           child: const InternetSettingsView(),
         );
         await tester.pumpAndSettle();
@@ -227,9 +227,9 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-PPTP_STATIC_VIEW
-    testLocalizations(
+    testLocalizationsV2(
       'Verifies the initial state of the PPTP connection with a static IP',
-      (tester, locale) async {
+      (tester, screen) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(
                 internetSettingsStatePptpWithStaticIp));
@@ -241,7 +241,7 @@ Future<void> main() async {
         });
         await testHelper.pumpView(
           tester,
-          locale: locale,
+          locale: screen.locale,
           child: const InternetSettingsView(),
         );
         await tester.pumpAndSettle();
@@ -258,9 +258,9 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-L2TP_VIEW
-    testLocalizations(
+    testLocalizationsV2(
       'Verifies the initial state of the L2TP connection type view',
-      (tester, locale) async {
+      (tester, screen) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateL2tp));
         when(testHelper.mockInternetSettingsNotifier.fetch())
@@ -270,7 +270,7 @@ Future<void> main() async {
         });
         final context = await testHelper.pumpView(
           tester,
-          locale: locale,
+          locale: screen.locale,
           child: const InternetSettingsView(),
         );
         await tester.pumpAndSettle();
@@ -292,9 +292,9 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-BRIDGE_VIEW
-    testLocalizations(
+    testLocalizationsV2(
       'Verifies the initial state of the Bridge mode view',
-      (tester, locale) async {
+      (tester, screen) async {
         final state =
             InternetSettingsState.fromMap(internetSettingsStateBridge);
         final status = state.status.copyWith(hostname: () => 'Linksys00000');
@@ -307,7 +307,7 @@ Future<void> main() async {
         });
         final context = await testHelper.pumpView(
           tester,
-          locale: locale,
+          locale: screen.locale,
           child: const InternetSettingsView(),
         );
         await tester.pumpAndSettle();
@@ -327,9 +327,9 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-DHCP_EDIT
-    testLocalizations(
+    testLocalizationsV2(
       'Verifies the editing state of the DHCP connection type view',
-      (tester, locale) async {
+      (tester, screen) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateDHCP));
         when(testHelper.mockInternetSettingsNotifier.fetch())
@@ -339,7 +339,7 @@ Future<void> main() async {
         });
         await testHelper.pumpView(
           tester,
-          locale: locale,
+          locale: screen.locale,
           child: const InternetSettingsView(),
         );
 
@@ -364,9 +364,9 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-STATIC_EDIT
-    testLocalizations(
+    testLocalizationsV2(
       'Verifies the editing state of the Static IP connection type view',
-      (tester, locale) async {
+      (tester, screen) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateStatic));
         when(testHelper.mockInternetSettingsNotifier.fetch())
@@ -376,7 +376,7 @@ Future<void> main() async {
         });
         await testHelper.pumpView(
           tester,
-          locale: locale,
+          locale: screen.locale,
           child: const InternetSettingsView(),
         );
 
@@ -403,9 +403,9 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-PPPOE_EDIT
-    testLocalizations(
+    testLocalizationsV2(
       'Verifies the editing state of the PPPoE connection type view',
-      (tester, locale) async {
+      (tester, screen) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStatePppoe));
         when(testHelper.mockInternetSettingsNotifier.fetch())
@@ -415,7 +415,7 @@ Future<void> main() async {
         });
         final context = await testHelper.pumpView(
           tester,
-          locale: locale,
+          locale: screen.locale,
           child: const InternetSettingsView(),
         );
 
@@ -450,9 +450,9 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-PPTP_EDIT
-    testLocalizations(
+    testLocalizationsV2(
       'Verifies the editing state of the PPTP connection type view',
-      (tester, locale) async {
+      (tester, screen) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStatePptp));
         when(testHelper.mockInternetSettingsNotifier.fetch())
@@ -462,7 +462,7 @@ Future<void> main() async {
         });
         final context = await testHelper.pumpView(
           tester,
-          locale: locale,
+          locale: screen.locale,
           child: const InternetSettingsView(),
         );
 
@@ -490,9 +490,9 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-L2TP_EDIT
-    testLocalizations(
+    testLocalizationsV2(
       'Verifies the editing state of the L2TP connection type view',
-      (tester, locale) async {
+      (tester, screen) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateL2tp));
         when(testHelper.mockInternetSettingsNotifier.fetch())
@@ -502,7 +502,7 @@ Future<void> main() async {
         });
         final context = await testHelper.pumpView(
           tester,
-          locale: locale,
+          locale: screen.locale,
           child: const InternetSettingsView(),
         );
 
@@ -530,9 +530,9 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-BRIDGE_EDIT
-    testLocalizations(
+    testLocalizationsV2(
       'Verifies the editing state of the Bridge mode view',
-      (tester, locale) async {
+      (tester, screen) async {
         final state =
             InternetSettingsState.fromMap(internetSettingsStateBridge);
         final status = state.status.copyWith(hostname: () => 'Linksys00000');
@@ -545,7 +545,7 @@ Future<void> main() async {
         });
         final context = await testHelper.pumpView(
           tester,
-          locale: locale,
+          locale: screen.locale,
           child: const InternetSettingsView(),
         );
 
@@ -569,9 +569,9 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-OPTIONAL_EDIT
-    testLocalizations(
+    testLocalizationsV2(
       'Verifies the editing state for optional settings (Domain Name, MTU, MAC Clone)',
-      (tester, locale) async {
+      (tester, screen) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateStatic));
         when(testHelper.mockInternetSettingsNotifier.fetch())
@@ -581,7 +581,7 @@ Future<void> main() async {
         });
         final context = await testHelper.pumpView(
           tester,
-          locale: locale,
+          locale: screen.locale,
           child: const InternetSettingsView(),
         );
 
@@ -608,9 +608,9 @@ Future<void> main() async {
 
   group('InternetSettings - Ipv6', () {
     // Test ID: ISET-IPV6_AUTO_VIEW
-    testLocalizations(
+    testLocalizationsV2(
       'Verifies the initial state of the IPv6 Automatic connection view',
-      (tester, locale) async {
+      (tester, screen) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateIpv6Automatic));
         when(testHelper.mockInternetSettingsNotifier.fetch())
@@ -621,7 +621,7 @@ Future<void> main() async {
         });
         final context = await testHelper.pumpView(
           tester,
-          locale: locale,
+          locale: screen.locale,
           child: const InternetSettingsView(),
         );
 
@@ -646,9 +646,9 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-IPV6_AUTO_EDIT
-    testLocalizations(
+    testLocalizationsV2(
       'Verifies the editing state of the IPv6 Automatic connection view',
-      (tester, locale) async {
+      (tester, screen) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateIpv6Automatic));
         when(testHelper.mockInternetSettingsNotifier.fetch())
@@ -659,7 +659,7 @@ Future<void> main() async {
         });
         await testHelper.pumpView(
           tester,
-          locale: locale,
+          locale: screen.locale,
           child: const InternetSettingsView(),
         );
 
@@ -687,9 +687,9 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-IPV6_6RD_DIS_EDIT
-    testLocalizations(
+    testLocalizationsV2(
       'Verifies the editing state for IPv6 Automatic with 6rd Tunnel disabled',
-      (tester, locale) async {
+      (tester, screen) async {
         final state =
             InternetSettingsState.fromMap(internetSettingsStateIpv6Automatic);
         final settings = state.settings.current;
@@ -711,7 +711,7 @@ Future<void> main() async {
         });
         await testHelper.pumpView(
           tester,
-          locale: locale,
+          locale: screen.locale,
           child: const InternetSettingsView(),
         );
 
@@ -738,9 +738,9 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-IPV6_6RD_AUTO_EDIT
-    testLocalizations(
+    testLocalizationsV2(
       'Verifies the editing state for IPv6 Automatic with 6rd Tunnel set to automatic',
-      (tester, locale) async {
+      (tester, screen) async {
         final state =
             InternetSettingsState.fromMap(internetSettingsStateIpv6Automatic);
         final settings = state.settings.current;
@@ -762,7 +762,7 @@ Future<void> main() async {
         });
         await testHelper.pumpView(
           tester,
-          locale: locale,
+          locale: screen.locale,
           child: const InternetSettingsView(),
         );
 
@@ -789,9 +789,9 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-IPV6_6RD_MAN_EDIT
-    testLocalizations(
+    testLocalizationsV2(
       'Verifies the editing state for IPv6 Automatic with 6rd Tunnel set to manual',
-      (tester, locale) async {
+      (tester, screen) async {
         final state =
             InternetSettingsState.fromMap(internetSettingsStateIpv6Automatic);
         final settings = state.settings.current;
@@ -813,7 +813,7 @@ Future<void> main() async {
         });
         final context = await testHelper.pumpView(
           tester,
-          locale: locale,
+          locale: screen.locale,
           child: const InternetSettingsView(),
         );
 
@@ -847,9 +847,9 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-IPV6_PASS_VIEW
-    testLocalizations(
+    testLocalizationsV2(
       'Verifies the initial state of the IPv6 Pass-Through connection view',
-      (tester, locale) async {
+      (tester, screen) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(
                 internetSettingsStateIpv6PassThrough));
@@ -861,7 +861,7 @@ Future<void> main() async {
         });
         final context = await testHelper.pumpView(
           tester,
-          locale: locale,
+          locale: screen.locale,
           child: const InternetSettingsView(),
         );
 
@@ -884,9 +884,9 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-IPV6_PASS_EDIT
-    testLocalizations(
+    testLocalizationsV2(
       'Verifies the editing state of the IPv6 Pass-Through connection view',
-      (tester, locale) async {
+      (tester, screen) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(
                 internetSettingsStateIpv6PassThrough));
@@ -898,7 +898,7 @@ Future<void> main() async {
         });
         await testHelper.pumpView(
           tester,
-          locale: locale,
+          locale: screen.locale,
           child: const InternetSettingsView(),
         );
 
@@ -925,9 +925,9 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-IPV6_PPPOE_VIEW
-    testLocalizations(
+    testLocalizationsV2(
       'Verifies the initial state of the IPv6 PPPoE connection view',
-      (tester, locale) async {
+      (tester, screen) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateIpv6PPPoE));
         when(testHelper.mockInternetSettingsNotifier.fetch())
@@ -937,7 +937,7 @@ Future<void> main() async {
         });
         final context = await testHelper.pumpView(
           tester,
-          locale: locale,
+          locale: screen.locale,
           child: const InternetSettingsView(),
         );
 
@@ -960,9 +960,9 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-IPV6_PPPOE_EDIT
-    testLocalizations(
+    testLocalizationsV2(
       'Verifies the editing state of the IPv6 PPPoE connection view',
-      (tester, locale) async {
+      (tester, screen) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateIpv6PPPoE));
         when(testHelper.mockInternetSettingsNotifier.fetch())
@@ -972,7 +972,7 @@ Future<void> main() async {
         });
         await testHelper.pumpView(
           tester,
-          locale: locale,
+          locale: screen.locale,
           child: const InternetSettingsView(),
         );
 
@@ -1001,9 +1001,9 @@ Future<void> main() async {
 
   group('InternetSettings - Release & Renew', () {
     // Test ID: ISET-RR_VIEW
-    testLocalizations(
+    testLocalizationsV2(
       'Verifies the Release & Renew tab',
-      (tester, locale) async {
+      (tester, screen) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateDHCP));
         when(testHelper.mockInternetSettingsNotifier.fetch())
@@ -1013,7 +1013,7 @@ Future<void> main() async {
         });
         final context = await testHelper.pumpView(
           tester,
-          locale: locale,
+          locale: screen.locale,
           child: const InternetSettingsView(),
         );
 
@@ -1036,9 +1036,9 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-RR_BRIDGE_VIEW
-    testLocalizations(
+    testLocalizationsV2(
       'Verifies the Release & Renew tab in Bridge mode',
-      (tester, locale) async {
+      (tester, screen) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateBridge));
         when(testHelper.mockInternetSettingsNotifier.fetch())
@@ -1048,7 +1048,7 @@ Future<void> main() async {
         });
         await testHelper.pumpView(
           tester,
-          locale: locale,
+          locale: screen.locale,
           child: const InternetSettingsView(),
         );
 
@@ -1064,9 +1064,9 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-RR_DIALOG
-    testLocalizations(
+    testLocalizationsV2(
       'Verifies the confirmation dialog for Release & Renew',
-      (tester, locale) async {
+      (tester, screen) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateDHCP));
         when(testHelper.mockInternetSettingsNotifier.fetch())
@@ -1076,7 +1076,7 @@ Future<void> main() async {
         });
         final context = await testHelper.pumpView(
           tester,
-          locale: locale,
+          locale: screen.locale,
           child: const InternetSettingsView(),
         );
 
@@ -1105,14 +1105,14 @@ Future<void> main() async {
 
   group('InternetSettings - Save', () {
     // Test ID: ISET-SAVE_RESTART_DIALOG
-    testLocalizations(
+    testLocalizationsV2(
       'Verifies the restart confirmation dialog when saving changes',
-      (tester, locale) async {
+      (tester, screen) async {
         when(testHelper.mockInternetSettingsNotifier.isDirty())
             .thenReturn(true);
         final context = await testHelper.pumpView(
           tester,
-          locale: locale,
+          locale: screen.locale,
           child: const InternetSettingsView(),
         );
         await tester.pumpAndSettle();
@@ -1149,16 +1149,16 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-SAVE_COMBO_DIALOG
-    testLocalizations(
+    testLocalizationsV2(
       'Verifies the invalid WAN combination error dialog',
-      (tester, locale) async {
+      (tester, screen) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
             InternetSettingsState.fromMap(internetSettingsStateIpv6PPPoE));
         when(testHelper.mockInternetSettingsNotifier.isDirty())
             .thenReturn(true);
         final context = await testHelper.pumpView(
           tester,
-          locale: locale,
+          locale: screen.locale,
           child: const InternetSettingsView(),
         );
 

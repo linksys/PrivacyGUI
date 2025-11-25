@@ -102,8 +102,10 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView>
             }
           } else {
             // if current tab is mac filtering, save mac filtering settings
-            final enableMacFiltering = bundleState.current.privacy.mode.isEnabled;
-            final shouldSave = await showMacFilteringConfirmDialog(context, enableMacFiltering);
+            final enableMacFiltering =
+                bundleState.current.privacy.mode.isEnabled;
+            final shouldSave = await showMacFilteringConfirmDialog(
+                context, enableMacFiltering);
             if (shouldSave == true) {
               await _doSave();
             }

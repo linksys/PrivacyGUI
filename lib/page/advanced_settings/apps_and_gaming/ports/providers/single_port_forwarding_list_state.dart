@@ -67,9 +67,8 @@ class SinglePortForwardingListStatus extends Equatable {
           json.decode(source) as Map<String, dynamic>);
 }
 
-class SinglePortForwardingListState
-    extends FeatureState<SinglePortForwardingRuleList,
-        SinglePortForwardingListStatus> {
+class SinglePortForwardingListState extends FeatureState<
+    SinglePortForwardingRuleList, SinglePortForwardingListStatus> {
   const SinglePortForwardingListState({
     required super.settings,
     required super.status,

@@ -51,8 +51,7 @@ class PortRangeTriggeringListStatus extends Equatable {
 }
 
 class PortRangeTriggeringListState extends FeatureState<
-    PortRangeTriggeringRuleList,
-    PortRangeTriggeringListStatus> {
+    PortRangeTriggeringRuleList, PortRangeTriggeringListStatus> {
   const PortRangeTriggeringListState({
     required super.settings,
     required super.status,

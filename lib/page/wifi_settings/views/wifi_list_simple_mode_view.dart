@@ -98,11 +98,11 @@ class _SimpleModeViewState extends ConsumerState<SimpleModeView>
     }
 
     return Table(
-        border: const TableBorder(),
-        columnWidths: columnWidths,
-        defaultVerticalAlignment: TableCellVerticalAlignment.top,
-        children: children,
-      );
+      border: const TableBorder(),
+      columnWidths: columnWidths,
+      defaultVerticalAlignment: TableCellVerticalAlignment.top,
+      children: children,
+    );
   }
 
   Widget _settingsView(WiFiItem simpleWifi) {

@@ -78,10 +78,9 @@ class _PortRangeTriggeringContentViewState
   Widget build(BuildContext context) {
     final state = ref.watch(portRangeTriggeringListProvider);
     return SingleChildScrollView(
-      
       child: ResponsiveLayout(
-                desktop: _desktopSettingsView(state),
-                mobile: _mobildSettingsView(state)),
+          desktop: _desktopSettingsView(state),
+          mobile: _mobildSettingsView(state)),
     );
   }
 
@@ -186,6 +185,7 @@ class _PortRangeTriggeringContentViewState
 
         return switch (index) {
           0 => AppTextField.outline(
+              key: const Key('applicationNameTextField'),
               controller: applicationTextController,
               onChanged: (value) {
                 ref
@@ -206,6 +206,7 @@ class _PortRangeTriggeringContentViewState
                   children: [
                     Expanded(
                       child: AppTextField.minMaxNumber(
+                        key: const Key('firstTriggerPortTextField'),
                         min: 0,
                         max: 65535,
                         border: OutlineInputBorder(),
@@ -230,6 +231,7 @@ class _PortRangeTriggeringContentViewState
                     ),
                     Expanded(
                       child: AppTextField.minMaxNumber(
+                        key: const Key('lastTriggerPortTextField'),
                         min: 0,
                         max: 65535,
                         border: OutlineInputBorder(),
@@ -259,6 +261,7 @@ class _PortRangeTriggeringContentViewState
                   children: [
                     Expanded(
                       child: AppTextField.minMaxNumber(
+                        key: const Key('firstForwardedPortTextField'),
                         min: 0,
                         max: 65535,
                         border: OutlineInputBorder(),
@@ -284,6 +287,7 @@ class _PortRangeTriggeringContentViewState
                     ),
                     Expanded(
                       child: AppTextField.minMaxNumber(
+                        key: const Key('lastForwardedPortTextField'),
                         min: 0,
                         max: 65535,
                         border: OutlineInputBorder(),
@@ -317,7 +321,11 @@ class _PortRangeTriggeringContentViewState
           1 => notifier.isPortRangeValid(
                   int.tryParse(firstTriggerPortController.text) ?? 0,
                   int.tryParse(lastTriggerPortController.text) ?? 0)
-              ? null
+              ? !notifier.isTriggeredPortConflict(
+                      int.tryParse(firstTriggerPortController.text) ?? 0,
+                      int.tryParse(lastTriggerPortController.text) ?? 0)
+                  ? null
+                  : loc(context).rulesOverlapError
               : loc(context).portRangeError,
           2 => notifier.isPortRangeValid(
                   int.tryParse(firstForwardedPortController.text) ?? 0,

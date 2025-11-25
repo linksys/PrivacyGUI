@@ -73,8 +73,8 @@ class _AddRuleContentViewState
     } else {
       _isEdit = false;
 
-      final prefixIp =
-          NetworkUtils.getIpPrefix(state.status.routerIp, state.status.subnetMask);
+      final prefixIp = NetworkUtils.getIpPrefix(
+          state.status.routerIp, state.status.subnetMask);
       _deviceIpAddressController.text = prefixIp.replaceAll('.0', '');
       rule = SinglePortForwardingRule(
           isEnabled: true,
@@ -157,6 +157,7 @@ class _AddRuleContentViewState
     final submaskToken = subnetMask.split('.');
     return [
       AppTextField(
+        key: const Key('applicationNameTextField'),
         headerText: loc(context).applicationName,
         border: const OutlineInputBorder(),
         controller: _ruleNameController,
@@ -181,6 +182,7 @@ class _AddRuleContentViewState
         children: [
           Expanded(
             child: AppTextField.minMaxNumber(
+              key: const Key('internalPortTextField'),
               headerText: loc(context).internalPort,
               inputType: TextInputType.number,
               border: const OutlineInputBorder(),
@@ -197,6 +199,7 @@ class _AddRuleContentViewState
           const AppGap.small1(),
           Expanded(
             child: AppTextField.minMaxNumber(
+              key: const Key('externalPortTextField'),
               headerText: loc(context).externalPort,
               inputType: TextInputType.number,
               border: const OutlineInputBorder(),
@@ -204,7 +207,7 @@ class _AddRuleContentViewState
               max: 65535,
               min: 0,
               onFocusChanged: (value) =>
-                  _onPortFocusChange(value, state.rule?.protocol ?? ''),
+                  _onPortFocusChange(value, state.rule?.protocol ?? 'Both'),
               onChanged: (value) {
                 _notifier.updateRule(state.rule
                     ?.copyWith(externalPort: int.tryParse(value) ?? 0));
@@ -228,6 +231,7 @@ class _AddRuleContentViewState
       AppText.labelMedium(loc(context).ipAddress),
       const AppGap.medium(),
       AppIPFormField(
+        key: const Key('ipAddressTextField'),
         semanticLabel: 'ip address',
         controller: _deviceIpAddressController,
         border: const OutlineInputBorder(),

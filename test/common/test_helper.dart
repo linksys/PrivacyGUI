@@ -11,6 +11,7 @@ import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/dhcp_reservations_provider.dart';
+import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/dhcp_reservations_state.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_rule_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_rule_state.dart';
@@ -68,6 +69,7 @@ import '../mocks/pnp_isp_settings_notifier_mocks.dart';
 import '../mocks/pnp_service_mocks.dart';
 import '../mocks/power_table_notifier_mocks.dart';
 import '../mocks/static_routing_rule_notifier_mocks.dart';
+import '../test_data/dhcp_reservations_test_state.dart';
 import '../test_data/instant_verify_test_state.dart';
 import '../test_data/power_table_test_state.dart';
 import '../test_data/wifi_bundle_test_state.dart';
@@ -210,7 +212,7 @@ class TestHelper {
     mockPnpService = MockPnpService();
     mockFirmwareUpdateService = MockFirmwareUpdateService();
     mockManualFirmwareUpdateService = MockManualFirmwareUpdateService();
-    
+
     SharedPreferences.setMockInitialValues({});
 
     _setupServiceHelper();
@@ -304,6 +306,8 @@ class TestHelper {
         .thenReturn(const Ipv6PortServiceRuleState());
     when(mockInternetSettingsNotifier.build())
         .thenReturn(InternetSettingsState.fromMap(internetSettingsStateDHCP));
+    when(mockDHCPReservationsNotifier.build())
+        .thenReturn(DHCPReservationState.fromMap(dhcpReservationTestState));
     when(mockLocalNetworkSettingsNotifier.build()).thenReturn(
         LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState));
     when(mockStaticRoutingNotifier.build())
@@ -450,7 +454,6 @@ class TestHelper {
     });
     return context;
   }
-
 
   Future<BuildContext> pumpView(
     WidgetTester tester, {

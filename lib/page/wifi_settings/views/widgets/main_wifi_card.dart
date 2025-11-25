@@ -187,8 +187,10 @@ class _MainWiFiCardState extends ConsumerState<MainWiFiCard>
                         textField: false,
                         explicitChildNodes: true,
                         child: AppPasswordField(
-                          semanticLabel: '${radio.radioID.bandName} wifi password',
-                          key: ValueKey('${radio.radioID.bandName} wifi password input'),
+                          semanticLabel:
+                              '${radio.radioID.bandName} wifi password',
+                          key: ValueKey(
+                              '${radio.radioID.bandName} wifi password input'),
                           readOnly: true,
                           border: InputBorder.none,
                           controller: _passwordController,
@@ -199,7 +201,6 @@ class _MainWiFiCardState extends ConsumerState<MainWiFiCard>
             ),
             trailing: const Icon(LinksysIcons.edit),
             onTap: () {
-              print('XXXXX showWifiPasswordModal');
               showWifiPasswordModal(radio.password, (value) {
                 ref
                     .read(wifiBundleProvider.notifier)

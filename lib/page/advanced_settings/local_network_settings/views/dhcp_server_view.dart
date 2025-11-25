@@ -58,11 +58,12 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
     _dns3Controller.dispose();
     _winsController.dispose();
   }
-  
+
   void _updateControllers(LocalNetworkSettingsState state) {
     _startIpAddressController.text = state.settings.current.firstIPAddress;
     _maxUserAllowedController.text = '${state.settings.current.maxUserAllowed}';
-    _clientLeaseTimeController.text = '${state.settings.current.clientLeaseTime}';
+    _clientLeaseTimeController.text =
+        '${state.settings.current.clientLeaseTime}';
     _dns1Controller.text = state.settings.current.dns1 ?? '';
     _dns2Controller.text = state.settings.current.dns2 ?? '';
     _dns3Controller.text = state.settings.current.dns3 ?? '';
@@ -72,7 +73,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(localNetworkSettingProvider);
-    
+
     ref.listen(localNetworkSettingProvider, (previous, next) {
       if (previous != next) {
         _updateControllers(next);
@@ -86,12 +87,14 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
         mainAxisSize: MainAxisSize.min,
         children: [
           AppSwitchTriggerTile(
+            key: const Key('dhcpServerSwitch'),
             padding: EdgeInsets.only(),
             title: AppText.titleMedium(loc(context).dhcpServer),
             semanticLabel: 'dhcp server',
             value: state.settings.current.isDHCPEnabled,
             onChanged: (value) {
-              _notifier.updateSettings(state.settings.current.copyWith(isDHCPEnabled: value));
+              _notifier.updateSettings(
+                  state.settings.current.copyWith(isDHCPEnabled: value));
             },
           ),
           Visibility(
@@ -135,8 +138,8 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
             autoFocus: true,
             errorText: LocalNetworkErrorPrompt.getErrorText(
                 context: context,
-                error: LocalNetworkErrorPrompt.resolve(state
-                    .status.errorTextMap[LocalNetworkErrorPrompt.startIpAddress.name]),
+                error: LocalNetworkErrorPrompt.resolve(state.status
+                    .errorTextMap[LocalNetworkErrorPrompt.startIpAddress.name]),
                 ipAddress: state.settings.current.ipAddress,
                 subnetMask: state.settings.current.subnetMask),
             octet1ReadOnly: true,
@@ -152,14 +155,16 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
           child: AppTextField.minMaxNumber(
             key: Key('maxUsersTextField'),
             headerText: loc(context).maximumNumberOfUsers,
-            descriptionText: '1 ${loc(context).to} ${state.status.maxUserLimit}',
+            descriptionText:
+                '1 ${loc(context).to} ${state.status.maxUserLimit}',
             min: 1,
             max: state.status.maxUserLimit,
             controller: _maxUserAllowedController,
             errorText: LocalNetworkErrorPrompt.getErrorText(
                 context: context,
-                error: LocalNetworkErrorPrompt.resolve(state.status.errorTextMap[
-                    LocalNetworkErrorPrompt.maxUserAllowed.name])),
+                error: LocalNetworkErrorPrompt.resolve(
+                    state.status.errorTextMap[
+                        LocalNetworkErrorPrompt.maxUserAllowed.name])),
             border: const OutlineInputBorder(),
             onChanged: (value) {
               _notifier.maxUserAllowedChanged(context, value);
@@ -179,12 +184,13 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
             controller: _clientLeaseTimeController,
             errorText: LocalNetworkErrorPrompt.getErrorText(
                 context: context,
-                error: LocalNetworkErrorPrompt.resolve(state
-                    .status.errorTextMap[LocalNetworkErrorPrompt.leaseTime.name])),
+                error: LocalNetworkErrorPrompt.resolve(state.status
+                    .errorTextMap[LocalNetworkErrorPrompt.leaseTime.name])),
             border: const OutlineInputBorder(),
             descriptionText: loc(context).minutes,
             onChanged: (value) {
-              final result = _notifier.clientLeaseFinished(value, state.settings.current);
+              final result =
+                  _notifier.clientLeaseFinished(value, state.settings.current);
               _notifier.updateSettings(result.$2);
               _notifier.updateErrorPrompts(
                 LocalNetworkErrorPrompt.leaseTime.name,
@@ -262,11 +268,12 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
             controller: _dns1Controller,
             errorText: LocalNetworkErrorPrompt.getErrorText(
                 context: context,
-                error: LocalNetworkErrorPrompt.resolve(
-                    state.status.errorTextMap[LocalNetworkErrorPrompt.dns1.name])),
+                error: LocalNetworkErrorPrompt.resolve(state
+                    .status.errorTextMap[LocalNetworkErrorPrompt.dns1.name])),
             border: const OutlineInputBorder(),
             onChanged: (value) {
-              final result = _notifier.staticDns1Finished(value, state.settings.current);
+              final result =
+                  _notifier.staticDns1Finished(value, state.settings.current);
               _notifier.updateSettings(result.$2);
               _notifier.updateErrorPrompts(
                 LocalNetworkErrorPrompt.dns1.name,
@@ -288,11 +295,12 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
             controller: _dns2Controller,
             errorText: LocalNetworkErrorPrompt.getErrorText(
                 context: context,
-                error: LocalNetworkErrorPrompt.resolve(
-                    state.status.errorTextMap[LocalNetworkErrorPrompt.dns2.name])),
+                error: LocalNetworkErrorPrompt.resolve(state
+                    .status.errorTextMap[LocalNetworkErrorPrompt.dns2.name])),
             border: const OutlineInputBorder(),
             onChanged: (value) {
-              final result = _notifier.staticDns2Finished(value, state.settings.current);
+              final result =
+                  _notifier.staticDns2Finished(value, state.settings.current);
               _notifier.updateSettings(result.$2);
               _notifier.updateErrorPrompts(
                 LocalNetworkErrorPrompt.dns2.name,
@@ -314,11 +322,12 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
             controller: _dns3Controller,
             errorText: LocalNetworkErrorPrompt.getErrorText(
                 context: context,
-                error: LocalNetworkErrorPrompt.resolve(
-                    state.status.errorTextMap[LocalNetworkErrorPrompt.dns3.name])),
+                error: LocalNetworkErrorPrompt.resolve(state
+                    .status.errorTextMap[LocalNetworkErrorPrompt.dns3.name])),
             border: const OutlineInputBorder(),
             onChanged: (value) {
-              final result = _notifier.staticDns3Finished(value, state.settings.current);
+              final result =
+                  _notifier.staticDns3Finished(value, state.settings.current);
               _notifier.updateSettings(result.$2);
               _notifier.updateErrorPrompts(
                 LocalNetworkErrorPrompt.dns3.name,
@@ -340,11 +349,12 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
             controller: _winsController,
             errorText: LocalNetworkErrorPrompt.getErrorText(
                 context: context,
-                error: LocalNetworkErrorPrompt.resolve(
-                    state.status.errorTextMap[LocalNetworkErrorPrompt.wins.name])),
+                error: LocalNetworkErrorPrompt.resolve(state
+                    .status.errorTextMap[LocalNetworkErrorPrompt.wins.name])),
             border: const OutlineInputBorder(),
             onChanged: (value) {
-              final result = _notifier.winsServerFinished(value, state.settings.current);
+              final result =
+                  _notifier.winsServerFinished(value, state.settings.current);
               _notifier.updateSettings(result.$2);
               _notifier.updateErrorPrompts(
                 LocalNetworkErrorPrompt.wins.name,

@@ -51,11 +51,11 @@ void main() {
 
   group('Incredible-WiFi - WiFi Advanced settings view', () {
     // Test ID: WIFIS-ADV_VIEW
-    testLocalizations('It should render the advanced settings view correctly',
-        (tester, locale) async {
+    testLocalizationsV2('It should render the advanced settings view correctly',
+        (tester, screen) async {
       final context = await testHelper.pumpShellView(
         tester,
-        locale: locale,
+        locale: screen.locale,
         child: const WiFiMainView(),
       );
       await tester.pumpAndSettle();
@@ -77,16 +77,16 @@ void main() {
     ], goldenFilename: 'WIFIS-ADV_VIEW-01-initial_state');
 
     // Test ID: WIFIS-MLO_WARN
-    testLocalizations(
+    testLocalizationsV2(
         'It should display the MLO warning in the advanced settings view',
-        (tester, locale) async {
+        (tester, screen) async {
       when(testHelper.mockWiFiBundleNotifier.checkingMLOSettingsConflicts(any,
               isMloEnabled: anyNamed('isMloEnabled')))
           .thenReturn(true);
 
       final context = await testHelper.pumpShellView(
         tester,
-        locale: locale,
+        locale: screen.locale,
         child: const WiFiMainView(),
       );
       await tester.pumpAndSettle();
@@ -102,12 +102,12 @@ void main() {
     ], goldenFilename: 'WIFIS-MLO_WARN-01-warning_shown');
 
     // Test ID: WIFIS-DFS_WARN
-    testLocalizations(
+    testLocalizationsV2(
         'It should display the DFS warning modal when saving advanced settings',
-        (tester, locale) async {
+        (tester, screen) async {
       final context = await testHelper.pumpShellView(
         tester,
-        locale: locale,
+        locale: screen.locale,
         child: const WiFiMainView(),
       );
       await tester.pumpAndSettle();
@@ -126,11 +126,11 @@ void main() {
 
   group('Incredible-WiFi - MAC Filtering view', () {
     // Test ID: WIFIS-MAC_VIEW
-    testLocalizations('It should render the MAC filtering view correctly',
-        (tester, locale) async {
+    testLocalizationsV2('It should render the MAC filtering view correctly',
+        (tester, screen) async {
       final context = await testHelper.pumpShellView(
         tester,
-        locale: locale,
+        locale: screen.locale,
         child: const WiFiMainView(),
       );
       await tester.pumpAndSettle();
@@ -146,9 +146,9 @@ void main() {
         goldenFilename: 'WIFIS-MAC_VIEW-01-initial_state');
 
     // Test ID: WIFIS-MAC_ENABLED
-    testLocalizations(
+    testLocalizationsV2(
         'It should render the MAC filtering view in an enabled state',
-        (tester, locale) async {
+        (tester, screen) async {
       final wifiBundleTestStateInitialState =
           getWifiBundleTestState(privacyTestData: instantPrivacyDenyTestState);
       when(testHelper.mockWiFiBundleNotifier.build())
@@ -156,7 +156,7 @@ void main() {
 
       await testHelper.pumpShellView(
         tester,
-        locale: locale,
+        locale: screen.locale,
         child: const WiFiMainView(),
       );
       await tester.pumpAndSettle();
@@ -174,9 +174,9 @@ void main() {
         goldenFilename: 'WIFIS-MAC_ENABLED-01-initial_state');
 
     // Test ID: WIFIS-MAC_ON_ALERT
-    testLocalizations(
+    testLocalizationsV2(
         'It should display an alert when turning on MAC filtering',
-        (tester, locale) async {
+        (tester, screen) async {
       final wifiBundleTestStateInitialState =
           getWifiBundleTestState(privacyTestData: instantPrivacyDenyTestState);
       when(testHelper.mockWiFiBundleNotifier.build())
@@ -184,7 +184,7 @@ void main() {
 
       final context = await testHelper.pumpShellView(
         tester,
-        locale: locale,
+        locale: screen.locale,
         child: const WiFiMainView(),
       );
       await tester.pumpAndSettle();
@@ -204,9 +204,9 @@ void main() {
         goldenFilename: 'WIFIS-MAC_ON_ALERT-01-alert_shown');
 
     // Test ID: WIFIS-MAC_OFF_ALERT
-    testLocalizations(
+    testLocalizationsV2(
         'It should display an alert when turning off MAC filtering',
-        (tester, locale) async {
+        (tester, screen) async {
       final wifiBundleTestStateInitialState =
           getWifiBundleTestState(privacyTestData: instantPrivacyTestState);
       when(testHelper.mockWiFiBundleNotifier.build())
@@ -214,7 +214,7 @@ void main() {
 
       final context = await testHelper.pumpShellView(
         tester,
-        locale: locale,
+        locale: screen.locale,
         child: const WiFiMainView(),
       );
       await tester.pumpAndSettle();
@@ -234,9 +234,9 @@ void main() {
         goldenFilename: 'WIFIS-MAC_OFF_ALERT-01-alert_shown');
 
     // Test ID: WIFIS-IP_DIS_WARN
-    testLocalizations(
+    testLocalizationsV2(
         'It should display a warning when Instant Privacy is disabled',
-        (tester, locale) async {
+        (tester, screen) async {
       final wifiBundleTestStateInitialState = getWifiBundleTestState(
           privacyTestData: instantPrivacyEnabledTestState);
       when(testHelper.mockWiFiBundleNotifier.build())
@@ -244,7 +244,7 @@ void main() {
 
       final context = await testHelper.pumpShellView(
         tester,
-        locale: locale,
+        locale: screen.locale,
         child: const WiFiMainView(),
       );
       await tester.pumpAndSettle();
@@ -260,15 +260,15 @@ void main() {
         goldenFilename: 'WIFIS-IP_DIS_WARN-01-warning_shown');
 
     // Test ID: WIFIS-MAC_DEV_VIEW
-    testLocalizations(
+    testLocalizationsV2(
         'It should render the MAC filtering devices view correctly',
-        (tester, locale) async {
+        (tester, screen) async {
       when(testHelper.mockInstantPrivacyNotifier.build())
           .thenReturn(InstantPrivacyState.fromMap(instantPrivacyDenyTestState));
 
       final context = await testHelper.pumpShellView(
         tester,
-        locale: locale,
+        locale: screen.locale,
         child: const FilteredDevicesView(),
       );
       await tester.pumpAndSettle();
@@ -282,11 +282,11 @@ void main() {
         goldenFilename: 'WIFIS-MAC_DEV_VIEW-01-initial_state');
 
     // Test ID: WIFIS-MAC_ADD_MAN
-    testLocalizations('It should allow manually adding a MAC address',
-        (tester, locale) async {
+    testLocalizationsV2('It should allow manually adding a MAC address',
+        (tester, screen) async {
       await testHelper.pumpShellView(
         tester,
-        locale: locale,
+        locale: screen.locale,
         child: const FilteredDevicesView(),
       );
       await tester.pumpAndSettle();
@@ -300,11 +300,11 @@ void main() {
         goldenFilename: 'WIFIS-MAC_ADD_MAN-01-dialog_shown');
 
     // Test ID: WIFIS-MAC_SEL_DEV
-    testLocalizations('It should allow selecting devices for MAC filtering',
-        (tester, locale) async {
+    testLocalizationsV2('It should allow selecting devices for MAC filtering',
+        (tester, screen) async {
       final context = await testHelper.pumpView(
         tester,
-        locale: locale,
+        locale: screen.locale,
         child: SelectDeviceView(
           args: const {
             'type': 'mac',
@@ -322,11 +322,11 @@ void main() {
 
   group('Incredible-WiFi Views', () {
     // Test ID: WIFIS-MAIN_VIEW
-    testLocalizations('It should render the main view with tabs correctly',
-        (tester, locale) async {
+    testLocalizationsV2('It should render the main view with tabs correctly',
+        (tester, screen) async {
       final context = await testHelper.pumpShellView(
         tester,
-        locale: locale,
+        locale: screen.locale,
         child: const WiFiMainView(),
       );
       await tester.pumpAndSettle();
@@ -341,16 +341,16 @@ void main() {
     ], goldenFilename: 'WIFIS-MAIN_VIEW-01-initial_state');
 
     // Test ID: WIFIS-DIRTY_STATE
-    testLocalizations(
+    testLocalizationsV2(
         'It should mark the state as dirty when a setting is edited',
-        (tester, locale) async {
+        (tester, screen) async {
       final dirtyState = getWifiBundleTestState(
           wifiListTestData: wifiListAdvancedModeTestState);
       when(testHelper.mockWiFiBundleNotifier.build()).thenReturn(dirtyState);
 
       await testHelper.pumpShellView(
         tester,
-        locale: locale,
+        locale: screen.locale,
         child: const WiFiMainView(),
       );
       await tester.pumpAndSettle();

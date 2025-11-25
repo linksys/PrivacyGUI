@@ -67,6 +67,7 @@ class _AdministrationSettingsViewState
               state.current.canDisAllowLocalMangementWirelessly) ...[
             AppCard(
               child: AppSwitchTriggerTile(
+                key: const Key('wirelessManagementSwitch'),
                 semanticLabel: 'allow local management wirelessly',
                 title: AppText.labelLarge(
                     loc(context).administrationAllowLocalManagementWirelessly),
@@ -86,6 +87,7 @@ class _AdministrationSettingsViewState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 AppSwitchTriggerTile(
+                  key: const Key('upnpSwitch'),
                   semanticLabel: 'upnp',
                   title: AppText.labelLarge(loc(context).upnp),
                   value: state.current.isUPnPEnabled,
@@ -98,6 +100,7 @@ class _AdministrationSettingsViewState
                 if (state.current.isUPnPEnabled) ...[
                   const Divider(),
                   AppCheckbox(
+                    key: const Key('upnpConfigureCheckbox'),
                     value: state.current.canUsersConfigure,
                     semanticLabel: 'upnp allow users configure',
                     text: loc(context).administrationUPnPAllowUsersConfigure,
@@ -112,6 +115,7 @@ class _AdministrationSettingsViewState
                   ),
                   const AppGap.small2(),
                   AppCheckbox(
+                    key: const Key('upnpDisableWANAccessCheckbox'),
                     value: state.current.canUsersDisableWANAccess,
                     semanticLabel: 'upnp allow users disable internet access',
                     text: loc(context)
@@ -132,6 +136,7 @@ class _AdministrationSettingsViewState
           const AppGap.small2(),
           AppCard(
             child: AppSwitchTriggerTile(
+              key: const Key('algSwitch'),
               semanticLabel: 'application layer gateway',
               title: AppText.labelLarge(
                   loc(context).administrationApplicationLayerGateway),
@@ -146,6 +151,7 @@ class _AdministrationSettingsViewState
           const AppGap.small2(),
           AppCard(
             child: AppSwitchTriggerTile(
+              key: const Key('expressForwardingSwitch'),
               semanticLabel: 'express forwarding',
               title: AppText.labelLarge(
                   loc(context).administrationExpressForwarding),
