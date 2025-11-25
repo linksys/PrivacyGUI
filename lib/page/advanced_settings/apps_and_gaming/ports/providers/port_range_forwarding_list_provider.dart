@@ -13,7 +13,8 @@ final portRangeForwardingListProvider = NotifierProvider<
     PortRangeForwardingListNotifier,
     PortRangeForwardingListState>(() => PortRangeForwardingListNotifier());
 
-final preservablePortRangeForwardingListProvider = Provider<PreservableContract>(
+final preservablePortRangeForwardingListProvider =
+    Provider<PreservableContract>(
   (ref) => ref.watch(portRangeForwardingListProvider.notifier),
 );
 
@@ -24,15 +25,16 @@ class PortRangeForwardingListNotifier
             PortRangeForwardingListStatus, PortRangeForwardingListState> {
   @override
   PortRangeForwardingListState build() => const PortRangeForwardingListState(
-        settings: Preservable(original: PortRangeForwardingRuleList(rules: []), current: PortRangeForwardingRuleList(rules: [])),
+        settings: Preservable(
+            original: PortRangeForwardingRuleList(rules: []),
+            current: PortRangeForwardingRuleList(rules: [])),
         status: PortRangeForwardingListStatus(),
       );
 
   @override
-  Future<
-      (PortRangeForwardingRuleList?,
-       PortRangeForwardingListStatus?)> performFetch(
-      {bool forceRemote = false, bool updateStatusOnly = false}) async {
+  Future<(PortRangeForwardingRuleList?, PortRangeForwardingListStatus?)>
+      performFetch(
+          {bool forceRemote = false, bool updateStatusOnly = false}) async {
     final repo = ref.read(routerRepositoryProvider);
 
     final lanSettings = await repo
@@ -69,7 +71,8 @@ class PortRangeForwardingListNotifier
 
   @override
   Future<void> performSave() async {
-    final rules = List<PortRangeForwardingRule>.from(state.settings.current.rules);
+    final rules =
+        List<PortRangeForwardingRule>.from(state.settings.current.rules);
     final repo = ref.read(routerRepositoryProvider);
     await repo.send(
       JNAPAction.setPortRangeForwardingRules,

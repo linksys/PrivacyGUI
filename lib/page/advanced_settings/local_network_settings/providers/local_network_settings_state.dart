@@ -25,11 +25,15 @@ enum LocalNetworkErrorPrompt {
   wins;
 
   static LocalNetworkErrorPrompt? resolve(String? error) {
-    return LocalNetworkErrorPrompt.values.firstWhereOrNull((element) => element.name == error);
+    return LocalNetworkErrorPrompt.values
+        .firstWhereOrNull((element) => element.name == error);
   }
 
-  static String? getErrorText({required BuildContext context,
-      LocalNetworkErrorPrompt? error, String? ipAddress, String? subnetMask}) {
+  static String? getErrorText(
+      {required BuildContext context,
+      LocalNetworkErrorPrompt? error,
+      String? ipAddress,
+      String? subnetMask}) {
     if (error == null) {
       return null;
     }
@@ -295,8 +299,7 @@ class LocalNetworkStatus extends Equatable {
       maxNetworkPrefixLength: map['maxNetworkPrefixLength']?.toInt() ?? 0,
       dhcpReservationList: List<DHCPReservation>.from(
           map['dhcpReservationList']?.map((x) => DHCPReservation.fromMap(x))),
-      errorTextMap: Map<String, String>.from(
-          map['errorTextMap'] ?? {}),
+      errorTextMap: Map<String, String>.from(map['errorTextMap'] ?? {}),
       hasErrorOnHostNameTab: map['hasErrorOnHostNameTab'] ?? false,
       hasErrorOnIPAddressTab: map['hasErrorOnIPAddressTab'] ?? false,
       hasErrorOnDhcpServerTab: map['hasErrorOnDhcpServerTab'] ?? false,
@@ -309,7 +312,8 @@ class LocalNetworkStatus extends Equatable {
       LocalNetworkStatus.fromMap(json.decode(source) as Map<String, dynamic>);
 }
 
-class LocalNetworkSettingsState extends FeatureState<LocalNetworkSettings, LocalNetworkStatus> {
+class LocalNetworkSettingsState
+    extends FeatureState<LocalNetworkSettings, LocalNetworkStatus> {
   const LocalNetworkSettingsState({
     required super.settings,
     required super.status,
@@ -317,7 +321,9 @@ class LocalNetworkSettingsState extends FeatureState<LocalNetworkSettings, Local
 
   factory LocalNetworkSettingsState.init() {
     return LocalNetworkSettingsState(
-      settings: Preservable(original: LocalNetworkSettings.init(), current: LocalNetworkSettings.init()),
+      settings: Preservable(
+          original: LocalNetworkSettings.init(),
+          current: LocalNetworkSettings.init()),
       status: LocalNetworkStatus.init(),
     );
   }
@@ -343,16 +349,20 @@ class LocalNetworkSettingsState extends FeatureState<LocalNetworkSettings, Local
 
   factory LocalNetworkSettingsState.fromMap(Map<String, dynamic> map) {
     return LocalNetworkSettingsState(
-      settings: Preservable.fromMap(map['settings'], (dynamic json) => LocalNetworkSettings.fromMap(json as Map<String, dynamic>)),
+      settings: Preservable.fromMap(
+          map['settings'],
+          (dynamic json) =>
+              LocalNetworkSettings.fromMap(json as Map<String, dynamic>)),
       status: LocalNetworkStatus.fromMap(map['status'] as Map<String, dynamic>),
     );
   }
-  
+
   @override
   String toJson() => json.encode(toMap());
 
   factory LocalNetworkSettingsState.fromJson(String source) =>
-      LocalNetworkSettingsState.fromMap(json.decode(source) as Map<String, dynamic>);
+      LocalNetworkSettingsState.fromMap(
+          json.decode(source) as Map<String, dynamic>);
 
   @override
   bool get stringify => true;

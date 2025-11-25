@@ -210,6 +210,7 @@ class _PortRangeForwardingContentViewState
 
         return switch (index) {
           0 => AppTextField.outline(
+              key: const Key('applicationNameTextField'),
               controller: applicationTextController,
               onChanged: (value) {
                 ref
@@ -230,6 +231,7 @@ class _PortRangeForwardingContentViewState
                   children: [
                     Expanded(
                       child: AppTextField.minMaxNumber(
+                        key: const Key('firstExternalPortTextField'),
                         min: 0,
                         max: 65535,
                         border: OutlineInputBorder(),
@@ -254,6 +256,7 @@ class _PortRangeForwardingContentViewState
                     ),
                     Expanded(
                       child: AppTextField.minMaxNumber(
+                        key: const Key('lastExternalPortTextField'),
                         min: 0,
                         max: 65535,
                         border: OutlineInputBorder(),
@@ -291,6 +294,7 @@ class _PortRangeForwardingContentViewState
               },
             ),
           3 => AppIPFormField(
+              key: const Key('ipAddressTextField'),
               controller: ipAddressTextController,
               border: const OutlineInputBorder(),
               octet1ReadOnly: submaskToken[0] == '255',

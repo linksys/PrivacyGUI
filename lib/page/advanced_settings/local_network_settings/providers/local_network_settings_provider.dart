@@ -42,7 +42,8 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState>
   }
 
   @override
-  bool updateShouldNotify(LocalNetworkSettingsState previous, LocalNetworkSettingsState next) {
+  bool updateShouldNotify(
+      LocalNetworkSettingsState previous, LocalNetworkSettingsState next) {
     return previous != next;
   }
 
@@ -102,7 +103,9 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState>
       dhcpReservationList: lanSettings.dhcpSettings.reservations,
     );
 
-    _updateValidators(state.copyWith(status: newStatus, settings: state.settings.copyWith(current: newSettings)));
+    _updateValidators(state.copyWith(
+        status: newStatus,
+        settings: state.settings.copyWith(current: newSettings)));
     logger.d('[State]:[LocalNetworkSettings]:${state.toJson()}');
     return (newSettings, newStatus);
   }
@@ -124,10 +127,9 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState>
         dnsServer2: settings.dns2?.isEmpty == true ? null : settings.dns2,
         dnsServer3: settings.dns3?.isEmpty == true ? null : settings.dns3,
         winsServer: settings.wins?.isEmpty == true ? null : settings.wins,
-        reservations:
-            (state.settings.original.ipAddress != settings.ipAddress)
-                ? []
-                : state.status.dhcpReservationList,
+        reservations: (state.settings.original.ipAddress != settings.ipAddress)
+            ? []
+            : state.status.dhcpReservationList,
       ),
     );
     final routerRepository = ref.read(routerRepositoryProvider);
@@ -256,8 +258,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState>
   }
 
   bool updateDHCPReservationOfIndex(DHCPReservation item, int index) {
-    List<DHCPReservation> newList =
-        List.from(state.status.dhcpReservationList);
+    List<DHCPReservation> newList = List.from(state.status.dhcpReservationList);
     bool succeed = false;
     if (item.ipAddress == 'DELETE') {
       newList.removeAt(index);
@@ -352,8 +353,8 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState>
     updateSettings(subnetMaskResult.$2);
     if (subnetMaskResult.$1 == true) {
       // Verify start ip
-      final startIpResult =
-          startIpFinished(subnetMaskResult.$2.firstIPAddress, subnetMaskResult.$2);
+      final startIpResult = startIpFinished(
+          subnetMaskResult.$2.firstIPAddress, subnetMaskResult.$2);
       updateSettings(startIpResult.$2);
       // Verify max user allowed
       final maxUserAllowedResult = maxUserAllowedFinished(
@@ -451,8 +452,8 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState>
         lastIPAddress: newLastIp,
       );
       // Update all necessary validators by the updated settings
-      _updateValidators(state.copyWith(
-          settings: state.settings.copyWith(current: settings)));
+      _updateValidators(
+          state.copyWith(settings: state.settings.copyWith(current: settings)));
     } else {
       settings = settings.copyWith(
         ipAddress: newRouterIpAddress,
@@ -635,7 +636,7 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState>
   ) {
     // Due to the UI limit, the value input from users should always be valid
     final isValid = _serverIpAddressValidator.validate(dnsIp);
-if (isValid) {
+    if (isValid) {
       settings = settings.copyWith(
         dns3: () => dnsIp,
       );

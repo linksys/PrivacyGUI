@@ -157,9 +157,12 @@ class _SinglePortForwardingContentViewState
       emptyMessage: loc(context).noSinglePortForwarding,
       addEnabled: !_notifier.isExceedMax(),
       onStartEdit: (index, rule) {
-        ref
-            .read(singlePortForwardingRuleProvider.notifier)
-            .init(state.current.rules, rule, index, state.status.routerIp, state.status.subnetMask);
+        ref.read(singlePortForwardingRuleProvider.notifier).init(
+            state.current.rules,
+            rule,
+            index,
+            state.status.routerIp,
+            state.status.subnetMask);
         // Edit
         applicationTextController.text = rule?.description ?? '';
         internalPortTextController.text = '${rule?.internalPort ?? 0}';
@@ -209,6 +212,7 @@ class _SinglePortForwardingContentViewState
 
         return switch (index) {
           0 => AppTextField.outline(
+              key: const Key('applicationNameTextField'),
               controller: applicationTextController,
               onChanged: (value) {
                 ref
@@ -222,6 +226,7 @@ class _SinglePortForwardingContentViewState
               },
             ),
           1 => AppTextField.minMaxNumber(
+              key: const Key('internalPortTextField'),
               min: 0,
               max: 65535,
               border: OutlineInputBorder(),
@@ -238,6 +243,7 @@ class _SinglePortForwardingContentViewState
               },
             ),
           2 => AppTextField.minMaxNumber(
+              key: const Key('externalPortTextField'),
               min: 0,
               max: 65535,
               border: OutlineInputBorder(),
@@ -269,6 +275,7 @@ class _SinglePortForwardingContentViewState
               },
             ),
           4 => AppIPFormField(
+              key: const Key('ipAddressTextField'),
               controller: ipAddressTextController,
               border: const OutlineInputBorder(),
               octet1ReadOnly: submaskToken[0] == '255',

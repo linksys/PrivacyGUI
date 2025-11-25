@@ -41,8 +41,8 @@ class WiFiListView extends ArgumentsConsumerStatelessView {
                           wifiListState.simpleModeWifi.copyWith(ssid: value));
                     },
                     onWifiPasswordEdited: (value) {
-                      final wifiItem =
-                          wifiListState.simpleModeWifi.copyWith(password: value);
+                      final wifiItem = wifiListState.simpleModeWifi
+                          .copyWith(password: value);
                       notifier.setSimpleModeWifi(wifiItem);
                     },
                     onSecurityTypeChanged: (value) {

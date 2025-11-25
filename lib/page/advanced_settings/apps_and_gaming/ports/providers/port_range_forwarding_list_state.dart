@@ -68,8 +68,7 @@ class PortRangeForwardingListStatus extends Equatable {
 }
 
 class PortRangeForwardingListState extends FeatureState<
-    PortRangeForwardingRuleList,
-    PortRangeForwardingListStatus> {
+    PortRangeForwardingRuleList, PortRangeForwardingListStatus> {
   const PortRangeForwardingListState({
     required super.settings,
     required super.status,

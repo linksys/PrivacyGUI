@@ -106,15 +106,15 @@ class _AddRuleContentViewState
         },
       ),
       child: (context, constraints) => Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const AppGap.large2(),
-            if (_isEdit)
-              ..._buildEditContents(state)
-            else
-              ..._buildAddContents(state)
-          ],
-        ),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const AppGap.large2(),
+          if (_isEdit)
+            ..._buildEditContents(state)
+          else
+            ..._buildAddContents(state)
+        ],
+      ),
     );
   }
 
@@ -143,6 +143,7 @@ class _AddRuleContentViewState
     final state = ref.watch(portRangeTriggeringRuleProvider);
     return [
       AppTextField.outline(
+        key: const Key('ruleNameTextField'),
         headerText: loc(context).ruleName,
         controller: _ruleNameController,
         onFocusChanged: (focus) {
@@ -168,6 +169,7 @@ class _AddRuleContentViewState
         children: [
           Expanded(
             child: AppTextField.minMaxNumber(
+              key: const Key('firstTriggerPortTextField'),
               border: const OutlineInputBorder(),
               headerText: loc(context).startPort,
               inputType: TextInputType.number,
@@ -190,6 +192,7 @@ class _AddRuleContentViewState
           ),
           Expanded(
             child: AppTextField.minMaxNumber(
+              key: const Key('lastTriggerPortTextField'),
               border: const OutlineInputBorder(),
               headerText: loc(context).endPort,
               inputType: TextInputType.number,
@@ -213,6 +216,7 @@ class _AddRuleContentViewState
         children: [
           Expanded(
             child: AppTextField.minMaxNumber(
+              key: const Key('firstForwardedPortTextField'),
               border: const OutlineInputBorder(),
               headerText: loc(context).startPort,
               inputType: TextInputType.number,
@@ -235,6 +239,7 @@ class _AddRuleContentViewState
           ),
           Expanded(
             child: AppTextField.minMaxNumber(
+              key: const Key('lastForwardedPortTextField'),
               border: const OutlineInputBorder(),
               headerText: loc(context).endPort,
               inputType: TextInputType.number,
@@ -262,9 +267,13 @@ class _AddRuleContentViewState
       final firstPort = int.tryParse(_firstForwardedPortController.text) ?? 0;
       final lastPort = int.tryParse(_lastForwardedPortController.text) ?? 0;
       bool isValidPortRange = lastPort - firstPort >= 0;
-
-      _forwardedPortError =
-          !isValidPortRange ? loc(context).portRangeError : null;
+      bool isRuleOverlap =
+          _notifier.isForwardedPortConflict(firstPort, lastPort);
+      _forwardedPortError = !isValidPortRange
+          ? loc(context).portRangeError
+          : isRuleOverlap
+              ? loc(context).rulesOverlapError
+              : null;
       _onFocusChange(focus);
     }
   }

@@ -160,6 +160,7 @@ class _AddRuleContentViewState
     final submaskToken = subnetMask.split('.');
     return [
       AppTextField.outline(
+        key: const Key('applicationNameTextField'),
         headerText: loc(context).applicationName,
         controller: _ruleNameController,
         onFocusChanged: _onFocusChange,
@@ -174,6 +175,7 @@ class _AddRuleContentViewState
         children: [
           Expanded(
             child: AppTextField.minMaxNumber(
+              key: const Key('firstExternalPortTextField'),
               border: const OutlineInputBorder(),
               headerText: loc(context).startPort,
               controller: _firstExternalPortController,
@@ -196,6 +198,7 @@ class _AddRuleContentViewState
           ),
           Expanded(
             child: AppTextField.minMaxNumber(
+              key: const Key('lastExternalPortTextField'),
               border: const OutlineInputBorder(),
               headerText: loc(context).endPort,
               controller: _lastExternalPortController,
@@ -225,6 +228,7 @@ class _AddRuleContentViewState
       AppText.labelMedium(loc(context).ipAddress),
       const AppGap.medium(),
       AppIPFormField(
+        key: const Key('ipAddressTextField'),
         semanticLabel: 'ip address',
         controller: _deviceIpAddressController,
         border: const OutlineInputBorder(),

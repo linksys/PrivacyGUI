@@ -9,14 +9,14 @@ import 'package:privacy_gui/providers/preservable_contract.dart';
 import 'package:privacy_gui/providers/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
 
-final dhcpReservationProvider =
-    NotifierProvider.autoDispose<DHCPReservationsNotifier, DHCPReservationState>(
-        () => DHCPReservationsNotifier());
+final dhcpReservationProvider = NotifierProvider.autoDispose<
+    DHCPReservationsNotifier,
+    DHCPReservationState>(() => DHCPReservationsNotifier());
 
 // The provider now needs to be generic to match the contract.
-final preservableDHCPReservationsProvider =
-    Provider.autoDispose<PreservableContract<DHCPReservationsSettings, DHCPReservationsStatus>>(
-        (ref) {
+final preservableDHCPReservationsProvider = Provider.autoDispose<
+        PreservableContract<DHCPReservationsSettings, DHCPReservationsStatus>>(
+    (ref) {
   return ref.watch(dhcpReservationProvider.notifier);
 });
 
@@ -28,7 +28,8 @@ class DHCPReservationsNotifier extends AutoDisposeNotifier<DHCPReservationState>
   DHCPReservationState build() => DHCPReservationState.init();
 
   @override
-  bool updateShouldNotify(DHCPReservationState previous, DHCPReservationState next) {
+  bool updateShouldNotify(
+      DHCPReservationState previous, DHCPReservationState next) {
     return previous != next;
   }
 
@@ -48,8 +49,10 @@ class DHCPReservationsNotifier extends AutoDisposeNotifier<DHCPReservationState>
   @override
   Future<void> performSave() async {
     final settings = state.settings.current;
-    final reservations =
-        settings.reservations.where((e) => e.reserved).map((e) => e.data).toList();
+    final reservations = settings.reservations
+        .where((e) => e.reserved)
+        .map((e) => e.data)
+        .toList();
     await ref
         .read(localNetworkSettingProvider.notifier)
         .saveReservations(reservations);
@@ -61,8 +64,8 @@ class DHCPReservationsNotifier extends AutoDisposeNotifier<DHCPReservationState>
             .map((e) => ReservedListItem(reserved: true, data: e))
             .toList());
     state = state.copyWith(
-        settings: Preservable(
-            original: initialSettings, current: initialSettings));
+        settings:
+            Preservable(original: initialSettings, current: initialSettings));
   }
 
   void updateSettings(DHCPReservationsSettings newSettings) {
@@ -117,8 +120,8 @@ class DHCPReservationsNotifier extends AutoDisposeNotifier<DHCPReservationState>
   void updateReservations(ReservedListItem item, [bool isNew = false]) {
     final rList = state.settings.current.reservations;
     final dList = state.status.devices;
-    var hit =
-        rList.firstWhereOrNull((e) => e.data.macAddress == item.data.macAddress);
+    var hit = rList
+        .firstWhereOrNull((e) => e.data.macAddress == item.data.macAddress);
     final index = rList.indexOf(item);
     if (hit != null && index >= 0) {
       // This item is found on reservations list, so it is reserved.

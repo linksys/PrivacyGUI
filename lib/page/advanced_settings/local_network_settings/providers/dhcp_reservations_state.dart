@@ -117,7 +117,7 @@ class DHCPReservationState
       status: status ?? this.status,
     );
   }
-  
+
   @override
   Map<String, dynamic> toMap() {
     return {
@@ -128,8 +128,12 @@ class DHCPReservationState
 
   factory DHCPReservationState.fromMap(Map<String, dynamic> map) {
     return DHCPReservationState(
-      settings: Preservable.fromMap(map['settings'], (dynamic json) => DHCPReservationsSettings.fromMap(json as Map<String, dynamic>)),
-      status: DHCPReservationsStatus.fromMap(map['status'] as Map<String, dynamic>),
+      settings: Preservable.fromMap(
+          map['settings'],
+          (dynamic json) =>
+              DHCPReservationsSettings.fromMap(json as Map<String, dynamic>)),
+      status:
+          DHCPReservationsStatus.fromMap(map['status'] as Map<String, dynamic>),
     );
   }
 

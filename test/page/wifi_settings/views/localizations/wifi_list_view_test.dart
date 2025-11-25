@@ -556,8 +556,8 @@ void main() {
       'Verify save confirmation modal with MLO warning',
       (tester, screen) async {
         when(testHelper.mockWiFiBundleNotifier.checkingMLOSettingsConflicts(any,
-              isMloEnabled: anyNamed('isMloEnabled')))
-          .thenReturn(true);
+                isMloEnabled: anyNamed('isMloEnabled')))
+            .thenReturn(true);
 
         final context = await testHelper.pumpShellView(
           tester,

@@ -22,15 +22,13 @@ final preservableStaticRoutingProvider = Provider<PreservableContract>(
 
 class StaticRoutingNotifier extends Notifier<StaticRoutingState>
     with
-        PreservableNotifierMixin<StaticRoutingSettings,
-            StaticRoutingStatus, StaticRoutingState> {
+        PreservableNotifierMixin<StaticRoutingSettings, StaticRoutingStatus,
+            StaticRoutingState> {
   @override
   StaticRoutingState build() => StaticRoutingState.empty();
 
   @override
-  Future<
-      (StaticRoutingSettings?,
-       StaticRoutingStatus?)> performFetch(
+  Future<(StaticRoutingSettings?, StaticRoutingStatus?)> performFetch(
       {bool forceRemote = false, bool updateStatusOnly = false}) async {
     final repo = ref.read(routerRepositoryProvider);
     final lanSettings = await repo
@@ -44,9 +42,10 @@ class StaticRoutingNotifier extends Notifier<StaticRoutingState>
     final subnetMask =
         NetworkUtils.prefixLengthToSubnetMask(lanSettings.networkPrefixLength);
 
-    final value = await ref
-        .read(routerRepositoryProvider)
-        .send(JNAPAction.getRoutingSettings, auth: true, fetchRemote: forceRemote);
+    final value = await ref.read(routerRepositoryProvider).send(
+        JNAPAction.getRoutingSettings,
+        auth: true,
+        fetchRemote: forceRemote);
     final getRoutingSettings = GetRoutingSettings.fromMap(value.output);
 
     final settings = StaticRoutingSettings(
@@ -68,7 +67,8 @@ class StaticRoutingNotifier extends Notifier<StaticRoutingState>
       settings: state.settings.copyWith(
         current: state.settings.current.copyWith(
           isNATEnabled: option == RoutingSettingNetwork.nat,
-          isDynamicRoutingEnabled: option == RoutingSettingNetwork.dynamicRouting,
+          isDynamicRoutingEnabled:
+              option == RoutingSettingNetwork.dynamicRouting,
         ),
       ),
     );
@@ -76,15 +76,14 @@ class StaticRoutingNotifier extends Notifier<StaticRoutingState>
 
   @override
   Future<void> performSave() async {
-    await ref
-        .read(routerRepositoryProvider)
-        .send(
+    await ref.read(routerRepositoryProvider).send(
           JNAPAction.setRoutingSettings,
           auth: true,
           fetchRemote: true,
           cacheLevel: CacheLevel.noCache,
           data: SetRoutingSettings(
-            isDynamicRoutingEnabled: state.settings.current.isDynamicRoutingEnabled,
+            isDynamicRoutingEnabled:
+                state.settings.current.isDynamicRoutingEnabled,
             isNATEnabled: state.settings.current.isNATEnabled,
             entries: state.settings.current.entries.entries,
           ).toMap(),
@@ -92,7 +91,8 @@ class StaticRoutingNotifier extends Notifier<StaticRoutingState>
   }
 
   bool isExceedMax() {
-    return state.status.maxStaticRouteEntries == state.settings.current.entries.entries.length;
+    return state.status.maxStaticRouteEntries ==
+        state.settings.current.entries.entries.length;
   }
 
   void addRule(NamedStaticRouteEntry rule) {
@@ -100,7 +100,8 @@ class StaticRoutingNotifier extends Notifier<StaticRoutingState>
       settings: state.settings.copyWith(
         current: state.settings.current.copyWith(
           entries: state.settings.current.entries.copyWith(
-            entries: List.from(state.settings.current.entries.entries)..add(rule),
+            entries: List.from(state.settings.current.entries.entries)
+              ..add(rule),
           ),
         ),
       ),
@@ -125,7 +126,8 @@ class StaticRoutingNotifier extends Notifier<StaticRoutingState>
       settings: state.settings.copyWith(
         current: state.settings.current.copyWith(
           entries: state.settings.current.entries.copyWith(
-            entries: List.from(state.settings.current.entries.entries)..remove(rule),
+            entries: List.from(state.settings.current.entries.entries)
+              ..remove(rule),
           ),
         ),
       ),

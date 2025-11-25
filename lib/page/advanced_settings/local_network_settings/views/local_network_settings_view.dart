@@ -92,7 +92,6 @@ class _LocalNetworkSettingsViewState
       });
     }
     final state = ref.watch(localNetworkSettingProvider);
-    final notifier = ref.read(localNetworkSettingProvider.notifier);
 
     ref.listen(localNetworkSettingProvider, (previous, next) {
       if (previous?.settings.current.hostName !=

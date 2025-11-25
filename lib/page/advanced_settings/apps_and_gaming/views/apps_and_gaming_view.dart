@@ -63,14 +63,14 @@ class _AppsGamingSettingsViewState extends ConsumerState<AppsGamingSettingsView>
       PortRangeForwardingListView(),
       PortRangeTriggeringListView(),
     ];
+    final isDirty = ref.read(appsAndGamingProvider.notifier).isDirty();
     return StyledAppPageView.withSliver(
       title: loc(context).appsGaming,
       padding: EdgeInsets.zero,
       tabController: _tabController,
       bottomBar: PageBottomBar(
         isPositiveEnabled:
-            appsAndGamingState.isDirty &&
-                ref.watch(appsAndGamingProvider.notifier).isDataValid(),
+            isDirty && ref.watch(appsAndGamingProvider.notifier).isDataValid(),
         onPositiveTap: () {
           doSomethingWithSpinner(
                   context, ref.read(appsAndGamingProvider.notifier).save())

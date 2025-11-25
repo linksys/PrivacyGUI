@@ -33,8 +33,8 @@ class _WifiSettingsChannelFinderViewState
         : StyledAppPageView.withSliver(
             title: 'Channel Finder',
             child: (context, constraints) => isShowButton
-                  ? _channelFinderButton()
-                  : _channelFinderResult(state),
+                ? _channelFinderButton()
+                : _channelFinderResult(state),
           );
   }
 

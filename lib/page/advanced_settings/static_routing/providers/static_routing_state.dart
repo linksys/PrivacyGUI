@@ -32,8 +32,9 @@ class NamedStaticRouteEntryList extends Equatable {
     return NamedStaticRouteEntryList(
       entries: List<NamedStaticRouteEntry>.from(
         map['entries']?.map<NamedStaticRouteEntry>(
-          (x) => NamedStaticRouteEntry.fromMap(x as Map<String, dynamic>),
-        ) ?? [],
+              (x) => NamedStaticRouteEntry.fromMap(x as Map<String, dynamic>),
+            ) ??
+            [],
       ),
     );
   }
@@ -41,7 +42,8 @@ class NamedStaticRouteEntryList extends Equatable {
   String toJson() => json.encode(toMap());
 
   factory NamedStaticRouteEntryList.fromJson(String source) =>
-      NamedStaticRouteEntryList.fromMap(json.decode(source) as Map<String, dynamic>);
+      NamedStaticRouteEntryList.fromMap(
+          json.decode(source) as Map<String, dynamic>);
 }
 
 class StaticRoutingSettings extends Equatable {
@@ -83,7 +85,8 @@ class StaticRoutingSettings extends Equatable {
     return StaticRoutingSettings(
       isNATEnabled: map['isNATEnabled'] as bool,
       isDynamicRoutingEnabled: map['isDynamicRoutingEnabled'] as bool,
-      entries: NamedStaticRouteEntryList.fromMap(map['entries'] as Map<String, dynamic>),
+      entries: NamedStaticRouteEntryList.fromMap(
+          map['entries'] as Map<String, dynamic>),
     );
   }
 }
@@ -108,7 +111,8 @@ class StaticRoutingStatus extends Equatable {
     String? subnetMask,
   }) {
     return StaticRoutingStatus(
-      maxStaticRouteEntries: maxStaticRouteEntries ?? this.maxStaticRouteEntries,
+      maxStaticRouteEntries:
+          maxStaticRouteEntries ?? this.maxStaticRouteEntries,
       routerIp: routerIp ?? this.routerIp,
       subnetMask: subnetMask ?? this.subnetMask,
     );
@@ -131,24 +135,25 @@ class StaticRoutingStatus extends Equatable {
   }
 }
 
-class StaticRoutingState extends FeatureState<
-    StaticRoutingSettings,
-    StaticRoutingStatus> {
+class StaticRoutingState
+    extends FeatureState<StaticRoutingSettings, StaticRoutingStatus> {
   const StaticRoutingState({
     required super.settings,
     required super.status,
   });
 
   factory StaticRoutingState.empty() => StaticRoutingState(
-        settings: Preservable(original: const StaticRoutingSettings(
-          isNATEnabled: false,
-          isDynamicRoutingEnabled: false,
-          entries: NamedStaticRouteEntryList(entries: []), 
-        ), current: const StaticRoutingSettings(
-          isNATEnabled: false,
-          isDynamicRoutingEnabled: false,
-          entries: NamedStaticRouteEntryList(entries: []), 
-        )),
+        settings: Preservable(
+            original: const StaticRoutingSettings(
+              isNATEnabled: false,
+              isDynamicRoutingEnabled: false,
+              entries: NamedStaticRouteEntryList(entries: []),
+            ),
+            current: const StaticRoutingSettings(
+              isNATEnabled: false,
+              isDynamicRoutingEnabled: false,
+              entries: NamedStaticRouteEntryList(entries: []),
+            )),
         status: const StaticRoutingStatus(
           maxStaticRouteEntries: 0,
           routerIp: '192.168.1.1',
@@ -179,9 +184,11 @@ class StaticRoutingState extends FeatureState<
     return StaticRoutingState(
       settings: Preservable.fromMap(
         map['settings'] as Map<String, dynamic>,
-        (valueMap) => StaticRoutingSettings.fromMap(valueMap as Map<String, dynamic>),
+        (valueMap) =>
+            StaticRoutingSettings.fromMap(valueMap as Map<String, dynamic>),
       ),
-      status: StaticRoutingStatus.fromMap(map['status'] as Map<String, dynamic>),
+      status:
+          StaticRoutingStatus.fromMap(map['status'] as Map<String, dynamic>),
     );
   }
 
