@@ -319,7 +319,7 @@ class TestHelper {
       (_) async => Future.value(AuthState(loginType: LoginType.local)),
     );
     when(mockInstantSafetyNotifier.build())
-        .thenReturn(InstantSafetyState.fromMap(instantSafetyTestState));
+        .thenReturn(InstantSafetyState.fromMap(instantSafetyTestState1));
     when(mockConnectivityNotifier.build()).thenReturn(ConnectivityState(
         hasInternet: true,
         connectivityInfo:

@@ -140,7 +140,7 @@ void main() {
     'dashboard menu view - instant safety status indicator',
     (tester, screen) async {
       when(testHelper.mockInstantSafetyNotifier.build()).thenReturn(
-        InstantSafetyState.fromMap(instantSafetyTestState1),
+        InstantSafetyState.fromMap(instantSafetyTestState2),
       );
       final context = await pumpMenu(tester, screen);
       final loc = testHelper.loc(context);

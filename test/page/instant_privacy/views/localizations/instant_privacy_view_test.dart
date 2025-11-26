@@ -9,17 +9,26 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 
 import '../../../../common/config.dart';
+import '../../../../common/screen.dart';
 import '../../../../common/test_helper.dart';
 import '../../../../common/test_responsive_widget.dart';
 import '../../../../test_data/device_list_test_state.dart';
-import '../../../../common/testable_router.dart';
-import '../../../../mocks/_index.dart';
-import '../../../../test_data/_index.dart';
 import '../../../../test_data/instant_privacy_test_state.dart';
 
-final _instantPrivacyScreens = [
-  ...responsiveMobileScreens.map((e) => e.copyWith(height: 1280)).toList(),
-  ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1080)).toList()
+// View ID: IPRV
+// Implementation: lib/page/instant_privacy/views/instant_privacy_view.dart
+// Summary:
+// - IPRV-BASE: Default disabled state with description and switch.
+// - IPRV-WARNING: Deny mode shows MAC filtering warning card.
+// - IPRV-ENABLED: Allowed mode lists devices and info card.
+// - IPRV-ENABLE_MODAL: Turning on opens confirmation dialog.
+// - IPRV-DISABLE_MODAL: Turning off shows warning dialog.
+// - IPRV-DELETE: Removing another device opens delete confirmation.
+// - IPRV-DELETE_SELF: Deleting current device shows self-alert.
+
+final _allScreens = [
+  ...responsiveMobileScreens.map((s) => s.copyWith(height: 1280)),
+  ...responsiveDesktopScreens.map((s) => s.copyWith(height: 1080)),
 ];
 
 void main() {
@@ -27,143 +36,169 @@ void main() {
 
   setUp(() {
     testHelper.setup();
-
-    when(testHelper.mockInstantPrivacyNotifier.fetch()).thenAnswer((realInvocation) async {
-      await Future.delayed(const Duration(seconds: 1));
-      return InstantPrivacyState.fromMap(instantPrivacyTestState);
-    });
+    when(testHelper.mockInstantPrivacyNotifier.fetch(
+      forceRemote: anyNamed('forceRemote'),
+    )).thenAnswer(
+        (_) async => InstantPrivacyState.fromMap(instantPrivacyTestState));
   });
 
-  tearDown(() {});
-
-  testLocalizations(
-    'Instant-Privacy view - disabled state',
-    (tester, locale) async {
-      when(testHelper.mockDeviceListNotifier.build()).thenReturn(
-          DeviceListState.fromMap(instantPrivacyDeviceListTestState));
-
-      await testHelper.pumpView(
-        tester,
-        child: const InstantPrivacyView(),
-        locale: locale,
-      );
-    },
-    screens: _instantPrivacyScreens,
-  );
-
-  testLocalizations(
-    'Instant-Privacy view - MAC filtering warning',
-    (tester, locale) async {
-      when(testHelper.mockDeviceListNotifier.build()).thenReturn(
-          DeviceListState.fromMap(instantPrivacyDeviceListTestState));
-
-      when(testHelper.mockInstantPrivacyNotifier.build())
-          .thenReturn(InstantPrivacyState.fromMap(instantPrivacyDenyTestState));
-      when(testHelper.mockInstantPrivacyNotifier.fetch(
-              forceRemote: anyNamed('forceRemote')))
-          .thenAnswer((_) {
-        return Future.delayed(Durations.extralong1, () {
-          return InstantPrivacyState.fromMap(instantPrivacyDenyTestState);
-        });
-      });
-      await testHelper.pumpView(
-        tester,
-        child: const InstantPrivacyView(),
-        locale: locale,
-      );
-    },
-    screens: _instantPrivacyScreens,
-  );
-
-  testLocalizations(
-    'Instant-Privacy view - enabled state',
-    (tester, locale) async {
-      when(testHelper.mockInstantPrivacyNotifier.build())
-          .thenReturn(InstantPrivacyState.fromMap(instantPrivacyEnabledTestState));
-      when(testHelper.mockDeviceListNotifier.build()).thenReturn(
-          DeviceListState.fromMap(instantPrivacyDeviceListTestState));
-
-      await testHelper.pumpView(
-        tester,
-        child: const InstantPrivacyView(),
-        locale: locale,
-      );
-    },
-    screens: _instantPrivacyScreens,
-  );
-
-  testLocalizations('Instant-Privacy view - enabling modal',
-      (tester, locale) async {
-    when(testHelper.mockDeviceListNotifier.build())
-        .thenReturn(DeviceListState.fromMap(instantPrivacyDeviceListTestState));
-
-    await testHelper.pumpView(
-      tester,
-      child: const InstantPrivacyView(),
-      locale: locale,
-    );
-
-    final switchFinder = find.byType(AppSwitch);
-    await tester.tap(switchFinder);
-    await tester.pumpAndSettle();
-  });
-
-  testLocalizations('Instant-Privacy view - disabling modal',
-      (tester, locale) async {
-    when(testHelper.mockInstantPrivacyNotifier.build())
-        .thenReturn(InstantPrivacyState.fromMap(instantPrivacyEnabledTestState));
-    when(testHelper.mockDeviceListNotifier.build())
-        .thenReturn(DeviceListState.fromMap(instantPrivacyDeviceListTestState));
-
-    await testHelper.pumpView(
-      tester,
-      child: const InstantPrivacyView(),
-      locale: locale,
-    );
-
-    final switchFinder = find.byType(AppSwitch);
-    await tester.tap(switchFinder);
-    await tester.pumpAndSettle();
-  });
-
-  testLocalizations('Instant-Privacy view - delete confirm modal',
-      (tester, locale) async {
+  Future<BuildContext> pumpPrivacy(
+    WidgetTester tester,
+    LocalizedScreen screen, {
+    InstantPrivacyState? state,
+    DeviceListState? devices,
+  }) {
     when(testHelper.mockInstantPrivacyNotifier.build()).thenReturn(
-        InstantPrivacyState.fromMap(instantPrivacyEnabledTestState));
-    when(testHelper.mockDeviceListNotifier.build())
-        .thenReturn(DeviceListState.fromMap(instantPrivacyDeviceListTestState));
-
-    await testHelper.pumpView(
+      state ?? InstantPrivacyState.fromMap(instantPrivacyTestState),
+    );
+    when(testHelper.mockDeviceListNotifier.build()).thenReturn(
+      devices ?? DeviceListState.fromMap(instantPrivacyDeviceListTestState),
+    );
+    return testHelper.pumpView(
       tester,
       child: const InstantPrivacyView(),
-      locale: locale,
+      locale: screen.locale,
     );
+  }
 
-    final deleteFinder = find.byIcon(LinksysIcons.delete);
-    await tester.tap(deleteFinder.at(1));
-    await tester.pumpAndSettle();
-  });
+  // Test ID: IPRV-BASE
+  testLocalizationsV2(
+    'instant privacy view - disabled state',
+    (tester, screen) async {
+      final context = await pumpPrivacy(tester, screen);
+      final loc = testHelper.loc(context);
 
-  testLocalizations('Instant-Privacy view - delete self alert modal',
-      (tester, locale) async {
-    when(testHelper.mockInstantPrivacyNotifier.build()).thenReturn(
-        InstantPrivacyState.fromMap(instantPrivacyEnabledTestState));
-    when(testHelper.mockDeviceListNotifier.build())
-        .thenReturn(DeviceListState.fromMap(instantPrivacyDeviceListTestState));
+      expect(find.text(loc.instantPrivacyDescription), findsOneWidget);
+      expect(find.byType(AppSwitch), findsOneWidget);
+    },
+    screens: _allScreens,
+    goldenFilename: 'IPRV-BASE_01_layout',
+    helper: testHelper,
+  );
 
-    await testHelper.pumpView(
-      tester,
-      child: const InstantPrivacyView(),
-      locale: locale,
-    );
-    final myCardFinder = find.ancestor(
-        of: find.text('3C:22:FB:E4:4F:18'), matching: find.byType(AppCard));
-    await tester.scrollUntilVisible(myCardFinder, 100,
-        scrollable: find.byType(Scrollable).last);
-    expect(myCardFinder, findsOneWidget);
-    final deleteFinder = find.descendant(
-        of: myCardFinder, matching: find.byIcon(LinksysIcons.delete));
-    await tester.tap(deleteFinder.first);
-    await tester.pumpAndSettle();
-  });
+  // Test ID: IPRV-WARNING
+  testLocalizationsV2(
+    'instant privacy view - mac filtering warning',
+    (tester, screen) async {
+      final context = await pumpPrivacy(
+        tester,
+        screen,
+        state: InstantPrivacyState.fromMap(instantPrivacyDenyTestState),
+      );
+      final loc = testHelper.loc(context);
+      expect(find.text(loc.macFilteringDisableWarning), findsOneWidget);
+    },
+    screens: _allScreens,
+    goldenFilename: 'IPRV-WARNING_01_card',
+    helper: testHelper,
+  );
+
+  // Test ID: IPRV-ENABLED
+  testLocalizationsV2(
+    'instant privacy view - enabled device list',
+    (tester, screen) async {
+      final context = await pumpPrivacy(
+        tester,
+        screen,
+        state: InstantPrivacyState.fromMap(instantPrivacyEnabledTestState),
+      );
+      final loc = testHelper.loc(context);
+
+      expect(find.text(loc.theDevicesAllowedToConnect), findsOneWidget);
+      expect(find.byIcon(LinksysIcons.delete), findsWidgets);
+    },
+    screens: _allScreens,
+    goldenFilename: 'IPRV-ENABLED_01_devices',
+    helper: testHelper,
+  );
+
+  // Test ID: IPRV-ENABLE_MODAL
+  testLocalizationsV2(
+    'instant privacy view - enable confirmation dialog',
+    (tester, screen) async {
+      final context = await pumpPrivacy(tester, screen);
+      final loc = testHelper.loc(context);
+
+      await tester.tap(find.byType(AppSwitch));
+      await tester.pumpAndSettle();
+      expect(find.text(loc.turnOnInstantPrivacy), findsOneWidget);
+    },
+    screens: _allScreens,
+    goldenFilename: 'IPRV-ENABLE_MODAL_01_dialog',
+    helper: testHelper,
+  );
+
+  // Test ID: IPRV-DISABLE_MODAL
+  testLocalizationsV2(
+    'instant privacy view - disable confirmation dialog',
+    (tester, screen) async {
+      final context = await pumpPrivacy(
+        tester,
+        screen,
+        state: InstantPrivacyState.fromMap(instantPrivacyEnabledTestState),
+      );
+      final loc = testHelper.loc(context);
+
+      await tester.tap(find.byType(AppSwitch));
+      await tester.pumpAndSettle();
+      expect(find.text(loc.turnOffInstantPrivacy), findsOneWidget);
+    },
+    screens: _allScreens,
+    goldenFilename: 'IPRV-DISABLE_MODAL_01_dialog',
+    helper: testHelper,
+  );
+
+  // Test ID: IPRV-DELETE
+  testLocalizationsV2(
+    'instant privacy view - delete device confirmation',
+    (tester, screen) async {
+      final context = await pumpPrivacy(
+        tester,
+        screen,
+        state: InstantPrivacyState.fromMap(instantPrivacyEnabledTestState),
+      );
+      final loc = testHelper.loc(context);
+
+      final deleteButton = find.byIcon(LinksysIcons.delete).first;
+      await tester.tap(deleteButton);
+      await tester.pumpAndSettle();
+      expect(find.text(loc.deleteDevice), findsOneWidget);
+      expect(find.text(loc.instantPrivacyDeleteDeviceDesc), findsOneWidget);
+    },
+    screens: _allScreens,
+    goldenFilename: 'IPRV-DELETE_01_dialog',
+    helper: testHelper,
+  );
+
+  // Test ID: IPRV-DELETE_SELF
+  testLocalizationsV2(
+    'instant privacy view - delete self alert',
+    (tester, screen) async {
+      await pumpPrivacy(
+        tester,
+        screen,
+        state: InstantPrivacyState.fromMap(instantPrivacyEnabledTestState),
+      );
+      final targetCard = find.ancestor(
+        of: find.text('3C:22:FB:E4:4F:18'),
+        matching: find.byType(AppCard),
+      );
+      await tester.scrollUntilVisible(targetCard, 100,
+          scrollable: find.byType(Scrollable).last);
+      final deleteSelf = find.descendant(
+        of: targetCard,
+        matching: find.byIcon(LinksysIcons.delete),
+      );
+      await tester.tap(deleteSelf.first);
+      await tester.pumpAndSettle();
+      final loc = testHelper.loc(
+        tester.element(find.byType(InstantPrivacyView)),
+      );
+      expect(
+          find.text(loc.instantPrivacyNotAllowDeleteCurrent), findsOneWidget);
+    },
+    screens: _allScreens,
+    goldenFilename: 'IPRV-DELETE_SELF_01_dialog',
+    helper: testHelper,
+  );
 }
