@@ -100,6 +100,28 @@ const healthCheckStateSuccessOkay = '''{"status": "complete",
         "serverId": "3967"
      }
 }''';
+const healthCheckInitStateWithModules = '''{"status": "idle", 
+    "meterValue": 0.0,
+    "randomValue": 0.0,
+    "healthCheckModules": ["SpeedTest", "SpeedTestSamKnows"],
+    "step":"latency",
+    "timestamp":"2024-06-24T09:20:09Z",
+    "result":null
+}''';
+const healthCheckStateWithModulesSuccessOkay = '''{"status": "complete", 
+    "meterValue": 0.0,
+    "randomValue": 0.0,
+    "healthCheckModules": ["SpeedTest", "SpeedTestSamKnows"],
+    "step":"success",
+    "timestamp":"2024-06-24T09:20:09Z",
+    "result":{
+       "downloadSpeed": "17.4",
+       "uploadSpeed": "21.2",
+       "latency": "1",
+       "timestamp": "2024-06-24T09:20:09Z",
+       "serverId": "3967"
+    }
+}''';
 const healthCheckStateError = '''{"status": "complete", 
     "meterValue": 0.0,
     "randomValue": 0.0,
