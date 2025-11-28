@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
@@ -7,15 +8,43 @@ import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 import '../../../../common/config.dart';
+import '../../../../common/screen.dart';
 import '../../../../common/test_helper.dart';
 import '../../../../common/test_responsive_widget.dart';
 import '../../../../test_data/device_details_test_state.dart';
 import '../../../../test_data/local_network_settings_state.dart';
 
+// View ID: IDDV
+// Implementation: lib/page/instant_device/views/device_detail_view.dart
+/// | Test ID        | Description                                                                 |
+/// | :------------- | :-------------------------------------------------------------------------- |
+/// | `IDDV-ONLINE`  | Online wireless device renders avatar card, connection info, and IP button. |
+/// | `IDDV-EDIT`    | Edit dialog enforces non-empty and max-length validations.                  |
+/// | `IDDV-RESERVE` | Reserve IP action exposes confirmation dialog with localized copy.          |
+/// | `IDDV-RELEASE` | Already reserved devices expose release flow with proper messaging.         |
+/// | `IDDV-MLO`     | MLO-capable clients show CTA and informational modal.                       |
+
 final _deviceDetailScreens = [
-  ...responsiveMobileScreens.map((e) => e.copyWith(height: 1080)).toList(),
-  ...responsiveDesktopScreens
+  ...responsiveMobileScreens.map((e) => e.copyWith(height: 1080)),
+  ...responsiveDesktopScreens,
 ];
+
+final _defaultExternalState =
+    ExternalDeviceDetailState.fromMap(deviceDetailsTestState1);
+final _defaultNetworkState =
+    LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState);
+
+LocalNetworkSettingsState _networkStateWithReservation() {
+  final reservation = DHCPReservation(
+    macAddress: _defaultExternalState.item.macAddress,
+    ipAddress: _defaultExternalState.item.ipv4Address,
+    description: 'Reserved device',
+  );
+  return _defaultNetworkState.copyWith(
+    status: _defaultNetworkState.status
+        .copyWith(dhcpReservationList: [reservation]),
+  );
+}
 
 void main() {
   final testHelper = TestHelper();
@@ -23,215 +52,155 @@ void main() {
   setUp(() {
     testHelper.setup();
   });
-  testLocalizations('Instant-Device - Device detail view ',
-      (tester, locale) async {
+
+  Future<BuildContext> pumpDeviceDetailView(
+    WidgetTester tester,
+    LocalizedScreen screen, {
+    ExternalDeviceDetailState? externalState,
+    LocalNetworkSettingsState? networkState,
+  }) async {
     when(testHelper.mockExternalDeviceDetailNotifier.build())
-        .thenReturn(ExternalDeviceDetailState.fromMap(deviceDetailsTestState1));
-    await testHelper.pumpView(
-      tester,
-      child: const DeviceDetailView(),
-      locale: locale,
-    );
-  }, screens: _deviceDetailScreens);
-
-  testLocalizations('Instant-Device - Device detail view - signal good ',
-      (tester, locale) async {
-    final externalState =
-        ExternalDeviceDetailState.fromMap(deviceDetailsTestState1);
-    final goodSignalItem = externalState.item.copyWith(signalStrength: -71);
-    when(testHelper.mockExternalDeviceDetailNotifier.build())
-        .thenReturn(externalState.copyWith(item: goodSignalItem));
-    await testHelper.pumpView(
-      tester,
-      child: const DeviceDetailView(),
-      locale: locale,
-    );
-  }, screens: _deviceDetailScreens);
-
-  testLocalizations('Instant-Device - Device detail view - signal fair ',
-      (tester, locale) async {
-    final externalState =
-        ExternalDeviceDetailState.fromMap(deviceDetailsTestState1);
-    final goodSignalItem = externalState.item.copyWith(signalStrength: -77);
-    when(testHelper.mockExternalDeviceDetailNotifier.build())
-        .thenReturn(externalState.copyWith(item: goodSignalItem));
-    await testHelper.pumpView(
-      tester,
-      child: const DeviceDetailView(),
-      locale: locale,
-    );
-  }, screens: _deviceDetailScreens);
-
-  testLocalizations('Instant-Device - Device detail view - signal poor ',
-      (tester, locale) async {
-    final externalState =
-        ExternalDeviceDetailState.fromMap(deviceDetailsTestState1);
-    final goodSignalItem = externalState.item.copyWith(signalStrength: -81);
-    when(testHelper.mockExternalDeviceDetailNotifier.build())
-        .thenReturn(externalState.copyWith(item: goodSignalItem));
-    await testHelper.pumpView(
-      tester,
-      child: const DeviceDetailView(),
-      locale: locale,
-    );
-  }, screens: _deviceDetailScreens);
-
-  testLocalizations('Instant-Device - Device detail view - ethernet',
-      (tester, locale) async {
-    final externalState =
-        ExternalDeviceDetailState.fromMap(deviceDetailsTestState1);
-    final goodSignalItem = externalState.item.copyWith(isWired: true);
-    when(testHelper.mockExternalDeviceDetailNotifier.build())
-        .thenReturn(externalState.copyWith(item: goodSignalItem));
-    await testHelper.pumpView(
-      tester,
-      child: const DeviceDetailView(),
-      locale: locale,
-    );
-  }, screens: _deviceDetailScreens);
-
-  testLocalizations('Instant-Device - Device detail view - edit modal ',
-      (tester, locale) async {
-    await testHelper.pumpView(
-      tester,
-      child: const DeviceDetailView(),
-      locale: locale,
-    );
-    final editFinder = find.byIcon(LinksysIcons.edit);
-    await tester.tap(editFinder);
-    await tester.pumpAndSettle();
-  });
-
-  testLocalizations(
-      'Instant-Device - Device detail view - edit modal - invalid name error',
-      (tester, locale) async {
-    await testHelper.pumpView(
-      tester,
-      child: const DeviceDetailView(),
-      locale: locale,
-    );
-    final editFinder = find.byIcon(LinksysIcons.edit);
-    await tester.tap(editFinder);
-    await tester.pumpAndSettle();
-    final inputFinder = find.byType(AppTextField);
-    await tester.enterText(inputFinder.first, '');
-    await tester.pumpAndSettle();
-  });
-
-  testLocalizations(
-      'Instant-Device - Device detail view - edit modal - max length error',
-      (tester, locale) async {
-    await testHelper.pumpView(
-      tester,
-      child: const DeviceDetailView(),
-      locale: locale,
-    );
-    final editFinder = find.byIcon(LinksysIcons.edit);
-    await tester.tap(editFinder);
-    await tester.pumpAndSettle();
-    final inputFinder = find.byType(AppTextField);
-    await tester.enterText(inputFinder.first,
-        'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz');
-    await tester.pumpAndSettle();
-  });
-
-  testLocalizations(
-    'Instant-Device - Device detail view - reserve IP confirm ',
-    (tester, locale) async {
-      when(testHelper.mockLocalNetworkSettingsNotifier.saveReservations(any))
-          .thenAnswer((_) async {
-        await Future.delayed(const Duration(seconds: 2));
-      });
-      await testHelper.pumpView(
-        tester,
-        child: const DeviceDetailView(),
-        locale: locale,
-      );
-
-      final btnFinder = find.byType(AppTextButton).first;
-      await tester.tap(btnFinder);
-      await tester.pumpAndSettle();
-    },
-  );
-
-  testLocalizations('Instant-Device - Device detail view - release IP ',
-      (tester, locale) async {
-    final state =
-        LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState);
-    final status = state.status.copyWith(dhcpReservationList: [
-      DHCPReservation(
-        macAddress: '3C:22:FB:E4:4F:18',
-        ipAddress: '192.168.1.30',
-        description: 'My laptop',
-      )
-    ]);
+        .thenReturn(externalState ?? _defaultExternalState);
     when(testHelper.mockLocalNetworkSettingsNotifier.build())
-        .thenReturn(state.copyWith(status: status));
-    await testHelper.pumpView(
+        .thenReturn(networkState ?? _defaultNetworkState);
+    when(testHelper.mockLocalNetworkSettingsNotifier.fetch(
+      forceRemote: anyNamed('forceRemote'),
+      updateStatusOnly: anyNamed('updateStatusOnly'),
+    )).thenAnswer((_) async => networkState ?? _defaultNetworkState);
+
+    final context = await testHelper.pumpView(
       tester,
       child: const DeviceDetailView(),
-      locale: locale,
+      locale: screen.locale,
     );
-  });
+    await tester.pumpAndSettle();
+    return context;
+  }
 
-  testLocalizations(
-    'Instant-Device - Device detail view - release IP confirm ',
-    (tester, locale) async {
-      final state =
-          LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState);
-      final status = state.status.copyWith(dhcpReservationList: [
-        DHCPReservation(
-          macAddress: '3C:22:FB:E4:4F:18',
-          ipAddress: '192.168.1.30',
-          description: 'My laptop',
-        )
-      ]);
-      when(testHelper.mockLocalNetworkSettingsNotifier.build())
-          .thenReturn(state.copyWith(status: status));
-      when(testHelper.mockLocalNetworkSettingsNotifier.saveReservations(any))
-          .thenAnswer((_) async {
-        await Future.delayed(const Duration(seconds: 2));
-      });
-      await testHelper.pumpView(
-        tester,
-        child: const DeviceDetailView(),
-        locale: locale,
-      );
+  // Test ID: IDDV-ONLINE — verify layout for online wireless device
+  testLocalizationsV2(
+    'device detail view - online wireless summary',
+    (tester, screen) async {
+      final context = await pumpDeviceDetailView(tester, screen);
+      final loc = testHelper.loc(context);
+      final item = _defaultExternalState.item;
 
-      final btnFinder = find.byType(AppTextButton).first;
-      await tester.tap(btnFinder);
-      await tester.pumpAndSettle();
+      expect(find.text(item.name), findsNWidgets(2));
+      expect(find.text(loc.manufacturer), findsOneWidget);
+      expect(find.text(item.manufacturer), findsOneWidget);
+      expect(find.text(loc.device), findsOneWidget);
+      expect(find.text(item.model), findsOneWidget);
+      expect(find.text(loc.connectTo), findsOneWidget);
+      expect(find.text(item.upstreamDevice), findsOneWidget);
+      expect(find.text(loc.ssid), findsOneWidget);
+      expect(find.text('${item.ssid} • ${item.band}'), findsOneWidget);
+      expect(find.text(loc.signalStrength), findsOneWidget);
+      expect(find.textContaining('${item.signalStrength}'), findsWidgets);
+      expect(find.text(loc.ipAddress), findsOneWidget);
+      expect(find.text(item.ipv4Address), findsOneWidget);
+      expect(find.text(loc.reserveIp), findsOneWidget);
+      expect(find.byIcon(LinksysIcons.edit), findsOneWidget);
     },
+    screens: _deviceDetailScreens,
+    goldenFilename: 'IDDV-ONLINE-01-layout',
+    helper: testHelper,
   );
 
-  testLocalizations('Instant-Device - Device detail view - MLO label ',
-      (tester, locale) async {
-    final externalState =
-        ExternalDeviceDetailState.fromMap(deviceDetailsTestState1);
-    final mloItem = externalState.item.copyWith(isMLO: true);
-    when(testHelper.mockExternalDeviceDetailNotifier.build())
-        .thenReturn(externalState.copyWith(item: mloItem));
-    await testHelper.pumpView(
-      tester,
-      child: const DeviceDetailView(),
-      locale: locale,
-    );
-  });
+  // Test ID: IDDV-EDIT — edit modal validation states
+  testLocalizationsV2(
+    'device detail view - edit modal validations',
+    (tester, screen) async {
+      final context = await pumpDeviceDetailView(tester, screen);
+      final loc = testHelper.loc(context);
 
-  testLocalizations('Instant-Device - Device detail view - MLO modal ',
-      (tester, locale) async {
-    final externalState =
-        ExternalDeviceDetailState.fromMap(deviceDetailsTestState1);
-    final mloItem = externalState.item.copyWith(isMLO: true);
-    when(testHelper.mockExternalDeviceDetailNotifier.build())
-        .thenReturn(externalState.copyWith(item: mloItem));
-    await testHelper.pumpView(
-      tester,
-      child: const DeviceDetailView(),
-      locale: locale,
-    );
-    final mloBtnFinder = find.byType(AppTextButton).first;
-    await tester.tap(mloBtnFinder);
-    await tester.pumpAndSettle();
-  });
+      await tester.tap(find.byIcon(LinksysIcons.edit));
+      await tester.pumpAndSettle();
+
+      final inputFinder = find.byType(AppTextField).first;
+      await tester.enterText(inputFinder, '');
+      await tester.pumpAndSettle();
+      expect(find.text(loc.theNameMustNotBeEmpty), findsOneWidget);
+      await testHelper.takeScreenshot(
+        tester,
+        'IDDV-EDIT-01-empty_error',
+      );
+
+      await tester.enterText(
+        inputFinder,
+        'm' * 260,
+      );
+      await tester.pumpAndSettle();
+      expect(find.text(loc.deviceNameExceedMaxSize), findsOneWidget);
+    },
+    screens: responsiveDesktopScreens,
+    goldenFilename: 'IDDV-EDIT-02-max_error',
+    helper: testHelper,
+  );
+
+  // Test ID: IDDV-RESERVE — reserve IP dialog
+  testLocalizationsV2(
+    'device detail view - reserve ip dialog',
+    (tester, screen) async {
+      final context = await pumpDeviceDetailView(tester, screen);
+      final loc = testHelper.loc(context);
+
+      await tester.tap(find.text(loc.reserveIp));
+      await tester.pumpAndSettle();
+
+      expect(find.text(loc.reserveIp), findsAtLeastNWidgets(1));
+      expect(find.text(loc.reservedIpDescription), findsOneWidget);
+      expect(find.text(loc.cancel), findsOneWidget);
+    },
+    screens: responsiveDesktopScreens,
+    goldenFilename: 'IDDV-RESERVE-01-dialog',
+    helper: testHelper,
+  );
+
+  // Test ID: IDDV-RELEASE — release IP dialog for reserved clients
+  testLocalizationsV2(
+    'device detail view - release ip dialog',
+    (tester, screen) async {
+      final context = await pumpDeviceDetailView(
+        tester,
+        screen,
+        networkState: _networkStateWithReservation(),
+      );
+      final loc = testHelper.loc(context);
+
+      await tester.tap(find.text(loc.releaseReservedIp));
+      await tester.pumpAndSettle();
+
+      expect(find.text(loc.releaseReservedIp), findsAtLeastNWidgets(1));
+      expect(find.text(loc.releaseReservedIpDescription), findsOneWidget);
+      expect(find.text(loc.cancel), findsOneWidget);
+    },
+    screens: responsiveDesktopScreens,
+    goldenFilename: 'IDDV-RELEASE-01-dialog',
+    helper: testHelper,
+  );
+
+  // Test ID: IDDV-MLO — show MLO CTA and modal
+  testLocalizationsV2(
+    'device detail view - mlo capable modal',
+    (tester, screen) async {
+      final context = await pumpDeviceDetailView(
+        tester,
+        screen,
+        externalState: _defaultExternalState.copyWith(
+          item: _defaultExternalState.item.copyWith(isMLO: true),
+        ),
+      );
+      final loc = testHelper.loc(context);
+
+      final mloButton = find.text(loc.mloCapable);
+      expect(mloButton, findsOneWidget);
+
+      await tester.tap(mloButton);
+      await tester.pumpAndSettle();
+      expect(find.text(loc.mlo), findsOneWidget);
+    },
+    screens: responsiveDesktopScreens,
+    goldenFilename: 'IDDV-MLO-01-modal',
+    helper: testHelper,
+  );
 }
