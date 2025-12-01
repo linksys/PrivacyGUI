@@ -95,6 +95,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               AppRadioList(
+                key: const Key('settingNetwork'),
                 selected: state.current.isNATEnabled
                     ? RoutingSettingNetwork.nat
                     : RoutingSettingNetwork.dynamicRouting,
@@ -250,6 +251,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
         final stateRule = ref.watch(staticRoutingRuleProvider).rule;
         return switch (index) {
           0 => AppTextField.outline(
+              key: const Key('ruleName'),
               controller: routerNameTextController,
               onChanged: (value) {
                 ref
@@ -263,6 +265,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
               },
             ),
           1 => AppIPFormField(
+              key: const Key('destinationIP'),
               displayType: AppIpFormFieldDisplayType.tight,
               controller: destinationIPTextController,
               border: const OutlineInputBorder(),
@@ -281,6 +284,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
               },
             ),
           2 => AppIPFormField(
+              key: const Key('subnetMask'),
               displayType: AppIpFormFieldDisplayType.tight,
               controller: subnetMaskTextController,
               border: const OutlineInputBorder(),
@@ -301,6 +305,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
               },
             ),
           3 => AppIPFormField(
+              key: const Key('gateway'),
               displayType: AppIpFormFieldDisplayType.tight,
               controller: gatewayTextController,
               border: const OutlineInputBorder(),
@@ -319,6 +324,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
               },
             ),
           4 => AppDropdownButton<RoutingSettingInterface>(
+              key: const Key('interface'),
               title: loc(context).labelInterface,
               items: const [
                 RoutingSettingInterface.lan,

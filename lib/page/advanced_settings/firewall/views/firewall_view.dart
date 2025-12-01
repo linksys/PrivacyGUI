@@ -111,6 +111,7 @@ class _FirewallViewState extends ConsumerState<FirewallView>
           children: [
             AppCard(
               child: AppSwitchTriggerTile(
+                key: const Key('ipv4SPIFirewallProtection'),
                 title: AppText.labelLarge(loc(context).ipv4SPIFirewallProtection),
                 semanticLabel: 'ipv4 SPI firewall protection',
                 value: state.settings.current.isIPv4FirewallEnabled,
@@ -123,6 +124,7 @@ class _FirewallViewState extends ConsumerState<FirewallView>
             const AppGap.small2(),
             AppCard(
               child: AppSwitchTriggerTile(
+                key: const Key('ipv6SPIFirewallProtection'),
                 title: AppText.labelLarge(loc(context).ipv6SPIFirewallProtection),
                 semanticLabel: 'ipv6 SPI firewall protection',
                 value: state.settings.current.isIPv6FirewallEnabled,
@@ -144,6 +146,7 @@ class _FirewallViewState extends ConsumerState<FirewallView>
         children: [
           AppCard(
             child: AppSwitchTriggerTile(
+              key: const Key('ipsecPassthrough'),
               title: AppText.labelLarge(loc(context).ipsecPassthrough),
               semanticLabel: 'ipsec passthrough',
               value: !state.settings.current.blockIPSec,
@@ -157,6 +160,7 @@ class _FirewallViewState extends ConsumerState<FirewallView>
           const AppGap.small2(),
           AppCard(
             child: AppSwitchTriggerTile(
+              key: const Key('pptpPassthrough'),
               title: AppText.labelLarge(loc(context).pptpPassthrough),
               semanticLabel: 'pptp passthrough',
               value: !state.settings.current.blockPPTP,
@@ -170,6 +174,7 @@ class _FirewallViewState extends ConsumerState<FirewallView>
           const AppGap.small2(),
           AppCard(
             child: AppSwitchTriggerTile(
+              key: const Key('l2tpPassthrough'),
               title: AppText.labelLarge(loc(context).l2tpPassthrough),
               semanticLabel: 'l2tp passthrough',
               value: !state.settings.current.blockL2TP,
@@ -192,6 +197,7 @@ class _FirewallViewState extends ConsumerState<FirewallView>
         children: [
           AppCard(
             child: AppSwitchTriggerTile(
+              key: const Key('filterAnonymous'),
               title: AppText.labelLarge(loc(context).filterAnonymous),
               semanticLabel: 'filter anonymous',
               value: state.settings.current.blockAnonymousRequests,
@@ -204,6 +210,7 @@ class _FirewallViewState extends ConsumerState<FirewallView>
           const AppGap.small2(),
           AppCard(
             child: AppSwitchTriggerTile(
+              key: const Key('filterMulticast'),
               title: AppText.labelLarge(loc(context).filterMulticast),
               semanticLabel: 'filter multicast',
               value: state.settings.current.blockMulticast,
@@ -216,6 +223,7 @@ class _FirewallViewState extends ConsumerState<FirewallView>
           const AppGap.small2(),
           AppCard(
             child: AppSwitchTriggerTile(
+              key: const Key('filterNATRedirection'),
               title:
                   AppText.labelLarge(loc(context).filterInternetNATRedirection),
               semanticLabel: 'filter internet NAT redirection',
@@ -229,6 +237,7 @@ class _FirewallViewState extends ConsumerState<FirewallView>
           const AppGap.small2(),
           AppCard(
             child: AppSwitchTriggerTile(
+              key: const Key('filterIdent'),
               title: AppText.labelLarge(loc(context).filterIdent),
               semanticLabel: 'filter ident',
               value: state.settings.current.blockIDENT,

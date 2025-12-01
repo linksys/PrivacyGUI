@@ -61,257 +61,257 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // expect(
-      //     find.text(testHelper.loc(context).dhcpReservations.capitalizeWords()),
-      //     findsOneWidget);
-      // expect(find.text(testHelper.loc(context).dhcpReservationDescption),
-      //     findsOneWidget);
-      // expect(find.widgetWithText(AppTextButton, testHelper.loc(context).add),
-      //     findsOneWidget);
-      // expect(find.text(testHelper.loc(context).nReservedAddresses(0)),
-      //     findsOneWidget);
-      // expect(find.byType(AppListCard), findsNothing);
+      expect(
+          find.text(testHelper.loc(context).dhcpReservations.capitalizeWords()),
+          findsOneWidget);
+      expect(find.text(testHelper.loc(context).dhcpReservationDescption),
+          findsOneWidget);
+      expect(find.widgetWithText(AppTextButton, testHelper.loc(context).add),
+          findsOneWidget);
+      expect(find.text(testHelper.loc(context).nReservedAddresses(0)),
+          findsOneWidget);
+      expect(find.byType(AppListCard), findsNothing);
     },
     screens: screens,
     goldenFilename: 'DHCPR-EMPTY-01-initial_state',
   );
 
   // Test ID: DHCPR-NO_RES
-  // testLocalizationsV2(
-  //   'Verifies the view with a list of un-reserved devices',
-  //   (tester, screen) async {
-  //     when(testHelper.mockDHCPReservationsNotifier.build())
-  //         .thenReturn(DHCPReservationState.fromMap(dhcpReservationTestState));
-  //     final context = await testHelper.pumpView(
-  //       tester,
-  //       locale: screen.locale,
-  //       child: const DHCPReservationsView(),
-  //     );
-  //     await tester.pumpAndSettle();
+  testLocalizationsV2(
+    'Verifies the view with a list of un-reserved devices',
+    (tester, screen) async {
+      when(testHelper.mockDHCPReservationsNotifier.build())
+          .thenReturn(DHCPReservationState.fromMap(dhcpReservationTestState));
+      final context = await testHelper.pumpView(
+        tester,
+        locale: screen.locale,
+        child: const DHCPReservationsView(),
+      );
+      await tester.pumpAndSettle();
 
-  //     expect(find.text(testHelper.loc(context).nReservedAddresses(0)),
-  //         findsOneWidget);
-  //     expect(find.byType(AppListCard), findsWidgets);
-  //     final firstCard =
-  //         tester.widget<AppListCard>(find.byType(AppListCard).first);
-  //     expect(firstCard.borderColor, Theme.of(context).colorScheme.outline);
-  //     final checkbox = find
-  //         .descendant(
-  //             of: find.byWidget(firstCard), matching: find.byType(AppCheckbox))
-  //         .evaluate()
-  //         .single
-  //         .widget as AppCheckbox;
-  //     expect(checkbox.value, isFalse);
-  //   },
-  //   screens: screens,
-  //   goldenFilename: 'DHCPR-NO_RES-01-initial_state',
-  // );
+      expect(find.text(testHelper.loc(context).nReservedAddresses(0)),
+          findsOneWidget);
+      expect(find.byType(AppListCard), findsWidgets);
+      final firstCard =
+          tester.widget<AppListCard>(find.byType(AppListCard).first);
+      expect(firstCard.borderColor, Theme.of(context).colorScheme.outline);
+      final checkbox = find
+          .descendant(
+              of: find.byWidget(firstCard), matching: find.byType(AppCheckbox))
+          .evaluate()
+          .single
+          .widget as AppCheckbox;
+      expect(checkbox.value, isFalse);
+    },
+    screens: screens,
+    goldenFilename: 'DHCPR-NO_RES-01-initial_state',
+  );
 
-  // // Test ID: DHCPR-SOME_RES
-  // testLocalizationsV2(
-  //   'Verifies the view with a mix of reserved and un-reserved devices',
-  //   (tester, screen) async {
-  //     final state = DHCPReservationState.fromMap(dhcpReservationTestState);
-  //     final settings = state.settings.current.copyWith(reservations: [
-  //       state.settings.current.reservations.first.copyWith(reserved: true),
-  //       state.settings.current.reservations[1].copyWith(reserved: true),
-  //     ]);
-  //     when(testHelper.mockDHCPReservationsNotifier.build()).thenReturn(
-  //         state.copyWith(
-  //             settings: Preservable(original: settings, current: settings)));
+  // Test ID: DHCPR-SOME_RES
+  testLocalizationsV2(
+    'Verifies the view with a mix of reserved and un-reserved devices',
+    (tester, screen) async {
+      final state = DHCPReservationState.fromMap(dhcpReservationTestState);
+      final settings = state.settings.current.copyWith(reservations: [
+        state.settings.current.reservations.first.copyWith(reserved: true),
+        state.settings.current.reservations[1].copyWith(reserved: true),
+      ]);
+      when(testHelper.mockDHCPReservationsNotifier.build()).thenReturn(
+          state.copyWith(
+              settings: Preservable(original: settings, current: settings)));
 
-  //     final context = await testHelper.pumpView(
-  //       tester,
-  //       locale: screen.locale,
-  //       child: const DHCPReservationsView(),
-  //     );
-  //     await tester.pumpAndSettle();
+      final context = await testHelper.pumpView(
+        tester,
+        locale: screen.locale,
+        child: const DHCPReservationsView(),
+      );
+      await tester.pumpAndSettle();
 
-  //     expect(find.text(testHelper.loc(context).nReservedAddresses(2)),
-  //         findsOneWidget);
-  //     expect(find.byType(Divider), findsOneWidget);
+      expect(find.text(testHelper.loc(context).nReservedAddresses(2)),
+          findsOneWidget);
+      expect(find.byType(Divider), findsAtLeast(1));
 
-  //     final reservedCard =
-  //         tester.widget<AppListCard>(find.byType(AppListCard).first);
-  //     expect(reservedCard.borderColor, Theme.of(context).colorScheme.primary);
-  //     final checkbox = find
-  //         .descendant(
-  //             of: find.byWidget(reservedCard),
-  //             matching: find.byType(AppCheckbox))
-  //         .evaluate()
-  //         .single
-  //         .widget as AppCheckbox;
-  //     expect(checkbox.value, isTrue);
-  //     expect(
-  //         find.descendant(
-  //             of: find.byWidget(reservedCard),
-  //             matching: find.byIcon(LinksysIcons.edit)),
-  //         findsOneWidget);
-  //   },
-  //   screens: screens,
-  //   goldenFilename: 'DHCPR-SOME_RES-01-initial_state',
-  // );
+      final reservedCard =
+          tester.widget<AppListCard>(find.byType(AppListCard).first);
+      expect(reservedCard.borderColor, Theme.of(context).colorScheme.primary);
+      final checkbox = find
+          .descendant(
+              of: find.byWidget(reservedCard),
+              matching: find.byType(AppCheckbox))
+          .evaluate()
+          .single
+          .widget as AppCheckbox;
+      expect(checkbox.value, isTrue);
+      expect(
+          find.descendant(
+              of: find.byWidget(reservedCard),
+              matching: find.byIcon(LinksysIcons.edit)),
+          findsOneWidget);
+    },
+    screens: screens,
+    goldenFilename: 'DHCPR-SOME_RES-01-initial_state',
+  );
 
-  // // Test ID: DHCPR-ALL_RES
-  // testLocalizationsV2(
-  //   'Verifies the view when all devices are reserved',
-  //   (tester, screen) async {
-  //     final state = DHCPReservationState.fromMap(dhcpReservationTestState);
-  //     final settings = state.settings.current.copyWith(
-  //       reservations: [
-  //         ...state.settings.current.reservations
-  //             .map((e) => e.copyWith(reserved: true)),
-  //       ],
-  //     );
-  //     when(testHelper.mockDHCPReservationsNotifier.build()).thenReturn(
-  //         state.copyWith(
-  //             settings: Preservable(original: settings, current: settings)));
+  // Test ID: DHCPR-ALL_RES
+  testLocalizationsV2(
+    'Verifies the view when all devices are reserved',
+    (tester, screen) async {
+      final state = DHCPReservationState.fromMap(dhcpReservationTestState);
+      final settings = state.settings.current.copyWith(
+        reservations: [
+          ...state.settings.current.reservations
+              .map((e) => e.copyWith(reserved: true)),
+        ],
+      );
+      when(testHelper.mockDHCPReservationsNotifier.build()).thenReturn(
+          state.copyWith(
+              settings: Preservable(original: settings, current: settings)));
 
-  //     final context = await testHelper.pumpView(
-  //       tester,
-  //       locale: screen.locale,
-  //       child: const DHCPReservationsView(),
-  //     );
-  //     await tester.pumpAndSettle();
+      final context = await testHelper.pumpView(
+        tester,
+        locale: screen.locale,
+        child: const DHCPReservationsView(),
+      );
+      await tester.pumpAndSettle();
 
-  //     final reservedCount = state.settings.current.reservations.length;
-  //     expect(
-  //         find.text(testHelper.loc(context).nReservedAddresses(reservedCount)),
-  //         findsOneWidget);
-  //     expect(find.byIcon(LinksysIcons.edit), findsNWidgets(reservedCount));
-  //   },
-  //   screens: screens,
-  //   goldenFilename: 'DHCPR-ALL_RES-01-initial_state',
-  // );
+      final reservedCount = state.settings.current.reservations.length;
+      expect(
+          find.text(testHelper.loc(context).nReservedAddresses(reservedCount)),
+          findsOneWidget);
+      expect(find.byIcon(LinksysIcons.edit), findsNWidgets(reservedCount));
+    },
+    screens: screens,
+    goldenFilename: 'DHCPR-ALL_RES-01-initial_state',
+  );
 
-  // // Test ID: DHCPR-CONFLICT
-  // testLocalizationsV2(
-  //   'Verifies the view when a device has a conflicting IP',
-  //   (tester, screen) async {
-  //     final state = DHCPReservationState.fromMap(dhcpReservationTestState);
-  //     final conflictingItem = state.status.devices[1];
+  // Test ID: DHCPR-CONFLICT
+  testLocalizationsV2(
+    'Verifies the view when a device has a conflicting IP',
+    (tester, screen) async {
+      final state = DHCPReservationState.fromMap(dhcpReservationTestState);
+      final conflictingItem = state.status.devices[1];
 
-  //     when(testHelper.mockDHCPReservationsNotifier.build()).thenReturn(state);
-  //     when(testHelper.mockDHCPReservationsNotifier.isConflict(conflictingItem))
-  //         .thenReturn(true);
+      when(testHelper.mockDHCPReservationsNotifier.build()).thenReturn(state);
+      when(testHelper.mockDHCPReservationsNotifier.isConflict(conflictingItem))
+          .thenReturn(true);
 
-  //     await testHelper.pumpView(
-  //       tester,
-  //       locale: screen.locale,
-  //       child: const DHCPReservationsView(),
-  //     );
-  //     await tester.pumpAndSettle();
+      await testHelper.pumpView(
+        tester,
+        locale: screen.locale,
+        child: const DHCPReservationsView(),
+      );
+      await tester.pumpAndSettle();
 
-  //     final cardFinder = find.ancestor(
-  //         of: find.textContaining(conflictingItem.data.macAddress,
-  //             findRichText: true),
-  //         matching: find.byType(AppListCard));
-  //     expect(cardFinder, findsOneWidget);
+      final cardFinder = find.ancestor(
+          of: find.textContaining(conflictingItem.data.macAddress,
+              findRichText: true),
+          matching: find.byType(AppListCard));
+      expect(cardFinder, findsOneWidget);
 
-  //     final opacityFinder =
-  //         find.ancestor(of: cardFinder, matching: find.byType(Opacity));
-  //     expect(opacityFinder, findsOneWidget);
-  //     final opacityWidget = tester.widget<Opacity>(opacityFinder);
-  //     expect(opacityWidget.opacity, 0.5);
-  //   },
-  //   screens: screens,
-  //   goldenFilename: 'DHCPR-CONFLICT-01-conflict_state',
-  // );
+      final opacityFinder =
+          find.ancestor(of: cardFinder, matching: find.byType(Opacity));
+      expect(opacityFinder, findsOneWidget);
+      final opacityWidget = tester.widget<Opacity>(opacityFinder);
+      expect(opacityWidget.opacity, 0.5);
+    },
+    screens: screens,
+    goldenFilename: 'DHCPR-CONFLICT-01-conflict_state',
+  );
 
-  // // Test ID: DHCPR-ADD_MODAL
-  // testLocalizationsV2(
-  //   'Verifies the "manually add reservation" dialog',
-  //   (tester, screen) async {
-  //     when(testHelper.mockDHCPReservationsNotifier.build())
-  //         .thenReturn(DHCPReservationState.fromMap(dhcpReservationTestState));
+  // Test ID: DHCPR-ADD_MODAL
+  testLocalizationsV2(
+    'Verifies the "manually add reservation" dialog',
+    (tester, screen) async {
+      when(testHelper.mockDHCPReservationsNotifier.build())
+          .thenReturn(DHCPReservationState.fromMap(dhcpReservationTestState));
 
-  //     final context = await testHelper.pumpView(
-  //       tester,
-  //       locale: screen.locale,
-  //       child: const DHCPReservationsView(),
-  //     );
-  //     await tester.pumpAndSettle();
+      final context = await testHelper.pumpView(
+        tester,
+        locale: screen.locale,
+        child: const DHCPReservationsView(),
+      );
+      await tester.pumpAndSettle();
 
-  //     await tester.tap(find.byKey(const Key('addReservationButton')));
-  //     await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('addReservationButton')));
+      await tester.pumpAndSettle();
 
-  //     expect(find.text(testHelper.loc(context).manuallyAddReservation),
-  //         findsOneWidget);
-  //     expect(find.byKey(const Key('deviceNameTextField')), findsOneWidget);
-  //     expect(find.byKey(const Key('ipAddressTextField')), findsOneWidget);
-  //     expect(find.byKey(const Key('macAddressTextField')), findsOneWidget);
-  //     expect(find.text(testHelper.loc(context).save), findsOneWidget);
-  //   },
-  //   screens: screens,
-  //   goldenFilename: 'DHCPR-ADD_MODAL-01-add_dialog',
-  // );
+      expect(find.text(testHelper.loc(context).manuallyAddReservation),
+          findsOneWidget);
+      expect(find.byKey(const Key('deviceNameTextField')), findsOneWidget);
+      expect(find.byKey(const Key('ipAddressTextField')), findsOneWidget);
+      expect(find.byKey(const Key('macAddressTextField')), findsOneWidget);
+      expect(find.byKey(const Key('alertPositiveButton')), findsOneWidget);
+    },
+    screens: screens,
+    goldenFilename: 'DHCPR-ADD_MODAL-01-add_dialog',
+  );
 
-  // // Test ID: DHCPR-EDIT_MODAL
-  // testLocalizationsV2(
-  //   'Verifies the "edit reservation" dialog',
-  //   (tester, screen) async {
-  //     final state = DHCPReservationState.fromMap(dhcpReservationTestState);
-  //     final itemToEdit =
-  //         state.settings.current.reservations.first.copyWith(reserved: true);
-  //     final settings =
-  //         state.settings.current.copyWith(reservations: [itemToEdit]);
-  //     when(testHelper.mockDHCPReservationsNotifier.build()).thenReturn(
-  //         state.copyWith(
-  //             settings: Preservable(original: settings, current: settings)));
+  // Test ID: DHCPR-EDIT_MODAL
+  testLocalizationsV2(
+    'Verifies the "edit reservation" dialog',
+    (tester, screen) async {
+      final state = DHCPReservationState.fromMap(dhcpReservationTestState);
+      final itemToEdit =
+          state.settings.current.reservations.first.copyWith(reserved: true);
+      final settings =
+          state.settings.current.copyWith(reservations: [itemToEdit]);
+      when(testHelper.mockDHCPReservationsNotifier.build()).thenReturn(
+          state.copyWith(
+              settings: Preservable(original: settings, current: settings)));
 
-  //     final context = await testHelper.pumpView(
-  //       tester,
-  //       locale: screen.locale,
-  //       child: const DHCPReservationsView(),
-  //     );
-  //     await tester.pumpAndSettle();
+      final context = await testHelper.pumpView(
+        tester,
+        locale: screen.locale,
+        child: const DHCPReservationsView(),
+      );
+      await tester.pumpAndSettle();
 
-  //     await tester.tap(find.byIcon(LinksysIcons.edit).first);
-  //     await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(LinksysIcons.edit).first);
+      await tester.pumpAndSettle();
 
-  //     expect(find.text(testHelper.loc(context).edit), findsOneWidget);
-  //     expect(find.text(testHelper.loc(context).update), findsOneWidget);
+      expect(find.text(testHelper.loc(context).edit), findsOneWidget);
+      expect(find.text(testHelper.loc(context).update), findsOneWidget);
 
-  //     final nameField = tester
-  //         .widget<AppTextField>(find.byKey(const Key('deviceNameTextField')));
-  //     expect(nameField.controller?.text, itemToEdit.data.description);
+      final nameField = tester
+          .widget<AppTextField>(find.byKey(const Key('deviceNameTextField')));
+      expect(nameField.controller?.text, itemToEdit.data.description);
 
-  //     final ipField = tester
-  //         .widget<AppIPFormField>(find.byKey(const Key('ipAddressTextField')));
-  //     expect(ipField.controller?.text, itemToEdit.data.ipAddress);
+      final ipField = tester
+          .widget<AppIPFormField>(find.byKey(const Key('ipAddressTextField')));
+      expect(ipField.controller?.text, itemToEdit.data.ipAddress);
 
-  //     final macField = tester
-  //         .widget<AppTextField>(find.byKey(const Key('macAddressTextField')));
-  //     expect(macField.controller?.text, itemToEdit.data.macAddress);
-  //   },
-  //   screens: screens,
-  //   goldenFilename: 'DHCPR-EDIT_MODAL-01-edit_dialog',
-  // );
+      final macField = tester
+          .widget<AppTextField>(find.byKey(const Key('macAddressTextField')));
+      expect(macField.controller?.text, itemToEdit.data.macAddress);
+    },
+    screens: screens,
+    goldenFilename: 'DHCPR-EDIT_MODAL-01-edit_dialog',
+  );
 
-  // // Test ID: DHCPR-MOB_FILTER
-  // testLocalizationsV2(
-  //   'Verifies the device filter dialog on mobile',
-  //   (tester, screen) async {
-  //     when(testHelper.mockDHCPReservationsNotifier.build())
-  //         .thenReturn(DHCPReservationState.fromMap(dhcpReservationTestState));
+  // Test ID: DHCPR-MOB_FILTER
+  testLocalizationsV2(
+    'Verifies the device filter dialog on mobile',
+    (tester, screen) async {
+      when(testHelper.mockDHCPReservationsNotifier.build())
+          .thenReturn(DHCPReservationState.fromMap(dhcpReservationTestState));
 
-  //     await testHelper.pumpView(
-  //       tester,
-  //       locale: screen.locale,
-  //       child: const DHCPReservationsView(),
-  //     );
-  //     await tester.pumpAndSettle();
+      await testHelper.pumpView(
+        tester,
+        locale: screen.locale,
+        child: const DHCPReservationsView(),
+      );
+      await tester.pumpAndSettle();
 
-  //     final filterBtnFinder = find.byIcon(LinksysIcons.filter);
-  //     expect(filterBtnFinder, findsOneWidget);
-  //     await tester.tap(filterBtnFinder);
-  //     await tester.pumpAndSettle();
+      final filterBtnFinder = find.byIcon(LinksysIcons.filter);
+      expect(filterBtnFinder, findsOneWidget);
+      await tester.tap(filterBtnFinder);
+      await tester.pumpAndSettle();
 
-  //     expect(find.byType(DevicesFilterWidget), findsOneWidget);
-  //   },
-  //   screens: responsiveMobileScreens,
-  //   goldenFilename: 'DHCPR-MOB_FILTER-01-filter_dialog',
-  // );
+      expect(find.byType(DevicesFilterWidget), findsOneWidget);
+    },
+    screens: responsiveMobileScreens,
+    goldenFilename: 'DHCPR-MOB_FILTER-01-filter_dialog',
+  );
 }
 
 final dhcpReservationEmptyState = {
@@ -324,6 +324,7 @@ final dhcpReservationEmptyState = {
     }
   },
   "status": {
+    "additionalReservations": [],
     "devices": [],
   }
 };

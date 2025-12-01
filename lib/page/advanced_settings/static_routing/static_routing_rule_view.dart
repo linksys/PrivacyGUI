@@ -106,6 +106,7 @@ class _StaticRoutingDetailViewState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             AppTextField.outline(
+              key: const Key('ruleName'),
               headerText: loc(context).routeName,
               controller: _routeNameController,
               errorText: _routeNameError,
@@ -129,6 +130,7 @@ class _StaticRoutingDetailViewState
             ),
             const AppGap.large2(),
             AppIPFormField(
+              key: const Key('destinationIP'),
               semanticLabel: 'destination IP Address',
               header: AppText.bodyLarge(
                 loc(context).destinationIPAddress,
@@ -157,6 +159,7 @@ class _StaticRoutingDetailViewState
             ),
             const AppGap.large2(),
             AppIPFormField(
+              key: const Key('subnetMask'),
               semanticLabel: 'subnet Mask',
               header: AppText.bodyLarge(
                 loc(context).subnetMask,
@@ -194,6 +197,7 @@ class _StaticRoutingDetailViewState
             ),
             const AppGap.large2(),
             AppIPFormField(
+              key: const Key('gateway'),
               semanticLabel: 'gateway',
               header: AppText.bodyLarge(
                 loc(context).gateway,
@@ -224,6 +228,7 @@ class _StaticRoutingDetailViewState
             ),
             const AppGap.large2(),
             AppDropdownButton<RoutingSettingInterface>(
+              key: const Key('interface'),
               title: loc(context).labelInterface,
               items: const [
                 RoutingSettingInterface.lan,

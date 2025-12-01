@@ -6,7 +6,6 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/components/settings_view/editable_card_list_settings_view.dart';
 import 'package:privacy_gui/page/components/settings_view/editable_table_settings_view.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -17,7 +16,6 @@ import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/input_field/ipv6_form_field.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
 import '../../apps_and_gaming/ports/views/widgets/_widgets.dart';
 
@@ -194,6 +192,7 @@ class _Ipv6PortServiceListViewState
 
         return switch (index) {
           0 => AppTextField.outline(
+              key: const Key('ruleName'),
               controller: applicationTextController,
               onChanged: (value) {
                 ref
@@ -203,6 +202,7 @@ class _Ipv6PortServiceListViewState
               },
             ),
           1 => AppDropdownButton(
+              key: const Key('protocol'),
               initial: stateRule?.portRanges.firstOrNull?.protocol ?? 'Both',
               items: const ['TCP', 'UDP', 'Both'],
               label: (e) => getProtocolTitle(context, e),
@@ -224,6 +224,7 @@ class _Ipv6PortServiceListViewState
               children: [
                 Expanded(
                   child: AppIPv6FormField(
+                    key: const Key('ipAddress'),
                     controller: ipAddressTextController,
                     border: const OutlineInputBorder(),
                     autovalidateMode: AutovalidateMode.disabled,
@@ -265,6 +266,7 @@ class _Ipv6PortServiceListViewState
                   children: [
                     Expanded(
                       child: AppTextField.minMaxNumber(
+                        key: const Key('firstPort'),
                         min: 0,
                         max: 65535,
                         border: OutlineInputBorder(),
@@ -296,6 +298,7 @@ class _Ipv6PortServiceListViewState
                     ),
                     Expanded(
                       child: AppTextField.minMaxNumber(
+                        key: const Key('lastPort'),
                         min: 0,
                         max: 65535,
                         border: OutlineInputBorder(),

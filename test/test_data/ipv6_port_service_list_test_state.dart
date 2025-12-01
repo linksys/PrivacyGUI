@@ -3,7 +3,7 @@ const ipv6PortServiceListTestState = {
     "original": {
       "rules": [
         {
-          "description": "222",
+          "description": "rule1",
           "ipv6Address": "1111:1111:1111:1111:1111:1111:1111:ffff",
           "isEnabled": true,
           "portRanges": [
@@ -11,7 +11,7 @@ const ipv6PortServiceListTestState = {
           ]
         },
         {
-          "description": "777",
+          "description": "rule2",
           "ipv6Address": "2223:3333:3333:3333:2222:2233:3333:ffff",
           "isEnabled": true,
           "portRanges": [
@@ -23,7 +23,7 @@ const ipv6PortServiceListTestState = {
     "current": {
       "rules": [
         {
-          "description": "222",
+          "description": "rule1",
           "ipv6Address": "1111:1111:1111:1111:1111:1111:1111:ffff",
           "isEnabled": true,
           "portRanges": [
@@ -31,7 +31,7 @@ const ipv6PortServiceListTestState = {
           ]
         },
         {
-          "description": "777",
+          "description": "rule2",
           "ipv6Address": "2223:3333:3333:3333:2222:2233:3333:ffff",
           "isEnabled": true,
           "portRanges": [

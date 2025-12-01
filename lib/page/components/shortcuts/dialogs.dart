@@ -169,6 +169,7 @@ Future<T?> showSubmitAppDialog<T>(
               : [
                   AppTextButton(
                     negitiveLabel ?? loc(context).cancel,
+                    key: const Key('alertNegativeButton'),
                     color: Theme.of(context).colorScheme.onSurface,
                     onTap: () {
                       context.pop();
@@ -176,6 +177,7 @@ Future<T?> showSubmitAppDialog<T>(
                   ),
                   AppTextButton(
                     positiveLabel ?? loc(context).save,
+                    key: const Key('alertPositiveButton'),
                     onTap: checkPositiveEnabled?.call() ?? true
                         ? () {
                             onSubmit();

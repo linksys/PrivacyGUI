@@ -79,10 +79,11 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
     // ref.listen(dmzSettingsProvider, (previous, next) {
     //   _updateControllers(next);
     // });
+    final isDirty = ref.read(dmzSettingsProvider.notifier).isDirty();
     return StyledAppPageView.withSliver(
         title: loc(context).dmz,
         bottomBar: PageBottomBar(
-            isPositiveEnabled: state.isDirty &&
+            isPositiveEnabled: isDirty &&
                 (_sourceError == null && _destinationError == null),
             onPositiveTap: () {
               doSomethingWithSpinner(
@@ -147,6 +148,7 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
         padding: EdgeInsets.zero,
         title: AppText.labelLarge(loc(context).dmzSourceIPAddress),
         description: AppRadioList(
+          key: const Key('sourceType'),
           selected: state.settings.current.sourceType,
           itemHeight: 56,
           items: [
@@ -162,6 +164,7 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             AppIPFormField(
+                              key: const Key('sourceFirstIP'),
                               semanticLabel: 'specified range ip address start',
                               border: const OutlineInputBorder(),
                               controller: _sourceFirstIPController,
@@ -200,6 +203,7 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                                   child: AppText.bodyMedium(loc(context).to)),
                             ),
                             AppIPFormField(
+                              key: const Key('sourceLastIP'),
                               semanticLabel: 'specified range ip address end',
                               border: const OutlineInputBorder(),
                               controller: _sourceLastIPController,
@@ -251,6 +255,7 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppRadioList(
+            key: const Key('destinationType'),
             initial: state.settings.current.destinationType,
             itemHeight: 56,
             items: [
@@ -261,6 +266,7 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                       ? Container(
                           constraints: const BoxConstraints(maxWidth: 429),
                           child: AppIPFormField(
+                            key: const Key('destinationIP'),
                             semanticLabel: 'destination ip address',
                             border: const OutlineInputBorder(),
                             controller: _destinationIPController,
