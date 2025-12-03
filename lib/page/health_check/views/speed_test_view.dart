@@ -11,6 +11,7 @@ import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_state.dart';
 import 'package:privacy_gui/page/components/customs/animated_digital_text.dart';
+import 'package:privacy_gui/page/health_check/providers/speed_test_display.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
@@ -46,60 +47,64 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
     final state = ref.watch(healthCheckProvider);
     final supportedBy = ref.watch(dashboardHomeProvider).healthCheckModule;
 
-    return StyledAppPageView(
-      scrollable: true,
-      title: loc(context).speedTest,
-      bottomBar: state.status == 'COMPLETE'
-          ? PageBottomBar(
-              positiveLabel: loc(context).testAgain,
-              isPositiveEnabled: true,
-              onPositiveTap: () {
-                ref
-                    .read(healthCheckProvider.notifier)
-                    .runHealthCheck(Module.speedtest);
-              },
-            )
-          : null,
-      child: (context, constraints) => switch (state.status) {
-        'RUNNING' => ResponsiveLayout(
-            desktop: Container(
-              margin: const EdgeInsets.fromLTRB(0, 0, 0, 40),
-              child: Center(
-                child: _runningView(
-                  state,
+    final isSpeedTestSupported = isDisplaySpeedTest(ref);
+
+    return isSpeedTestSupported
+        ? StyledAppPageView(
+            scrollable: true,
+            title: loc(context).speedTest,
+            bottomBar: state.status == 'COMPLETE'
+                ? PageBottomBar(
+                    positiveLabel: loc(context).testAgain,
+                    isPositiveEnabled: true,
+                    onPositiveTap: () {
+                      ref
+                          .read(healthCheckProvider.notifier)
+                          .runHealthCheck(Module.speedtest);
+                    },
+                  )
+                : null,
+            child: (context, constraints) => switch (state.status) {
+              'RUNNING' => ResponsiveLayout(
+                  desktop: Container(
+                    margin: const EdgeInsets.fromLTRB(0, 0, 0, 40),
+                    child: Center(
+                      child: _runningView(
+                        state,
+                      ),
+                    ),
+                  ),
+                  mobile: _runningView(state),
                 ),
-              ),
-            ),
-            mobile: _runningView(state),
-          ),
-        'COMPLETE' => ResponsiveLayout(
-            desktop: Container(
-              margin: const EdgeInsets.fromLTRB(0, 0, 0, 40),
-              child: Container(
-                alignment: state.step != 'error'
-                    ? Alignment.topCenter
-                    : Alignment.topLeft,
-                child: _finishView(
-                  state,
+              'COMPLETE' => ResponsiveLayout(
+                  desktop: Container(
+                    margin: const EdgeInsets.fromLTRB(0, 0, 0, 40),
+                    child: Container(
+                      alignment: state.step != 'error'
+                          ? Alignment.topCenter
+                          : Alignment.topLeft,
+                      child: _finishView(
+                        state,
+                      ),
+                    ),
+                  ),
+                  mobile: _finishView(
+                    state,
+                  ),
                 ),
-              ),
-            ),
-            mobile: _finishView(
-              state,
-            ),
-          ),
-        _ => ResponsiveLayout(
-            desktop: AppCard(
-              showBorder: false,
-              margin: const EdgeInsets.fromLTRB(0, 0, 0, 40),
-              padding: EdgeInsets.zero,
-              clipBehavior: Clip.antiAlias,
-              child: _initView(supportedBy),
-            ),
-            mobile: _initView(supportedBy),
-          ),
-      },
-    );
+              _ => ResponsiveLayout(
+                  desktop: AppCard(
+                    showBorder: false,
+                    margin: const EdgeInsets.fromLTRB(0, 0, 0, 40),
+                    padding: EdgeInsets.zero,
+                    clipBehavior: Clip.antiAlias,
+                    child: _initView(supportedBy),
+                  ),
+                  mobile: _initView(supportedBy),
+                ),
+            },
+          )
+        : const SizedBox.shrink();
   }
 
   Widget _gradientBackground() {
