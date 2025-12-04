@@ -10,6 +10,7 @@ import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart
 import 'package:privacy_gui/page/nodes/_nodes.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/custom_theme.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 import '../../../common/config.dart';
 import '../../../common/screen.dart';
@@ -21,14 +22,14 @@ import '../../../test_data/node_details_data.dart';
 
 // View ID: NDVL
 // Implementation: lib/page/nodes/views/node_detail_view.dart
-/// | Test ID             | Description                                                                      |
-/// | :------------------ | :------------------------------------------------------------------------------- |
-/// | `NDVL-INFO`         | Desktop info tab shows node summary, firmware status, and connected devices.     |
-/// | `NDVL-MOBILE`       | Mobile layout switches between Info and Devices tabs correctly.                  |
-/// | `NDVL-MLO`          | Nodes flagged as MLO display the badge and modal explaining the capability.      |
-/// | `NDVL-LIGHTS`       | Node light settings card opens the LED mode dialog with toggles.                 |
-/// | `NDVL-EDIT`         | Edit name dialog enforces empty validation with blink control.                   |
-/// | `NDVL-EDIT_LONG`    | Edit name dialog shows error when the name exceeds the max length.               |
+/// | Test ID          | Description                                                                      |
+/// | :--------------- | :------------------------------------------------------------------------------- |
+/// | `NDVL-INFO`      | Desktop info tab shows node summary, firmware status, and connected devices.     |
+/// | `NDVL-MOBILE`    | Mobile layout switches between Info and Devices tabs correctly.                  |
+/// | `NDVL-MLO`       | Nodes flagged as MLO display the badge and modal explaining the capability.      |
+/// | `NDVL-LIGHTS`    | Node light settings card opens the LED mode dialog with toggles.                 |
+/// | `NDVL-EDIT`      | Edit name dialog enforces empty validation with blink control.                   |
+/// | `NDVL-EDIT_LONG` | Edit name dialog shows error when the name exceeds the max length.               |
 
 final _desktopScreens = responsiveDesktopScreens
     .map((screen) => screen.copyWith(height: 1400))
@@ -106,12 +107,33 @@ void main() {
       );
       final loc = testHelper.loc(context);
 
+      // Verify page title
       expect(find.text(_masterState.location), findsWidgets);
+
+      // Verify device image with semantic label
+      expect(find.bySemanticsLabel('device image'), findsOneWidget);
+
+      // Verify edit button
+      expect(find.byIcon(LinksysIcons.edit), findsWidgets);
+
+      // Verify connection info
       expect(find.text(loc.connectTo), findsWidgets);
+
+      // Verify detail section fields
+      expect(find.text(loc.wanIPAddress), findsOneWidget);
+      expect(find.text(loc.lanIPAddress), findsOneWidget);
       expect(find.text(loc.firmwareVersion), findsOneWidget);
+      expect(find.text(loc.modelNumber), findsOneWidget);
+      expect(find.text(loc.serialNumber), findsOneWidget);
+      expect(find.text(loc.macAddress), findsOneWidget);
+
+      // Verify device tab elements
       expect(find.text(loc.nDevices(_deviceList.length)), findsOneWidget);
       expect(find.text(loc.filters), findsWidgets);
+
+      // Verify refresh button
       expect(find.text(loc.refresh), findsOneWidget);
+      expect(find.byIcon(LinksysIcons.refresh), findsOneWidget);
     },
     screens: _desktopScreens,
     goldenFilename: 'NDVL-INFO-01-desktop',
@@ -129,11 +151,22 @@ void main() {
       );
       final loc = testHelper.loc(context);
 
+      // Verify tabs exist
+      expect(find.text(loc.info), findsOneWidget);
+      expect(find.text(loc.devices), findsOneWidget);
+
+      // Initially on Info tab - verify location is visible
+      expect(find.text(_masterState.location), findsWidgets);
+
+      // Switch to Devices tab
       await tester.tap(find.text(loc.devices));
       await tester.pumpAndSettle();
 
+      // Verify device count is shown
       expect(find.text(loc.nDevices(_singleDeviceList.length)), findsOneWidget);
-      // expect(find.text(loc.filters), findsOneWidget);
+
+      // Verify filter icon button (mobile variant)
+      expect(find.byIcon(LinksysIcons.filter), findsOneWidget);
     },
     screens: _mobileScreens,
     goldenFilename: 'NDVL-MOBILE-01-tabs',
@@ -151,10 +184,19 @@ void main() {
       );
       final loc = testHelper.loc(context);
 
-      await tester.tap(find.text(loc.connectedWithMLO));
+      // Verify MLO button appears in avatar card
+      final mloButton = find.text(loc.connectedWithMLO);
+      expect(mloButton, findsOneWidget);
+
+      // Tap to open modal
+      await tester.tap(mloButton);
       await tester.pumpAndSettle();
 
+      // Verify modal shows MLO title
       expect(find.text(loc.mlo), findsOneWidget);
+
+      // Verify cancel button exists
+      expect(find.text(loc.ok), findsOneWidget);
 
       await testHelper.takeScreenshot(tester, 'NDVL-MLO-01-dialog');
     },
@@ -178,11 +220,33 @@ void main() {
       final context = await pumpNodeDetailView(tester, screen);
       final loc = testHelper.loc(context);
 
-      await tester.tap(find.byKey(const ValueKey('nodeLightSettings')));
+      // Verify node light card with correct key
+      final nodeLightCard = find.byKey(const ValueKey('nodeLightSettings'));
+      expect(nodeLightCard, findsOneWidget);
+
+      // Verify card shows node light title
+      expect(find.text(loc.nodeLight), findsOneWidget);
+
+      // Verify night mode icon and time display
+      expect(find.byIcon(LinksysIcons.darkMode), findsOneWidget);
+      expect(find.text('8PM - 8AM'), findsOneWidget);
+
+      // Tap to open dialog
+      await tester.tap(nodeLightCard);
       await tester.pumpAndSettle();
 
+      // Verify dialog title
+      expect(find.text(loc.nodeLight), findsWidgets);
+
+      // Verify night mode toggle
       expect(find.text(loc.nodeDetailsLedNightMode), findsOneWidget);
+
+      // Verify lights off checkbox
       expect(find.text(loc.lightsOff), findsOneWidget);
+
+      // Verify dialog buttons
+      expect(find.text(loc.cancel), findsOneWidget);
+      expect(find.text(loc.save), findsOneWidget);
 
       await testHelper.takeScreenshot(tester, 'NDVL-LIGHTS-01-dialog');
     },
@@ -199,14 +263,32 @@ void main() {
       final context = await pumpNodeDetailView(tester, screen);
       final loc = testHelper.loc(context);
 
-      await tester.tap(find.byIcon(LinksysIcons.edit).first);
+      // Tap edit button
+      final editButton = find.byIcon(LinksysIcons.edit).first;
+      expect(editButton, findsOneWidget);
+      await tester.tap(editButton);
       await tester.pumpAndSettle();
 
+      // Verify dialog title
+      expect(find.text(loc.nodeName), findsWidgets);
+
+      // Verify text field exists with semantic label
       final nameField = find.bySemanticsLabel('node name');
       expect(nameField, findsOneWidget);
+
+      // Verify field is pre-filled with current location
+      expect(find.text(_masterState.location), findsWidgets);
+
+      // Clear text to trigger empty validation
       await tester.enterText(nameField, '');
       await tester.pumpAndSettle();
+
+      // Verify empty error message
       expect(find.text(loc.theNameMustNotBeEmpty), findsOneWidget);
+
+      // Verify blink control widget appears (when LED blinking is supported)
+      expect(find.byType(AppTextButton), findsWidgets);
+
       await testHelper.takeScreenshot(tester, 'NDVL-EDIT-01-empty_error');
     },
     screens: _desktopScreens,
@@ -220,15 +302,28 @@ void main() {
       final context = await pumpNodeDetailView(tester, screen);
       final loc = testHelper.loc(context);
 
+      // Tap edit button
       await tester.tap(find.byIcon(LinksysIcons.edit).first);
       await tester.pumpAndSettle();
 
+      // Verify dialog opened
+      expect(find.text(loc.nodeName), findsWidgets);
+
+      // Find text field
       final nameField = find.bySemanticsLabel('node name');
       expect(nameField, findsOneWidget);
+
+      // Enter excessively long name (300 characters)
       await tester.enterText(nameField, 'n' * 300);
       await tester.pumpAndSettle();
 
+      // Verify max size error message
       expect(find.text(loc.deviceNameExceedMaxSize), findsOneWidget);
+
+      // Verify dialog buttons
+      expect(find.text(loc.cancel), findsOneWidget);
+      expect(find.text(loc.save), findsOneWidget);
+
       await testHelper.takeScreenshot(tester, 'NDVL-EDIT_LONG-01-error');
     },
     screens: _desktopScreens,
