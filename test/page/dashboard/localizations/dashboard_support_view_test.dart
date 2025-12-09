@@ -1,70 +1,108 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
-import 'package:privacy_gui/core/jnap/actions/better_action.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:privacy_gui/di.dart';
-import 'package:privacy_gui/page/components/styled/general_settings_widget/general_settings_widget.dart';
-import 'package:privacy_gui/page/dashboard/_dashboard.dart';
-import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
-import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
-import 'package:privacy_gui/page/instant_safety/providers/instant_safety_provider.dart';
-import 'package:privacy_gui/page/instant_safety/providers/instant_safety_state.dart';
 import 'package:privacy_gui/page/support/faq_list_view.dart';
-import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:privacygui_widgets/widgets/card/expansion_card.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../common/config.dart';
-import '../../../common/di.dart';
+import '../../../common/screen.dart';
+import '../../../common/test_helper.dart';
 import '../../../common/test_responsive_widget.dart';
-import '../../../common/testable_router.dart';
-import '../../../mocks/_index.dart';
-import '../../../mocks/connectivity_notifier_mocks.dart';
-import '../../../mocks/jnap_service_supported_mocks.dart';
-import '../../../test_data/_index.dart';
 
-void main() async {
-  mockDependencyRegister();
-  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
+// View ID: DSUP
+// Implementation: lib/page/support/faq_list_view.dart
+// Summary:
+// - DSUP-DESKTOP: Default desktop view renders FAQ headers and CTA.
+// - DSUP-MOBILE: Mobile view toggles menu to reveal CTA text.
+// - DSUP-EXPAND: Expands every category to reveal FAQ entries.
 
-  Widget testableWidget(Locale locale) => testableRouteShellWidget(
-        child: const FaqListView(),
-        locale: locale,
-        overrides: [],
-      );
+final _expandedScreens = [
+  ...responsiveMobileScreens.map(
+    (screen) => screen.copyWith(name: '${screen.name}-Tall', height: 1600),
+  ),
+  ...responsiveDesktopScreens.map(
+    (screen) => screen.copyWith(name: '${screen.name}-Tall', height: 1440),
+  ),
+];
+
+void main() {
+  final testHelper = TestHelper();
 
   setUp(() {
-    SharedPreferences.setMockInitialValues({});
+    testHelper.setup();
   });
-  testLocalizations('Dashboard Support View - default', (tester, locale) async {
-    await tester.pumpWidget(
-      testableWidget(locale),
-    );
-    await tester.pumpAndSettle();
-  }, screens: [...responsiveMobileScreens, ...responsiveDesktopScreens]);
 
-  testLocalizations('Dashboard Support View - expended',
-      (tester, locale) async {
-    await tester.pumpWidget(
-      testableWidget(locale),
+  Future<BuildContext> pumpFaq(WidgetTester tester, LocalizedScreen screen) {
+    return testHelper.pumpShellView(
+      tester,
+      child: const FaqListView(),
+      locale: screen.locale,
     );
-    await tester.pumpAndSettle();
-    final expansionCardFinder =
-        find.byType(AppExpansionCard, skipOffstage: false);
-    await tester.tap(expansionCardFinder.first);
-    await tester.pumpAndSettle();
-    await tester.tap(expansionCardFinder.at(1));
-    await tester.pumpAndSettle();
-    await tester.tap(expansionCardFinder.at(2));
-    await tester.pumpAndSettle();
-    await tester.tap(expansionCardFinder.at(3));
-    await tester.pumpAndSettle();
-    await tester.tap(expansionCardFinder.at(4));
-    await tester.pumpAndSettle();
-  }, screens: [
-    ...responsiveMobileScreens.map((e) => e.copyWith(height: 1600)).toList(),
-    ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1440)).toList()
-  ]);
+  }
+
+  Future<void> expandAllCategories(WidgetTester tester) async {
+    final finder = find.byType(AppExpansionCard, skipOffstage: false);
+    for (var i = 0; i < finder.evaluate().length; i++) {
+      await tester.tap(finder.at(i));
+      await tester.pumpAndSettle();
+    }
+  }
+
+  // Test ID: DSUP-DESKTOP
+  testLocalizationsV2(
+    'dashboard support view - default desktop layout',
+    (tester, screen) async {
+      final context = await pumpFaq(tester, screen);
+      final loc = testHelper.loc(context);
+
+      expect(find.text(loc.faqs), findsOneWidget);
+      expect(find.text(loc.faqLookingFor), findsOneWidget);
+      expect(find.text(loc.faqVisitLinksysSupport), findsOneWidget);
+      expect(find.byType(AppExpansionCard), findsNWidgets(5));
+    },
+    screens: responsiveDesktopScreens,
+    goldenFilename: 'DSUP-DESKTOP_01_base',
+    helper: testHelper,
+  );
+
+  // Test ID: DSUP-MOBILE
+  testLocalizationsV2(
+    'dashboard support view - default mobile layout',
+    (tester, screen) async {
+      final context = await pumpFaq(tester, screen);
+      final loc = testHelper.loc(context);
+
+      expect(find.text(loc.faqs), findsOneWidget);
+      expect(find.byType(AppExpansionCard), findsNWidgets(5));
+      await testHelper.takeScreenshot(
+        tester,
+        'DSUP-MOBILE_01_base',
+      );
+      final menuButton = find.byType(AppIconButton);
+      expect(menuButton, findsOneWidget);
+      await tester.tap(menuButton);
+      await tester.pumpAndSettle();
+      expect(find.text(loc.faqLookingFor), findsOneWidget);
+      expect(find.text(loc.faqVisitLinksysSupport), findsOneWidget);
+    },
+    screens: responsiveMobileScreens,
+    goldenFilename: 'DSUP-MOBILE_02_menu',
+    helper: testHelper,
+  );
+
+  // Test ID: DSUP-EXPAND
+  testLocalizationsV2(
+    'dashboard support view - expanded all categories',
+    (tester, screen) async {
+      final context = await pumpFaq(tester, screen);
+      final loc = testHelper.loc(context);
+
+      await expandAllCategories(tester);
+      expect(find.text(loc.faqListCannotAddChildNode), findsOneWidget);
+      expect(find.text(loc.faqListWhatLightsMean), findsOneWidget);
+    },
+    screens: _expandedScreens,
+    goldenFilename: 'DSUP-EXPAND_01_all_open',
+    helper: testHelper,
+  );
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/views/widgets/wifi_setting_modal_mixin.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -127,7 +128,7 @@ class _MainWiFiCardState extends ConsumerState<MainWiFiCard>
           onChanged: !radio.isEnabled || canBeDisable
               ? (value) {
                   ref
-                      .read(wifiListProvider.notifier)
+                      .read(wifiBundleProvider.notifier)
                       .setWiFiEnabled(value, radio.radioID);
                 }
               : null,
@@ -135,6 +136,7 @@ class _MainWiFiCardState extends ConsumerState<MainWiFiCard>
       );
 
   Widget _advancedWiFiNameCard(WiFiItem radio) => AppListCard(
+        key: ValueKey('wifiNameCard-${radio.radioID.bandName}'),
         showBorder: false,
         title: AppText.bodyMedium(loc(context).wifiName),
         description: AppText.labelLarge(radio.ssid),
@@ -146,7 +148,7 @@ class _MainWiFiCardState extends ConsumerState<MainWiFiCard>
         onTap: () {
           showWiFiNameModal(radio.ssid, (value) {
             ref
-                .read(wifiListProvider.notifier)
+                .read(wifiBundleProvider.notifier)
                 .setWiFiSSID(value, radio.radioID);
           });
         },
@@ -157,6 +159,7 @@ class _MainWiFiCardState extends ConsumerState<MainWiFiCard>
         child: IgnorePointer(
           ignoring: radio.securityType.isOpenVariant ? true : false,
           child: AppListCard(
+            key: ValueKey('wifiPasswordCard-${radio.radioID.bandName}'),
             showBorder: false,
             padding: const EdgeInsets.symmetric(vertical: 8.0),
             title: AppText.bodyMedium(
@@ -184,7 +187,10 @@ class _MainWiFiCardState extends ConsumerState<MainWiFiCard>
                         textField: false,
                         explicitChildNodes: true,
                         child: AppPasswordField(
-                          semanticLabel: '${radio.radioID.value} wifi password',
+                          semanticLabel:
+                              '${radio.radioID.bandName} wifi password',
+                          key: ValueKey(
+                              '${radio.radioID.bandName} wifi password input'),
                           readOnly: true,
                           border: InputBorder.none,
                           controller: _passwordController,
@@ -197,7 +203,7 @@ class _MainWiFiCardState extends ConsumerState<MainWiFiCard>
             onTap: () {
               showWifiPasswordModal(radio.password, (value) {
                 ref
-                    .read(wifiListProvider.notifier)
+                    .read(wifiBundleProvider.notifier)
                     .setWiFiPassword(value, radio.radioID);
               });
             },
@@ -208,6 +214,7 @@ class _MainWiFiCardState extends ConsumerState<MainWiFiCard>
   Widget _advancedWiFiSecurityTypeCard(WiFiItem radio) {
     final securityType = getWifiSecurityTypeTitle(context, radio.securityType);
     return AppListCard(
+      key: ValueKey('wifiSecurityTypeCard-${radio.radioID.bandName}'),
       showBorder: false,
       title: AppText.bodyMedium(loc(context).securityMode),
       description: SizedBox(
@@ -223,7 +230,7 @@ class _MainWiFiCardState extends ConsumerState<MainWiFiCard>
         showSecurityModeModal(radio.securityType, radio.availableSecurityTypes,
             (value) {
           ref
-              .read(wifiListProvider.notifier)
+              .read(wifiBundleProvider.notifier)
               .setWiFiSecurityType(value, radio.radioID);
         });
       },
@@ -232,6 +239,7 @@ class _MainWiFiCardState extends ConsumerState<MainWiFiCard>
 
   Widget _advanvedWiFiWirelessModeCard(WiFiItem radio) =>
       AppSettingCard.noBorder(
+        key: ValueKey('wifiWirelessModeCard-${radio.radioID.bandName}'),
         title: loc(context).wifiMode,
         description: getWifiWirelessModeTitle(
           context,
@@ -249,11 +257,11 @@ class _MainWiFiCardState extends ConsumerState<MainWiFiCard>
           showWirelessWiFiModeModal(radio.wirelessMode, radio.defaultMixedMode,
               radio.availableWirelessModes, validWirelessModes, (value) {
             ref
-                .read(wifiListProvider.notifier)
+                .read(wifiBundleProvider.notifier)
                 .setWiFiMode(value, radio.radioID);
             if (!validWirelessModes.contains(value)) {
               ref
-                  .read(wifiListProvider.notifier)
+                  .read(wifiBundleProvider.notifier)
                   .setChannelWidth(WifiChannelWidth.auto, radio.radioID);
             }
           });
@@ -261,6 +269,7 @@ class _MainWiFiCardState extends ConsumerState<MainWiFiCard>
       );
 
   Widget _advancedWiFiBoradcastCard(WiFiItem radio) => AppListCard(
+        key: ValueKey('wifiBroadcastCard-${radio.radioID.bandName}'),
         showBorder: false,
         title: AppText.labelLarge(loc(context).broadcastSSID),
         padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -271,7 +280,7 @@ class _MainWiFiCardState extends ConsumerState<MainWiFiCard>
               return;
             }
             ref
-                .read(wifiListProvider.notifier)
+                .read(wifiBundleProvider.notifier)
                 .setEnableBoardcast(value, radio.radioID);
           },
         ),
@@ -279,6 +288,7 @@ class _MainWiFiCardState extends ConsumerState<MainWiFiCard>
 
   Widget _advancedWiFiChannelWidthCard(WiFiItem radio) =>
       AppSettingCard.noBorder(
+        key: ValueKey('wifiChannelWidthCard-${radio.radioID.bandName}'),
         title: loc(context).channelWidth,
         description: getWifiChannelWidthTitle(
           context,
@@ -297,7 +307,7 @@ class _MainWiFiCardState extends ConsumerState<MainWiFiCard>
                 radio.wirelessMode, radio.availableChannels.keys.toList()),
             (value) {
               ref
-                  .read(wifiListProvider.notifier)
+                  .read(wifiBundleProvider.notifier)
                   .setChannelWidth(value, radio.radioID);
             },
           );
@@ -305,6 +315,7 @@ class _MainWiFiCardState extends ConsumerState<MainWiFiCard>
       );
 
   Widget _advancedWiFiChannelCard(WiFiItem radio) => AppSettingCard.noBorder(
+        key: ValueKey('wifiChannelCard-${radio.radioID.bandName}'),
         title: loc(context).channel,
         description: getWifiChannelTitle(
           context,
@@ -322,7 +333,7 @@ class _MainWiFiCardState extends ConsumerState<MainWiFiCard>
               radio.availableChannels[radio.channelWidth] ?? [],
               radio.radioID, (value) {
             ref
-                .read(wifiListProvider.notifier)
+                .read(wifiBundleProvider.notifier)
                 .setChannel(value, radio.radioID);
           });
         },

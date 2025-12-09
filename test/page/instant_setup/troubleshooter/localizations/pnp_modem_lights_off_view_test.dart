@@ -1,68 +1,105 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
-import 'package:privacy_gui/core/jnap/models/device_info.dart';
-import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
-import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/pnp_modem_lights_off_view.dart';
 import 'package:privacy_gui/route/route_model.dart';
-import 'package:get_it/get_it.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:privacy_gui/di.dart';
+import 'package:privacygui_widgets/widgets/buttons/button.dart';
+import 'package:privacygui_widgets/widgets/text/app_styled_text.dart';
+import '../../../../common/config.dart';
 import '../../../../common/test_responsive_widget.dart';
-import '../../../../common/testable_router.dart';
-import '../../../../common/di.dart';
-import '../../../../test_data/device_info_test_data.dart';
-import '../../../../mocks/pnp_notifier_mocks.dart' as Mock;
-import 'package:privacy_gui/page/instant_setup/data/pnp_state.dart';
+import '../../../../common/test_helper.dart';
 
+// View ID: PNPM
+/// Implementation file under test: lib/page/instant_setup/troubleshooter/views/pnp_modem_lights_off_view.dart
+///
+/// This file contains screenshot tests for the `PnpModemLightsOffView` widget,
+/// which guides the user through troubleshooting steps when modem lights are off.
+///
+/// | Test ID     | Description                                                                 |
+/// | :---------- | :-------------------------------------------------------------------------- |
+/// | `PNPM-INIT` | Verifies the initial state and the display of the tips modal.               |
 void main() async {
-  late Mock.MockPnpNotifier mockPnpNotifier;
-
-  mockDependencyRegister();
-  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
+  final testHelper = TestHelper();
+  final screens = responsiveAllScreens;
 
   setUp(() {
-    mockPnpNotifier = Mock.MockPnpNotifier();
-    when(mockPnpNotifier.build()).thenReturn(PnpState(
-        deviceInfo:
-            NodeDeviceInfo.fromJson(jsonDecode(testDeviceInfo)['output']),
-        isUnconfigured: true));
-    when(mockPnpNotifier.checkAdminPassword(null)).thenAnswer((_) {
-      throw ExceptionInvalidAdminPassword();
-    });
+    testHelper.setup();
   });
 
-  testLocalizations('Troubleshooter - PnP modem lights off',
-      (tester, locale) async {
-    await tester.pumpWidget(
-      testableSingleRoute(
+  // Test ID: PNPM-INIT
+  testLocalizationsV2(
+    'Verify the initial state of the modem lights off troubleshooter and the tips modal',
+    (tester, screen) async {
+      final context = await testHelper.pumpView(
+        tester,
         child: const PnpModemLightsOffView(),
         config: LinksysRouteConfig(
             column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
-        locale: locale,
-        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
-      ),
-    );
-    await tester.pumpAndSettle();
-  });
+        locale: screen.locale,
+      );
+      await tester.pumpAndSettle();
 
-  testLocalizations('Troubleshooter - PnP modem lights off: show tips',
-      (tester, locale) async {
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const PnpModemLightsOffView(),
-        config: LinksysRouteConfig(
-            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
-        locale: locale,
-        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
-      ),
-    );
-    await tester.pumpAndSettle();
-    final tipFinder = find.byType(TextButton);
-    await tester.tap(tipFinder);
-    await tester.pumpAndSettle();
-  });
+      // Verify initial state elements
+      expect(find.text(testHelper.loc(context).pnpModemLightsOffTitle),
+          findsOneWidget);
+      expect(find.text(testHelper.loc(context).pnpModemLightsOffDesc),
+          findsOneWidget);
+      expect(find.bySemanticsLabel('modem Device image'),
+          findsOneWidget); // Verify image by semantics label
+      final showTipsButton = find.widgetWithText(
+          TextButton, testHelper.loc(context).pnpModemLightsOffTip);
+      expect(showTipsButton, findsOneWidget);
+      expect(find.widgetWithText(AppFilledButton, testHelper.loc(context).next),
+          findsOneWidget);
+
+
+      // Tap "Show Tips" button and verify modal
+      await tester.tap(showTipsButton);
+      await tester.pumpAndSettle();
+
+      // Take intermediate screenshot of the tips modal
+      await testHelper.takeScreenshot(tester, 'PNPM-INIT_01_tips_modal');
+
+      // Verify tips modal elements
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.text(testHelper.loc(context).pnpModemLightsOffTipTitle),
+          findsOneWidget);
+      expect(find.text(testHelper.loc(context).pnpModemLightsOffTipDesc),
+          findsOneWidget);
+      expect(
+          find.text(testHelper
+              .loc(context)
+              .pnpModemLightsOffTipStep1),
+          findsOneWidget);
+      expect(
+          find.text(testHelper.loc(context).pnpModemLightsOffTipStep2),
+          findsOneWidget);
+      expect(
+          tester
+              .widget<AppStyledText>(
+                  find.byKey(const Key('pnpModemLightsOffTipStep3')).first)
+              .text,
+          testHelper
+              .loc(context)
+              .pnpModemLightsOffTipStep3);
+      final closeButton = find.widgetWithText(TextButton,
+          testHelper.loc(context).ok); // Assuming 'close' for simple dialog
+      expect(closeButton, findsOneWidget);
+
+      // Close the modal
+      await tester.tap(closeButton);
+      await tester.pumpAndSettle();
+
+      // Verify modal is gone and initial screen elements are still present
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.text(testHelper.loc(context).pnpModemLightsOffTitle),
+          findsOneWidget);
+      expect(find.text(testHelper.loc(context).pnpModemLightsOffDesc),
+          findsOneWidget);
+      expect(find.widgetWithText(AppFilledButton, testHelper.loc(context).next),
+          findsOneWidget);
+    },
+    helper: testHelper,
+    screens: screens,
+    goldenFilename: 'PNPM-INIT_02_final_state',
+  );
 }

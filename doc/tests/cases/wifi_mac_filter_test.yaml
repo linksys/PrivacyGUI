@@ -1,0 +1,36 @@
+- id: 54
+  symbolic_id: "WIFI_MAC_FILTER_ENABLE_AND_ADD"
+  tags:
+    - "wifi"
+    - "menu"
+  name: "Incredible WiFi - MAC Filtering - Enable and Add Device"
+  objective: "Verify MAC filtering can be enabled and a device added."
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to the \"MAC Filtering\" tab."
+    - action: "Enable the \"MAC Filtering\" switch."
+    - action: "Go to \"Filtered Devices\" and manually add a device."
+      verify: "The device appears in the list."
+    - action: "Click \"Save\"."
+      verify: "A success toast (e.g., \"Saved\") is displayed."
+    - action: "Wait for the confirmation to disappear."
+  expected_result: "MAC filtering is enabled and the device is added successfully."
+
+- id: 55
+  symbolic_id: "WIFI_MAC_FILTER_REMOVE"
+  tags:
+    - "wifi"
+    - "menu"
+  name: "Incredible WiFi - MAC Filtering - Remove Device"
+  objective: "Verify a device can be removed from the MAC filter list."
+  preconditions:
+    - "A device has been added to the filter list."
+  steps:
+    - action: "Navigate to the \"Filtered Devices\" page."
+    - action: "Select a device and remove it."
+      verify: "The device is removed from the UI list."
+    - action: "Click \"Save\"."
+      verify: "A success toast (e.g., \"Saved\") is displayed."
+    - action: "Wait for the confirmation to disappear."
+  expected_result: "The device is successfully removed from the filter list."

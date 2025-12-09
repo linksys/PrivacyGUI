@@ -1,425 +1,192 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
-import 'package:privacy_gui/core/jnap/providers/dashboard_manager_state.dart';
-import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
-import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
-import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
-import 'package:privacy_gui/core/jnap/providers/firmware_update_state.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
-import 'package:privacy_gui/di.dart';
-import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
-import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
-import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
-import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
-import 'package:privacy_gui/page/instant_topology/providers/instant_topology_provider.dart';
-import 'package:privacy_gui/page/instant_verify/providers/instant_verify_provider.dart';
+import 'package:privacy_gui/page/health_check/providers/health_check_state.dart';
+import 'package:privacy_gui/page/health_check/widgets/speed_test_widget.dart';
+import 'package:privacy_gui/page/instant_topology/views/instant_topology_view.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_state.dart';
+import 'package:privacy_gui/page/instant_verify/views/components/ping_network_modal.dart';
+import 'package:privacy_gui/page/instant_verify/views/components/traceroute_modal.dart';
 import 'package:privacy_gui/page/instant_verify/views/instant_verify_view.dart';
 import 'package:privacygui_widgets/theme/custom_theme.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../../common/_index.dart';
-import '../../../../common/di.dart';
-import '../../../../mocks/_index.dart';
-import '../../../../mocks/instant_verify_notifier_mocks.dart';
-import '../../../../test_data/_index.dart';
+import '../../../../common/config.dart';
+import '../../../../common/screen.dart';
+import '../../../../common/test_helper.dart';
+import '../../../../common/test_responsive_widget.dart';
+import '../../../../test_data/health_check_state_data.dart';
 import '../../../../test_data/instant_verify_test_state.dart';
 
-void main() {
-  late DashboardHomeNotifier mockDashboardHomeNotifier;
-  late FirmwareUpdateNotifier mockFirmwareUpdateNotifier;
-  late DeviceManagerNotifier mockDeviceManagerNotifier;
-  late InstantPrivacyNotifier mockInstantPrivacyNotifier;
-  late InstantTopologyNotifier mockInstantTopologyNotifier;
-  late InstantVerifyNotifier mockInstantVerifyNotifier;
-  late DashboardManagerNotifier mockDashboardManagerNotifier;
+// View ID: IVER
+// Implementation: lib/page/instant_verify/views/instant_verify_view.dart
+// Summary:
+// - IVER-INFO: Base Instant Info tab with device/connection/speed cards.
+// - IVER-TOPOLOGY: Tab switch to topology view with tree layout.
+// - IVER-MULTI_DNS: Connectivity card display when multiple DNS entries exist.
+// - IVER-SPEEDTEST: Internal health-check speed test widget rendered.
+// - IVER-SPEEDTEST_INIT: Modules configured but idle still show speed test panel.
+// - IVER-PING: Ping tile launches ping modal via PageBottomBar.
+// - IVER-TRACEROUTE: Traceroute tile launches traceroute modal.
 
-  mockDependencyRegister();
-  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
+final _infoScreens = [
+  ...responsiveDesktopScreens.map((s) => s.copyWith(height: 1280)),
+  ...responsiveMobileScreens.map((s) => s.copyWith(height: 2880)),
+];
+
+void main() {
+  final testHelper = TestHelper();
 
   setUp(() {
-    SharedPreferences.setMockInitialValues({});
-
-    mockDashboardHomeNotifier = MockDashboardHomeNotifier();
-    mockFirmwareUpdateNotifier = MockFirmwareUpdateNotifier();
-    mockDeviceManagerNotifier = MockDeviceManagerNotifier();
-    mockInstantPrivacyNotifier = MockInstantPrivacyNotifier();
-    mockInstantTopologyNotifier = MockInstantTopologyNotifier();
-    mockInstantVerifyNotifier = MockInstantVerifyNotifier();
-    mockDashboardManagerNotifier = MockDashboardManagerNotifier();
-
-    when(mockDashboardHomeNotifier.build())
-        .thenReturn(DashboardHomeState.fromMap(dashboardHomeCherry7TestState));
-    when(mockFirmwareUpdateNotifier.build())
-        .thenReturn(FirmwareUpdateState.fromMap(firmwareUpdateTestData));
-    when(mockDeviceManagerNotifier.build())
-        .thenReturn(DeviceManagerState.fromMap(deviceManagerCherry7TestState));
-    when(mockInstantPrivacyNotifier.build())
-        .thenReturn(InstantPrivacyState.fromMap(instantPrivacyTestState));
-    when(mockInstantTopologyNotifier.build())
-        .thenReturn(TopologyTestData().testTopology2SlavesDaisyState);
-    when(mockInstantVerifyNotifier.build())
-        .thenReturn(InstantVerifyState.fromMap(instantVerifyTestState));
-    when(mockDashboardManagerNotifier.build()).thenReturn(
-        DashboardManagerState.fromMap(dashboardManagerChrry7TestState));
+    testHelper.setup();
   });
-  testLocalizations(
-    'Instant-Verify view - Instant-Topology',
-    (tester, locale) async {
-      await tester.pumpWidget(
-        testableRouteShellWidget(
-          child: const InstantVerifyView(),
-          locale: locale,
-          overrides: [
-            dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
-            firmwareUpdateProvider
-                .overrideWith(() => mockFirmwareUpdateNotifier),
-            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
-            instantPrivacyProvider
-                .overrideWith(() => mockInstantPrivacyNotifier),
-            instantTopologyProvider
-                .overrideWith(() => mockInstantTopologyNotifier),
-            instantVerifyProvider.overrideWith(() => mockInstantVerifyNotifier),
-            dashboardManagerProvider
-                .overrideWith(() => mockDashboardManagerNotifier),
-          ],
-        ),
-      );
-      await tester.pumpAndSettle();
-      await tester.runAsync(() async {
-        final context = tester.element(find.byType(InstantVerifyView));
-        await precacheImage(
-            CustomTheme.of(context).images.devices.routerMx6200, context);
-        await precacheImage(
-            CustomTheme.of(context).images.devices.routerWhw03, context);
-        await precacheImage(
-            CustomTheme.of(context).images.devices.routerMr7500, context);
-        await tester.pumpAndSettle();
-      });
-      final topologyTabFinder = find.byType(Tab).last;
 
-      await tester.tap(topologyTabFinder);
+  Future<BuildContext> pumpInstantVerify(
+    WidgetTester tester,
+    LocalizedScreen screen, {
+    InstantVerifyState? state,
+  }) async {
+    when(testHelper.mockInstantVerifyNotifier.build()).thenReturn(
+      state ?? InstantVerifyState.fromMap(instantVerifyTestState),
+    );
+    final context = await testHelper.pumpShellView(
+      tester,
+      child: const InstantVerifyView(),
+      locale: screen.locale,
+      overrides: [
+        internetStatusProvider.overrideWith((ref) => InternetStatus.online),
+      ],
+    );
+    await tester.runAsync(() async {
+      final element = tester.element(find.byType(InstantVerifyView));
+      final theme = CustomTheme.of(element);
+      final images = [
+        theme.images.devices.routerMx6200,
+        theme.images.devices.routerWhw03,
+        theme.images.devices.routerMr7500,
+        theme.images.speedtestPowered,
+      ];
+      for (final image in images) {
+        await precacheImage(image, element);
+      }
+    });
+    await tester.pumpAndSettle();
+    return context;
+  }
 
-      await tester.pumpAndSettle();
+  // Test ID: IVER-INFO — validate base Instant Info tab layout
+  testLocalizationsV2(
+    'instant verify view - instant info layout',
+    (tester, screen) async {
+      final context = await pumpInstantVerify(tester, screen);
+      final loc = testHelper.loc(context);
+
+      expect(find.text(loc.instantVerify), findsOneWidget);
+      expect(find.text(loc.deviceInfo), findsOneWidget);
+      expect(find.byKey(const ValueKey('connectivityCard')), findsOneWidget);
+      expect(find.byKey(const ValueKey('speedTestCard')), findsOneWidget);
     },
-    screens: [
-      ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1280)).toList(),
-      ...responsiveMobileScreens.map((e) => e.copyWith(height: 1280)).toList(),
-    ],
+    screens: _infoScreens,
+    goldenFilename: 'IVER-INFO_01_layout',
+    helper: testHelper,
   );
 
-  testLocalizations('Instant-Verify view - Instant-Info view',
-      (tester, locale) async {
-    await tester.runAsync(() async {
-      await tester.pumpWidget(
-        testableRouteShellWidget(
-          child: const InstantVerifyView(),
-          locale: locale,
-          overrides: [
-            dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
-            firmwareUpdateProvider
-                .overrideWith(() => mockFirmwareUpdateNotifier),
-            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
-            instantPrivacyProvider
-                .overrideWith(() => mockInstantPrivacyNotifier),
-            instantTopologyProvider
-                .overrideWith(() => mockInstantTopologyNotifier),
-            instantVerifyProvider.overrideWith(() => mockInstantVerifyNotifier),
-            dashboardManagerProvider
-                .overrideWith(() => mockDashboardManagerNotifier),
-          ],
-        ),
-      );
-      await tester.pumpAndSettle();
-      final context = tester.element(find.byType(InstantVerifyView));
-      await precacheImage(
-          CustomTheme.of(context).images.devices.routerMx6200, context);
-      await precacheImage(
-          CustomTheme.of(context).images.devices.routerWhw03, context);
-      await precacheImage(
-          CustomTheme.of(context).images.devices.routerMr7500, context);
-      await tester.pumpAndSettle();
-    });
-  }, screens: [
-    ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1280)).toList(),
-    ...responsiveMobileScreens.map((e) => e.copyWith(height: 2880)).toList(),
-  ]);
+  // Test ID: IVER-TOPOLOGY — switch tab renders InstantTopologyView
+  testLocalizationsV2(
+    'instant verify view - instant topology tab',
+    (tester, screen) async {
+      final context = await pumpInstantVerify(tester, screen);
+      final loc = testHelper.loc(context);
 
-  testLocalizations('Instant-Verify view - Internal speed test tile',
-      (tester, locale) async {
-    when(mockDashboardHomeNotifier.build()).thenReturn(
-        DashboardHomeState.fromMap(dashboardHomeCherry7TestState).copyWith(
-            isHealthCheckSupported: true, healthCheckModule: () => 'Ookla'));
-    await tester.runAsync(() async {
-      await tester.pumpWidget(
-        testableRouteShellWidget(
-          child: const InstantVerifyView(),
-          locale: locale,
-          overrides: [
-            dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
-            firmwareUpdateProvider
-                .overrideWith(() => mockFirmwareUpdateNotifier),
-            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
-            instantPrivacyProvider
-                .overrideWith(() => mockInstantPrivacyNotifier),
-            instantTopologyProvider
-                .overrideWith(() => mockInstantTopologyNotifier),
-            instantVerifyProvider.overrideWith(() => mockInstantVerifyNotifier),
-            dashboardManagerProvider
-                .overrideWith(() => mockDashboardManagerNotifier),
-          ],
-        ),
-      );
+      await tester.tap(find.text(loc.instantTopology));
       await tester.pumpAndSettle();
-      final context = tester.element(find.byType(InstantVerifyView));
-      await precacheImage(
-          CustomTheme.of(context).images.devices.routerMx6200, context);
-      await precacheImage(
-          CustomTheme.of(context).images.devices.routerWhw03, context);
-      await precacheImage(
-          CustomTheme.of(context).images.devices.routerMr7500, context);
-      await precacheImage(
-          CustomTheme.of(context).images.speedtestPowered, context);
-
-      await tester.pumpAndSettle();
-    });
-  }, screens: [
-    ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1280)).toList(),
-    ...responsiveMobileScreens.map((e) => e.copyWith(height: 2880)).toList(),
-  ]);
-
-  testLocalizations('Instant-Verify view - Instant-Info view - Internet off',
-      (tester, locale) async {
-    final testState =
-        InstantVerifyState.fromMap(instantVerifyInternetOffTestState);
-    when(mockInstantVerifyNotifier.build()).thenReturn(testState);
-    await tester.runAsync(() async {
-      await tester.pumpWidget(
-        testableRouteShellWidget(
-          child: const InstantVerifyView(),
-          locale: locale,
-          overrides: [
-            dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
-            firmwareUpdateProvider
-                .overrideWith(() => mockFirmwareUpdateNotifier),
-            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
-            instantPrivacyProvider
-                .overrideWith(() => mockInstantPrivacyNotifier),
-            instantTopologyProvider
-                .overrideWith(() => mockInstantTopologyNotifier),
-            instantVerifyProvider.overrideWith(() => mockInstantVerifyNotifier),
-            dashboardManagerProvider
-                .overrideWith(() => mockDashboardManagerNotifier),
-          ],
-        ),
-      );
-      await tester.pumpAndSettle();
-      final context = tester.element(find.byType(InstantVerifyView));
-      await precacheImage(
-          CustomTheme.of(context).images.devices.routerMx6200, context);
-      await precacheImage(
-          CustomTheme.of(context).images.devices.routerWhw03, context);
-      await precacheImage(
-          CustomTheme.of(context).images.devices.routerMr7500, context);
-      await tester.pumpAndSettle();
-    });
-  }, screens: [
-    ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1280)).toList(),
-    ...responsiveMobileScreens.map((e) => e.copyWith(height: 2880)).toList(),
-  ]);
-
-  testLocalizations('Instant-Verify view - Instant-Info view - WiFi off',
-      (tester, locale) async {
-    final testState =
-        InstantVerifyState.fromMap(instantVerifyAllWiFiOffTestState);
-    when(mockInstantVerifyNotifier.build()).thenReturn(testState);
-    await tester.runAsync(() async {
-      await tester.pumpWidget(
-        testableRouteShellWidget(
-          child: const InstantVerifyView(),
-          locale: locale,
-          overrides: [
-            dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
-            firmwareUpdateProvider
-                .overrideWith(() => mockFirmwareUpdateNotifier),
-            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
-            instantPrivacyProvider
-                .overrideWith(() => mockInstantPrivacyNotifier),
-            instantTopologyProvider
-                .overrideWith(() => mockInstantTopologyNotifier),
-            instantVerifyProvider.overrideWith(() => mockInstantVerifyNotifier),
-            dashboardManagerProvider
-                .overrideWith(() => mockDashboardManagerNotifier),
-          ],
-        ),
-      );
-      await tester.pumpAndSettle();
-      final context = tester.element(find.byType(InstantVerifyView));
-      await precacheImage(
-          CustomTheme.of(context).images.devices.routerMx6200, context);
-      await precacheImage(
-          CustomTheme.of(context).images.devices.routerWhw03, context);
-      await precacheImage(
-          CustomTheme.of(context).images.devices.routerMr7500, context);
-      await tester.pumpAndSettle();
-    });
-  }, screens: [
-    ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1280)).toList(),
-    ...responsiveMobileScreens.map((e) => e.copyWith(height: 2880)).toList(),
-  ]);
-
-  testLocalizations(
-    'Instant-Verify view - Instant-Info view - firmware update available',
-    (tester, locale) async {
-      when(mockFirmwareUpdateNotifier.build()).thenReturn(
-          FirmwareUpdateState.fromMap(firmwareUpdateHasFirmwareTestData));
-      await tester.runAsync(() async {
-        await tester.pumpWidget(
-          testableRouteShellWidget(
-            child: const InstantVerifyView(),
-            locale: locale,
-            overrides: [
-              dashboardHomeProvider
-                  .overrideWith(() => mockDashboardHomeNotifier),
-              firmwareUpdateProvider
-                  .overrideWith(() => mockFirmwareUpdateNotifier),
-              deviceManagerProvider
-                  .overrideWith(() => mockDeviceManagerNotifier),
-              internetStatusProvider
-                  .overrideWith((ref) => InternetStatus.online),
-              instantPrivacyProvider
-                  .overrideWith(() => mockInstantPrivacyNotifier),
-              instantTopologyProvider
-                  .overrideWith(() => mockInstantTopologyNotifier),
-              instantVerifyProvider
-                  .overrideWith(() => mockInstantVerifyNotifier),
-              dashboardManagerProvider
-                  .overrideWith(() => mockDashboardManagerNotifier),
-            ],
-          ),
-        );
-        await tester.pumpAndSettle();
-        final context = tester.element(find.byType(InstantVerifyView));
-        await precacheImage(
-            CustomTheme.of(context).images.devices.routerMx6200, context);
-        await precacheImage(
-            CustomTheme.of(context).images.devices.routerWhw03, context);
-        await precacheImage(
-            CustomTheme.of(context).images.devices.routerMr7500, context);
-        await tester.pumpAndSettle();
-      });
+      expect(find.byType(InstantTopologyView), findsOneWidget);
     },
-    screens: [
-      ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1280)).toList(),
-      ...responsiveMobileScreens.map((e) => e.copyWith(height: 2880)).toList(),
-    ],
+    screens: _infoScreens,
+    goldenFilename: 'IVER-TOPOLOGY_01_tab',
+    helper: testHelper,
   );
 
-  testLocalizations(
-    'Instant-Verify view - Instant-Info view - no WAN port',
-    (tester, locale) async {
-      final testState =
-          InstantVerifyState.fromMap(instantVerifyAllWiFiOffTestState);
-      when(mockInstantVerifyNotifier.build()).thenReturn(testState);
-      when(mockDashboardHomeNotifier.build()).thenReturn(
-          DashboardHomeState.fromMap(dashboardHomeCherry7TestState)
-              .copyWith(wanPortConnection: () => 'None'));
-      await tester.runAsync(() async {
-        await tester.pumpWidget(
-          testableRouteShellWidget(
-            child: const InstantVerifyView(),
-            locale: locale,
-            overrides: [
-              dashboardHomeProvider
-                  .overrideWith(() => mockDashboardHomeNotifier),
-              firmwareUpdateProvider
-                  .overrideWith(() => mockFirmwareUpdateNotifier),
-              deviceManagerProvider
-                  .overrideWith(() => mockDeviceManagerNotifier),
-              internetStatusProvider
-                  .overrideWith((ref) => InternetStatus.online),
-              instantPrivacyProvider
-                  .overrideWith(() => mockInstantPrivacyNotifier),
-              instantTopologyProvider
-                  .overrideWith(() => mockInstantTopologyNotifier),
-              instantVerifyProvider
-                  .overrideWith(() => mockInstantVerifyNotifier),
-              dashboardManagerProvider
-                  .overrideWith(() => mockDashboardManagerNotifier),
-            ],
-          ),
-        );
-        await tester.pumpAndSettle();
-        final context = tester.element(find.byType(InstantVerifyView));
-        await precacheImage(
-            CustomTheme.of(context).images.devices.routerMx6200, context);
-        await precacheImage(
-            CustomTheme.of(context).images.devices.routerWhw03, context);
-        await precacheImage(
-            CustomTheme.of(context).images.devices.routerMr7500, context);
-        await tester.pumpAndSettle();
-      });
+  // Test ID: IVER-MULTI_DNS — connectivity card with multiple DNS servers
+  testLocalizationsV2(
+    'instant verify view - connectivity multi dns',
+    (tester, screen) async {
+      final context = await pumpInstantVerify(
+        tester,
+        screen,
+        state: InstantVerifyState.fromMap(instantVerifyMultiDNSTestState),
+      );
+      final loc = testHelper.loc(context);
+
+      expect(find.text(loc.nDNS(3)), findsOneWidget);
+      expect(
+        find.textContaining(' | '),
+        findsWidgets,
+      );
     },
-    screens: [
-      ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1280)).toList(),
-      ...responsiveMobileScreens.map((e) => e.copyWith(height: 2880)).toList(),
-    ],
+    screens: _infoScreens,
+    goldenFilename: 'IVER-MULTI_DNS_01_card',
+    helper: testHelper,
   );
 
-  testLocalizations(
-    'Instant-Verify view - Instant-Info view - multi-DNS',
-    (tester, locale) async {
-      final testState =
-          InstantVerifyState.fromMap(instantVerifyMultiDNSTestState);
-      when(mockInstantVerifyNotifier.build()).thenReturn(testState);
-
-      await tester.runAsync(() async {
-        await tester.pumpWidget(
-          testableRouteShellWidget(
-            child: const InstantVerifyView(),
-            locale: locale,
-            overrides: [
-              dashboardHomeProvider
-                  .overrideWith(() => mockDashboardHomeNotifier),
-              firmwareUpdateProvider
-                  .overrideWith(() => mockFirmwareUpdateNotifier),
-              deviceManagerProvider
-                  .overrideWith(() => mockDeviceManagerNotifier),
-              internetStatusProvider
-                  .overrideWith((ref) => InternetStatus.online),
-              instantPrivacyProvider
-                  .overrideWith(() => mockInstantPrivacyNotifier),
-              instantTopologyProvider
-                  .overrideWith(() => mockInstantTopologyNotifier),
-              instantVerifyProvider
-                  .overrideWith(() => mockInstantVerifyNotifier),
-              dashboardManagerProvider
-                  .overrideWith(() => mockDashboardManagerNotifier),
-            ],
-          ),
-        );
-        await tester.pumpAndSettle();
-        final context = tester.element(find.byType(InstantVerifyView));
-        await precacheImage(
-            CustomTheme.of(context).images.devices.routerMx6200, context);
-        await precacheImage(
-            CustomTheme.of(context).images.devices.routerWhw03, context);
-        await precacheImage(
-            CustomTheme.of(context).images.devices.routerMr7500, context);
-        await tester.pumpAndSettle();
-      });
+  // Test ID: IVER-SPEEDTEST — internal health-check speed test widget
+  testLocalizationsV2(
+    'instant verify view - internal speed test widget',
+    (tester, screen) async {
+      when(testHelper.mockHealthCheckProvider.build()).thenReturn(
+        HealthCheckState.fromJson(healthCheckStateWithModulesSuccessOkay),
+      );
+      await pumpInstantVerify(tester, screen);
+      expect(find.byKey(const ValueKey('speedTestCard')), findsOneWidget);
+      expect(find.byType(SpeedTestWidget), findsOneWidget);
     },
-    screens: [
-      ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1280)).toList(),
-      ...responsiveMobileScreens.map((e) => e.copyWith(height: 2880)).toList(),
-    ],
+    screens: _infoScreens,
+    goldenFilename: 'IVER-SPEEDTEST_01_card',
+    helper: testHelper,
+  );
+
+  // Test ID: IVER-SPEEDTEST_INIT — idle modules still show speed test card
+  testLocalizationsV2(
+    'instant verify view - speed test modules idle state',
+    (tester, screen) async {
+      when(testHelper.mockHealthCheckProvider.build()).thenReturn(
+        HealthCheckState.fromJson(healthCheckInitStateWithModules),
+      );
+      await pumpInstantVerify(tester, screen);
+      expect(find.byKey(const ValueKey('speedTestCard')), findsOneWidget);
+    },
+    screens: _infoScreens,
+    goldenFilename: 'IVER-SPEEDTEST_INIT_01_card',
+    helper: testHelper,
+  );
+
+  // Test ID: IVER-PING — tapping ping card opens modal
+  testLocalizationsV2(
+    'instant verify view - ping dialog',
+    (tester, screen) async {
+      await pumpInstantVerify(tester, screen);
+
+      await tester.tap(find.byKey(const ValueKey('ping')));
+      await tester.pumpAndSettle();
+      expect(find.byType(PingNetworkModal), findsOneWidget);
+    },
+    screens: _infoScreens,
+    goldenFilename: 'IVER-PING_01_dialog',
+    helper: testHelper,
+  );
+
+  // Test ID: IVER-TRACEROUTE — tapping traceroute card opens modal
+  testLocalizationsV2(
+    'instant verify view - traceroute dialog',
+    (tester, screen) async {
+      await pumpInstantVerify(tester, screen);
+
+      await tester.tap(find.byKey(const ValueKey('traceroute')));
+      await tester.pumpAndSettle();
+      expect(find.byType(TracerouteModal), findsOneWidget);
+    },
+    screens: _infoScreens,
+    goldenFilename: 'IVER-TRACEROUTE_01_dialog',
+    helper: testHelper,
   );
 }

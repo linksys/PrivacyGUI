@@ -30,23 +30,51 @@ import 'package:privacy_gui/page/advanced_settings/local_network_settings/provid
 
 class _FakeNotifierProviderRef_0<T> extends _i1.SmartFake
     implements _i2.NotifierProviderRef<T> {
-  _FakeNotifierProviderRef_0(Object parent, Invocation parentInvocation)
-      : super(parent, parentInvocation);
+  _FakeNotifierProviderRef_0(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
 }
 
 class _FakeLocalNetworkSettingsState_1 extends _i1.SmartFake
     implements _i3.LocalNetworkSettingsState {
-  _FakeLocalNetworkSettingsState_1(Object parent, Invocation parentInvocation)
-      : super(parent, parentInvocation);
+  _FakeLocalNetworkSettingsState_1(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
+class _FakeLocalNetworkSettings_2 extends _i1.SmartFake
+    implements _i3.LocalNetworkSettings {
+  _FakeLocalNetworkSettings_2(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
 }
 
 /// A class which mocks [LocalNetworkSettingsNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockLocalNetworkSettingsNotifier
-    extends _i2.Notifier<_i3.LocalNetworkSettingsState>
-    with _i1.Mock
+class MockLocalNetworkSettingsNotifier extends _i2.Notifier<_i3.LocalNetworkSettingsState> with _i1.Mock
     implements _i4.LocalNetworkSettingsNotifier {
+  @override
+  set state(_i3.LocalNetworkSettingsState? newState) => super.noSuchMethod(
+        Invocation.setter(
+          #state,
+          newState,
+        ),
+        returnValueForMissingStub: null,
+      );
+
   @override
   _i2.NotifierProviderRef<_i3.LocalNetworkSettingsState> get ref =>
       (super.noSuchMethod(
@@ -76,417 +104,26 @@ class MockLocalNetworkSettingsNotifier
       ) as _i3.LocalNetworkSettingsState);
 
   @override
-  set state(_i3.LocalNetworkSettingsState? value) => super.noSuchMethod(
-        Invocation.setter(#state, value),
-        returnValueForMissingStub: null,
-      );
-
-  @override
   _i3.LocalNetworkSettingsState build() => (super.noSuchMethod(
-        Invocation.method(#build, []),
+        Invocation.method(
+          #build,
+          [],
+        ),
         returnValue: _FakeLocalNetworkSettingsState_1(
           this,
-          Invocation.method(#build, []),
+          Invocation.method(
+            #build,
+            [],
+          ),
         ),
         returnValueForMissingStub: _FakeLocalNetworkSettingsState_1(
           this,
-          Invocation.method(#build, []),
+          Invocation.method(
+            #build,
+            [],
+          ),
         ),
       ) as _i3.LocalNetworkSettingsState);
-
-  @override
-  _i5.Future<_i3.LocalNetworkSettingsState> fetch({
-    bool? fetchRemote = false,
-  }) =>
-      (super.noSuchMethod(
-        Invocation.method(#fetch, [], {#fetchRemote: fetchRemote}),
-        returnValue: _i5.Future<_i3.LocalNetworkSettingsState>.value(
-          _FakeLocalNetworkSettingsState_1(
-            this,
-            Invocation.method(#fetch, [], {#fetchRemote: fetchRemote}),
-          ),
-        ),
-        returnValueForMissingStub:
-            _i5.Future<_i3.LocalNetworkSettingsState>.value(
-          _FakeLocalNetworkSettingsState_1(
-            this,
-            Invocation.method(#fetch, [], {#fetchRemote: fetchRemote}),
-          ),
-        ),
-      ) as _i5.Future<_i3.LocalNetworkSettingsState>);
-
-  @override
-  _i5.Future<void> saveSettings(
-    _i3.LocalNetworkSettingsState? settings, {
-    String? previousIPAddress,
-  }) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #saveSettings,
-          [settings],
-          {#previousIPAddress: previousIPAddress},
-        ),
-        returnValue: _i5.Future<void>.value(),
-        returnValueForMissingStub: _i5.Future<void>.value(),
-      ) as _i5.Future<void>);
-
-  @override
-  _i5.Future<List<_i6.DHCPReservation>> saveReservations(
-    List<_i6.DHCPReservation>? list,
-  ) =>
-      (super.noSuchMethod(
-        Invocation.method(#saveReservations, [list]),
-        returnValue: _i5.Future<List<_i6.DHCPReservation>>.value(
-          <_i6.DHCPReservation>[],
-        ),
-        returnValueForMissingStub: _i5.Future<List<_i6.DHCPReservation>>.value(
-          <_i6.DHCPReservation>[],
-        ),
-      ) as _i5.Future<List<_i6.DHCPReservation>>);
-
-  @override
-  void updateHostName(String? hostName) => super.noSuchMethod(
-        Invocation.method(#updateHostName, [hostName]),
-        returnValueForMissingStub: null,
-      );
-
-  @override
-  void updateErrorPrompts(String? key, String? value) => super.noSuchMethod(
-        Invocation.method(#updateErrorPrompts, [key, value]),
-        returnValueForMissingStub: null,
-      );
-
-  @override
-  void updateHasErrorOnTabs() => super.noSuchMethod(
-        Invocation.method(#updateHasErrorOnTabs, []),
-        returnValueForMissingStub: null,
-      );
-
-  @override
-  void updateDHCPReservationList(
-    List<_i6.DHCPReservation>? addedDHCPReservationList,
-  ) =>
-      super.noSuchMethod(
-        Invocation.method(
-            #updateDHCPReservationList, [addedDHCPReservationList]),
-        returnValueForMissingStub: null,
-      );
-
-  @override
-  bool updateDHCPReservationOfIndex(_i6.DHCPReservation? item, int? index) =>
-      (super.noSuchMethod(
-        Invocation.method(#updateDHCPReservationOfIndex, [item, index]),
-        returnValue: false,
-        returnValueForMissingStub: false,
-      ) as bool);
-
-  @override
-  bool isReservationOverlap({required _i6.DHCPReservation? item, int? index}) =>
-      (super.noSuchMethod(
-        Invocation.method(#isReservationOverlap, [], {
-          #item: item,
-          #index: index,
-        }),
-        returnValue: false,
-        returnValueForMissingStub: false,
-      ) as bool);
-
-  @override
-  void updateState(_i3.LocalNetworkSettingsState? newState) =>
-      super.noSuchMethod(
-        Invocation.method(#updateState, [newState]),
-        returnValueForMissingStub: null,
-      );
-
-  @override
-  void routerIpAddressChanged(
-    _i7.BuildContext? context,
-    String? newRouterIpAddress,
-    _i3.LocalNetworkSettingsState? settings,
-  ) =>
-      super.noSuchMethod(
-        Invocation.method(#routerIpAddressChanged, [
-          context,
-          newRouterIpAddress,
-          settings,
-        ]),
-        returnValueForMissingStub: null,
-      );
-
-  @override
-  void subnetMaskChanged(
-    _i7.BuildContext? context,
-    String? subnetMask,
-    _i3.LocalNetworkSettingsState? settings,
-  ) =>
-      super.noSuchMethod(
-        Invocation.method(#subnetMaskChanged, [context, subnetMask, settings]),
-        returnValueForMissingStub: null,
-      );
-
-  @override
-  void startIpChanged(
-    _i7.BuildContext? context,
-    String? startIpAddress,
-    _i3.LocalNetworkSettingsState? settings,
-  ) =>
-      super.noSuchMethod(
-        Invocation.method(#startIpChanged, [context, startIpAddress, settings]),
-        returnValueForMissingStub: null,
-      );
-
-  @override
-  void maxUserAllowedChanged(
-    _i7.BuildContext? context,
-    String? maxUserAllowed,
-    _i3.LocalNetworkSettingsState? settings,
-  ) =>
-      super.noSuchMethod(
-        Invocation.method(#maxUserAllowedChanged, [
-          context,
-          maxUserAllowed,
-          settings,
-        ]),
-        returnValueForMissingStub: null,
-      );
-
-  @override
-  (bool, _i3.LocalNetworkSettingsState) routerIpAddressFinished(
-    String? newRouterIpAddress,
-    _i3.LocalNetworkSettingsState? settings,
-  ) =>
-      (super.noSuchMethod(
-        Invocation.method(#routerIpAddressFinished, [
-          newRouterIpAddress,
-          settings,
-        ]),
-        returnValue: (
-          false,
-          _FakeLocalNetworkSettingsState_1(
-            this,
-            Invocation.method(#routerIpAddressFinished, [
-              newRouterIpAddress,
-              settings,
-            ]),
-          ),
-        ),
-        returnValueForMissingStub: (
-          false,
-          _FakeLocalNetworkSettingsState_1(
-            this,
-            Invocation.method(#routerIpAddressFinished, [
-              newRouterIpAddress,
-              settings,
-            ]),
-          ),
-        ),
-      ) as (bool, _i3.LocalNetworkSettingsState));
-
-  @override
-  (bool, _i3.LocalNetworkSettingsState) subnetMaskFinished(
-    String? subnetMask,
-    _i3.LocalNetworkSettingsState? settings,
-  ) =>
-      (super.noSuchMethod(
-        Invocation.method(#subnetMaskFinished, [subnetMask, settings]),
-        returnValue: (
-          false,
-          _FakeLocalNetworkSettingsState_1(
-            this,
-            Invocation.method(#subnetMaskFinished, [subnetMask, settings]),
-          ),
-        ),
-        returnValueForMissingStub: (
-          false,
-          _FakeLocalNetworkSettingsState_1(
-            this,
-            Invocation.method(#subnetMaskFinished, [subnetMask, settings]),
-          ),
-        ),
-      ) as (bool, _i3.LocalNetworkSettingsState));
-
-  @override
-  (bool, _i3.LocalNetworkSettingsState) startIpFinished(
-    String? startIpAddress,
-    _i3.LocalNetworkSettingsState? settings,
-  ) =>
-      (super.noSuchMethod(
-        Invocation.method(#startIpFinished, [startIpAddress, settings]),
-        returnValue: (
-          false,
-          _FakeLocalNetworkSettingsState_1(
-            this,
-            Invocation.method(#startIpFinished, [startIpAddress, settings]),
-          ),
-        ),
-        returnValueForMissingStub: (
-          false,
-          _FakeLocalNetworkSettingsState_1(
-            this,
-            Invocation.method(#startIpFinished, [startIpAddress, settings]),
-          ),
-        ),
-      ) as (bool, _i3.LocalNetworkSettingsState));
-
-  @override
-  (bool, _i3.LocalNetworkSettingsState) maxUserAllowedFinished(
-    String? maxUserAllowed,
-    _i3.LocalNetworkSettingsState? settings,
-  ) =>
-      (super.noSuchMethod(
-        Invocation.method(#maxUserAllowedFinished, [
-          maxUserAllowed,
-          settings,
-        ]),
-        returnValue: (
-          false,
-          _FakeLocalNetworkSettingsState_1(
-            this,
-            Invocation.method(#maxUserAllowedFinished, [
-              maxUserAllowed,
-              settings,
-            ]),
-          ),
-        ),
-        returnValueForMissingStub: (
-          false,
-          _FakeLocalNetworkSettingsState_1(
-            this,
-            Invocation.method(#maxUserAllowedFinished, [
-              maxUserAllowed,
-              settings,
-            ]),
-          ),
-        ),
-      ) as (bool, _i3.LocalNetworkSettingsState));
-
-  @override
-  (bool, _i3.LocalNetworkSettingsState) clientLeaseFinished(
-    String? leaseTime,
-    _i3.LocalNetworkSettingsState? settings,
-  ) =>
-      (super.noSuchMethod(
-        Invocation.method(#clientLeaseFinished, [leaseTime, settings]),
-        returnValue: (
-          false,
-          _FakeLocalNetworkSettingsState_1(
-            this,
-            Invocation.method(#clientLeaseFinished, [leaseTime, settings]),
-          ),
-        ),
-        returnValueForMissingStub: (
-          false,
-          _FakeLocalNetworkSettingsState_1(
-            this,
-            Invocation.method(#clientLeaseFinished, [leaseTime, settings]),
-          ),
-        ),
-      ) as (bool, _i3.LocalNetworkSettingsState));
-
-  @override
-  (bool, _i3.LocalNetworkSettingsState) staticDns1Finished(
-    String? dnsIp,
-    _i3.LocalNetworkSettingsState? settings,
-  ) =>
-      (super.noSuchMethod(
-        Invocation.method(#staticDns1Finished, [dnsIp, settings]),
-        returnValue: (
-          false,
-          _FakeLocalNetworkSettingsState_1(
-            this,
-            Invocation.method(#staticDns1Finished, [dnsIp, settings]),
-          ),
-        ),
-        returnValueForMissingStub: (
-          false,
-          _FakeLocalNetworkSettingsState_1(
-            this,
-            Invocation.method(#staticDns1Finished, [dnsIp, settings]),
-          ),
-        ),
-      ) as (bool, _i3.LocalNetworkSettingsState));
-
-  @override
-  (bool, _i3.LocalNetworkSettingsState) staticDns2Finished(
-    String? dnsIp,
-    _i3.LocalNetworkSettingsState? settings,
-  ) =>
-      (super.noSuchMethod(
-        Invocation.method(#staticDns2Finished, [dnsIp, settings]),
-        returnValue: (
-          false,
-          _FakeLocalNetworkSettingsState_1(
-            this,
-            Invocation.method(#staticDns2Finished, [dnsIp, settings]),
-          ),
-        ),
-        returnValueForMissingStub: (
-          false,
-          _FakeLocalNetworkSettingsState_1(
-            this,
-            Invocation.method(#staticDns2Finished, [dnsIp, settings]),
-          ),
-        ),
-      ) as (bool, _i3.LocalNetworkSettingsState));
-
-  @override
-  (bool, _i3.LocalNetworkSettingsState) staticDns3Finished(
-    String? dnsIp,
-    _i3.LocalNetworkSettingsState? settings,
-  ) =>
-      (super.noSuchMethod(
-        Invocation.method(#staticDns3Finished, [dnsIp, settings]),
-        returnValue: (
-          false,
-          _FakeLocalNetworkSettingsState_1(
-            this,
-            Invocation.method(#staticDns3Finished, [dnsIp, settings]),
-          ),
-        ),
-        returnValueForMissingStub: (
-          false,
-          _FakeLocalNetworkSettingsState_1(
-            this,
-            Invocation.method(#staticDns3Finished, [dnsIp, settings]),
-          ),
-        ),
-      ) as (bool, _i3.LocalNetworkSettingsState));
-
-  @override
-  (bool, _i3.LocalNetworkSettingsState) winsServerFinished(
-    String? winsIp,
-    _i3.LocalNetworkSettingsState? settings,
-  ) =>
-      (super.noSuchMethod(
-        Invocation.method(#winsServerFinished, [winsIp, settings]),
-        returnValue: (
-          false,
-          _FakeLocalNetworkSettingsState_1(
-            this,
-            Invocation.method(#winsServerFinished, [winsIp, settings]),
-          ),
-        ),
-        returnValueForMissingStub: (
-          false,
-          _FakeLocalNetworkSettingsState_1(
-            this,
-            Invocation.method(#winsServerFinished, [winsIp, settings]),
-          ),
-        ),
-      ) as (bool, _i3.LocalNetworkSettingsState));
-
-  @override
-  void listenSelf(
-    void Function(
-      _i3.LocalNetworkSettingsState?,
-      _i3.LocalNetworkSettingsState,
-    )? listener, {
-    void Function(Object, StackTrace)? onError,
-  }) =>
-      super.noSuchMethod(
-        Invocation.method(#listenSelf, [listener], {#onError: onError}),
-        returnValueForMissingStub: null,
-      );
 
   @override
   bool updateShouldNotify(
@@ -494,8 +131,695 @@ class MockLocalNetworkSettingsNotifier
     _i3.LocalNetworkSettingsState? next,
   ) =>
       (super.noSuchMethod(
-        Invocation.method(#updateShouldNotify, [previous, next]),
+        Invocation.method(
+          #updateShouldNotify,
+          [
+            previous,
+            next,
+          ],
+        ),
         returnValue: false,
         returnValueForMissingStub: false,
       ) as bool);
+
+  @override
+  _i5.Future<
+      (_i3.LocalNetworkSettings?, _i3.LocalNetworkStatus?)> performFetch({
+    bool? forceRemote = false,
+    bool? updateStatusOnly = false,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #performFetch,
+          [],
+          {
+            #forceRemote: forceRemote,
+            #updateStatusOnly: updateStatusOnly,
+          },
+        ),
+        returnValue: _i5
+            .Future<(_i3.LocalNetworkSettings?, _i3.LocalNetworkStatus?)>.value(
+            (null, null)),
+        returnValueForMissingStub: _i5
+            .Future<(_i3.LocalNetworkSettings?, _i3.LocalNetworkStatus?)>.value(
+            (null, null)),
+      ) as _i5.Future<(_i3.LocalNetworkSettings?, _i3.LocalNetworkStatus?)>);
+
+  @override
+  _i5.Future<void> performSave() => (super.noSuchMethod(
+        Invocation.method(
+          #performSave,
+          [],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> saveReservations(List<_i6.DHCPReservation>? list) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #saveReservations,
+          [list],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  void updateSettings(_i3.LocalNetworkSettings? newSettings) =>
+      super.noSuchMethod(
+        Invocation.method(
+          #updateSettings,
+          [newSettings],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  void updateHostName(String? hostName) => super.noSuchMethod(
+        Invocation.method(
+          #updateHostName,
+          [hostName],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  void updateErrorPrompts(
+    String? key,
+    String? value,
+  ) =>
+      super.noSuchMethod(
+        Invocation.method(
+          #updateErrorPrompts,
+          [
+            key,
+            value,
+          ],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  void updateHasErrorOnTabs() => super.noSuchMethod(
+        Invocation.method(
+          #updateHasErrorOnTabs,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  void updateDHCPReservationList(
+          List<_i6.DHCPReservation>? addedDHCPReservationList) =>
+      super.noSuchMethod(
+        Invocation.method(
+          #updateDHCPReservationList,
+          [addedDHCPReservationList],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  bool updateDHCPReservationOfIndex(
+    _i6.DHCPReservation? item,
+    int? index,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #updateDHCPReservationOfIndex,
+          [
+            item,
+            index,
+          ],
+        ),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  bool isReservationOverlap({
+    required _i6.DHCPReservation? item,
+    int? index,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #isReservationOverlap,
+          [],
+          {
+            #item: item,
+            #index: index,
+          },
+        ),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  void routerIpAddressChanged(
+    _i7.BuildContext? context,
+    String? newRouterIpAddress,
+  ) =>
+      super.noSuchMethod(
+        Invocation.method(
+          #routerIpAddressChanged,
+          [
+            context,
+            newRouterIpAddress,
+          ],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  void subnetMaskChanged(
+    _i7.BuildContext? context,
+    String? subnetMask,
+  ) =>
+      super.noSuchMethod(
+        Invocation.method(
+          #subnetMaskChanged,
+          [
+            context,
+            subnetMask,
+          ],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  void startIpChanged(
+    _i7.BuildContext? context,
+    String? startIpAddress,
+  ) =>
+      super.noSuchMethod(
+        Invocation.method(
+          #startIpChanged,
+          [
+            context,
+            startIpAddress,
+          ],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  void maxUserAllowedChanged(
+    _i7.BuildContext? context,
+    String? maxUserAllowed,
+  ) =>
+      super.noSuchMethod(
+        Invocation.method(
+          #maxUserAllowedChanged,
+          [
+            context,
+            maxUserAllowed,
+          ],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  (bool, _i3.LocalNetworkSettings) routerIpAddressFinished(
+    String? newRouterIpAddress,
+    _i3.LocalNetworkSettings? settings,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #routerIpAddressFinished,
+          [
+            newRouterIpAddress,
+            settings,
+          ],
+        ),
+        returnValue: (
+          false,
+          _FakeLocalNetworkSettings_2(
+            this,
+            Invocation.method(
+              #routerIpAddressFinished,
+              [
+                newRouterIpAddress,
+                settings,
+              ],
+            ),
+          )
+        ),
+        returnValueForMissingStub: (
+          false,
+          _FakeLocalNetworkSettings_2(
+            this,
+            Invocation.method(
+              #routerIpAddressFinished,
+              [
+                newRouterIpAddress,
+                settings,
+              ],
+            ),
+          )
+        ),
+      ) as (bool, _i3.LocalNetworkSettings));
+
+  @override
+  (bool, _i3.LocalNetworkSettings) subnetMaskFinished(
+    String? subnetMask,
+    _i3.LocalNetworkSettings? settings,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #subnetMaskFinished,
+          [
+            subnetMask,
+            settings,
+          ],
+        ),
+        returnValue: (
+          false,
+          _FakeLocalNetworkSettings_2(
+            this,
+            Invocation.method(
+              #subnetMaskFinished,
+              [
+                subnetMask,
+                settings,
+              ],
+            ),
+          )
+        ),
+        returnValueForMissingStub: (
+          false,
+          _FakeLocalNetworkSettings_2(
+            this,
+            Invocation.method(
+              #subnetMaskFinished,
+              [
+                subnetMask,
+                settings,
+              ],
+            ),
+          )
+        ),
+      ) as (bool, _i3.LocalNetworkSettings));
+
+  @override
+  (bool, _i3.LocalNetworkSettings) startIpFinished(
+    String? startIpAddress,
+    _i3.LocalNetworkSettings? settings,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #startIpFinished,
+          [
+            startIpAddress,
+            settings,
+          ],
+        ),
+        returnValue: (
+          false,
+          _FakeLocalNetworkSettings_2(
+            this,
+            Invocation.method(
+              #startIpFinished,
+              [
+                startIpAddress,
+                settings,
+              ],
+            ),
+          )
+        ),
+        returnValueForMissingStub: (
+          false,
+          _FakeLocalNetworkSettings_2(
+            this,
+            Invocation.method(
+              #startIpFinished,
+              [
+                startIpAddress,
+                settings,
+              ],
+            ),
+          )
+        ),
+      ) as (bool, _i3.LocalNetworkSettings));
+
+  @override
+  (bool, _i3.LocalNetworkSettings) maxUserAllowedFinished(
+    String? maxUserAllowed,
+    _i3.LocalNetworkSettings? settings,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #maxUserAllowedFinished,
+          [
+            maxUserAllowed,
+            settings,
+          ],
+        ),
+        returnValue: (
+          false,
+          _FakeLocalNetworkSettings_2(
+            this,
+            Invocation.method(
+              #maxUserAllowedFinished,
+              [
+                maxUserAllowed,
+                settings,
+              ],
+            ),
+          )
+        ),
+        returnValueForMissingStub: (
+          false,
+          _FakeLocalNetworkSettings_2(
+            this,
+            Invocation.method(
+              #maxUserAllowedFinished,
+              [
+                maxUserAllowed,
+                settings,
+              ],
+            ),
+          )
+        ),
+      ) as (bool, _i3.LocalNetworkSettings));
+
+  @override
+  (bool, _i3.LocalNetworkSettings) clientLeaseFinished(
+    String? leaseTime,
+    _i3.LocalNetworkSettings? settings,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #clientLeaseFinished,
+          [
+            leaseTime,
+            settings,
+          ],
+        ),
+        returnValue: (
+          false,
+          _FakeLocalNetworkSettings_2(
+            this,
+            Invocation.method(
+              #clientLeaseFinished,
+              [
+                leaseTime,
+                settings,
+              ],
+            ),
+          )
+        ),
+        returnValueForMissingStub: (
+          false,
+          _FakeLocalNetworkSettings_2(
+            this,
+            Invocation.method(
+              #clientLeaseFinished,
+              [
+                leaseTime,
+                settings,
+              ],
+            ),
+          )
+        ),
+      ) as (bool, _i3.LocalNetworkSettings));
+
+  @override
+  (bool, _i3.LocalNetworkSettings) staticDns1Finished(
+    String? dnsIp,
+    _i3.LocalNetworkSettings? settings,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #staticDns1Finished,
+          [
+            dnsIp,
+            settings,
+          ],
+        ),
+        returnValue: (
+          false,
+          _FakeLocalNetworkSettings_2(
+            this,
+            Invocation.method(
+              #staticDns1Finished,
+              [
+                dnsIp,
+                settings,
+              ],
+            ),
+          )
+        ),
+        returnValueForMissingStub: (
+          false,
+          _FakeLocalNetworkSettings_2(
+            this,
+            Invocation.method(
+              #staticDns1Finished,
+              [
+                dnsIp,
+                settings,
+              ],
+            ),
+          )
+        ),
+      ) as (bool, _i3.LocalNetworkSettings));
+
+  @override
+  (bool, _i3.LocalNetworkSettings) staticDns2Finished(
+    String? dnsIp,
+    _i3.LocalNetworkSettings? settings,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #staticDns2Finished,
+          [
+            dnsIp,
+            settings,
+          ],
+        ),
+        returnValue: (
+          false,
+          _FakeLocalNetworkSettings_2(
+            this,
+            Invocation.method(
+              #staticDns2Finished,
+              [
+                dnsIp,
+                settings,
+              ],
+            ),
+          )
+        ),
+        returnValueForMissingStub: (
+          false,
+          _FakeLocalNetworkSettings_2(
+            this,
+            Invocation.method(
+              #staticDns2Finished,
+              [
+                dnsIp,
+                settings,
+              ],
+            ),
+          )
+        ),
+      ) as (bool, _i3.LocalNetworkSettings));
+
+  @override
+  (bool, _i3.LocalNetworkSettings) staticDns3Finished(
+    String? dnsIp,
+    _i3.LocalNetworkSettings? settings,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #staticDns3Finished,
+          [
+            dnsIp,
+            settings,
+          ],
+        ),
+        returnValue: (
+          false,
+          _FakeLocalNetworkSettings_2(
+            this,
+            Invocation.method(
+              #staticDns3Finished,
+              [
+                dnsIp,
+                settings,
+              ],
+            ),
+          )
+        ),
+        returnValueForMissingStub: (
+          false,
+          _FakeLocalNetworkSettings_2(
+            this,
+            Invocation.method(
+              #staticDns3Finished,
+              [
+                dnsIp,
+                settings,
+              ],
+            ),
+          )
+        ),
+      ) as (bool, _i3.LocalNetworkSettings));
+
+  @override
+  (bool, _i3.LocalNetworkSettings) winsServerFinished(
+    String? winsIp,
+    _i3.LocalNetworkSettings? settings,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #winsServerFinished,
+          [
+            winsIp,
+            settings,
+          ],
+        ),
+        returnValue: (
+          false,
+          _FakeLocalNetworkSettings_2(
+            this,
+            Invocation.method(
+              #winsServerFinished,
+              [
+                winsIp,
+                settings,
+              ],
+            ),
+          )
+        ),
+        returnValueForMissingStub: (
+          false,
+          _FakeLocalNetworkSettings_2(
+            this,
+            Invocation.method(
+              #winsServerFinished,
+              [
+                winsIp,
+                settings,
+              ],
+            ),
+          )
+        ),
+      ) as (bool, _i3.LocalNetworkSettings));
+
+  @override
+  void listenSelf(
+    void Function(
+      _i3.LocalNetworkSettingsState?,
+      _i3.LocalNetworkSettingsState,
+    )? listener, {
+    void Function(
+      Object,
+      StackTrace,
+    )? onError,
+  }) =>
+      super.noSuchMethod(
+        Invocation.method(
+          #listenSelf,
+          [listener],
+          {#onError: onError},
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  _i5.Future<_i3.LocalNetworkSettingsState> fetch({
+    bool? forceRemote = false,
+    bool? updateStatusOnly = false,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #fetch,
+          [],
+          {
+            #forceRemote: forceRemote,
+            #updateStatusOnly: updateStatusOnly,
+          },
+        ),
+        returnValue: _i5.Future<_i3.LocalNetworkSettingsState>.value(
+            _FakeLocalNetworkSettingsState_1(
+          this,
+          Invocation.method(
+            #fetch,
+            [],
+            {
+              #forceRemote: forceRemote,
+              #updateStatusOnly: updateStatusOnly,
+            },
+          ),
+        )),
+        returnValueForMissingStub:
+            _i5.Future<_i3.LocalNetworkSettingsState>.value(
+                _FakeLocalNetworkSettingsState_1(
+          this,
+          Invocation.method(
+            #fetch,
+            [],
+            {
+              #forceRemote: forceRemote,
+              #updateStatusOnly: updateStatusOnly,
+            },
+          ),
+        )),
+      ) as _i5.Future<_i3.LocalNetworkSettingsState>);
+
+  @override
+  _i5.Future<_i3.LocalNetworkSettingsState> save() => (super.noSuchMethod(
+        Invocation.method(
+          #save,
+          [],
+        ),
+        returnValue: _i5.Future<_i3.LocalNetworkSettingsState>.value(
+            _FakeLocalNetworkSettingsState_1(
+          this,
+          Invocation.method(
+            #save,
+            [],
+          ),
+        )),
+        returnValueForMissingStub:
+            _i5.Future<_i3.LocalNetworkSettingsState>.value(
+                _FakeLocalNetworkSettingsState_1(
+          this,
+          Invocation.method(
+            #save,
+            [],
+          ),
+        )),
+      ) as _i5.Future<_i3.LocalNetworkSettingsState>);
+
+  @override
+  void revert() => super.noSuchMethod(
+        Invocation.method(
+          #revert,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  bool isDirty() => (super.noSuchMethod(
+        Invocation.method(
+          #isDirty,
+          [],
+        ),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  void markAsSaved() => super.noSuchMethod(
+        Invocation.method(
+          #markAsSaved,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
 }

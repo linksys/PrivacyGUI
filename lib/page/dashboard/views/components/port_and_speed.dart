@@ -4,13 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/build_config.dart';
-import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
-import 'package:privacy_gui/page/instant_verify/views/components/speed_test_widget.dart';
+import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
+import 'package:privacy_gui/page/health_check/widgets/speed_test_widget.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/dashboard/views/components/loading_tile.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
@@ -108,14 +108,15 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
   Widget _desktopVertical(BuildContext context, WidgetRef ref,
       DashboardHomeState state, bool isOnline, bool isLoading) {
     final hasLanPort = state.lanPortConnections.isNotEmpty;
-
+    final isHealthCheckSupported =
+        ref.watch(healthCheckProvider).isSpeedTestModuleSupported;
     return Container(
       constraints: BoxConstraints(
-          minWidth: 150, minHeight: !state.isHealthCheckSupported ? 360 : 520),
+          minWidth: 150, minHeight: !isHealthCheckSupported ? 360 : 520),
       child: AppCard(
           padding: EdgeInsets.zero,
           child: Column(
-            mainAxisAlignment: !state.isHealthCheckSupported
+            mainAxisAlignment: !isHealthCheckSupported
                 ? MainAxisAlignment.center
                 : MainAxisAlignment.spaceBetween,
             children: [
@@ -276,13 +277,18 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
       DashboardHomeState state, bool hasLanPort,
       [bool mobile = false]) {
     final isRemote = BuildConfig.isRemote();
-    return state.isHealthCheckSupported
+    final isHealthCheckSupported =
+        ref.watch(healthCheckProvider).isSpeedTestModuleSupported;
+    return isHealthCheckSupported
         ? hasLanPort
             ? Column(
                 children: const [
                   Divider(),
                   SpeedTestWidget(
                       showDetails: false,
+                      showInfoPanel: true,
+                      showStepDescriptions: false,
+                      showLatestOnIdle: true,
                       layout: SpeedTestLayout.vertical),
                   AppGap.large2(),
                 ],
@@ -302,12 +308,14 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
 
   Widget _speedCheckWidget(
       BuildContext context, WidgetRef ref, DashboardHomeState state) {
+    final speedTest = ref.watch(healthCheckProvider);
     final horizontalLayout = state.isHorizontalLayout;
     final hasLanPort =
         ref.read(dashboardHomeProvider).lanPortConnections.isNotEmpty;
-    final dateTime = state.speedCheckTimestamp == null
+    final dateTime = speedTest.latestSpeedTest?.timestampEpoch == null
         ? null
-        : DateTime.fromMillisecondsSinceEpoch(state.speedCheckTimestamp!);
+        : DateTime.fromMillisecondsSinceEpoch(
+            speedTest.latestSpeedTest!.timestampEpoch!);
     final isLegacy = dateTime == null
         ? true
         : DateTime.now().difference(dateTime).inDays > 1;
@@ -341,16 +349,18 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                               opacity: isLegacy ? 0.6 : 1,
                               child: _downloadSpeedResult(
                                   context,
-                                  state.downloadResult?.value ?? '--',
-                                  state.downloadResult?.unit,
+                                  speedTest.latestSpeedTest?.downloadSpeed ??
+                                      '--',
+                                  speedTest.latestSpeedTest?.downloadUnit,
                                   isLegacy),
                             ),
                             Opacity(
                               opacity: isLegacy ? 0.6 : 1,
                               child: _uploadSpeedResult(
                                   context,
-                                  state.uploadResult?.value ?? '--',
-                                  state.uploadResult?.unit,
+                                  speedTest.latestSpeedTest?.uploadSpeed ??
+                                      '--',
+                                  speedTest.latestSpeedTest?.uploadUnit,
                                   isLegacy),
                             )
                           ],
@@ -383,9 +393,11 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                                           opacity: isLegacy ? 0.6 : 1,
                                           child: _downloadSpeedResult(
                                               context,
-                                              state.downloadResult?.value ??
+                                              speedTest.latestSpeedTest
+                                                      ?.downloadSpeed ??
                                                   '--',
-                                              state.downloadResult?.unit,
+                                              speedTest.latestSpeedTest
+                                                  ?.downloadUnit,
                                               isLegacy),
                                         ),
                                       ),
@@ -394,8 +406,11 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                                           opacity: isLegacy ? 0.6 : 1,
                                           child: _uploadSpeedResult(
                                               context,
-                                              state.uploadResult?.value ?? '--',
-                                              state.uploadResult?.unit,
+                                              speedTest.latestSpeedTest
+                                                      ?.uploadSpeed ??
+                                                  '--',
+                                              speedTest
+                                                  .latestSpeedTest?.uploadUnit,
                                               isLegacy),
                                         ),
                                       ),
@@ -420,14 +435,16 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                               ],
                               _downloadSpeedResult(
                                   context,
-                                  state.downloadResult?.value ?? '--',
-                                  state.downloadResult?.unit,
+                                  speedTest.latestSpeedTest?.downloadSpeed ??
+                                      '--',
+                                  speedTest.latestSpeedTest?.downloadUnit,
                                   isLegacy),
                               const AppGap.large2(),
                               _uploadSpeedResult(
                                   context,
-                                  state.uploadResult?.value ?? '--',
-                                  state.uploadResult?.unit,
+                                  speedTest.latestSpeedTest?.uploadSpeed ??
+                                      '--',
+                                  speedTest.latestSpeedTest?.uploadUnit,
                                   isLegacy),
                               const AppGap.medium(),
                               _speedTestButton(context, state),
@@ -451,8 +468,9 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                                 opacity: isLegacy ? 0.6 : 1,
                                 child: _downloadSpeedResult(
                                     context,
-                                    state.downloadResult?.value ?? '--',
-                                    state.downloadResult?.unit,
+                                    speedTest.latestSpeedTest?.downloadSpeed ??
+                                        '--',
+                                    speedTest.latestSpeedTest?.downloadUnit,
                                     isLegacy),
                               ),
                             ),
@@ -461,8 +479,9 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                                 opacity: isLegacy ? 0.6 : 1,
                                 child: _uploadSpeedResult(
                                     context,
-                                    state.uploadResult?.value ?? '--',
-                                    state.uploadResult?.unit,
+                                    speedTest.latestSpeedTest?.uploadSpeed ??
+                                        '--',
+                                    speedTest.latestSpeedTest?.uploadUnit,
                                     isLegacy),
                               ),
                             ),

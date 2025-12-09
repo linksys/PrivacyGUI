@@ -4,6 +4,8 @@ final menus = [
   LinksysRoute(
     name: RouteNamed.menuInstantSafety,
     path: RoutePath.safeBrowsing,
+    preservableProvider: preservableInstantSafetyProvider,
+    enableDirtyCheck: true,
     config: LinksysRouteConfig(
       column: ColumnGrid(column: 9),
     ),
@@ -88,6 +90,8 @@ final menus = [
         LinksysRoute(
           name: RouteNamed.settingsTimeZone,
           path: RoutePath.settingsTimeZone,
+          preservableProvider: preservableTimezoneProvider,
+          enableDirtyCheck: true,
           config: LinksysRouteConfig(
             column: ColumnGrid(column: 9),
           ),
@@ -97,6 +101,8 @@ final menus = [
   LinksysRoute(
     name: RouteNamed.menuIncredibleWiFi,
     path: RoutePath.menuIncredibleWiFi,
+    preservableProvider: preservableWifiSettingsProvider,
+    enableDirtyCheck: true,
     config:
         LinksysRouteConfig(column: ColumnGrid(column: 12), noNaviRail: false),
     builder: (context, state) => WiFiMainView(
@@ -106,6 +112,8 @@ final menus = [
   LinksysRoute(
     name: RouteNamed.menuInstantPrivacy,
     path: RoutePath.menuInstantPrivacy,
+    preservableProvider: preservableInstantPrivacyProvider,
+    enableDirtyCheck: true,
     config: LinksysRouteConfig(column: ColumnGrid(column: 12)),
     builder: (context, state) => InstantPrivacyView(
       args: state.extra as Map<String, dynamic>? ?? const {},

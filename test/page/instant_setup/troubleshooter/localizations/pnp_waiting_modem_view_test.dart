@@ -1,107 +1,88 @@
-import 'dart:convert';
+import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:go_router/go_router.dart';
 import 'package:mockito/mockito.dart';
-import 'package:privacy_gui/core/jnap/models/device_info.dart';
-import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
-import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/pnp_waiting_modem_view.dart';
 import 'package:privacy_gui/route/route_model.dart';
-import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:get_it/get_it.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:privacy_gui/di.dart';
+import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
+
+import '../../../../common/config.dart';
+import '../../../../common/test_helper.dart';
 import '../../../../common/test_responsive_widget.dart';
-import '../../../../common/testable_router.dart';
-import '../../../../common/di.dart';
-import '../../../../test_data/device_info_test_data.dart';
-import '../../../../mocks/pnp_notifier_mocks.dart' as Mock;
-import 'package:privacy_gui/page/instant_setup/data/pnp_state.dart';
 
+/// View ID: PNPWM
+/// Implementation file under test: lib/page/instant_setup/troubleshooter/views/pnp_waiting_modem_view.dart
+///
+/// | Test ID         | Description                                                                 |
+/// | :-------------- | :-------------------------------------------------------------------------- |
+/// | `PNPWM-FULL_FLOW` | Verifies the full flow from countdown to checking for internet.             |
 void main() async {
-  late Mock.MockPnpNotifier mockPnpNotifier;
-
-  mockDependencyRegister();
-  ServiceHelper mockServiceHelper = GetIt.I<ServiceHelper>();
+  final testHelper = TestHelper();
+  final screens = responsiveAllScreens;
 
   setUp(() {
-    mockPnpNotifier = Mock.MockPnpNotifier();
-    when(mockPnpNotifier.build()).thenReturn(PnpState(
-        deviceInfo:
-            NodeDeviceInfo.fromJson(jsonDecode(testDeviceInfo)['output']),
-        isUnconfigured: true));
-    when(mockPnpNotifier.checkAdminPassword(null)).thenAnswer((_) {
+    testHelper.setup();
+    when(testHelper.mockPnpNotifier.checkAdminPassword(null)).thenAnswer((_) {
       throw ExceptionInvalidAdminPassword();
     });
+    // Mock the checkInternetConnection to return a pending Future to avoid navigation
+    when(testHelper.mockPnpNotifier.checkInternetConnection(any))
+        .thenAnswer((_) => Completer<bool>().future);
   });
 
-  testLocalizations('Troubleshooter - PnP waiting modem: counting',
-      (tester, locale) async {
-    await tester.pumpWidget(
-      testableSingleRoute(
+  // Test ID: PNPWM-FULL_FLOW
+  testLocalizationsV2(
+    'Verify waiting modem full flow',
+    (tester, localizedScreen) async {
+      final context = await testHelper.pumpView(
+        tester,
         child: const PnpWaitingModemView(),
         config: LinksysRouteConfig(
             column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
-        locale: locale,
-        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
-      ),
-    );
-    await tester.pump(const Duration(seconds: 3));
-  });
+        locale: localizedScreen.locale,
+      );
 
-  testLocalizations(
-      'Troubleshooter - PnP waiting modem: plug your modem back in',
-      (tester, locale) async {
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const PnpWaitingModemView(),
-        config: LinksysRouteConfig(
-            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
-        locale: locale,
-        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
-      ),
-    );
-    await tester.pumpAndSettle();
-  });
-  testLocalizations('Troubleshooter - PnP waiting modem: wait to start up',
-      (tester, locale) async {
-    final router = testableRouter(
-      router: GoRouter(routes: [
-        LinksysRoute(
-            path: '/',
-            builder: (context, state) => const PnpWaitingModemView()),
-        pnpTroubleshootingRoute,
-        pnpRoute,
-      ], initialLocation: '/'),
-      locale: locale,
-      overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
-    );
-    await tester.pumpWidget(router);
-    await tester.pumpAndSettle();
-    final btnFinder = find.byType(AppFilledButton);
-    await tester.tap(btnFinder);
-    await tester.pump(const Duration(seconds: 3));
-  });
+      // 1. Initial state: Counting down
+      await tester.pump(const Duration(seconds: 3));
+      expect(find.text(testHelper.loc(context).pnpWaitingModemTitle),
+          findsOneWidget);
+      expect(
+          find.text(testHelper.loc(context).pnpWaitingModemDesc), findsOneWidget);
+      expect(find.byType(AppProgressBar), findsOneWidget);
+      await testHelper.takeScreenshot(
+          tester, 'PNPWM-FULL_FLOW_01_counting_down');
 
-  testLocalizations('Troubleshooter - PnP waiting modem: checking for internet',
-      (tester, locale) async {
-    final router = testableRouter(
-      router: GoRouter(routes: [
-        LinksysRoute(
-            path: '/',
-            builder: (context, state) => const PnpWaitingModemView()),
-        pnpTroubleshootingRoute,
-        pnpRoute,
-      ], initialLocation: '/'),
-      locale: locale,
-      overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
-    );
-    await tester.pumpWidget(router);
-    await tester.pumpAndSettle();
-    final btnFinder = find.byType(AppFilledButton);
-    await tester.tap(btnFinder);
-    await tester.pump(const Duration(seconds: 5));
-  });
+      // 2. State: Plug your modem back in
+      await tester.pumpAndSettle(const Duration(seconds: 150));
+      expect(find.text(testHelper.loc(context).pnpWaitingModemPlugBack),
+          findsOneWidget);
+      expect(find.bySemanticsLabel('modem Plugged image'), findsOneWidget);
+      expect(find.text(testHelper.loc(context).pnpWaitingModemPluggedIn),
+          findsOneWidget);
+      await testHelper.takeScreenshot(
+          tester, 'PNPWM-FULL_FLOW_02_plug_back_in');
+
+      // 3. State: Wait to start up
+      final btnFinder =
+          find.text(testHelper.loc(context).pnpWaitingModemPluggedIn);
+      await tester.tap(btnFinder);
+      await tester.pump(); // Trigger setState for _isPlugged
+      expect(find.text(testHelper.loc(context).pnpWaitingModemWaitStartUp),
+          findsOneWidget);
+      expect(find.bySemanticsLabel('modem Waiting image'), findsOneWidget);
+      await testHelper.takeScreenshot(
+          tester, 'PNPWM-FULL_FLOW_03_waiting_to_start');
+
+      // 4. State: Checking for internet
+      await tester.pump(const Duration(seconds: 5)); // Trigger _isCheckingInternet
+      expect(find.text(testHelper.loc(context).pnpWaitingModemCheckingInternet),
+          findsOneWidget);
+      expect(find.byType(AppSpinner), findsOneWidget);
+    },
+    helper: testHelper,
+    screens: screens,
+    goldenFilename: 'PNPWM-FULL_FLOW_04_checking_internet',
+  );
 }

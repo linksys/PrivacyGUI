@@ -20,7 +20,6 @@ import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
-import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacy_gui/page/instant_device/extensions/icon_device_category_ext.dart';
 import 'package:privacy_gui/utils.dart';
@@ -71,7 +70,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
   Widget build(BuildContext context) {
     final state = ref.watch(externalDeviceDetailProvider);
     final dhcpReservationList = ref.watch(localNetworkSettingProvider
-        .select((value) => value.dhcpReservationList));
+        .select((value) => value.status.dhcpReservationList));
 
     setState(() {
       isReservedIp = dhcpReservationList.any((e) =>
@@ -80,15 +79,13 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
     });
     return LayoutBuilder(
       builder: (context, constraint) {
-        return StyledAppPageView(
+        return StyledAppPageView.withSliver(
           padding: const EdgeInsets.only(),
           title: state.item.name,
           scrollable: true,
-          child: (context, constraints) => AppBasicLayout(
-            content: ResponsiveLayout(
-              desktop: _desktopLayout(state),
-              mobile: _mobileLayout(state),
-            ),
+          child: (context, constraints) => ResponsiveLayout(
+            desktop: _desktopLayout(state),
+            mobile: _mobileLayout(state),
           ),
         );
       },
@@ -300,43 +297,6 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
     );
   }
 
-  Widget _extraInfoSection(ExternalDeviceDetailState state) {
-    return AppCard(
-      child: Column(
-        // crossAxisAlignment: CrossAxisAlignment.start,
-        // mainAxisSize: MainAxisSize.min,
-        children: [
-          AppSettingCard(
-            showBorder: false,
-            padding: const EdgeInsets.fromLTRB(
-              Spacing.small2,
-              0,
-              Spacing.small2,
-              Spacing.small2,
-            ),
-            title: loc(context).manufacturer,
-            description: _formatEmptyValue(state.item.manufacturer),
-          ),
-          const Divider(
-            height: 8,
-            thickness: 1,
-          ),
-          AppSettingCard(
-            showBorder: false,
-            padding: const EdgeInsets.fromLTRB(
-              Spacing.small2,
-              Spacing.small2,
-              Spacing.small2,
-              0,
-            ),
-            title: loc(context).device,
-            description: state.item.model,
-          ),
-        ],
-      ),
-    );
-  }
-
   _showEdidDeviceModal() {
     _deviceNameController.text =
         ref.read(externalDeviceDetailProvider).item.name;
@@ -460,7 +420,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
       if (delete) {
         controller.showSpinner();
         final dhcpReservationList =
-            ref.read(localNetworkSettingProvider).dhcpReservationList;
+            ref.read(localNetworkSettingProvider).status.dhcpReservationList;
         final hit = dhcpReservationList.firstWhereOrNull((e) =>
             e.ipAddress == dhcpReservationItem.ipAddress ||
             e.macAddress == dhcpReservationItem.macAddress);
@@ -481,6 +441,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
         final isOverlap =
             notifier.isReservationOverlap(item: dhcpReservationItem);
         if (isOverlap) {
+          if (!mounted) return;
           // Show overlap
           showFailedSnackBar(
             context,
@@ -522,12 +483,14 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
     );
   }
 
+  // !TODO
   Future _saveDhcpResevervationSetting() async {
     final state = ref.read(localNetworkSettingProvider);
     await ref
         .read(localNetworkSettingProvider.notifier)
-        .saveSettings(state)
+        .saveReservations(state.status.dhcpReservationList)
         .then((_) {
+      if (!mounted) return;
       // show succeed
       showSuccessSnackBar(
         context,
@@ -536,6 +499,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
     }).catchError((error) {
       // show error
       final err = error as JNAPError;
+      if (!mounted) return;
       showFailedSnackBar(
         context,
         err.result,

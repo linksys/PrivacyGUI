@@ -1,73 +1,50 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/validator_rules/rules.dart';
-import 'package:privacy_gui/validator_rules/input_validators.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
-class WiFiSSIDField extends ConsumerStatefulWidget {
+/// A reusable widget for entering Wi-Fi SSID.
+///
+/// This widget provides a text input field for SSID with optional label, hint,
+/// error text, controller, and callbacks for changes and submission.
+class WiFiSSIDField extends ConsumerWidget {
+  /// The label text for the SSID input field.
   final String? label;
+
+  /// The hint text displayed inside the SSID input field.
   final String? hint;
+
+  /// The error text to display below the SSID input field.
+  final String? errorText;
+
+  /// The text editing controller for the SSID input field.
   final TextEditingController? controller;
-  final void Function(bool isValid, String input)? onCheckInput;
+
+  /// Callback function when the text in the SSID field changes.
+  final void Function(String value)? onChanged;
+
+  /// Callback function when the user submits the text in the SSID field.
   final void Function(String value)? onSubmitted;
 
   const WiFiSSIDField({
     super.key,
     this.label,
     this.hint,
+    this.errorText,
     this.controller,
-    this.onCheckInput,
+    this.onChanged,
     this.onSubmitted,
   });
 
   @override
-  ConsumerState<WiFiSSIDField> createState() => _WiFiSSIDFieldState();
-}
-
-class _WiFiSSIDFieldState extends ConsumerState<WiFiSSIDField> {
-  final InputValidator wifiSSIDValidator = InputValidator([
-    RequiredRule(),
-    NoSurroundWhitespaceRule(),
-    LengthRule(min: 1, max: 32),
-    // WiFiSsidRule(),
-  ]);
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return AppTextField(
       border: const OutlineInputBorder(),
-      headerText: widget.label,
-      hintText: widget.hint,
-      errorText: () {
-        if (widget.controller?.text.isEmpty == true) {
-          return null;
-        }
-        final errorKeys = wifiSSIDValidator
-            .validateDetail(widget.controller?.text ?? '', onlyFailed: true);
-        if (errorKeys.isEmpty) {
-          return null;
-        } else if (errorKeys.keys.first == NoSurroundWhitespaceRule().name) {
-          return loc(context).routerPasswordRuleStartEndWithSpace;
-        } else if (errorKeys.keys.first == LengthRule().name) {
-          return loc(context).wifiSSIDLengthLimit;
-        } else if (errorKeys.keys.first == WiFiSsidRule().name) {
-          return loc(context).theNameMustNotBeEmpty;
-        } else {
-          return null;
-        }
-      }(),
-      controller: widget.controller,
-      onChanged: (value) {
-        final errorKeys = wifiSSIDValidator
-            .validateDetail(widget.controller?.text ?? '', onlyFailed: true);
-        if (value.isEmpty || errorKeys.isNotEmpty) {
-          widget.onCheckInput?.call(false, value);
-        } else {
-          widget.onCheckInput?.call(true, value);
-        }
-      },
-      onSubmitted: widget.onSubmitted,
+      headerText: label,
+      hintText: hint,
+      errorText: errorText,
+      controller: controller,
+      onChanged: onChanged,
+      onSubmitted: onSubmitted,
     );
   }
 }

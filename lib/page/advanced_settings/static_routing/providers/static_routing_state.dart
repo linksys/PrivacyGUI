@@ -3,69 +3,203 @@ import 'dart:convert';
 import 'package:equatable/equatable.dart';
 
 import 'package:privacy_gui/core/jnap/models/get_routing_settings.dart';
+import 'package:privacy_gui/providers/feature_state.dart';
+import 'package:privacy_gui/providers/preservable.dart';
 
-class StaticRoutingState extends Equatable {
-  final GetRoutingSettings setting;
+class NamedStaticRouteEntryList extends Equatable {
+  final List<NamedStaticRouteEntry> entries;
+
+  const NamedStaticRouteEntryList({required this.entries});
+
+  @override
+  List<Object> get props => [entries];
+
+  NamedStaticRouteEntryList copyWith({
+    List<NamedStaticRouteEntry>? entries,
+  }) {
+    return NamedStaticRouteEntryList(
+      entries: entries ?? this.entries,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'entries': entries.map((x) => x.toMap()).toList(),
+    };
+  }
+
+  factory NamedStaticRouteEntryList.fromMap(Map<String, dynamic> map) {
+    return NamedStaticRouteEntryList(
+      entries: List<NamedStaticRouteEntry>.from(
+        map['entries']?.map<NamedStaticRouteEntry>(
+              (x) => NamedStaticRouteEntry.fromMap(x as Map<String, dynamic>),
+            ) ??
+            [],
+      ),
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory NamedStaticRouteEntryList.fromJson(String source) =>
+      NamedStaticRouteEntryList.fromMap(
+          json.decode(source) as Map<String, dynamic>);
+}
+
+class StaticRoutingSettings extends Equatable {
+  final bool isNATEnabled;
+  final bool isDynamicRoutingEnabled;
+  final NamedStaticRouteEntryList entries;
+
+  const StaticRoutingSettings({
+    required this.isNATEnabled,
+    required this.isDynamicRoutingEnabled,
+    required this.entries,
+  });
+
+  @override
+  List<Object?> get props => [isNATEnabled, isDynamicRoutingEnabled, entries];
+
+  StaticRoutingSettings copyWith({
+    bool? isNATEnabled,
+    bool? isDynamicRoutingEnabled,
+    NamedStaticRouteEntryList? entries,
+  }) {
+    return StaticRoutingSettings(
+      isNATEnabled: isNATEnabled ?? this.isNATEnabled,
+      isDynamicRoutingEnabled:
+          isDynamicRoutingEnabled ?? this.isDynamicRoutingEnabled,
+      entries: entries ?? this.entries,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'isNATEnabled': isNATEnabled,
+      'isDynamicRoutingEnabled': isDynamicRoutingEnabled,
+      'entries': entries.toMap(),
+    };
+  }
+
+  factory StaticRoutingSettings.fromMap(Map<String, dynamic> map) {
+    return StaticRoutingSettings(
+      isNATEnabled: map['isNATEnabled'] as bool,
+      isDynamicRoutingEnabled: map['isDynamicRoutingEnabled'] as bool,
+      entries: NamedStaticRouteEntryList.fromMap(
+          map['entries'] as Map<String, dynamic>),
+    );
+  }
+}
+
+class StaticRoutingStatus extends Equatable {
+  final int maxStaticRouteEntries;
   final String routerIp;
   final String subnetMask;
 
-  const StaticRoutingState({
-    required this.setting,
-    this.routerIp = '192.168.1.1',
-    this.subnetMask = '255.255.255.0',
+  const StaticRoutingStatus({
+    required this.maxStaticRouteEntries,
+    required this.routerIp,
+    required this.subnetMask,
   });
 
-  factory StaticRoutingState.empty() => const StaticRoutingState(
-        setting: GetRoutingSettings(
-          isNATEnabled: false,
-          isDynamicRoutingEnabled: false,
-          maxStaticRouteEntries: 0,
-          entries: [],
-        ),
-      );
+  @override
+  List<Object> get props => [maxStaticRouteEntries, routerIp, subnetMask];
 
-  StaticRoutingState copyWith({
-    GetRoutingSettings? setting,
+  StaticRoutingStatus copyWith({
+    int? maxStaticRouteEntries,
     String? routerIp,
     String? subnetMask,
   }) {
-    return StaticRoutingState(
-      setting: setting ?? this.setting,
+    return StaticRoutingStatus(
+      maxStaticRouteEntries:
+          maxStaticRouteEntries ?? this.maxStaticRouteEntries,
       routerIp: routerIp ?? this.routerIp,
       subnetMask: subnetMask ?? this.subnetMask,
     );
   }
 
   Map<String, dynamic> toMap() {
-    return {
-      'setting': setting.toMap(),
+    return <String, dynamic>{
+      'maxStaticRouteEntries': maxStaticRouteEntries,
       'routerIp': routerIp,
       'subnetMask': subnetMask,
     };
   }
 
-  factory StaticRoutingState.fromMap(Map<String, dynamic> map) {
-    return StaticRoutingState(
-      setting: GetRoutingSettings.fromMap(map['setting']),
+  factory StaticRoutingStatus.fromMap(Map<String, dynamic> map) {
+    return StaticRoutingStatus(
+      maxStaticRouteEntries: map['maxStaticRouteEntries'] as int,
       routerIp: map['routerIp'] ?? '',
       subnetMask: map['subnetMask'] ?? '',
     );
   }
+}
 
-  String toJson() => json.encode(toMap());
+class StaticRoutingState
+    extends FeatureState<StaticRoutingSettings, StaticRoutingStatus> {
+  const StaticRoutingState({
+    required super.settings,
+    required super.status,
+  });
+
+  factory StaticRoutingState.empty() => StaticRoutingState(
+        settings: Preservable(
+            original: const StaticRoutingSettings(
+              isNATEnabled: false,
+              isDynamicRoutingEnabled: false,
+              entries: NamedStaticRouteEntryList(entries: []),
+            ),
+            current: const StaticRoutingSettings(
+              isNATEnabled: false,
+              isDynamicRoutingEnabled: false,
+              entries: NamedStaticRouteEntryList(entries: []),
+            )),
+        status: const StaticRoutingStatus(
+          maxStaticRouteEntries: 0,
+          routerIp: '192.168.1.1',
+          subnetMask: '255.255.255.0',
+        ),
+      );
+
+  @override
+  StaticRoutingState copyWith({
+    Preservable<StaticRoutingSettings>? settings,
+    StaticRoutingStatus? status,
+  }) {
+    return StaticRoutingState(
+      settings: settings ?? this.settings,
+      status: status ?? this.status,
+    );
+  }
+
+  @override
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'settings': settings.toMap((s) => s.toMap()),
+      'status': status.toMap(),
+    };
+  }
+
+  factory StaticRoutingState.fromMap(Map<String, dynamic> map) {
+    return StaticRoutingState(
+      settings: Preservable.fromMap(
+        map['settings'] as Map<String, dynamic>,
+        (valueMap) =>
+            StaticRoutingSettings.fromMap(valueMap as Map<String, dynamic>),
+      ),
+      status:
+          StaticRoutingStatus.fromMap(map['status'] as Map<String, dynamic>),
+    );
+  }
 
   factory StaticRoutingState.fromJson(String source) =>
-      StaticRoutingState.fromMap(json.decode(source));
+      StaticRoutingState.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
   bool get stringify => true;
 
   @override
-  List<Object> get props => [setting, routerIp, subnetMask];
-
-  @override
-  String toString() =>
-      'StaticRoutingState(setting: $setting, routerIp: $routerIp, subnetMask: $subnetMask)';
+  List<Object> get props => [settings, status];
 }
 
 enum RoutingSettingNetwork {

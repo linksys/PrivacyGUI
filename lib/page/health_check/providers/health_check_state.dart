@@ -1,92 +1,140 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
+import 'package:privacy_gui/page/health_check/models/health_check_enum.dart';
+import 'package:privacy_gui/page/health_check/models/speed_test_ui_model.dart';
 
-import 'package:privacy_gui/core/jnap/models/health_check_result.dart';
-import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
-
+/// Represents the state of the health check feature.
 class HealthCheckState extends Equatable {
-  final String step;
-  final String? timestamp;
-  final List<HealthCheckResult> result;
-  final JNAPError? error;
-  final String status;
+  // --- Transient State (for a single test run) ---
+
+  /// The current step in the health check process (e.g., latency, download).
+  final HealthCheckStep step;
+
+  /// The overall status of the health check (e.g., idle, running, complete).
+  final HealthCheckStatus status;
+
+  /// The current value for the animated meter, typically in Kbps.
   final double meterValue;
-  final double randomValue;
+
+  /// The current speed test result, which can be partial or final.
+  final SpeedTestUIModel? result;
+
+  /// If an error occurred, this holds the specific error code.
+  final SpeedTestError? errorCode;
+
+  // --- Persistent State ---
+
+  /// The most recent completed speed test result.
+  final SpeedTestUIModel? latestSpeedTest;
+
+  /// A list of historical speed test results.
+  final List<SpeedTestUIModel> historicalSpeedTests;
+
+  /// A list of health check modules supported by the router.
+  final List<String> healthCheckModules;
 
   const HealthCheckState({
-    this.step = 'latency',
-    this.timestamp,
-    this.result = const [],
-    this.error,
-    this.status = 'IDLE',
+    // Transient
+    this.step = HealthCheckStep.latency,
+    this.status = HealthCheckStatus.idle,
     this.meterValue = 0.0,
-    this.randomValue = 0.0,
-
+    this.result,
+    this.errorCode,
+    // Persistent
+    this.latestSpeedTest,
+    this.historicalSpeedTests = const [],
+    this.healthCheckModules = const [],
   });
 
-  @override
-  List<Object?> get props => [step, timestamp, result, error];
+  /// A getter to easily check if the 'SpeedTest' module is supported.
+  bool get isSpeedTestModuleSupported =>
+      healthCheckModules.contains('SpeedTest');
 
+  @override
+  List<Object?> get props => [
+        // Transient
+        step,
+        status,
+        meterValue,
+        result,
+        errorCode,
+        // Persistent
+        latestSpeedTest,
+        historicalSpeedTests,
+        healthCheckModules,
+      ];
+
+  /// Creates the initial state for the health check.
   factory HealthCheckState.init() {
-    return const HealthCheckState(
-      step: 'latency',
-      result: [],
-      status: 'IDLE',
-      meterValue: 0.0,
-      randomValue: 0.0,
-    );
+    return const HealthCheckState();
   }
 
+  /// Creates a copy of the current state with updated values.
   HealthCheckState copyWith({
-    String? step,
-    String? timestamp,
-    List<HealthCheckResult>? result,
-    JNAPError? error,
-    String? status,
+    HealthCheckStep? step,
+    HealthCheckStatus? status,
     double? meterValue,
-    double? randomValue,
+    ValueGetter<SpeedTestUIModel?>? result,
+    ValueGetter<SpeedTestError?>? errorCode,
+    ValueGetter<SpeedTestUIModel?>? latestSpeedTest,
+    List<SpeedTestUIModel>? historicalSpeedTests,
+    List<String>? healthCheckModules,
   }) {
     return HealthCheckState(
       step: step ?? this.step,
-      timestamp: timestamp ?? this.timestamp,
-      result: result ?? this.result,
-      error: error ?? this.error,
       status: status ?? this.status,
       meterValue: meterValue ?? this.meterValue,
-      randomValue: randomValue ?? this.randomValue,
+      result: result != null ? result() : this.result,
+      errorCode: errorCode != null ? errorCode() : this.errorCode,
+      latestSpeedTest:
+          latestSpeedTest != null ? latestSpeedTest() : this.latestSpeedTest,
+      historicalSpeedTests: historicalSpeedTests ?? this.historicalSpeedTests,
+      healthCheckModules: healthCheckModules ?? this.healthCheckModules,
     );
   }
 
   Map<String, dynamic> toMap() {
-    return <String, dynamic>{
-      'step': step,
-      'timestamp': timestamp,
-      'result': result.map((x) => x.toJson()).toList(),
-      'error': error,
-      'status': status,
+    return {
+      'step': step.name,
+      'status': status.name,
       'meterValue': meterValue,
-      'randomValue': randomValue,
-    }..removeWhere((key, value) => value == null);
+      'result': result?.toMap(),
+      'errorCode': errorCode?.name,
+      'latestSpeedTest': latestSpeedTest?.toMap(),
+      'historicalSpeedTests':
+          historicalSpeedTests.map((x) => x.toMap()).toList(),
+      'healthCheckModules': healthCheckModules,
+    };
   }
 
   factory HealthCheckState.fromMap(Map<String, dynamic> map) {
     return HealthCheckState(
-      step: map['step'] as String,
-      timestamp: map['timestamp'] != null ? map['timestamp'] as String : null,
-      result: List<HealthCheckResult>.from(
-        map['result'].map<HealthCheckResult>(
-          (x) => HealthCheckResult.fromJson(x as Map<String, dynamic>),
-        ),
-      ),
-      error: map['error'] == null
-          ? null
-          : JNAPError(
-              result: map['error']?['result'], error: map['error']?['error']),
-      status: map['status'] as String,
+      step: HealthCheckStep.values.byName(map['step'] as String),
+      status: HealthCheckStatus.values.byName(map['status'] as String),
       meterValue: map['meterValue'] as double,
-      randomValue: map['randomValue'] as double,
+      result: map['result'] != null
+          ? SpeedTestUIModel.fromMap(map['result'] as Map<String, dynamic>)
+          : null,
+      errorCode: map['errorCode'] != null
+          ? SpeedTestError.values.byName(map['errorCode'] as String)
+          : null,
+      latestSpeedTest: map['latestSpeedTest'] != null
+          ? SpeedTestUIModel.fromMap(
+              map['latestSpeedTest'] as Map<String, dynamic>)
+          : null,
+      historicalSpeedTests: map['historicalSpeedTests'] != null
+          ? List<SpeedTestUIModel>.from(
+              (map['historicalSpeedTests'] as List<dynamic>)
+                  .map<SpeedTestUIModel>(
+                (x) => SpeedTestUIModel.fromMap(x as Map<String, dynamic>),
+              ),
+            )
+          : const [],
+      healthCheckModules: map['healthCheckModules'] != null
+          ? List<String>.from(map['healthCheckModules'] as List<dynamic>)
+          : const [],
     );
   }
 
@@ -97,4 +145,15 @@ class HealthCheckState extends Equatable {
 
   @override
   bool get stringify => true;
+
+  String? get moduleName {
+    return isSpeedTestModuleSupported
+        ? (healthCheckModules.contains('SpeedTestSamKnows')
+            ? 'SamKnows'
+            : 'Ookla')
+        : null;
+  }
+
+  bool get isOoklaSpeedTestModule => moduleName == 'Ookla';
+  bool get isSamKnowsSpeedTestModule => moduleName == 'SamKnows';
 }

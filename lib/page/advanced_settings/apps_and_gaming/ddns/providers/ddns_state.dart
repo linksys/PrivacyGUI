@@ -8,6 +8,8 @@ import 'package:privacy_gui/core/jnap/models/ddns_settings_model.dart';
 import 'package:privacy_gui/core/jnap/models/dyn_dns_settings.dart';
 import 'package:privacy_gui/core/jnap/models/no_ip_settings.dart';
 import 'package:privacy_gui/core/jnap/models/tzo_settings.dart';
+import 'package:privacy_gui/providers/feature_state.dart';
+import 'package:privacy_gui/providers/preservable.dart';
 
 const String dynDNSProviderName = 'DynDNS';
 const String noIPDNSProviderName = 'No-IP';
@@ -25,7 +27,7 @@ sealed class DDNSProvider<T> extends Equatable {
 
   DDNSProvider applySettings(dynamic settings);
 
-  static DDNSProvider reslove(DDNSSettings? settings) {
+  static DDNSProvider reslove(RouterDDNSSettings? settings) {
     if (settings == null) {
       return NoDDNSProvider();
     } else if (settings.dynDNSSettings != null) {
@@ -163,63 +165,111 @@ class NoDDNSProvider extends DDNSProvider<dynamic> {
   }
 }
 
-class DDNSState extends Equatable {
-  final List<String> supportedProvider;
+class DDNSSettings extends Equatable {
   final DDNSProvider provider;
+
+  const DDNSSettings({required this.provider});
+
+  @override
+  List<Object?> get props => [provider];
+
+  DDNSSettings copyWith({DDNSProvider? provider}) {
+    return DDNSSettings(provider: provider ?? this.provider);
+  }
+
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{'provider': provider.toMap()};
+  }
+
+  factory DDNSSettings.fromMap(Map<String, dynamic> map) {
+    return DDNSSettings(provider: DDNSProvider.fromMap(map['provider']));
+  }
+}
+
+class DDNSStatus extends Equatable {
+  final List<String> supportedProvider;
   final String status;
   final String ipAddress;
-  const DDNSState({
+
+  const DDNSStatus({
     required this.supportedProvider,
-    required this.provider,
     required this.status,
     required this.ipAddress,
   });
 
-  DDNSState copyWith({
+  @override
+  List<Object?> get props => [supportedProvider, status, ipAddress];
+
+  DDNSStatus copyWith({
     List<String>? supportedProvider,
-    DDNSProvider? provider,
     String? status,
     String? ipAddress,
   }) {
-    return DDNSState(
+    return DDNSStatus(
       supportedProvider: supportedProvider ?? this.supportedProvider,
-      provider: provider ?? this.provider,
       status: status ?? this.status,
       ipAddress: ipAddress ?? this.ipAddress,
     );
   }
 
-  @override
-  bool get stringify => true;
-
-  @override
-  List<Object> get props => [supportedProvider, provider, status, ipAddress];
-
   Map<String, dynamic> toMap() {
-    return {
+    return <String, dynamic>{
       'supportedProvider': supportedProvider,
-      'provider': provider.toMap(),
       'status': status,
       'ipAddress': ipAddress,
     };
   }
 
-  factory DDNSState.fromMap(Map<String, dynamic> map) {
-    return DDNSState(
+  factory DDNSStatus.fromMap(Map<String, dynamic> map) {
+    return DDNSStatus(
       supportedProvider: List<String>.from(map['supportedProvider']),
-      provider: DDNSProvider.fromMap(map['provider']),
       status: map['status'] ?? '',
       ipAddress: map['ipAddress'] ?? '',
     );
   }
+}
 
-  String toJson() => json.encode(toMap());
-
-  factory DDNSState.fromJson(String source) =>
-      DDNSState.fromMap(json.decode(source));
+class DDNSState extends FeatureState<DDNSSettings, DDNSStatus> {
+  const DDNSState({
+    required super.settings,
+    required super.status,
+  });
 
   @override
-  String toString() {
-    return 'DDNSState(supportedProvider: $supportedProvider, provider: $provider, status: $status, ipAddress: $ipAddress)';
+  DDNSState copyWith({
+    Preservable<DDNSSettings>? settings,
+    DDNSStatus? status,
+  }) {
+    return DDNSState(
+      settings: settings ?? this.settings,
+      status: status ?? this.status,
+    );
   }
+
+  @override
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'settings': settings.toMap((s) => s.toMap()),
+      'status': status.toMap(),
+    };
+  }
+
+  factory DDNSState.fromMap(Map<String, dynamic> map) {
+    return DDNSState(
+      settings: Preservable.fromMap(
+        map['settings'] as Map<String, dynamic>,
+        (valueMap) => DDNSSettings.fromMap(valueMap as Map<String, dynamic>),
+      ),
+      status: DDNSStatus.fromMap(map['status'] as Map<String, dynamic>),
+    );
+  }
+
+  factory DDNSState.fromJson(String source) =>
+      DDNSState.fromMap(json.decode(source) as Map<String, dynamic>);
+
+  @override
+  bool get stringify => true;
+
+  @override
+  List<Object> get props => [settings, status];
 }

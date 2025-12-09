@@ -10,7 +10,6 @@ import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class RegionPickerView extends ArgumentsConsumerStatefulView {
@@ -20,21 +19,22 @@ class RegionPickerView extends ArgumentsConsumerStatefulView {
   }) : super(key: key);
 
   @override
-  _RegionPickerViewState createState() => _RegionPickerViewState();
+  ConsumerState<RegionPickerView> createState() => _RegionPickerViewState();
 }
 
 class _RegionPickerViewState extends ConsumerState<RegionPickerView> {
   @override
   Widget build(BuildContext context) {
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       appBarStyle: AppBarStyle.close,
-      child: (context, constraints) => AppBasicLayout(
-        header: const BasicHeader(
-          title: 'Select region',
-          description:
-              'If your region is not listed, we can’t send text messages in your region yet.',
-        ),
-        content: FutureBuilder<List<RegionCode>>(
+      child: (context, constraints) => Column(
+        children: [
+          const BasicHeader(
+            title: 'Select region',
+            description:
+                'If your region is not listed, we can’t send text messages in your region yet.',
+          ),
+         FutureBuilder<List<RegionCode>>(
             future: ref.read(authProvider.notifier).fetchRegionCodes(),
             initialData: null,
             builder: (context, snapshot) {
@@ -62,7 +62,7 @@ class _RegionPickerViewState extends ConsumerState<RegionPickerView> {
                             },
                           ))
                   : const AppFullScreenSpinner();
-            }),
+            }),],
       ),
     );
   }

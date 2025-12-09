@@ -1,254 +1,541 @@
+import 'dart:async';
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:go_router/go_router.dart';
 import 'package:mockito/mockito.dart';
-import 'package:privacy_gui/constants/_constants.dart';
-import 'package:privacy_gui/core/jnap/models/device_info.dart';
+import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
-import 'package:privacy_gui/page/advanced_settings/internet_settings/_internet_settings.dart';
-import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
-import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
-import 'package:privacy_gui/page/instant_setup/data/pnp_state.dart';
-import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_isp_save_settings_view.dart';
+import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_provider.dart';
+import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_exception.dart';
+import 'package:privacy_gui/page/instant_setup/services/pnp_service.dart';
+import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/_providers.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_static_ip_view.dart';
-import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/route/route_model.dart';
-import 'package:privacy_gui/route/router_provider.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
-import 'package:get_it/get_it.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:privacy_gui/di.dart';
+import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
+import '../../../../../../common/config.dart';
+import '../../../../../../common/test_helper.dart';
 import '../../../../../../common/test_responsive_widget.dart';
-import '../../../../../../common/testable_router.dart';
-import '../../../../../../common/di.dart';
-import '../../../../../../test_data/device_info_test_data.dart';
 import '../../../../../../test_data/internet_settings_state_data.dart';
-import '../../../../../../mocks/pnp_notifier_mocks.dart' as Mock;
-import '../../../../../../mocks/internet_settings_notifier_mocks.dart';
+
+// Implementation file: lib/page/instant_setup/troubleshooter/views/isp_settings/pnp_static_ip_view.dart
+// View ID: PNP-STATIC-IP
+//
+// File-Level Summary:
+//
+// 1. PNP-STATIC-IP-FLOW_01_SUCCESS:
+//    - Verifies the successful UI flow where a user enters valid static IP details,
+//      taps 'Next', and the settings are saved.
+//
+// 2. PNP-STATIC-IP-ERR_01_JNAP-SIDE-EFFECT:
+//    - Verifies that a specific error message is shown when saving settings
+//      results in a JNAPSideEffectError with a JNAPSuccess.
+//
+// 3. PNP-STATIC-IP-ERR_02_ROUTER-NOT-FOUND:
+//    - Verifies that the 'Router Not Found' alert is displayed when saving
+//      settings results in a JNAPSideEffectError without a JNAPSuccess.
+//
+// 4. PNP-STATIC-IP-ERR_03_JNAP-ERROR:
+//    - Verifies that a specific error message is shown when saving settings
+//      results in a JNAPError.
+//
+// 5. PNP-STATIC-IP-ERR_04_NO-INTERNET:
+//    - Verifies that a specific error message is shown when saving settings
+//      results in an ExceptionNoInternetConnection.
+//
+// 6. PNP-STATIC-IP-ERR_05_GENERIC-EXCEPTION:
+//    - Verifies that a specific error message is shown when saving settings
+//      results in a generic Exception.
+//
+// 7. PNP-STATIC-IP_SAVE-PROGRESS:
+//    - Verifies the UI updates during save and verify progress.
+// 
+
+// Helper function to enter text into the 4 fields of an AppIPFormField
+Future<void> enterIpByHeader(
+    WidgetTester tester, String headerText, List<String> parts) async {
+  final headerFinder = find.text(headerText);
+  expect(headerFinder, findsOneWidget,
+      reason: 'Could not find header "$headerText"');
+
+  final formField = find.ancestor(
+    of: headerFinder,
+    matching: find.byType(AppIPFormField),
+  );
+  expect(formField, findsOneWidget,
+      reason: 'Could not find AppIPFormField for header "$headerText"');
+
+  final textFields = find.descendant(
+    of: formField,
+    matching: find.byType(TextFormField),
+  );
+  expect(textFields, findsNWidgets(4),
+      reason: 'Could not find 4 TextFormFields for header "$headerText"');
+
+  for (var i = 0; i < parts.length; i++) {
+    await tester.enterText(textFields.at(i), parts[i]);
+  }
+}
 
 void main() async {
-  late Mock.MockPnpNotifier mockPnpNotifier;
-  late MockInternetSettingsNotifier mockInternetSettingsNotifier;
-
-  mockDependencyRegister();
-  ServiceHelper mockServiceHelper = GetIt.I<ServiceHelper>();
+  final testHelper = TestHelper();
+  final screens = [
+    ...responsiveMobileScreens.map((e) => e).toList(),
+    ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1080)).toList()
+  ];
 
   setUp(() {
-    mockPnpNotifier = Mock.MockPnpNotifier();
-    mockInternetSettingsNotifier = MockInternetSettingsNotifier();
-
-    when(mockPnpNotifier.build()).thenReturn(PnpState(
-        deviceInfo:
-            NodeDeviceInfo.fromJson(jsonDecode(testDeviceInfo)['output']),
-        isUnconfigured: true));
-    when(mockPnpNotifier.checkAdminPassword(null)).thenAnswer((_) {
+    testHelper.setup();
+    when(testHelper.mockPnpNotifier.checkAdminPassword(null)).thenAnswer((_) {
       throw ExceptionInvalidAdminPassword();
     });
 
     final mockInternetSettingsState =
-        InternetSettingsState.fromJson(internetSettingsStateData);
-    when(mockInternetSettingsNotifier.build())
+        InternetSettingsState.fromMap(jsonDecode(internetSettingsStateData));
+    when(testHelper.mockInternetSettingsNotifier.build())
         .thenReturn(mockInternetSettingsState);
-    when(mockInternetSettingsNotifier.fetch()).thenAnswer((_) async {
+    when(testHelper.mockInternetSettingsNotifier
+            .fetch(forceRemote: anyNamed('forceRemote')))
+        .thenAnswer((_) async {
       return mockInternetSettingsState;
     });
-  });
-
-  testLocalizations('Troubleshooter - PnP static IP: default',
-      (tester, locale) async {
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const PnpStaticIpView(),
-        config: LinksysRouteConfig(
-            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
-        locale: locale,
-        overrides: [
-          pnpProvider.overrideWith(() => mockPnpNotifier),
-          internetSettingsProvider
-              .overrideWith(() => mockInternetSettingsNotifier)
-        ],
-      ),
-    );
-    await tester.pumpAndSettle();
-  });
-
-  testLocalizations('Troubleshooter - PnP static IP: with DNS 2',
-      (tester, locale) async {
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const PnpStaticIpView(),
-        config: LinksysRouteConfig(
-            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
-        locale: locale,
-        overrides: [
-          pnpProvider.overrideWith(() => mockPnpNotifier),
-          internetSettingsProvider
-              .overrideWith(() => mockInternetSettingsNotifier)
-        ],
-      ),
-    );
-    await tester.pumpAndSettle();
-    final dnsFinder = find.byType(AppTextButton);
-    await tester.tap(dnsFinder);
-    await tester.pumpAndSettle();
-  });
-
-  testLocalizations('Troubleshooter - PnP static IP: wrong input formats',
-      (tester, locale) async {
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const PnpStaticIpView(),
-        config: LinksysRouteConfig(
-            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
-        locale: locale,
-        overrides: [
-          pnpProvider.overrideWith(() => mockPnpNotifier),
-          internetSettingsProvider
-              .overrideWith(() => mockInternetSettingsNotifier)
-        ],
-      ),
-    );
-    await tester.pumpAndSettle();
-    // Expand DNS 2 form
-    final dnsFinder = find.byType(AppTextButton);
-    await tester.tap(dnsFinder);
-    await tester.pumpAndSettle();
-    // Tap IP address form
-    final ipAddressForm = find.byType(AppIPFormField).at(0);
-    await tester.tap(ipAddressForm);
-    // Input
-    final ipAddressTextFormField = find.descendant(
-        of: ipAddressForm, matching: find.byType(TextFormField));
-    await tester.enterText(ipAddressTextFormField.at(0), '1');
-    await tester.pumpAndSettle();
-    // Tap subnet mask form
-    final subnetMaskForm = find.byType(AppIPFormField).at(1);
-    await tester.tap(subnetMaskForm);
-    // Input
-    final subnetMaskTextFormField = find.descendant(
-        of: subnetMaskForm, matching: find.byType(TextFormField));
-    await tester.enterText(subnetMaskTextFormField.at(0), '1');
-    await tester.pumpAndSettle();
-    // Tap gateway form
-    final gatewayForm = find.byType(AppIPFormField).at(2);
-    await tester.tap(gatewayForm);
-    // Input
-    final gatewayTextFormField =
-        find.descendant(of: gatewayForm, matching: find.byType(TextFormField));
-    await tester.enterText(gatewayTextFormField.at(0), '1');
-    await tester.pumpAndSettle();
-    // Tap DNS 1 form
-    final dns1Form = find.byType(AppIPFormField).at(3);
-    await tester.tap(dns1Form);
-    // Input
-    final dns1TextFormField =
-        find.descendant(of: dns1Form, matching: find.byType(TextFormField));
-    await tester.enterText(dns1TextFormField.at(0), '1');
-    await tester.pumpAndSettle();
-    // Tap DNS 2 form
-    final dns2Form = find.byType(AppIPFormField).at(4);
-    await tester.tap(dns2Form);
-    await tester.pump(const Duration(seconds: 2));
-  });
-
-  testLocalizations('Troubleshooter - PnP static IP: wrong gateway',
-      (tester, locale) async {
-    when(mockInternetSettingsNotifier.savePnpIpv4(any)).thenAnswer((_) async {
-      throw JNAPError(result: errorInvalidGateway, error: 'error');
+    // Default successful save for the UI flow test
+    when(testHelper.mockPnpIspSettingsNotifier.saveAndVerifySettings(any))
+        .thenAnswer((_) async {
+      await Future.delayed(const Duration(seconds: 1));
     });
-    final router = GoRouter(
-      navigatorKey: shellNavigatorKey,
-      initialLocation: '/',
-      routes: [
-        LinksysRoute(
-          path: '/',
-          config: LinksysRouteConfig(
-              column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
-          builder: (context, state) => const PnpStaticIpView(),
-        ),
-        LinksysRoute(
-          path: '/$RoutePath.pnpIspSaveSettings',
-          name: RouteNamed.pnpIspSaveSettings,
-          config: LinksysRouteConfig(
-              column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
-          builder: (context, state) => PnpIspSaveSettingsView(
-            args: state.extra as Map<String, dynamic>? ?? {},
-          ),
-        ),
-      ],
-    );
-    await tester.pumpWidget(
-      testableRouter(
-        router: router,
-        locale: locale,
-        overrides: [
-          pnpProvider.overrideWith(() => mockPnpNotifier),
-          internetSettingsProvider
-              .overrideWith(() => mockInternetSettingsNotifier)
-        ],
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    // Tap IP address form
-    final ipAddressForm = find.byType(AppIPFormField, skipOffstage: true).at(0);
-    await tester.tap(ipAddressForm);
-    // Input
-    final ipAddressTextFormField = find.descendant(
-        of: ipAddressForm, matching: find.byType(TextFormField));
-    await tester.enterText(ipAddressTextFormField.at(0), '192');
-    await tester.enterText(ipAddressTextFormField.at(1), '168');
-    await tester.enterText(ipAddressTextFormField.at(2), '1');
-    await tester.enterText(ipAddressTextFormField.at(3), '1');
-    await tester.pumpAndSettle();
-
-    // Tap subnet mask form
-    final subnetMaskForm =
-        find.byType(AppIPFormField, skipOffstage: true).at(1);
-    await tester.tap(subnetMaskForm);
-    // Input
-    final subnetMaskTextFormField = find.descendant(
-        of: subnetMaskForm, matching: find.byType(TextFormField));
-    await tester.enterText(subnetMaskTextFormField.at(0), '255');
-    await tester.enterText(subnetMaskTextFormField.at(1), '255');
-    await tester.enterText(subnetMaskTextFormField.at(2), '255');
-    await tester.enterText(subnetMaskTextFormField.at(3), '0');
-    await tester.pumpAndSettle();
-
-    // Tap gateway form
-    final gatewayForm = find.byType(AppIPFormField, skipOffstage: true).at(2);
-    await tester.tap(gatewayForm);
-    // Input
-    final gatewayTextFormField =
-        find.descendant(of: gatewayForm, matching: find.byType(TextFormField));
-    await tester.enterText(gatewayTextFormField.at(0), '192');
-    await tester.enterText(gatewayTextFormField.at(1), '168');
-    await tester.enterText(gatewayTextFormField.at(2), '1');
-    await tester.enterText(gatewayTextFormField.at(3), '1');
-    await tester.pumpAndSettle();
-
-    // Tap DNS 1 form
-    final dns1Form = find.byType(AppIPFormField, skipOffstage: true).at(3);
-    await tester.tap(dns1Form);
-    // Input
-    final dns1TextFormField =
-        find.descendant(of: dns1Form, matching: find.byType(TextFormField));
-    await tester.enterText(dns1TextFormField.at(0), '8');
-    await tester.enterText(dns1TextFormField.at(1), '8');
-    await tester.enterText(dns1TextFormField.at(2), '8');
-    await tester.enterText(dns1TextFormField.at(3), '8');
-    await tester.pumpAndSettle();
-    //Tap next
-    final nextFinder = find.byType(AppFilledButton);
-    await tester.scrollUntilVisible(
-      nextFinder,
-      10,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.tap(nextFinder);
-    await tester.pumpAndSettle();
   });
+
+  group('PNP-STATIC-IP_UI-FLOW', () {
+    // Test ID: PNP-STATIC-IP-UI
+    testLocalizationsV2(
+      'Verify pnp static ip view, includes input fields and next button status',
+      (tester, localizedScreen) async {
+        final context = await testHelper.pumpView(
+          tester,
+          child: PnpStaticIpView(),
+          config: LinksysRouteConfig(
+              column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
+          locale: localizedScreen.locale,
+          overrides: [],
+        );
+
+        await enterIpByHeader(tester, testHelper.loc(context).ipAddress,
+            ['192', '168', '1', '10']);
+        await enterIpByHeader(tester, testHelper.loc(context).subnetMask,
+            ['255', '255', '255', '0']);
+        await enterIpByHeader(tester, testHelper.loc(context).defaultGateway,
+            ['192', '168', '1', '1']);
+        await enterIpByHeader(
+            tester, testHelper.loc(context).dns1, ['8', '8', '8', '8']);
+
+        // Tap somewhere else to trigger onFocusChanged
+        await tester.tap(find.text(testHelper.loc(context).staticIPAddress));
+        await tester.pumpAndSettle();
+
+        // expect button onTap is not null
+        expect(
+            tester.widget<AppFilledButton>(find.byType(AppFilledButton)).onTap,
+            isNotNull);
+        await testHelper.takeScreenshot(
+            tester, 'PNP-STATIC-IP-UI_01_fully_input');
+
+        // invalid ip address
+        await enterIpByHeader(
+            tester, testHelper.loc(context).ipAddress, ['192', '168', '1', '']);
+        // Tap somewhere else to trigger onFocusChanged
+        await tester.tap(find.text(testHelper.loc(context).staticIPAddress));
+        await tester.pumpAndSettle();
+        // expect error message
+        expect(find.text(testHelper.loc(context).invalidIpAddress),
+            findsOneWidget);
+        expect(
+            tester.widget<AppFilledButton>(find.byType(AppFilledButton)).onTap,
+            isNull);
+        await testHelper.takeScreenshot(
+            tester, 'PNP-STATIC-IP-UI_02_invalid_ip');
+        // restore valid ip address
+        await enterIpByHeader(tester, testHelper.loc(context).ipAddress,
+            ['192', '168', '1', '10']);
+
+        // invalid subnet mask
+        await enterIpByHeader(tester, testHelper.loc(context).subnetMask,
+            ['255', '255', '255', '255']);
+        // Tap somewhere else to trigger onFocusChanged
+        await tester.tap(find.text(testHelper.loc(context).staticIPAddress));
+        await tester.pumpAndSettle();
+        // expect error message
+        expect(find.text(testHelper.loc(context).invalidSubnetMask),
+            findsOneWidget);
+        expect(
+            tester.widget<AppFilledButton>(find.byType(AppFilledButton)).onTap,
+            isNull);
+        await testHelper.takeScreenshot(
+            tester, 'PNP-STATIC-IP-UI_03_invalid_subnet_mask');
+        // restore valid subnet mask
+        await enterIpByHeader(tester, testHelper.loc(context).subnetMask,
+            ['255', '255', '255', '0']);
+
+        // invalid default gateway
+        await enterIpByHeader(tester, testHelper.loc(context).defaultGateway,
+            ['192', '168', '1', '']);
+        // Tap somewhere else to trigger onFocusChanged
+        await tester.tap(find.text(testHelper.loc(context).staticIPAddress));
+        await tester.pumpAndSettle();
+        // expect error message
+        expect(find.text(testHelper.loc(context).invalidGatewayIpAddress),
+            findsOneWidget);
+        expect(
+            tester.widget<AppFilledButton>(find.byType(AppFilledButton)).onTap,
+            isNull);
+        await testHelper.takeScreenshot(
+            tester, 'PNP-STATIC-IP-UI_04_invalid_default_gateway');
+        // restore valid default gateway
+        await enterIpByHeader(tester, testHelper.loc(context).defaultGateway,
+            ['192', '168', '1', '1']);
+
+        // invalid dns1
+        await enterIpByHeader(
+            tester, testHelper.loc(context).dns1, ['255', '255', '255', '255']);
+        // Tap somewhere else to trigger onFocusChanged
+        await tester.tap(find.text(testHelper.loc(context).staticIPAddress));
+        await tester.pumpAndSettle();
+        // expect error message
+        expect(find.text(testHelper.loc(context).invalidDns), findsOneWidget);
+        expect(
+            tester.widget<AppFilledButton>(find.byType(AppFilledButton)).onTap,
+            isNull);
+        await testHelper.takeScreenshot(
+            tester, 'PNP-STATIC-IP-UI_05_invalid_dns1');
+        // restore valid dns1
+        await enterIpByHeader(
+            tester, testHelper.loc(context).dns1, ['8', '8', '8', '8']);
+
+        expect(find.text(testHelper.loc(context).addDns), findsOneWidget);
+        // toogle dns2
+        await tester.tap(find.text(testHelper.loc(context).addDns));
+        await tester.pumpAndSettle();
+        await testHelper.takeScreenshot(
+            tester, 'PNP-STATIC-IP-UI_06_add_dns2');
+        
+      },
+      screens: screens,
+      helper: testHelper,
+    );
+  });
+
+  group('PNP-STATIC-IP_ERROR-HANDLING', () {
+    // Test ID: PNP-STATIC-IP-ERR_01_JNAP-SIDE-EFFECT
+    testLocalizationsV2(
+      'WHEN saveAndVerifySettings throws JNAPSideEffectError with JNAPSuccess, THEN shows error message',
+      (tester, localizedScreen) async {
+        when(testHelper.mockPnpIspSettingsNotifier.saveAndVerifySettings(any))
+            .thenThrow(JNAPSideEffectError(
+                const JNAPSuccess(output: {}, result: 'Success'),
+                const JNAPSuccess(output: {}, result: 'Success')));
+
+        final context = await testHelper.pumpView(
+          tester,
+          child: PnpStaticIpView(),
+          config: LinksysRouteConfig(
+              column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
+          locale: localizedScreen.locale,
+          overrides: [],
+        );
+
+        await enterIpByHeader(tester, testHelper.loc(context).ipAddress,
+            ['192', '168', '1', '10']);
+        await enterIpByHeader(tester, testHelper.loc(context).subnetMask,
+            ['255', '255', '255', '0']);
+        await enterIpByHeader(tester, testHelper.loc(context).defaultGateway,
+            ['192', '168', '1', '1']);
+        await enterIpByHeader(
+            tester, testHelper.loc(context).dns1, ['8', '8', '8', '8']);
+
+        // Tap somewhere else to trigger onFocusChanged
+        await tester.tap(find.text(testHelper.loc(context).staticIPAddress));
+        await tester.pumpAndSettle();
+
+        // expect button onTap is not null
+        expect(
+            tester.widget<AppFilledButton>(find.byType(AppFilledButton)).onTap,
+            isNotNull);
+
+        await tester.tap(find.byType(AppFilledButton));
+        await tester.pumpAndSettle();
+
+        expect(find.text(testHelper.loc(context).pnpErrorForStaticIpAndDhcp),
+            findsOneWidget);
+      },
+      goldenFilename: 'PNP-STATIC-IP-ERR_01_JNAP-SIDE-EFFECT_01_error_message',
+      screens: screens,
+      helper: testHelper,
+    );
+
+    // Test ID: PNP-STATIC-IP-ERR_02_ROUTER-NOT-FOUND
+    testLocalizationsV2(
+      'WHEN saveAndVerifySettings throws JNAPSideEffectError without JNAPSuccess, THEN shows router not found alert',
+      (tester, localizedScreen) async {
+        when(testHelper.mockPnpIspSettingsNotifier.saveAndVerifySettings(any))
+            .thenThrow(JNAPSideEffectError());
+
+        final context = await testHelper.pumpView(
+          tester,
+          child: PnpStaticIpView(),
+          config: LinksysRouteConfig(
+              column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
+          locale: localizedScreen.locale,
+          overrides: [],
+        );
+
+        await enterIpByHeader(tester, testHelper.loc(context).ipAddress,
+            ['192', '168', '1', '10']);
+        await enterIpByHeader(tester, testHelper.loc(context).subnetMask,
+            ['255', '255', '255', '0']);
+        await enterIpByHeader(tester, testHelper.loc(context).defaultGateway,
+            ['192', '168', '1', '1']);
+        await enterIpByHeader(
+            tester, testHelper.loc(context).dns1, ['8', '8', '8', '8']);
+
+        // Tap somewhere else to trigger onFocusChanged
+        await tester.tap(find.text(testHelper.loc(context).staticIPAddress));
+        await tester.pumpAndSettle();
+
+        // expect button onTap is not null
+        expect(
+            tester.widget<AppFilledButton>(find.byType(AppFilledButton)).onTap,
+            isNotNull);
+
+        await tester.tap(find.byType(AppFilledButton));
+        await tester.pumpAndSettle();
+
+        expect(
+            find.text(testHelper.loc(context).routerNotFound), findsOneWidget);
+      },
+      goldenFilename: 'PNP-STATIC-IP-ERR_02_ROUTER-NOT-FOUND_01_alert_dialog',
+      screens: screens,
+      helper: testHelper,
+    );
+
+    // Test ID: PNP-STATIC-IP-ERR_03_JNAP-ERROR
+    testLocalizationsV2(
+      'WHEN saveAndVerifySettings throws JNAPError, THEN shows error message',
+      (tester, localizedScreen) async {
+        when(testHelper.mockPnpIspSettingsNotifier.saveAndVerifySettings(any))
+            .thenThrow(JNAPError(
+          result: 'error',
+          error: '',
+        ));
+
+        final context = await testHelper.pumpView(
+          tester,
+          child: PnpStaticIpView(),
+          config: LinksysRouteConfig(
+              column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
+          locale: localizedScreen.locale,
+          overrides: [],
+        );
+
+        await enterIpByHeader(tester, testHelper.loc(context).ipAddress,
+            ['192', '168', '1', '10']);
+        await enterIpByHeader(tester, testHelper.loc(context).subnetMask,
+            ['255', '255', '255', '0']);
+        await enterIpByHeader(tester, testHelper.loc(context).defaultGateway,
+            ['192', '168', '1', '1']);
+        await enterIpByHeader(
+            tester, testHelper.loc(context).dns1, ['8', '8', '8', '8']);
+
+        // Tap somewhere else to trigger onFocusChanged
+        await tester.tap(find.text(testHelper.loc(context).staticIPAddress));
+        await tester.pumpAndSettle();
+
+        // expect button onTap is not null
+        expect(
+            tester.widget<AppFilledButton>(find.byType(AppFilledButton)).onTap,
+            isNotNull);
+
+        await tester.tap(find.byType(AppFilledButton));
+        await tester.pumpAndSettle();
+
+        expect(find.text(testHelper.loc(context).pnpErrorForStaticIpAndDhcp),
+            findsOneWidget);
+      },
+      goldenFilename: 'PNP-STATIC-IP-ERR_03_JNAP-ERROR_01_error_message',
+      screens: screens,
+      helper: testHelper,
+    );
+
+    // Test ID: PNP-STATIC-IP-ERR_04_NO-INTERNET
+    testLocalizationsV2(
+      'WHEN saveAndVerifySettings throws ExceptionNoInternetConnection, THEN shows error message',
+      (tester, localizedScreen) async {
+        when(testHelper.mockPnpIspSettingsNotifier.saveAndVerifySettings(any))
+            .thenThrow(ExceptionNoInternetConnection());
+
+        final context = await testHelper.pumpView(
+          tester,
+          child: PnpStaticIpView(),
+          config: LinksysRouteConfig(
+              column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
+          locale: localizedScreen.locale,
+          overrides: [],
+        );
+
+        await enterIpByHeader(tester, testHelper.loc(context).ipAddress,
+            ['192', '168', '1', '10']);
+        await enterIpByHeader(tester, testHelper.loc(context).subnetMask,
+            ['255', '255', '255', '0']);
+        await enterIpByHeader(tester, testHelper.loc(context).defaultGateway,
+            ['192', '168', '1', '1']);
+        await enterIpByHeader(
+            tester, testHelper.loc(context).dns1, ['8', '8', '8', '8']);
+
+        // Tap somewhere else to trigger onFocusChanged
+        await tester.tap(find.text(testHelper.loc(context).staticIPAddress));
+        await tester.pumpAndSettle();
+
+        // expect button onTap is not null
+        expect(
+            tester.widget<AppFilledButton>(find.byType(AppFilledButton)).onTap,
+            isNotNull);
+
+        await tester.tap(find.byType(AppFilledButton));
+        await tester.pumpAndSettle();
+
+        expect(find.text(testHelper.loc(context).pnpErrorForStaticIpAndDhcp),
+            findsOneWidget);
+      },
+      goldenFilename: 'PNP-STATIC-IP-ERR_04_NO-INTERNET_01_error_message',
+      screens: screens,
+      helper: testHelper,
+    );
+
+    // Test ID: PNP-STATIC-IP-ERR_05_GENERIC-EXCEPTION
+    testLocalizationsV2(
+      'WHEN saveAndVerifySettings throws generic Exception, THEN shows error message',
+      (tester, localizedScreen) async {
+        when(testHelper.mockPnpIspSettingsNotifier.saveAndVerifySettings(any))
+            .thenThrow(Exception('Some other error'));
+
+        final context = await testHelper.pumpView(
+          tester,
+          child: PnpStaticIpView(),
+          config: LinksysRouteConfig(
+              column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
+          locale: localizedScreen.locale,
+          overrides: [],
+        );
+
+        await enterIpByHeader(tester, testHelper.loc(context).ipAddress,
+            ['192', '168', '1', '10']);
+        await enterIpByHeader(tester, testHelper.loc(context).subnetMask,
+            ['255', '255', '255', '0']);
+        await enterIpByHeader(tester, testHelper.loc(context).defaultGateway,
+            ['192', '168', '1', '1']);
+        await enterIpByHeader(
+            tester, testHelper.loc(context).dns1, ['8', '8', '8', '8']);
+
+        // Tap somewhere else to trigger onFocusChanged
+        await tester.tap(find.text(testHelper.loc(context).staticIPAddress));
+        await tester.pumpAndSettle();
+
+        // expect button onTap is not null
+        expect(
+            tester.widget<AppFilledButton>(find.byType(AppFilledButton)).onTap,
+            isNotNull);
+
+        await tester.tap(find.byType(AppFilledButton));
+        await tester.pumpAndSettle();
+
+        expect(find.text(testHelper.loc(context).pnpErrorForStaticIpAndDhcp),
+            findsOneWidget);
+      },
+      goldenFilename: 'PNP-STATIC-IP-ERR_05_GENERIC-EXCEPTION_01_error_message',
+      screens: screens,
+      helper: testHelper,
+    );
+  });
+
+  // Test ID: PNP-STATIC-IP_SAVE-PROGRESS
+  testLocalizationsV2(
+    'Verify UI updates during save and verify progress',
+    (tester, localizedScreen) async {
+      // 1. Setup completers to control the flow
+      final saveCompleter = Completer<void>();
+      final verifySettingsCompleter = Completer<bool>();
+      final checkInternetCompleter = Completer<bool>();
+
+      // 2. Mock dependencies of the real PnpIspSettingsNotifier
+      when(testHelper.mockInternetSettingsNotifier.savePnpIpv4(any))
+          .thenAnswer((_) => saveCompleter.future);
+      when(testHelper.mockPnpIspService.verifyNewSettings(any))
+          .thenAnswer((_) => verifySettingsCompleter.future);
+      when(testHelper.mockPnpService.checkInternetConnection(any))
+          .thenAnswer((_) => checkInternetCompleter.future);
+
+      final context = await testHelper.pumpView(
+        tester,
+        child: const PnpStaticIpView(),
+        locale: localizedScreen.locale,
+        overrides: [
+          pnpIspServiceProvider.overrideWithValue(testHelper.mockPnpIspService),
+          pnpServiceProvider.overrideWithValue(testHelper.mockPnpService),
+          internetSettingsProvider.overrideWith(() => testHelper.mockInternetSettingsNotifier),
+        ],
+        forceOverride: true,
+      );
+      await tester.pumpAndSettle();
+
+      await enterIpByHeader(tester, testHelper.loc(context).ipAddress,
+            ['192', '168', '1', '10']);
+        await enterIpByHeader(tester, testHelper.loc(context).subnetMask,
+            ['255', '255', '255', '0']);
+        await enterIpByHeader(tester, testHelper.loc(context).defaultGateway,
+            ['192', '168', '1', '1']);
+        await enterIpByHeader(
+            tester, testHelper.loc(context).dns1, ['8', '8', '8', '8']);
+
+        // Tap somewhere else to trigger onFocusChanged
+        await tester.tap(find.text(testHelper.loc(context).staticIPAddress));
+        await tester.pumpAndSettle();
+
+
+      // 3. Trigger the save process
+      await tester.tap(find.byType(AppFilledButton));
+      await tester
+          .pump(Duration(seconds: 1)); // Let the state change to 'saving'
+
+      // 4. Verify 'saving' state
+      expect(find.byType(AppFullScreenSpinner), findsOneWidget);
+      await testHelper.takeScreenshot(
+          tester, 'PNP-STATIC-IP_SAVE-PROGRESS_01_saving');
+
+      // 5. Move to 'checkSettings' state
+      saveCompleter.complete();
+      await tester.pump(); // Let the state change to 'checkSettings'
+      expect(find.byType(AppFullScreenSpinner), findsOneWidget);
+      await testHelper.takeScreenshot(
+          tester, 'PNP-STATIC-IP_SAVE-PROGRESS_02_checking_settings');
+
+      // 6. Move to 'checkInternetConnection' state
+      verifySettingsCompleter.complete(true);
+      await tester.pump(); // Let the state change to 'checkInternetConnection'
+      expect(find.byType(AppFullScreenSpinner), findsOneWidget);
+      await testHelper.takeScreenshot(
+          tester, 'PNP-STATIC-IP_SAVE-PROGRESS_03_checking_internet');
+
+      // 7. Complete the flow
+      checkInternetCompleter.complete(true);
+      await tester.pumpAndSettle(); // Let the UI handle success
+
+      // Verify the spinner is gone
+      expect(find.byType(AppFullScreenSpinner), findsNothing);
+    },
+    helper: testHelper,
+    screens: screens,
+  );
 }

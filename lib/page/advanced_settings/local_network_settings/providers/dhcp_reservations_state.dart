@@ -3,24 +3,63 @@ import 'dart:convert';
 import 'package:equatable/equatable.dart';
 
 import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
+import 'package:privacy_gui/providers/feature_state.dart';
+import 'package:privacy_gui/providers/preservable.dart';
 
-class DHCPReservationState extends Equatable {
+class DHCPReservationsSettings extends Equatable {
   final List<ReservedListItem> reservations;
-  final List<ReservedListItem> additionalReservations;
-  final List<ReservedListItem> devices;
-  const DHCPReservationState({
-    required this.reservations,
-    required this.additionalReservations,
-    required this.devices,
+
+  const DHCPReservationsSettings({
+    this.reservations = const [],
   });
 
-  DHCPReservationState copyWith({
+  @override
+  List<Object> get props => [reservations];
+
+  DHCPReservationsSettings copyWith({
     List<ReservedListItem>? reservations,
+  }) {
+    return DHCPReservationsSettings(
+      reservations: reservations ?? this.reservations,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'reservations': reservations.map((x) => x.toMap()).toList(),
+    };
+  }
+
+  factory DHCPReservationsSettings.fromMap(Map<String, dynamic> map) {
+    return DHCPReservationsSettings(
+      reservations: List<ReservedListItem>.from(
+          map['reservations']?.map((x) => ReservedListItem.fromMap(x))),
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory DHCPReservationsSettings.fromJson(String source) =>
+      DHCPReservationsSettings.fromMap(json.decode(source));
+}
+
+class DHCPReservationsStatus extends Equatable {
+  final List<ReservedListItem> additionalReservations;
+  final List<ReservedListItem> devices;
+
+  const DHCPReservationsStatus({
+    this.additionalReservations = const [],
+    this.devices = const [],
+  });
+
+  @override
+  List<Object> get props => [additionalReservations, devices];
+
+  DHCPReservationsStatus copyWith({
     List<ReservedListItem>? additionalReservations,
     List<ReservedListItem>? devices,
   }) {
-    return DHCPReservationState(
-      reservations: reservations ?? this.reservations,
+    return DHCPReservationsStatus(
       additionalReservations:
           additionalReservations ?? this.additionalReservations,
       devices: devices ?? this.devices,
@@ -29,17 +68,14 @@ class DHCPReservationState extends Equatable {
 
   Map<String, dynamic> toMap() {
     return {
-      'reservations': reservations.map((x) => x.toMap()).toList(),
       'additionalReservations':
           additionalReservations.map((x) => x.toMap()).toList(),
       'devices': devices.map((x) => x.toMap()).toList(),
     };
   }
 
-  factory DHCPReservationState.fromMap(Map<String, dynamic> map) {
-    return DHCPReservationState(
-      reservations: List<ReservedListItem>.from(
-          map['reservations']?.map((x) => ReservedListItem.fromMap(x))),
+  factory DHCPReservationsStatus.fromMap(Map<String, dynamic> map) {
+    return DHCPReservationsStatus(
       additionalReservations: List<ReservedListItem>.from(
           map['additionalReservations']
               ?.map((x) => ReservedListItem.fromMap(x))),
@@ -50,15 +86,64 @@ class DHCPReservationState extends Equatable {
 
   String toJson() => json.encode(toMap());
 
+  factory DHCPReservationsStatus.fromJson(String source) =>
+      DHCPReservationsStatus.fromMap(json.decode(source));
+}
+
+class DHCPReservationState
+    extends FeatureState<DHCPReservationsSettings, DHCPReservationsStatus> {
+  const DHCPReservationState({
+    required super.settings,
+    required super.status,
+  });
+
+  factory DHCPReservationState.init() {
+    return DHCPReservationState(
+      settings: Preservable(
+        original: const DHCPReservationsSettings(),
+        current: const DHCPReservationsSettings(),
+      ),
+      status: const DHCPReservationsStatus(),
+    );
+  }
+
+  @override
+  DHCPReservationState copyWith({
+    Preservable<DHCPReservationsSettings>? settings,
+    DHCPReservationsStatus? status,
+  }) {
+    return DHCPReservationState(
+      settings: settings ?? this.settings,
+      status: status ?? this.status,
+    );
+  }
+
+  @override
+  Map<String, dynamic> toMap() {
+    return {
+      'settings': settings.toMap((value) => value.toMap()),
+      'status': status.toMap(),
+    };
+  }
+
+  factory DHCPReservationState.fromMap(Map<String, dynamic> map) {
+    return DHCPReservationState(
+      settings: Preservable.fromMap(
+          map['settings'],
+          (dynamic json) =>
+              DHCPReservationsSettings.fromMap(json as Map<String, dynamic>)),
+      status:
+          DHCPReservationsStatus.fromMap(map['status'] as Map<String, dynamic>),
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
   factory DHCPReservationState.fromJson(String source) =>
       DHCPReservationState.fromMap(json.decode(source));
 
   @override
-  String toString() =>
-      'DHCPReservationState(reservations: $reservations, additionalReservations: $additionalReservations, devices: $devices)';
-
-  @override
-  List<Object> get props => [reservations, additionalReservations, devices];
+  List<Object> get props => [settings, status];
 }
 
 class ReservedListItem extends Equatable {

@@ -1,193 +1,199 @@
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
-import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
-import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/login/views/login_local_view.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
-import '../../../common/di.dart';
+import '../../../common/test_helper.dart';
 import '../../../common/test_responsive_widget.dart';
-import '../../../common/testable_router.dart';
-import '../../../mocks/_index.dart';
-import '../../../mocks/jnap_service_supported_mocks.dart';
 import '../../../test_data/device_info_test_data.dart';
 
-void main() async {
-  late MockDashboardManagerNotifier mockDashboardManagerNotifier;
-  late MockAuthNotifier mockAuthNotifier;
+// View ID: LGLV
+// Implementation: lib/page/login/views/login_local_view.dart
+// Summary:
+// - LGLV-INIT: Verifies default login form state shows required controls and disabled CTA.
+// - LGLV-PASS: Covers password typing, visibility toggle, and hint expansion interactions.
+// - LGLV-ERR_COUNTDOWN: Shows countdown error message when attempts remain with delay.
+// - LGLV-ERR_LOCKED: Shows lockout error when no attempts remain.
+// - LGLV-ERR_GENERIC: Falls back to generic error when auth status omits attempts.
 
-  mockDependencyRegister();
-  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
+void main() async {
+  final testHelper = TestHelper();
 
   setUp(() {
-    mockDashboardManagerNotifier = MockDashboardManagerNotifier();
-    when(mockDashboardManagerNotifier.checkDeviceInfo(null)).thenAnswer(
-      (realInvocation) async =>
+    testHelper.setup();
+
+    when(testHelper.mockDashboardManagerNotifier.checkDeviceInfo(null))
+        .thenAnswer(
+      (_) async =>
           NodeDeviceInfo.fromJson(jsonDecode(testDeviceInfo)['output']),
     );
-
-    mockAuthNotifier = MockAuthNotifier();
-    when(mockAuthNotifier.build()).thenAnswer(
+    when(testHelper.mockAuthNotifier.build()).thenAnswer(
       (_) async => Future.value(
         AuthState.empty().copyWith(localPasswordHint: 'Linksys'),
       ),
     );
-    when(mockAuthNotifier.getPasswordHint()).thenAnswer((_) async {});
-    when(mockAuthNotifier.getAdminPasswordAuthStatus(any))
+    when(testHelper.mockAuthNotifier.getPasswordHint())
+        .thenAnswer((_) async {});
+    when(testHelper.mockAuthNotifier.getAdminPasswordAuthStatus(any))
         .thenAnswer((_) async => null);
   });
 
-  testLocalizations(
-    'login local view - init state',
-    (tester, locale) async {
-      await tester.pumpWidget(
-        testableSingleRoute(
-          child: const LoginLocalView(),
-          locale: locale,
-          config: LinksysRouteConfig(noNaviRail: true),
-          overrides: [
-            dashboardManagerProvider
-                .overrideWith(() => mockDashboardManagerNotifier),
-            authProvider.overrideWith(() => mockAuthNotifier),
-          ],
-        ),
+  // Test ID: LGLV-INIT
+  testLocalizationsV2(
+    'login local view - default layout',
+    (tester, screen) async {
+      final context = await testHelper.pumpView(
+        tester,
+        child: const LoginLocalView(),
+        locale: screen.locale,
+        config: LinksysRouteConfig(noNaviRail: true),
       );
+      final loc = testHelper.loc(context);
 
       await tester.pumpAndSettle();
+      expect(find.text(loc.login), findsWidgets);
+      expect(find.byType(AppPasswordField), findsOneWidget);
+      expect(find.text(loc.forgotPassword), findsOneWidget);
+      final loginButtonFinder = find.byType(AppFilledButton);
+      final loginButton = tester.widget<AppFilledButton>(loginButtonFinder);
+      expect(loginButton.onTap, isNull);
     },
+    goldenFilename: 'LGLV-INIT_01_initial_state',
+    helper: testHelper,
   );
 
-  testLocalizations(
-    'login local view - input password masked',
-    (tester, locale) async {
-      await tester.pumpWidget(
-        testableSingleRoute(
-          child: const LoginLocalView(),
-          locale: locale,
-          config: LinksysRouteConfig(noNaviRail: true),
-          overrides: [
-            dashboardManagerProvider
-                .overrideWith(() => mockDashboardManagerNotifier),
-            authProvider.overrideWith(() => mockAuthNotifier),
-          ],
-        ),
+  // Test ID: LGLV-PASS
+  testLocalizationsV2(
+    'login local view - password entry and hint expansion',
+    (tester, screen) async {
+      final context = await testHelper.pumpView(
+        tester,
+        child: const LoginLocalView(),
+        locale: screen.locale,
+        config: LinksysRouteConfig(noNaviRail: true),
       );
+      final loc = testHelper.loc(context);
       await tester.pumpAndSettle();
 
       final passwordFinder = find.byType(AppPasswordField);
       await tester.enterText(passwordFinder, 'Password!!!');
       await tester.pumpAndSettle();
-    },
-  );
-
-  testLocalizations(
-    'login local view - input password visible',
-    (tester, locale) async {
-      await tester.pumpWidget(
-        testableSingleRoute(
-          child: const LoginLocalView(),
-          locale: locale,
-          config: LinksysRouteConfig(noNaviRail: true),
-          overrides: [
-            dashboardManagerProvider
-                .overrideWith(() => mockDashboardManagerNotifier),
-            authProvider.overrideWith(() => mockAuthNotifier),
-          ],
-        ),
+      final loginButtonFinder = find.byType(AppFilledButton);
+      var loginButton = tester.widget<AppFilledButton>(loginButtonFinder);
+      expect(loginButton.onTap, isNotNull);
+      await testHelper.takeScreenshot(
+        tester,
+        'LGLV-PASS_01_password_masked',
       );
-      await tester.pumpAndSettle();
 
-      final passwordFinder = find.byType(AppPasswordField);
-      await tester.enterText(passwordFinder, 'Password!!!');
-      await tester.pumpAndSettle();
       final secureFinder = find.byIcon(LinksysIcons.visibility);
       await tester.tap(secureFinder);
       await tester.pumpAndSettle();
+      loginButton = tester.widget<AppFilledButton>(loginButtonFinder);
+      expect(loginButton.onTap, isNotNull);
+
+      final showHintFinder = find.text(loc.showHint);
+      expect(showHintFinder, findsOneWidget);
+      await tester.tap(showHintFinder);
+      await tester.pumpAndSettle();
+      expect(find.text('Linksys'), findsWidgets);
     },
+    goldenFilename: 'LGLV-PASS_02_password_hint_visible',
+    helper: testHelper,
   );
 
-  testLocalizations(
-    'login local view - failed to login with auth status',
-    (tester, locale) async {
-      when(mockAuthNotifier.getAdminPasswordAuthStatus(any))
+  // Test ID: LGLV-ERR_COUNTDOWN
+  testLocalizationsV2(
+    'login local view - error countdown',
+    (tester, screen) async {
+      when(testHelper.mockAuthNotifier.getAdminPasswordAuthStatus(any))
           .thenAnswer((_) async {
         return {
-          "attemptsRemaining": 4,
-          "delayTimeRemaining": 5,
+          'attemptsRemaining': 4,
+          'delayTimeRemaining': 5,
         };
       });
 
-      await tester.pumpWidget(
-        testableSingleRoute(
-          child: const LoginLocalView(),
-          locale: locale,
-          config: LinksysRouteConfig(noNaviRail: true),
-          overrides: [
-            dashboardManagerProvider
-                .overrideWith(() => mockDashboardManagerNotifier),
-            authProvider.overrideWith(() => mockAuthNotifier),
-          ],
-        ),
+      final context = await testHelper.pumpView(
+        tester,
+        child: const LoginLocalView(),
+        locale: screen.locale,
+        config: LinksysRouteConfig(noNaviRail: true),
       );
+      final loc = testHelper.loc(context);
       await tester.pumpAndSettle();
+      // At the moment of the screenshot, delay time remaining has already dropped from 5 seconds to 4 seconds
+      final expectedError = [
+        loc.localLoginTryAgainIn(4),
+        loc.localLoginRemainingAttempts(4),
+      ].join('\n');
+      expect(find.text(expectedError), findsOneWidget);
     },
+    goldenFilename: 'LGLV-ERR_COUNTDOWN_01_delay_message',
+    helper: testHelper,
   );
 
-  testLocalizations(
-    'login local view - failed to login with auth status and too many attempts',
-    (tester, locale) async {
-      when(mockAuthNotifier.getAdminPasswordAuthStatus(any))
+  // Test ID: LGLV-ERR_LOCKED
+  testLocalizationsV2(
+    'login local view - lockout message when attempts exhausted',
+    (tester, screen) async {
+      when(testHelper.mockAuthNotifier.getAdminPasswordAuthStatus(any))
           .thenAnswer((_) async {
         return {
-          "attemptsRemaining": 0,
+          'attemptsRemaining': 0,
         };
       });
 
-      await tester.pumpWidget(
-        testableSingleRoute(
-          child: const LoginLocalView(),
-          locale: locale,
-          config: LinksysRouteConfig(noNaviRail: true),
-          overrides: [
-            dashboardManagerProvider
-                .overrideWith(() => mockDashboardManagerNotifier),
-            authProvider.overrideWith(() => mockAuthNotifier),
-          ],
-        ),
+      final context = await testHelper.pumpView(
+        tester,
+        child: const LoginLocalView(),
+        locale: screen.locale,
+        config: LinksysRouteConfig(noNaviRail: true),
       );
+      final loc = testHelper.loc(context);
       await tester.pumpAndSettle();
+
+      expect(
+        find.text(loc.localLoginTooManyAttemptsTitle),
+        findsOneWidget,
+      );
     },
+    goldenFilename: 'LGLV-ERR_LOCKED_01_lockout_message',
+    helper: testHelper,
   );
 
-  testLocalizations(
-    'login local view - failed to login without auth status',
-    (tester, locale) async {
-      when(mockAuthNotifier.getAdminPasswordAuthStatus(any))
+  // Test ID: LGLV-ERR_GENERIC
+  testLocalizationsV2(
+    'login local view - generic incorrect password error',
+    (tester, screen) async {
+      // As long as one of the two parameters is missing, it will display generic incorrect password error
+      when(testHelper.mockAuthNotifier.getAdminPasswordAuthStatus(any))
           .thenAnswer((_) async {
         return {
-          "attemptsRemaining": null,
-          "delayTimeRemaining": 5,
+          'attemptsRemaining': null,
+          'delayTimeRemaining': 5,
         };
       });
 
-      await tester.pumpWidget(
-        testableSingleRoute(
-          child: const LoginLocalView(),
-          locale: locale,
-          config: LinksysRouteConfig(noNaviRail: true),
-          overrides: [
-            dashboardManagerProvider
-                .overrideWith(() => mockDashboardManagerNotifier),
-            authProvider.overrideWith(() => mockAuthNotifier),
-          ],
-        ),
+      final context = await testHelper.pumpView(
+        tester,
+        child: const LoginLocalView(),
+        locale: screen.locale,
+        config: LinksysRouteConfig(noNaviRail: true),
       );
+      final loc = testHelper.loc(context);
       await tester.pumpAndSettle();
+
+      expect(
+        find.text(loc.localLoginIncorrectRouterPassword),
+        findsOneWidget,
+      );
     },
+    goldenFilename: 'LGLV-ERR_GENERIC_01_generic_message',
+    helper: testHelper,
   );
 }

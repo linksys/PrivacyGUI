@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -11,6 +10,7 @@ import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/qr_code.dart';
 import 'package:privacy_gui/util/wifi_credential.dart';
@@ -305,33 +305,53 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
   Future<void> _handleWifiToggled(bool value) async {
     final result = await showSwitchWifiDialog();
     if (result) {
+      // If the widget is already disposed, do nothing even if the user has confirmed the change
+      if (!mounted) return;
       showSpinnerDialog(context);
-      final wifiProvider = ref.read(wifiListProvider.notifier);
+      final wifiProvider = ref.read(wifiBundleProvider.notifier);
       await wifiProvider.fetch();
       if (widget.item.isGuest) {
         wifiProvider.setWiFiEnabled(value);
-        await wifiProvider.save().then((value) => context.pop()).catchError(
-            (error, stackTrace) {
+        await wifiProvider.save().then((value) {
+          if (mounted) {
+            context.pop();
+          }
+        }).catchError((error, stackTrace) {
+          if (!mounted) return;
           // Show RouterNotFound alert for the JNAP side effect error
-          showRouterNotFoundAlert(context, ref,
-              onComplete: () => context.pop());
+          showRouterNotFoundAlert(
+            context,
+            ref,
+            onComplete: () => context.pop(),
+          );
         }, test: (error) => error is JNAPSideEffectError).onError(
             (error, statckTrace) {
-          // Just dismiss the spinner for other unexpected errors
-          context.pop();
+          if (mounted) {
+            // Just dismiss the spinner for other unexpected errors
+            context.pop();
+          }
         });
       } else {
         await wifiProvider
             .saveToggleEnabled(radios: widget.item.radios, enabled: value)
-            .then((value) => context.pop())
-            .catchError((error, stackTrace) {
+            .then((value) {
+          if (mounted) {
+            context.pop();
+          }
+        }).catchError((error, stackTrace) {
+          if (!mounted) return;
           // Show RouterNotFound alert for the JNAP side effect error
-          showRouterNotFoundAlert(context, ref,
-              onComplete: () => context.pop());
+          showRouterNotFoundAlert(
+            context,
+            ref,
+            onComplete: () => context.pop(),
+          );
         }, test: (error) => error is JNAPSideEffectError).onError(
                 (error, statckTrace) {
-          // Just dismiss the spinner for other unexpected errors
-          context.pop();
+          if (mounted) {
+            // Just dismiss the spinner for other unexpected errors
+            context.pop();
+          }
         });
       }
     }

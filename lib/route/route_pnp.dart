@@ -1,6 +1,5 @@
 part of 'router_provider.dart';
 
-
 final pnpRoute = LinksysRoute(
   name: RouteNamed.pnp,
   path: RoutePath.pnp,
@@ -22,7 +21,18 @@ final pnpRoute = LinksysRoute(
         noNaviRail: true,
       ),
       builder: (context, state) => const PnpSetupView(),
-      routes: [],
+      routes: [
+        LinksysRoute(
+          name: RouteNamed.pnpAddNodes,
+          path: RoutePath.pnpAddNodes,
+          config: LinksysRouteConfig(
+              noNaviRail: true, column: ColumnGrid(column: 6, centered: true)),
+          builder: (context, state) => AddNodesView(
+            args: state.extra as Map<String, dynamic>? ?? {},
+          ),
+          routes: [],
+        )
+      ],
     ),
   ],
 );
@@ -76,17 +86,6 @@ final pnpTroubleshootingRoute = LinksysRoute(
         noNaviRail: true,
       ),
       builder: (context, state) => PnpIspAuthView(
-        args: state.extra as Map<String, dynamic>? ?? {},
-      ),
-    ),
-    LinksysRoute(
-      name: RouteNamed.pnpIspSaveSettings,
-      path: RoutePath.pnpIspSaveSettings,
-      config: LinksysRouteConfig(
-        column: ColumnGrid(column: 6, centered: true),
-        noNaviRail: true,
-      ),
-      builder: (context, state) => PnpIspSaveSettingsView(
         args: state.extra as Map<String, dynamic>? ?? {},
       ),
     ),

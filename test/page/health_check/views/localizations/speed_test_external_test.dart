@@ -1,24 +1,35 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/health_check/views/speed_test_external.dart';
 
-import '../../../../common/di.dart';
+import '../../../../common/test_helper.dart';
 import '../../../../common/test_responsive_widget.dart';
-import '../../../../common/testable_router.dart';
+
+// Reference: lib/page/health_check/views/speed_test_external.dart
+// View ID: STEXT
+//
+// ## Test Cases
+//
+// | Test ID    | Description                                                 |
+// |------------|-------------------------------------------------------------|
+// | STEXT-INIT | Verify the initial state of the external speed test view. |
 
 void main() {
-  mockDependencyRegister();
-  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
+  final testHelper = TestHelper();
 
-  setUp(() {});
-
-  testLocalizations('SpeedtestExternal - init', (tester, locale) async {
-    final widget = testableSingleRoute(
-      overrides: [],
-      locale: locale,
-      child: const SpeedTestExternalView(),
-    );
-    await tester.pumpWidget(widget);
+  setUp(() {
+    testHelper.setup();
   });
+
+  // Test ID: STEXT-INIT
+  testLocalizations(
+    'Verify the initial state of the external speed test view',
+    (tester, locale) async {
+      await testHelper.pumpView(
+        tester,
+        child: const SpeedTestExternalView(),
+        locale: locale,
+      );
+    },
+    goldenFilename: 'STEXT-INIT-01-initial_state',
+  );
 }

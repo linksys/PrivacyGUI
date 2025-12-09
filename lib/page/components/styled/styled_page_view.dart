@@ -1,7 +1,10 @@
+import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/page/components/styled/status_label.dart';
 import 'package:privacy_gui/page/components/styled/top_bar.dart';
 import 'package:privacy_gui/route/route_model.dart';
@@ -12,22 +15,26 @@ import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/page/base_page_view.dart';
-import 'package:collection/collection.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
+import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dart';
 
 import 'package:privacy_gui/localization/localization_hook.dart';
 
 import 'consts.dart';
 
+/// Defines how the main content of the page should be laid out.
 enum PageContentType {
+  /// The content can be flexible in size.
   flexible,
+
+  /// The content should fill the available space.
   fit,
   ;
 }
 
+/// A model for the page's bottom action bar.
 ///
-/// To display negitive item, isNegitiveEnabled should not be null
-///
+/// Defines the state and behavior of buttons like "Save" and "Cancel".
 class PageBottomBar extends Equatable {
   final bool isPositiveEnabled;
   final bool? isNegitiveEnabled;
@@ -76,6 +83,8 @@ class PageBottomBar extends Equatable {
   }
 }
 
+/// A variant of [PageBottomBar] typically used for destructive actions like "Delete",
+/// where the main positive action button is styled with an error color (red).
 class InversePageBottomBar extends PageBottomBar {
   const InversePageBottomBar({
     required super.isPositiveEnabled,
@@ -87,6 +96,8 @@ class InversePageBottomBar extends PageBottomBar {
   });
 }
 
+/// A model for the page menu, used for the side menu on desktop
+/// or the modal bottom sheet menu on mobile.
 class PageMenu {
   final String? title;
   List<PageMenuItem> items;
@@ -96,6 +107,7 @@ class PageMenu {
   });
 }
 
+/// A single item within a [PageMenu].
 class PageMenuItem {
   final String label;
   final IconData? icon;
@@ -110,6 +122,17 @@ class PageMenuItem {
 const double kDefaultToolbarHeight = 80;
 const double kDefaultBottomHeight = 80;
 
+/// A powerful and highly configurable page layout widget.
+///
+/// This widget serves as the base frame for most pages in the application.
+/// It integrates multiple layout modes:
+/// - **Non-Sliver Mode**: A traditional layout with a fixed AppBar.
+/// - **Sliver Mode**: A collapsible AppBar effect when `enableSliverAppBar: true`.
+/// - **Tab Support**: Supports TabBar and TabBarView in both sliver and non-sliver modes.
+/// - **Responsive Design**: Automatically handles menu display for desktop and mobile.
+/// - **Bottom Action Bar**: An optional area for action buttons.
+/// - **Bottom Navigation Bar Integration**: Automatically hides/shows the global
+///   BottomNavigationBar based on scroll direction in Sliver mode.
 class StyledAppPageView extends ConsumerStatefulWidget {
   final String? title;
   final Widget Function(BuildContext context, BoxConstraints constraints)?
@@ -147,6 +170,9 @@ class StyledAppPageView extends ConsumerStatefulWidget {
   //
   final PageContentType pageContentType;
 
+  /// Whether to enable the Sliver AppBar effect.
+  final bool enableSliverAppBar;
+
   const StyledAppPageView({
     super.key,
     this.title,
@@ -180,11 +206,15 @@ class StyledAppPageView extends ConsumerStatefulWidget {
     this.onTabTap,
     this.hideTopbar = false,
     this.pageContentType = PageContentType.flexible,
+    this.enableSliverAppBar = false,
   }) : assert(child != null ||
             (tabs != null &&
                 tabContentViews != null &&
                 tabs.length == tabContentViews.length));
 
+  /// A factory constructor for creating an "inner page", which is a page
+  /// without its own top bar or AppBar. This is typically used for pages
+  /// that are children of a TabBarView.
   factory StyledAppPageView.innerPage({
     Widget Function(BuildContext context, BoxConstraints constraints)? child,
     EdgeInsets? padding,
@@ -196,6 +226,7 @@ class StyledAppPageView extends ConsumerStatefulWidget {
     bool useMainPadding = true,
     PageContentType pageContentType = PageContentType.flexible,
     Future<void> Function()? onRefresh,
+    bool enableSliverAppBar = false,
   }) {
     return StyledAppPageView(
       child: child,
@@ -210,6 +241,84 @@ class StyledAppPageView extends ConsumerStatefulWidget {
       hideTopbar: true,
       appBarStyle: AppBarStyle.none,
       onRefresh: onRefresh,
+      enableSliverAppBar: enableSliverAppBar,
+    );
+  }
+
+  /// A factory constructor for creating a page with a Sliver AppBar enabled by default.
+  factory StyledAppPageView.withSliver({
+    Key? key,
+    Widget Function(BuildContext context, BoxConstraints constraints)? child,
+    String? title,
+    EdgeInsets? padding,
+    bool? scrollable = true,
+    double toolbarHeight = kDefaultToolbarHeight,
+    Future<void> Function()? onRefresh,
+    VoidCallback? onBackTap,
+    StyledBackState backState = StyledBackState.enabled,
+    List<Widget>? actions,
+    Widget? bottomSheet,
+    Widget? bottomNavigationBar,
+    AppBarStyle appBarStyle = AppBarStyle.back,
+    bool handleNoConnection = false,
+    bool handleBanner = false,
+    IconData? menuIcon,
+    PageMenu? menu,
+    Widget? menuWidget,
+    ScrollController? controller,
+    ({
+      bool left,
+      bool top,
+      bool right,
+      bool bottom
+    }) enableSafeArea = (left: true, top: true, right: true, bottom: true),
+    PageBottomBar? bottomBar,
+    bool menuOnRight = false,
+    bool largeMenu = false,
+    Widget? topbar,
+    String? markLabel,
+    List<Widget>? tabs,
+    List<Widget>? tabContentViews,
+    TabController? tabController,
+    void Function(int index)? onTabTap,
+    bool hideTopbar = false,
+    bool useMainPadding = true,
+    PageContentType pageContentType = PageContentType.flexible,
+  }) {
+    return StyledAppPageView(
+      key: key,
+      child: child,
+      title: title,
+      padding: padding,
+      scrollable: scrollable,
+      toolbarHeight: toolbarHeight,
+      onBackTap: onBackTap,
+      onRefresh: onRefresh,
+      backState: backState,
+      actions: actions,
+      bottomSheet: bottomSheet,
+      bottomNavigationBar: bottomNavigationBar,
+      appBarStyle: appBarStyle,
+      handleNoConnection: handleNoConnection,
+      handleBanner: handleBanner,
+      menuIcon: menuIcon,
+      menu: menu,
+      menuWidget: menuWidget,
+      controller: controller,
+      enableSafeArea: enableSafeArea,
+      bottomBar: bottomBar,
+      menuOnRight: menuOnRight,
+      largeMenu: largeMenu,
+      topbar: topbar,
+      useMainPadding: useMainPadding,
+      markLabel: markLabel,
+      tabs: tabs,
+      tabContentViews: tabContentViews,
+      tabController: tabController,
+      onTabTap: onTabTap,
+      hideTopbar: hideTopbar,
+      pageContentType: pageContentType,
+      enableSliverAppBar: true,
     );
   }
 
@@ -217,6 +326,12 @@ class StyledAppPageView extends ConsumerStatefulWidget {
   ConsumerState<StyledAppPageView> createState() => _StyledAppPageViewState();
 }
 
+/// The main state class for [StyledAppPageView].
+///
+/// This class is responsible for:
+/// 1. Managing the lifecycle of the `ScrollController`.
+/// 2. Listening to scroll events to coordinate with the global BottomNavigationBar.
+/// 3. Acting as a dispatcher to render the correct layout based on input parameters.
 class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
   late ScrollController _scrollController;
 
@@ -224,146 +339,185 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
   void initState() {
     super.initState();
     _scrollController = widget.controller ?? ScrollController();
+    _scrollController.addListener(_scrollListener);
   }
 
   @override
   void dispose() {
-    _scrollController.dispose();
+    _scrollController.removeListener(_scrollListener);
+    // Only dispose the controller if it was created by this widget.
+    if (widget.controller == null) {
+      _scrollController.dispose();
+    }
     super.dispose();
+  }
+
+  /// Listens to scroll events to automatically hide/show the global BottomNavigationBar.
+  void _scrollListener() {
+    final menu = ref.read(menuController);
+    // Only act if the menu is a bottom bar (i.e., on mobile layout).
+    if (menu.displayType != MenuDisplay.bottom) {
+      // If we scrolled and the menu is no longer a bottom bar (e.g., due to screen resize),
+      // ensure its visibility is reset to true.
+      if (!menu.isVisible) {
+        menu.setMenuVisible(true);
+      }
+      return;
+    }
+
+    final direction = _scrollController.position.userScrollDirection;
+
+    // Always show the menu when scrolled near the top.
+    if (_scrollController.position.pixels < 100) {
+      if (!menu.isVisible) {
+        menu.setMenuVisible(true);
+      }
+      return;
+    }
+
+    // Hide when scrolling down.
+    if (direction == ScrollDirection.reverse) {
+      if (menu.isVisible) {
+        menu.setMenuVisible(false);
+      }
+    } else if (direction == ScrollDirection.forward) {
+      // Show when scrolling up.
+      if (!menu.isVisible) {
+        menu.setMenuVisible(true);
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // final pageRoute = GoRouter.of(context)
-    //     .routerDelegate
-    //     .currentConfiguration
-    //     .routes
-    //     .last as LinksysRoute?;
-    // final config = pageRoute?.config;
+    // This ValueListenableBuilder is likely a technique to force redraws when a global state changes.
     return ValueListenableBuilder<bool>(
-        valueListenable: showColumnOverlayNotifier,
-        builder: (context, showColumnOverlay, _) {
-          return Column(
+      valueListenable: showColumnOverlayNotifier,
+      builder: (context, showColumnOverlay, _) {
+        // Dispatch to the appropriate private layout widget based on conditions.
+        if (widget.enableSliverAppBar) {
+          Widget body;
+          if (widget.tabs != null) {
+            body = _SliverWithTabsLayout(state: this);
+          } else {
+            body = _SliverWithoutTabsLayout(state: this);
+          }
+
+          // Background
+          body = DecoratedBox(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.background,
+            ),
+            child: body,
+          );
+
+          // Wrap with RefreshIndicator if needed.
+          if (widget.onRefresh != null) {
+            body = RefreshIndicator(
+              onRefresh: widget.onRefresh!,
+              child: body,
+            );
+          }
+
+          // Combine the main body and the bottom action bar in a Stack.
+          return Stack(
             children: [
-              if (!widget.hideTopbar)
-                widget.topbar ??
-                    const PreferredSize(
-                        preferredSize: Size(0, 80), child: TopBar()),
-              Expanded(
-                  child: buildMainContent(
-                      widget.useMainPadding, showColumnOverlay)),
+              SafeArea(
+                left: widget.enableSafeArea.left,
+                top: widget.enableSafeArea.top,
+                right: widget.enableSafeArea.right,
+                bottom: widget.enableSafeArea.bottom,
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    bottom:
+                        widget.bottomBar != null ? kDefaultBottomHeight : 0.0,
+                  ),
+                  child: body,
+                ),
+              ),
+              _bottomWidget(context),
             ],
           );
-        });
-  }
-
-  Widget buildMainContent(bool useMainPadding, bool showColumnOverlay) {
-    final mainContentPadding = ResponsiveLayout.pageHorizontalPadding(context);
-    return Stack(
-      children: [
-        Padding(
-          padding: EdgeInsets.only(
-              bottom: widget.bottomBar != null ? kDefaultBottomHeight : 0.0),
-          child: widget.tabs != null
-              ? Container(
-                  color: Theme.of(context).colorScheme.background,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (widget.appBarStyle != AppBarStyle.none)
-                        Padding(
-                          padding: EdgeInsets.symmetric(
-                              horizontal: mainContentPadding),
-                          child:
-                              _buildAppBar(context, ref) ?? SizedBox(height: 0),
-                        ),
-                      Padding(
-                        padding: EdgeInsets.symmetric(
-                            horizontal: mainContentPadding),
-                        child: AppTabBar(
-                          tabController: widget.tabController,
-                          tabs: widget.tabs!,
-                          onTap: widget.onTabTap,
-                        ),
-                      ),
-                      AppGap.medium(),
-                      Expanded(
-                        child: TabBarView(
-                          controller: widget.tabController,
-                          physics: NeverScrollableScrollPhysics(),
-                          children: widget.tabContentViews!,
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              : AppPageView(
-                  // appBar: _buildAppBar(context, ref),
-                  padding: widget.padding,
-                  onRefresh: widget.onRefresh,
-                  scrollable: widget.scrollable,
-                  scrollController: _scrollController,
-                  bottomSheet: widget.bottomSheet,
-                  bottomNavigationBar: widget.bottomNavigationBar,
-                  background: Theme.of(context).colorScheme.background,
-                  enableSafeArea: (
-                    left: widget.enableSafeArea.left,
-                    top: widget.enableSafeArea.top,
-                    right: widget.enableSafeArea.right,
-                    bottom: widget.enableSafeArea.bottom,
-                  ),
-                  useContentMainPadding: useMainPadding,
-                  isOverlayVisible: showColumnOverlay,
-                  child: (context, constraints) {
-                    final views = [
-                      if (!ResponsiveLayout.isMobileLayout(context) &&
-                          hasMenu()) ...[
-                        SizedBox(
-                          width: widget.largeMenu ? 4.col : 3.col,
-                          child: AppCard(
-                            child: _createMenuWidget(context),
-                          ),
-                        ),
-                        const AppGap.gutter(),
-                      ],
-                      Expanded(
-                          child: widget.child?.call(context, constraints) ??
-                              SizedBox.shrink()),
-                    ];
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        if (widget.appBarStyle != AppBarStyle.none)
-                          _buildAppBar(context, ref) ?? SizedBox(height: 0),
-                        Expanded(
-                          child: SizedBox(
-                            height:
-                                widget.pageContentType == PageContentType.fit
-                                    ? constraints.maxHeight
-                                    : null,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: widget.menuOnRight
-                                  ? views.reversed.toList()
-                                  : views,
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-        ),
-        _bottomWidget(context),
-      ],
+        } else {
+          // If not using Sliver mode, render the traditional layout.
+          return _NonSliverLayout(state: this);
+        }
+      },
     );
   }
 
+  //region Helper Methods
+  //----------------------------------------------------------------------------
+
+  /// Checks if the back button should be enabled.
   bool isBackEnabled() => widget.backState == StyledBackState.enabled;
 
+  /// Checks if a side menu is provided.
   bool hasMenu() => widget.menu != null || widget.menuWidget != null;
 
+  /// Builds the [SliverAppBar].
+  SliverAppBar? _buildSliverAppBar(
+    BuildContext context,
+    WidgetRef ref,
+  ) {
+    final title = widget.title;
+    final leading = widget.appBarStyle == AppBarStyle.back
+        ? BackButton(
+            key: Key('appBarBackButton'),
+            onPressed: isBackEnabled()
+                ? (widget.onBackTap ?? () => context.pop())
+                : null,
+          )
+        : widget.appBarStyle == AppBarStyle.close
+            ? CloseButton(
+                key: Key('appBarCloseButton'),
+                onPressed: isBackEnabled()
+                    ? (widget.onBackTap ?? () => context.pop())
+                    : null,
+              )
+            : null;
+
+    if (widget.appBarStyle == AppBarStyle.none) {
+      return null;
+    }
+
+    return SliverAppBar(
+      centerTitle: false,
+      backgroundColor: Theme.of(context).colorScheme.background,
+      leading: widget.backState != StyledBackState.none ? leading : null,
+      title: title == null
+          ? null
+          : Semantics(
+              label: 'page title',
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (widget.backState == StyledBackState.none) AppGap.small2(),
+                  Flexible(
+                    fit: FlexFit.loose,
+                    child: AppText.titleLarge(
+                      title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (widget.markLabel != null) ...[
+                    const AppGap.small2(),
+                    StatusLabel(label: widget.markLabel!),
+                  ],
+                ],
+              ),
+            ),
+      actions: _buildActions(context),
+      pinned: ResponsiveLayout.isMobileLayout(context) ? false : true,
+      floating: true,
+      snap: true,
+      toolbarHeight: widget.toolbarHeight,
+    );
+  }
+
+  /// Builds the traditional [LinksysAppBar].
   LinksysAppBar? _buildAppBar(BuildContext context, WidgetRef ref) {
     final title = widget.title;
     switch (widget.appBarStyle) {
@@ -443,6 +597,7 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
     }
   }
 
+  /// Builds the list of actions for the AppBar.
   List<Widget>? _buildActions(BuildContext context) {
     final actionWidgets =
         !hasMenu() || !ResponsiveLayout.isMobileLayout(context)
@@ -454,10 +609,12 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
         yield const AppGap.small2();
       } else {
         yield element;
+        yield const AppGap.large2();
       }
     }).toList();
   }
 
+  /// Builds the bottom action bar.
   Widget _bottomWidget(BuildContext context) {
     return widget.bottomBar != null
         ? Align(
@@ -476,8 +633,10 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
                       identifier: 'now-page-bottom-container',
                       child: Padding(
                         padding: EdgeInsets.symmetric(
-                            horizontal: ResponsiveLayout.pageHorizontalPadding(
-                                context)),
+                            horizontal: widget.useMainPadding
+                                ? ResponsiveLayout.pageHorizontalPadding(
+                                    context)
+                                : Spacing.large2),
                         child: Row(
                           children: [
                             if (ResponsiveLayout.isMobileLayout(context)) ...[
@@ -487,6 +646,7 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
                                   child: AppOutlinedButton.fillWidth(
                                     widget.bottomBar?.negitiveLable ??
                                         loc(context).cancel,
+                                    key: const Key('pageBottomNegitiveButton'),
                                     onTap:
                                         widget.bottomBar?.isNegitiveEnabled ==
                                                 true
@@ -507,6 +667,7 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
                                 child: AppFilledButton.fillWidth(
                                   widget.bottomBar?.positiveLabel ??
                                       loc(context).save,
+                                  key: Key('pageBottomPositiveButton'),
                                   onTap: widget.bottomBar?.isPositiveEnabled ==
                                           true
                                       ? () {
@@ -528,6 +689,7 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
                                 AppOutlinedButton(
                                   widget.bottomBar?.negitiveLable ??
                                       loc(context).cancel,
+                                  key: const Key('pageBottomNegitiveButton'),
                                   color: Theme.of(context).colorScheme.outline,
                                   identifier: 'now-page-bottom-button-negitice',
                                   onTap: widget.bottomBar?.isNegitiveEnabled ==
@@ -543,6 +705,7 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
                               AppFilledButton(
                                 widget.bottomBar?.positiveLabel ??
                                     loc(context).save,
+                                key: Key('pageBottomPositiveButton'),
                                 identifier: 'now-page-bottom-button-positive',
                                 onTap: widget.bottomBar?.isPositiveEnabled ==
                                         true
@@ -567,6 +730,7 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
         : const Center();
   }
 
+  /// Builds the "More" icon button on mobile to open the menu.
   Widget _createMenuAction(BuildContext context) {
     return AppIconButton.noPadding(
       icon: widget.menuIcon ?? LinksysIcons.moreHoriz,
@@ -584,6 +748,7 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
     );
   }
 
+  /// Builds the content widget for the menu.
   Widget _createMenuWidget(BuildContext context, [double? maxWidth]) {
     return Semantics(
       explicitChildNodes: true,
@@ -620,5 +785,295 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
             ),
       ),
     );
+  }
+  //endregion
+}
+
+//region Layout Widgets
+//----------------------------------------------------------------------------
+
+/// A private layout widget for the case where Slivers are enabled and tabs are present.
+///
+/// It uses a [NestedScrollView] to coordinate the outer Sliver components (AppBar, etc.)
+/// with the inner [TabBarView].
+class _SliverWithTabsLayout extends StatelessWidget {
+  const _SliverWithTabsLayout({required this.state});
+  final _StyledAppPageViewState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final mainContentPadding = ResponsiveLayout.pageHorizontalPadding(context);
+    final tabBar = AppTabBar(
+      tabController: state.widget.tabController,
+      tabs: state.widget.tabs!,
+      onTap: state.widget.onTabTap,
+    );
+
+    return NestedScrollView(
+      physics: state.widget.scrollable == false
+          ? const NeverScrollableScrollPhysics()
+          : null,
+      controller: state._scrollController,
+      headerSliverBuilder: (context, innerBoxIsScrolled) {
+        return [
+          if (!state.widget.hideTopbar)
+            SliverToBoxAdapter(
+              child: state.widget.topbar ??
+                  const PreferredSize(
+                      preferredSize: Size(0, 80), child: TopBar()),
+            ),
+          if (state.widget.appBarStyle != AppBarStyle.none)
+            state._buildSliverAppBar(context, state.ref)!,
+          SliverPersistentHeader(
+            delegate: _SliverTabBarDelegate(tabBar),
+            pinned: ResponsiveLayout.isMobileLayout(context) ? false : true,
+          ),
+        ];
+      },
+      body: TabBarView(
+        physics: NeverScrollableScrollPhysics(),
+        controller: state.widget.tabController,
+        children: state.widget.tabContentViews!
+            .map((e) => Container(
+                  color: Theme.of(context).colorScheme.background,
+                  padding: EdgeInsets.symmetric(
+                      horizontal:
+                          state.widget.useMainPadding ? mainContentPadding : 0,
+                      vertical: Spacing.medium),
+                  child: e,
+                ))
+            .toList(),
+      ),
+    );
+  }
+}
+
+/// A private layout widget for the case where Slivers are enabled but no tabs are present.
+///
+/// It uses a standard [CustomScrollView] to build the page.
+class _SliverWithoutTabsLayout extends StatelessWidget {
+  const _SliverWithoutTabsLayout({required this.state});
+  final _StyledAppPageViewState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final mainContentPadding = ResponsiveLayout.pageHorizontalPadding(context);
+    final layoutBuilder = LayoutBuilder(
+      builder: (context, constraints) {
+        // On desktop with a menu, show a side-by-side layout.
+        if (!ResponsiveLayout.isMobileLayout(context) && state.hasMenu()) {
+          final views = [
+            SizedBox(
+              width: state.widget.largeMenu ? 4.col : 3.col,
+              child: AppCard(
+                child: state._createMenuWidget(context),
+              ),
+            ),
+            const AppGap.gutter(),
+            Expanded(
+              child: state.widget.child?.call(context, constraints) ??
+                  const SizedBox.shrink(),
+            ),
+          ];
+          return Padding(
+            padding: state.widget.padding ?? EdgeInsets.zero,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children:
+                  state.widget.menuOnRight ? views.reversed.toList() : views,
+            ),
+          );
+        } else {
+          // On mobile or without a menu, show the main child directly.
+          return Padding(
+            padding: state.widget.padding ?? EdgeInsets.zero,
+            child: state.widget.child?.call(context, constraints) ??
+                const SizedBox.shrink(),
+          );
+        }
+      },
+    );
+    return CustomScrollView(
+      physics: state.widget.scrollable == false
+          ? const NeverScrollableScrollPhysics()
+          : null,
+      controller: state._scrollController,
+      slivers: [
+        if (!state.widget.hideTopbar)
+          SliverToBoxAdapter(
+            child: state.widget.topbar ??
+                const PreferredSize(
+                    preferredSize: Size(0, 80), child: TopBar()),
+          ),
+        if (state.widget.appBarStyle != AppBarStyle.none)
+          state._buildSliverAppBar(context, state.ref)!,
+        SliverPadding(
+          padding: EdgeInsets.symmetric(
+              horizontal: state.widget.useMainPadding ? mainContentPadding : 0,
+              vertical: Spacing.medium),
+          sliver: state.widget.pageContentType == PageContentType.fit
+              ? SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: layoutBuilder,
+                )
+              : SliverToBoxAdapter(
+                  child: layoutBuilder,
+                ),
+        ),
+      ],
+    );
+  }
+}
+
+/// A private layout widget for the traditional, non-Sliver layout.
+class _NonSliverLayout extends StatelessWidget {
+  const _NonSliverLayout({required this.state});
+  final _StyledAppPageViewState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final mainContentPadding = ResponsiveLayout.pageHorizontalPadding(context);
+    final showColumnOverlay = showColumnOverlayNotifier.value;
+    final useMainPadding = state.widget.useMainPadding;
+
+    final content = Stack(
+      children: [
+        Padding(
+          padding: EdgeInsets.only(
+              bottom:
+                  state.widget.bottomBar != null ? kDefaultBottomHeight : 0.0),
+          child: state.widget.tabs != null
+              ? Container(
+                  color: Theme.of(context).colorScheme.background,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (state.widget.appBarStyle != AppBarStyle.none)
+                        Padding(
+                          padding: EdgeInsets.symmetric(
+                              horizontal: mainContentPadding),
+                          child: state._buildAppBar(context, state.ref) ??
+                              const SizedBox(height: 0),
+                        ),
+                      Padding(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: mainContentPadding),
+                        child: AppTabBar(
+                          tabController: state.widget.tabController,
+                          tabs: state.widget.tabs!,
+                          onTap: state.widget.onTabTap,
+                        ),
+                      ),
+                      AppGap.medium(),
+                      Expanded(
+                        child: TabBarView(
+                          controller: state.widget.tabController,
+                          physics: const NeverScrollableScrollPhysics(),
+                          children: state.widget.tabContentViews!,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : AppPageView(
+                  padding: state.widget.padding,
+                  onRefresh: state.widget.onRefresh,
+                  scrollable: state.widget.scrollable,
+                  scrollController: state._scrollController,
+                  bottomSheet: state.widget.bottomSheet,
+                  bottomNavigationBar: state.widget.bottomNavigationBar,
+                  background: Theme.of(context).colorScheme.background,
+                  enableSafeArea: (
+                    left: state.widget.enableSafeArea.left,
+                    top: state.widget.enableSafeArea.top,
+                    right: state.widget.enableSafeArea.right,
+                    bottom: state.widget.enableSafeArea.bottom,
+                  ),
+                  useContentMainPadding: useMainPadding,
+                  isOverlayVisible: showColumnOverlay,
+                  child: (context, constraints) {
+                    final views = [
+                      if (!ResponsiveLayout.isMobileLayout(context) &&
+                          state.hasMenu()) ...[
+                        SizedBox(
+                          width: state.widget.largeMenu ? 4.col : 3.col,
+                          child: AppCard(
+                            child: state._createMenuWidget(context),
+                          ),
+                        ),
+                        const AppGap.gutter(),
+                      ],
+                      Expanded(
+                          child:
+                              state.widget.child?.call(context, constraints) ??
+                                  const SizedBox.shrink()),
+                    ];
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (state.widget.appBarStyle != AppBarStyle.none)
+                          state._buildAppBar(context, state.ref) ??
+                              const SizedBox(height: 0),
+                        Expanded(
+                          child: SizedBox(
+                            height: state.widget.pageContentType ==
+                                    PageContentType.fit
+                                ? constraints.maxHeight
+                                : null,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: state.widget.menuOnRight
+                                  ? views.reversed.toList()
+                                  : views,
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+        ),
+        state._bottomWidget(context),
+      ],
+    );
+    return Column(
+      children: [
+        if (!state.widget.hideTopbar)
+          state.widget.topbar ??
+              const PreferredSize(preferredSize: Size(0, 80), child: TopBar()),
+        Expanded(child: content),
+      ],
+    );
+  }
+}
+
+//endregion
+
+/// A helper delegate to wrap the [AppTabBar] in a [SliverPersistentHeader]
+/// so it can be pinned below the [SliverAppBar].
+class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
+  _SliverTabBarDelegate(this.tabBar);
+
+  final AppTabBar tabBar;
+
+  @override
+  double get minExtent => tabBar.preferredSize.height;
+  @override
+  double get maxExtent => tabBar.preferredSize.height;
+
+  @override
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      color: Theme.of(context).colorScheme.background,
+      child: tabBar,
+    );
+  }
+
+  @override
+  bool shouldRebuild(_SliverTabBarDelegate oldDelegate) {
+    return tabBar != oldDelegate.tabBar;
   }
 }

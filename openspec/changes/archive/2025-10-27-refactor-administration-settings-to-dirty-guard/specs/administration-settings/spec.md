@@ -1,0 +1,33 @@
+## ADDED Requirements
+
+### Requirement: Administration Settings State Management
+The system SHALL manage the Administration Settings using the standardized dirty-guard framework, ensuring automatic detection of unsaved changes and consistent handling of navigation.
+
+#### Scenario: Modify Administration settings and save
+- **GIVEN** the user is on the Administration Settings page.
+- **WHEN** the user modifies a setting (e.g., changes the admin password).
+- **AND** the user clicks the page-level "Save" button.
+- **THEN** the changes SHALL be persisted.
+- **AND** the page's dirty state SHALL be cleared.
+
+#### Scenario: Attempt to navigate away with unsaved changes
+- **GIVEN** the user has modified a setting on the Administration Settings page, making it "dirty".
+- **WHEN** the user attempts to navigate away from the page.
+- **THEN** a confirmation dialog SHALL be displayed, asking the user to save, discard, or cancel the navigation.
+
+## ADDED Requirements
+
+### Requirement: Visual Feedback for Operations
+The system SHALL display a loading spinner during `save` and `fetch` operations to provide visual feedback to the user.
+
+#### Scenario: Saving changes
+- **GIVEN** the user has modified a setting.
+- **WHEN** the user initiates a save operation.
+- **THEN** a loading spinner SHALL be displayed while the operation is in progress.
+- **AND** the spinner SHALL be dismissed upon completion.
+
+#### Scenario: Fetching data
+- **GIVEN** the user navigates to a page that requires data fetching.
+- **WHEN** the data fetch operation is initiated.
+- **THEN** a loading spinner SHALL be displayed while the operation is in progress.
+- **AND** the spinner SHALL be dismissed upon completion.

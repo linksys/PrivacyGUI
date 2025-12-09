@@ -3,19 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/models/port_range_triggering_rule.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/_ports.dart';
-import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/providers/apps_and_gaming_provider.dart';
 import 'package:privacy_gui/page/components/settings_view/editable_card_list_settings_view.dart';
 import 'package:privacy_gui/page/components/settings_view/editable_table_settings_view.dart';
-import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/styled/consts.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
 class PortRangeTriggeringListView extends ArgumentsConsumerStatelessView {
   const PortRangeTriggeringListView({super.key, super.args});
@@ -82,54 +77,10 @@ class _PortRangeTriggeringContentViewState
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(portRangeTriggeringListProvider);
-    // ref.listen(portRangeTriggeringListProvider, (previous, next) {
-    //   ref
-    //       .read(appsAndGamingProvider.notifier)
-    //       .setChanged(next != preservedState);
-    // });
-    return StyledAppPageView(
-      scrollable: true,
-      useMainPadding: true,
-      hideTopbar: true,
-      appBarStyle: AppBarStyle.none,
-      padding: EdgeInsets.zero,
-      title: loc(context).portRangeTriggering,
-      // bottomBar: PageBottomBar(
-      //     isPositiveEnabled: state != preservedState,
-      //     onPositiveTap: () {
-      //       doSomethingWithSpinner(context, _notifier.save()).then((state) {
-      //         setState(() {
-      //           preservedState = state;
-      //         });
-      //       });
-      //       // ref.read(appsAndGamingProvider.notifier).setChanged(false);
-      //     }),
-      child: (context, constraints) => AppBasicLayout(
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // const AppGap.large2(),
-            // AppText.bodyLarge(loc(context).portRangeForwardingDescription),
-            // if (!_notifier.isExceedMax()) ...[
-            //   const AppGap.large2(),
-            //   AddRuleCard(
-            //     onTap: () {
-            //       context.pushNamed<bool?>(RouteNamed.protRangeTriggeringRule,
-            //           extra: {'rules': state.rules}).then((value) {
-            //         if (value ?? false) {
-            //           _notifier.fetch();
-            //         }
-            //       });
-            //     },
-            //   ),
-            // ],
-            const AppGap.large2(),
-            ResponsiveLayout(
-                desktop: _desktopSettingsView(state),
-                mobile: _mobildSettingsView(state))
-          ],
-        ),
-      ),
+    return SingleChildScrollView(
+      child: ResponsiveLayout(
+          desktop: _desktopSettingsView(state),
+          mobile: _mobildSettingsView(state)),
     );
   }
 
@@ -168,7 +119,7 @@ class _PortRangeTriggeringContentViewState
               ),
             ),
         editRoute: RouteNamed.portRangeTriggeringRule,
-        dataList: state.rules,
+        dataList: state.current.rules,
         onSave: (index, rule) {
           if (index >= 0) {
             _notifier.editRule(index, rule);
@@ -189,7 +140,7 @@ class _PortRangeTriggeringContentViewState
       onStartEdit: (index, rule) {
         ref
             .read(portRangeTriggeringRuleProvider.notifier)
-            .init(state.rules, rule, index);
+            .init(state.current.rules, rule, index);
         // Edit
         applicationTextController.text = rule?.description ?? '';
         firstTriggerPortController.text = '${rule?.firstTriggerPort ?? 0}';
@@ -217,7 +168,7 @@ class _PortRangeTriggeringContentViewState
               1: FractionColumnWidth(.25),
               2: FractionColumnWidth(.25),
             },
-      dataList: [...state.rules],
+      dataList: [...state.current.rules],
       editRowIndex: 0,
       cellBuilder: (context, ref, index, rule) {
         return switch (index) {
@@ -234,6 +185,7 @@ class _PortRangeTriggeringContentViewState
 
         return switch (index) {
           0 => AppTextField.outline(
+              key: const Key('applicationNameTextField'),
               controller: applicationTextController,
               onChanged: (value) {
                 ref
@@ -254,6 +206,7 @@ class _PortRangeTriggeringContentViewState
                   children: [
                     Expanded(
                       child: AppTextField.minMaxNumber(
+                        key: const Key('firstTriggerPortTextField'),
                         min: 0,
                         max: 65535,
                         border: OutlineInputBorder(),
@@ -278,6 +231,7 @@ class _PortRangeTriggeringContentViewState
                     ),
                     Expanded(
                       child: AppTextField.minMaxNumber(
+                        key: const Key('lastTriggerPortTextField'),
                         min: 0,
                         max: 65535,
                         border: OutlineInputBorder(),
@@ -307,6 +261,7 @@ class _PortRangeTriggeringContentViewState
                   children: [
                     Expanded(
                       child: AppTextField.minMaxNumber(
+                        key: const Key('firstForwardedPortTextField'),
                         min: 0,
                         max: 65535,
                         border: OutlineInputBorder(),
@@ -332,6 +287,7 @@ class _PortRangeTriggeringContentViewState
                     ),
                     Expanded(
                       child: AppTextField.minMaxNumber(
+                        key: const Key('lastForwardedPortTextField'),
                         min: 0,
                         max: 65535,
                         border: OutlineInputBorder(),
@@ -365,7 +321,11 @@ class _PortRangeTriggeringContentViewState
           1 => notifier.isPortRangeValid(
                   int.tryParse(firstTriggerPortController.text) ?? 0,
                   int.tryParse(lastTriggerPortController.text) ?? 0)
-              ? null
+              ? !notifier.isTriggeredPortConflict(
+                      int.tryParse(firstTriggerPortController.text) ?? 0,
+                      int.tryParse(lastTriggerPortController.text) ?? 0)
+                  ? null
+                  : loc(context).rulesOverlapError
               : loc(context).portRangeError,
           2 => notifier.isPortRangeValid(
                   int.tryParse(firstForwardedPortController.text) ?? 0,

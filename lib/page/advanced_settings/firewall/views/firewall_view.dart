@@ -21,8 +21,6 @@ class FirewallView extends ArgumentsConsumerStatefulView {
 class _FirewallViewState extends ConsumerState<FirewallView>
     with PageSnackbarMixin, SingleTickerProviderStateMixin {
   late final TabController _tabController;
-  FirewallState? _preservedState;
-  Ipv6PortServiceListState? _preservedIPv6State;
 
   int _tabIndex = 0;
 
@@ -36,12 +34,7 @@ class _FirewallViewState extends ConsumerState<FirewallView>
         Future.wait([
           ref.read(firewallProvider.notifier).fetch(),
           ref.read(ipv6PortServiceListProvider.notifier).fetch()
-        ]).then((values) {
-          setState(() {
-            _preservedState = values[0] as FirewallState;
-            _preservedIPv6State = values[1] as Ipv6PortServiceListState;
-          });
-        }));
+        ]));
   }
 
   @override
@@ -67,45 +60,37 @@ class _FirewallViewState extends ConsumerState<FirewallView>
       _internetFiltersView(firewallState),
       _ipv6PortServicesView(firewallState),
     ];
-    return StyledAppPageView(
+
+    final isDirty = firewallState.isDirty || ipv6State.isDirty;
+
+    return StyledAppPageView.withSliver(
       padding: EdgeInsets.zero,
-      useMainPadding: false,
       tabController: _tabController,
       title: loc(context).firewall,
       bottomBar: PageBottomBar(
-          isPositiveEnabled: _preservedState != firewallState ||
-              _preservedIPv6State != ipv6State,
+          isPositiveEnabled: isDirty,
           onPositiveTap: () {
-            List<Future> futures = [
-              _preservedState != firewallState
-                  ? ref.read(firewallProvider.notifier).save()
-                  : Future.value(null),
-              _preservedIPv6State != ipv6State
-                  ? ref.read(ipv6PortServiceListProvider.notifier).save()
-                  : Future.value(null),
-            ];
+            List<Future> futures = [];
+            if (firewallState.isDirty) {
+              futures.add(ref.read(firewallProvider.notifier).save());
+            }
+            if (ipv6State.isDirty) {
+              futures.add(ref.read(ipv6PortServiceListProvider.notifier).save());
+            }
+
             doSomethingWithSpinner(context, Future.wait(futures))
                 .then((values) {
-              final newFirewallState = values?[0];
-              final newIPv6State = values?[1];
-              setState(() {
-                if (newFirewallState is FirewallState) {
-                  _preservedState = newFirewallState;
-                }
-                if (newIPv6State is Ipv6PortServiceListState) {
-                  _preservedIPv6State = newIPv6State;
-                }
-              });
               showChangesSavedSnackBar();
             }).onError((error, stackTrace) {
               showErrorMessageSnackBar(error);
             });
           }),
-      onBackTap: _preservedState != firewallState
+      onBackTap: isDirty
           ? () async {
               final goBack = await showUnsavedAlert(context);
               if (goBack == true) {
-                ref.read(firewallProvider.notifier).fetch();
+                ref.read(firewallProvider.notifier).revert();
+                ref.read(ipv6PortServiceListProvider.notifier).revert();
                 context.pop();
               }
             }
@@ -116,87 +101,87 @@ class _FirewallViewState extends ConsumerState<FirewallView>
               ))
           .toList(),
       tabContentViews: tabContents,
-      onTabTap: (index) {
-        setState(() {
-          _tabIndex = index;
-        });
-      },
     );
   }
 
   Widget _firewallView(FirewallState state) {
-    return StyledAppPageView.innerPage(
-      child: (context, constraints) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppCard(
-            child: AppSwitchTriggerTile(
-              title: AppText.labelLarge(loc(context).ipv4SPIFirewallProtection),
-              semanticLabel: 'ipv4 SPI firewall protection',
-              value: state.settings.isIPv4FirewallEnabled,
-              onChanged: (value) {
-                ref.read(firewallProvider.notifier).setSettings(
-                    state.settings.copyWith(isIPv4FirewallEnabled: value));
-              },
+    return SingleChildScrollView(
+      child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppCard(
+              child: AppSwitchTriggerTile(
+                key: const Key('ipv4SPIFirewallProtection'),
+                title: AppText.labelLarge(loc(context).ipv4SPIFirewallProtection),
+                semanticLabel: 'ipv4 SPI firewall protection',
+                value: state.settings.current.isIPv4FirewallEnabled,
+                onChanged: (value) {
+                  ref.read(firewallProvider.notifier).setSettings(
+                      state.settings.current.copyWith(isIPv4FirewallEnabled: value));
+                },
+              ),
             ),
-          ),
-          const AppGap.small2(),
-          AppCard(
-            child: AppSwitchTriggerTile(
-              title: AppText.labelLarge(loc(context).ipv6SPIFirewallProtection),
-              semanticLabel: 'ipv6 SPI firewall protection',
-              value: state.settings.isIPv6FirewallEnabled,
-              onChanged: (value) {
-                ref.read(firewallProvider.notifier).setSettings(
-                    state.settings.copyWith(isIPv6FirewallEnabled: value));
-              },
+            const AppGap.small2(),
+            AppCard(
+              child: AppSwitchTriggerTile(
+                key: const Key('ipv6SPIFirewallProtection'),
+                title: AppText.labelLarge(loc(context).ipv6SPIFirewallProtection),
+                semanticLabel: 'ipv6 SPI firewall protection',
+                value: state.settings.current.isIPv6FirewallEnabled,
+                onChanged: (value) {
+                  ref.read(firewallProvider.notifier).setSettings(
+                      state.settings.current.copyWith(isIPv6FirewallEnabled: value));
+                },
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
     );
   }
 
   Widget _vpnPassthroughView(FirewallState state) {
-    return StyledAppPageView.innerPage(
-      child: (context, constraints) => Column(
+    return SingleChildScrollView(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppCard(
             child: AppSwitchTriggerTile(
+              key: const Key('ipsecPassthrough'),
               title: AppText.labelLarge(loc(context).ipsecPassthrough),
               semanticLabel: 'ipsec passthrough',
-              value: !state.settings.blockIPSec,
+              value: !state.settings.current.blockIPSec,
               onChanged: (value) {
                 ref
                     .read(firewallProvider.notifier)
-                    .setSettings(state.settings.copyWith(blockIPSec: !value));
+                    .setSettings(state.settings.current.copyWith(blockIPSec: !value));
               },
             ),
           ),
           const AppGap.small2(),
           AppCard(
             child: AppSwitchTriggerTile(
+              key: const Key('pptpPassthrough'),
               title: AppText.labelLarge(loc(context).pptpPassthrough),
               semanticLabel: 'pptp passthrough',
-              value: !state.settings.blockPPTP,
+              value: !state.settings.current.blockPPTP,
               onChanged: (value) {
                 ref
                     .read(firewallProvider.notifier)
-                    .setSettings(state.settings.copyWith(blockPPTP: !value));
+                    .setSettings(state.settings.current.copyWith(blockPPTP: !value));
               },
             ),
           ),
           const AppGap.small2(),
           AppCard(
             child: AppSwitchTriggerTile(
+              key: const Key('l2tpPassthrough'),
               title: AppText.labelLarge(loc(context).l2tpPassthrough),
               semanticLabel: 'l2tp passthrough',
-              value: !state.settings.blockL2TP,
+              value: !state.settings.current.blockL2TP,
               onChanged: (value) {
                 ref
                     .read(firewallProvider.notifier)
-                    .setSettings(state.settings.copyWith(blockL2TP: !value));
+                    .setSettings(state.settings.current.copyWith(blockL2TP: !value));
               },
             ),
           ),
@@ -206,56 +191,60 @@ class _FirewallViewState extends ConsumerState<FirewallView>
   }
 
   Widget _internetFiltersView(FirewallState state) {
-    return StyledAppPageView.innerPage(
-      child: (context, constraints) => Column(
+    return SingleChildScrollView(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppCard(
             child: AppSwitchTriggerTile(
+              key: const Key('filterAnonymous'),
               title: AppText.labelLarge(loc(context).filterAnonymous),
               semanticLabel: 'filter anonymous',
-              value: state.settings.blockAnonymousRequests,
+              value: state.settings.current.blockAnonymousRequests,
               onChanged: (value) {
                 ref.read(firewallProvider.notifier).setSettings(
-                    state.settings.copyWith(blockAnonymousRequests: value));
+                    state.settings.current.copyWith(blockAnonymousRequests: value));
               },
             ),
           ),
           const AppGap.small2(),
           AppCard(
             child: AppSwitchTriggerTile(
+              key: const Key('filterMulticast'),
               title: AppText.labelLarge(loc(context).filterMulticast),
               semanticLabel: 'filter multicast',
-              value: state.settings.blockMulticast,
+              value: state.settings.current.blockMulticast,
               onChanged: (value) {
                 ref.read(firewallProvider.notifier).setSettings(
-                    state.settings.copyWith(blockMulticast: value));
+                    state.settings.current.copyWith(blockMulticast: value));
               },
             ),
           ),
           const AppGap.small2(),
           AppCard(
             child: AppSwitchTriggerTile(
+              key: const Key('filterNATRedirection'),
               title:
                   AppText.labelLarge(loc(context).filterInternetNATRedirection),
               semanticLabel: 'filter internet NAT redirection',
-              value: state.settings.blockNATRedirection,
+              value: state.settings.current.blockNATRedirection,
               onChanged: (value) {
                 ref.read(firewallProvider.notifier).setSettings(
-                    state.settings.copyWith(blockNATRedirection: value));
+                    state.settings.current.copyWith(blockNATRedirection: value));
               },
             ),
           ),
           const AppGap.small2(),
           AppCard(
             child: AppSwitchTriggerTile(
+              key: const Key('filterIdent'),
               title: AppText.labelLarge(loc(context).filterIdent),
               semanticLabel: 'filter ident',
-              value: state.settings.blockIDENT,
+              value: state.settings.current.blockIDENT,
               onChanged: (value) {
                 ref
                     .read(firewallProvider.notifier)
-                    .setSettings(state.settings.copyWith(blockIDENT: value));
+                    .setSettings(state.settings.current.copyWith(blockIDENT: value));
               },
             ),
           ),

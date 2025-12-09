@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/models/ipv6_firewall_rule.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/components/settings_view/editable_card_list_settings_view.dart';
 import 'package:privacy_gui/page/components/settings_view/editable_table_settings_view.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -18,7 +16,6 @@ import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/input_field/ipv6_form_field.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
 import '../../apps_and_gaming/ports/views/widgets/_widgets.dart';
 
@@ -64,17 +61,15 @@ class _Ipv6PortServiceListViewState
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(ipv6PortServiceListProvider);
-    return StyledAppPageView.innerPage(
-      child: (context, constraints) => AppBasicLayout(
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const AppGap.large2(),
-            ResponsiveLayout(
-                desktop: _desktopSettingsView(state),
-                mobile: _mobildSettingsView(state)),
-          ],
-        ),
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const AppGap.large2(),
+          ResponsiveLayout(
+              desktop: _desktopSettingsView(state),
+              mobile: _mobildSettingsView(state)),
+        ],
       ),
     );
   }
@@ -129,7 +124,7 @@ class _Ipv6PortServiceListViewState
               ),
             ),
         editRoute: RouteNamed.ipv6PortServiceRule,
-        dataList: state.rules,
+        dataList: state.current.rules,
         onSave: (index, rule) {
           if (index >= 0) {
             _notifier.editRule(index, rule);
@@ -150,7 +145,7 @@ class _Ipv6PortServiceListViewState
       onStartEdit: (index, rule) {
         ref
             .read(ipv6PortServiceRuleProvider.notifier)
-            .init(state.rules, rule, index);
+            .init(state.current.rules, rule, index);
         // Edit
         applicationTextController.text = rule?.description ?? '';
         firstPortTextController.text =
@@ -179,7 +174,7 @@ class _Ipv6PortServiceListViewState
               2: FractionColumnWidth(.35),
               3: FractionColumnWidth(.15),
             },
-      dataList: [...state.rules],
+      dataList: [...state.current.rules],
       editRowIndex: 0,
       cellBuilder: (context, ref, index, rule) {
         return switch (index) {
@@ -197,6 +192,7 @@ class _Ipv6PortServiceListViewState
 
         return switch (index) {
           0 => AppTextField.outline(
+              key: const Key('ruleName'),
               controller: applicationTextController,
               onChanged: (value) {
                 ref
@@ -206,6 +202,7 @@ class _Ipv6PortServiceListViewState
               },
             ),
           1 => AppDropdownButton(
+              key: const Key('protocol'),
               initial: stateRule?.portRanges.firstOrNull?.protocol ?? 'Both',
               items: const ['TCP', 'UDP', 'Both'],
               label: (e) => getProtocolTitle(context, e),
@@ -227,6 +224,7 @@ class _Ipv6PortServiceListViewState
               children: [
                 Expanded(
                   child: AppIPv6FormField(
+                    key: const Key('ipAddress'),
                     controller: ipAddressTextController,
                     border: const OutlineInputBorder(),
                     autovalidateMode: AutovalidateMode.disabled,
@@ -268,6 +266,7 @@ class _Ipv6PortServiceListViewState
                   children: [
                     Expanded(
                       child: AppTextField.minMaxNumber(
+                        key: const Key('firstPort'),
                         min: 0,
                         max: 65535,
                         border: OutlineInputBorder(),
@@ -299,6 +298,7 @@ class _Ipv6PortServiceListViewState
                     ),
                     Expanded(
                       child: AppTextField.minMaxNumber(
+                        key: const Key('lastPort'),
                         min: 0,
                         max: 65535,
                         border: OutlineInputBorder(),

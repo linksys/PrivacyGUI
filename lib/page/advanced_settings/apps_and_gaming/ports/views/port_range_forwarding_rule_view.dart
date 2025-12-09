@@ -57,8 +57,8 @@ class _AddRuleContentViewState
   void initState() {
     _notifier = ref.read(portRangeForwardingRuleProvider.notifier);
     final state = ref.read(portRangeForwardingListProvider);
-    final routerIp = state.routerIp;
-    final subnetMask = state.subnetMask;
+    final routerIp = state.status.routerIp;
+    final subnetMask = state.status.subnetMask;
     final List<PortRangeForwardingRule> rules = widget.args['items'] ?? [];
     var rule = widget.args['edit'] as PortRangeForwardingRule?;
     int? index;
@@ -74,8 +74,8 @@ class _AddRuleContentViewState
     } else {
       _isEdit = false;
 
-      final prefixIp =
-          NetworkUtils.getIpPrefix(state.routerIp, state.subnetMask);
+      final prefixIp = NetworkUtils.getIpPrefix(
+          state.status.routerIp, state.status.subnetMask);
       _deviceIpAddressController.text = prefixIp.replaceAll('.0', '');
       rule = PortRangeForwardingRule(
         isEnabled: true,
@@ -106,7 +106,7 @@ class _AddRuleContentViewState
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(portRangeForwardingRuleProvider);
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       scrollable: true,
       title: loc(context).portRangeForwarding,
       bottomBar: PageBottomBar(
@@ -160,6 +160,7 @@ class _AddRuleContentViewState
     final submaskToken = subnetMask.split('.');
     return [
       AppTextField.outline(
+        key: const Key('applicationNameTextField'),
         headerText: loc(context).applicationName,
         controller: _ruleNameController,
         onFocusChanged: _onFocusChange,
@@ -174,6 +175,7 @@ class _AddRuleContentViewState
         children: [
           Expanded(
             child: AppTextField.minMaxNumber(
+              key: const Key('firstExternalPortTextField'),
               border: const OutlineInputBorder(),
               headerText: loc(context).startPort,
               controller: _firstExternalPortController,
@@ -196,6 +198,7 @@ class _AddRuleContentViewState
           ),
           Expanded(
             child: AppTextField.minMaxNumber(
+              key: const Key('lastExternalPortTextField'),
               border: const OutlineInputBorder(),
               headerText: loc(context).endPort,
               controller: _lastExternalPortController,
@@ -225,6 +228,7 @@ class _AddRuleContentViewState
       AppText.labelMedium(loc(context).ipAddress),
       const AppGap.medium(),
       AppIPFormField(
+        key: const Key('ipAddressTextField'),
         semanticLabel: 'ip address',
         controller: _deviceIpAddressController,
         border: const OutlineInputBorder(),

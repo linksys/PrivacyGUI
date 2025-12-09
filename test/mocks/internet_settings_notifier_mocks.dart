@@ -30,137 +30,161 @@ import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/i
 
 class _FakeNotifierProviderRef_0<T> extends _i1.SmartFake
     implements _i2.NotifierProviderRef<T> {
-  _FakeNotifierProviderRef_0(Object parent, Invocation parentInvocation)
-    : super(parent, parentInvocation);
+  _FakeNotifierProviderRef_0(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
 }
 
 class _FakeInternetSettingsState_1 extends _i1.SmartFake
     implements _i3.InternetSettingsState {
-  _FakeInternetSettingsState_1(Object parent, Invocation parentInvocation)
-    : super(parent, parentInvocation);
+  _FakeInternetSettingsState_1(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
 }
 
 /// A class which mocks [InternetSettingsNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockInternetSettingsNotifier extends _i2.Notifier<_i3.InternetSettingsState> with _i1.Mock
+class MockInternetSettingsNotifier
+    extends _i2.Notifier<_i3.InternetSettingsState>
+    with _i1.Mock
     implements _i4.InternetSettingsNotifier {
   @override
   _i2.NotifierProviderRef<_i3.InternetSettingsState> get ref =>
       (super.noSuchMethod(
-            Invocation.getter(#ref),
-            returnValue: _FakeNotifierProviderRef_0<_i3.InternetSettingsState>(
-              this,
-              Invocation.getter(#ref),
-            ),
-            returnValueForMissingStub:
-                _FakeNotifierProviderRef_0<_i3.InternetSettingsState>(
-                  this,
-                  Invocation.getter(#ref),
-                ),
-          )
-          as _i2.NotifierProviderRef<_i3.InternetSettingsState>);
+        Invocation.getter(#ref),
+        returnValue: _FakeNotifierProviderRef_0<_i3.InternetSettingsState>(
+          this,
+          Invocation.getter(#ref),
+        ),
+        returnValueForMissingStub:
+            _FakeNotifierProviderRef_0<_i3.InternetSettingsState>(
+          this,
+          Invocation.getter(#ref),
+        ),
+      ) as _i2.NotifierProviderRef<_i3.InternetSettingsState>);
 
   @override
-  _i3.InternetSettingsState get state =>
-      (super.noSuchMethod(
-            Invocation.getter(#state),
-            returnValue: _FakeInternetSettingsState_1(
-              this,
-              Invocation.getter(#state),
-            ),
-            returnValueForMissingStub: _FakeInternetSettingsState_1(
-              this,
-              Invocation.getter(#state),
-            ),
-          )
-          as _i3.InternetSettingsState);
+  _i3.InternetSettingsState get state => (super.noSuchMethod(
+        Invocation.getter(#state),
+        returnValue: _FakeInternetSettingsState_1(
+          this,
+          Invocation.getter(#state),
+        ),
+        returnValueForMissingStub: _FakeInternetSettingsState_1(
+          this,
+          Invocation.getter(#state),
+        ),
+      ) as _i3.InternetSettingsState);
 
   @override
   set state(_i3.InternetSettingsState? value) => super.noSuchMethod(
-    Invocation.setter(#state, value),
-    returnValueForMissingStub: null,
-  );
+        Invocation.setter(
+          #state,
+          value,
+        ),
+        returnValueForMissingStub: null,
+      );
 
   @override
-  _i3.InternetSettingsState build() =>
-      (super.noSuchMethod(
-            Invocation.method(#build, []),
-            returnValue: _FakeInternetSettingsState_1(
-              this,
-              Invocation.method(#build, []),
-            ),
-            returnValueForMissingStub: _FakeInternetSettingsState_1(
-              this,
-              Invocation.method(#build, []),
-            ),
-          )
-          as _i3.InternetSettingsState);
+  _i3.InternetSettingsState build() => (super.noSuchMethod(
+        Invocation.method(
+          #build,
+          [],
+        ),
+        returnValue: _FakeInternetSettingsState_1(
+          this,
+          Invocation.method(
+            #build,
+            [],
+          ),
+        ),
+        returnValueForMissingStub: _FakeInternetSettingsState_1(
+          this,
+          Invocation.method(
+            #build,
+            [],
+          ),
+        ),
+      ) as _i3.InternetSettingsState);
 
   @override
-  _i5.Future<_i3.InternetSettingsState> fetch({bool? fetchRemote = false}) =>
+  _i5.Future<
+      (_i3.InternetSettings?, _i3.InternetSettingsStatus?)> performFetch({
+    bool? forceRemote = false,
+    bool? updateStatusOnly = false,
+  }) =>
       (super.noSuchMethod(
-            Invocation.method(#fetch, [], {#fetchRemote: fetchRemote}),
-            returnValue: _i5.Future<_i3.InternetSettingsState>.value(
-              _FakeInternetSettingsState_1(
-                this,
-                Invocation.method(#fetch, [], {#fetchRemote: fetchRemote}),
-              ),
-            ),
-            returnValueForMissingStub:
-                _i5.Future<_i3.InternetSettingsState>.value(
-                  _FakeInternetSettingsState_1(
-                    this,
-                    Invocation.method(#fetch, [], {#fetchRemote: fetchRemote}),
-                  ),
-                ),
-          )
-          as _i5.Future<_i3.InternetSettingsState>);
+        Invocation.method(
+          #performFetch,
+          [],
+          {
+            #forceRemote: forceRemote,
+            #updateStatusOnly: updateStatusOnly,
+          },
+        ),
+        returnValue: _i5
+            .Future<(_i3.InternetSettings?, _i3.InternetSettingsStatus?)>.value(
+            (null, null)),
+        returnValueForMissingStub: _i5
+            .Future<(_i3.InternetSettings?, _i3.InternetSettingsStatus?)>.value(
+            (null, null)),
+      ) as _i5.Future<(_i3.InternetSettings?, _i3.InternetSettingsStatus?)>);
 
   @override
-  _i5.Future<dynamic> saveInternetSettings(
-    _i3.InternetSettingsState? newState,
-    _i3.InternetSettingsState? originalState,
-  ) =>
-      (super.noSuchMethod(
-            Invocation.method(#saveInternetSettings, [newState, originalState]),
-            returnValue: _i5.Future<dynamic>.value(),
-            returnValueForMissingStub: _i5.Future<dynamic>.value(),
-          )
-          as _i5.Future<dynamic>);
+  _i5.Future<void> performSave() => (super.noSuchMethod(
+        Invocation.method(
+          #performSave,
+          [],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
 
   @override
   List<MapEntry<_i6.JNAPAction, Map<String, dynamic>>> getSaveIpv4Transactions(
-    _i3.InternetSettingsState? newState,
-  ) =>
+          _i3.InternetSettings? data) =>
       (super.noSuchMethod(
-            Invocation.method(#getSaveIpv4Transactions, [newState]),
-            returnValue: <MapEntry<_i6.JNAPAction, Map<String, dynamic>>>[],
-            returnValueForMissingStub:
-                <MapEntry<_i6.JNAPAction, Map<String, dynamic>>>[],
-          )
-          as List<MapEntry<_i6.JNAPAction, Map<String, dynamic>>>);
+        Invocation.method(
+          #getSaveIpv4Transactions,
+          [data],
+        ),
+        returnValue: <MapEntry<_i6.JNAPAction, Map<String, dynamic>>>[],
+        returnValueForMissingStub: <MapEntry<_i6.JNAPAction,
+            Map<String, dynamic>>>[],
+      ) as List<MapEntry<_i6.JNAPAction, Map<String, dynamic>>>);
 
   @override
-  _i5.Future<dynamic> savePnpIpv4(_i3.InternetSettingsState? newState) =>
+  _i5.Future<dynamic> savePnpIpv4(_i3.InternetSettings? data) =>
       (super.noSuchMethod(
-            Invocation.method(#savePnpIpv4, [newState]),
-            returnValue: _i5.Future<dynamic>.value(),
-            returnValueForMissingStub: _i5.Future<dynamic>.value(),
-          )
-          as _i5.Future<dynamic>);
+        Invocation.method(
+          #savePnpIpv4,
+          [data],
+        ),
+        returnValue: _i5.Future<dynamic>.value(),
+        returnValueForMissingStub: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
 
   @override
   List<MapEntry<_i6.JNAPAction, Map<String, dynamic>>> getSaveIpv6Transactions(
-    _i3.InternetSettingsState? newState,
-  ) =>
+          _i3.InternetSettings? data) =>
       (super.noSuchMethod(
-            Invocation.method(#getSaveIpv6Transactions, [newState]),
-            returnValue: <MapEntry<_i6.JNAPAction, Map<String, dynamic>>>[],
-            returnValueForMissingStub:
-                <MapEntry<_i6.JNAPAction, Map<String, dynamic>>>[],
-          )
-          as List<MapEntry<_i6.JNAPAction, Map<String, dynamic>>>);
+        Invocation.method(
+          #getSaveIpv6Transactions,
+          [data],
+        ),
+        returnValue: <MapEntry<_i6.JNAPAction, Map<String, dynamic>>>[],
+        returnValueForMissingStub: <MapEntry<_i6.JNAPAction,
+            Map<String, dynamic>>>[],
+      ) as List<MapEntry<_i6.JNAPAction, Map<String, dynamic>>>);
 
   @override
   MapEntry<_i6.JNAPAction, Map<String, dynamic>> getMacAddressCloneTransaction(
@@ -168,101 +192,150 @@ class MockInternetSettingsNotifier extends _i2.Notifier<_i3.InternetSettingsStat
     String? macAddress,
   ) =>
       (super.noSuchMethod(
-            Invocation.method(#getMacAddressCloneTransaction, [
+        Invocation.method(
+          #getMacAddressCloneTransaction,
+          [
+            isMACAddressCloneEnabled,
+            macAddress,
+          ],
+        ),
+        returnValue:
+            _i7.dummyValue<MapEntry<_i6.JNAPAction, Map<String, dynamic>>>(
+          this,
+          Invocation.method(
+            #getMacAddressCloneTransaction,
+            [
               isMACAddressCloneEnabled,
               macAddress,
-            ]),
-            returnValue: _i7
-                .dummyValue<MapEntry<_i6.JNAPAction, Map<String, dynamic>>>(
-                  this,
-                  Invocation.method(#getMacAddressCloneTransaction, [
-                    isMACAddressCloneEnabled,
-                    macAddress,
-                  ]),
-                ),
-            returnValueForMissingStub: _i7
-                .dummyValue<MapEntry<_i6.JNAPAction, Map<String, dynamic>>>(
-                  this,
-                  Invocation.method(#getMacAddressCloneTransaction, [
-                    isMACAddressCloneEnabled,
-                    macAddress,
-                  ]),
-                ),
-          )
-          as MapEntry<_i6.JNAPAction, Map<String, dynamic>>);
+            ],
+          ),
+        ),
+        returnValueForMissingStub:
+            _i7.dummyValue<MapEntry<_i6.JNAPAction, Map<String, dynamic>>>(
+          this,
+          Invocation.method(
+            #getMacAddressCloneTransaction,
+            [
+              isMACAddressCloneEnabled,
+              macAddress,
+            ],
+          ),
+        ),
+      ) as MapEntry<_i6.JNAPAction, Map<String, dynamic>>);
 
   @override
-  _i5.Future<String?> getMyMACAddress() =>
-      (super.noSuchMethod(
-            Invocation.method(#getMyMACAddress, []),
-            returnValue: _i5.Future<String?>.value(),
-            returnValueForMissingStub: _i5.Future<String?>.value(),
-          )
-          as _i5.Future<String?>);
+  _i5.Future<String?> getMyMACAddress() => (super.noSuchMethod(
+        Invocation.method(
+          #getMyMACAddress,
+          [],
+        ),
+        returnValue: _i5.Future<String?>.value(),
+        returnValueForMissingStub: _i5.Future<String?>.value(),
+      ) as _i5.Future<String?>);
 
   @override
-  _i5.Future<dynamic> renewDHCPWANLease() =>
-      (super.noSuchMethod(
-            Invocation.method(#renewDHCPWANLease, []),
-            returnValue: _i5.Future<dynamic>.value(),
-            returnValueForMissingStub: _i5.Future<dynamic>.value(),
-          )
-          as _i5.Future<dynamic>);
+  _i5.Future<dynamic> renewDHCPWANLease() => (super.noSuchMethod(
+        Invocation.method(
+          #renewDHCPWANLease,
+          [],
+        ),
+        returnValue: _i5.Future<dynamic>.value(),
+        returnValueForMissingStub: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
 
   @override
-  _i5.Future<dynamic> renewDHCPIPv6WANLease() =>
-      (super.noSuchMethod(
-            Invocation.method(#renewDHCPIPv6WANLease, []),
-            returnValue: _i5.Future<dynamic>.value(),
-            returnValueForMissingStub: _i5.Future<dynamic>.value(),
-          )
-          as _i5.Future<dynamic>);
+  _i5.Future<dynamic> renewDHCPIPv6WANLease() => (super.noSuchMethod(
+        Invocation.method(
+          #renewDHCPIPv6WANLease,
+          [],
+        ),
+        returnValue: _i5.Future<dynamic>.value(),
+        returnValueForMissingStub: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
 
   @override
-  void updateState(_i3.InternetSettingsState? newState) => super.noSuchMethod(
-    Invocation.method(#updateState, [newState]),
-    returnValueForMissingStub: null,
-  );
+  void updateStatus(_i3.InternetSettingsStatus? newStatus) =>
+      super.noSuchMethod(
+        Invocation.method(
+          #updateStatus,
+          [newStatus],
+        ),
+        returnValueForMissingStub: null,
+      );
 
   @override
   void updateMtu(int? mtu) => super.noSuchMethod(
-    Invocation.method(#updateMtu, [mtu]),
-    returnValueForMissingStub: null,
-  );
+        Invocation.method(
+          #updateMtu,
+          [mtu],
+        ),
+        returnValueForMissingStub: null,
+      );
 
   @override
   void updateMacAddressCloneEnable(bool? enable) => super.noSuchMethod(
-    Invocation.method(#updateMacAddressCloneEnable, [enable]),
-    returnValueForMissingStub: null,
-  );
+        Invocation.method(
+          #updateMacAddressCloneEnable,
+          [enable],
+        ),
+        returnValueForMissingStub: null,
+      );
 
   @override
   void updateMacAddressClone(String? macAddress) => super.noSuchMethod(
-    Invocation.method(#updateMacAddressClone, [macAddress]),
-    returnValueForMissingStub: null,
-  );
+        Invocation.method(
+          #updateMacAddressClone,
+          [macAddress],
+        ),
+        returnValueForMissingStub: null,
+      );
 
   @override
   void updateIpv4Settings(_i3.Ipv4Setting? ipv4Setting) => super.noSuchMethod(
-    Invocation.method(#updateIpv4Settings, [ipv4Setting]),
-    returnValueForMissingStub: null,
-  );
+        Invocation.method(
+          #updateIpv4Settings,
+          [ipv4Setting],
+        ),
+        returnValueForMissingStub: null,
+      );
 
   @override
   void updateIpv6Settings(_i3.Ipv6Setting? ipv6Setting) => super.noSuchMethod(
-    Invocation.method(#updateIpv6Settings, [ipv6Setting]),
-    returnValueForMissingStub: null,
-  );
+        Invocation.method(
+          #updateIpv6Settings,
+          [ipv6Setting],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  void setSettingsDefaultOnBrigdeMode() => super.noSuchMethod(
+        Invocation.method(
+          #setSettingsDefaultOnBrigdeMode,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
 
   @override
   void listenSelf(
-    void Function(_i3.InternetSettingsState?, _i3.InternetSettingsState)?
-    listener, {
-    void Function(Object, StackTrace)? onError,
-  }) => super.noSuchMethod(
-    Invocation.method(#listenSelf, [listener], {#onError: onError}),
-    returnValueForMissingStub: null,
-  );
+    void Function(
+      _i3.InternetSettingsState?,
+      _i3.InternetSettingsState,
+    )? listener, {
+    void Function(
+      Object,
+      StackTrace,
+    )? onError,
+  }) =>
+      super.noSuchMethod(
+        Invocation.method(
+          #listenSelf,
+          [listener],
+          {#onError: onError},
+        ),
+        returnValueForMissingStub: null,
+      );
 
   @override
   bool updateShouldNotify(
@@ -270,9 +343,106 @@ class MockInternetSettingsNotifier extends _i2.Notifier<_i3.InternetSettingsStat
     _i3.InternetSettingsState? next,
   ) =>
       (super.noSuchMethod(
-            Invocation.method(#updateShouldNotify, [previous, next]),
-            returnValue: false,
-            returnValueForMissingStub: false,
-          )
-          as bool);
+        Invocation.method(
+          #updateShouldNotify,
+          [
+            previous,
+            next,
+          ],
+        ),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  _i5.Future<_i3.InternetSettingsState> fetch({
+    bool? forceRemote = false,
+    bool? updateStatusOnly = false,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #fetch,
+          [],
+          {
+            #forceRemote: forceRemote,
+            #updateStatusOnly: updateStatusOnly,
+          },
+        ),
+        returnValue: _i5.Future<_i3.InternetSettingsState>.value(
+            _FakeInternetSettingsState_1(
+          this,
+          Invocation.method(
+            #fetch,
+            [],
+            {
+              #forceRemote: forceRemote,
+              #updateStatusOnly: updateStatusOnly,
+            },
+          ),
+        )),
+        returnValueForMissingStub: _i5.Future<_i3.InternetSettingsState>.value(
+            _FakeInternetSettingsState_1(
+          this,
+          Invocation.method(
+            #fetch,
+            [],
+            {
+              #forceRemote: forceRemote,
+              #updateStatusOnly: updateStatusOnly,
+            },
+          ),
+        )),
+      ) as _i5.Future<_i3.InternetSettingsState>);
+
+  @override
+  _i5.Future<_i3.InternetSettingsState> save() => (super.noSuchMethod(
+        Invocation.method(
+          #save,
+          [],
+        ),
+        returnValue: _i5.Future<_i3.InternetSettingsState>.value(
+            _FakeInternetSettingsState_1(
+          this,
+          Invocation.method(
+            #save,
+            [],
+          ),
+        )),
+        returnValueForMissingStub: _i5.Future<_i3.InternetSettingsState>.value(
+            _FakeInternetSettingsState_1(
+          this,
+          Invocation.method(
+            #save,
+            [],
+          ),
+        )),
+      ) as _i5.Future<_i3.InternetSettingsState>);
+
+  @override
+  void revert() => super.noSuchMethod(
+        Invocation.method(
+          #revert,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  bool isDirty() => (super.noSuchMethod(
+        Invocation.method(
+          #isDirty,
+          [],
+        ),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  void markAsSaved() => super.noSuchMethod(
+        Invocation.method(
+          #markAsSaved,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
 }

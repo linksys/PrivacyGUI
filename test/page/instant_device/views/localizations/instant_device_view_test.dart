@@ -1,205 +1,209 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
-import 'package:privacy_gui/core/jnap/providers/dashboard_manager_state.dart';
-import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
-import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
-import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_filtered_list_state.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/wifi_list_provider.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/wifi_state.dart';
+import 'package:privacy_gui/page/instant_device/views/devices_filter_widget.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/device_list_card.dart';
-import 'package:privacygui_widgets/widgets/check_box/check_box.dart';
 
 import '../../../../common/config.dart';
-import '../../../../common/di.dart';
+import '../../../../common/screen.dart';
+import '../../../../common/test_helper.dart';
 import '../../../../common/test_responsive_widget.dart';
-import '../../../../common/testable_router.dart';
-import '../../../../mocks/dashboard_manager_notifier_mocks.dart';
-import '../../../../mocks/device_manager_notifier_mocks.dart';
-import '../../../../mocks/jnap_service_supported_mocks.dart';
-import '../../../../mocks/wifi_list_notifier_mocks.dart';
-import '../../../../test_data/_index.dart';
-import '../../../../mocks/device_filter_config_notifier_mocks.dart';
+import '../../../../test_data/device_filter_config_test_state.dart';
+import '../../../../test_data/device_filtered_list_test_data.dart';
+
+// View ID: IDVC
+// Implementation: lib/page/instant_device/views/instant_device_view.dart
+/// | Test ID         | Description                                                                 |
+/// | :-------------- | :-------------------------------------------------------------------------- |
+/// | `IDVC-ONLINE`   | Desktop layout renders instant devices list with filter card and summary.   |
+/// | `IDVC-FILTER`   | Mobile layout exposes DevicesFilter bottom sheet from the Filters button.   |
+/// | `IDVC-OFF_EDIT` | Offline filter enables edit mode with selectable rows and delete bar.       |
+/// | `IDVC-OFF_DEL`  | Offline edit mode shows confirmation dialog when delete action is invoked.  |
+/// | `IDVC-DEAUTH`   | Online mode allows de-authenticating a wireless client through dialog flow. |
+
+final _defaultFilterState =
+    DeviceFilterConfigState.fromMap(deviceFilterConfigTestState);
+final _onlineDevices =
+    deviceFilteredTestData.map((e) => DeviceListItem.fromMap(e)).toList();
+final _offlineDevices = deviceFilteredOfflineTestData
+    .map((e) => DeviceListItem.fromMap(e))
+    .toList();
 
 void main() {
-  late DeviceFilterConfigNotifier mockDeviceFilterConfigNotifier;
-  late MockDeviceManagerNotifier mockDeviceManagerNotifier;
-  late WifiListNotifier mockWifiListNotifier;
-  late DashboardManagerNotifier mockDashboardManagerNotifier;
-
-  mockDependencyRegister();
-  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
+  final testHelper = TestHelper();
 
   setUp(() {
-    mockDeviceFilterConfigNotifier = MockDeviceFilterConfigNotifier();
-    mockDeviceManagerNotifier = MockDeviceManagerNotifier();
-    mockWifiListNotifier = MockWifiListNotifier();
-    mockDashboardManagerNotifier = MockDashboardManagerNotifier();
-
-    when(mockDeviceFilterConfigNotifier.build()).thenReturn(
-        DeviceFilterConfigState.fromMap(deviceFilterConfigTestState));
-    when(mockDeviceManagerNotifier.build())
-        .thenReturn(DeviceManagerState.fromMap(deviceManagerCherry7TestState));
-    when(mockServiceHelper.isSupportClientDeauth()).thenReturn(true);
-    when(mockWifiListNotifier.build())
-        .thenReturn(WiFiState.fromMap(wifiListTestState));
-    when(mockDashboardManagerNotifier.build()).thenReturn(
-        DashboardManagerState.fromMap(dashboardManagerChrry7TestState));
-
-    when(mockDeviceManagerNotifier.getBandConnectedBy(any))
+    testHelper.setup();
+    when(testHelper.mockDeviceManagerNotifier.getBandConnectedBy(any))
         .thenReturn('2.4GHz');
   });
 
-  Widget testableWidget(Locale locale, {List<Override>? overrides}) {
-    return testableSingleRoute(
-      overrides: overrides ??
-          [
-            deviceFilterConfigProvider
-                .overrideWith(() => mockDeviceFilterConfigNotifier),
-            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            filteredDeviceListProvider.overrideWith((ref) =>
-                deviceFilteredTestData
-                    .map((e) => DeviceListItem.fromMap(e))
-                    .toList()),
-            wifiListProvider.overrideWith(() => mockWifiListNotifier),
-            dashboardManagerProvider
-                .overrideWith(() => mockDashboardManagerNotifier),
-          ],
-      locale: locale,
+  Future<BuildContext> pumpInstantDeviceView(
+    WidgetTester tester,
+    LocalizedScreen screen, {
+    List<DeviceListItem>? devices,
+    DeviceFilterConfigState? filterState,
+    bool useShell = false,
+  }) async {
+    when(testHelper.mockDeviceFilterConfigNotifier.build()).thenReturn(
+      filterState ?? _defaultFilterState,
+    );
+    final overrides = [
+      filteredDeviceListProvider.overrideWith(
+        (ref) => devices ?? _onlineDevices,
+      ),
+    ];
+    final pump = useShell ? testHelper.pumpShellView : testHelper.pumpView;
+    final context = await pump(
+      tester,
+      overrides: overrides,
+      locale: screen.locale,
       child: const InstantDeviceView(),
     );
+    await tester.pumpAndSettle();
+    return context;
   }
 
-  testLocalizations('Instant device view - default', (tester, locale) async {
-    await tester.pumpWidget(testableWidget(locale));
-  });
+  // Test ID: IDVC-ONLINE — desktop layout renders base instant device UI
+  testLocalizationsV2(
+    'instant device view - desktop layout',
+    (tester, screen) async {
+      final context = await pumpInstantDeviceView(tester, screen);
+      final loc = testHelper.loc(context);
 
-  testLocalizations('Instant device view - 1 device', (tester, locale) async {
-    final widget = testableWidget(locale, overrides: [
-      deviceFilterConfigProvider
-          .overrideWith(() => mockDeviceFilterConfigNotifier),
-      deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-      filteredDeviceListProvider.overrideWith((ref) => deviceFilteredTestData
-          .map((e) => DeviceListItem.fromMap(e))
-          .take(1)
-          .toList()),
-      wifiListProvider.overrideWith(() => mockWifiListNotifier),
-      dashboardManagerProvider.overrideWith(() => mockDashboardManagerNotifier),
-    ]);
-    await tester.pumpWidget(widget);
-    await tester.pumpAndSettle();
-  });
+      expect(find.text(loc.instantDevices), findsOneWidget);
+      expect(find.text(loc.nDevices(_onlineDevices.length)), findsOneWidget);
+      expect(find.byType(DevicesFilterWidget), findsOneWidget);
+      expect(find.text(loc.selectAll), findsOneWidget);
+      expect(find.byIcon(LinksysIcons.refresh), findsOneWidget);
+    },
+    screens: responsiveDesktopScreens,
+    goldenFilename: 'IDVC-ONLINE-01-layout',
+    helper: testHelper,
+  );
 
-  testLocalizations('Instant device view - no device', (tester, locale) async {
-    final widget = testableWidget(locale, overrides: [
-      deviceFilterConfigProvider
-          .overrideWith(() => mockDeviceFilterConfigNotifier),
-      deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-      filteredDeviceListProvider.overrideWith((ref) => deviceFilteredTestData
-          .map((e) => DeviceListItem.fromMap(e))
-          .take(0)
-          .toList()),
-      wifiListProvider.overrideWith(() => mockWifiListNotifier),
-      dashboardManagerProvider.overrideWith(() => mockDashboardManagerNotifier),
-    ]);
-    await tester.pumpWidget(widget);
-    await tester.pumpAndSettle();
-  });
+  // Test ID: IDVC-FILTER — mobile filters button opens DevicesFilter sheet
+  testLocalizationsV2(
+    'instant device view - mobile filter bottom sheet',
+    (tester, screen) async {
+      await pumpInstantDeviceView(tester, screen);
 
-  testLocalizations('Instant device view - filter with unknown node',
-      (tester, locale) async {
-    when(mockDeviceFilterConfigNotifier.build()).thenReturn(
-        DeviceFilterConfigState.fromMap(deviceFilterConfigTestState)
-            .copyWith(showOrphanNodes: true));
-    await tester.pumpWidget(testableWidget(locale));
-  }, screens: responsiveDesktopScreens);
+      final filterButton =
+          find.widgetWithIcon(AppTextButton, LinksysIcons.filter);
+      expect(filterButton, findsOneWidget);
+      expect(find.byType(DevicesFilterWidget), findsNothing);
 
-  testLocalizations('Instant device view - filter with unknown node',
-      (tester, locale) async {
-    when(mockDeviceFilterConfigNotifier.build()).thenReturn(
-        DeviceFilterConfigState.fromMap(deviceFilterConfigTestState)
-            .copyWith(showOrphanNodes: true));
-    await tester.pumpWidget(testableWidget(locale));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byIcon(LinksysIcons.filter));
-    await tester.pumpAndSettle();
-  }, screens: responsiveMobileScreens);
+      await tester.tap(filterButton);
+      await tester.pumpAndSettle();
 
-  testLocalizations('Instant device view - offline devices',
-      (tester, locale) async {
-    when(mockDeviceFilterConfigNotifier.build()).thenReturn(
-        DeviceFilterConfigState.fromMap(deviceFilterConfigTestState)
-            .copyWith(connectionFilter: false));
-    final widget = testableWidget(locale, overrides: [
-      deviceFilterConfigProvider
-          .overrideWith(() => mockDeviceFilterConfigNotifier),
-      deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-      filteredDeviceListProvider.overrideWith((ref) =>
-          deviceFilteredOfflineTestData
-              .map((e) => DeviceListItem.fromMap(e))
-              .toList()),
-      wifiListProvider.overrideWith(() => mockWifiListNotifier),
-      dashboardManagerProvider.overrideWith(() => mockDashboardManagerNotifier),
-    ]);
-    await tester.pumpWidget(widget);
-    await tester.pumpAndSettle();
+      expect(find.byType(DevicesFilterWidget), findsOneWidget);
+    },
+    screens: responsiveMobileScreens,
+    goldenFilename: 'IDVC-FILTER-01-bottom_sheet',
+    helper: testHelper,
+  );
 
-    final deviceCheckboxFinder = find.descendant(
-        of: find.byType(AppDeviceListCard), matching: find.byType(AppCheckbox));
-    await tester.tap(deviceCheckboxFinder.first);
-    await tester.pumpAndSettle();
-  });
+  // Test ID: IDVC-OFF_EDIT — offline mode enables edit state and selection
+  testLocalizationsV2(
+    'instant device view - offline edit state',
+    (tester, screen) async {
+      final context = await pumpInstantDeviceView(
+        tester,
+        screen,
+        devices: _offlineDevices,
+        filterState: _defaultFilterState.copyWith(connectionFilter: false),
+      );
+      final loc = testHelper.loc(context);
 
-  testLocalizations(
-      'Instant device view - offline devices - delete confirm modal',
-      (tester, locale) async {
-    when(mockDeviceFilterConfigNotifier.build()).thenReturn(
-        DeviceFilterConfigState.fromMap(deviceFilterConfigTestState)
-            .copyWith(connectionFilter: false));
-    final widget = testableWidget(locale, overrides: [
-      deviceFilterConfigProvider
-          .overrideWith(() => mockDeviceFilterConfigNotifier),
-      deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-      filteredDeviceListProvider.overrideWith((ref) =>
-          deviceFilteredOfflineTestData
-              .map((e) => DeviceListItem.fromMap(e))
-              .toList()),
-      wifiListProvider.overrideWith(() => mockWifiListNotifier),
-      dashboardManagerProvider.overrideWith(() => mockDashboardManagerNotifier),
-    ]);
-    await tester.pumpWidget(widget);
-    await tester.pumpAndSettle();
-
-    final deviceCheckboxFinder = find.descendant(
-        of: find.byType(AppDeviceListCard), matching: find.byType(AppCheckbox));
-    await tester.tap(deviceCheckboxFinder.first);
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.byType(AppFilledButton).last);
-    await tester.pumpAndSettle();
-  });
-
-  testLocalizations('Instant device view - deauth confirm modal',
-      (tester, locale) async {
-    when(mockDeviceFilterConfigNotifier.build()).thenReturn(
-        DeviceFilterConfigState.fromMap(deviceFilterConfigTestState));
-    final widget = testableWidget(locale);
-    await tester.pumpWidget(widget);
-    await tester.pumpAndSettle();
-
-    final deviceCheckboxFinder = find.descendant(
+      final checkboxFinder = find.descendant(
         of: find.byType(AppDeviceListCard),
-        matching: find.byIcon(LinksysIcons.bidirectional));
-    await tester.tap(deviceCheckboxFinder.first);
-    await tester.pumpAndSettle();
-  });
+        matching: find.byType(AppCheckbox),
+      );
+      expect(checkboxFinder, findsWidgets);
+
+      await tester.tap(checkboxFinder.first);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byWidgetPredicate(
+          (widget) => widget is AppDeviceListCard && widget.isSelected == true,
+        ),
+        findsWidgets,
+      );
+      expect(find.byKey(const Key('pageBottomPositiveButton')), findsOneWidget);
+      expect(find.text(loc.delete), findsOneWidget);
+    },
+    screens: responsiveDesktopScreens,
+    goldenFilename: 'IDVC-OFF_EDIT-01-selection',
+    helper: testHelper,
+  );
+
+  // Test ID: IDVC-OFF_DEL — delete action shows confirmation dialog
+  testLocalizationsV2(
+    'instant device view - offline delete dialog',
+    (tester, screen) async {
+      final context = await pumpInstantDeviceView(
+        tester,
+        screen,
+        devices: _offlineDevices,
+        filterState: _defaultFilterState.copyWith(connectionFilter: false),
+      );
+      final loc = testHelper.loc(context);
+
+      final checkboxFinder = find.descendant(
+        of: find.byType(AppDeviceListCard),
+        matching: find.byType(AppCheckbox),
+      );
+      await tester.tap(checkboxFinder.first);
+      await tester.pumpAndSettle();
+
+      final deleteButton = find.byKey(const Key('pageBottomPositiveButton'));
+      await tester.tap(deleteButton);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(loc.nDevicesDeleteDevicesTitle(1)),
+        findsOneWidget,
+      );
+      expect(
+        find.text(loc.nDevicesDeleteDevicesDescription(1)),
+        findsOneWidget,
+      );
+    },
+    screens: responsiveDesktopScreens,
+    goldenFilename: 'IDVC-OFF_DEL-01-dialog',
+    helper: testHelper,
+  );
+
+  // Test ID: IDVC-DEAUTH — deauth button opens confirmation dialog
+  testLocalizationsV2(
+    'instant device view - deauth dialog',
+    (tester, screen) async {
+      final context = await pumpInstantDeviceView(
+        tester,
+        screen,
+        useShell: true,
+      );
+      final loc = testHelper.loc(context);
+
+      final deauthButton = find.descendant(
+        of: find.byType(AppDeviceListCard),
+        matching: find.byIcon(LinksysIcons.bidirectional),
+      );
+      expect(deauthButton, findsWidgets);
+
+      await tester.tap(deauthButton.first);
+      await tester.pumpAndSettle();
+
+      expect(find.text(loc.disconnectClient), findsOneWidget);
+      expect(find.text(loc.disconnect), findsAtLeastNWidgets(1));
+    },
+    screens: responsiveDesktopScreens,
+    goldenFilename: 'IDVC-DEAUTH-01-dialog',
+    helper: testHelper,
+  );
 }

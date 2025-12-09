@@ -486,20 +486,21 @@ const firmwareUpdateTestData = {
     }
   ],
   "isUpdating": false,
-  "isChecking": false
+  "isRetryMaxReached": false,
+  "isWaitingChildrenAfterUpdating": false
 };
 
-const firmwareUpdateHasFirmwareCherry7TestState = {
+const firmwareUpdateHasFirmwarePinnacleTestState = {
   "settings": {
     "updatePolicy": "AutomaticallyCheckAndInstall",
     "autoUpdateWindow": {"startMinute": 0, "durationMinutes": 240}
   },
   "nodesStatus": [
     {
-      "lastSuccessfulCheckTime": "2024-06-14T07:26:11Z",
+      "lastSuccessfulCheckTime": "2025-11-16T08:16:06Z",
       "availableUpdate": {
-        "firmwareVersion": "1.23.34567",
-        "firmwareDate": "2024-05-14T07:26:11Z",
+        "firmwareVersion": "1.0.6.25110918",
+        "firmwareDate": "2025-11-10T02:30:41Z",
         "description": ""
       },
       "pendingOperation": null,

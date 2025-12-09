@@ -24,6 +24,7 @@ mixin WifiSettingModalMixin<T extends StatefulWidget> on State<T> {
         mainAxisSize: MainAxisSize.min,
         children: [
           WifiNameField(
+            semanticLabel: 'wifi name',
             controller: controller,
             onChanged: (value) {
               setState(() {
@@ -62,6 +63,8 @@ mixin WifiSettingModalMixin<T extends StatefulWidget> on State<T> {
           mainAxisSize: MainAxisSize.min,
           children: [
             WifiPasswordField(
+              semanticLabel: 'wifi password',
+              key: ValueKey('wifi password input'),
               controller: controller,
               isLength64: isLength64,
               onChanged: (value) {

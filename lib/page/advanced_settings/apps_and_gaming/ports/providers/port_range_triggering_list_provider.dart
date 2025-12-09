@@ -1,70 +1,94 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/models/port_range_triggering_rule.dart';
-import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/_ports.dart';
+import 'package:privacy_gui/providers/preservable.dart';
+import 'package:privacy_gui/providers/preservable_contract.dart';
+import 'package:privacy_gui/providers/preservable_notifier_mixin.dart';
 
 final portRangeTriggeringListProvider = NotifierProvider<
     PortRangeTriggeringListNotifier,
     PortRangeTriggeringListState>(() => PortRangeTriggeringListNotifier());
 
-class PortRangeTriggeringListNotifier
-    extends Notifier<PortRangeTriggeringListState> {
-  @override
-  PortRangeTriggeringListState build() => const PortRangeTriggeringListState();
+final preservablePortRangeTriggeringListProvider =
+    Provider<PreservableContract>(
+  (ref) => ref.watch(portRangeTriggeringListProvider.notifier),
+);
 
-  Future<PortRangeTriggeringListState> fetch([bool force = false]) async {
+class PortRangeTriggeringListNotifier
+    extends Notifier<PortRangeTriggeringListState>
+    with
+        PreservableNotifierMixin<PortRangeTriggeringRuleList,
+            PortRangeTriggeringListStatus, PortRangeTriggeringListState> {
+  @override
+  PortRangeTriggeringListState build() => const PortRangeTriggeringListState(
+        settings: Preservable(
+            original: PortRangeTriggeringRuleList(rules: []),
+            current: PortRangeTriggeringRuleList(rules: [])),
+        status: PortRangeTriggeringListStatus(),
+      );
+
+  @override
+  Future<(PortRangeTriggeringRuleList?, PortRangeTriggeringListStatus?)>
+      performFetch(
+          {bool forceRemote = false, bool updateStatusOnly = false}) async {
     final repo = ref.read(routerRepositoryProvider);
-    await repo
-        .send(
+    final value = await repo.send(
       JNAPAction.getPortRangeTriggeringRules,
-      fetchRemote: force,
+      fetchRemote: forceRemote,
       auth: true,
-    )
-        .then<JNAPSuccess?>((value) {
-      final rules = List.from(value.output['rules'])
-          .map((e) => PortRangeTriggeringRule.fromMap(e))
-          .toList();
-      final int maxRules = value.output['maxRules'] ?? 50;
-      final int maxDesc = value.output['maxDescriptionLength'] ?? 32;
-      state = state.copyWith(
-          rules: rules, maxRules: maxRules, maxDescriptionLength: maxDesc);
-      return null;
-    }).onError(
-      (error, stackTrace) {
-        return null;
-      },
     );
-    return state;
+    final rules = List.from(value.output['rules'])
+        .map((e) => PortRangeTriggeringRule.fromMap(e))
+        .toList();
+    final int maxRules = value.output['maxRules'] ?? 50;
+    final int maxDesc = value.output['maxDescriptionLength'] ?? 32;
+    final status = PortRangeTriggeringListStatus(
+        maxRules: maxRules, maxDescriptionLength: maxDesc);
+    state = state.copyWith(
+        settings: Preservable(
+            original: PortRangeTriggeringRuleList(rules: rules),
+            current: PortRangeTriggeringRuleList(rules: rules)),
+        status: status);
+    return (PortRangeTriggeringRuleList(rules: rules), status);
   }
 
-  Future<PortRangeTriggeringListState> save() async {
-    final rules = List<PortRangeTriggeringRule>.from(state.rules);
+  @override
+  Future<void> performSave() async {
+    final rules =
+        List<PortRangeTriggeringRule>.from(state.settings.current.rules);
     final repo = ref.read(routerRepositoryProvider);
     await repo.send(
       JNAPAction.setPortRangeTriggeringRules,
       data: {'rules': rules.map((e) => e.toMap()).toList()},
       auth: true,
     );
-    await fetch(true);
-    return state;
   }
 
   bool isExceedMax() {
-    return state.maxRules == state.rules.length;
+    return state.status.maxRules == state.settings.current.rules.length;
   }
 
   void addRule(PortRangeTriggeringRule rule) {
-    state = state.copyWith(rules: List.from(state.rules)..add(rule));
+    state = state.copyWith(
+        settings: state.settings.copyWith(
+            current: state.settings.current.copyWith(
+                rules: List.from(state.settings.current.rules)..add(rule))));
   }
 
   void editRule(int index, PortRangeTriggeringRule rule) {
     state = state.copyWith(
-        rules: List.from(state.rules)..replaceRange(index, index + 1, [rule]));
+        settings: state.settings.copyWith(
+            current: state.settings.current.copyWith(
+                rules: List.from(state.settings.current.rules)
+                  ..replaceRange(index, index + 1, [rule]))));
   }
 
   void deleteRule(PortRangeTriggeringRule rule) {
-    state = state.copyWith(rules: List.from(state.rules)..remove(rule));
+    state = state.copyWith(
+        settings: state.settings.copyWith(
+            current: state.settings.current.copyWith(
+                rules: List.from(state.settings.current.rules)..remove(rule))));
   }
 }

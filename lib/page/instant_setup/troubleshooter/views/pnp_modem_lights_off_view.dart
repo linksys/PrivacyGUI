@@ -100,6 +100,7 @@ class _PnpLightOffViewState extends ConsumerState<PnpModemLightsOffView> {
               loc(context).pnpModemLightsOffTipStep2,
             ),
             AppStyledText.bold(
+              key: const Key('pnpModemLightsOffTipStep3'),
               loc(context).pnpModemLightsOffTipStep3,
               defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
               tags: const ['b'],

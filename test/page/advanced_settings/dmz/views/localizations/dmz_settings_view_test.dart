@@ -3,354 +3,473 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/models/dmz_settings.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
-import 'package:privacy_gui/di.dart';
-import 'package:privacy_gui/page/advanced_settings/dmz/providers/dmz_settings_provider.dart';
-import 'package:privacy_gui/page/advanced_settings/dmz/providers/dmz_settings_state.dart';
-import 'package:privacy_gui/page/advanced_settings/dmz/views/dmz_settings_view.dart';
-import 'package:privacy_gui/page/instant_device/providers/device_list_provider.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
 import 'package:privacy_gui/page/instant_device/views/select_device_view.dart';
+import 'package:privacy_gui/providers/preservable.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:privacygui_widgets/widgets/card/info_card.dart';
+import 'package:privacygui_widgets/widgets/card/list_card.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
-import 'package:get_it/get_it.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
+import 'package:privacygui_widgets/widgets/radios/radio_list.dart';
 
 import '../../../../../common/config.dart';
+import '../../../../../common/test_helper.dart';
 import '../../../../../common/test_responsive_widget.dart';
-import '../../../../../common/testable_router.dart';
-import '../../../../../common/di.dart';
 import '../../../../../test_data/device_list_test_state.dart';
 import '../../../../../test_data/dmz_settings_test_state.dart';
-import '../../../../../mocks/device_list_notifier_mock.dart';
-import '../../../../../mocks/dmz_setting_notifier_mocks.dart';
 
+// View ID: DMZS
+// Implementation file under test: lib/page/advanced_settings/dmz/views/dmz_settings_view.dart
+///
+/// | Test ID             | Description                                                                 |
+/// | :------------------ | :-------------------------------------------------------------------------- |
+/// | `DMZS-DISABLED`     | Verifies the initial state when DMZ is disabled.                            |
+/// | `DMZS-ENABLED`      | Verifies the UI when DMZ is enabled with default settings.                  |
+/// | `DMZS-SRC_RANGE`    | Verifies the UI when source is set to a specified IP range.                 |
+/// | `DMZS-SRC_ERR`      | Verifies the error message for an invalid source IP range.                  |
+/// | `DMZS-DEST_IP_ERR`  | Verifies the error message for an invalid destination IP address.           |
+/// | `DMZS-DEST_MAC`     | Verifies the UI when destination is set to a MAC address.                   |
+/// | `DMZS-DEST_MAC_ERR` | Verifies the error message for an invalid destination MAC address.          |
+/// | `DMZS-DHCP_TABLE`   | Verifies the view of the DHCP client table (device picker).                 |
+/// | `DMZS-SAVE`         | Verifies the success message after saving settings.                         |
+/// | `DMZS-SAVE_FAIL`    | Verifies the failure message when saving settings fails.                    |
 void main() {
-  late MockDMZSettingNotifier mockDMZSettingNotifier;
+  final testHelper = TestHelper();
+  final screens = [
+    ...responsiveMobileScreens.map((e) => e.copyWith(height: 1024)),
+    ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1024)),
+  ];
 
-  mockDependencyRegister();
-  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
   setUp(() {
-    mockDMZSettingNotifier = MockDMZSettingNotifier();
-    when(mockDMZSettingNotifier.build())
-        .thenReturn(DMZSettingsState.fromMap(dmzSettingsTestState));
-    when(mockDMZSettingNotifier.fetch(any)).thenAnswer((_) async {
+    testHelper.setup();
+    final state = DMZSettingsState.fromMap(dmzSettingsTestState);
+    when(testHelper.mockDMZSettingsNotifier
+            .fetch(forceRemote: anyNamed('forceRemote')))
+        .thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 1));
-      return DMZSettingsState.fromMap(dmzSettingsTestState);
+      return state;
     });
-    when(mockDMZSettingNotifier.subnetMask).thenReturn('255.255.0.0');
-    when(mockDMZSettingNotifier.ipAddress).thenReturn('192.168.1.1');
   });
-  testLocalizations('DMZ settings view - disabled', (tester, locale) async {
+
+  // Test ID: DMZS-DISABLED
+    testLocalizationsV2(
+      'DMZ settings view - disabled',
+      (tester, screen) async {
+    const settings = DMZUISettings(
+        isDMZEnabled: false,
+        sourceType: DMZSourceType.auto,
+        destinationType: DMZDestinationType.ip);
     final state = DMZSettingsState.fromMap(dmzSettingsTestState)
-        .copyWith(settings: const DMZSettings(isDMZEnabled: false));
-    when(mockDMZSettingNotifier.build()).thenReturn(state);
-    when(mockDMZSettingNotifier.fetch()).thenAnswer((_) async {
+        .copyWith(settings: Preservable(original: settings, current: settings));
+    when(testHelper.mockDMZSettingsNotifier.build()).thenReturn(state);
+    when(testHelper.mockDMZSettingsNotifier
+            .fetch(forceRemote: anyNamed('forceRemote')))
+        .thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 1));
       return state;
     });
-    await tester.pumpWidget(
-      testableRouteShellWidget(
-        child: const DMZSettingsView(),
-        config: LinksysRouteConfig(
-          column: ColumnGrid(column: 9),
-        ),
-        locale: locale,
-        overrides: [
-          dmzSettingsProvider.overrideWith(() => mockDMZSettingNotifier),
-        ],
+    final context = await testHelper.pumpShellView(
+      tester,
+      child: const DMZSettingsView(),
+      config: LinksysRouteConfig(
+        column: ColumnGrid(column: 9),
       ),
+      locale: screen.locale,
     );
     await tester.pumpAndSettle();
-  }, screens: [
-    ...responsiveMobileScreens.map((e) => e.copyWith(height: 1024)),
-    ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1024)),
-  ]);
-  testLocalizations('DMZ settings view - enabled', (tester, locale) async {
-    await tester.pumpWidget(
-      testableRouteShellWidget(
-        child: const DMZSettingsView(),
-        config: LinksysRouteConfig(
-          column: ColumnGrid(column: 9),
-        ),
-        locale: locale,
-        overrides: [
-          dmzSettingsProvider.overrideWith(() => mockDMZSettingNotifier),
-        ],
-      ),
-    );
-    await tester.pumpAndSettle();
-  }, screens: [
-    ...responsiveMobileScreens.map((e) => e.copyWith(height: 1024)),
-    ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1024)),
-  ]);
 
-  testLocalizations('DMZ settings view - enabled with specific range source',
-      (tester, locale) async {
-    var state = DMZSettingsState.fromMap(dmzSettingsTestState);
-    state = state.copyWith(
-      sourceType: DMZSourceType.range,
-      settings: state.settings.copyWith(
-        sourceRestriction: () => DMZSourceRestriction(
-          firstIPAddress: '192.168.1.23',
-          lastIPAddress: '192.168.1.78',
-        ),
-      ),
-    );
-    when(mockDMZSettingNotifier.build()).thenReturn(state);
-    when(mockDMZSettingNotifier.fetch(any)).thenAnswer((_) async {
+    expect(find.widgetWithText(AppInfoCard, loc(context).dmz), findsOneWidget);
+    expect(find.widgetWithText(AppInfoCard, loc(context).dmzDescription),
+        findsOneWidget);
+    final appSwitchFinder = find.descendant(
+        of: find.widgetWithText(AppInfoCard, loc(context).dmz),
+        matching: find.byType(AppSwitch));
+    final appSwitch = tester.widget<AppSwitch>(appSwitchFinder);
+    expect(appSwitch.value, isFalse);
+    expect(find.widgetWithText(AppListCard, loc(context).dmzSourceIPAddress),
+        findsNothing);
+    expect(
+        find.widgetWithText(AppListCard, loc(context).dmzDestinationIPAddress),
+        findsNothing);
+  }, helper: testHelper, goldenFilename: 'DMZS-DISABLED-01-initial_state', screens: screens);
+
+  // Test ID: DMZS-ENABLED
+  testLocalizationsV2(
+    'DMZ settings view - enabled',
+    (tester, screen) async {
+    const settings = DMZUISettings(
+        isDMZEnabled: true,
+        sourceType: DMZSourceType.auto,
+        destinationType: DMZDestinationType.ip);
+    final state = DMZSettingsState.fromMap(dmzSettingsTestState)
+        .copyWith(settings: Preservable(original: settings, current: settings));
+    when(testHelper.mockDMZSettingsNotifier.build()).thenReturn(state);
+    when(testHelper.mockDMZSettingsNotifier
+            .fetch(forceRemote: anyNamed('forceRemote')))
+        .thenAnswer((_) async {
+      await Future.delayed(const Duration(seconds: 1));
       return state;
     });
-    await tester.pumpWidget(
-      testableRouteShellWidget(
-        child: const DMZSettingsView(),
-        config: LinksysRouteConfig(
-          column: ColumnGrid(column: 9),
-        ),
-        locale: locale,
-        overrides: [
-          dmzSettingsProvider.overrideWith(() => mockDMZSettingNotifier),
-        ],
+    final context = await testHelper.pumpShellView(
+      tester,
+      child: const DMZSettingsView(),
+      config: LinksysRouteConfig(
+        column: ColumnGrid(column: 9),
       ),
+      locale: screen.locale,
     );
     await tester.pumpAndSettle();
-  }, screens: [
-    ...responsiveMobileScreens.map((e) => e.copyWith(height: 1024)),
-    ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1024)),
-  ]);
 
-  testLocalizations(
+    final appSwitchFinder = find.descendant(
+        of: find.widgetWithText(AppInfoCard, loc(context).dmz),
+        matching: find.byType(AppSwitch));
+    final appSwitch = tester.widget<AppSwitch>(appSwitchFinder);
+    expect(appSwitch.value, isTrue);
+    expect(find.text(loc(context).dmzSourceIPAddress), findsOneWidget);
+    expect(find.text(loc(context).dmzDestinationIPAddress), findsOneWidget);
+
+    final sourceRadioList = tester.widget<AppRadioList>(find.byKey(
+        const Key('sourceType')));
+    expect(sourceRadioList.selected, DMZSourceType.auto);
+
+    final destinationRadioList = tester.widget<AppRadioList>(find.byKey(
+        const Key('destinationType')));
+    expect(destinationRadioList.initial, DMZDestinationType.ip);
+    expect(find.byKey(const Key('destinationIP')), findsOneWidget);
+    expect(find.widgetWithText(AppTextButton, loc(context).dmzViewDHCP),
+        findsOneWidget);
+  }, helper: testHelper, goldenFilename: 'DMZS-ENABLED-01-initial_state', screens: screens);
+
+  // Test ID: DMZS-SRC_RANGE
+  testLocalizationsV2(
+    'DMZ settings view - enabled with specific range source',
+    (tester, screen) async {
+    const settings = DMZUISettings(
+        isDMZEnabled: true,
+        sourceType: DMZSourceType.range,
+        destinationType: DMZDestinationType.ip,
+        sourceRestriction: DMZSourceRestriction(
+            firstIPAddress: '192.168.1.23', lastIPAddress: '192.168.1.78'));
+    final state = DMZSettingsState.fromMap(dmzSettingsTestState)
+        .copyWith(settings: Preservable(original: settings, current: settings));
+
+    when(testHelper.mockDMZSettingsNotifier.build()).thenReturn(state);
+    when(testHelper.mockDMZSettingsNotifier
+            .fetch(forceRemote: anyNamed('forceRemote')))
+        .thenAnswer((_) async {
+      return state;
+    });
+    final context = await testHelper.pumpShellView(
+      tester,
+      child: const DMZSettingsView(),
+      config: LinksysRouteConfig(
+        column: ColumnGrid(column: 9),
+      ),
+      locale: screen.locale,
+    );
+    await tester.pumpAndSettle();
+
+    final sourceRadioList =
+        tester.widget<AppRadioList>(find.byKey(const Key('sourceType')));
+    expect(sourceRadioList.selected, DMZSourceType.range);
+    expect(find.byKey(const Key('sourceFirstIP')), findsOneWidget);
+    expect(find.byKey(const Key('sourceLastIP')), findsOneWidget);
+    expect(find.widgetWithText(AppText, loc(context).to), findsOneWidget);
+
+    final startIpController = tester
+        .widget<AppIPFormField>(find.byKey(const Key('sourceFirstIP')))
+        .controller;
+    expect(startIpController?.text, '192.168.1.23');
+    final endIpController = tester
+        .widget<AppIPFormField>(find.byKey(const Key('sourceLastIP')))
+        .controller;
+    expect(endIpController?.text, '192.168.1.78');
+  }, helper: testHelper, goldenFilename: 'DMZS-SRC_RANGE-01-initial_state', screens: screens);
+
+  // Test ID: DMZS-SRC_ERR
+  testLocalizationsV2(
       'DMZ settings view - enabled with specific range source - error state',
-      (tester, locale) async {
-    var state = DMZSettingsState.fromMap(dmzSettingsTestState);
-    state = state.copyWith(
-      sourceType: DMZSourceType.range,
-      settings: state.settings.copyWith(
-        sourceRestriction: () => DMZSourceRestriction(
-          firstIPAddress: '192.168.1.23',
-          lastIPAddress: '192.168.1.78',
-        ),
-      ),
-    );
-    when(mockDMZSettingNotifier.build()).thenReturn(state);
-    when(mockDMZSettingNotifier.fetch(any)).thenAnswer((_) async {
+      (tester, screen) async {
+    const settings = DMZUISettings(
+        isDMZEnabled: true,
+        sourceType: DMZSourceType.range,
+        destinationType: DMZDestinationType.ip,
+        sourceRestriction: DMZSourceRestriction(
+            firstIPAddress: '192.168.1.23', lastIPAddress: '192.168.1.78'));
+    var state = DMZSettingsState.fromMap(dmzSettingsTestState)
+        .copyWith(settings: Preservable(original: settings, current: settings));
+
+    when(testHelper.mockDMZSettingsNotifier.build()).thenReturn(state);
+    when(testHelper.mockDMZSettingsNotifier
+            .fetch(forceRemote: anyNamed('forceRemote')))
+        .thenAnswer((_) async {
       return state;
     });
-    await tester.pumpWidget(
-      testableRouteShellWidget(
-        child: const DMZSettingsView(),
-        config: LinksysRouteConfig(
-          column: ColumnGrid(column: 9),
-        ),
-        locale: locale,
-        overrides: [
-          dmzSettingsProvider.overrideWith(() => mockDMZSettingNotifier),
-        ],
+    final context = await testHelper.pumpShellView(
+      tester,
+      child: const DMZSettingsView(),
+      config: LinksysRouteConfig(
+        column: ColumnGrid(column: 9),
       ),
+      locale: screen.locale,
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.byType(AppIPFormField).at(1));
-    final startIPInputForm = find.descendant(
-        of: find.byType(AppIPFormField).at(1),
-        matching: find.byType(TextFormField));
-    await tester.enterText(startIPInputForm.at(3), '1');
-    await tester.pumpAndSettle();
-    await tester.tap(find.byType(AppIPFormField).at(0));
-    await tester.pumpAndSettle();
-  }, screens: [
-    ...responsiveMobileScreens.map((e) => e.copyWith(height: 1024)),
-    ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1024)),
-  ]);
+    await testHelper.takeScreenshot(tester, 'DMZS-SRC_ERR-01-before_error');
 
-  testLocalizations(
+    final ipFormField = find.byKey(const Key('sourceLastIP'));
+    await tester.tap(ipFormField);
+    await tester.pumpAndSettle();
+
+    final textFormField =
+        find.descendant(of: ipFormField, matching: find.byType(TextFormField));
+    await tester.enterText(textFormField.at(3), '1');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(AppInfoCard, loc(context).dmz));
+    await tester.pumpAndSettle();
+
+    final endIpFormField = tester.widget<AppIPFormField>(ipFormField);
+    expect(endIpFormField.errorText, loc(context).dmzSourceRangeError);
+  }, helper: testHelper, goldenFilename: 'DMZS-SRC_ERR-02-after_error', screens: screens);
+
+  // Test ID: DMZS-DEST_IP_ERR
+  testLocalizationsV2(
       'DMZ settings view - enabled with IP address destination - error state',
-      (tester, locale) async {
-    var state = DMZSettingsState.fromMap(dmzSettingsTestState);
-    state = state.copyWith(destinationType: DMZDestinationType.ip);
-    when(mockDMZSettingNotifier.build()).thenReturn(state);
-    when(mockDMZSettingNotifier.fetch()).thenAnswer((_) async {
+      (tester, screen) async {
+    const settings = DMZUISettings(
+        isDMZEnabled: true,
+        sourceType: DMZSourceType.auto,
+        destinationType: DMZDestinationType.ip,
+        destinationIPAddress: '192.168.1.1');
+    var state = DMZSettingsState.fromMap(dmzSettingsTestState)
+        .copyWith(settings: Preservable(original: settings, current: settings));
+    when(testHelper.mockDMZSettingsNotifier.build()).thenReturn(state);
+    when(testHelper.mockDMZSettingsNotifier
+            .fetch(forceRemote: anyNamed('forceRemote')))
+        .thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 1));
       return state;
     });
-    await tester.pumpWidget(
-      testableRouteShellWidget(
-        child: const DMZSettingsView(),
-        config: LinksysRouteConfig(
-          column: ColumnGrid(column: 9),
-        ),
-        locale: locale,
-        overrides: [
-          dmzSettingsProvider.overrideWith(() => mockDMZSettingNotifier),
-        ],
+    final context = await testHelper.pumpShellView(
+      tester,
+      child: const DMZSettingsView(),
+      config: LinksysRouteConfig(
+        column: ColumnGrid(column: 9),
       ),
+      locale: screen.locale,
     );
     await tester.pumpAndSettle();
+    await testHelper.takeScreenshot(tester, 'DMZS-DEST_IP_ERR-01-before_error');
 
-    await tester.tap(find.byType(AppIPFormField).at(0));
-    final startIPInputForm = find.descendant(
-        of: find.byType(AppIPFormField).at(0),
-        matching: find.byType(TextFormField));
-    await tester.enterText(startIPInputForm.at(0), '');
+    final ipFormField = find.byKey(const Key('destinationIP'));
+    await tester.tap(ipFormField);
     await tester.pumpAndSettle();
-    await tester.tap(find.byType(AppCard).first);
-    await tester.pumpAndSettle();
-  }, screens: [
-    ...responsiveMobileScreens.map((e) => e.copyWith(height: 1024)),
-    ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1024)),
-  ]);
 
-  testLocalizations('DMZ settings view - enabled with mac address destination',
-      (tester, locale) async {
-    var state = DMZSettingsState.fromMap(dmzSettingsTestState);
-    state = state.copyWith(destinationType: DMZDestinationType.mac);
-    when(mockDMZSettingNotifier.build()).thenReturn(state);
-    when(mockDMZSettingNotifier.fetch()).thenAnswer((_) async {
+    final textFormField =
+        find.descendant(of: ipFormField, matching: find.byType(TextFormField));
+    await tester.enterText(textFormField.at(0), '');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(AppInfoCard, loc(context).dmz));
+    await tester.pumpAndSettle();
+
+    final destIpFormField = tester.widget<AppIPFormField>(ipFormField);
+    expect(destIpFormField.errorText, loc(context).invalidIpAddress);
+  }, helper: testHelper, goldenFilename: 'DMZS-DEST_IP_ERR-02-after_error', screens: screens);
+
+  // Test ID: DMZS-DEST_MAC
+  testLocalizationsV2(
+      'DMZ settings view - enabled with mac address destination',
+      (tester, screen) async {
+    const settings = DMZUISettings(
+        isDMZEnabled: true,
+        sourceType: DMZSourceType.auto,
+        destinationType: DMZDestinationType.mac,
+        destinationMACAddress: '00:11:22:33:44:55');
+    var state = DMZSettingsState.fromMap(dmzSettingsTestState)
+        .copyWith(settings: Preservable(original: settings, current: settings));
+    when(testHelper.mockDMZSettingsNotifier.build()).thenReturn(state);
+    when(testHelper.mockDMZSettingsNotifier
+            .fetch(forceRemote: anyNamed('forceRemote')))
+        .thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 1));
       return state;
     });
-    await tester.pumpWidget(
-      testableRouteShellWidget(
-        child: const DMZSettingsView(),
-        config: LinksysRouteConfig(
-          column: ColumnGrid(column: 9),
-        ),
-        locale: locale,
-        overrides: [
-          dmzSettingsProvider.overrideWith(() => mockDMZSettingNotifier),
-        ],
+    final context = await testHelper.pumpShellView(
+      tester,
+      child: const DMZSettingsView(),
+      config: LinksysRouteConfig(
+        column: ColumnGrid(column: 9),
       ),
+      locale: screen.locale,
     );
     await tester.pumpAndSettle();
-  }, screens: [
-    ...responsiveMobileScreens.map((e) => e.copyWith(height: 1024)),
-    ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1024)),
-  ]);
 
-  testLocalizations(
+    final destinationRadioList =
+        tester.widget<AppRadioList>(find.byKey(const Key('destinationType')));
+    expect(destinationRadioList.initial, DMZDestinationType.mac);
+    final macField = find.byType(AppTextField);
+    expect(macField, findsOneWidget);
+    final macController = tester.widget<AppTextField>(macField).controller;
+    expect(macController?.text, '00:11:22:33:44:55');
+  }, helper: testHelper, goldenFilename: 'DMZS-DEST_MAC-01-initial_state', screens: screens);
+
+  // Test ID: DMZS-DEST_MAC_ERR
+  testLocalizationsV2(
       'DMZ settings view - enabled with mac address destination - error state',
-      (tester, locale) async {
-    var state = DMZSettingsState.fromMap(dmzSettingsTestState);
-    state = state.copyWith(destinationType: DMZDestinationType.mac);
-    when(mockDMZSettingNotifier.build()).thenReturn(state);
-    when(mockDMZSettingNotifier.fetch()).thenAnswer((_) async {
+      (tester, screen) async {
+    const settings = DMZUISettings(
+        isDMZEnabled: true,
+        sourceType: DMZSourceType.auto,
+        destinationType: DMZDestinationType.mac,
+        destinationMACAddress: '00:11:22:33:44:55');
+    var state = DMZSettingsState.fromMap(dmzSettingsTestState)
+        .copyWith(settings: Preservable(original: settings, current: settings));
+    when(testHelper.mockDMZSettingsNotifier.build()).thenReturn(state);
+    when(testHelper.mockDMZSettingsNotifier
+            .fetch(forceRemote: anyNamed('forceRemote')))
+        .thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 1));
       return state;
     });
-    await tester.pumpWidget(
-      testableRouteShellWidget(
-        child: const DMZSettingsView(),
-        config: LinksysRouteConfig(
-          column: ColumnGrid(column: 9),
-        ),
-        locale: locale,
-        overrides: [
-          dmzSettingsProvider.overrideWith(() => mockDMZSettingNotifier),
-        ],
+    final context = await testHelper.pumpShellView(
+      tester,
+      child: const DMZSettingsView(),
+      config: LinksysRouteConfig(
+        column: ColumnGrid(column: 9),
       ),
+      locale: screen.locale,
     );
     await tester.pumpAndSettle();
+    await testHelper.takeScreenshot(
+        tester, 'DMZS-DEST_MAC_ERR-01-before_error');
 
-    await tester.tap(find.byType(TextField).at(0));
+    await tester.enterText(find.byType(TextField).first, 'invalid mac');
     await tester.pumpAndSettle();
-    await tester.tap(find.byType(AppCard).first);
+    await tester.tap(find.widgetWithText(AppInfoCard, loc(context).dmz));
     await tester.pumpAndSettle();
-  }, screens: [
-    ...responsiveMobileScreens.map((e) => e.copyWith(height: 1024)),
-    ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1024)),
-  ]);
 
-  testLocalizations('DMZ settings view - view DHCP client table',
-      (tester, locale) async {
-    final mockDeviceListNotifier = MockDeviceListNotifier();
-    when(mockDeviceListNotifier.build())
+    final macField = tester.widget<AppTextField>(find.byType(AppTextField));
+    expect(macField.errorText, loc(context).invalidMACAddress);
+  }, helper: testHelper, goldenFilename: 'DMZS-DEST_MAC_ERR-02-after_error', screens: screens);
+
+  // Test ID: DMZS-DHCP_TABLE
+  testLocalizationsV2('DMZ settings view - view DHCP client table',
+      (tester, screen) async {
+    when(testHelper.mockDeviceListNotifier.build())
         .thenReturn(DeviceListState.fromMap(deviceListTestState));
-    await tester.pumpWidget(
-      testableRouteShellWidget(
-        child: const SelectDeviceView(args: {
-          'type': 'ipv4AndMac',
-          'selectMode': 'single',
-          'onlineOnly': true,
-        }),
-        locale: locale,
-        overrides: [
-          dmzSettingsProvider.overrideWith(() => mockDMZSettingNotifier),
-          deviceListProvider.overrideWith(() => mockDeviceListNotifier),
-        ],
-      ),
+    await testHelper.pumpShellView(
+      tester,
+      child: const SelectDeviceView(args: {
+        'type': 'ipv4AndMac',
+        'selectMode': 'single',
+        'onlineOnly': true,
+      }),
+      locale: screen.locale,
     );
     await tester.pumpAndSettle();
-  }, screens: [
-    ...responsiveMobileScreens.map((e) => e.copyWith(height: 1024)),
-    ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1024)),
-  ]);
 
-  testLocalizations('DMZ settings view - Saved', (tester, locale) async {
+    expect(find.byType(ListView), findsWidgets);
+  }, helper: testHelper, goldenFilename: 'DMZS-DHCP_TABLE-01-view', screens: screens);
+
+  // Test ID: DMZS-SAVE
+  testLocalizationsV2('DMZ settings view - Saved', (tester, screen) async {
+    final settings = DMZUISettings(
+        isDMZEnabled: true,
+        sourceType: DMZSourceType.auto,
+        destinationType: DMZDestinationType.ip);
     final state = DMZSettingsState.fromMap(dmzSettingsTestState)
-        .copyWith(settings: const DMZSettings(isDMZEnabled: true));
-    when(mockDMZSettingNotifier.build()).thenReturn(state);
-    when(mockDMZSettingNotifier.fetch()).thenAnswer((_) async {
+        .copyWith(settings: Preservable(original: settings, current: settings));
+    when(testHelper.mockDMZSettingsNotifier.build()).thenReturn(state);
+    when(testHelper.mockDMZSettingsNotifier
+            .fetch(forceRemote: anyNamed('forceRemote')))
+        .thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 1));
       return state;
     });
-    when(mockDMZSettingNotifier.save()).thenAnswer((_) async {
+    when(testHelper.mockDMZSettingsNotifier.save()).thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 1));
-      return state;
+      final savedState = state.copyWith(
+          settings: state.settings.copyWith(original: state.settings.current));
+      when(testHelper.mockDMZSettingsNotifier.build()).thenReturn(savedState);
+      return savedState;
     });
-    await tester.pumpWidget(
-      testableRouteShellWidget(
-        child: const DMZSettingsView(),
-        config: LinksysRouteConfig(
-          column: ColumnGrid(column: 9),
-        ),
-        locale: locale,
-        overrides: [
-          dmzSettingsProvider.overrideWith(() => mockDMZSettingNotifier),
-        ],
+    when(testHelper.mockDMZSettingsNotifier.isDirty()).thenAnswer((_) => true);
+    final context = await testHelper.pumpShellView(
+      tester,
+      child: const DMZSettingsView(),
+      config: LinksysRouteConfig(
+        column: ColumnGrid(column: 9),
       ),
+      locale: screen.locale,
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.byType(AppSwitch));
+    await testHelper.takeScreenshot(tester, 'DMZS-SAVE-01-before_save');
+
+    final appSwitchFinder = find.descendant(
+        of: find.widgetWithText(AppInfoCard, loc(context).dmz),
+        matching: find.byType(AppSwitch));
+    await tester.tap(appSwitchFinder);
     await tester.pumpAndSettle();
     await tester.tap(find.byType(AppFilledButton));
     await tester.pumpAndSettle();
-  }, screens: [
-    ...responsiveMobileScreens.map((e) => e.copyWith(height: 1024)),
-    ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1024)),
-  ]);
 
-  testLocalizations('DMZ settings view - Save failed', (tester, locale) async {
+    expect(find.byType(SnackBar), findsOneWidget);
+    expect(
+        find.descendant(
+            of: find.byType(SnackBar), matching: find.text(loc(context).saved)),
+        findsOneWidget);
+  }, helper: testHelper, goldenFilename: 'DMZS-SAVE-02-after_save', screens: screens);
+
+  // Test ID: DMZS-SAVE_FAIL
+  testLocalizationsV2('DMZ settings view - Save failed',
+      (tester, screen) async {
+    final settings = DMZUISettings(
+        isDMZEnabled: true,
+        sourceType: DMZSourceType.auto,
+        destinationType: DMZDestinationType.ip);
     final state = DMZSettingsState.fromMap(dmzSettingsTestState)
-        .copyWith(settings: const DMZSettings(isDMZEnabled: true));
-    when(mockDMZSettingNotifier.build()).thenReturn(state);
-    when(mockDMZSettingNotifier.fetch()).thenAnswer((_) async {
+        .copyWith(settings: Preservable(original: settings, current: settings));
+    when(testHelper.mockDMZSettingsNotifier.build()).thenReturn(state);
+    when(testHelper.mockDMZSettingsNotifier
+            .fetch(forceRemote: anyNamed('forceRemote')))
+        .thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 1));
       return state;
     });
-    when(mockDMZSettingNotifier.save()).thenAnswer((_) async {
+    when(testHelper.mockDMZSettingsNotifier.save()).thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 1));
       throw const JNAPError(result: 'ErrorMissingDestination');
     });
-    await tester.pumpWidget(
-      testableRouteShellWidget(
-        child: const DMZSettingsView(),
-        config: LinksysRouteConfig(
-          column: ColumnGrid(column: 9),
-        ),
-        locale: locale,
-        overrides: [
-          dmzSettingsProvider.overrideWith(() => mockDMZSettingNotifier),
-        ],
+    when(testHelper.mockDMZSettingsNotifier.isDirty()).thenAnswer((_) => true);
+
+    final context = await testHelper.pumpShellView(
+      tester,
+      child: const DMZSettingsView(),
+      config: LinksysRouteConfig(
+        column: ColumnGrid(column: 9),
       ),
+      locale: screen.locale,
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.byType(AppSwitch));
+    await testHelper.takeScreenshot(tester, 'DMZS-SAVE_FAIL-01-before_fail');
+
+    final appSwitchFinder = find.descendant(
+        of: find.widgetWithText(AppInfoCard, loc(context).dmz),
+        matching: find.byType(AppSwitch));
+    await tester.tap(appSwitchFinder);
     await tester.pumpAndSettle();
     await tester.tap(find.byType(AppFilledButton));
     await tester.pumpAndSettle();
-  }, screens: [
-    ...responsiveMobileScreens.map((e) => e.copyWith(height: 1024)),
-    ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1024)),
-  ]);
+
+    expect(find.byType(SnackBar), findsOneWidget);
+    expect(
+        find.descendant(
+            of: find.byType(SnackBar),
+            matching: find.text(loc(context).invalidDestinationIpAddress)),
+        findsOneWidget);
+  }, helper: testHelper, goldenFilename: 'DMZS-SAVE_FAIL-02-after_fail', screens: screens);
 }

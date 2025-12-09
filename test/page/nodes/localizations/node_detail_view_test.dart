@@ -1,809 +1,332 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:privacy_gui/core/jnap/actions/better_action.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
-import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
-import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
-import 'package:privacy_gui/core/jnap/providers/firmware_update_state.dart';
-import 'package:privacy_gui/di.dart';
-import 'package:privacy_gui/page/instant_device/_instant_device.dart';
-import 'package:privacy_gui/page/instant_device/providers/device_filtered_list_state.dart';
-import 'package:privacy_gui/page/nodes/_nodes.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/wifi_list_provider.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/wifi_state.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:mockito/mockito.dart';
+import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
+import 'package:privacy_gui/core/jnap/providers/firmware_update_state.dart';
+import 'package:privacy_gui/core/utils/icon_rules.dart';
+import 'package:privacy_gui/page/instant_device/providers/device_filtered_list_provider.dart';
+import 'package:privacy_gui/page/instant_device/providers/device_filtered_list_state.dart';
+import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
+import 'package:privacy_gui/page/nodes/_nodes.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/theme/custom_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
 
 import '../../../common/config.dart';
-import '../../../common/di.dart';
+import '../../../common/screen.dart';
+import '../../../common/test_helper.dart';
 import '../../../common/test_responsive_widget.dart';
-import '../../../common/testable_router.dart';
-import '../../../mocks/_index.dart';
-import '../../../mocks/jnap_service_supported_mocks.dart';
 import '../../../test_data/device_filter_config_test_state.dart';
 import '../../../test_data/device_filtered_list_test_data.dart';
-import '../../../test_data/device_manager_test_state.dart';
-import '../../../test_data/firmware_update_test_state.dart';
 import '../../../test_data/node_details_data.dart';
-import '../../../test_data/wifi_list_test_state.dart';
+
+// View ID: NDVL
+// Implementation: lib/page/nodes/views/node_detail_view.dart
+/// | Test ID          | Description                                                                      |
+/// | :--------------- | :------------------------------------------------------------------------------- |
+/// | `NDVL-INFO`      | Desktop info tab shows node summary, firmware status, and connected devices.     |
+/// | `NDVL-MOBILE`    | Mobile layout switches between Info and Devices tabs correctly.                  |
+/// | `NDVL-MLO`       | Nodes flagged as MLO display the badge and modal explaining the capability.      |
+/// | `NDVL-LIGHTS`    | Node light settings card opens the LED mode dialog with toggles.                 |
+/// | `NDVL-EDIT`      | Edit name dialog enforces empty validation with blink control.                   |
+/// | `NDVL-EDIT_LONG` | Edit name dialog shows error when the name exceeds the max length.               |
+
+final _desktopScreens = responsiveDesktopScreens
+    .map((screen) => screen.copyWith(height: 1400))
+    .toList();
+final _mobileScreens = responsiveMobileScreens
+    .map((screen) => screen.copyWith(height: 1280))
+    .toList();
+
+final _defaultFilterState =
+    DeviceFilterConfigState.fromMap(deviceFilterConfigTestState);
+final _masterState = NodeDetailState.fromMap(nodeDetailsCherry7TestState);
+final _slaveState = NodeDetailState.fromMap(fakeNodeDetailsState2);
+final _deviceList =
+    deviceFilteredTestData.map((e) => DeviceListItem.fromMap(e)).toList();
+final _singleDeviceList = deviceFilteredTestData
+    .map((e) => DeviceListItem.fromMap(e))
+    .take(1)
+    .toList();
 
 void main() {
-  late NodeDetailNotifier mockNodeDetailNotifier;
-  late FirmwareUpdateNotifier mockFirmwareUpdateNotifier;
-  late DeviceFilterConfigNotifier mockDeviceFilterConfigNotifier;
-  late MockDeviceManagerNotifier mockDeviceManagerNotifier;
-  late WifiListNotifier mockWifiListNotifier;
-
-  mockDependencyRegister();
-  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
+  final testHelper = TestHelper();
 
   setUp(() {
-    mockNodeDetailNotifier = MockNodeDetailNotifier();
-    mockFirmwareUpdateNotifier = MockFirmwareUpdateNotifier();
-    mockDeviceFilterConfigNotifier = MockDeviceFilterConfigNotifier();
-    mockDeviceManagerNotifier = MockDeviceManagerNotifier();
-    mockWifiListNotifier = MockWifiListNotifier();
-
-    when(mockDeviceManagerNotifier.build())
-        .thenReturn(DeviceManagerState.fromMap(deviceManagerCherry7TestState));
-    when(mockWifiListNotifier.build())
-        .thenReturn(WiFiState.fromMap(wifiListTestState));
-
-    when(mockDeviceManagerNotifier.getBandConnectedBy(any))
+    testHelper.setup();
+    when(testHelper.mockDeviceManagerNotifier.getBandConnectedBy(any))
         .thenReturn('2.4GHz');
   });
-  testLocalizations(
-    'Instant-Topology - Node details view - master node',
-    (tester, locale) async {
-      when(mockNodeDetailNotifier.build())
-          .thenReturn(NodeDetailState.fromMap(nodeDetailsCherry7TestState));
-      when(mockFirmwareUpdateNotifier.build())
-          .thenReturn(FirmwareUpdateState.empty());
-      when(mockDeviceFilterConfigNotifier.build()).thenReturn(
-          DeviceFilterConfigState.fromMap(deviceFilterConfigTestState));
-      final widget = testableSingleRoute(
-        overrides: [
-          nodeDetailProvider.overrideWith(() => mockNodeDetailNotifier),
-          firmwareUpdateProvider.overrideWith(() => mockFirmwareUpdateNotifier),
-          deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-          deviceFilterConfigProvider
-              .overrideWith(() => mockDeviceFilterConfigNotifier),
-          wifiListProvider.overrideWith(() => mockWifiListNotifier),
-          filteredDeviceListProvider.overrideWith((ref) =>
-              deviceFilteredTestData
-                  .map((e) => DeviceListItem.fromMap(e))
-                  .toList()),
-        ],
-        locale: locale,
-        child: const NodeDetailView(),
-      );
-      await tester.pumpWidget(widget);
 
-      await tester.pumpAndSettle();
+  Future<BuildContext> pumpNodeDetailView(
+    WidgetTester tester,
+    LocalizedScreen screen, {
+    NodeDetailState? nodeState,
+    List<DeviceListItem>? devices,
+    DeviceFilterConfigState? filterState,
+    FirmwareUpdateState? firmwareState,
+  }) async {
+    when(testHelper.mockNodeDetailNotifier.build())
+        .thenReturn(nodeState ?? _masterState);
+    when(testHelper.mockFirmwareUpdateNotifier.build())
+        .thenReturn(firmwareState ?? FirmwareUpdateState.empty());
+    when(testHelper.mockDeviceFilterConfigNotifier.build())
+        .thenReturn(filterState ?? _defaultFilterState);
 
-      await tester.runAsync(() async {
-        final context = tester.element(find.byType(NodeDetailView));
-
-        await precacheImage(
-            CustomTheme.of(context).images.devices.routerLn12, context);
-        await tester.pumpAndSettle();
-      });
-    },
-  );
-  testLocalizations(
-    'Instant-Topology - Node details view - master node without devices',
-    (tester, locale) async {
-      when(mockNodeDetailNotifier.build())
-          .thenReturn(NodeDetailState.fromMap(nodeDetailsCherry7TestState));
-      when(mockFirmwareUpdateNotifier.build())
-          .thenReturn(FirmwareUpdateState.empty());
-      when(mockDeviceFilterConfigNotifier.build()).thenReturn(
-          DeviceFilterConfigState.fromMap(deviceFilterConfigTestState));
-      final widget = testableSingleRoute(
-        overrides: [
-          nodeDetailProvider.overrideWith(() => mockNodeDetailNotifier),
-          firmwareUpdateProvider.overrideWith(() => mockFirmwareUpdateNotifier),
-          deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-          deviceFilterConfigProvider
-              .overrideWith(() => mockDeviceFilterConfigNotifier),
-          wifiListProvider.overrideWith(() => mockWifiListNotifier),
-          filteredDeviceListProvider.overrideWith((ref) => []),
-        ],
-        locale: locale,
-        child: const NodeDetailView(),
-      );
-      await tester.pumpWidget(widget);
-
-      await tester.pumpAndSettle();
-
-      await tester.runAsync(() async {
-        final context = tester.element(find.byType(NodeDetailView));
-
-        await precacheImage(
-            CustomTheme.of(context).images.devices.routerLn12, context);
-        await tester.pumpAndSettle();
-      });
-    },
-    screens: responsiveDesktopScreens,
-  );
-
-  testLocalizations(
-    'Instant-Topology - Node details view - master node with one device',
-    (tester, locale) async {
-      when(mockNodeDetailNotifier.build())
-          .thenReturn(NodeDetailState.fromMap(nodeDetailsCherry7TestState));
-      when(mockFirmwareUpdateNotifier.build())
-          .thenReturn(FirmwareUpdateState.empty());
-      when(mockDeviceFilterConfigNotifier.build()).thenReturn(
-          DeviceFilterConfigState.fromMap(deviceFilterConfigTestState));
-      final widget = testableSingleRoute(
-        overrides: [
-          nodeDetailProvider.overrideWith(() => mockNodeDetailNotifier),
-          firmwareUpdateProvider.overrideWith(() => mockFirmwareUpdateNotifier),
-          deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-          deviceFilterConfigProvider
-              .overrideWith(() => mockDeviceFilterConfigNotifier),
-          wifiListProvider.overrideWith(() => mockWifiListNotifier),
-          filteredDeviceListProvider.overrideWith((ref) =>
-              deviceFilteredTestData
-                  .map((e) => DeviceListItem.fromMap(e))
-                  .take(1)
-                  .toList()),
-        ],
-        locale: locale,
-        child: const NodeDetailView(),
-      );
-      await tester.pumpWidget(widget);
-
-      await tester.pumpAndSettle();
-
-      await tester.runAsync(() async {
-        final context = tester.element(find.byType(NodeDetailView));
-
-        await precacheImage(
-            CustomTheme.of(context).images.devices.routerLn12, context);
-        await tester.pumpAndSettle();
-      });
-    },
-    screens: responsiveDesktopScreens,
-  );
-
-  testLocalizations(
-    'Instant-Topology - Node details view - master node with filter',
-    (tester, locale) async {
-      when(mockNodeDetailNotifier.build())
-          .thenReturn(NodeDetailState.fromMap(nodeDetailsCherry7TestState));
-      when(mockFirmwareUpdateNotifier.build())
-          .thenReturn(FirmwareUpdateState.empty());
-      when(mockDeviceFilterConfigNotifier.build()).thenReturn(
-          DeviceFilterConfigState.fromMap(deviceFilterConfigTestState));
-      final widget = testableSingleRoute(
-        overrides: [
-          nodeDetailProvider.overrideWith(() => mockNodeDetailNotifier),
-          firmwareUpdateProvider.overrideWith(() => mockFirmwareUpdateNotifier),
-          deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-          deviceFilterConfigProvider
-              .overrideWith(() => mockDeviceFilterConfigNotifier),
-          wifiListProvider.overrideWith(() => mockWifiListNotifier),
-          filteredDeviceListProvider.overrideWith((ref) =>
-              deviceFilteredTestData
-                  .map((e) => DeviceListItem.fromMap(e))
-                  .toList()),
-        ],
-        locale: locale,
-        child: const NodeDetailView(),
-      );
-      await tester.pumpWidget(widget);
-
-      await tester.pumpAndSettle();
-
-      await tester.runAsync(() async {
-        final context = tester.element(find.byType(NodeDetailView));
-
-        await precacheImage(
-            CustomTheme.of(context).images.devices.routerLn12, context);
-        await tester.pumpAndSettle();
-      });
-
-      await tester.tap(find.byIcon(LinksysIcons.filter).first);
-      await tester.pumpAndSettle();
-    },
-    screens: responsiveDesktopScreens,
-  );
-
-  testLocalizations(
-    'Instant-Topology - Node details view - master node',
-    (tester, locale) async {
-      when(mockNodeDetailNotifier.build())
-          .thenReturn(NodeDetailState.fromMap(nodeDetailsCherry7TestState));
-      when(mockFirmwareUpdateNotifier.build())
-          .thenReturn(FirmwareUpdateState.empty());
-      when(mockDeviceFilterConfigNotifier.build()).thenReturn(
-          DeviceFilterConfigState.fromMap(deviceFilterConfigTestState));
-      final widget = testableSingleRoute(
-        overrides: [
-          nodeDetailProvider.overrideWith(() => mockNodeDetailNotifier),
-          firmwareUpdateProvider.overrideWith(() => mockFirmwareUpdateNotifier),
-          deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-          deviceFilterConfigProvider
-              .overrideWith(() => mockDeviceFilterConfigNotifier),
-          wifiListProvider.overrideWith(() => mockWifiListNotifier),
-          filteredDeviceListProvider.overrideWith((ref) =>
-              deviceFilteredTestData
-                  .map((e) => DeviceListItem.fromMap(e))
-                  .toList()),
-        ],
-        locale: locale,
-        child: const NodeDetailView(),
-      );
-      await tester.pumpWidget(widget);
-
-      await tester.pumpAndSettle();
-
-      await tester.runAsync(() async {
-        final context = tester.element(find.byType(NodeDetailView));
-
-        await precacheImage(
-            CustomTheme.of(context).images.devices.routerLn12, context);
-        await tester.pumpAndSettle();
-      });
-
-      final devicesTab = find.byType(Tab).last;
-      await tester.tap(devicesTab);
-      await tester.pumpAndSettle();
-    },
-    screens: responsiveMobileScreens,
-  );
-  testLocalizations(
-    'Instant-Topology - Node details view - master node without devices',
-    (tester, locale) async {
-      when(mockNodeDetailNotifier.build())
-          .thenReturn(NodeDetailState.fromMap(nodeDetailsCherry7TestState));
-      when(mockFirmwareUpdateNotifier.build())
-          .thenReturn(FirmwareUpdateState.empty());
-      when(mockDeviceFilterConfigNotifier.build()).thenReturn(
-          DeviceFilterConfigState.fromMap(deviceFilterConfigTestState));
-      final widget = testableSingleRoute(
-        overrides: [
-          nodeDetailProvider.overrideWith(() => mockNodeDetailNotifier),
-          firmwareUpdateProvider.overrideWith(() => mockFirmwareUpdateNotifier),
-          deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-          deviceFilterConfigProvider
-              .overrideWith(() => mockDeviceFilterConfigNotifier),
-          wifiListProvider.overrideWith(() => mockWifiListNotifier),
-          filteredDeviceListProvider.overrideWith((ref) => []),
-        ],
-        locale: locale,
-        child: const NodeDetailView(),
-      );
-      await tester.pumpWidget(widget);
-
-      await tester.pumpAndSettle();
-
-      await tester.runAsync(() async {
-        final context = tester.element(find.byType(NodeDetailView));
-
-        await precacheImage(
-            CustomTheme.of(context).images.devices.routerLn12, context);
-        await tester.pumpAndSettle();
-      });
-
-      final devicesTab = find.byType(Tab).last;
-      await tester.tap(devicesTab);
-      await tester.pumpAndSettle();
-    },
-    screens: responsiveMobileScreens,
-  );
-
-  testLocalizations(
-    'Instant-Topology - Node details view - master node with one device',
-    (tester, locale) async {
-      when(mockNodeDetailNotifier.build())
-          .thenReturn(NodeDetailState.fromMap(nodeDetailsCherry7TestState));
-      when(mockFirmwareUpdateNotifier.build())
-          .thenReturn(FirmwareUpdateState.empty());
-      when(mockDeviceFilterConfigNotifier.build()).thenReturn(
-          DeviceFilterConfigState.fromMap(deviceFilterConfigTestState));
-      final widget = testableSingleRoute(
-        overrides: [
-          nodeDetailProvider.overrideWith(() => mockNodeDetailNotifier),
-          firmwareUpdateProvider.overrideWith(() => mockFirmwareUpdateNotifier),
-          deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-          deviceFilterConfigProvider
-              .overrideWith(() => mockDeviceFilterConfigNotifier),
-          wifiListProvider.overrideWith(() => mockWifiListNotifier),
-          filteredDeviceListProvider.overrideWith((ref) =>
-              deviceFilteredTestData
-                  .map((e) => DeviceListItem.fromMap(e))
-                  .take(1)
-                  .toList()),
-        ],
-        locale: locale,
-        child: const NodeDetailView(),
-      );
-      await tester.pumpWidget(widget);
-
-      await tester.pumpAndSettle();
-
-      await tester.runAsync(() async {
-        final context = tester.element(find.byType(NodeDetailView));
-
-        await precacheImage(
-            CustomTheme.of(context).images.devices.routerLn12, context);
-        await tester.pumpAndSettle();
-        final devicesTab = find.byType(Tab).last;
-        await tester.tap(devicesTab);
-        await tester.pumpAndSettle();
-      });
-    },
-    screens: responsiveMobileScreens,
-  );
-
-  testLocalizations(
-    'Instant-Topology - Node details view - master node with filter',
-    (tester, locale) async {
-      when(mockNodeDetailNotifier.build())
-          .thenReturn(NodeDetailState.fromMap(nodeDetailsCherry7TestState));
-      when(mockFirmwareUpdateNotifier.build())
-          .thenReturn(FirmwareUpdateState.empty());
-      when(mockDeviceFilterConfigNotifier.build()).thenReturn(
-          DeviceFilterConfigState.fromMap(deviceFilterConfigTestState));
-      final widget = testableSingleRoute(
-        overrides: [
-          nodeDetailProvider.overrideWith(() => mockNodeDetailNotifier),
-          firmwareUpdateProvider.overrideWith(() => mockFirmwareUpdateNotifier),
-          deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-          deviceFilterConfigProvider
-              .overrideWith(() => mockDeviceFilterConfigNotifier),
-          wifiListProvider.overrideWith(() => mockWifiListNotifier),
-          filteredDeviceListProvider.overrideWith((ref) =>
-              deviceFilteredTestData
-                  .map((e) => DeviceListItem.fromMap(e))
-                  .toList()),
-        ],
-        locale: locale,
-        child: const NodeDetailView(),
-      );
-      await tester.pumpWidget(widget);
-
-      await tester.pumpAndSettle();
-
-      await tester.runAsync(() async {
-        final context = tester.element(find.byType(NodeDetailView));
-
-        await precacheImage(
-            CustomTheme.of(context).images.devices.routerLn12, context);
-        await tester.pumpAndSettle();
-      });
-
-      final devicesTab = find.byType(Tab).last;
-      await tester.tap(devicesTab);
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byIcon(LinksysIcons.filter).first);
-      await tester.pumpAndSettle();
-    },
-    screens: responsiveMobileScreens,
-  );
-
-  testLocalizations(
-    'Instant-Topology - Node details view - slave node',
-    (tester, locale) async {
-      when(mockNodeDetailNotifier.build())
-          .thenReturn(NodeDetailState.fromMap(fakeNodeDetailsState2));
-      when(mockFirmwareUpdateNotifier.build())
-          .thenReturn(FirmwareUpdateState.empty());
-      when(mockDeviceFilterConfigNotifier.build()).thenReturn(
-          DeviceFilterConfigState.fromMap(deviceFilterConfigTestState));
-      final widget = testableSingleRoute(
-        overrides: [
-          nodeDetailProvider.overrideWith(() => mockNodeDetailNotifier),
-          firmwareUpdateProvider.overrideWith(() => mockFirmwareUpdateNotifier),
-          deviceFilterConfigProvider
-              .overrideWith(() => mockDeviceFilterConfigNotifier),
-          deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-          wifiListProvider.overrideWith(() => mockWifiListNotifier),
-          filteredDeviceListProvider.overrideWith((ref) =>
-              deviceFilteredTestData
-                  .map((e) => DeviceListItem.fromMap(e))
-                  .toList()),
-        ],
-        locale: locale,
-        child: const NodeDetailView(),
-      );
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
-      await tester.runAsync(() async {
-        final context = tester.element(find.byType(NodeDetailView));
-
-        await precacheImage(
-            CustomTheme.of(context).images.devices.routerLn12, context);
-        await tester.pumpAndSettle();
-      });
-    },
-  );
-
-  testLocalizations(
-    'Instant-Topology - Node details view - slave node with MLO label',
-    (tester, locale) async {
-      when(mockNodeDetailNotifier.build()).thenReturn(
-          NodeDetailState.fromMap(fakeNodeDetailsState2).copyWith(isMLO: true));
-      when(mockFirmwareUpdateNotifier.build())
-          .thenReturn(FirmwareUpdateState.empty());
-      when(mockDeviceFilterConfigNotifier.build()).thenReturn(
-          DeviceFilterConfigState.fromMap(deviceFilterConfigTestState));
-      final widget = testableSingleRoute(
-        overrides: [
-          nodeDetailProvider.overrideWith(() => mockNodeDetailNotifier),
-          firmwareUpdateProvider.overrideWith(() => mockFirmwareUpdateNotifier),
-          deviceFilterConfigProvider
-              .overrideWith(() => mockDeviceFilterConfigNotifier),
-          deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-          wifiListProvider.overrideWith(() => mockWifiListNotifier),
-          filteredDeviceListProvider.overrideWith((ref) =>
-              deviceFilteredTestData
-                  .map((e) => DeviceListItem.fromMap(e))
-                  .toList()),
-        ],
-        locale: locale,
-        child: const NodeDetailView(),
-      );
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
-      await tester.runAsync(() async {
-        final context = tester.element(find.byType(NodeDetailView));
-
-        await precacheImage(
-            CustomTheme.of(context).images.devices.routerLn12, context);
-        await tester.pumpAndSettle();
-      });
-    },
-  );
-
-  testLocalizations(
-    'Instant-Topology - Node details view - MLO modal',
-    (tester, locale) async {
-      when(mockNodeDetailNotifier.build()).thenReturn(
-          NodeDetailState.fromMap(fakeNodeDetailsState2).copyWith(isMLO: true));
-      when(mockFirmwareUpdateNotifier.build())
-          .thenReturn(FirmwareUpdateState.empty());
-      when(mockDeviceFilterConfigNotifier.build()).thenReturn(
-          DeviceFilterConfigState.fromMap(deviceFilterConfigTestState));
-      final widget = testableSingleRoute(
-        overrides: [
-          nodeDetailProvider.overrideWith(() => mockNodeDetailNotifier),
-          firmwareUpdateProvider.overrideWith(() => mockFirmwareUpdateNotifier),
-          deviceFilterConfigProvider
-              .overrideWith(() => mockDeviceFilterConfigNotifier),
-          deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-          wifiListProvider.overrideWith(() => mockWifiListNotifier),
-          filteredDeviceListProvider.overrideWith((ref) =>
-              deviceFilteredTestData
-                  .map((e) => DeviceListItem.fromMap(e))
-                  .toList()),
-        ],
-        locale: locale,
-        child: const NodeDetailView(),
-      );
-      await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
-      await tester.runAsync(() async {
-        final context = tester.element(find.byType(NodeDetailView));
-
-        await precacheImage(
-            CustomTheme.of(context).images.devices.routerLn12, context);
-        await tester.pumpAndSettle();
-      });
-      final mloLabelFinder = find.descendant(
-          of: find.byType(AppCard).first, matching: find.byType(AppTextButton));
-      await tester.tap(mloLabelFinder);
-      await tester.pumpAndSettle();
-    },
-  );
-
-  testLocalizations(
-    'Instant-Topology - Node details view - firmware update avaliable',
-    (tester, locale) async {
-      when(mockNodeDetailNotifier.build())
-          .thenReturn(NodeDetailState.fromMap(nodeDetailsCherry7TestState));
-      when(mockFirmwareUpdateNotifier.build()).thenReturn(
-          FirmwareUpdateState.fromMap(firmwareUpdateHasFirmwareTestData));
-      when(mockDeviceFilterConfigNotifier.build()).thenReturn(
-          DeviceFilterConfigState.fromMap(deviceFilterConfigTestState));
-      await tester.runAsync(() async {
-        final widget = testableSingleRoute(
-          overrides: [
-            nodeDetailProvider.overrideWith(() => mockNodeDetailNotifier),
-            firmwareUpdateProvider
-                .overrideWith(() => mockFirmwareUpdateNotifier),
-            deviceFilterConfigProvider
-                .overrideWith(() => mockDeviceFilterConfigNotifier),
-            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            wifiListProvider.overrideWith(() => mockWifiListNotifier),
-            filteredDeviceListProvider.overrideWith((ref) =>
-                deviceFilteredTestData
-                    .map((e) => DeviceListItem.fromMap(e))
-                    .toList()),
-          ],
-          locale: locale,
-          child: const NodeDetailView(),
-        );
-        await tester.pumpWidget(widget);
-        final context = tester.element(find.byType(NodeDetailView));
-
-        await precacheImage(
-            CustomTheme.of(context).images.devices.routerLn12, context);
-        await tester.pumpAndSettle();
-      });
-    },
-  );
-
-  testLocalizations(
-    'Instant-Topology - Node details view - edit name modal',
-    (tester, locale) async {
-      when(mockNodeDetailNotifier.build())
-          .thenReturn(NodeDetailState.fromMap(nodeDetailsCherry7TestState));
-      when(mockFirmwareUpdateNotifier.build())
-          .thenReturn(FirmwareUpdateState.empty());
-      when(mockDeviceFilterConfigNotifier.build()).thenReturn(
-          DeviceFilterConfigState.fromMap(deviceFilterConfigTestState));
-      when(mockServiceHelper.isSupportLedMode()).thenReturn(true);
-      when(mockServiceHelper.isSupportLedBlinking()).thenReturn(true);
-
-      await tester.runAsync(() async {
-        final widget = testableSingleRoute(
-          overrides: [
-            nodeDetailProvider.overrideWith(() => mockNodeDetailNotifier),
-            firmwareUpdateProvider
-                .overrideWith(() => mockFirmwareUpdateNotifier),
-            deviceFilterConfigProvider
-                .overrideWith(() => mockDeviceFilterConfigNotifier),
-            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            wifiListProvider.overrideWith(() => mockWifiListNotifier),
-            filteredDeviceListProvider.overrideWith((ref) =>
-                deviceFilteredTestData
-                    .map((e) => DeviceListItem.fromMap(e))
-                    .toList()),
-          ],
-          locale: locale,
-          child: const NodeDetailView(),
-        );
-        await tester.pumpWidget(widget);
-        final context = tester.element(find.byType(NodeDetailView));
-
-        await precacheImage(
-            CustomTheme.of(context).images.devices.routerLn12, context);
-        await tester.pumpAndSettle();
-        final editFinder = find.byIcon(LinksysIcons.edit);
-        await tester.tap(editFinder);
-        await tester.pumpAndSettle();
-      });
-    },
-  );
-
-  testLocalizations(
-    'Instant-Topology - Node details view - edit name modal - empty error',
-    (tester, locale) async {
-      when(mockNodeDetailNotifier.build())
-          .thenReturn(NodeDetailState.fromMap(nodeDetailsCherry7TestState));
-      when(mockFirmwareUpdateNotifier.build())
-          .thenReturn(FirmwareUpdateState.empty());
-      when(mockDeviceFilterConfigNotifier.build()).thenReturn(
-          DeviceFilterConfigState.fromMap(deviceFilterConfigTestState));
-      when(mockServiceHelper.isSupportLedMode()).thenReturn(true);
-      when(mockServiceHelper.isSupportLedBlinking()).thenReturn(true);
-
-      await tester.runAsync(() async {
-        final widget = testableSingleRoute(
-          overrides: [
-            nodeDetailProvider.overrideWith(() => mockNodeDetailNotifier),
-            firmwareUpdateProvider
-                .overrideWith(() => mockFirmwareUpdateNotifier),
-            deviceFilterConfigProvider
-                .overrideWith(() => mockDeviceFilterConfigNotifier),
-            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            wifiListProvider.overrideWith(() => mockWifiListNotifier),
-            filteredDeviceListProvider.overrideWith((ref) =>
-                deviceFilteredTestData
-                    .map((e) => DeviceListItem.fromMap(e))
-                    .toList()),
-          ],
-          locale: locale,
-          child: const NodeDetailView(),
-        );
-        await tester.pumpWidget(widget);
-        final context = tester.element(find.byType(NodeDetailView));
-
-        await precacheImage(
-            CustomTheme.of(context).images.devices.routerLn12, context);
-        await tester.pumpAndSettle();
-        final editFinder = find.byIcon(LinksysIcons.edit);
-        await tester.tap(editFinder);
-        await tester.pumpAndSettle();
-
-        final inputFieldFinder = find.bySemanticsLabel('node name').last;
-        await tester.tap(inputFieldFinder);
-        await tester.enterText(inputFieldFinder, '');
-        await tester.pumpAndSettle();
-      });
-    },
-  );
-
-  testLocalizations(
-    'Instant-Topology - Node details view - edit name modal - over name size error',
-    (tester, locale) async {
-      when(mockNodeDetailNotifier.build())
-          .thenReturn(NodeDetailState.fromMap(nodeDetailsCherry7TestState));
-      when(mockFirmwareUpdateNotifier.build())
-          .thenReturn(FirmwareUpdateState.empty());
-      when(mockDeviceFilterConfigNotifier.build()).thenReturn(
-          DeviceFilterConfigState.fromMap(deviceFilterConfigTestState));
-      when(mockServiceHelper.isSupportLedMode()).thenReturn(true);
-      when(mockServiceHelper.isSupportLedBlinking()).thenReturn(true);
-
-      await tester.runAsync(() async {
-        final widget = testableSingleRoute(
-          overrides: [
-            nodeDetailProvider.overrideWith(() => mockNodeDetailNotifier),
-            firmwareUpdateProvider
-                .overrideWith(() => mockFirmwareUpdateNotifier),
-            deviceFilterConfigProvider
-                .overrideWith(() => mockDeviceFilterConfigNotifier),
-            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            wifiListProvider.overrideWith(() => mockWifiListNotifier),
-            filteredDeviceListProvider.overrideWith((ref) =>
-                deviceFilteredTestData
-                    .map((e) => DeviceListItem.fromMap(e))
-                    .toList()),
-          ],
-          locale: locale,
-          child: const NodeDetailView(),
-        );
-        await tester.pumpWidget(widget);
-        final context = tester.element(find.byType(NodeDetailView));
-
-        await precacheImage(
-            CustomTheme.of(context).images.devices.routerLn12, context);
-        await tester.pumpAndSettle();
-        final editFinder = find.byIcon(LinksysIcons.edit);
-        await tester.tap(editFinder);
-        await tester.pumpAndSettle();
-
-        final inputFieldFinder = find.bySemanticsLabel('node name').last;
-        await tester.tap(inputFieldFinder);
-        await tester.enterText(inputFieldFinder,
-            'fjwkle23m3n,nmfjwkle23m3n,nmfjwkle23m3n,nmfjwkle23m3n,nmfjwkle23m3n,nmfjwkle23m3n,nmfjwkle23m3n,nmfjwkle23m3n,nmfjwkle23m3n,nmfjwkle23m3n,nmfjwkle23m3n,nmfjwkle23m3n,nmfjwkle23m3n,nmfjwkle23m3n,nmfjwkle23m3n,nmfjwkle23m3n,nmfjwkle23m3n,nmfjwkle23m3n,nmfjwkle23m3n,nmfjwkle23m3n,nmfjwkle23m3n,nmfjwkle23m3n,nmfjwkle23m3n,nmfjwkle23m3n,nmfjwkle23m3n,nmfjwkle23m3n,nmfjwkle23m3n,nmfjwkle23m3n,nmfjwkle23m3n,nmfjwkle23m3n,nmfjwkle23m3n,nmfjwkle23m3n,nmfjwkle23m3n,nm');
-        await tester.pumpAndSettle();
-      });
-    },
-  );
-
-  testLocalizations(
-    'Instant-Topology - Node details view - edit name modal, blink node',
-    (tester, locale) async {
-      when(mockNodeDetailNotifier.build())
-          .thenReturn(NodeDetailState.fromMap(nodeDetailsCherry7TestState));
-      when(mockFirmwareUpdateNotifier.build())
-          .thenReturn(FirmwareUpdateState.empty());
-      when(mockDeviceFilterConfigNotifier.build()).thenReturn(
-          DeviceFilterConfigState.fromMap(deviceFilterConfigTestState));
-      final widget = testableSingleRoute(
-        overrides: [
-          nodeDetailProvider.overrideWith(() => mockNodeDetailNotifier),
-          firmwareUpdateProvider.overrideWith(() => mockFirmwareUpdateNotifier),
-          deviceFilterConfigProvider
-              .overrideWith(() => mockDeviceFilterConfigNotifier),
-          deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-          wifiListProvider.overrideWith(() => mockWifiListNotifier),
-          filteredDeviceListProvider.overrideWith((ref) =>
-              deviceFilteredTestData
-                  .map((e) => DeviceListItem.fromMap(e))
-                  .toList()),
-        ],
-        locale: locale,
-        child: const NodeDetailView(),
-      );
-      await tester.pumpWidget(widget);
-      await tester.runAsync(() async {
-        final context = tester.element(find.byType(NodeDetailView));
-
-        await precacheImage(
-            CustomTheme.of(context).images.devices.routerLn12, context);
-        await tester.pumpAndSettle();
-      });
-      final editFinder = find.byIcon(LinksysIcons.edit);
-      await tester.tap(editFinder);
-      await tester.pumpAndSettle();
-      final blinkFinder = find.descendant(
-          of: find.byType(AlertDialog),
-          matching: find.byKey(const ValueKey('blinkNodeButton')));
-      await tester.tap(blinkFinder);
-      await tester.pumpAndSettle();
-      await tester.pump(const Duration(seconds: 5));
-      await tester.pumpAndSettle();
-    },
-  );
-
-  testLocalizations(
-    'Instant-Topology - Node details view - node light settings',
-    (tester, locale) async {
-      when(mockNodeDetailNotifier.build())
-          .thenReturn(NodeDetailState.fromMap(nodeDetailsCherry7TestState));
-      when(mockFirmwareUpdateNotifier.build())
-          .thenReturn(FirmwareUpdateState.empty());
-      when(mockDeviceFilterConfigNotifier.build()).thenReturn(
-          DeviceFilterConfigState.fromMap(deviceFilterConfigTestState));
-      when(mockServiceHelper.isSupportLedMode()).thenReturn(true);
-      await tester.runAsync(() async {
-        final widget = testableSingleRoute(
-          overrides: [
-            nodeDetailProvider.overrideWith(() => mockNodeDetailNotifier),
-            firmwareUpdateProvider
-                .overrideWith(() => mockFirmwareUpdateNotifier),
-            deviceFilterConfigProvider
-                .overrideWith(() => mockDeviceFilterConfigNotifier),
-            deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            wifiListProvider.overrideWith(() => mockWifiListNotifier),
-            filteredDeviceListProvider.overrideWith((ref) =>
-                deviceFilteredTestData
-                    .map((e) => DeviceListItem.fromMap(e))
-                    .toList()),
-          ],
-          locale: locale,
-          child: const NodeDetailView(),
-        );
-        await tester.pumpWidget(widget);
-        final context = tester.element(find.byType(NodeDetailView));
-
-        await precacheImage(
-            CustomTheme.of(context).images.devices.routerLn12, context);
-        await tester.pumpAndSettle();
-        final nodeLightFinder = find.byKey(const ValueKey('nodeLightSettings'));
-        await tester.tap(nodeLightFinder);
-        await tester.pumpAndSettle();
-      });
-    },
-  );
-
-  testLocalizations(
-      'Instant-Topology - Node details view - devices tab for mobile layout',
-      (tester, locale) async {
-    when(mockNodeDetailNotifier.build())
-        .thenReturn(NodeDetailState.fromMap(nodeDetailsCherry7TestState));
-    when(mockFirmwareUpdateNotifier.build())
-        .thenReturn(FirmwareUpdateState.empty());
-    when(mockDeviceFilterConfigNotifier.build()).thenReturn(
-        DeviceFilterConfigState.fromMap(deviceFilterConfigTestState));
-    final widget = testableSingleRoute(
-      overrides: [
-        nodeDetailProvider.overrideWith(() => mockNodeDetailNotifier),
-        firmwareUpdateProvider.overrideWith(() => mockFirmwareUpdateNotifier),
-        deviceFilterConfigProvider
-            .overrideWith(() => mockDeviceFilterConfigNotifier),
-        deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-        wifiListProvider.overrideWith(() => mockWifiListNotifier),
-        filteredDeviceListProvider.overrideWith((ref) => deviceFilteredTestData
-            .map((e) => DeviceListItem.fromMap(e))
-            .toList()),
-      ],
-      locale: locale,
+    final context = await testHelper.pumpShellView(
+      tester,
+      locale: screen.locale,
       child: const NodeDetailView(),
+      overrides: [
+        filteredDeviceListProvider.overrideWith(
+          (ref) => devices ?? _deviceList,
+        ),
+      ],
     );
-    await tester.pumpWidget(widget);
+
     await tester.runAsync(() async {
-      final context = tester.element(find.byType(NodeDetailView));
-
-      await precacheImage(
-          CustomTheme.of(context).images.devices.routerLn12, context);
-      await tester.pumpAndSettle();
-
-      final devicesTab = find.byType(Tab).last;
-      await tester.tap(devicesTab);
-      await tester.pumpAndSettle();
+      final element = tester.element(find.byType(NodeDetailView));
+      final theme = CustomTheme.of(element);
+      final iconName = routerIconTestByModel(
+          modelNumber: (nodeState ?? _masterState).modelNumber);
+      await precacheImage(theme.getRouterImage(iconName), element);
     });
-  }, screens: responsiveMobileScreens);
+    await tester.pumpAndSettle();
+    return context;
+  }
+
+  // Test ID: NDVL-INFO — desktop info tab layout with devices list
+  testLocalizationsV2(
+    'node detail view - desktop info layout',
+    (tester, screen) async {
+      final context = await pumpNodeDetailView(
+        tester,
+        screen,
+        devices: _deviceList,
+        nodeState: _masterState,
+      );
+      final loc = testHelper.loc(context);
+
+      // Verify page title
+      expect(find.text(_masterState.location), findsWidgets);
+
+      // Verify device image with semantic label
+      expect(find.bySemanticsLabel('device image'), findsOneWidget);
+
+      // Verify edit button
+      expect(find.byIcon(LinksysIcons.edit), findsWidgets);
+
+      // Verify connection info
+      expect(find.text(loc.connectTo), findsWidgets);
+
+      // Verify detail section fields
+      expect(find.text(loc.wanIPAddress), findsOneWidget);
+      expect(find.text(loc.lanIPAddress), findsOneWidget);
+      expect(find.text(loc.firmwareVersion), findsOneWidget);
+      expect(find.text(loc.modelNumber), findsOneWidget);
+      expect(find.text(loc.serialNumber), findsOneWidget);
+      expect(find.text(loc.macAddress), findsOneWidget);
+
+      // Verify device tab elements
+      expect(find.text(loc.nDevices(_deviceList.length)), findsOneWidget);
+      expect(find.text(loc.filters), findsWidgets);
+
+      // Verify refresh button
+      expect(find.text(loc.refresh), findsOneWidget);
+      expect(find.byIcon(LinksysIcons.refresh), findsOneWidget);
+    },
+    screens: _desktopScreens,
+    goldenFilename: 'NDVL-INFO-01-desktop',
+    helper: testHelper,
+  );
+
+  // Test ID: NDVL-MOBILE — verify mobile tab navigation
+  testLocalizationsV2(
+    'node detail view - mobile tabs',
+    (tester, screen) async {
+      final context = await pumpNodeDetailView(
+        tester,
+        screen,
+        devices: _singleDeviceList,
+      );
+      final loc = testHelper.loc(context);
+
+      // Verify tabs exist
+      expect(find.text(loc.info), findsOneWidget);
+      expect(find.text(loc.devices), findsOneWidget);
+
+      // Initially on Info tab - verify location is visible
+      expect(find.text(_masterState.location), findsWidgets);
+
+      // Switch to Devices tab
+      await tester.tap(find.text(loc.devices));
+      await tester.pumpAndSettle();
+
+      // Verify device count is shown
+      expect(find.text(loc.nDevices(_singleDeviceList.length)), findsOneWidget);
+
+      // Verify filter icon button (mobile variant)
+      expect(find.byIcon(LinksysIcons.filter), findsOneWidget);
+    },
+    screens: _mobileScreens,
+    goldenFilename: 'NDVL-MOBILE-01-tabs',
+    helper: testHelper,
+  );
+
+  // Test ID: NDVL-MLO — show connected with MLO modal
+  testLocalizationsV2(
+    'node detail view - mlo modal',
+    (tester, screen) async {
+      final context = await pumpNodeDetailView(
+        tester,
+        screen,
+        nodeState: _slaveState.copyWith(isMLO: true),
+      );
+      final loc = testHelper.loc(context);
+
+      // Verify MLO button appears in avatar card
+      final mloButton = find.text(loc.connectedWithMLO);
+      expect(mloButton, findsOneWidget);
+
+      // Tap to open modal
+      await tester.tap(mloButton);
+      await tester.pumpAndSettle();
+
+      // Verify modal shows MLO title
+      expect(find.text(loc.mlo), findsOneWidget);
+
+      // Verify cancel button exists
+      expect(find.text(loc.ok), findsOneWidget);
+
+      await testHelper.takeScreenshot(tester, 'NDVL-MLO-01-dialog');
+    },
+    screens: _desktopScreens,
+    helper: testHelper,
+  );
+
+  // Test ID: NDVL-LIGHTS — node light settings dialog
+  testLocalizationsV2(
+    'node detail view - node light settings dialog',
+    (tester, screen) async {
+      when(testHelper.mockNodeLightSettingsNotifier.build()).thenReturn(
+        const NodeLightSettings(
+          isNightModeEnable: true,
+          startHour: 20,
+          endHour: 8,
+          allDayOff: false,
+        ),
+      );
+
+      final context = await pumpNodeDetailView(tester, screen);
+      final loc = testHelper.loc(context);
+
+      // Verify node light card with correct key
+      final nodeLightCard = find.byKey(const ValueKey('nodeLightSettings'));
+      expect(nodeLightCard, findsOneWidget);
+
+      // Verify card shows node light title
+      expect(find.text(loc.nodeLight), findsOneWidget);
+
+      // Verify night mode icon and time display
+      expect(find.byIcon(LinksysIcons.darkMode), findsOneWidget);
+      expect(find.text('8PM - 8AM'), findsOneWidget);
+
+      // Tap to open dialog
+      await tester.tap(nodeLightCard);
+      await tester.pumpAndSettle();
+
+      // Verify dialog title
+      expect(find.text(loc.nodeLight), findsWidgets);
+
+      // Verify night mode toggle
+      expect(find.text(loc.nodeDetailsLedNightMode), findsOneWidget);
+
+      // Verify lights off checkbox
+      expect(find.text(loc.lightsOff), findsOneWidget);
+
+      // Verify dialog buttons
+      expect(find.text(loc.cancel), findsOneWidget);
+      expect(find.text(loc.save), findsOneWidget);
+
+      await testHelper.takeScreenshot(tester, 'NDVL-LIGHTS-01-dialog');
+    },
+    screens: _desktopScreens,
+    helper: testHelper,
+  );
+
+  // Test ID: NDVL-EDIT — edit name dialog validations
+  testLocalizationsV2(
+    'node detail view - edit name validations',
+    (tester, screen) async {
+      when(testHelper.mockServiceHelper.isSupportLedBlinking())
+          .thenReturn(true);
+      final context = await pumpNodeDetailView(tester, screen);
+      final loc = testHelper.loc(context);
+
+      // Tap edit button
+      final editButton = find.byIcon(LinksysIcons.edit).first;
+      expect(editButton, findsOneWidget);
+      await tester.tap(editButton);
+      await tester.pumpAndSettle();
+
+      // Verify dialog title
+      expect(find.text(loc.nodeName), findsWidgets);
+
+      // Verify text field exists with semantic label
+      final nameField = find.bySemanticsLabel('node name');
+      expect(nameField, findsOneWidget);
+
+      // Verify field is pre-filled with current location
+      expect(find.text(_masterState.location), findsWidgets);
+
+      // Clear text to trigger empty validation
+      await tester.enterText(nameField, '');
+      await tester.pumpAndSettle();
+
+      // Verify empty error message
+      expect(find.text(loc.theNameMustNotBeEmpty), findsOneWidget);
+
+      // Verify blink control widget appears (when LED blinking is supported)
+      expect(find.byType(AppTextButton), findsWidgets);
+
+      await testHelper.takeScreenshot(tester, 'NDVL-EDIT-01-empty_error');
+    },
+    screens: _desktopScreens,
+    helper: testHelper,
+  );
+
+  // Test ID: NDVL-EDIT_LONG — edit name dialog with overly long input
+  testLocalizationsV2(
+    'node detail view - edit name too long error',
+    (tester, screen) async {
+      final context = await pumpNodeDetailView(tester, screen);
+      final loc = testHelper.loc(context);
+
+      // Tap edit button
+      await tester.tap(find.byIcon(LinksysIcons.edit).first);
+      await tester.pumpAndSettle();
+
+      // Verify dialog opened
+      expect(find.text(loc.nodeName), findsWidgets);
+
+      // Find text field
+      final nameField = find.bySemanticsLabel('node name');
+      expect(nameField, findsOneWidget);
+
+      // Enter excessively long name (300 characters)
+      await tester.enterText(nameField, 'n' * 300);
+      await tester.pumpAndSettle();
+
+      // Verify max size error message
+      expect(find.text(loc.deviceNameExceedMaxSize), findsOneWidget);
+
+      // Verify dialog buttons
+      expect(find.text(loc.cancel), findsOneWidget);
+      expect(find.text(loc.save), findsOneWidget);
+
+      await testHelper.takeScreenshot(tester, 'NDVL-EDIT_LONG-01-error');
+    },
+    screens: _desktopScreens,
+    helper: testHelper,
+  );
 }

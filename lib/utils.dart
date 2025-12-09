@@ -4,7 +4,6 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:collection/collection.dart';
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -20,6 +19,7 @@ import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:share_plus/share_plus.dart';
 import 'core/utils/logger.dart';
 import 'core/utils/storage.dart';
+import 'core/utils/fernet_manager.dart';
 import '../../../util/export_selector/export_base.dart'
     if (dart.library.io) '../../../util/export_selector/export_mobile.dart'
     if (dart.library.html) '../../../util/export_selector/export_web.dart';
@@ -43,6 +43,7 @@ class Utils {
         Storage.deleteFile(Storage.logFileUri);
         Storage.createLoggerFile();
       }
+      if (!context.mounted) return;
       showSnackBar(context, content: Text("Log exported - $shareLogFilename"));
     });
   }
@@ -93,6 +94,24 @@ class Utils {
     return maskJsonValue(raw, keys);
   }
 
+  static String encryptJNAPAuth(String raw) {
+    final pattern = RegExp(r'(X-JNAP-Authorization: Basic )([a-zA-Z0-9=+/]+)');
+    return raw.replaceAllMapped(pattern, (match) {
+      final header = match.group(1)!;
+      final encodedPassword = match.group(2)!;
+
+      // Encrypt the password
+      final encryptedPassword = FernetManager().encrypt(encodedPassword);
+
+      if (encryptedPassword != null) {
+        return '$header$encryptedPassword';
+      } else {
+        // If encryption fails, return the original match, but mask the password
+        return '${header}************';
+      }
+    });
+  }
+
   static String replaceHttpScheme(String raw) {
     const pattern =
         r'(https?:\/\/)?((www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b)([-a-zA-Z0-9()@:%_\+.~#?&\/\/=]*)';
@@ -100,7 +119,7 @@ class Utils {
     String result = raw;
     int idx = 0;
     regex.allMatches(result).forEach((element) {
-      element.groups([1, 2, 4]).whereNotNull().forEach((group) {
+      element.groups([1, 2, 4]).nonNulls.forEach((group) {
             int start = raw.indexOf(group, idx);
             int end = start + group.length;
             final replaced = group.replaceAll(':', '-').replaceAll('.', '-');
@@ -267,33 +286,33 @@ extension MediaQueryUtils on Utils {
         getBottomSafeAreaPadding(context);
   }
 
-  static Future<Map<String, dynamic>> _deviceInfoMap(
-      DeviceInfoPlugin deviceInfo) async {
-    if (Platform.isIOS) {
-      return _iosDeviceMap(await deviceInfo.iosInfo);
-    } else if (Platform.isAndroid) {
-      return _androidDeviceMap(await deviceInfo.androidInfo);
-    } else {
-      return {};
-    }
-  }
+  // static Future<Map<String, dynamic>> _deviceInfoMap(
+  //     DeviceInfoPlugin deviceInfo) async {
+  //   if (Platform.isIOS) {
+  //     return _iosDeviceMap(await deviceInfo.iosInfo);
+  //   } else if (Platform.isAndroid) {
+  //     return _androidDeviceMap(await deviceInfo.androidInfo);
+  //   } else {
+  //     return {};
+  //   }
+  // }
 
-  static Future<Map<String, dynamic>> _androidDeviceMap(
-      AndroidDeviceInfo build) async {
-    return {
-      'osVersion': build.version.release,
-      'mobileManufacturer': build.manufacturer,
-      'mobileModel': build.model,
-    };
-  }
+  // static Future<Map<String, dynamic>> _androidDeviceMap(
+  //     AndroidDeviceInfo build) async {
+  //   return {
+  //     'osVersion': build.version.release,
+  //     'mobileManufacturer': build.manufacturer,
+  //     'mobileModel': build.model,
+  //   };
+  // }
 
-  static Future<Map<String, dynamic>> _iosDeviceMap(IosDeviceInfo data) async {
-    return {
-      'osVersion': data.systemVersion,
-      'mobileModel': data.utsname.machine,
-      'mobileManufacturer': 'Apple'
-    };
-  }
+  // static Future<Map<String, dynamic>> _iosDeviceMap(IosDeviceInfo data) async {
+  //   return {
+  //     'osVersion': data.systemVersion,
+  //     'mobileModel': data.utsname.machine,
+  //     'mobileManufacturer': 'Apple'
+  //   };
+  // }
 
   // static Future<String> getTimeZone() async {
   //   return await FlutterNativeTimezone.getLocalTimezone();

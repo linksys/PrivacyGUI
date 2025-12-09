@@ -1,374 +1,330 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
-import 'package:privacy_gui/core/jnap/providers/dashboard_manager_state.dart';
-import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
-import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
-import 'package:privacy_gui/di.dart';
+import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
-import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/dhcp_reservations_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/dhcp_reservations_state.dart';
-import 'package:privacy_gui/page/instant_device/providers/device_filtered_list_provider.dart';
-import 'package:privacy_gui/page/instant_device/providers/device_filtered_list_state.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/wifi_list_provider.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/wifi_state.dart';
+import 'package:privacy_gui/page/instant_device/views/devices_filter_widget.dart';
+import 'package:privacy_gui/providers/preservable.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/card/list_card.dart';
+import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
+
 import '../../../../../common/config.dart';
-import '../../../../../common/di.dart';
+import '../../../../../common/test_helper.dart';
 import '../../../../../common/test_responsive_widget.dart';
-import '../../../../../common/testable_router.dart';
-import '../../../../../mocks/dashboard_manager_notifier_mocks.dart';
-import '../../../../../mocks/device_filter_config_notifier_mocks.dart';
-import '../../../../../mocks/device_manager_notifier_mocks.dart';
-import '../../../../../mocks/dhcp_reservations_notifier_mocks.dart';
-import '../../../../../mocks/wifi_list_notifier_mocks.dart';
-import '../../../../../test_data/dashboard_manager_test_state.dart';
-import '../../../../../test_data/device_filter_config_test_state.dart';
-import '../../../../../test_data/device_manager_test_state.dart';
 import '../../../../../test_data/dhcp_reservations_test_state.dart';
 import '../../../../../test_data/local_network_settings_state.dart';
-import '../../../../../mocks/local_network_settings_notifier_mocks.dart';
-import '../../../../../test_data/wifi_list_test_state.dart';
 
+// View ID: DHCPR
+// Implementation file under test: lib/page/advanced_settings/local_network_settings/views/dhcp_reservations_view.dart
+///
+/// | Test ID          | Description                                                          |
+/// | :--------------- | :------------------------------------------------------------------- |
+/// | `DHCPR-EMPTY`    | Verifies the view when there are no devices or reservations.         |
+/// | `DHCPR-NO_RES`   | Verifies the view with a list of un-reserved devices.                |
+/// | `DHCPR-SOME_RES` | Verifies the view with a mix of reserved and un-reserved devices.    |
+/// | `DHCPR-ALL_RES`  | Verifies the view when all devices are reserved.                     |
+/// | `DHCPR-CONFLICT` | Verifies the view when a device has a conflicting IP.                |
+/// | `DHCPR-ADD_MODAL`| Verifies the "manually add reservation" dialog.                      |
+/// | `DHCPR-EDIT_MODAL`| Verifies the "edit reservation" dialog.                              |
+/// | `DHCPR-MOB_FILTER`| Verifies the device filter dialog on mobile.                         |
+///
 void main() {
-  mockDependencyRegister();
-  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
-
-  late MockLocalNetworkSettingsNotifier mockLocalNetworkSettingsNotifier;
-  late MockDHCPReservationsNotifier mockDHCPReservationsNotifier;
-  late MockDeviceFilterConfigNotifier mockDeviceFilterConfigNotifier;
-  late MockDeviceManagerNotifier mockDeviceManagerNotifier;
-  late MockWifiListNotifier mockWifiListNotifier;
-  late MockDashboardManagerNotifier mockDashboardManagerNotifier;
+  final testHelper = TestHelper();
+  final screens = [
+    ...responsiveMobileScreens,
+    ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1240))
+  ];
 
   setUp(() {
-    mockLocalNetworkSettingsNotifier = MockLocalNetworkSettingsNotifier();
-    mockDHCPReservationsNotifier = MockDHCPReservationsNotifier();
-    mockDeviceFilterConfigNotifier = MockDeviceFilterConfigNotifier();
-    mockDeviceManagerNotifier = MockDeviceManagerNotifier();
-    mockWifiListNotifier = MockWifiListNotifier();
-    mockDashboardManagerNotifier = MockDashboardManagerNotifier();
-
-    when(mockLocalNetworkSettingsNotifier.build()).thenReturn(
-        LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState));
-    when(mockDeviceFilterConfigNotifier.build()).thenReturn(
-        DeviceFilterConfigState.fromMap(deviceFilterConfigTestState));
-    when(mockDeviceManagerNotifier.build())
-        .thenReturn(DeviceManagerState.fromMap(deviceManagerCherry7TestState));
-    when(mockWifiListNotifier.build())
-        .thenReturn(WiFiState.fromMap(wifiListTestState));
-    when(mockDashboardManagerNotifier.build()).thenReturn(
-        DashboardManagerState.fromMap(dashboardManagerChrry7TestState));
-    when(mockDeviceManagerNotifier.getBandConnectedBy(any))
-        .thenReturn('2.4GHz');
+    testHelper.setup();
+    when(testHelper.mockLocalNetworkSettingsNotifier.fetch(forceRemote: true))
+        .thenAnswer((_) async =>
+            LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState));
+    when(testHelper.mockDeviceFilterConfigNotifier.initFilter())
+        .thenAnswer((_) async => {});
   });
 
-  testLocalizations(
-    'DHCP reservations - Empty',
-    (tester, locale) async {
-      final widget = testableSingleRoute(
-        overrides: [
-          localNetworkSettingProvider
-              .overrideWith(() => mockLocalNetworkSettingsNotifier),
-          deviceFilterConfigProvider
-              .overrideWith(() => mockDeviceFilterConfigNotifier),
-          deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-          wifiListProvider.overrideWith(() => mockWifiListNotifier),
-          dashboardManagerProvider
-              .overrideWith(() => mockDashboardManagerNotifier),
-        ],
-        locale: locale,
+  // Test ID: DHCPR-EMPTY
+  testLocalizationsV2(
+    'Verifies the view when there are no devices or reservations',
+    (tester, screen) async {
+      when(testHelper.mockDHCPReservationsNotifier.build())
+          .thenReturn(DHCPReservationState.fromMap(dhcpReservationEmptyState));
+
+      final context = await testHelper.pumpView(
+        tester,
+        locale: screen.locale,
         child: const DHCPReservationsView(),
       );
-      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+
+      expect(
+          find.text(testHelper.loc(context).dhcpReservations.capitalizeWords()),
+          findsOneWidget);
+      expect(find.text(testHelper.loc(context).dhcpReservationDescption),
+          findsOneWidget);
+      expect(find.widgetWithText(AppTextButton, testHelper.loc(context).add),
+          findsOneWidget);
+      expect(find.text(testHelper.loc(context).nReservedAddresses(0)),
+          findsOneWidget);
+      expect(find.byType(AppListCard), findsNothing);
     },
-    screens: [
-      ...responsiveMobileScreens.map((e) => e).toList(),
-      ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1240)).toList()
-    ],
+    screens: screens,
+    goldenFilename: 'DHCPR-EMPTY-01-initial_state',
   );
 
-  testLocalizations(
-    'DHCP reservations - No reserved',
-    (tester, locale) async {
-      when(mockDHCPReservationsNotifier.build())
+  // Test ID: DHCPR-NO_RES
+  testLocalizationsV2(
+    'Verifies the view with a list of un-reserved devices',
+    (tester, screen) async {
+      when(testHelper.mockDHCPReservationsNotifier.build())
+          .thenReturn(DHCPReservationState.fromMap(dhcpReservationTestState));
+      final context = await testHelper.pumpView(
+        tester,
+        locale: screen.locale,
+        child: const DHCPReservationsView(),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(testHelper.loc(context).nReservedAddresses(0)),
+          findsOneWidget);
+      expect(find.byType(AppListCard), findsWidgets);
+      final firstCard =
+          tester.widget<AppListCard>(find.byType(AppListCard).first);
+      expect(firstCard.borderColor, Theme.of(context).colorScheme.outline);
+      final checkbox = find
+          .descendant(
+              of: find.byWidget(firstCard), matching: find.byType(AppCheckbox))
+          .evaluate()
+          .single
+          .widget as AppCheckbox;
+      expect(checkbox.value, isFalse);
+    },
+    screens: screens,
+    goldenFilename: 'DHCPR-NO_RES-01-initial_state',
+  );
+
+  // Test ID: DHCPR-SOME_RES
+  testLocalizationsV2(
+    'Verifies the view with a mix of reserved and un-reserved devices',
+    (tester, screen) async {
+      final state = DHCPReservationState.fromMap(dhcpReservationTestState);
+      final settings = state.settings.current.copyWith(reservations: [
+        state.settings.current.reservations.first.copyWith(reserved: true),
+        state.settings.current.reservations[1].copyWith(reserved: true),
+      ]);
+      when(testHelper.mockDHCPReservationsNotifier.build()).thenReturn(
+          state.copyWith(
+              settings: Preservable(original: settings, current: settings)));
+
+      final context = await testHelper.pumpView(
+        tester,
+        locale: screen.locale,
+        child: const DHCPReservationsView(),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(testHelper.loc(context).nReservedAddresses(2)),
+          findsOneWidget);
+      expect(find.byType(Divider), findsAtLeast(1));
+
+      final reservedCard =
+          tester.widget<AppListCard>(find.byType(AppListCard).first);
+      expect(reservedCard.borderColor, Theme.of(context).colorScheme.primary);
+      final checkbox = find
+          .descendant(
+              of: find.byWidget(reservedCard),
+              matching: find.byType(AppCheckbox))
+          .evaluate()
+          .single
+          .widget as AppCheckbox;
+      expect(checkbox.value, isTrue);
+      expect(
+          find.descendant(
+              of: find.byWidget(reservedCard),
+              matching: find.byIcon(LinksysIcons.edit)),
+          findsOneWidget);
+    },
+    screens: screens,
+    goldenFilename: 'DHCPR-SOME_RES-01-initial_state',
+  );
+
+  // Test ID: DHCPR-ALL_RES
+  testLocalizationsV2(
+    'Verifies the view when all devices are reserved',
+    (tester, screen) async {
+      final state = DHCPReservationState.fromMap(dhcpReservationTestState);
+      final settings = state.settings.current.copyWith(
+        reservations: [
+          ...state.settings.current.reservations
+              .map((e) => e.copyWith(reserved: true)),
+        ],
+      );
+      when(testHelper.mockDHCPReservationsNotifier.build()).thenReturn(
+          state.copyWith(
+              settings: Preservable(original: settings, current: settings)));
+
+      final context = await testHelper.pumpView(
+        tester,
+        locale: screen.locale,
+        child: const DHCPReservationsView(),
+      );
+      await tester.pumpAndSettle();
+
+      final reservedCount = state.settings.current.reservations.length;
+      expect(
+          find.text(testHelper.loc(context).nReservedAddresses(reservedCount)),
+          findsOneWidget);
+      expect(find.byIcon(LinksysIcons.edit), findsNWidgets(reservedCount));
+    },
+    screens: screens,
+    goldenFilename: 'DHCPR-ALL_RES-01-initial_state',
+  );
+
+  // Test ID: DHCPR-CONFLICT
+  testLocalizationsV2(
+    'Verifies the view when a device has a conflicting IP',
+    (tester, screen) async {
+      final state = DHCPReservationState.fromMap(dhcpReservationTestState);
+      final conflictingItem = state.status.devices[1];
+
+      when(testHelper.mockDHCPReservationsNotifier.build()).thenReturn(state);
+      when(testHelper.mockDHCPReservationsNotifier.isConflict(conflictingItem))
+          .thenReturn(true);
+
+      await testHelper.pumpView(
+        tester,
+        locale: screen.locale,
+        child: const DHCPReservationsView(),
+      );
+      await tester.pumpAndSettle();
+
+      final cardFinder = find.ancestor(
+          of: find.textContaining(conflictingItem.data.macAddress,
+              findRichText: true),
+          matching: find.byType(AppListCard));
+      expect(cardFinder, findsOneWidget);
+
+      final opacityFinder =
+          find.ancestor(of: cardFinder, matching: find.byType(Opacity));
+      expect(opacityFinder, findsOneWidget);
+      final opacityWidget = tester.widget<Opacity>(opacityFinder);
+      expect(opacityWidget.opacity, 0.5);
+    },
+    screens: screens,
+    goldenFilename: 'DHCPR-CONFLICT-01-conflict_state',
+  );
+
+  // Test ID: DHCPR-ADD_MODAL
+  testLocalizationsV2(
+    'Verifies the "manually add reservation" dialog',
+    (tester, screen) async {
+      when(testHelper.mockDHCPReservationsNotifier.build())
           .thenReturn(DHCPReservationState.fromMap(dhcpReservationTestState));
 
-      final widget = testableSingleRoute(
-        overrides: [
-          localNetworkSettingProvider
-              .overrideWith(() => mockLocalNetworkSettingsNotifier),
-          dhcpReservationProvider
-              .overrideWith(() => mockDHCPReservationsNotifier),
-          deviceFilterConfigProvider
-              .overrideWith(() => mockDeviceFilterConfigNotifier),
-          deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-          wifiListProvider.overrideWith(() => mockWifiListNotifier),
-          dashboardManagerProvider
-              .overrideWith(() => mockDashboardManagerNotifier),
-        ],
-        locale: locale,
+      final context = await testHelper.pumpView(
+        tester,
+        locale: screen.locale,
         child: const DHCPReservationsView(),
       );
-      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('addReservationButton')));
+      await tester.pumpAndSettle();
+
+      expect(find.text(testHelper.loc(context).manuallyAddReservation),
+          findsOneWidget);
+      expect(find.byKey(const Key('deviceNameTextField')), findsOneWidget);
+      expect(find.byKey(const Key('ipAddressTextField')), findsOneWidget);
+      expect(find.byKey(const Key('macAddressTextField')), findsOneWidget);
+      expect(find.byKey(const Key('alertPositiveButton')), findsOneWidget);
     },
-    screens: [
-      ...responsiveMobileScreens.map((e) => e).toList(),
-      ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1240)).toList()
-    ],
+    screens: screens,
+    goldenFilename: 'DHCPR-ADD_MODAL-01-add_dialog',
   );
 
-  testLocalizations(
-    'DHCP reservations - 1 reserved',
-    (tester, locale) async {
-      DHCPReservationState dhcpReservationState =
-          DHCPReservationState.fromMap(dhcpReservationTestState);
-      when(mockDHCPReservationsNotifier.build()).thenReturn(dhcpReservationState
-          .copyWith(reservations: [
-        dhcpReservationState.devices.first.copyWith(reserved: true)
-      ]));
+  // Test ID: DHCPR-EDIT_MODAL
+  testLocalizationsV2(
+    'Verifies the "edit reservation" dialog',
+    (tester, screen) async {
+      final state = DHCPReservationState.fromMap(dhcpReservationTestState);
+      final itemToEdit =
+          state.settings.current.reservations.first.copyWith(reserved: true);
+      final settings =
+          state.settings.current.copyWith(reservations: [itemToEdit]);
+      when(testHelper.mockDHCPReservationsNotifier.build()).thenReturn(
+          state.copyWith(
+              settings: Preservable(original: settings, current: settings)));
 
-      final widget = testableSingleRoute(
-        overrides: [
-          localNetworkSettingProvider
-              .overrideWith(() => mockLocalNetworkSettingsNotifier),
-          dhcpReservationProvider
-              .overrideWith(() => mockDHCPReservationsNotifier),
-          deviceFilterConfigProvider
-              .overrideWith(() => mockDeviceFilterConfigNotifier),
-          deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-          wifiListProvider.overrideWith(() => mockWifiListNotifier),
-          dashboardManagerProvider
-              .overrideWith(() => mockDashboardManagerNotifier),
-        ],
-        locale: locale,
+      final context = await testHelper.pumpView(
+        tester,
+        locale: screen.locale,
         child: const DHCPReservationsView(),
       );
-      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(LinksysIcons.edit).first);
+      await tester.pumpAndSettle();
+
+      expect(find.text(testHelper.loc(context).edit), findsOneWidget);
+      expect(find.text(testHelper.loc(context).update), findsOneWidget);
+
+      final nameField = tester
+          .widget<AppTextField>(find.byKey(const Key('deviceNameTextField')));
+      expect(nameField.controller?.text, itemToEdit.data.description);
+
+      final ipField = tester
+          .widget<AppIPFormField>(find.byKey(const Key('ipAddressTextField')));
+      expect(ipField.controller?.text, itemToEdit.data.ipAddress);
+
+      final macField = tester
+          .widget<AppTextField>(find.byKey(const Key('macAddressTextField')));
+      expect(macField.controller?.text, itemToEdit.data.macAddress);
     },
-    screens: [
-      ...responsiveMobileScreens.map((e) => e).toList(),
-      ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1240)).toList()
-    ],
+    screens: screens,
+    goldenFilename: 'DHCPR-EDIT_MODAL-01-edit_dialog',
   );
 
-  testLocalizations(
-    'DHCP reservations - 2 reserved',
-    (tester, locale) async {
-      DHCPReservationState dhcpReservationState =
-          DHCPReservationState.fromMap(dhcpReservationTestState);
-      when(mockDHCPReservationsNotifier.build())
-          .thenReturn(dhcpReservationState.copyWith(reservations: [
-        dhcpReservationState.devices[0].copyWith(reserved: true),
-        dhcpReservationState.devices[1].copyWith(reserved: true)
-      ]));
-
-      final widget = testableSingleRoute(
-        overrides: [
-          localNetworkSettingProvider
-              .overrideWith(() => mockLocalNetworkSettingsNotifier),
-          dhcpReservationProvider
-              .overrideWith(() => mockDHCPReservationsNotifier),
-          deviceFilterConfigProvider
-              .overrideWith(() => mockDeviceFilterConfigNotifier),
-          deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-          wifiListProvider.overrideWith(() => mockWifiListNotifier),
-          dashboardManagerProvider
-              .overrideWith(() => mockDashboardManagerNotifier),
-        ],
-        locale: locale,
-        child: const DHCPReservationsView(),
-      );
-      await tester.pumpWidget(widget);
-    },
-    screens: [
-      ...responsiveMobileScreens.map((e) => e).toList(),
-      ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1240)).toList()
-    ],
-  );
-
-  testLocalizations(
-    'DHCP reservations - all reserved',
-    (tester, locale) async {
-      DHCPReservationState dhcpReservationState =
-          DHCPReservationState.fromMap(dhcpReservationTestState);
-      when(mockDHCPReservationsNotifier.build()).thenReturn(
-          dhcpReservationState.copyWith(
-              reservations: dhcpReservationState.devices
-                  .map((e) => e.copyWith(reserved: true))
-                  .toList()));
-
-      final widget = testableSingleRoute(
-        overrides: [
-          localNetworkSettingProvider
-              .overrideWith(() => mockLocalNetworkSettingsNotifier),
-          dhcpReservationProvider
-              .overrideWith(() => mockDHCPReservationsNotifier),
-          deviceFilterConfigProvider
-              .overrideWith(() => mockDeviceFilterConfigNotifier),
-          deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-          wifiListProvider.overrideWith(() => mockWifiListNotifier),
-          dashboardManagerProvider
-              .overrideWith(() => mockDashboardManagerNotifier),
-        ],
-        locale: locale,
-        child: const DHCPReservationsView(),
-      );
-      await tester.pumpWidget(widget);
-    },
-    screens: [
-      ...responsiveMobileScreens.map((e) => e).toList(),
-      ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1240)).toList()
-    ],
-  );
-
-  testLocalizations(
-    'DHCP reservations - mobile filter',
-    (tester, locale) async {
-      when(mockDHCPReservationsNotifier.build())
+  // Test ID: DHCPR-MOB_FILTER
+  testLocalizationsV2(
+    'Verifies the device filter dialog on mobile',
+    (tester, screen) async {
+      when(testHelper.mockDHCPReservationsNotifier.build())
           .thenReturn(DHCPReservationState.fromMap(dhcpReservationTestState));
 
-      final widget = testableSingleRoute(
-        overrides: [
-          localNetworkSettingProvider
-              .overrideWith(() => mockLocalNetworkSettingsNotifier),
-          dhcpReservationProvider
-              .overrideWith(() => mockDHCPReservationsNotifier),
-          deviceFilterConfigProvider
-              .overrideWith(() => mockDeviceFilterConfigNotifier),
-          deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-          wifiListProvider.overrideWith(() => mockWifiListNotifier),
-          dashboardManagerProvider
-              .overrideWith(() => mockDashboardManagerNotifier),
-        ],
-        locale: locale,
+      await testHelper.pumpView(
+        tester,
+        locale: screen.locale,
         child: const DHCPReservationsView(),
       );
-      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
 
       final filterBtnFinder = find.byIcon(LinksysIcons.filter);
-      await tester.tap(filterBtnFinder.first);
+      expect(filterBtnFinder, findsOneWidget);
+      await tester.tap(filterBtnFinder);
       await tester.pumpAndSettle();
+
+      expect(find.byType(DevicesFilterWidget), findsOneWidget);
     },
-    screens: [
-      ...responsiveMobileScreens.map((e) => e).toList(),
-    ],
-  );
-
-  testLocalizations(
-    'DHCP reservations - add reservation',
-    (tester, locale) async {
-      when(mockDHCPReservationsNotifier.build())
-          .thenReturn(DHCPReservationState.fromMap(dhcpReservationTestState));
-
-      final widget = testableSingleRoute(
-        overrides: [
-          localNetworkSettingProvider
-              .overrideWith(() => mockLocalNetworkSettingsNotifier),
-          dhcpReservationProvider
-              .overrideWith(() => mockDHCPReservationsNotifier),
-          deviceFilterConfigProvider
-              .overrideWith(() => mockDeviceFilterConfigNotifier),
-          deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-          wifiListProvider.overrideWith(() => mockWifiListNotifier),
-          dashboardManagerProvider
-              .overrideWith(() => mockDashboardManagerNotifier),
-        ],
-        locale: locale,
-        child: const DHCPReservationsView(),
-      );
-      await tester.pumpWidget(widget);
-
-      final addBtnFinder = find.byIcon(LinksysIcons.add);
-      await tester.tap(addBtnFinder.first);
-      await tester.pumpAndSettle();
-    },
-    screens: [
-      ...responsiveMobileScreens.map((e) => e).toList(),
-      ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1240)).toList()
-    ],
-  );
-
-  testLocalizations(
-    'DHCP reservations - edit reservation',
-    (tester, locale) async {
-      DHCPReservationState dhcpReservationState =
-          DHCPReservationState.fromMap(dhcpReservationTestState);
-      when(mockDHCPReservationsNotifier.build()).thenReturn(dhcpReservationState
-          .copyWith(reservations: [
-        dhcpReservationState.devices.first.copyWith(reserved: true)
-      ]));
-
-      final widget = testableSingleRoute(
-        overrides: [
-          localNetworkSettingProvider
-              .overrideWith(() => mockLocalNetworkSettingsNotifier),
-          dhcpReservationProvider
-              .overrideWith(() => mockDHCPReservationsNotifier),
-          deviceFilterConfigProvider
-              .overrideWith(() => mockDeviceFilterConfigNotifier),
-          deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-          wifiListProvider.overrideWith(() => mockWifiListNotifier),
-          dashboardManagerProvider
-              .overrideWith(() => mockDashboardManagerNotifier),
-        ],
-        locale: locale,
-        child: const DHCPReservationsView(),
-      );
-      await tester.pumpWidget(widget);
-
-      final editBtnFinder = find.byIcon(LinksysIcons.edit);
-      await tester.tap(editBtnFinder.first);
-      await tester.pumpAndSettle();
-    },
-    screens: [
-      ...responsiveMobileScreens.map((e) => e).toList(),
-      ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1240)).toList()
-    ],
-  );
-
-  testLocalizations(
-    'DHCP reservations - can not be added state',
-    (tester, locale) async {
-      DHCPReservationState dhcpReservationState =
-          DHCPReservationState.fromMap(dhcpReservationTestState);
-
-      when(mockDHCPReservationsNotifier.build())
-          .thenReturn(dhcpReservationState.copyWith(reservations: [
-        dhcpReservationState.devices.first.copyWith(
-          reserved: true,
-          data: dhcpReservationState.devices.first.data
-              .copyWith(ipAddress: "10.175.1.144"),
-        ),
-        dhcpReservationState.devices[1],
-      ]));
-
-      when(mockDHCPReservationsNotifier
-              .isConflict(dhcpReservationState.devices[1]))
-          .thenAnswer((invocation) => true);
-
-      final widget = testableSingleRoute(
-        overrides: [
-          localNetworkSettingProvider
-              .overrideWith(() => mockLocalNetworkSettingsNotifier),
-          dhcpReservationProvider
-              .overrideWith(() => mockDHCPReservationsNotifier),
-          deviceFilterConfigProvider
-              .overrideWith(() => mockDeviceFilterConfigNotifier),
-          deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-          wifiListProvider.overrideWith(() => mockWifiListNotifier),
-          dashboardManagerProvider
-              .overrideWith(() => mockDashboardManagerNotifier),
-        ],
-        locale: locale,
-        child: const DHCPReservationsView(),
-      );
-      await tester.pumpWidget(widget);
-    },
-    screens: [
-      ...responsiveMobileScreens.map((e) => e).toList(),
-      ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1240)).toList()
-    ],
+    screens: responsiveMobileScreens,
+    goldenFilename: 'DHCPR-MOB_FILTER-01-filter_dialog',
   );
 }
+
+final dhcpReservationEmptyState = {
+  "settings": {
+    "original": {
+      "reservations": [],
+    },
+    "current": {
+      "reservations": [],
+    }
+  },
+  "status": {
+    "additionalReservations": [],
+    "devices": [],
+  }
+};

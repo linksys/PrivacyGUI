@@ -83,3 +83,41 @@ class PortRangeForwardingRule extends Equatable {
       PortRangeForwardingRule.fromMap(
           json.decode(source) as Map<String, dynamic>);
 }
+
+class PortRangeForwardingRuleList extends Equatable {
+  final List<PortRangeForwardingRule> rules;
+
+  const PortRangeForwardingRuleList({required this.rules});
+
+  @override
+  List<Object> get props => [rules];
+
+  PortRangeForwardingRuleList copyWith({
+    List<PortRangeForwardingRule>? rules,
+  }) {
+    return PortRangeForwardingRuleList(
+      rules: rules ?? this.rules,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'rules': rules.map((x) => x.toMap()).toList(),
+    };
+  }
+
+  factory PortRangeForwardingRuleList.fromMap(Map<String, dynamic> map) {
+    return PortRangeForwardingRuleList(
+      rules: List<PortRangeForwardingRule>.from(
+        map['rules']?.map<PortRangeForwardingRule>(
+          (x) => PortRangeForwardingRule.fromMap(x as Map<String, dynamic>),
+        ) ?? [],
+      ),
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory PortRangeForwardingRuleList.fromJson(String source) =>
+      PortRangeForwardingRuleList.fromMap(json.decode(source) as Map<String, dynamic>);
+}

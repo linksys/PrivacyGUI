@@ -4,12 +4,11 @@ import 'dart:convert';
 import 'package:equatable/equatable.dart';
 
 import 'package:privacy_gui/core/jnap/models/firmware_update_settings.dart';
-import 'package:privacy_gui/core/jnap/models/firmware_update_status.dart';
-import 'package:privacy_gui/core/jnap/models/firmware_update_status_nodes.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_update_ui_model.dart';
 
 class FirmwareUpdateState extends Equatable {
   final FirmwareUpdateSettings settings;
-  final List<FirmwareUpdateStatus>? nodesStatus;
+  final List<FirmwareUpdateUIModel>? nodesStatus;
   final bool isUpdating;
   final bool isRetryMaxReached;
   final bool isWaitingChildrenAfterUpdating;
@@ -32,7 +31,7 @@ class FirmwareUpdateState extends Equatable {
 
   FirmwareUpdateState copyWith({
     FirmwareUpdateSettings? settings,
-    List<FirmwareUpdateStatus>? nodesStatus,
+    List<FirmwareUpdateUIModel>? nodesStatus,
     bool? isUpdating,
     bool? isRetryMaxReached,
     bool? isWaitingChildrenAfterUpdating,
@@ -61,11 +60,9 @@ class FirmwareUpdateState extends Equatable {
       settings: FirmwareUpdateSettings.fromMap(
           map['settings'] as Map<String, dynamic>),
       nodesStatus: map['nodesStatus'] != null
-          ? List<FirmwareUpdateStatus>.from(
-              map['nodesStatus'].map<FirmwareUpdateStatus?>(
-                (x) => x['deviceUUID'] == null
-                    ? FirmwareUpdateStatus.fromMap(x)
-                    : NodesFirmwareUpdateStatus.fromMap(x),
+          ? List<FirmwareUpdateUIModel>.from(
+              map['nodesStatus'].map<FirmwareUpdateUIModel?>(
+                (x) => FirmwareUpdateUIModel.fromMap(x),
               ),
             )
           : null,

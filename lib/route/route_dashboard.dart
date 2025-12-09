@@ -24,50 +24,21 @@ final dashboardRoute = ShellRoute(
         LinksysRoute(
           name: RouteNamed.speedTestSelection,
           path: RoutePath.speedTestSelection,
-          config: LinksysRouteConfig(
-            column: ColumnGrid(column: 12),
-          ),
           builder: (context, state) => SpeedTestSelectionView(),
         ),
         LinksysRoute(
           name: RouteNamed.dashboardSpeedTest,
           path: RoutePath.dashboardSpeedTest,
-          config: LinksysRouteConfig(
-            column: ColumnGrid(column: 12),
-          ),
           builder: (context, state) => SpeedTestView(),
         ),
         LinksysRoute(
           name: RouteNamed.speedTestExternal,
           path: RoutePath.speedTestExternal,
-          config: LinksysRouteConfig(
-            column: ColumnGrid(column: 12),
-          ),
           builder: (context, state) => SpeedTestExternalView(),
-        ),
-        LinksysRoute(
-          name: RouteNamed.troubleshooting,
-          path: RoutePath.troubleshooting,
-          config: LinksysRouteConfig(
-            column: ColumnGrid(column: 9),
-          ),
-          builder: (context, state) => TroubleshootingView(),
-          routes: [
-            LinksysRoute(
-                name: RouteNamed.troubleshootingPing,
-                path: RoutePath.troubleshootingPing,
-                config: LinksysRouteConfig(
-                  column: ColumnGrid(column: 9),
-                ),
-                builder: (context, state) => TroubleshootingPingView()),
-          ],
         ),
         LinksysRoute(
           name: RouteNamed.settingsDDNS,
           path: RoutePath.settingsDDNS,
-          config: LinksysRouteConfig(
-            column: ColumnGrid(column: 9),
-          ),
           builder: (context, state) => DDNSSettingsView(),
         ),
       ],
@@ -75,17 +46,11 @@ final dashboardRoute = ShellRoute(
     LinksysRoute(
       name: RouteNamed.dashboardSupport,
       path: RoutePath.dashboardSupport,
-      config: LinksysRouteConfig(
-        column: ColumnGrid(column: 12),
-      ),
       builder: (context, state) => const FaqListView(),
       routes: [
         LinksysRoute(
           name: RouteNamed.faqList,
           path: RoutePath.faqList,
-          config: LinksysRouteConfig(
-            column: ColumnGrid(column: 12),
-          ),
           builder: (context, state) => const FaqListView(),
         ),
         

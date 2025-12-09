@@ -1,0 +1,66 @@
+- id: 42
+  symbolic_id: "LOCAL_NETWORK_VALID_INVALID_HOSTNAME"
+  tags:
+    - "local_network"
+    - "advanced_settings"
+    - "menu"
+  name: "Local Network Settings - Valid and invalid host name"
+  objective: "Change host name, set LAN Ip address and DHCP server"
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to \"Menu\" -> \"Advanced Settings\" -> \"Local Network Settings\"."
+    - action: "Go to the \"Host Name\" tab."
+    - action: "Input an invalid host name and verify the error message."
+    - action: "Input an empty host name and verify the error message."
+    - action: "Input a valid host name."
+    - action: "Click the \"Save\" button."
+      verify: "A success toast is displayed."
+    - action: "Wait for the confirmation to disappear."
+    - action: "Re-enter the \"Local Network Settings\" page and verify the host name persists."
+  expected_result: "The host name is successfully changed, with proper validation for incorrect inputs."
+
+- id: 43
+  symbolic_id: "LOCAL_NETWORK_VALID_INVALID_IP_SUBNET"
+  tags:
+    - "local_network"
+    - "advanced_settings"
+    - "menu"
+  name: "Local Network Settings - Valid and invalid IP address and subnet mask"
+  objective: "Change host name, set LAN Ip address and DHCP server"
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to \"Menu\" -> \"Advanced Settings\" -> \"Local Network Settings\"."
+    - action: "Go to the \"LAN IP Address\" tab."
+    - action: "Enter an invalid IP address and verify the error message."
+    - action: "Enter an invalid subnet mask and verify the error message."
+    - action: "Enter a valid IP address and subnet mask."
+    - action: "Click the \"Save\" button."
+      verify: "A success toast is displayed."
+    - action: "Wait for the confirmation to disappear."
+    - action: "Re-enter the \"Local Network Settings\" page and verify the IP address and subnet mask persist."
+  expected_result: "The LAN IP address and subnet mask are successfully changed, with proper validation for incorrect inputs."
+
+- id: 44
+  symbolic_id: "LOCAL_NETWORK_VALID_INVALID_DHCP"
+  tags:
+    - "local_network"
+    - "advanced_settings"
+    - "menu"
+  name: "Local Network Settings - Valid and invalid DHCP Server settings"
+  objective: "Change host name, set LAN Ip address and DHCP server"
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to \"Menu\" -> \"Advanced Settings\" -> \"Local Network Settings\"."
+    - action: "Go to the \"DHCP Server\" tab."
+    - action: "Disable and then re-enable the DHCP server."
+    - action: "Enter an invalid start IP address and verify the error message."
+    - action: "Enter invalid DNS and WINS addresses and verify the error messages."
+    - action: "Enter valid values for all DHCP server settings (Start IP, Max Users, Lease Time, DNS, WINS)."
+    - action: "Click the \"Save\" button."
+      verify: "A success toast is displayed."
+    - action: "Wait for the confirmation to disappear."
+    - action: "Re-enter the \"Local Network Settings\" page and verify all DHCP server settings persist."
+  expected_result: "The DHCP server settings are successfully changed, with proper validation for incorrect inputs."

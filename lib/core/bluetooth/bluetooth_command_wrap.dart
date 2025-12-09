@@ -34,7 +34,6 @@ class BluetoothCommandWrap {
 
   final JNAPBTCommand command;
   StreamSubscription? _ctrlSubscription;
-  StreamSubscription? _jnapSubscription;
   final Completer _completer = Completer();
 
   BluetoothCommandWrap({

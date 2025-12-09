@@ -1,0 +1,23 @@
+- id: 45
+  symbolic_id: "MENU_OPERATIONS"
+  tags:
+    - "dashboard"
+    - "menu"
+  name: "Menu operations"
+  objective: "Click all cards and buttons on the dashboard menu"
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Open the menu."
+    - action: "Go to the \"Incredible WiFi\" page and back."
+    - action: "Go to the \"Instant Admin\" page and back."
+    - action: "Go to the \"Instant Topology\" page and back."
+    - action: "Go to the \"Instant Safety\" page and back."
+    - action: "Go to the \"Instant Privacy\" page and back."
+    - action: "Go to the \"Instant Devices\" page and back."
+    - action: "Go to the \"Advanced Settings\" page and back."
+    - action: "Go to the \"Instant Verify\" page and back."
+    - action: "If health check is supported, go to the \"Speed Test\" page and back. Otherwise, go to the \"External Speed Test\" page and back."
+    - action: "Go to the \"Add Nodes\" page and back."
+    - action: "Click the \"Restart\" button and then \"Cancel\" in the confirmation dialog."
+  expected_result: "All menu items are clickable and navigate to their respective pages correctly."

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/guest_wifi_item.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/wifi_list_provider.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/views/widgets/wifi_setting_modal_mixin.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -26,7 +26,8 @@ class GuestWiFiCard extends ConsumerStatefulWidget {
   ConsumerState<GuestWiFiCard> createState() => _GuestWiFiCardState();
 }
 
-class _GuestWiFiCardState extends ConsumerState<GuestWiFiCard> with WifiSettingModalMixin {
+class _GuestWiFiCardState extends ConsumerState<GuestWiFiCard>
+    with WifiSettingModalMixin {
   final _guestPasswordController = TextEditingController();
 
   @override
@@ -61,7 +62,7 @@ class _GuestWiFiCardState extends ConsumerState<GuestWiFiCard> with WifiSettingM
               bottom: Spacing.medium,
             ),
             child: AppCard(
-              key: const ValueKey('WiFiGuestCard'),
+              key: const Key('WiFiGuestCard'),
               padding: const EdgeInsets.symmetric(
                   vertical: Spacing.small2, horizontal: Spacing.large2),
               child: Column(
@@ -85,10 +86,11 @@ class _GuestWiFiCardState extends ConsumerState<GuestWiFiCard> with WifiSettingM
         padding: const EdgeInsets.symmetric(vertical: 8.0),
         title: AppText.labelLarge(loc(context).guest),
         trailing: AppSwitch(
+          key: Key('WiFiGuestSwitch'),
           semanticLabel: 'guest',
           value: state.isEnabled,
           onChanged: (value) {
-            ref.read(wifiListProvider.notifier).setWiFiEnabled(value);
+            ref.read(wifiBundleProvider.notifier).setWiFiEnabled(value);
           },
         ),
       );
@@ -104,7 +106,7 @@ class _GuestWiFiCardState extends ConsumerState<GuestWiFiCard> with WifiSettingM
         ),
         onTap: () {
           showWiFiNameModal(state.ssid, (value) {
-            ref.read(wifiListProvider.notifier).setWiFiSSID(value);
+            ref.read(wifiBundleProvider.notifier).setWiFiSSID(value);
           });
         },
       );
@@ -132,9 +134,8 @@ class _GuestWiFiCardState extends ConsumerState<GuestWiFiCard> with WifiSettingM
         trailing: const Icon(LinksysIcons.edit),
         onTap: () {
           showWifiPasswordModal(state.password, (value) {
-            ref.read(wifiListProvider.notifier).setWiFiPassword(value);
+            ref.read(wifiBundleProvider.notifier).setWiFiPassword(value);
           });
         },
       );
-  
 }

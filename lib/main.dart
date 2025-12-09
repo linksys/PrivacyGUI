@@ -16,10 +16,17 @@ import 'package:privacy_gui/providers/logger_observer.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:privacy_gui/util/platforms/platform_util.dart'
-    if (dart.library.html) 'package:privacy_gui/util/platforms/platform_util_web.dart'
-    if (dart.library.io) 'package:privacy_gui/util/platforms/platform_util_mobile.dart';
-
+/// The main entry point for the Flutter application.
+///
+/// This function orchestrates the initialization of the app, including:
+/// - Ensuring Flutter bindings are initialized.
+/// - Preserving the native splash screen.
+/// - Initializing storage and checking for the first launch.
+/// - Setting up global error handlers.
+/// - Loading build configurations and initializing JNAP actions.
+/// - Overriding HTTP client behavior for non-web platforms.
+/// - Setting up dependency injection using GetIt.
+/// - Finally, running the main application widget.
 void main() async {
   // if (kIsWeb) {
   //   usePathUrlStrategy();
@@ -58,6 +65,12 @@ void main() async {
   runApp(app());
 }
 
+/// Checks if this is the first time the app is being launched and performs cleanup if so.
+///
+/// On the first launch, this function clears all data from [FlutterSecureStorage].
+/// This is particularly important on iOS to handle issues with keychain data
+/// persisting after an app uninstall. It then sets a flag in [SharedPreferences]
+/// to indicate that the first launch has occurred.
 checkFirstLaunch() {
   /// For iOS, Secure storage restores issue
   SharedPreferences.getInstance().then((prefs) {
@@ -70,6 +83,12 @@ checkFirstLaunch() {
   });
 }
 
+/// Initializes global error handlers for the application.
+///
+/// This function sets up handlers for both uncaught framework errors (via
+/// `FlutterError.onError`) and other uncaught Dart errors (via
+/// `PlatformDispatcher.instance.onError`). All caught exceptions are logged
+/// using the global [logger].
 initErrorHandler() {
   // Pass all uncaught errors from the framework to Crashlytics.
   FlutterError.onError = (FlutterErrorDetails details) {
@@ -84,8 +103,18 @@ initErrorHandler() {
   };
 }
 
+/// A global [ProviderContainer] instance.
+///
+/// This container holds the state of all providers in the app.
 final container = ProviderContainer();
 
+/// Constructs the root widget of the application.
+///
+/// This function wraps the main [LinksysApp] widget with a [ProviderScope],
+/// making Riverpod providers available throughout the widget tree. It also
+/// adds a [ProviderLogger] to observe provider state changes.
+///
+/// Returns the root [Widget] for the app.
 Widget app() {
   return ProviderScope(
     observers: [
@@ -95,6 +124,14 @@ Widget app() {
   );
 }
 
+/// A custom [HttpOverrides] class to handle bad SSL certificates.
+///
+/// This override is used on mobile platforms to bypass SSL certificate validation
+/// errors, which can occur when communicating with local routers that use
+/// self-signed certificates.
+///
+/// **Warning:** This should only be used in controlled environments and accepts
+/// all certificates, which is insecure for general web browsing.
 class MyHTTPOverrides extends HttpOverrides {
   @override
   HttpClient createHttpClient(SecurityContext? context) {

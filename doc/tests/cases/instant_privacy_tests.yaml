@@ -1,0 +1,16 @@
+- id: 33
+  symbolic_id: "INST_PRIV_ENABLE_POSITIVE"
+  tags:
+    - "menu"
+    - "instant_privacy"
+  name: "Instant Privacy - Enable"
+  objective: "Verify the Instant Privacy feature can be enabled."
+  preconditions:
+    - "User is successfully logged in to the web UI."
+  steps:
+    - action: "Navigate to \"Menu\" -> \"Instant Privacy\"."
+    - action: "Toggle the \"Enable\" switch to 'On'."
+      verify: "A confirmation dialog appears."
+    - action: "Click \"Turn On\" in the dialog."
+      verify: "The switch on the main page remains 'On'."
+  expected_result: "The Instant Privacy feature is successfully enabled."

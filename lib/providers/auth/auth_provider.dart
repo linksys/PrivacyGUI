@@ -102,12 +102,13 @@ final authProvider =
     AsyncNotifierProvider<AuthNotifier, AuthState>(() => AuthNotifier());
 
 class AuthNotifier extends AsyncNotifier<AuthState> {
-  bool _isInit = false;
+  // bool _isInit = false;
 
   AuthNotifier() : super() {
     LinksysHttpClient.onError = (error) async {
       logger.e('Http Response Error: $error');
       if (error is ErrorResponse) {
+        // Remote login
         if (error.code == 'INVALID_SESSION_TOKEN') {
           final sessionToken =
               await checkSessionToken().onError(handleSessionTokenError);
@@ -165,6 +166,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       logger.d(
           '[Auth]: Existence: cloud user name: ${username != null}, cloud pwd: ${password != null}, admin password: ${localPassword != null}. Login type = $loginType');
       return AuthState(
+        localPasswordHint: state.value?.localPasswordHint,
         username: username ?? '',
         loginType: loginType,
         sessionToken: sessionToken,
@@ -176,8 +178,8 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   }
 
   Future<SessionToken?> checkSessionToken() async {
-    logger.d(
-        '[Auth]: Check expiration time for the cloud session token (if it exists)');
+    // logger.d(
+    //     '[Auth]: Check expiration time for the cloud session token (if it exists)');
     const storage = FlutterSecureStorage();
     final ts = await storage.read(key: pSessionTokenTs);
     final json = await storage.read(key: pSessionToken);
@@ -202,11 +204,11 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   Future<SessionToken?> handleSessionTokenError(
       Object error, StackTrace trace) {
     if (error is NeedToRefreshTokenException) {
-      logger.e('[Auth]: Start to refresh session token');
+      // logger.e('[Auth]: Start to refresh session token');
       return refreshToken(error.refreshToken);
     } else {
       // not handling at this moment
-      logger.e('[Auth]: Unhandled session token error: $error');
+      // logger.e('[Auth]: Unhandled session token error: $error');
       return Future.value(null);
     }
   }

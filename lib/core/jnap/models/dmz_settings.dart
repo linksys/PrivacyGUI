@@ -1,4 +1,3 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
@@ -9,27 +8,13 @@ class DMZSettings extends Equatable {
   final DMZSourceRestriction? sourceRestriction;
   final String? destinationIPAddress;
   final String? destinationMACAddress;
+
   const DMZSettings({
     required this.isDMZEnabled,
     this.sourceRestriction,
     this.destinationIPAddress,
     this.destinationMACAddress,
   });
-
-  // DMZSettings copyWith({
-  //   bool? isDMZEnabled,
-  //   DMZSourceRestriction? sourceRestriction,
-  //   String? destinationIPAddress,
-  //   String? destinationMACAddress,
-  // }) {
-  //   return DMZSettings(
-  //     isDMZEnabled: isDMZEnabled ?? this.isDMZEnabled,
-  //     sourceRestriction: sourceRestriction ?? this.sourceRestriction,
-  //     destinationIPAddress: destinationIPAddress ?? this.destinationIPAddress,
-  //     destinationMACAddress:
-  //         destinationMACAddress ?? this.destinationMACAddress,
-  //   );
-  // }
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
@@ -80,9 +65,14 @@ class DMZSettings extends Equatable {
   }) {
     return DMZSettings(
       isDMZEnabled: isDMZEnabled ?? this.isDMZEnabled,
-      sourceRestriction: sourceRestriction != null ? sourceRestriction() : this.sourceRestriction,
-      destinationIPAddress: destinationIPAddress != null ? destinationIPAddress() : this.destinationIPAddress,
-      destinationMACAddress: destinationMACAddress != null ? destinationMACAddress() : this.destinationMACAddress,
+      sourceRestriction:
+          sourceRestriction != null ? sourceRestriction() : this.sourceRestriction,
+      destinationIPAddress: destinationIPAddress != null
+          ? destinationIPAddress()
+          : this.destinationIPAddress,
+      destinationMACAddress: destinationMACAddress != null
+          ? destinationMACAddress()
+          : this.destinationMACAddress,
     );
   }
 }

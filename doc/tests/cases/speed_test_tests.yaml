@@ -1,0 +1,17 @@
+- id: 49
+  symbolic_id: "SPEED_TEST_RUN"
+  tags:
+    - "speed_test"
+    - "menu"
+  name: "Speed Test - Run speed test"
+  objective: "Run speed test and check the result. NOTE: Only run on device supports speed test"
+  preconditions:
+    - "User is successfully logged in to the web UI."
+    - "The device supports the speed test feature."
+  steps:
+    - action: "Navigate to \"Menu\" -> \"Speed Test\"."
+    - action: "Click the \"Go\" button to start the speed test."
+    - action: "Wait for the speed test to complete."
+      verify: "The download and upload bandwidth results are displayed."
+    - action: "Verify that the \"Try Again\" button is visible."
+  expected_result: "The speed test runs successfully, and the results are displayed on the screen."

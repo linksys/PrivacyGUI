@@ -60,8 +60,11 @@ class SinglePortForwardingRuleState extends Equatable {
 
   factory SinglePortForwardingRuleState.fromMap(Map<String, dynamic> map) {
     return SinglePortForwardingRuleState(
-      rules: List<SinglePortForwardingRule>.from(map['rules']?.map((x) => SinglePortForwardingRule.fromMap(x))),
-      rule: map['rule'] != null ? SinglePortForwardingRule.fromMap(map['rule']) : null,
+      rules: List<SinglePortForwardingRule>.from(
+          map['rules']?.map((x) => SinglePortForwardingRule.fromMap(x))),
+      rule: map['rule'] != null
+          ? SinglePortForwardingRule.fromMap(map['rule'])
+          : null,
       editIndex: map['editIndex']?.toInt(),
       routerIp: map['routerIp'] ?? '',
       subnetMask: map['subnetMask'] ?? '',

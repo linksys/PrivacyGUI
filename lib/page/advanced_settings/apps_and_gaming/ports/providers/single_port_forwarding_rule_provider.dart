@@ -55,7 +55,8 @@ class SinglePortForwardingRuleNotifier
   }
 
   bool isPortConflict(int externalPort, String protocol) {
-    final portRangeState = ref.read(portRangeForwardingListProvider).rules;
+    final portRangeState =
+        ref.read(portRangeForwardingListProvider).current.rules;
     return portRangeState.any((rule) =>
             externalPort > rule.firstExternalPort &&
             externalPort < rule.lastExternalPort &&

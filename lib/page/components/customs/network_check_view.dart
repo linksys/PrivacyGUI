@@ -38,7 +38,9 @@ class _NetworkCheckViewState extends ConsumerState<NetworkCheckView>
     await checkLocationPermissions().then((value) {
       if (!value) {
         openAppSettings();
-        context.pop();
+        if (mounted) {
+          context.pop();
+        }
       } else {
         ref.read(connectivityProvider.notifier).forceUpdate();
       }

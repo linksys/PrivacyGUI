@@ -1,8 +1,8 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
-
 import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/providers/feature_state.dart';
+import 'package:privacy_gui/providers/preservable.dart';
 
 enum MacFilterMode {
   disabled,
@@ -16,6 +16,8 @@ enum MacFilterMode {
         'deny' => MacFilterMode.deny,
         _ => MacFilterMode.disabled,
       };
+  
+  bool get isEnabled => this != MacFilterMode.disabled;
 }
 
 class InstantPrivacyStatus extends Equatable {
@@ -138,49 +140,52 @@ class InstantPrivacySettings extends Equatable {
   bool get stringify => true;
 }
 
-class InstantPrivacyState extends Equatable {
-  final InstantPrivacyStatus status;
-  final InstantPrivacySettings settings;
-
-  @override
-  List<Object?> get props => [status, settings];
-
+class InstantPrivacyState
+    extends FeatureState<InstantPrivacySettings, InstantPrivacyStatus> {
   const InstantPrivacyState({
-    required this.status,
-    required this.settings,
+    required super.settings,
+    required super.status,
   });
 
   factory InstantPrivacyState.init() {
     return InstantPrivacyState(
+      settings: Preservable(
+          original: InstantPrivacySettings.init(),
+          current: InstantPrivacySettings.init()),
       status: InstantPrivacyStatus.init(),
-      settings: InstantPrivacySettings.init(),
     );
   }
 
+  @override
   InstantPrivacyState copyWith({
+    Preservable<InstantPrivacySettings>? settings,
     InstantPrivacyStatus? status,
-    InstantPrivacySettings? settings,
   }) {
     return InstantPrivacyState(
-      status: status ?? this.status,
       settings: settings ?? this.settings,
+      status: status ?? this.status,
     );
   }
 
+  @override
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'status': status.mode.name,
-      'settings': settings.toMap(),
+      'settings': settings.toMap((s) => s.toMap()),
     };
   }
 
   factory InstantPrivacyState.fromMap(Map<String, dynamic> map) {
     return InstantPrivacyState(
       status: InstantPrivacyStatus.fromMap(map['status']),
-      settings: InstantPrivacySettings.fromMap(map['settings']),
+      settings: Preservable.fromMap(
+          map['settings'],
+          (data) =>
+              InstantPrivacySettings.fromMap(data as Map<String, dynamic>)),
     );
   }
 
+  @override
   String toJson() => json.encode(toMap());
 
   factory InstantPrivacyState.fromJson(String source) =>

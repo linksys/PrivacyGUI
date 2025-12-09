@@ -16,6 +16,7 @@ import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dar
 import 'package:privacy_gui/page/components/styled/status_label.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
+import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
 import 'package:privacy_gui/page/instant_safety/providers/_providers.dart';
@@ -50,7 +51,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
 
   @override
   Widget build(BuildContext context) {
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       scrollable: true,
       backState: StyledBackState.none,
       title: loc(context).menu,
@@ -72,7 +73,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(child: _buildMenuGridView(createMenuItems())),
+          _buildMenuGridView(createMenuItems()),
           const AppGap.large2(),
           // const Spacer(),
           // AppTextButton.noPadding('About Linksys', onTap: () {}),
@@ -143,7 +144,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
     final isBehindRouter = routerType == RouterType.behindManaged ||
         BuildConfig.forceCommandType == ForceCommand.local;
     final isSupportHealthCheck =
-        ref.watch(dashboardHomeProvider).isHealthCheckSupported;
+        ref.watch(healthCheckProvider).isSpeedTestModuleSupported;
     final isSupportVPN = getIt.get<ServiceHelper>().isSupportVPN();
     return [
       AppSectionItemData(
@@ -172,7 +173,8 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
           description: loc(context).instantSafetyDesc,
           iconData: LinksysIcons.encrypted,
           disabledOnBridge: true,
-          status: safetyState.safeBrowsingType == InstantSafetyType.off,
+          status: safetyState.settings.current.safeBrowsingType ==
+              InstantSafetyType.off,
           onTap: () {
             _navigateTo(RouteNamed.menuInstantSafety);
           }),
@@ -269,9 +271,13 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
               '${loc(context).restarting}...'
             ]).then((value) {
               ref.read(pollingProvider.notifier).startPolling();
-              showSuccessSnackBar(context, loc(context).successExclamation);
+              if (mounted) {
+                showSuccessSnackBar(context, loc(context).successExclamation);
+              }
             }).catchError((error) {
-              showRouterNotFoundAlert(context, ref);
+              if (mounted) {
+                showRouterNotFoundAlert(context, ref);
+              }
             }, test: (error) => error is JNAPSideEffectError);
           },
         ),

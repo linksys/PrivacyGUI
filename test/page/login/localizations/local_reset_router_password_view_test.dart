@@ -1,148 +1,212 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/instant_admin/_instant_admin.dart';
 import 'package:privacy_gui/page/login/views/local_reset_router_password_view.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
-import '../../../common/di.dart';
+import '../../../common/test_helper.dart';
 import '../../../common/test_responsive_widget.dart';
-import '../../../common/testable_router.dart';
-import '../../../mocks/_index.dart';
 import '../../../test_data/_index.dart';
 
-void main() {
-  mockDependencyRegister();
-  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
+// View ID: LRRP
+// Implementation: lib/page/login/views/local_reset_router_password_view.dart
+// Summary:
+// - LRRP-INIT: Default page layout with validators and disabled Save.
+// - LRRP-EDIT: User types passwords, toggles visibility, and fills hint field.
+// - LRRP-VALID: Save button enabled when provider state is valid.
+// - LRRP-SUCCESS: Successful reset shows confirmation dialog.
+// - LRRP-FAIL: Failed reset surfaces error dialog.
 
-  late MockRouterPasswordNotifier mockRouterPasswordNotifier;
+void main() {
+  final testHelper = TestHelper();
 
   setUp(() {
-    mockRouterPasswordNotifier = MockRouterPasswordNotifier();
-    when(mockRouterPasswordNotifier.build())
+    testHelper.setup();
+    when(testHelper.mockRouterPasswordNotifier.build())
         .thenReturn(RouterPasswordState.fromMap(routerPasswordTestState1));
+    when(
+      testHelper.mockRouterPasswordNotifier.setAdminPasswordWithResetCode(
+        any,
+        any,
+        any,
+      ),
+    ).thenAnswer((_) async {});
   });
 
-  testLocalizations('local reset router password view - init state',
-      (tester, locale) async {
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const LocalResetRouterPasswordView(),
-        config: LinksysRouteConfig(noNaviRail: true),
-        locale: locale,
-        overrides: [
-          routerPasswordProvider.overrideWith(() => mockRouterPasswordNotifier),
-        ],
-      ),
-    );
+  RouterPasswordState baseState() =>
+      RouterPasswordState.fromMap(routerPasswordTestState1);
 
-    await tester.pumpAndSettle();
-  });
-
-  testLocalizations('local reset router password view - input password masked',
-      (tester, locale) async {
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const LocalResetRouterPasswordView(),
-        config: LinksysRouteConfig(noNaviRail: true),
-        locale: locale,
-        overrides: [
-          routerPasswordProvider.overrideWith(() => mockRouterPasswordNotifier),
-        ],
-      ),
-    );
-    await tester.pumpAndSettle();
-    // Input new password
+  Future<void> fillPasswords(
+    WidgetTester tester, {
+    required String password,
+    String? confirm,
+  }) async {
     final passwordFinder = find.byType(AppPasswordField);
-    await tester.enterText(passwordFinder.first, 'Linksys');
+    await tester.enterText(passwordFinder.at(0), password);
+    await tester.enterText(passwordFinder.at(1), confirm ?? password);
     await tester.pumpAndSettle();
-  });
+  }
 
-  testLocalizations('local reset router password view - input password visible',
-      (tester, locale) async {
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const LocalResetRouterPasswordView(),
-        config: LinksysRouteConfig(noNaviRail: true),
-        locale: locale,
-        overrides: [
-          routerPasswordProvider.overrideWith(() => mockRouterPasswordNotifier),
-        ],
-      ),
-    );
+  Future<void> fillHint(WidgetTester tester, String hint) async {
+    final hintField = find.byType(AppTextField).last;
+    await tester.enterText(hintField, hint);
     await tester.pumpAndSettle();
-    // Input new password
-    final passwordFinder = find.byType(AppPasswordField);
-    await tester.enterText(passwordFinder.first, 'Linksys');
-    await tester.pumpAndSettle();
-    // Tap eye icon
-    final secureIconFinder = find.byIcon(LinksysIcons.visibility);
-    await tester.tap(secureIconFinder.first);
-    await tester.pumpAndSettle();
-  });
+  }
 
-  testLocalizations(
-      'local reset router password view - input password visible and hint',
-      (tester, locale) async {
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const LocalResetRouterPasswordView(),
-        config: LinksysRouteConfig(noNaviRail: true),
-        locale: locale,
-        overrides: [
-          routerPasswordProvider.overrideWith(() => mockRouterPasswordNotifier),
-        ],
-      ),
-    );
-    await tester.pumpAndSettle();
-    // Input new password
-    final passwordFinder = find.byType(AppPasswordField);
-    await tester.enterText(passwordFinder.first, 'Linksys');
-    await tester.enterText(passwordFinder.last, 'Linksys');
-    await tester.pumpAndSettle();
-    // Tap eye icon
-    final secureIconFinder = find.byIcon(LinksysIcons.visibility);
-    await tester.tap(secureIconFinder.first);
-    await tester.pumpAndSettle();
-    // Input hint
-    final hintFinder = find.byType(AppTextField).last;
-    await tester.enterText(hintFinder, 'Linksys');
-    await tester.pumpAndSettle();
-  });
-
-  testLocalizations('local reset router password view - success prompt',
-      (tester, locale) async {
-    when(mockRouterPasswordNotifier.build()).thenReturn(
-      RouterPasswordState.fromMap(routerPasswordTestState1)
-          .copyWith(isValid: true),
-    );
-
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const LocalResetRouterPasswordView(),
-        config: LinksysRouteConfig(noNaviRail: true),
-        locale: locale,
-        overrides: [
-          routerPasswordProvider.overrideWith(() => mockRouterPasswordNotifier),
-        ],
-      ),
-    );
-    await tester.pumpAndSettle();
-    // Input new password
-    final passwordFinder = find.byType(AppPasswordField);
-    await tester.enterText(passwordFinder.first, 'Linksys123!');
-    await tester.enterText(passwordFinder.last, 'Linksys123!');
-    await tester.pumpAndSettle();
-    // scroll until button visible
+  Future<void> scrollToSave(WidgetTester tester) async {
     final saveFinder = find.byType(AppFilledButton);
-    await tester.scrollUntilVisible(saveFinder, 100,
-        scrollable: find.byType(Scrollable).last);
+    await tester.scrollUntilVisible(
+      saveFinder,
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
     await tester.pumpAndSettle();
-    // Tap save
-    await tester.tap(saveFinder);
-    await tester.pumpAndSettle();
-  });
+  }
+
+  // Test ID: LRRP-INIT
+  testLocalizationsV2(
+    'local reset router password view - initial layout',
+    (tester, screen) async {
+      final context = await testHelper.pumpView(
+        tester,
+        child: const LocalResetRouterPasswordView(),
+        config: LinksysRouteConfig(noNaviRail: true),
+        locale: screen.locale,
+      );
+      await tester.pumpAndSettle();
+      final loc = testHelper.loc(context);
+
+      expect(
+        find.text(loc.localResetRouterPasswordTitle),
+        findsOneWidget,
+      );
+      expect(
+        find.text(loc.localResetRouterPasswordDescription),
+        findsOneWidget,
+      );
+      expect(find.byType(AppTextField), findsNWidgets(3));
+      expect(find.byType(AppPasswordField), findsNWidgets(2));
+      final saveButton =
+          tester.widget<AppFilledButton>(find.byType(AppFilledButton));
+      expect(saveButton.onTap, isNull);
+    },
+    goldenFilename: 'LRRP-INIT_01_initial_state',
+    helper: testHelper,
+  );
+
+  // Test ID: LRRP-EDIT
+  testLocalizationsV2(
+    'local reset router password view - editing password and hint',
+    (tester, screen) async {
+      await testHelper.pumpView(
+        tester,
+        child: const LocalResetRouterPasswordView(),
+        config: LinksysRouteConfig(noNaviRail: true),
+        locale: screen.locale,
+      );
+      await tester.pumpAndSettle();
+
+      await fillPasswords(tester, password: 'Linksys123!', confirm: 'Linksys!');
+      final visibilityFinder = find.byIcon(LinksysIcons.visibility).first;
+      await tester.tap(visibilityFinder);
+      await tester.pumpAndSettle();
+      await fillHint(tester, 'Home Wifi');
+    },
+    goldenFilename: 'LRRP-EDIT_01_password_not_match',
+    helper: testHelper,
+  );
+
+  // Test ID: LRRP-VALID
+  testLocalizationsV2(
+    'local reset router password view - save button enabled on valid state',
+    (tester, screen) async {
+      when(testHelper.mockRouterPasswordNotifier.build()).thenReturn(
+        baseState().copyWith(isValid: true),
+      );
+      await testHelper.pumpView(
+        tester,
+        child: const LocalResetRouterPasswordView(),
+        config: LinksysRouteConfig(noNaviRail: true),
+        locale: screen.locale,
+      );
+      await tester.pumpAndSettle();
+      await scrollToSave(tester);
+
+      final saveButton =
+          tester.widget<AppFilledButton>(find.byType(AppFilledButton));
+      expect(saveButton.onTap, isNotNull);
+    },
+    goldenFilename: 'LRRP-VALID_01_save_enabled',
+    helper: testHelper,
+  );
+
+  // Test ID: LRRP-SUCCESS
+  testLocalizationsV2(
+    'local reset router password view - successful reset dialog',
+    (tester, screen) async {
+      when(testHelper.mockRouterPasswordNotifier.build()).thenReturn(
+        baseState().copyWith(isValid: true),
+      );
+
+      final context = await testHelper.pumpView(
+        tester,
+        child: const LocalResetRouterPasswordView(),
+        config: LinksysRouteConfig(noNaviRail: true),
+        locale: screen.locale,
+      );
+      final loc = testHelper.loc(context);
+      await tester.pumpAndSettle();
+
+      await fillPasswords(tester, password: 'Linksys123!');
+      await fillHint(tester, 'Home Wifi');
+      await scrollToSave(tester);
+      await tester.tap(find.byType(AppFilledButton));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('resetSavedDialog')), findsOneWidget);
+      expect(find.text(loc.localResetRouterPasswordSuccessContent),
+          findsOneWidget);
+    },
+    goldenFilename: 'LRRP-SUCCESS_01_success_dialog',
+    helper: testHelper,
+  );
+
+  // Test ID: LRRP-FAIL
+  testLocalizationsV2(
+    'local reset router password view - failure dialog',
+    (tester, screen) async {
+      when(testHelper.mockRouterPasswordNotifier.build()).thenReturn(
+        baseState().copyWith(isValid: true),
+      );
+      when(
+        testHelper.mockRouterPasswordNotifier.setAdminPasswordWithResetCode(
+          any,
+          any,
+          any,
+        ),
+      ).thenAnswer((_) async => throw Exception('failed'));
+
+      final context = await testHelper.pumpView(
+        tester,
+        child: const LocalResetRouterPasswordView(),
+        config: LinksysRouteConfig(noNaviRail: true),
+        locale: screen.locale,
+      );
+      final loc = testHelper.loc(context);
+      await tester.pumpAndSettle();
+
+      await fillPasswords(tester, password: 'Linksys123!');
+      await fillHint(tester, 'Office Wifi');
+      await scrollToSave(tester);
+      await tester.tap(find.byType(AppFilledButton));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('resetSavedDialog')), findsOneWidget);
+      expect(find.text(loc.invalidAdminPassword), findsOneWidget);
+    },
+    goldenFilename: 'LRRP-FAIL_01_failure_dialog',
+    helper: testHelper,
+  );
 }

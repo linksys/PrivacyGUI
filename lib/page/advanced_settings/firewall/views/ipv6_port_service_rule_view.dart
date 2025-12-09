@@ -98,7 +98,7 @@ class _AddRuleContentViewState
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(ipv6PortServiceRuleProvider);
-    return StyledAppPageView(
+    return StyledAppPageView.withSliver(
       scrollable: true,
       title: loc(context).ipv6PortServices,
       bottomBar: PageBottomBar(
@@ -152,6 +152,7 @@ class _AddRuleContentViewState
 
     return [
       AppTextField.outline(
+        key: const Key('ruleName'),
         headerText: loc(context).ruleName,
         controller: _ruleNameController,
         onChanged: (value) {
@@ -167,6 +168,7 @@ class _AddRuleContentViewState
       ),
       const AppGap.large2(),
       AppDropdownButton(
+        key: const Key('protocol'),
         title: loc(context).protocol,
         initial: state.rule?.portRanges.firstOrNull?.protocol ?? 'Both',
         items: const ['TCP', 'UDP', 'Both'],
@@ -185,6 +187,7 @@ class _AddRuleContentViewState
       ),
       const AppGap.large2(),
       AppIPv6FormField(
+        key: const Key('ipAddress'),
         semanticLabel: 'ip address',
         title: loc(context).ipAddress,
         controller: _ipAddressController,
@@ -219,6 +222,7 @@ class _AddRuleContentViewState
         children: [
           Expanded(
             child: AppTextField.minMaxNumber(
+              key: const Key('firstPort'),
               border: const OutlineInputBorder(),
               headerText: loc(context).startPort,
               controller: _firstExternalPortController,
@@ -250,6 +254,7 @@ class _AddRuleContentViewState
           ),
           Expanded(
             child: AppTextField.minMaxNumber(
+              key: const Key('lastPort'),
               border: const OutlineInputBorder(),
               headerText: loc(context).endPort,
               controller: _lastExternalPortController,
