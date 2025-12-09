@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/core/jnap/models/dmz_settings.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/dmz/providers/dmz_settings_provider.dart';
@@ -85,22 +84,27 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
         bottomBar: PageBottomBar(
             isPositiveEnabled: isDirty &&
                 (_sourceError == null && _destinationError == null),
-            onPositiveTap: () {
-              doSomethingWithSpinner(
+            onPositiveTap: () async {
+              try {
+                await doSomethingWithSpinner(
                   context,
-                  ref.read(dmzSettingsProvider.notifier).save().then((value) {
-                    _updateControllers(value);
-                    showSuccessSnackBar(context, loc(context).saved);
-                  }).onError((error, stackTrace) {
-                    if (!context.mounted) return;
-                    final errorMsg = errorCodeHelper(
-                        context, (error as JNAPError?)?.result ?? '');
-                    if (errorMsg != null) {
-                      showFailedSnackBar(context, errorMsg);
-                    } else {
-                      showFailedSnackBar(context, loc(context).unknownError);
-                    }
-                  }));
+                  ref.read(dmzSettingsProvider.notifier).save(),
+                );
+                if (context.mounted) {
+                  final state = ref.read(dmzSettingsProvider);
+                  _updateControllers(state);
+                  showSuccessSnackBar(context, loc(context).saved);
+                }
+              } catch (error) {
+                if (!context.mounted) return;
+                final errorMsg = errorCodeHelper(
+                    context, (error as JNAPError?)?.result ?? '');
+                if (errorMsg != null) {
+                  showFailedSnackBar(context, errorMsg);
+                } else {
+                  showFailedSnackBar(context, loc(context).unknownError);
+                }
+              }
             }),
         child: (context, constraints) => SingleChildScrollView(
               child: Column(
@@ -171,7 +175,7 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                               onChanged: (value) {
                                 final sourceSettings =
                                     state.settings.current.sourceRestriction ??
-                                        const DMZSourceRestriction(
+                                        const DMZSourceRestrictionUI(
                                             firstIPAddress: '',
                                             lastIPAddress: '');
                                 ref
@@ -210,7 +214,7 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                               onChanged: (value) {
                                 final sourceSettings =
                                     state.settings.current.sourceRestriction ??
-                                        const DMZSourceRestriction(
+                                        const DMZSourceRestrictionUI(
                                             firstIPAddress: '',
                                             lastIPAddress: '');
                                 ref
