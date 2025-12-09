@@ -38,6 +38,178 @@
 - **Application**: 業務邏輯、錯誤處理、狀態管理（Riverpod Notifier）
 - **Data**: API 調用、資料庫訪問、數據模型定義（依賴注入）
 
+### 1.1 數據模型分層規範 (⚠️ 最常違反的規則)
+
+**關鍵原則**: 不同層級應該使用**不同的數據模型**，每層的模型只在該層及下層使用。
+
+#### 模型層級分類
+
+```
+┌─────────────────────────────────────────┐
+│  Presentation Layer Models (UI Models)   │
+│  - DMZUISettings, DMZSourceRestrictionUI │
+│  - 用於 UI 顯示、用戶輸入               │
+│  - ❌ 禁止直接依賴 JNAP Data Models     │
+└────────────────┬────────────────────────┘
+                 │ 轉換
+┌────────────────▼────────────────────────┐
+│  Application Layer Models (DTO/State)    │
+│  - 業務層的轉換模型                     │
+│  - 橋接 Data Models 與 Presentation     │
+│  - Service 進行 Data ↔ App 轉換        │
+└────────────────┬────────────────────────┘
+                 │ 轉換
+┌────────────────▼────────────────────────┐
+│  Data Layer Models (Protocol Models)     │
+│  - DMZSettings, DMZSourceRestriction    │
+│  - JNAP、API 回應的直接映射             │
+│  - ❌ 禁止在 Provider、UI 層出現        │
+└─────────────────────────────────────────┘
+```
+
+#### 具體規則 (強制)
+
+**❌ 禁止**:
+```dart
+// ❌ 錯誤：Provider 中直接使用 JNAP Data Model
+final dmzSettings = DMZSettings(...);  // lib/core/jnap/models/
+
+// ❌ 錯誤：UI 層直接依賴 JNAP models
+import 'package:privacy_gui/core/jnap/models/dmz_settings.dart';
+const settings = DMZSourceRestriction(...);  // UI 層不應該知道這個
+
+// ❌ 錯誤：Provider 中直接引用 JNAP models (即使不用也不應該 import)
+import 'package:privacy_gui/core/jnap/models/dmz_settings.dart';
+```
+
+**✅ 正確**:
+```dart
+// ✅ Service 層負責轉換
+// lib/page/advanced_settings/dmz/services/dmz_settings_service.dart
+final jnapModel = DMZSettings.fromMap(...);  // Data Model
+final appModel = DMZUISettings(...);         // App Model
+return appModel;  // 返回 App Model
+
+// ✅ Provider 只知道 App Model
+// lib/page/advanced_settings/dmz/providers/dmz_settings_provider.dart
+final uiSettings = await service.fetchDmzSettings(...);  // App Model
+state = state.copyWith(settings: uiSettings);
+
+// ✅ UI 層只知道 UI Model
+// lib/page/advanced_settings/dmz/views/dmz_settings_view.dart
+const settings = DMZUISettings(...);  // UI Model，沒有 JNAP imports
+```
+
+#### 模型定位檢查清單
+
+當定義新模型或重構時，檢查：
+
+```
+□ 該模型的來源是什麼？
+  ├─ 來自 JNAP/API 協議 → Data Layer Model
+  ├─ 為了轉換/適配而創建 → Application Layer Model
+  └─ 為了 UI 顯示而創建 → UI Layer Model
+
+□ 該模型應該出現在哪些檔案中？
+  ├─ Data Layer: lib/core/jnap/models/, lib/core/cloud/model/
+  ├─ App Layer: lib/page/[feature]/providers/[feature]_state.dart
+  └─ UI Layer: lib/page/[feature]/views/
+
+□ 該模型**不應該**出現在哪裡？
+  ├─ Data Model ❌ 不應該出現在 providers/ 或 views/
+  ├─ App Model ❌ 不應該出現在 lib/core/
+  └─ UI Model ❌ 不應該出現在 lib/core/
+
+□ 導入規則檢查
+  if 這個檔案 imports 了 'lib/core/jnap/models/':
+    ✅ 允許：Service 層、Repository 層
+    ❌ 禁止：Provider、Notifier、View
+```
+
+#### 常見違規模式與修正
+
+**模式 1: Provider 中直接使用 JNAP Models**
+
+❌ **違規**:
+```dart
+// lib/page/advanced_settings/dmz/providers/dmz_settings_provider.dart
+import 'package:privacy_gui/core/jnap/models/dmz_settings.dart';
+
+class DMZSettingsNotifier extends Notifier<DMZSettingsState> {
+  Future<void> performSave() async {
+    final domainSettings = DMZSettings(...);  // ❌ 不應該在這裡
+    await repo.send(..., data: domainSettings.toMap());
+  }
+}
+```
+
+✅ **修正**:
+```dart
+// lib/page/advanced_settings/dmz/services/dmz_settings_service.dart
+class DMZSettingsService {
+  Future<void> saveDmzSettings(Ref ref, DMZUISettings settings) async {
+    // 轉換 UI Model → Data Model（Service 層職責）
+    final dataModel = DMZSettings(...);
+    await ref.read(routerRepositoryProvider).send(..., data: dataModel.toMap());
+  }
+}
+
+// lib/page/advanced_settings/dmz/providers/dmz_settings_provider.dart
+class DMZSettingsNotifier extends Notifier<DMZSettingsState> {
+  Future<void> performSave() async {
+    final service = DMZSettingsService();
+    await service.saveDmzSettings(ref, state.settings.current);  // App Model
+  }
+}
+```
+
+**模式 2: 測試中使用錯誤的模型**
+
+❌ **違規**:
+```dart
+// test/page/advanced_settings/dmz/views/dmz_settings_view_test.dart
+import 'package:privacy_gui/core/jnap/models/dmz_settings.dart';
+
+test('DMZ view renders', () {
+  const settings = DMZUISettings(
+    sourceRestriction: DMZSourceRestriction(...),  // ❌ 錯誤的模型
+  );
+});
+```
+
+✅ **修正**:
+```dart
+// test/page/advanced_settings/dmz/views/dmz_settings_view_test.dart
+test('DMZ view renders', () {
+  const settings = DMZUISettings(
+    sourceRestriction: DMZSourceRestrictionUI(...),  // ✅ 正確的 UI 模型
+  );
+});
+```
+
+#### 重構時的驗證方法
+
+完成重構後，執行以下檢查：
+
+```bash
+# 1️⃣ 檢查 Provider 層是否還有 JNAP imports
+grep -r "import.*jnap/models" lib/page/*/providers/
+# ✅ 應該返回 0 結果
+
+# 2️⃣ 檢查 UI 層是否還有 JNAP imports
+grep -r "import.*jnap/models" lib/page/*/views/
+# ✅ 應該返回 0 結果
+
+# 3️⃣ 檢查 Service 層是否有正確的 imports
+grep -r "import.*jnap/models" lib/page/*/services/
+# ✅ 應該有結果（Service 層應該 import JNAP models）
+
+# 4️⃣ 檢查測試中的模型使用
+grep -r "DMZSourceRestriction" test/page/advanced_settings/dmz/views/
+grep -r "DMZSourceRestrictionUI" test/page/advanced_settings/dmz/views/
+# ✅ 應該只看到 UI 模型（DMZSourceRestrictionUI）
+```
+
 ---
 
 ### 2. 測試金字塔
@@ -104,11 +276,30 @@
 - ❌ UI 層**禁止**直接調用 API 或 Repository
 - ❌ 只有 Application 層可依賴 Data 層
 - ❌ 不允許循環依賴
+- ❌ **禁止在 Provider/UI 層出現 JNAP Data Models** (⚠️ 最常違反)
 
 **檢查清單**:
 - [ ] 無 UI 層直接引用 JNAP action
 - [ ] 所有 API 調用都通過 Service/Repository
 - [ ] Provider 只依賴 Service，不依賴底層 API
+- [ ] ⚠️ **Provider 層無 `import 'package:privacy_gui/core/jnap/models/'`**
+- [ ] ⚠️ **View 層無 `import 'package:privacy_gui/core/jnap/models/'`**
+- [ ] ⚠️ **測試中使用正確的 UI Models (DMZSourceRestrictionUI)，不是 Data Models (DMZSourceRestriction)**
+
+**Code Review 檢查項目** (提交前必檢):
+```bash
+# 1️⃣ 驗證提交者是否混用了 Data Models
+grep -n "import.*jnap/models" lib/page/*/providers/*.dart
+grep -n "import.*jnap/models" lib/page/*/views/*.dart
+# ✅ 若有結果，請求提交者移到 Service 層
+
+# 2️⃣ 驗證測試中的模型使用
+grep -n "DMZSettings\|DMZSourceRestriction" test/page/*/views/*.dart
+# ⚠️ 若出現 Data Models，應改用 UI Models
+
+# 3️⃣ 驗證 Service 層轉換邏輯是否完整
+# 檢查是否有 fromMap() → 處理 → toMap() 的完整流程
+```
 
 ---
 
@@ -1092,10 +1283,11 @@ test/page/[feature]/
 
 | 版本 | 日期 | 主要內容 |
 |:---|:---|:---|
+| v2.3 | 2025-12-09 | 🔴 強化：新增「1.1 數據模型分層規範」- 明確禁止 Provider/UI 層出現 JNAP Data Models，增加 Code Review 自動化檢查項目。基於 DMZ refactor 發現的最常見違規模式。 |
 | v2.2 | 2025-12-08 | 新增：第六部分 Test Data Builder Pattern + 第七部分 三層測試實踐指南 (基於 AdministrationSettingsService 重構經驗驗證) |
 | v2.1 | 2025-12-06 | 增強：重構與層級提取規則 + 三層測試框架 + 常見遺漏檢查表 + 計畫文檔要求 (基於 AdministrationSettingsService 重構經驗) |
 | v2.0 | 2025-12-05 | 全新撰寫：核心觀念 + 開發規則 + 測試規則 + 狀態管理 + UI 元件規則 + 流程新增機制 |
 
 ---
 
-**Last Amended**: 2025-12-08
+**Last Amended**: 2025-12-09
