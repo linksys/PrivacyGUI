@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/core/jnap/models/ipv6_firewall_rule.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/components/settings_view/editable_card_list_settings_view.dart';
@@ -75,7 +74,7 @@ class _Ipv6PortServiceListViewState
   }
 
   Widget _mobildSettingsView(Ipv6PortServiceListState state) {
-    return EditableCardListsettingsView<IPv6FirewallRule>(
+    return EditableCardListsettingsView<IPv6PortServiceRuleUI>(
         title: loc(context).ipv6PortServices,
         emptyMessage: loc(context).noIPv6PortService,
         addEnabled: !_notifier.isExceedMax(),
@@ -138,7 +137,7 @@ class _Ipv6PortServiceListViewState
   }
 
   Widget _desktopSettingsView(Ipv6PortServiceListState state) {
-    return AppEditableTableSettingsView<IPv6FirewallRule>(
+    return AppEditableTableSettingsView<IPv6PortServiceRuleUI>(
       title: loc(context).ipv6PortServices,
       addEnabled: !_notifier.isExceedMax(),
       emptyMessage: loc(context).noIPv6PortService,
@@ -354,11 +353,11 @@ class _Ipv6PortServiceListViewState
           _ => null,
         };
       },
-      createNewItem: () => const IPv6FirewallRule(
-          isEnabled: true,
+      createNewItem: () => const IPv6PortServiceRuleUI(
+          enabled: true,
           description: '',
           ipv6Address: '',
-          portRanges: [PortRange(protocol: 'Both', firstPort: 0, lastPort: 0)]),
+          portRanges: [PortRangeUI(protocol: 'Both', firstPort: 0, lastPort: 0)]),
       onSaved: (index, rule) {
         final stateRule = ref.read(ipv6PortServiceRuleProvider).rule;
         if (stateRule == null) {

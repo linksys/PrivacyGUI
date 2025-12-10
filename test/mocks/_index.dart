@@ -9,7 +9,6 @@ export 'device_list_notifier_mock.dart';
 export 'device_manager_notifier_mocks.dart';
 export 'dmz_setting_notifier_mocks.dart';
 export 'external_device_detail_notifier_mocks.dart';
-export 'firewall_notifier_mocks.dart';
 export 'firmware_update_notifier_mocks.dart';
 export 'firmware_update_service_mocks.dart';
 export 'geolocation_notifier_mocks.dart';

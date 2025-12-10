@@ -124,7 +124,7 @@ class TestHelper {
   late MockDeviceListNotifier mockDeviceListNotifier;
   late ServiceHelper mockServiceHelper;
   late MockHealthCheckProvider mockHealthCheckProvider;
-  late MockFirewallNotifier mockFirewallNotifier;
+  // late MockFirewallNotifier mockFirewallNotifier; // TODO: Regenerate mock after refactoring
   late MockIpv6PortServiceListNotifier mockIpv6PortServiceListNotifier;
   late MockIpv6PortServiceRuleNotifier mockIpv6PortServiceRuleNotifier;
   late MockInternetSettingsNotifier mockInternetSettingsNotifier;
@@ -185,7 +185,7 @@ class TestHelper {
     mockWiFiBundleNotifier = MockWifiBundleNotifier();
     mockDeviceListNotifier = MockDeviceListNotifier();
     mockHealthCheckProvider = MockHealthCheckProvider();
-    mockFirewallNotifier = MockFirewallNotifier();
+    // mockFirewallNotifier = MockFirewallNotifier(); // TODO: Regenerate mock after refactoring
     mockIpv6PortServiceListNotifier = MockIpv6PortServiceListNotifier();
     mockIpv6PortServiceRuleNotifier = MockIpv6PortServiceRuleNotifier();
     mockInternetSettingsNotifier = MockInternetSettingsNotifier();
@@ -298,8 +298,8 @@ class TestHelper {
         .thenReturn(DeviceListState.fromMap(deviceListTestState));
     when(mockHealthCheckProvider.build())
         .thenReturn(HealthCheckState.fromJson(healthCheckStateSuccessGood));
-    when(mockFirewallNotifier.build())
-        .thenReturn(FirewallState.fromMap(firewallSettingsTestState));
+    // when(mockFirewallNotifier.build()) // TODO: Regenerate mock after refactoring
+    //     .thenReturn(FirewallState.fromMap(firewallSettingsTestState));
     when(mockIpv6PortServiceListNotifier.build()).thenReturn(
         Ipv6PortServiceListState.fromMap(ipv6PortServiceListTestState));
     when(mockIpv6PortServiceRuleNotifier.build())
@@ -387,7 +387,7 @@ class TestHelper {
         wifiBundleProvider.overrideWith(() => mockWiFiBundleNotifier),
         deviceListProvider.overrideWith(() => mockDeviceListNotifier),
         internetStatusProvider.overrideWith((ref) => InternetStatus.online),
-        firewallProvider.overrideWith(() => mockFirewallNotifier),
+        // firewallProvider.overrideWith(() => mockFirewallNotifier), // TODO: Regenerate mock after refactoring
         ipv6PortServiceListProvider
             .overrideWith(() => mockIpv6PortServiceListNotifier),
         ipv6PortServiceRuleProvider

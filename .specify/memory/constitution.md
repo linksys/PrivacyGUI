@@ -47,7 +47,6 @@
 ```
 ┌─────────────────────────────────────────┐
 │  Presentation Layer Models (UI Models)   │
-│  - DMZUISettings, DMZSourceRestrictionUI │
 │  - 用於 UI 顯示、用戶輸入               │
 │  - ❌ 禁止直接依賴 JNAP Data Models     │
 └────────────────┬────────────────────────┘

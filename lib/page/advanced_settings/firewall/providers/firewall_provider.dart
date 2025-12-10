@@ -1,9 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/jnap/actions/better_action.dart';
-import 'package:privacy_gui/core/jnap/command/base_command.dart';
-import 'package:privacy_gui/core/jnap/models/firewall_settings.dart';
-import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/advanced_settings/firewall/providers/firewall_state.dart';
+import 'package:privacy_gui/page/advanced_settings/firewall/services/firewall_settings_service.dart';
 import 'package:privacy_gui/providers/empty_status.dart';
 import 'package:privacy_gui/providers/preservable.dart';
 import 'package:privacy_gui/providers/preservable_contract.dart';
@@ -18,10 +15,11 @@ final preservableFirewallProvider = Provider<PreservableContract>(
 
 class FirewallNotifier extends Notifier<FirewallState>
     with
-        PreservableNotifierMixin<FirewallSettings, EmptyStatus, FirewallState> {
+        PreservableNotifierMixin<FirewallUISettings, EmptyStatus,
+            FirewallState> {
   @override
   FirewallState build() {
-    const settings = FirewallSettings(
+    const settings = FirewallUISettings(
       blockAnonymousRequests: false,
       blockIDENT: false,
       blockIPSec: false,
@@ -39,27 +37,19 @@ class FirewallNotifier extends Notifier<FirewallState>
   }
 
   @override
-  Future<(FirewallSettings?, EmptyStatus?)> performFetch(
+  Future<(FirewallUISettings?, EmptyStatus?)> performFetch(
       {bool forceRemote = false, bool updateStatusOnly = false}) async {
-    final result = await ref
-        .read(routerRepositoryProvider)
-        .send(JNAPAction.getFirewallSettings, auth: true, fetchRemote: forceRemote);
-    final settings = FirewallSettings.fromMap(result.output);
-    return (settings, const EmptyStatus());
+    final service = FirewallSettingsService();
+    return await service.fetchFirewallSettings(ref, forceRemote: forceRemote);
   }
 
   @override
   Future<void> performSave() async {
-    await ref.read(routerRepositoryProvider).send(
-          JNAPAction.setFirewallSettings,
-          auth: true,
-          fetchRemote: true,
-          cacheLevel: CacheLevel.noCache,
-          data: state.settings.current.toMap(),
-        );
+    final service = FirewallSettingsService();
+    await service.saveFirewallSettings(ref, state.settings.current);
   }
 
-  setSettings(FirewallSettings settings) {
+  setSettings(FirewallUISettings settings) {
     state = state.copyWith(
       settings: state.settings.copyWith(current: settings),
     );

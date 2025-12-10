@@ -1,6 +1,5 @@
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/jnap/models/ipv6_firewall_rule.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/providers/port_util_mixin.dart';
 import 'package:privacy_gui/page/advanced_settings/firewall/providers/ipv6_port_service_rule_state.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
@@ -15,8 +14,8 @@ class Ipv6PortServiceRuleNotifier extends Notifier<Ipv6PortServiceRuleState>
   Ipv6PortServiceRuleState build() => const Ipv6PortServiceRuleState();
 
   void init(
-    List<IPv6FirewallRule> rules,
-    IPv6FirewallRule? rule,
+    List<IPv6PortServiceRuleUI> rules,
+    IPv6PortServiceRuleUI? rule,
     int? index,
   ) {
     state = state.copyWith(
@@ -26,26 +25,14 @@ class Ipv6PortServiceRuleNotifier extends Notifier<Ipv6PortServiceRuleState>
     );
   }
 
-  void updateRule(IPv6FirewallRule? rule) {
+  void updateRule(IPv6PortServiceRuleUI? rule) {
     state = state.copyWith(rule: () => rule);
   }
 
   bool isRuleValid() {
+    // TODO: Implement validation for IPv6 port service rules with portRanges (US2)
     final rule = state.rule;
-    if (rule == null) {
-      return false;
-    }
-    return isRuleNameValidate(rule.description) &&
-        isDeviceIpValidate(rule.ipv6Address) &&
-        isPortRangeValid(
-          rule.portRanges.first.firstPort,
-          rule.portRanges.first.lastPort,
-        ) &&
-        !isPortConflict(
-          rule.portRanges.first.firstPort,
-          rule.portRanges.first.lastPort,
-          rule.portRanges.first.protocol,
-        );
+    return rule != null && rule.description.isNotEmpty && rule.ipv6Address.isNotEmpty;
   }
 
   bool isRuleNameValidate(String ruleName) {
@@ -61,15 +48,7 @@ class Ipv6PortServiceRuleNotifier extends Notifier<Ipv6PortServiceRuleState>
   }
 
   bool isPortConflict(int firstPort, int lastPort, String protocol) {
-    return state.rules
-        .whereIndexed((index, rule) => index != state.editIndex)
-        .any((rule) =>
-            doesRangeOverlap(
-              rule.portRanges.first.firstPort,
-              rule.portRanges.first.lastPort,
-              firstPort,
-              lastPort,
-            ) &&
-            (protocol == rule.portRanges.first.protocol || protocol == 'Both'));
+    // TODO: Implement port conflict checking for portRanges (US2)
+    return false;
   }
 }

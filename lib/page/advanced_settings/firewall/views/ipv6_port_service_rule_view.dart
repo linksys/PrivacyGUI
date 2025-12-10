@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/core/jnap/models/ipv6_firewall_rule.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/firewall/_firewall.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/views/widgets/protocol_utils.dart';
@@ -57,7 +56,7 @@ class _AddRuleContentViewState
     _notifier = ref.read(ipv6PortServiceRuleProvider.notifier);
 
     final rules = widget.args['items'] ?? [];
-    var rule = widget.args['edit'] as IPv6FirewallRule?;
+    var rule = widget.args['edit'] as IPv6PortServiceRuleUI?;
     int? index;
 
     if (rule != null) {
@@ -71,12 +70,12 @@ class _AddRuleContentViewState
       _ipAddressController.text = rule.ipv6Address;
       index = rules.indexOf(rule);
     } else {
-      rule = IPv6FirewallRule(
+      rule = IPv6PortServiceRuleUI(
           description: '',
           ipv6Address: '',
-          isEnabled: true,
+          enabled: true,
           portRanges: const [
-            PortRange(protocol: 'Both', firstPort: 0, lastPort: 0)
+            PortRangeUI(protocol: 'Both', firstPort: 0, lastPort: 0)
           ]);
     }
     doSomethingWithSpinner(context, Future.doWhile(() => !mounted)).then((_) {
@@ -136,9 +135,9 @@ class _AddRuleContentViewState
         title: AppText.labelLarge(loc(context).ruleEnabled),
         trailing: AppSwitch(
           semanticLabel: 'rule enabled',
-          value: state.rule?.isEnabled ?? true,
+          value: state.rule?.enabled ?? true,
           onChanged: (value) {
-            _notifier.updateRule(state.rule?.copyWith(isEnabled: value));
+            _notifier.updateRule(state.rule?.copyWith(enabled: value));
           },
         ),
       ),

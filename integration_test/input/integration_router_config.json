@@ -1,0 +1,13 @@
+{
+	"recoveryCode": "44318",
+	"newPassword": "Linksys123!",
+	"password": "5xDu6nhbj@",
+	"passwordHint": "Linksys",
+	"serialNumber": "67A10M24F00080",
+	"wifiBands": "2.4,5,guest",
+	"defaultWiFi": {
+		"ssid": "Linksys00080",
+		"password": "5xDu6nhbj@"
+	},
+	"isHealthCheckSupported": "false"
+} 
