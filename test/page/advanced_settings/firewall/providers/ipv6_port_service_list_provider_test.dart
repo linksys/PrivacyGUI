@@ -520,6 +520,236 @@ void main() {
       });
     });
 
+    group('rule manipulation', () {
+      test('addRule adds a new rule to the list', () {
+        // Arrange
+        final notifier = container.read(ipv6PortServiceListProvider.notifier);
+        final rule1 = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'Rule 1',
+          ipv6Address: '2001:db8::1',
+          portRanges: const [
+            PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)
+          ],
+        );
+        final rule2 = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'Rule 2',
+          ipv6Address: '2001:db8::2',
+          portRanges: const [
+            PortRangeUI(protocol: 'UDP', firstPort: 53, lastPort: 53)
+          ],
+        );
+
+        // Act
+        notifier.setRules([rule1]);
+        notifier.addRule(rule2);
+        var state = container.read(ipv6PortServiceListProvider);
+
+        // Assert
+        expect(state.settings.current.rules.length, 2);
+        expect(state.settings.current.rules.last, rule2);
+      });
+
+      test('addRule throws exception when max rules reached', () {
+        // Arrange
+        final notifier = container.read(ipv6PortServiceListProvider.notifier);
+        final rules = List<IPv6PortServiceRuleUI>.generate(
+          50,
+          (i) => IPv6PortServiceRuleUI(
+            enabled: true,
+            description: 'Rule $i',
+            ipv6Address: '2001:db8::${i + 1}',
+            portRanges: const [
+              PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)
+            ],
+          ),
+        );
+        final newRule = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'Extra Rule',
+          ipv6Address: '2001:db8::51',
+          portRanges: const [
+            PortRangeUI(protocol: 'TCP', firstPort: 8080, lastPort: 8080)
+          ],
+        );
+
+        // Act & Assert
+        notifier.setRules(rules);
+        expect(
+          () => notifier.addRule(newRule),
+          throwsException,
+        );
+      });
+
+      test('editRule updates rule at specified index', () {
+        // Arrange
+        final notifier = container.read(ipv6PortServiceListProvider.notifier);
+        final rule1 = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'Rule 1',
+          ipv6Address: '2001:db8::1',
+          portRanges: const [
+            PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)
+          ],
+        );
+        final rule2 = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'Rule 2',
+          ipv6Address: '2001:db8::2',
+          portRanges: const [
+            PortRangeUI(protocol: 'UDP', firstPort: 53, lastPort: 53)
+          ],
+        );
+        final updatedRule = IPv6PortServiceRuleUI(
+          enabled: false,
+          description: 'Updated Rule 2',
+          ipv6Address: '2001:db8::2',
+          portRanges: const [
+            PortRangeUI(protocol: 'UDP', firstPort: 53, lastPort: 53)
+          ],
+        );
+
+        // Act
+        notifier.setRules([rule1, rule2]);
+        notifier.editRule(1, updatedRule);
+        var state = container.read(ipv6PortServiceListProvider);
+
+        // Assert
+        expect(state.settings.current.rules[1], updatedRule);
+        expect(state.settings.current.rules[0], rule1);
+      });
+
+      test('editRule throws exception for invalid index', () {
+        // Arrange
+        final notifier = container.read(ipv6PortServiceListProvider.notifier);
+        final rule = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'Rule 1',
+          ipv6Address: '2001:db8::1',
+          portRanges: const [
+            PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)
+          ],
+        );
+
+        // Act & Assert
+        notifier.setRules([rule]);
+        expect(
+          () => notifier.editRule(5, rule),
+          throwsException,
+        );
+      });
+
+      test('deleteRule removes rule from list', () {
+        // Arrange
+        final notifier = container.read(ipv6PortServiceListProvider.notifier);
+        final rule1 = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'Rule 1',
+          ipv6Address: '2001:db8::1',
+          portRanges: const [
+            PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)
+          ],
+        );
+        final rule2 = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'Rule 2',
+          ipv6Address: '2001:db8::2',
+          portRanges: const [
+            PortRangeUI(protocol: 'UDP', firstPort: 53, lastPort: 53)
+          ],
+        );
+
+        // Act
+        notifier.setRules([rule1, rule2]);
+        notifier.deleteRule(rule1);
+        var state = container.read(ipv6PortServiceListProvider);
+
+        // Assert
+        expect(state.settings.current.rules.length, 1);
+        expect(state.settings.current.rules.first, rule2);
+      });
+
+      test('deleteRule handles non-existent rule gracefully', () {
+        // Arrange
+        final notifier = container.read(ipv6PortServiceListProvider.notifier);
+        final rule1 = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'Rule 1',
+          ipv6Address: '2001:db8::1',
+          portRanges: const [
+            PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)
+          ],
+        );
+        final rule2 = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'Rule 2',
+          ipv6Address: '2001:db8::2',
+          portRanges: const [
+            PortRangeUI(protocol: 'UDP', firstPort: 53, lastPort: 53)
+          ],
+        );
+        final nonExistentRule = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'Non-existent',
+          ipv6Address: '2001:db8::99',
+          portRanges: const [
+            PortRangeUI(protocol: 'TCP', firstPort: 9999, lastPort: 9999)
+          ],
+        );
+
+        // Act
+        notifier.setRules([rule1, rule2]);
+        notifier.deleteRule(nonExistentRule);
+        var state = container.read(ipv6PortServiceListProvider);
+
+        // Assert
+        expect(state.settings.current.rules.length, 2);
+      });
+
+      test('multiple add/edit/delete operations maintain state', () {
+        // Arrange
+        final notifier = container.read(ipv6PortServiceListProvider.notifier);
+        final rule1 = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'Rule 1',
+          ipv6Address: '2001:db8::1',
+          portRanges: const [
+            PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)
+          ],
+        );
+        final rule2 = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'Rule 2',
+          ipv6Address: '2001:db8::2',
+          portRanges: const [
+            PortRangeUI(protocol: 'UDP', firstPort: 53, lastPort: 53)
+          ],
+        );
+        final rule3 = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'Rule 3',
+          ipv6Address: '2001:db8::3',
+          portRanges: const [
+            PortRangeUI(protocol: 'TCP', firstPort: 443, lastPort: 443)
+          ],
+        );
+
+        // Act
+        notifier.setRules([rule1]);
+        notifier.addRule(rule2);
+        notifier.editRule(0, rule3);
+        notifier.addRule(rule1);
+        var state = container.read(ipv6PortServiceListProvider);
+
+        // Assert
+        expect(state.settings.current.rules.length, 3);
+        expect(state.settings.current.rules[0], rule3);
+        expect(state.settings.current.rules[1], rule2);
+        expect(state.settings.current.rules[2], rule1);
+      });
+    });
+
     group('edge cases', () {
       test('handles init with empty rule list', () {
         // Arrange

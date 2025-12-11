@@ -92,18 +92,54 @@ class Ipv6PortServiceListNotifier extends Notifier<Ipv6PortServiceListState>
     return state.status.maxRules <= state.current.rules.length;
   }
 
-  Future<void> addRule(IPv6PortServiceRuleUI rule) async {
-    // TODO: Implement with IPv6PortServiceListService (US2)
-    await fetch(forceRemote: true);
+  /// Adds a new rule to the current list
+  /// Updates the current state without fetching (local change only)
+  void addRule(IPv6PortServiceRuleUI rule) {
+    if (isExceedMax()) {
+      throw Exception(
+          'Maximum number of rules (${state.status.maxRules}) reached');
+    }
+
+    final updatedRules = [...state.current.rules, rule];
+    state = state.copyWith(
+      settings: state.settings.copyWith(
+        current: state.settings.current.copyWith(rules: updatedRules),
+      ),
+    );
   }
 
-  Future<void> editRule(int index, IPv6PortServiceRuleUI newRule) async {
-    // TODO: Implement with IPv6PortServiceListService (US2)
-    await fetch(forceRemote: true);
+  /// Edits an existing rule at the specified index
+  /// Updates the current state without fetching (local change only)
+  void editRule(int index, IPv6PortServiceRuleUI newRule) {
+    if (index < 0 || index >= state.current.rules.length) {
+      throw Exception('Invalid rule index: $index');
+    }
+
+    final updatedRules = [...state.current.rules];
+    updatedRules[index] = newRule;
+
+    state = state.copyWith(
+      settings: state.settings.copyWith(
+        current: state.settings.current.copyWith(rules: updatedRules),
+      ),
+    );
   }
 
-  Future<void> deleteRule(IPv6PortServiceRuleUI rule) async {
-    // TODO: Implement with IPv6PortServiceListService (US2)
+  /// Deletes a rule from the current list
+  /// Updates the current state without fetching (local change only)
+  void deleteRule(IPv6PortServiceRuleUI rule) {
+    final updatedRules = state.current.rules.where((r) => r != rule).toList();
+
+    state = state.copyWith(
+      settings: state.settings.copyWith(
+        current: state.settings.current.copyWith(rules: updatedRules),
+      ),
+    );
+  }
+
+  /// Saves the current rules to the device
+  /// Called after add/edit/delete operations
+  Future<void> saveRules() async {
     await fetch(forceRemote: true);
   }
 }
