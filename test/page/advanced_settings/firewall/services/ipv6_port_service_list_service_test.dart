@@ -434,5 +434,224 @@ void main() {
         expect(jnapRules.first.portRanges[2].firstPort, 53);
       });
     });
+
+    group('Error handling', () {
+      test('returns (null, null) when rules list is empty', () async {
+        // Act
+        final result = await service.fetchPortServiceRules([]);
+
+        // Assert
+        expect(result.$1, isNotNull);
+        expect(result.$1!.rules, isEmpty);
+        expect(result.$2, isNotNull);
+      });
+
+      test('handles invalid protocol value', () async {
+        // Arrange
+        final invalidRule = IPv6FirewallRule(
+          isEnabled: true,
+          description: 'Bad Protocol',
+          ipv6Address: '2001:db8::1',
+          portRanges: [
+            const PortRange(protocol: 'INVALID', firstPort: 80, lastPort: 80),
+          ],
+        );
+
+        // Act
+        final result = await service.fetchPortServiceRules([invalidRule]);
+
+        // Assert - should return (null, null) due to validation failure
+        expect(result.$1, isNull);
+        expect(result.$2, isNull);
+      });
+
+      test('handles out-of-range port numbers', () async {
+        // Arrange
+        final invalidRule = IPv6FirewallRule(
+          isEnabled: true,
+          description: 'Bad Port',
+          ipv6Address: '2001:db8::1',
+          portRanges: [
+            const PortRange(protocol: 'TCP', firstPort: 65536, lastPort: 65537),
+          ],
+        );
+
+        // Act
+        final result = await service.fetchPortServiceRules([invalidRule]);
+
+        // Assert
+        expect(result.$1, isNull);
+        expect(result.$2, isNull);
+      });
+
+      test('handles port range where firstPort > lastPort', () async {
+        // Arrange
+        final invalidRule = IPv6FirewallRule(
+          isEnabled: true,
+          description: 'Reversed Range',
+          ipv6Address: '2001:db8::1',
+          portRanges: [
+            const PortRange(protocol: 'TCP', firstPort: 443, lastPort: 80),
+          ],
+        );
+
+        // Act
+        final result = await service.fetchPortServiceRules([invalidRule]);
+
+        // Assert
+        expect(result.$1, isNull);
+        expect(result.$2, isNull);
+      });
+
+      test('handles rule with empty description', () async {
+        // Arrange
+        final invalidRule = IPv6FirewallRule(
+          isEnabled: true,
+          description: '',
+          ipv6Address: '2001:db8::1',
+          portRanges: const [
+            PortRange(protocol: 'TCP', firstPort: 80, lastPort: 80),
+          ],
+        );
+
+        // Act
+        final result = await service.fetchPortServiceRules([invalidRule]);
+
+        // Assert
+        expect(result.$1, isNull);
+        expect(result.$2, isNull);
+      });
+
+      test('handles rule with empty IPv6 address', () async {
+        // Arrange
+        final invalidRule = IPv6FirewallRule(
+          isEnabled: true,
+          description: 'Test',
+          ipv6Address: '',
+          portRanges: const [
+            PortRange(protocol: 'TCP', firstPort: 80, lastPort: 80),
+          ],
+        );
+
+        // Act
+        final result = await service.fetchPortServiceRules([invalidRule]);
+
+        // Assert
+        expect(result.$1, isNull);
+        expect(result.$2, isNull);
+      });
+
+      test('handles rule with no port ranges', () async {
+        // Arrange
+        final invalidRule = IPv6FirewallRule(
+          isEnabled: true,
+          description: 'No Ports',
+          ipv6Address: '2001:db8::1',
+          portRanges: const [],
+        );
+
+        // Act
+        final result = await service.fetchPortServiceRules([invalidRule]);
+
+        // Assert
+        expect(result.$1, isNull);
+        expect(result.$2, isNull);
+      });
+
+      test('partial success: returns valid rules when some fail', () async {
+        // Arrange
+        final validRule = IPv6FirewallRule(
+          isEnabled: true,
+          description: 'Valid Rule',
+          ipv6Address: '2001:db8::1',
+          portRanges: const [
+            PortRange(protocol: 'TCP', firstPort: 80, lastPort: 80),
+          ],
+        );
+
+        final invalidRule = IPv6FirewallRule(
+          isEnabled: true,
+          description: 'Invalid Protocol',
+          ipv6Address: '2001:db8::2',
+          portRanges: const [
+            PortRange(protocol: 'INVALID', firstPort: 443, lastPort: 443),
+          ],
+        );
+
+        // Act
+        final result = await service.fetchPortServiceRules([validRule, invalidRule]);
+
+        // Assert - should return valid rule despite one failing
+        expect(result.$1, isNotNull);
+        expect(result.$1!.rules, hasLength(1));
+        expect(result.$1!.rules.first.description, 'Valid Rule');
+      });
+
+      test('partial success: continues processing after failure', () async {
+        // Arrange
+        final rules = [
+          IPv6FirewallRule(
+            isEnabled: true,
+            description: 'Valid 1',
+            ipv6Address: '2001:db8::1',
+            portRanges: const [
+              PortRange(protocol: 'TCP', firstPort: 80, lastPort: 80),
+            ],
+          ),
+          IPv6FirewallRule(
+            isEnabled: true,
+            description: 'Invalid Port',
+            ipv6Address: '2001:db8::2',
+            portRanges: const [
+              PortRange(protocol: 'TCP', firstPort: 65536, lastPort: 65537),
+            ],
+          ),
+          IPv6FirewallRule(
+            isEnabled: true,
+            description: 'Valid 2',
+            ipv6Address: '2001:db8::3',
+            portRanges: const [
+              PortRange(protocol: 'UDP', firstPort: 53, lastPort: 53),
+            ],
+          ),
+        ];
+
+        // Act
+        final result = await service.fetchPortServiceRules(rules);
+
+        // Assert - should have 2 valid rules
+        expect(result.$1, isNotNull);
+        expect(result.$1!.rules, hasLength(2));
+        expect(result.$1!.rules[0].description, 'Valid 1');
+        expect(result.$1!.rules[1].description, 'Valid 2');
+      });
+
+      test('returns (null, null) when all rules fail validation', () async {
+        // Arrange
+        final allInvalidRules = [
+          IPv6FirewallRule(
+            isEnabled: true,
+            description: '',
+            ipv6Address: '2001:db8::1',
+            portRanges: const [
+              PortRange(protocol: 'TCP', firstPort: 80, lastPort: 80),
+            ],
+          ),
+          IPv6FirewallRule(
+            isEnabled: true,
+            description: 'No Ports',
+            ipv6Address: '2001:db8::2',
+            portRanges: const [],
+          ),
+        ];
+
+        // Act
+        final result = await service.fetchPortServiceRules(allInvalidRules);
+
+        // Assert
+        expect(result.$1, isNull);
+        expect(result.$2, isNull);
+      });
+    });
   });
 }
