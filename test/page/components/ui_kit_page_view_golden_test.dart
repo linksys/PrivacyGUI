@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:golden_toolkit/golden_toolkit.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
-import 'package:privacy_gui/page/components/styled/consts.dart' as privacy_gui_consts;
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
-import 'package:ui_kit_library/ui_kit.dart';
 
 /// T093: Comprehensive golden tests for production UiKitPageView
 ///
@@ -25,8 +22,8 @@ void main() {
                 child: (context, constraints) => const Center(
                   child: Text('Basic page content'),
                 ),
-                appBarStyle: privacy_gui_consts.AppBarStyle.back,
-                backState: privacy_gui_consts.StyledBackState.enabled,
+                appBarStyle: UiKitAppBarStyle.back,
+                backState: UiKitBackState.enabled,
               ),
             ),
             name: 'Basic Configuration',
@@ -48,8 +45,8 @@ void main() {
                 child: (context, constraints) => const Center(
                   child: Text('Page with actions'),
                 ),
-                appBarStyle: privacy_gui_consts.AppBarStyle.back,
-                backState: privacy_gui_consts.StyledBackState.enabled,
+                appBarStyle: UiKitAppBarStyle.back,
+                backState: UiKitBackState.enabled,
               ),
             ),
             name: 'With Actions',
@@ -88,11 +85,11 @@ void main() {
             widget: _wrapWithProviders(
               UiKitPageView.dashboard(
                 title: 'Dashboard',
-                menu: PageMenu(
+                menu: UiKitMenuConfig(
                   title: 'Menu',
                   items: [
-                    PageMenuItem(label: 'Home', icon: Icons.home),
-                    PageMenuItem(label: 'Settings', icon: Icons.settings),
+                    UiKitMenuItem(label: 'Home', icon: Icons.home),
+                    UiKitMenuItem(label: 'Settings', icon: Icons.settings),
                   ],
                 ),
                 child: (context, constraints) => const Center(
@@ -106,19 +103,19 @@ void main() {
             widget: _wrapWithProviders(
               UiKitPageView.settings(
                 title: 'Settings',
-                menu: PageMenu(
+                menu: UiKitMenuConfig(
                   title: 'Settings',
                   items: [
-                    PageMenuItem(label: 'General', icon: Icons.settings),
-                    PageMenuItem(label: 'Privacy', icon: Icons.security),
-                    PageMenuItem(label: 'Network', icon: Icons.wifi),
+                    UiKitMenuItem(label: 'General', icon: Icons.settings),
+                    UiKitMenuItem(label: 'Privacy', icon: Icons.security),
+                    UiKitMenuItem(label: 'Network', icon: Icons.wifi),
                   ],
                 ),
-                bottomBar: PageBottomBar(
+                bottomBar: UiKitBottomBarConfig(
                   positiveLabel: 'Save',
                   onPositiveTap: () {},
-                  negitiveLable: 'Cancel',
-                  onNegitiveTap: () {},
+                  negativeLabel: 'Cancel',
+                  onNegativeTap: () {},
                 ),
                 child: (context, constraints) => const Center(
                   child: Text('Settings content'),
@@ -143,11 +140,11 @@ void main() {
             widget: _wrapWithProviders(
               UiKitPageView(
                 title: 'Standard Bottom Bar',
-                bottomBar: PageBottomBar(
+                bottomBar: UiKitBottomBarConfig(
                   positiveLabel: 'Save',
                   onPositiveTap: () {},
-                  negitiveLable: 'Cancel',
-                  onNegitiveTap: () {},
+                  negativeLabel: 'Cancel',
+                  onNegativeTap: () {},
                 ),
                 child: (context, constraints) => const Center(
                   child: Text('Standard bottom bar'),
@@ -160,11 +157,12 @@ void main() {
             widget: _wrapWithProviders(
               UiKitPageView(
                 title: 'Destructive Bottom Bar',
-                bottomBar: InversePageBottomBar(
+                bottomBar: UiKitBottomBarConfig(
                   positiveLabel: 'Delete',
                   onPositiveTap: () {},
-                  negitiveLable: 'Cancel',
-                  onNegitiveTap: () {},
+                  negativeLabel: 'Cancel',
+                  onNegativeTap: () {},
+                  isDestructive: true,
                 ),
                 child: (context, constraints) => const Center(
                   child: Text('Destructive bottom bar'),
@@ -177,13 +175,13 @@ void main() {
             widget: _wrapWithProviders(
               UiKitPageView(
                 title: 'Disabled Actions',
-                bottomBar: PageBottomBar(
+                bottomBar: UiKitBottomBarConfig(
                   positiveLabel: 'Save',
                   onPositiveTap: () {},
                   isPositiveEnabled: false,
-                  negitiveLable: 'Cancel',
-                  onNegitiveTap: () {},
-                  isNegitiveEnabled: false,
+                  negativeLabel: 'Cancel',
+                  onNegativeTap: () {},
+                  isNegativeEnabled: false,
                 ),
                 child: (context, constraints) => const Center(
                   child: Text('Disabled actions'),
@@ -208,12 +206,12 @@ void main() {
             widget: _wrapWithProviders(
               UiKitPageView(
                 title: 'Small Menu Left',
-                menu: PageMenu(
+                menu: UiKitMenuConfig(
                   title: 'Menu',
                   items: [
-                    PageMenuItem(label: 'Item 1', icon: Icons.home),
-                    PageMenuItem(label: 'Item 2', icon: Icons.settings),
-                    PageMenuItem(label: 'Item 3', icon: Icons.info),
+                    UiKitMenuItem(label: 'Item 1', icon: Icons.home),
+                    UiKitMenuItem(label: 'Item 2', icon: Icons.settings),
+                    UiKitMenuItem(label: 'Item 3', icon: Icons.info),
                   ],
                 ),
                 menuOnRight: false,
@@ -229,15 +227,15 @@ void main() {
             widget: _wrapWithProviders(
               UiKitPageView(
                 title: 'Large Menu Right',
-                menu: PageMenu(
+                menu: UiKitMenuConfig(
                   title: 'Navigation',
                   items: [
-                    PageMenuItem(label: 'Dashboard', icon: Icons.dashboard),
-                    PageMenuItem(label: 'Network', icon: Icons.wifi),
-                    PageMenuItem(label: 'Security', icon: Icons.security),
-                    PageMenuItem(label: 'Parental Controls', icon: Icons.family_restroom),
-                    PageMenuItem(label: 'Guest Access', icon: Icons.person_add),
-                    PageMenuItem(label: 'Advanced', icon: Icons.build),
+                    UiKitMenuItem(label: 'Dashboard', icon: Icons.dashboard),
+                    UiKitMenuItem(label: 'Network', icon: Icons.wifi),
+                    UiKitMenuItem(label: 'Security', icon: Icons.security),
+                    UiKitMenuItem(label: 'Parental Controls', icon: Icons.family_restroom),
+                    UiKitMenuItem(label: 'Guest Access', icon: Icons.person_add),
+                    UiKitMenuItem(label: 'Advanced', icon: Icons.build),
                   ],
                 ),
                 menuOnRight: true,
@@ -416,11 +414,11 @@ void main() {
           ..addScenario(
             widget: _wrapWithProviders(
               UiKitPageView.innerPage(
-                bottomBar: PageBottomBar(
+                bottomBar: UiKitBottomBarConfig(
                   positiveLabel: 'Next',
                   onPositiveTap: () {},
-                  negitiveLable: 'Back',
-                  onNegitiveTap: () {},
+                  negativeLabel: 'Back',
+                  onNegativeTap: () {},
                 ),
                 child: (context, constraints) => const Center(
                   child: Text('Inner page with bottom bar'),
@@ -451,19 +449,19 @@ void main() {
                     IconButton(onPressed: () {}, icon: const Icon(Icons.search)),
                     IconButton(onPressed: () {}, icon: const Icon(Icons.more_vert)),
                   ],
-                  menu: PageMenu(
+                  menu: UiKitMenuConfig(
                     title: 'Navigation',
                     items: [
-                      PageMenuItem(label: 'Home', icon: Icons.home),
-                      PageMenuItem(label: 'Settings', icon: Icons.settings),
-                      PageMenuItem(label: 'Help', icon: Icons.help),
+                      UiKitMenuItem(label: 'Home', icon: Icons.home),
+                      UiKitMenuItem(label: 'Settings', icon: Icons.settings),
+                      UiKitMenuItem(label: 'Help', icon: Icons.help),
                     ],
                   ),
-                  bottomBar: PageBottomBar(
+                  bottomBar: UiKitBottomBarConfig(
                     positiveLabel: 'Save',
                     onPositiveTap: () {},
-                    negitiveLable: 'Cancel',
-                    onNegitiveTap: () {},
+                    negativeLabel: 'Cancel',
+                    onNegativeTap: () {},
                   ),
                   tabs: const [
                     Tab(text: 'Overview'),
@@ -497,8 +495,8 @@ void main() {
       const pageView = UiKitPageView(
         title: 'Test',
         toolbarHeight: 56.0,
-        backState: privacy_gui_consts.StyledBackState.enabled,
-        appBarStyle: privacy_gui_consts.AppBarStyle.back,
+        backState: UiKitBackState.enabled,
+        appBarStyle: UiKitAppBarStyle.back,
         handleNoConnection: true,
         handleBanner: true,
         enableSafeArea: (left: true, top: true, right: true, bottom: true),
@@ -506,15 +504,15 @@ void main() {
         largeMenu: false,
         useMainPadding: true,
         markLabel: 'test-label',
-        pageContentType: PageContentType.flexible,
+        pageContentType: UiKitPageContentType.flexible,
         hideTopbar: false,
         enableSliverAppBar: false,
       );
 
       expect(pageView.title, equals('Test'));
       expect(pageView.toolbarHeight, equals(56.0));
-      expect(pageView.backState, equals(privacy_gui_consts.StyledBackState.enabled));
-      expect(pageView.appBarStyle, equals(privacy_gui_consts.AppBarStyle.back));
+      expect(pageView.backState, equals(UiKitBackState.enabled));
+      expect(pageView.appBarStyle, equals(UiKitAppBarStyle.back));
       expect(pageView.handleNoConnection, isTrue);
       expect(pageView.handleBanner, isTrue);
       expect(pageView.menuOnRight, isFalse);
@@ -563,7 +561,7 @@ void main() {
       expect(settingsPage.largeMenu, isTrue);
 
       expect(innerPage.hideTopbar, isTrue);
-      expect(innerPage.appBarStyle, equals(privacy_gui_consts.AppBarStyle.none));
+      expect(innerPage.appBarStyle, equals(UiKitAppBarStyle.none));
 
       expect(sliverPage.enableSliverAppBar, isTrue);
     });
