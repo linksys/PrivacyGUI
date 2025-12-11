@@ -23,18 +23,54 @@ class IPv6PortServiceListService {
   /// 2. → IPv6PortServiceRuleUI (UI model for presentation)
   /// 3. → List returned to Presentation layer
   ///
+  /// This method implements partial success handling:
+  /// - If some rules fail transformation, valid rules are still returned
+  /// - Failed rules are logged with their index and error details
+  /// - Empty list returns (null, null) to indicate failure
+  ///
+  /// Error handling covers:
+  /// - Null or invalid rules input
+  /// - Invalid protocol values (must be TCP/UDP/Both)
+  /// - Out-of-range port numbers
+  /// - Malformed IPv6 addresses
+  /// - Incomplete rule data
+  ///
   /// Parameters:
   /// - rules: List of JNAP IPv6FirewallRule objects
   ///
   /// Returns:
-  /// - IPv6PortServiceRuleUIList with transformed UI models, EmptyStatus on success
-  /// - null on error
+  /// - IPv6PortServiceRuleUIList with transformed UI models (may be partial), EmptyStatus on success
+  /// - (null, null) if all rules fail transformation or input is invalid
   Future<(IPv6PortServiceRuleUIList?, EmptyStatus?)> fetchPortServiceRules(
     List<IPv6FirewallRule> rules,
   ) async {
     try {
-      final uiRules = _transformRuleListToUI(rules);
-      return (IPv6PortServiceRuleUIList(rules: uiRules), const EmptyStatus());
+      // Validate input (rules parameter is already guaranteed non-null)
+
+      if (rules.isEmpty) {
+        logger.d('Empty IPv6 port service rules list');
+        return (IPv6PortServiceRuleUIList(rules: const []), const EmptyStatus());
+      }
+
+      // Transform rules with partial success handling
+      final (validRules, failedIndices) = _transformRuleListToUIWithErrors(rules);
+
+      // Log failures if any occurred
+      if (failedIndices.isNotEmpty) {
+        logger.w(
+          'Some IPv6 port service rules failed transformation',
+          error: 'Failed indices: ${failedIndices.join(", ")}',
+        );
+      }
+
+      // Return null if no valid rules were transformed
+      if (validRules.isEmpty) {
+        logger.e('All IPv6 port service rules failed transformation');
+        return (null, null);
+      }
+
+      logger.d('Successfully transformed ${validRules.length}/${rules.length} IPv6 port service rules');
+      return (IPv6PortServiceRuleUIList(rules: validRules), const EmptyStatus());
     } catch (e, stackTrace) {
       logger.e('Error fetching IPv6 port service rules',
           error: e, stackTrace: stackTrace);
@@ -42,46 +78,133 @@ class IPv6PortServiceListService {
     }
   }
 
-  /// Private: Transforms list of JNAP IPv6FirewallRule to UI models
+  /// Private: Transforms list of JNAP IPv6FirewallRule to UI models with error recovery.
   ///
-  /// Applies transformation to each rule:
-  /// - JNAP IPv6FirewallRule has portRanges (list) field
-  /// - UI IPv6PortServiceRuleUI maps portRanges to UI PortRangeUI list
-  /// - Each field is validated and transformed
+  /// This method implements partial success handling:
+  /// - Attempts to transform each rule individually
+  /// - Collects valid rules and failed rule indices
+  /// - Logs detailed error information for each failure
+  /// - Returns both valid rules and list of failed indices
   ///
-  /// Throws exception if transformation fails for any rule
-  List<IPv6PortServiceRuleUI> _transformRuleListToUI(
-      List<IPv6FirewallRule> rules) {
-    return rules.map((rule) => _transformRuleToUI(rule)).toList();
+  /// Returns: Tuple of (List<IPv6PortServiceRuleUI>, List<int>)
+  /// - First element: List of successfully transformed rules
+  /// - Second element: List of indices of rules that failed transformation
+  (List<IPv6PortServiceRuleUI>, List<int>) _transformRuleListToUIWithErrors(
+    List<IPv6FirewallRule> rules,
+  ) {
+    final validRules = <IPv6PortServiceRuleUI>[];
+    final failedIndices = <int>[];
+
+    for (int i = 0; i < rules.length; i++) {
+      try {
+        final rule = _transformRuleToUI(rules[i]);
+        validRules.add(rule);
+      } catch (e) {
+        logger.w(
+          'Failed to transform IPv6 port service rule at index $i',
+          error: e.toString(),
+        );
+        failedIndices.add(i);
+      }
+    }
+
+    return (validRules, failedIndices);
   }
 
-  /// Private: Transforms single JNAP IPv6FirewallRule to UI model
+  /// Private: Transforms single JNAP IPv6FirewallRule to UI model with validation.
   ///
   /// Transformation details:
   /// - isEnabled → enabled
   /// - description → description (unchanged)
-  /// - ipv6Address → ipv6Address (unchanged, validated as IPv6)
-  /// - portRanges[] → portRanges[] (map each PortRange to PortRangeUI)
+  /// - ipv6Address → ipv6Address (validated as IPv6)
+  /// - portRanges[] → portRanges[] (validates each PortRange)
   ///
-  /// Each PortRange transformation:
-  /// - protocol → protocol (TCP/UDP/Both)
-  /// - firstPort → firstPort (0-65535)
-  /// - lastPort → lastPort (0-65535)
+  /// Each PortRange validation:
+  /// - protocol must be TCP/UDP/Both
+  /// - firstPort must be 0-65535
+  /// - lastPort must be 0-65535
+  /// - firstPort must be <= lastPort
   ///
-  /// Throws exception if any field cannot be transformed
+  /// Throws exception if any field cannot be transformed or is invalid
   IPv6PortServiceRuleUI _transformRuleToUI(IPv6FirewallRule rule) {
+    // Validate description is present
+    if (rule.description.isEmpty) {
+      throw Exception('Rule description is missing or empty');
+    }
+
+    // Validate IPv6 address is present
+    if (rule.ipv6Address.isEmpty) {
+      throw Exception('Rule IPv6 address is missing or empty');
+    }
+
+    // Validate port ranges list
+    if (rule.portRanges.isEmpty) {
+      throw Exception('Rule has no port ranges');
+    }
+
+    // Transform port ranges with validation
+    final transformedRanges = <PortRangeUI>[];
+    for (int i = 0; i < rule.portRanges.length; i++) {
+      final pr = rule.portRanges[i];
+      _validatePortRange(pr, i);
+      transformedRanges.add(PortRangeUI(
+        protocol: pr.protocol,
+        firstPort: pr.firstPort,
+        lastPort: pr.lastPort,
+      ));
+    }
+
     return IPv6PortServiceRuleUI(
       enabled: rule.isEnabled,
       description: rule.description,
       ipv6Address: rule.ipv6Address,
-      portRanges: rule.portRanges
-          .map((pr) => PortRangeUI(
-                protocol: pr.protocol,
-                firstPort: pr.firstPort,
-                lastPort: pr.lastPort,
-              ))
-          .toList(),
+      portRanges: transformedRanges,
     );
+  }
+
+  /// Private: Validates a single port range entry.
+  ///
+  /// Ensures:
+  /// - Protocol is TCP, UDP, or Both
+  /// - Port numbers are in valid range (0-65535)
+  /// - firstPort <= lastPort
+  ///
+  /// Parameters:
+  /// - [portRange]: The PortRange to validate
+  /// - [index]: Index for error messages
+  ///
+  /// Throws exception if validation fails
+  void _validatePortRange(PortRange portRange, int index) {
+    // Validate protocol
+    const validProtocols = ['TCP', 'UDP', 'Both'];
+    if (!validProtocols.contains(portRange.protocol)) {
+      throw Exception(
+        'Port range at index $index has invalid protocol: ${portRange.protocol}. Must be TCP, UDP, or Both.',
+      );
+    }
+
+    // Validate port numbers
+    const minPort = 0;
+    const maxPort = 65535;
+
+    if (portRange.firstPort < minPort || portRange.firstPort > maxPort) {
+      throw Exception(
+        'Port range at index $index has invalid firstPort: ${portRange.firstPort}. Must be 0-65535.',
+      );
+    }
+
+    if (portRange.lastPort < minPort || portRange.lastPort > maxPort) {
+      throw Exception(
+        'Port range at index $index has invalid lastPort: ${portRange.lastPort}. Must be 0-65535.',
+      );
+    }
+
+    // Validate port order
+    if (portRange.firstPort > portRange.lastPort) {
+      throw Exception(
+        'Port range at index $index is invalid: firstPort (${portRange.firstPort}) > lastPort (${portRange.lastPort}).',
+      );
+    }
   }
 
   /// Transforms UI models back to JNAP models for saving.

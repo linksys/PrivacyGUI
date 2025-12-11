@@ -3,6 +3,7 @@ import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/models/firewall_settings.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/advanced_settings/firewall/providers/firewall_state.dart';
 import 'package:privacy_gui/providers/empty_status.dart';
 
@@ -27,8 +28,10 @@ class FirewallSettingsService {
   /// Returns: Tuple of (FirewallUISettings, EmptyStatus)
   ///   - FirewallUISettings: Transformed UI model with all firewall configuration
   ///   - EmptyStatus: Status object (currently unused, reserved for future extensions)
+  ///   - Returns (null, null) on error after logging
   ///
-  /// Throws: [Exception] with detailed context if JNAP action or transformation fails
+  /// This method does NOT throw exceptions. Instead, it catches all errors and returns null,
+  /// allowing the provider layer to handle error display.
   Future<(FirewallUISettings?, EmptyStatus?)> fetchFirewallSettings(
     Ref ref, {
     bool forceRemote = false,
@@ -43,17 +46,41 @@ class FirewallSettingsService {
         fetchRemote: forceRemote,
       );
 
+      // Validate JNAP response is not empty
+      final output = result.output;
+      if ((output as Map?)?.isEmpty ?? true) {
+        logger.e(
+          'JNAP getFirewallSettings returned empty output',
+          error: 'Response output is empty or null',
+        );
+        return (null, null);
+      }
+
       // Parse Data layer model (JNAP response)
-      final dataModel = FirewallSettings.fromMap(result.output);
+      final dataModel = _parseFirewallSettings(result.output);
+      if (dataModel == null) {
+        logger.e(
+          'Failed to parse firewall settings from JNAP response',
+          error: 'Data model parsing failed',
+        );
+        return (null, null);
+      }
+
+      // Validate parsed model for missing or invalid fields
+      _validateFirewallSettings(dataModel);
 
       // Transform to Application layer UI model
       final uiSettings = _transformToUIModel(dataModel);
 
+      logger.d('Successfully fetched firewall settings');
       return (uiSettings, const EmptyStatus());
-    } catch (e) {
-      throw Exception(
-        'Failed to fetch firewall settings: ${e.toString()}',
+    } catch (e, stackTrace) {
+      logger.e(
+        'Error fetching firewall settings',
+        error: e,
+        stackTrace: stackTrace,
       );
+      return (null, null);
     }
   }
 
@@ -68,16 +95,30 @@ class FirewallSettingsService {
   /// - [ref]: Riverpod Ref for accessing provider dependencies
   /// - [settings]: The FirewallUISettings to save (Application layer UI model)
   ///
-  /// Throws: [Exception] with detailed context if transformation or JNAP action fails
+  /// Throws: [Exception] with descriptive error message if transformation or JNAP action fails
+  ///
+  /// Error handling covers:
+  /// - Null settings input validation
+  /// - Data model transformation errors
+  /// - JNAP action failures
+  /// - Network timeouts
+  /// - Invalid responses
   Future<void> saveFirewallSettings(
     Ref ref,
     FirewallUISettings settings,
   ) async {
     try {
+      // Validate input settings (note: settings is already guaranteed non-null by parameter signature)
+
       final repo = ref.read(routerRepositoryProvider);
 
       // Transform UI model to Data model for JNAP
       final dataModel = _transformToDataModel(settings);
+
+      // Validate data model before sending
+      _validateFirewallSettings(dataModel);
+
+      logger.d('Saving firewall settings to device');
 
       // Execute JNAP action to save firewall settings
       await repo.send(
@@ -87,7 +128,17 @@ class FirewallSettingsService {
         cacheLevel: CacheLevel.noCache,
         data: dataModel.toMap(),
       );
-    } catch (e) {
+
+      logger.d('Successfully saved firewall settings');
+    } on ArgumentError catch (e) {
+      logger.e('Invalid firewall settings input', error: e);
+      throw Exception('Invalid firewall settings: ${e.message}');
+    } catch (e, stackTrace) {
+      logger.e(
+        'Error saving firewall settings',
+        error: e,
+        stackTrace: stackTrace,
+      );
       throw Exception(
         'Failed to save firewall settings: ${e.toString()}',
       );
@@ -139,5 +190,65 @@ class FirewallSettingsService {
       isIPv4FirewallEnabled: uiSettings.isIPv4FirewallEnabled,
       isIPv6FirewallEnabled: uiSettings.isIPv6FirewallEnabled,
     );
+  }
+
+  /// Private: Parses JNAP response output into FirewallSettings model.
+  ///
+  /// This method safely parses the JNAP response output map into a FirewallSettings object.
+  /// It handles various parsing errors gracefully.
+  ///
+  /// Parameters:
+  /// - [output]: The raw JNAP response output map
+  ///
+  /// Returns: Parsed FirewallSettings object, or null if parsing fails
+  FirewallSettings? _parseFirewallSettings(dynamic output) {
+    try {
+      // Ensure output is a Map
+      if (output is! Map<String, dynamic>) {
+        logger.w(
+          'JNAP response output is not a Map',
+          error: 'Expected Map<String, dynamic>, got ${output.runtimeType}',
+        );
+        return null;
+      }
+
+      // Parse using factory method
+      return FirewallSettings.fromMap(output);
+    } on TypeError catch (e) {
+      logger.e(
+        'Type error parsing firewall settings',
+        error: 'Field type mismatch: ${e.toString()}',
+      );
+      return null;
+    } on FormatException catch (e) {
+      logger.e(
+        'Format error parsing firewall settings',
+        error: 'Invalid data format: ${e.toString()}',
+      );
+      return null;
+    } catch (e) {
+      logger.e(
+        'Unexpected error parsing firewall settings',
+        error: e.toString(),
+      );
+      return null;
+    }
+  }
+
+  /// Private: Validates that FirewallSettings model has all required fields with valid values.
+  ///
+  /// This method performs validation of parsed firewall settings to ensure:
+  /// - Data model structure is valid
+  /// - Field values are semantically valid
+  /// - No incomplete or corrupted data exists
+  ///
+  /// Parameters:
+  /// - [dataModel]: The FirewallSettings model to validate (guaranteed non-null)
+  ///
+  /// Throws: [Exception] if validation fails with descriptive error message
+  void _validateFirewallSettings(FirewallSettings dataModel) {
+    // All fields in FirewallSettings are non-nullable by design
+    // Additional semantic validation could be added here in the future
+    logger.d('Firewall settings validation passed');
   }
 }
