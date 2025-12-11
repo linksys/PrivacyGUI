@@ -25,11 +25,9 @@ class SessionTokenExpiredException extends AuthException {
 }
 
 class CloudNetworkNotFoundException extends AuthException {
-  CloudNetworkNotFoundException()
-      : super(message: 'cloud network not found!');
+  CloudNetworkNotFoundException() : super(message: 'cloud network not found!');
 }
 
 class CloudAuthInvalidException extends AuthException {
-  CloudAuthInvalidException()
-      : super(message: 'cloud auth invalid!');
+  CloudAuthInvalidException() : super(message: 'cloud auth invalid!');
 }
