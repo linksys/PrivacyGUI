@@ -297,9 +297,8 @@ void main() {
 
         final uiSettings =
             FirewallSettingsTestData.createSuccessfulResponse().output;
-        final firewallUISettings = service
-            .fetchFirewallSettings(mockRef)
-            .then((value) => value.$1!);
+        final firewallUISettings =
+            service.fetchFirewallSettings(mockRef).then((value) => value.$1!);
 
         // Act
         await service.saveFirewallSettings(
@@ -383,7 +382,8 @@ void main() {
           routerRepository: mockRepository,
         );
 
-        final fetchResponse = FirewallSettingsTestData.createIPv4EnabledResponse();
+        final fetchResponse =
+            FirewallSettingsTestData.createIPv4EnabledResponse();
         when(() => mockRepository.send(
               JNAPAction.getFirewallSettings,
               auth: any(named: 'auth'),
@@ -438,12 +438,13 @@ void main() {
       test('ensures fetchRemote is true for save operation', () async {
         // Arrange
         when(() => mockRepository.send(
-              any(),
-              auth: any(named: 'auth'),
-              fetchRemote: any(named: 'fetchRemote'),
-              cacheLevel: any(named: 'cacheLevel'),
-              data: any(named: 'data'),
-            )).thenAnswer((_) async =>
+                  any(),
+                  auth: any(named: 'auth'),
+                  fetchRemote: any(named: 'fetchRemote'),
+                  cacheLevel: any(named: 'cacheLevel'),
+                  data: any(named: 'data'),
+                ))
+            .thenAnswer((_) async =>
                 FirewallSettingsTestData.createSuccessfulResponse());
 
         final mockRef = UnitTestHelper.createMockRef(
@@ -476,12 +477,13 @@ void main() {
       test('ensures noCache for save operation', () async {
         // Arrange
         when(() => mockRepository.send(
-              any(),
-              auth: any(named: 'auth'),
-              fetchRemote: any(named: 'fetchRemote'),
-              cacheLevel: any(named: 'cacheLevel'),
-              data: any(named: 'data'),
-            )).thenAnswer((_) async =>
+                  any(),
+                  auth: any(named: 'auth'),
+                  fetchRemote: any(named: 'fetchRemote'),
+                  cacheLevel: any(named: 'cacheLevel'),
+                  data: any(named: 'data'),
+                ))
+            .thenAnswer((_) async =>
                 FirewallSettingsTestData.createSuccessfulResponse());
 
         final mockRef = UnitTestHelper.createMockRef(

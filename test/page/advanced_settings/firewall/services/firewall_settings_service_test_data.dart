@@ -97,8 +97,7 @@ class FirewallSettingsTestData {
   /// Create response with all firewall protections enabled
   ///
   /// Represents maximum security configuration
-  static JNAPSuccess createFullyEnabledResponse() =>
-      createSuccessfulResponse(
+  static JNAPSuccess createFullyEnabledResponse() => createSuccessfulResponse(
         blockAnonymousRequests: true,
         blockIDENT: true,
         blockIPSec: true,
@@ -113,8 +112,7 @@ class FirewallSettingsTestData {
   /// Create response with IPv4 firewall enabled only
   ///
   /// Represents common configuration: IPv4 firewall with basic blocking
-  static JNAPSuccess createIPv4EnabledResponse() =>
-      createSuccessfulResponse(
+  static JNAPSuccess createIPv4EnabledResponse() => createSuccessfulResponse(
         isIPv4FirewallEnabled: true,
         blockAnonymousRequests: true,
       );
@@ -122,8 +120,7 @@ class FirewallSettingsTestData {
   /// Create response with IPv6 firewall enabled only
   ///
   /// Represents IPv6-focused configuration
-  static JNAPSuccess createIPv6EnabledResponse() =>
-      createSuccessfulResponse(
+  static JNAPSuccess createIPv6EnabledResponse() => createSuccessfulResponse(
         isIPv6FirewallEnabled: true,
         blockMulticast: true,
       );

@@ -543,8 +543,7 @@ void main() {
         expect(restored.isIPv6FirewallEnabled, false);
       });
 
-      test('round-trip: object → toMap() → fromMap() → equals(original)',
-          () {
+      test('round-trip: object → toMap() → fromMap() → equals(original)', () {
         // Arrange
         const original = FirewallUISettings(
           blockAnonymousRequests: true,
@@ -564,7 +563,8 @@ void main() {
 
         // Assert
         expect(restored, original);
-        expect(restored.blockAnonymousRequests, original.blockAnonymousRequests);
+        expect(
+            restored.blockAnonymousRequests, original.blockAnonymousRequests);
         expect(restored.blockIDENT, original.blockIDENT);
         expect(restored.blockIPSec, original.blockIPSec);
         expect(restored.blockL2TP, original.blockL2TP);
@@ -623,8 +623,7 @@ void main() {
         expect(restored, originalSettings);
       });
 
-      test('round-trip: object → toJson() → fromJson() → equals(original)',
-          () {
+      test('round-trip: object → toJson() → fromJson() → equals(original)', () {
         // Arrange
         const original = FirewallUISettings(
           blockAnonymousRequests: false,
@@ -852,8 +851,7 @@ void main() {
         expect(restored.status, const EmptyStatus());
       });
 
-      test('round-trip: object → toMap() → fromMap() → equals(original)',
-          () {
+      test('round-trip: object → toMap() → fromMap() → equals(original)', () {
         // Arrange
         const originalSettings = FirewallUISettings(
           blockAnonymousRequests: true,

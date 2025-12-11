@@ -221,7 +221,8 @@ class IPv6PortServiceTestData {
   /// ```dart
   /// final rules = IPv6PortServiceTestData.createUIRuleList();
   /// ```
-  static IPv6PortServiceRuleUIList createUIRuleList() => IPv6PortServiceRuleUIList(rules: [
+  static IPv6PortServiceRuleUIList createUIRuleList() =>
+      IPv6PortServiceRuleUIList(rules: [
         createUIRule(
           description: 'Web Server',
           protocol: 'TCP',

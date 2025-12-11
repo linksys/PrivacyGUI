@@ -228,8 +228,8 @@ void main() {
     group('preservable functionality', () {
       test('preservable contract accessor returns notifier', () {
         // Act
-        final preservable = container.read(preservableFirewallProvider)
-            as FirewallNotifier;
+        final preservable =
+            container.read(preservableFirewallProvider) as FirewallNotifier;
 
         // Assert
         expect(preservable, isNotNull);
@@ -428,8 +428,8 @@ void main() {
         expect(state1.settings.current.blockIDENT, false);
         expect(state2.settings.current.blockAnonymousRequests, false);
         expect(state2.settings.current.blockIDENT, true);
-        expect(identical(state1.settings.current, state2.settings.current),
-            false);
+        expect(
+            identical(state1.settings.current, state2.settings.current), false);
       });
     });
 

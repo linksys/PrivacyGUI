@@ -20,7 +20,8 @@ void main() {
         expect(result.$2, isNotNull);
       });
 
-      test('transforms single IPv6FirewallRule to IPv6PortServiceRuleUI', () async {
+      test('transforms single IPv6FirewallRule to IPv6PortServiceRuleUI',
+          () async {
         final jnapRule = IPv6FirewallRule(
           isEnabled: true,
           description: 'SSH Access',
@@ -107,7 +108,8 @@ void main() {
             description: 'Both Rule',
             ipv6Address: '2001:db8::3',
             portRanges: [
-              const PortRange(protocol: 'Both', firstPort: 5000, lastPort: 6000),
+              const PortRange(
+                  protocol: 'Both', firstPort: 5000, lastPort: 6000),
             ],
           ),
         ];
@@ -136,7 +138,8 @@ void main() {
         expect(uiRule.portRanges.first.lastPort, 65535);
       });
 
-      test('handles port ranges with special characters in description', () async {
+      test('handles port ranges with special characters in description',
+          () async {
         final jnapRule = IPv6FirewallRule(
           isEnabled: true,
           description: 'Test-Rule_#123!@Special',
@@ -222,9 +225,12 @@ void main() {
         expect(transformed.portRanges.length, original.portRanges.length);
 
         for (int i = 0; i < original.portRanges.length; i++) {
-          expect(transformed.portRanges[i].protocol, original.portRanges[i].protocol);
-          expect(transformed.portRanges[i].firstPort, original.portRanges[i].firstPort);
-          expect(transformed.portRanges[i].lastPort, original.portRanges[i].lastPort);
+          expect(transformed.portRanges[i].protocol,
+              original.portRanges[i].protocol);
+          expect(transformed.portRanges[i].firstPort,
+              original.portRanges[i].firstPort);
+          expect(transformed.portRanges[i].lastPort,
+              original.portRanges[i].lastPort);
         }
       });
 
@@ -233,17 +239,22 @@ void main() {
           isEnabled: true,
           description: 'Enabled',
           ipv6Address: '2001:db8::1',
-          portRanges: const [PortRange(protocol: 'TCP', firstPort: 80, lastPort: 80)],
+          portRanges: const [
+            PortRange(protocol: 'TCP', firstPort: 80, lastPort: 80)
+          ],
         );
 
         final disabledRule = IPv6FirewallRule(
           isEnabled: false,
           description: 'Disabled',
           ipv6Address: '2001:db8::2',
-          portRanges: const [PortRange(protocol: 'TCP', firstPort: 443, lastPort: 443)],
+          portRanges: const [
+            PortRange(protocol: 'TCP', firstPort: 443, lastPort: 443)
+          ],
         );
 
-        final result = await service.fetchPortServiceRules([enabledRule, disabledRule]);
+        final result =
+            await service.fetchPortServiceRules([enabledRule, disabledRule]);
 
         expect(result.$1!.rules[0].enabled, true);
         expect(result.$1!.rules[1].enabled, false);
