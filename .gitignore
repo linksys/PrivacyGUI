@@ -144,3 +144,5 @@ macos/
 # AI Project Documentation
 # Keep .claude/CLAUDE.md tracked as project documentation
 # Keep .specify/memory/ tracked for project constitution
+# Untrack auto-generated CLAUDE.md in project root
+CLAUDE.md
