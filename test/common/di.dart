@@ -5,9 +5,12 @@ import '../mocks/jnap_service_supported_mocks.dart';
 import 'theme_data.dart';
 
 void mockDependencyRegister() {
-  if (!getIt.isRegistered<ServiceHelper>()) {
-    getIt.registerSingleton<ServiceHelper>(MockServiceHelper());
+  // Unregister if already exists to allow fresh mock setup
+  if (getIt.isRegistered<ServiceHelper>()) {
+    getIt.unregister<ServiceHelper>();
   }
+  getIt.registerSingleton<ServiceHelper>(MockServiceHelper());
+
   if (!getIt.isRegistered<ThemeData>(instanceName: 'lightThemeData')) {
     getIt.registerSingleton<ThemeData>(mockLightThemeData,
         instanceName: 'lightThemeData');
