@@ -138,6 +138,9 @@ tools/translated.json
 # Macros
 macros/
 
+# macOS specific
+macos/
+
 # AI Project Documentation
 # Keep .claude/CLAUDE.md tracked as project documentation
 # Keep .specify/memory/ tracked for project constitution
