@@ -99,8 +99,9 @@ class IPv6PortServiceRuleUI extends Equatable {
     return IPv6PortServiceRuleUI(
       portRanges: List<PortRangeUI>.from(
         map['portRanges']?.map<PortRangeUI>(
-          (x) => PortRangeUI.fromMap(x as Map<String, dynamic>),
-        ) ?? [],
+              (x) => PortRangeUI.fromMap(x as Map<String, dynamic>),
+            ) ??
+            [],
       ),
       ipv6Address: map['ipv6Address'] as String,
       description: map['description'] as String,
@@ -113,7 +114,8 @@ class IPv6PortServiceRuleUI extends Equatable {
 
   /// Create from JSON string
   factory IPv6PortServiceRuleUI.fromJson(String source) =>
-      IPv6PortServiceRuleUI.fromMap(json.decode(source) as Map<String, dynamic>);
+      IPv6PortServiceRuleUI.fromMap(
+          json.decode(source) as Map<String, dynamic>);
 
   @override
   List<Object> get props => [portRanges, ipv6Address, description, enabled];
@@ -146,8 +148,9 @@ class IPv6PortServiceRuleUIList extends Equatable {
     return IPv6PortServiceRuleUIList(
       rules: List<IPv6PortServiceRuleUI>.from(
         map['rules']?.map<IPv6PortServiceRuleUI>(
-          (x) => IPv6PortServiceRuleUI.fromMap(x as Map<String, dynamic>),
-        ) ?? [],
+              (x) => IPv6PortServiceRuleUI.fromMap(x as Map<String, dynamic>),
+            ) ??
+            [],
       ),
     );
   }
@@ -155,7 +158,8 @@ class IPv6PortServiceRuleUIList extends Equatable {
   String toJson() => json.encode(toMap());
 
   factory IPv6PortServiceRuleUIList.fromJson(String source) =>
-      IPv6PortServiceRuleUIList.fromMap(json.decode(source) as Map<String, dynamic>);
+      IPv6PortServiceRuleUIList.fromMap(
+          json.decode(source) as Map<String, dynamic>);
 }
 
 class Ipv6PortServiceRuleState extends Equatable {

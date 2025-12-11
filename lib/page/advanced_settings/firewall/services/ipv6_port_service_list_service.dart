@@ -32,7 +32,8 @@ class IPv6PortServiceListService {
       final uiRules = _transformRuleListToUI(rules);
       return (IPv6PortServiceRuleUIList(rules: uiRules), const EmptyStatus());
     } catch (e, stackTrace) {
-      logger.e('Error fetching IPv6 port service rules', error: e, stackTrace: stackTrace);
+      logger.e('Error fetching IPv6 port service rules',
+          error: e, stackTrace: stackTrace);
       return (null, null);
     }
   }
@@ -45,7 +46,8 @@ class IPv6PortServiceListService {
   /// - Each field is validated and transformed
   ///
   /// Throws exception if transformation fails for any rule
-  List<IPv6PortServiceRuleUI> _transformRuleListToUI(List<IPv6FirewallRule> rules) {
+  List<IPv6PortServiceRuleUI> _transformRuleListToUI(
+      List<IPv6FirewallRule> rules) {
     return rules.map((rule) => _transformRuleToUI(rule)).toList();
   }
 
@@ -77,5 +79,4 @@ class IPv6PortServiceListService {
           .toList(),
     );
   }
-
 }

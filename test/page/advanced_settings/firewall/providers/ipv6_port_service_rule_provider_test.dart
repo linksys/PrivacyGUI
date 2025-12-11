@@ -1,9 +1,7 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/advanced_settings/firewall/providers/ipv6_port_service_rule_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/firewall/providers/ipv6_port_service_rule_state.dart';
-
-import '../services/ipv6_port_service_list_service_test_data.dart';
 
 void main() {
   late ProviderContainer container;
@@ -12,512 +10,346 @@ void main() {
     container = ProviderContainer();
   });
 
-  tearDown(() {
-    container.dispose();
-  });
-
   group('Ipv6PortServiceRuleNotifier', () {
-    test('initial state is empty', () {
-      // Arrange
-      final notifier = container.read(ipv6PortServiceRuleProvider.notifier);
+    group('initialization', () {
+      test('builds with default empty state', () {
+        final state = container.read(ipv6PortServiceRuleProvider);
 
-      // Act
-      final state = notifier.state;
-
-      // Assert
-      expect(state.rules, isEmpty);
-      expect(state.rule, isNull);
-      expect(state.editIndex, isNull);
+        expect(state.rules, isEmpty);
+        expect(state.rule, isNull);
+        expect(state.editIndex, isNull);
+      });
     });
 
-    group('init', () {
-      test('initializes state with rules', () {
-        // Arrange
-        final notifier = container.read(ipv6PortServiceRuleProvider.notifier);
-        final rules = IPv6PortServiceTestData.createUIRuleList();
-
-        // Act
-        notifier.init(rules, null, null);
-
-        // Assert
-        expect(notifier.state.rules, equals(rules));
-        expect(notifier.state.rule, isNull);
-        expect(notifier.state.editIndex, isNull);
-      });
-
-      test('initializes state with rules and rule', () {
-        // Arrange
-        final notifier = container.read(ipv6PortServiceRuleProvider.notifier);
-        final rules = IPv6PortServiceTestData.createUIRuleList();
+    group('init method', () {
+      test('sets rules, rule, and editIndex', () {
+        final rules = [
+          IPv6PortServiceRuleUI(
+            enabled: true,
+            description: 'Rule 1',
+            ipv6Address: '2001:db8::1',
+            portRanges: const [PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)],
+          ),
+        ];
         final rule = rules.first;
 
-        // Act
-        notifier.init(rules, rule, null);
+        container.read(ipv6PortServiceRuleProvider.notifier).init(rules, rule, 0);
 
-        // Assert
-        expect(notifier.state.rules, equals(rules));
-        expect(notifier.state.rule, equals(rule));
-        expect(notifier.state.editIndex, isNull);
+        final state = container.read(ipv6PortServiceRuleProvider);
+        expect(state.rules, rules);
+        expect(state.rule, rule);
+        expect(state.editIndex, 0);
       });
 
-      test('initializes state with all parameters', () {
-        // Arrange
-        final notifier = container.read(ipv6PortServiceRuleProvider.notifier);
-        final rules = IPv6PortServiceTestData.createUIRuleList();
-        final rule = rules[1];
-        const editIndex = 1;
+      test('can be called with null rule for add operation', () {
+        final rules = <IPv6PortServiceRuleUI>[];
 
-        // Act
-        notifier.init(rules, rule, editIndex);
+        container.read(ipv6PortServiceRuleProvider.notifier).init(rules, null, null);
 
-        // Assert
-        expect(notifier.state.rules, equals(rules));
-        expect(notifier.state.rule, equals(rule));
-        expect(notifier.state.editIndex, editIndex);
-      });
-
-      test('can re-initialize state with different values', () {
-        // Arrange
-        final notifier = container.read(ipv6PortServiceRuleProvider.notifier);
-        final rules1 = [IPv6PortServiceTestData.createUIRule()];
-        final rules2 = IPv6PortServiceTestData.createUIRuleList();
-
-        // Act
-        notifier.init(rules1, rules1.first, 0);
-        notifier.init(rules2, null, null);
-
-        // Assert
-        expect(notifier.state.rules, equals(rules2));
-        expect(notifier.state.rule, isNull);
-        expect(notifier.state.editIndex, isNull);
+        final state = container.read(ipv6PortServiceRuleProvider);
+        expect(state.rule, isNull);
+        expect(state.editIndex, isNull);
       });
     });
 
     group('updateRule', () {
-      test('updates rule in state', () {
-        // Arrange
-        final notifier = container.read(ipv6PortServiceRuleProvider.notifier);
-        final rules = IPv6PortServiceTestData.createUIRuleList();
-        final newRule = rules.first;
+      test('updates current rule', () {
+        final rule = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'Updated',
+          ipv6Address: '2001:db8::1',
+          portRanges: const [PortRangeUI(protocol: 'TCP', firstPort: 8080, lastPort: 8080)],
+        );
 
-        // Act
-        notifier.updateRule(newRule);
+        container.read(ipv6PortServiceRuleProvider.notifier).updateRule(rule);
 
-        // Assert
-        expect(notifier.state.rule, equals(newRule));
+        final state = container.read(ipv6PortServiceRuleProvider);
+        expect(state.rule, rule);
       });
 
-      test('can update rule to null', () {
-        // Arrange
-        final notifier = container.read(ipv6PortServiceRuleProvider.notifier);
-        final rules = IPv6PortServiceTestData.createUIRuleList();
-        notifier.init(rules, rules.first, 0);
+      test('can set rule to null', () {
+        final rule = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'Test',
+          ipv6Address: '2001:db8::1',
+          portRanges: const [PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)],
+        );
 
-        // Act
-        notifier.updateRule(null);
+        container.read(ipv6PortServiceRuleProvider.notifier).updateRule(rule);
+        container.read(ipv6PortServiceRuleProvider.notifier).updateRule(null);
 
-        // Assert
-        expect(notifier.state.rule, isNull);
-      });
-
-      test('can update rule multiple times', () {
-        // Arrange
-        final notifier = container.read(ipv6PortServiceRuleProvider.notifier);
-        final rules = IPv6PortServiceTestData.createUIRuleList();
-
-        // Act
-        notifier.updateRule(rules[0]);
-        notifier.updateRule(rules[1]);
-        notifier.updateRule(rules[2]);
-
-        // Assert
-        expect(notifier.state.rule, equals(rules[2]));
+        final state = container.read(ipv6PortServiceRuleProvider);
+        expect(state.rule, isNull);
       });
     });
 
     group('isRuleValid', () {
-      test('returns false when rule is null', () {
-        // Arrange
+      test('returns false if rule is null', () {
         final notifier = container.read(ipv6PortServiceRuleProvider.notifier);
 
-        // Act
-        final isValid = notifier.isRuleValid();
-
-        // Assert
-        expect(isValid, false);
+        expect(notifier.isRuleValid(), false);
       });
 
-      test('returns true for valid rule', () {
-        // Arrange
-        final notifier = container.read(ipv6PortServiceRuleProvider.notifier);
-        final rule = IPv6PortServiceTestData.createUIRule(
-          description: 'Valid Rule',
-          internalIPAddress: '2001:db8::1',
-          externalPort: 80,
-          internalPort: 80,
-        );
-        notifier.init([], rule, null);
-
-        // Act
-        final isValid = notifier.isRuleValid();
-
-        // Assert
-        expect(isValid, true);
-      });
-
-      test('returns false when description is empty', () {
-        // Arrange
-        final notifier = container.read(ipv6PortServiceRuleProvider.notifier);
-        final rule = IPv6PortServiceTestData.createUIRule(
-          description: '',
-        );
-        notifier.init([], rule, null);
-
-        // Act
-        final isValid = notifier.isRuleValid();
-
-        // Assert
-        expect(isValid, false);
-      });
-
-      test('returns false when description exceeds max length', () {
-        // Arrange
-        final notifier = container.read(ipv6PortServiceRuleProvider.notifier);
-        final rule = IPv6PortServiceTestData.createUIRule(
-          description: 'a' * 33, // Max is 32
-        );
-        notifier.init([], rule, null);
-
-        // Act
-        final isValid = notifier.isRuleValid();
-
-        // Assert
-        expect(isValid, false);
-      });
-
-      test('returns false for invalid IPv6 address', () {
-        // Arrange
-        final notifier = container.read(ipv6PortServiceRuleProvider.notifier);
-        final rule = IPv6PortServiceTestData.createUIRule(
-          internalIPAddress: 'invalid',
-        );
-        notifier.init([], rule, null);
-
-        // Act
-        final isValid = notifier.isRuleValid();
-
-        // Assert
-        expect(isValid, false);
-      });
-
-      test('returns false when port range is invalid', () {
-        // Arrange
-        final notifier = container.read(ipv6PortServiceRuleProvider.notifier);
-        final rule = IPv6PortServiceTestData.createUIRule(
-          externalPort: 100,
-          internalPort: 50, // Last port less than first port
-        );
-        notifier.init([], rule, null);
-
-        // Act
-        final isValid = notifier.isRuleValid();
-
-        // Assert
-        expect(isValid, false);
-      });
-
-      test('returns false when port conflicts with existing rule', () {
-        // Arrange
-        final notifier = container.read(ipv6PortServiceRuleProvider.notifier);
-        final existingRules = [
-          IPv6PortServiceTestData.createUIRule(
-            externalPort: 80,
-            internalPort: 80,
-            protocol: 'TCP',
+      test('returns false if description is empty', () {
+        container.read(ipv6PortServiceRuleProvider.notifier).updateRule(
+          IPv6PortServiceRuleUI(
+            enabled: true,
+            description: '',
+            ipv6Address: '2001:db8::1',
+            portRanges: const [PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)],
           ),
-        ];
-        final newRule = IPv6PortServiceTestData.createUIRule(
-          externalPort: 80,
-          internalPort: 80,
-          protocol: 'TCP',
         );
-        notifier.init(existingRules, newRule, null);
 
-        // Act
-        final isValid = notifier.isRuleValid();
-
-        // Assert
-        expect(isValid, false);
+        expect(container.read(ipv6PortServiceRuleProvider.notifier).isRuleValid(), false);
       });
 
-      test('returns true when editing existing rule (no conflict with self)', () {
-        // Arrange
-        final notifier = container.read(ipv6PortServiceRuleProvider.notifier);
-        final existingRules = [
-          IPv6PortServiceTestData.createUIRule(
-            externalPort: 80,
-            internalPort: 80,
-            protocol: 'TCP',
+      test('returns false if ipv6Address is empty', () {
+        container.read(ipv6PortServiceRuleProvider.notifier).updateRule(
+          IPv6PortServiceRuleUI(
+            enabled: true,
+            description: 'Test',
+            ipv6Address: '',
+            portRanges: const [PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)],
           ),
-        ];
-        final editRule = existingRules.first;
-        notifier.init(existingRules, editRule, 0); // Editing index 0
+        );
 
-        // Act
-        final isValid = notifier.isRuleValid();
+        expect(container.read(ipv6PortServiceRuleProvider.notifier).isRuleValid(), false);
+      });
 
-        // Assert
-        expect(isValid, true);
+      test('returns false if portRanges is empty', () {
+        container.read(ipv6PortServiceRuleProvider.notifier).updateRule(
+          IPv6PortServiceRuleUI(
+            enabled: true,
+            description: 'Test',
+            ipv6Address: '2001:db8::1',
+            portRanges: const [],
+          ),
+        );
+
+        expect(container.read(ipv6PortServiceRuleProvider.notifier).isRuleValid(), false);
+      });
+
+      test('returns false if port range is invalid', () {
+        container.read(ipv6PortServiceRuleProvider.notifier).updateRule(
+          IPv6PortServiceRuleUI(
+            enabled: true,
+            description: 'Test',
+            ipv6Address: '2001:db8::1',
+            portRanges: const [PortRangeUI(protocol: 'TCP', firstPort: 100, lastPort: 50)],
+          ),
+        );
+
+        expect(container.read(ipv6PortServiceRuleProvider.notifier).isRuleValid(), false);
+      });
+
+      test('returns true for valid complete rule', () {
+        container.read(ipv6PortServiceRuleProvider.notifier).updateRule(
+          IPv6PortServiceRuleUI(
+            enabled: true,
+            description: 'Valid Rule',
+            ipv6Address: '2001:db8::1',
+            portRanges: const [PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 8080)],
+          ),
+        );
+
+        expect(container.read(ipv6PortServiceRuleProvider.notifier).isRuleValid(), true);
+      });
+
+      test('returns true for rule with multiple valid port ranges', () {
+        container.read(ipv6PortServiceRuleProvider.notifier).updateRule(
+          IPv6PortServiceRuleUI(
+            enabled: true,
+            description: 'Multi Port Rule',
+            ipv6Address: '2001:db8::1',
+            portRanges: const [
+              PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80),
+              PortRangeUI(protocol: 'TCP', firstPort: 443, lastPort: 443),
+            ],
+          ),
+        );
+
+        expect(container.read(ipv6PortServiceRuleProvider.notifier).isRuleValid(), true);
       });
     });
 
     group('isRuleNameValidate', () {
-      test('returns true for valid rule name', () {
-        // Arrange
-        final notifier = container.read(ipv6PortServiceRuleProvider.notifier);
-
-        // Act & Assert
-        expect(notifier.isRuleNameValidate('Valid Name'), true);
+      test('returns false for empty name', () {
+        expect(
+          container.read(ipv6PortServiceRuleProvider.notifier).isRuleNameValidate(''),
+          false,
+        );
       });
 
-      test('returns false for empty rule name', () {
-        // Arrange
-        final notifier = container.read(ipv6PortServiceRuleProvider.notifier);
-
-        // Act & Assert
-        expect(notifier.isRuleNameValidate(''), false);
+      test('returns false for name longer than 32 characters', () {
+        expect(
+          container.read(ipv6PortServiceRuleProvider.notifier).isRuleNameValidate('A' * 33),
+          false,
+        );
       });
 
-      test('returns false for rule name exceeding 32 characters', () {
-        // Arrange
-        final notifier = container.read(ipv6PortServiceRuleProvider.notifier);
-
-        // Act & Assert
-        expect(notifier.isRuleNameValidate('a' * 33), false);
-      });
-
-      test('returns true for rule name at max length (32)', () {
-        // Arrange
-        final notifier = container.read(ipv6PortServiceRuleProvider.notifier);
-
-        // Act & Assert
-        expect(notifier.isRuleNameValidate('a' * 32), true);
+      test('returns true for valid name (1-32 chars)', () {
+        expect(
+          container.read(ipv6PortServiceRuleProvider.notifier).isRuleNameValidate('Valid Rule'),
+          true,
+        );
+        expect(
+          container.read(ipv6PortServiceRuleProvider.notifier).isRuleNameValidate('A' * 32),
+          true,
+        );
       });
     });
 
     group('isDeviceIpValidate', () {
-      test('returns true for valid IPv6 addresses', () {
-        // Arrange
-        final notifier = container.read(ipv6PortServiceRuleProvider.notifier);
-        final validAddresses = [
-          '2001:db8::1',
-          'fe80::1',
-          '::1',
-          '2001:0db8:85a3:0000:0000:8a2e:0370:7334',
-        ];
-
-        // Act & Assert
-        for (final address in validAddresses) {
-          expect(notifier.isDeviceIpValidate(address), true,
-              reason: '$address should be valid');
-        }
+      test('returns true for valid IPv6 address', () {
+        expect(
+          container.read(ipv6PortServiceRuleProvider.notifier).isDeviceIpValidate('2001:db8::1'),
+          true,
+        );
       });
 
-      test('returns false for invalid IPv6 addresses', () {
-        // Arrange
-        final notifier = container.read(ipv6PortServiceRuleProvider.notifier);
-        final invalidAddresses = [
-          '',
-          'invalid',
-          '192.168.1.1', // IPv4
-          'gggg::1',
-          '2001:db8::xyz',
-        ];
+      test('returns false for invalid IPv6 address', () {
+        expect(
+          container.read(ipv6PortServiceRuleProvider.notifier).isDeviceIpValidate('not-ipv6'),
+          false,
+        );
+      });
 
-        // Act & Assert
-        for (final address in invalidAddresses) {
-          expect(notifier.isDeviceIpValidate(address), false,
-              reason: '$address should be invalid');
-        }
+      test('returns false for IPv4 address', () {
+        expect(
+          container.read(ipv6PortServiceRuleProvider.notifier).isDeviceIpValidate('192.168.1.1'),
+          false,
+        );
       });
     });
 
     group('isPortRangeValid', () {
-      test('returns true when last port equals first port', () {
-        // Arrange
-        final notifier = container.read(ipv6PortServiceRuleProvider.notifier);
-
-        // Act & Assert
-        expect(notifier.isPortRangeValid(80, 80), true);
+      test('returns true when firstPort <= lastPort', () {
+        expect(
+          container.read(ipv6PortServiceRuleProvider.notifier).isPortRangeValid(80, 8080),
+          true,
+        );
       });
 
-      test('returns true when last port is greater than first port', () {
-        // Arrange
-        final notifier = container.read(ipv6PortServiceRuleProvider.notifier);
-
-        // Act & Assert
-        expect(notifier.isPortRangeValid(8000, 9000), true);
+      test('returns true when firstPort == lastPort', () {
+        expect(
+          container.read(ipv6PortServiceRuleProvider.notifier).isPortRangeValid(80, 80),
+          true,
+        );
       });
 
-      test('returns false when last port is less than first port', () {
-        // Arrange
-        final notifier = container.read(ipv6PortServiceRuleProvider.notifier);
+      test('returns false when firstPort > lastPort', () {
+        expect(
+          container.read(ipv6PortServiceRuleProvider.notifier).isPortRangeValid(8080, 80),
+          false,
+        );
+      });
 
-        // Act & Assert
-        expect(notifier.isPortRangeValid(9000, 8000), false);
+      test('returns true for boundary values', () {
+        expect(
+          container.read(ipv6PortServiceRuleProvider.notifier).isPortRangeValid(0, 65535),
+          true,
+        );
       });
     });
 
     group('isPortConflict', () {
       test('returns false when no rules exist', () {
-        // Arrange
-        final notifier = container.read(ipv6PortServiceRuleProvider.notifier);
-        notifier.init([], null, null);
+        container.read(ipv6PortServiceRuleProvider.notifier).updateRule(
+          IPv6PortServiceRuleUI(
+            enabled: true,
+            description: 'Test',
+            ipv6Address: '2001:db8::1',
+            portRanges: const [PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)],
+          ),
+        );
 
-        // Act
-        final hasConflict = notifier.isPortConflict(80, 80, 'TCP');
-
-        // Assert
-        expect(hasConflict, false);
+        expect(
+          container.read(ipv6PortServiceRuleProvider.notifier).isPortConflict(80, 80, 'TCP'),
+          false,
+        );
       });
 
-      test('returns true when port overlaps with existing rule', () {
-        // Arrange
-        final notifier = container.read(ipv6PortServiceRuleProvider.notifier);
-        final existingRules = [
-          IPv6PortServiceTestData.createUIRule(
-            externalPort: 80,
-            internalPort: 90,
-            protocol: 'TCP',
+      test('detects overlapping port ranges with same protocol', () {
+        final rules = [
+          IPv6PortServiceRuleUI(
+            enabled: true,
+            description: 'Rule 1',
+            ipv6Address: '2001:db8::1',
+            portRanges: const [PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 100)],
           ),
         ];
-        notifier.init(existingRules, null, null);
 
-        // Act
-        final hasConflict = notifier.isPortConflict(85, 85, 'TCP');
+        container.read(ipv6PortServiceRuleProvider.notifier).init(rules, null, null);
+        container.read(ipv6PortServiceRuleProvider.notifier).updateRule(rules.first);
 
-        // Assert
-        expect(hasConflict, true);
+        expect(
+          container.read(ipv6PortServiceRuleProvider.notifier).isPortConflict(90, 110, 'TCP'),
+          true,
+        );
       });
 
-      test('returns false when port does not overlap', () {
-        // Arrange
-        final notifier = container.read(ipv6PortServiceRuleProvider.notifier);
-        final existingRules = [
-          IPv6PortServiceTestData.createUIRule(
-            externalPort: 80,
-            internalPort: 90,
-            protocol: 'TCP',
+      test('allows non-overlapping port ranges', () {
+        final rules = [
+          IPv6PortServiceRuleUI(
+            enabled: true,
+            description: 'Rule 1',
+            ipv6Address: '2001:db8::1',
+            portRanges: const [PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 100)],
           ),
         ];
-        notifier.init(existingRules, null, null);
 
-        // Act
-        final hasConflict = notifier.isPortConflict(100, 110, 'TCP');
+        container.read(ipv6PortServiceRuleProvider.notifier).init(rules, null, null);
+        container.read(ipv6PortServiceRuleProvider.notifier).updateRule(rules.first);
 
-        // Assert
-        expect(hasConflict, false);
+        expect(
+          container.read(ipv6PortServiceRuleProvider.notifier).isPortConflict(200, 300, 'TCP'),
+          false,
+        );
       });
 
-      test('returns false when protocol differs', () {
-        // Arrange
-        final notifier = container.read(ipv6PortServiceRuleProvider.notifier);
-        final existingRules = [
-          IPv6PortServiceTestData.createUIRule(
-            externalPort: 80,
-            internalPort: 80,
-            protocol: 'TCP',
+      test('handles protocol compatibility (TCP and Both overlap)', () {
+        final rules = [
+          IPv6PortServiceRuleUI(
+            enabled: true,
+            description: 'Both Rule',
+            ipv6Address: '2001:db8::1',
+            portRanges: const [PortRangeUI(protocol: 'Both', firstPort: 80, lastPort: 100)],
           ),
         ];
-        notifier.init(existingRules, null, null);
 
-        // Act
-        final hasConflict = notifier.isPortConflict(80, 80, 'UDP');
+        container.read(ipv6PortServiceRuleProvider.notifier).init(rules, null, null);
+        container.read(ipv6PortServiceRuleProvider.notifier).updateRule(rules.first);
 
-        // Assert
-        expect(hasConflict, false);
+        // TCP overlaps with Both
+        expect(
+          container.read(ipv6PortServiceRuleProvider.notifier).isPortConflict(90, 110, 'TCP'),
+          true,
+        );
+
+        // UDP overlaps with Both
+        expect(
+          container.read(ipv6PortServiceRuleProvider.notifier).isPortConflict(90, 110, 'UDP'),
+          true,
+        );
       });
 
-      test('returns true when new protocol is Both and existing is TCP', () {
-        // Arrange
-        final notifier = container.read(ipv6PortServiceRuleProvider.notifier);
-        final existingRules = [
-          IPv6PortServiceTestData.createUIRule(
-            externalPort: 80,
-            internalPort: 80,
-            protocol: 'TCP',
-          ),
-        ];
-        notifier.init(existingRules, null, null);
+      test('skips self when editing existing rule', () {
+        final rule = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'Rule 1',
+          ipv6Address: '2001:db8::1',
+          portRanges: const [PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 100)],
+        );
 
-        // Act
-        final hasConflict = notifier.isPortConflict(80, 80, 'Both');
+        final rules = [rule];
 
-        // Assert
-        expect(hasConflict, true);
-      });
+        container.read(ipv6PortServiceRuleProvider.notifier).init(rules, rule, 0);
 
-      test('returns false when editing same rule', () {
-        // Arrange
-        final notifier = container.read(ipv6PortServiceRuleProvider.notifier);
-        final existingRules = [
-          IPv6PortServiceTestData.createUIRule(
-            externalPort: 80,
-            internalPort: 80,
-            protocol: 'TCP',
-          ),
-        ];
-        notifier.init(existingRules, existingRules.first, 0);
-
-        // Act
-        final hasConflict = notifier.isPortConflict(80, 80, 'TCP');
-
-        // Assert
-        expect(hasConflict, false);
-      });
-
-      test('returns true when editing different rule with conflict', () {
-        // Arrange
-        final notifier = container.read(ipv6PortServiceRuleProvider.notifier);
-        final existingRules = [
-          IPv6PortServiceTestData.createUIRule(
-            externalPort: 80,
-            internalPort: 80,
-            protocol: 'TCP',
-          ),
-          IPv6PortServiceTestData.createUIRule(
-            externalPort: 443,
-            internalPort: 443,
-            protocol: 'TCP',
-          ),
-        ];
-        notifier.init(existingRules, existingRules[1], 1); // Editing rule at index 1
-
-        // Act
-        final hasConflict = notifier.isPortConflict(80, 80, 'TCP');
-
-        // Assert
-        expect(hasConflict, true);
-      });
-
-      test('handles port range overlaps correctly', () {
-        // Arrange
-        final notifier = container.read(ipv6PortServiceRuleProvider.notifier);
-        final existingRules = [
-          IPv6PortServiceTestData.createUIRule(
-            externalPort: 8000,
-            internalPort: 9000,
-            protocol: 'TCP',
-          ),
-        ];
-        notifier.init(existingRules, null, null);
-
-        // Act & Assert
-        expect(notifier.isPortConflict(7500, 8500, 'TCP'), true); // Overlaps start
-        expect(notifier.isPortConflict(8500, 9500, 'TCP'), true); // Overlaps end
-        expect(notifier.isPortConflict(8100, 8200, 'TCP'), true); // Within range
-        expect(notifier.isPortConflict(7000, 7999, 'TCP'), false); // Before range
-        expect(notifier.isPortConflict(9001, 9100, 'TCP'), false); // After range
+        // Same port range should not conflict with itself when editing
+        expect(
+          container.read(ipv6PortServiceRuleProvider.notifier).isPortConflict(80, 100, 'TCP'),
+          false,
+        );
       });
     });
   });

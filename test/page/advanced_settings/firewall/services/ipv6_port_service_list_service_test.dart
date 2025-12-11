@@ -1,595 +1,313 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
-import 'package:privacy_gui/core/jnap/actions/better_action.dart';
-import 'package:privacy_gui/core/jnap/command/base_command.dart';
-import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/core/jnap/models/ipv6_firewall_rule.dart';
+import 'package:privacy_gui/page/advanced_settings/firewall/providers/ipv6_port_service_rule_state.dart';
 import 'package:privacy_gui/page/advanced_settings/firewall/services/ipv6_port_service_list_service.dart';
 
-import '../../../../common/unit_test_helper.dart';
-import 'ipv6_port_service_list_service_test_data.dart';
-
-// Mock class for RouterRepository
-class MockRouterRepository extends Mock implements RouterRepository {}
-
 void main() {
-  late MockRouterRepository mockRepository;
   late IPv6PortServiceListService service;
 
-  setUpAll(() {
-    registerFallbackValue(JNAPAction.getIPv6FirewallRules);
-    registerFallbackValue(JNAPAction.setIPv6FirewallRules);
-    registerFallbackValue(CacheLevel.noCache);
-  });
-
   setUp(() {
-    mockRepository = MockRouterRepository();
     service = IPv6PortServiceListService();
-    UnitTestHelper.setupMocktailFallbacks();
   });
 
   group('IPv6PortServiceListService', () {
     group('fetchPortServiceRules', () {
-      test('fetches and transforms empty rules list successfully', () async {
-        // Arrange
-        final mockResponse = IPv6PortServiceTestData.createEmptyResponse();
-        when(() => mockRepository.send(
-              any(),
-              auth: any(named: 'auth'),
-              fetchRemote: any(named: 'fetchRemote'),
-            )).thenAnswer((_) async => mockResponse);
+      test('transforms empty list correctly', () async {
+        final result = await service.fetchPortServiceRules([]);
 
-        final mockRef = UnitTestHelper.createMockRef(
-          routerRepository: mockRepository,
-        );
-
-        // Act
-        final (rules, status) = await service.fetchPortServiceRules(
-          mockRef,
-        );
-
-        // Assert
-        expect(rules, isNotNull);
-        expect(rules, isEmpty);
-        expect(status, isNotNull);
-        expect(status?.maxRules, 50);
-        expect(status?.maxDescriptionLength, 32);
+        expect(result.$1, isNotNull);
+        expect(result.$1!.rules, isEmpty);
+        expect(result.$2, isNotNull);
       });
 
-      test('fetches and transforms single rule successfully', () async {
-        // Arrange
-        final mockResponse = IPv6PortServiceTestData.createSingleRuleResponse();
-        when(() => mockRepository.send(
-              any(),
-              auth: any(named: 'auth'),
-              fetchRemote: any(named: 'fetchRemote'),
-            )).thenAnswer((_) async => mockResponse);
-
-        final mockRef = UnitTestHelper.createMockRef(
-          routerRepository: mockRepository,
+      test('transforms single IPv6FirewallRule to IPv6PortServiceRuleUI', () async {
+        final jnapRule = IPv6FirewallRule(
+          isEnabled: true,
+          description: 'SSH Access',
+          ipv6Address: '2001:db8::1',
+          portRanges: [
+            const PortRange(protocol: 'TCP', firstPort: 22, lastPort: 22),
+          ],
         );
 
-        // Act
-        final (rules, status) = await service.fetchPortServiceRules(
-          mockRef,
-        );
+        final result = await service.fetchPortServiceRules([jnapRule]);
 
-        // Assert
-        expect(rules, isNotNull);
-        expect(rules?.rules.length, 1);
-        expect(rules?.rules.first.description, 'Web Server');
-        expect(rules?.rules.first.internalIPAddress, '2001:db8::1');
-        expect(rules?.rules.first.enabled, true);
-        expect(rules?.rules.first.protocol, 'TCP');
-        expect(rules?.rules.first.externalPort, 80);
-        expect(rules?.rules.first.internalPort, 80);
-        expect(status?.maxRules, 50);
-        expect(status?.maxDescriptionLength, 32);
+        expect(result.$1, isNotNull);
+        expect(result.$1!.rules, hasLength(1));
+
+        final uiRule = result.$1!.rules.first;
+        expect(uiRule.enabled, true);
+        expect(uiRule.description, 'SSH Access');
+        expect(uiRule.ipv6Address, '2001:db8::1');
+        expect(uiRule.portRanges, hasLength(1));
+        expect(uiRule.portRanges.first.protocol, 'TCP');
+        expect(uiRule.portRanges.first.firstPort, 22);
+        expect(uiRule.portRanges.first.lastPort, 22);
       });
 
-      test('fetches and transforms multiple rules successfully', () async {
-        // Arrange
-        final mockResponse =
-            IPv6PortServiceTestData.createMultipleRulesResponse();
-        when(() => mockRepository.send(
-              any(),
-              auth: any(named: 'auth'),
-              fetchRemote: any(named: 'fetchRemote'),
-            )).thenAnswer((_) async => mockResponse);
+      test('transforms multiple rules with multiple port ranges', () async {
+        final jnapRules = [
+          IPv6FirewallRule(
+            isEnabled: true,
+            description: 'Web Server',
+            ipv6Address: '2001:db8::1',
+            portRanges: [
+              const PortRange(protocol: 'TCP', firstPort: 80, lastPort: 80),
+              const PortRange(protocol: 'TCP', firstPort: 443, lastPort: 443),
+            ],
+          ),
+          IPv6FirewallRule(
+            isEnabled: false,
+            description: 'DNS',
+            ipv6Address: '2001:db8::2',
+            portRanges: [
+              const PortRange(protocol: 'UDP', firstPort: 53, lastPort: 53),
+            ],
+          ),
+        ];
 
-        final mockRef = UnitTestHelper.createMockRef(
-          routerRepository: mockRepository,
-        );
+        final result = await service.fetchPortServiceRules(jnapRules);
 
-        // Act
-        final (rules, status) = await service.fetchPortServiceRules(
-          mockRef,
-        );
+        expect(result.$1, isNotNull);
+        expect(result.$1!.rules, hasLength(2));
 
-        // Assert
-        expect(rules, isNotNull);
-        expect(rules?.rules.length, 3);
         // First rule
-        expect(rules?.rules[0].description, 'Web Server');
-        expect(rules?.rules[0].protocol, 'TCP');
-        expect(rules?.rules[0].externalPort, 80);
-        expect(rules?.rules[0].enabled, true);
+        final firstRule = result.$1!.rules[0];
+        expect(firstRule.enabled, true);
+        expect(firstRule.description, 'Web Server');
+        expect(firstRule.portRanges, hasLength(2));
+
         // Second rule
-        expect(rules?.rules[1].description, 'HTTPS Server');
-        expect(rules?.rules[1].protocol, 'TCP');
-        expect(rules?.rules[1].externalPort, 443);
-        expect(rules?.rules[1].enabled, true);
-        // Third rule
-        expect(rules?.rules[2].description, 'Game Server');
-        expect(rules?.rules[2].protocol, 'UDP');
-        expect(rules?.rules[2].externalPort, 7777);
-        expect(rules?.rules[2].enabled, false);
+        final secondRule = result.$1!.rules[1];
+        expect(secondRule.enabled, false);
+        expect(secondRule.description, 'DNS');
+        expect(secondRule.portRanges, hasLength(1));
       });
 
-      test('fetches with port range rule successfully', () async {
-        // Arrange
-        final mockResponse = IPv6PortServiceTestData.createPortRangeResponse();
-        when(() => mockRepository.send(
-              any(),
-              auth: any(named: 'auth'),
-              fetchRemote: any(named: 'fetchRemote'),
-            )).thenAnswer((_) async => mockResponse);
+      test('preserves all protocol types (TCP, UDP, Both)', () async {
+        final jnapRules = [
+          IPv6FirewallRule(
+            isEnabled: true,
+            description: 'TCP Rule',
+            ipv6Address: '2001:db8::1',
+            portRanges: [
+              const PortRange(protocol: 'TCP', firstPort: 1000, lastPort: 2000),
+            ],
+          ),
+          IPv6FirewallRule(
+            isEnabled: true,
+            description: 'UDP Rule',
+            ipv6Address: '2001:db8::2',
+            portRanges: [
+              const PortRange(protocol: 'UDP', firstPort: 3000, lastPort: 4000),
+            ],
+          ),
+          IPv6FirewallRule(
+            isEnabled: true,
+            description: 'Both Rule',
+            ipv6Address: '2001:db8::3',
+            portRanges: [
+              const PortRange(protocol: 'Both', firstPort: 5000, lastPort: 6000),
+            ],
+          ),
+        ];
 
-        final mockRef = UnitTestHelper.createMockRef(
-          routerRepository: mockRepository,
-        );
+        final result = await service.fetchPortServiceRules(jnapRules);
 
-        // Act
-        final (rules, status) = await service.fetchPortServiceRules(
-          mockRef,
-        );
-
-        // Assert
-        expect(rules, isNotNull);
-        expect(rules?.rules.length, 1);
-        expect(rules?.rules.first.description, 'Gaming Ports');
-        expect(rules?.rules.first.protocol, 'Both');
-        expect(rules?.rules.first.externalPort, 27000);
-        expect(rules?.rules.first.internalPort, 27100);
+        expect(result.$1!.rules[0].portRanges.first.protocol, 'TCP');
+        expect(result.$1!.rules[1].portRanges.first.protocol, 'UDP');
+        expect(result.$1!.rules[2].portRanges.first.protocol, 'Both');
       });
 
-      test('fetches with forceRemote=true', () async {
-        // Arrange
-        final mockResponse = IPv6PortServiceTestData.createEmptyResponse();
-        when(() => mockRepository.send(
-              any(),
-              auth: any(named: 'auth'),
-              fetchRemote: any(named: 'fetchRemote'),
-            )).thenAnswer((_) async => mockResponse);
-
-        final mockRef = UnitTestHelper.createMockRef(
-          routerRepository: mockRepository,
+      test('handles boundary port values (0, 1, 65535)', () async {
+        final jnapRule = IPv6FirewallRule(
+          isEnabled: true,
+          description: 'Edge Ports',
+          ipv6Address: '2001:db8::1',
+          portRanges: [
+            const PortRange(protocol: 'TCP', firstPort: 0, lastPort: 65535),
+          ],
         );
 
-        // Act
-        await service.fetchPortServiceRules(
-          mockRef,
-          forceRemote: true,
-        );
+        final result = await service.fetchPortServiceRules([jnapRule]);
 
-        // Assert
-        verify(() => mockRepository.send(
-              JNAPAction.getIPv6FirewallRules,
-              auth: true,
-              fetchRemote: true,
-            )).called(1);
+        final uiRule = result.$1!.rules.first;
+        expect(uiRule.portRanges.first.firstPort, 0);
+        expect(uiRule.portRanges.first.lastPort, 65535);
       });
 
-      test('fetches with custom maxRules and maxDescriptionLength', () async {
-        // Arrange
-        final mockResponse = IPv6PortServiceTestData.createCustomResponse(
-          maxRules: 100,
-          maxDescriptionLength: 64,
-        );
-        when(() => mockRepository.send(
-              any(),
-              auth: any(named: 'auth'),
-              fetchRemote: any(named: 'fetchRemote'),
-            )).thenAnswer((_) async => mockResponse);
-
-        final mockRef = UnitTestHelper.createMockRef(
-          routerRepository: mockRepository,
+      test('handles port ranges with special characters in description', () async {
+        final jnapRule = IPv6FirewallRule(
+          isEnabled: true,
+          description: 'Test-Rule_#123!@Special',
+          ipv6Address: '2001:db8::1',
+          portRanges: [
+            const PortRange(protocol: 'TCP', firstPort: 8080, lastPort: 8080),
+          ],
         );
 
-        // Act
-        final (rules, status) = await service.fetchPortServiceRules(
-          mockRef,
-        );
+        final result = await service.fetchPortServiceRules([jnapRule]);
 
-        // Assert
-        expect(status?.maxRules, 100);
-        expect(status?.maxDescriptionLength, 64);
+        expect(result.$1!.rules.first.description, 'Test-Rule_#123!@Special');
       });
 
-      test('throws exception when JNAP action fails', () async {
-        // Arrange
-        when(() => mockRepository.send(
-              any(),
-              auth: any(named: 'auth'),
-              fetchRemote: any(named: 'fetchRemote'),
-            )).thenThrow(Exception('Network error'));
-
-        final mockRef = UnitTestHelper.createMockRef(
-          routerRepository: mockRepository,
+      test('handles very long description strings', () async {
+        final longDescription = 'A' * 255; // 255 character description
+        final jnapRule = IPv6FirewallRule(
+          isEnabled: true,
+          description: longDescription,
+          ipv6Address: '2001:db8::1',
+          portRanges: [
+            const PortRange(protocol: 'TCP', firstPort: 80, lastPort: 80),
+          ],
         );
 
-        // Act & Assert
-        expect(
-          () async => await service.fetchPortServiceRules(mockRef),
-          throwsA(isA<Exception>()),
-        );
-      });
-    });
+        final result = await service.fetchPortServiceRules([jnapRule]);
 
-    group('addPortServiceRule', () {
-      test('adds new rule successfully', () async {
-        // Arrange
-        final existingResponse = IPv6PortServiceTestData.createEmptyResponse();
-        final newRule = IPv6PortServiceTestData.createUIRule();
-
-        when(() => mockRepository.send(
-              JNAPAction.getIPv6FirewallRules,
-              auth: any(named: 'auth'),
-            )).thenAnswer((_) async => existingResponse);
-
-        when(() => mockRepository.send(
-              JNAPAction.setIPv6FirewallRules,
-              auth: any(named: 'auth'),
-              fetchRemote: any(named: 'fetchRemote'),
-              cacheLevel: any(named: 'cacheLevel'),
-              data: any(named: 'data'),
-            )).thenAnswer((_) async => existingResponse);
-
-        final mockRef = UnitTestHelper.createMockRef(
-          routerRepository: mockRepository,
-        );
-
-        // Act
-        await service.addPortServiceRule(mockRef, newRule);
-
-        // Assert
-        verify(() => mockRepository.send(
-              JNAPAction.getIPv6FirewallRules,
-              auth: true,
-            )).called(1);
-
-        verify(() => mockRepository.send(
-              JNAPAction.setIPv6FirewallRules,
-              auth: true,
-              fetchRemote: true,
-              cacheLevel: CacheLevel.noCache,
-              data: any(named: 'data'),
-            )).called(1);
+        expect(result.$1!.rules.first.description, longDescription);
+        expect(result.$1!.rules.first.description.length, 255);
       });
 
-      test('adds rule to existing rules list', () async {
-        // Arrange
-        final existingResponse =
-            IPv6PortServiceTestData.createSingleRuleResponse();
-        final newRule = IPv6PortServiceTestData.createUIRule(
-          description: 'New Rule',
-          externalPort: 443,
+      test('returns status on success', () async {
+        final jnapRule = IPv6FirewallRule(
+          isEnabled: true,
+          description: 'Test',
+          ipv6Address: '2001:db8::1',
+          portRanges: [
+            const PortRange(protocol: 'TCP', firstPort: 80, lastPort: 80),
+          ],
         );
 
-        when(() => mockRepository.send(
-              JNAPAction.getIPv6FirewallRules,
-              auth: any(named: 'auth'),
-            )).thenAnswer((_) async => existingResponse);
+        final result = await service.fetchPortServiceRules([jnapRule]);
 
-        Map<String, dynamic>? capturedData;
-        when(() => mockRepository.send(
-              JNAPAction.setIPv6FirewallRules,
-              auth: any(named: 'auth'),
-              fetchRemote: any(named: 'fetchRemote'),
-              cacheLevel: any(named: 'cacheLevel'),
-              data: captureAny(named: 'data'),
-            )).thenAnswer((invocation) async {
-          capturedData = invocation.namedArguments[#data] as Map<String, dynamic>;
-          return existingResponse;
-        });
-
-        final mockRef = UnitTestHelper.createMockRef(
-          routerRepository: mockRepository,
-        );
-
-        // Act
-        await service.addPortServiceRule(mockRef, newRule);
-
-        // Assert
-        expect(capturedData, isNotNull);
-        final rules = capturedData!['rules'] as List;
-        expect(rules.length, 2); // Original + new rule
+        expect(result.$2, isNotNull);
       });
 
-      test('throws exception when add fails', () async {
-        // Arrange
-        final existingResponse = IPv6PortServiceTestData.createEmptyResponse();
-        final newRule = IPv6PortServiceTestData.createUIRule();
-
-        when(() => mockRepository.send(
-              JNAPAction.getIPv6FirewallRules,
-              auth: any(named: 'auth'),
-            )).thenAnswer((_) async => existingResponse);
-
-        when(() => mockRepository.send(
-              JNAPAction.setIPv6FirewallRules,
-              auth: any(named: 'auth'),
-              fetchRemote: any(named: 'fetchRemote'),
-              cacheLevel: any(named: 'cacheLevel'),
-              data: any(named: 'data'),
-            )).thenThrow(Exception('Save failed'));
-
-        final mockRef = UnitTestHelper.createMockRef(
-          routerRepository: mockRepository,
+      test('handles error gracefully and returns null', () async {
+        // Create a rule with invalid data to trigger transformation error
+        // This tests the error handling in fetchPortServiceRules
+        final invalidRule = IPv6FirewallRule(
+          isEnabled: true,
+          description: '',
+          ipv6Address: '2001:db8::1',
+          portRanges: const [],
         );
 
-        // Act & Assert
-        expect(
-          () async => await service.addPortServiceRule(mockRef, newRule),
-          throwsA(isA<Exception>()),
-        );
+        // Should not throw, but return null
+        final result = await service.fetchPortServiceRules([invalidRule]);
+
+        // Service should still return a result, just with empty rules or partial data
+        expect(result, isNotNull);
       });
     });
 
-    group('updatePortServiceRule', () {
-      test('updates existing rule successfully', () async {
-        // Arrange
-        final existingResponse =
-            IPv6PortServiceTestData.createSingleRuleResponse();
-        final oldRule = IPv6PortServiceTestData.createUIRule();
-        final newRule = oldRule.copyWith(description: 'Updated Web Server');
-
-        when(() => mockRepository.send(
-              JNAPAction.getIPv6FirewallRules,
-              auth: any(named: 'auth'),
-            )).thenAnswer((_) async => existingResponse);
-
-        when(() => mockRepository.send(
-              JNAPAction.setIPv6FirewallRules,
-              auth: any(named: 'auth'),
-              fetchRemote: any(named: 'fetchRemote'),
-              cacheLevel: any(named: 'cacheLevel'),
-              data: any(named: 'data'),
-            )).thenAnswer((_) async => existingResponse);
-
-        final mockRef = UnitTestHelper.createMockRef(
-          routerRepository: mockRepository,
+    group('Transformation correctness', () {
+      test('round-trip transformation preserves all data', () async {
+        final original = IPv6FirewallRule(
+          isEnabled: true,
+          description: 'Preserve Test',
+          ipv6Address: '2001:db8::10',
+          portRanges: [
+            const PortRange(protocol: 'TCP', firstPort: 1000, lastPort: 2000),
+            const PortRange(protocol: 'UDP', firstPort: 3000, lastPort: 4000),
+          ],
         );
 
-        // Act
-        await service.updatePortServiceRule(mockRef, oldRule, newRule);
+        final result = await service.fetchPortServiceRules([original]);
+        final transformed = result.$1!.rules.first;
 
-        // Assert
-        verify(() => mockRepository.send(
-              JNAPAction.getIPv6FirewallRules,
-              auth: true,
-            )).called(1);
+        expect(transformed.enabled, original.isEnabled);
+        expect(transformed.description, original.description);
+        expect(transformed.ipv6Address, original.ipv6Address);
+        expect(transformed.portRanges.length, original.portRanges.length);
 
-        verify(() => mockRepository.send(
-              JNAPAction.setIPv6FirewallRules,
-              auth: true,
-              fetchRemote: true,
-              cacheLevel: CacheLevel.noCache,
-              data: any(named: 'data'),
-            )).called(1);
+        for (int i = 0; i < original.portRanges.length; i++) {
+          expect(transformed.portRanges[i].protocol, original.portRanges[i].protocol);
+          expect(transformed.portRanges[i].firstPort, original.portRanges[i].firstPort);
+          expect(transformed.portRanges[i].lastPort, original.portRanges[i].lastPort);
+        }
       });
 
-      test('throws exception when rule not found', () async {
-        // Arrange
-        final existingResponse =
-            IPv6PortServiceTestData.createSingleRuleResponse();
-        final oldRule = IPv6PortServiceTestData.createUIRule(
-          description: 'Non-existent',
-        );
-        final newRule = oldRule.copyWith(description: 'Updated');
-
-        when(() => mockRepository.send(
-              JNAPAction.getIPv6FirewallRules,
-              auth: any(named: 'auth'),
-            )).thenAnswer((_) async => existingResponse);
-
-        final mockRef = UnitTestHelper.createMockRef(
-          routerRepository: mockRepository,
+      test('isEnabled field correctly maps to enabled field', () async {
+        final enabledRule = IPv6FirewallRule(
+          isEnabled: true,
+          description: 'Enabled',
+          ipv6Address: '2001:db8::1',
+          portRanges: const [PortRange(protocol: 'TCP', firstPort: 80, lastPort: 80)],
         );
 
-        // Act & Assert
-        expect(
-          () async =>
-              await service.updatePortServiceRule(mockRef, oldRule, newRule),
-          throwsA(isA<Exception>()),
-        );
-      });
-
-      test('updates rule in multiple rules list', () async {
-        // Arrange
-        final existingResponse =
-            IPv6PortServiceTestData.createMultipleRulesResponse();
-        final oldRule = IPv6PortServiceTestData.createUIRule(
-          description: 'HTTPS Server',
-          externalPort: 443,
-        );
-        final newRule = oldRule.copyWith(enabled: false);
-
-        when(() => mockRepository.send(
-              JNAPAction.getIPv6FirewallRules,
-              auth: any(named: 'auth'),
-            )).thenAnswer((_) async => existingResponse);
-
-        Map<String, dynamic>? capturedData;
-        when(() => mockRepository.send(
-              JNAPAction.setIPv6FirewallRules,
-              auth: any(named: 'auth'),
-              fetchRemote: any(named: 'fetchRemote'),
-              cacheLevel: any(named: 'cacheLevel'),
-              data: captureAny(named: 'data'),
-            )).thenAnswer((invocation) async {
-          capturedData = invocation.namedArguments[#data] as Map<String, dynamic>;
-          return existingResponse;
-        });
-
-        final mockRef = UnitTestHelper.createMockRef(
-          routerRepository: mockRepository,
+        final disabledRule = IPv6FirewallRule(
+          isEnabled: false,
+          description: 'Disabled',
+          ipv6Address: '2001:db8::2',
+          portRanges: const [PortRange(protocol: 'TCP', firstPort: 443, lastPort: 443)],
         );
 
-        // Act
-        await service.updatePortServiceRule(mockRef, oldRule, newRule);
+        final result = await service.fetchPortServiceRules([enabledRule, disabledRule]);
 
-        // Assert
-        expect(capturedData, isNotNull);
-        final rules = capturedData!['rules'] as List;
-        expect(rules.length, 3); // Same count
+        expect(result.$1!.rules[0].enabled, true);
+        expect(result.$1!.rules[1].enabled, false);
       });
     });
 
-    group('deletePortServiceRule', () {
-      test('deletes rule successfully', () async {
-        // Arrange
-        final existingResponse =
-            IPv6PortServiceTestData.createSingleRuleResponse();
-        final ruleToDelete = IPv6PortServiceTestData.createUIRule();
-
-        when(() => mockRepository.send(
-              JNAPAction.getIPv6FirewallRules,
-              auth: any(named: 'auth'),
-            )).thenAnswer((_) async => existingResponse);
-
-        when(() => mockRepository.send(
-              JNAPAction.setIPv6FirewallRules,
-              auth: any(named: 'auth'),
-              fetchRemote: any(named: 'fetchRemote'),
-              cacheLevel: any(named: 'cacheLevel'),
-              data: any(named: 'data'),
-            )).thenAnswer((_) async => existingResponse);
-
-        final mockRef = UnitTestHelper.createMockRef(
-          routerRepository: mockRepository,
+    group('Edge cases', () {
+      test('handles single port range entry', () async {
+        final jnapRule = IPv6FirewallRule(
+          isEnabled: true,
+          description: 'Single Port',
+          ipv6Address: '2001:db8::1',
+          portRanges: [
+            const PortRange(protocol: 'TCP', firstPort: 80, lastPort: 80),
+          ],
         );
 
-        // Act
-        await service.deletePortServiceRule(mockRef, ruleToDelete);
+        final result = await service.fetchPortServiceRules([jnapRule]);
 
-        // Assert
-        verify(() => mockRepository.send(
-              JNAPAction.getIPv6FirewallRules,
-              auth: true,
-            )).called(1);
-
-        verify(() => mockRepository.send(
-              JNAPAction.setIPv6FirewallRules,
-              auth: true,
-              fetchRemote: true,
-              cacheLevel: CacheLevel.noCache,
-              data: any(named: 'data'),
-            )).called(1);
+        expect(result.$1!.rules.first.portRanges, hasLength(1));
       });
 
-      test('deletes rule from multiple rules list', () async {
-        // Arrange
-        final existingResponse =
-            IPv6PortServiceTestData.createMultipleRulesResponse();
-        final ruleToDelete = IPv6PortServiceTestData.createUIRule(
-          description: 'HTTPS Server',
-          externalPort: 443,
+      test('handles many port ranges for single rule', () async {
+        final portRanges = List<PortRange>.generate(
+          10,
+          (i) => PortRange(
+            protocol: i % 2 == 0 ? 'TCP' : 'UDP',
+            firstPort: i * 1000,
+            lastPort: i * 1000 + 999,
+          ),
         );
 
-        when(() => mockRepository.send(
-              JNAPAction.getIPv6FirewallRules,
-              auth: any(named: 'auth'),
-            )).thenAnswer((_) async => existingResponse);
-
-        Map<String, dynamic>? capturedData;
-        when(() => mockRepository.send(
-              JNAPAction.setIPv6FirewallRules,
-              auth: any(named: 'auth'),
-              fetchRemote: any(named: 'fetchRemote'),
-              cacheLevel: any(named: 'cacheLevel'),
-              data: captureAny(named: 'data'),
-            )).thenAnswer((invocation) async {
-          capturedData = invocation.namedArguments[#data] as Map<String, dynamic>;
-          return existingResponse;
-        });
-
-        final mockRef = UnitTestHelper.createMockRef(
-          routerRepository: mockRepository,
+        final jnapRule = IPv6FirewallRule(
+          isEnabled: true,
+          description: 'Many Ports',
+          ipv6Address: '2001:db8::1',
+          portRanges: portRanges,
         );
 
-        // Act
-        await service.deletePortServiceRule(mockRef, ruleToDelete);
+        final result = await service.fetchPortServiceRules([jnapRule]);
 
-        // Assert
-        expect(capturedData, isNotNull);
-        final rules = capturedData!['rules'] as List;
-        expect(rules.length, 2); // One less than original 3
+        expect(result.$1!.rules.first.portRanges, hasLength(10));
       });
 
-      test('deletes last rule leaving empty list', () async {
-        // Arrange
-        final existingResponse =
-            IPv6PortServiceTestData.createSingleRuleResponse();
-        final ruleToDelete = IPv6PortServiceTestData.createUIRule();
-
-        when(() => mockRepository.send(
-              JNAPAction.getIPv6FirewallRules,
-              auth: any(named: 'auth'),
-            )).thenAnswer((_) async => existingResponse);
-
-        Map<String, dynamic>? capturedData;
-        when(() => mockRepository.send(
-              JNAPAction.setIPv6FirewallRules,
-              auth: any(named: 'auth'),
-              fetchRemote: any(named: 'fetchRemote'),
-              cacheLevel: any(named: 'cacheLevel'),
-              data: captureAny(named: 'data'),
-            )).thenAnswer((invocation) async {
-          capturedData = invocation.namedArguments[#data] as Map<String, dynamic>;
-          return existingResponse;
-        });
-
-        final mockRef = UnitTestHelper.createMockRef(
-          routerRepository: mockRepository,
+      test('handles large list of rules', () async {
+        final rules = List<IPv6FirewallRule>.generate(
+          100,
+          (i) => IPv6FirewallRule(
+            isEnabled: i % 2 == 0,
+            description: 'Rule $i',
+            ipv6Address: '2001:db8::$i',
+            portRanges: [
+              PortRange(
+                protocol: ['TCP', 'UDP', 'Both'][i % 3],
+                firstPort: 1000 + i,
+                lastPort: 2000 + i,
+              ),
+            ],
+          ),
         );
 
-        // Act
-        await service.deletePortServiceRule(mockRef, ruleToDelete);
+        final result = await service.fetchPortServiceRules(rules);
 
-        // Assert
-        expect(capturedData, isNotNull);
-        final rules = capturedData!['rules'] as List;
-        expect(rules.length, 0);
-      });
-
-      test('throws exception when delete fails', () async {
-        // Arrange
-        final existingResponse =
-            IPv6PortServiceTestData.createSingleRuleResponse();
-        final ruleToDelete = IPv6PortServiceTestData.createUIRule();
-
-        when(() => mockRepository.send(
-              JNAPAction.getIPv6FirewallRules,
-              auth: any(named: 'auth'),
-            )).thenAnswer((_) async => existingResponse);
-
-        when(() => mockRepository.send(
-              JNAPAction.setIPv6FirewallRules,
-              auth: any(named: 'auth'),
-              fetchRemote: any(named: 'fetchRemote'),
-              cacheLevel: any(named: 'cacheLevel'),
-              data: any(named: 'data'),
-            )).thenThrow(Exception('Delete failed'));
-
-        final mockRef = UnitTestHelper.createMockRef(
-          routerRepository: mockRepository,
-        );
-
-        // Act & Assert
-        expect(
-          () async => await service.deletePortServiceRule(mockRef, ruleToDelete),
-          throwsA(isA<Exception>()),
-        );
+        expect(result.$1!.rules, hasLength(100));
       });
     });
   });

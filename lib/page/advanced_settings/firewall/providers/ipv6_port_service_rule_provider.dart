@@ -72,7 +72,8 @@ class Ipv6PortServiceRuleNotifier extends Notifier<Ipv6PortServiceRuleState>
       // Check for port range overlap with same or compatible protocol
       for (final otherRange in otherRule.portRanges) {
         if (_protocolsCompatible(protocol, otherRange.protocol)) {
-          if (_portRangesOverlap(firstPort, lastPort, otherRange.firstPort, otherRange.lastPort)) {
+          if (_portRangesOverlap(
+              firstPort, lastPort, otherRange.firstPort, otherRange.lastPort)) {
             return true;
           }
         }
@@ -94,4 +95,3 @@ class Ipv6PortServiceRuleNotifier extends Notifier<Ipv6PortServiceRuleState>
     return !(end1 < start2 || end2 < start1);
   }
 }
-

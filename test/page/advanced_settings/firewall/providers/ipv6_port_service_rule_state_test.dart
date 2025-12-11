@@ -1,522 +1,826 @@
-import 'dart:convert';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/advanced_settings/firewall/providers/ipv6_port_service_rule_state.dart';
 
-import '../services/ipv6_port_service_list_service_test_data.dart';
-
 void main() {
-  group('IPv6PortServiceRuleUI', () {
-    test('creates instance with required fields', () {
-      // Arrange & Act
-      final rule = IPv6PortServiceRuleUI(
-        protocol: 'TCP',
-        externalPort: 80,
-        internalPort: 8080,
-        internalIPAddress: '2001:db8::1',
-        description: 'Web Server',
-        enabled: true,
-      );
-
-      // Assert
-      expect(rule.protocol, 'TCP');
-      expect(rule.externalPort, 80);
-      expect(rule.internalPort, 8080);
-      expect(rule.internalIPAddress, '2001:db8::1');
-      expect(rule.description, 'Web Server');
-      expect(rule.enabled, true);
-    });
-
-    test('copyWith creates new instance with updated fields', () {
-      // Arrange
-      final original = IPv6PortServiceTestData.createUIRule();
-
-      // Act
-      final updated = original.copyWith(
-        description: 'Updated Description',
-        enabled: false,
-      );
-
-      // Assert
-      expect(updated.description, 'Updated Description');
-      expect(updated.enabled, false);
-      // Unchanged fields
-      expect(updated.protocol, original.protocol);
-      expect(updated.externalPort, original.externalPort);
-      expect(updated.internalPort, original.internalPort);
-      expect(updated.internalIPAddress, original.internalIPAddress);
-    });
-
-    test('copyWith with no changes returns equivalent instance', () {
-      // Arrange
-      final original = IPv6PortServiceTestData.createUIRule();
-
-      // Act
-      final copy = original.copyWith();
-
-      // Assert
-      expect(copy, equals(original));
-    });
-
-    test('toMap serializes all fields correctly', () {
-      // Arrange
-      final rule = IPv6PortServiceTestData.createUIRule(
-        protocol: 'UDP',
-        externalPort: 7777,
-        internalPort: 7777,
-        internalIPAddress: '2001:db8::2',
-        description: 'Game Server',
-        enabled: false,
-      );
-
-      // Act
-      final map = rule.toMap();
-
-      // Assert
-      expect(map['protocol'], 'UDP');
-      expect(map['externalPort'], 7777);
-      expect(map['internalPort'], 7777);
-      expect(map['internalIPAddress'], '2001:db8::2');
-      expect(map['description'], 'Game Server');
-      expect(map['enabled'], false);
-    });
-
-    test('fromMap deserializes all fields correctly', () {
-      // Arrange
-      final map = {
-        'protocol': 'Both',
-        'externalPort': 27000,
-        'internalPort': 27100,
-        'internalIPAddress': '2001:db8::3',
-        'description': 'Port Range',
-        'enabled': true,
-      };
-
-      // Act
-      final rule = IPv6PortServiceRuleUI.fromMap(map);
-
-      // Assert
-      expect(rule.protocol, 'Both');
-      expect(rule.externalPort, 27000);
-      expect(rule.internalPort, 27100);
-      expect(rule.internalIPAddress, '2001:db8::3');
-      expect(rule.description, 'Port Range');
-      expect(rule.enabled, true);
-    });
-
-    test('round-trip serialization preserves all data', () {
-      // Arrange
-      final original = IPv6PortServiceTestData.createUIRule(
-        protocol: 'TCP',
-        externalPort: 443,
-        internalPort: 8443,
-        internalIPAddress: '2001:db8:abcd::1',
-        description: 'HTTPS Proxy',
-        enabled: true,
-      );
-
-      // Act
-      final map = original.toMap();
-      final deserialized = IPv6PortServiceRuleUI.fromMap(map);
-
-      // Assert
-      expect(deserialized, equals(original));
-    });
-
-    test('toJson produces valid JSON string', () {
-      // Arrange
-      final rule = IPv6PortServiceTestData.createUIRule();
-
-      // Act
-      final jsonString = rule.toJson();
-      final decoded = json.decode(jsonString);
-
-      // Assert
-      expect(decoded, isA<Map>());
-      expect(decoded['protocol'], rule.protocol);
-      expect(decoded['description'], rule.description);
-    });
-
-    test('fromJson parses JSON string correctly', () {
-      // Arrange
-      final original = IPv6PortServiceTestData.createUIRule();
-      final jsonString = original.toJson();
-
-      // Act
-      final parsed = IPv6PortServiceRuleUI.fromJson(jsonString);
-
-      // Assert
-      expect(parsed, equals(original));
-    });
-
-    test('equality compares all fields', () {
-      // Arrange
-      final rule1 = IPv6PortServiceTestData.createUIRule();
-      final rule2 = IPv6PortServiceTestData.createUIRule();
-      final rule3 = IPv6PortServiceTestData.createUIRule(description: 'Different');
-
-      // Act & Assert
-      expect(rule1, equals(rule2));
-      expect(rule1, isNot(equals(rule3)));
-    });
-
-    test('props includes all fields for equality', () {
-      // Arrange
-      final rule = IPv6PortServiceTestData.createUIRule();
-
-      // Act
-      final props = rule.props;
-
-      // Assert
-      expect(props.length, 6);
-      expect(props, contains(rule.protocol));
-      expect(props, contains(rule.externalPort));
-      expect(props, contains(rule.internalPort));
-      expect(props, contains(rule.internalIPAddress));
-      expect(props, contains(rule.description));
-      expect(props, contains(rule.enabled));
-    });
-
-    test('handles different protocols correctly', () {
-      // Arrange & Act
-      final tcpRule = IPv6PortServiceTestData.createUIRule(protocol: 'TCP');
-      final udpRule = IPv6PortServiceTestData.createUIRule(protocol: 'UDP');
-      final bothRule = IPv6PortServiceTestData.createUIRule(protocol: 'Both');
-
-      // Assert
-      expect(tcpRule.protocol, 'TCP');
-      expect(udpRule.protocol, 'UDP');
-      expect(bothRule.protocol, 'Both');
-    });
-
-    test('handles port ranges correctly', () {
-      // Arrange & Act
-      final singlePort = IPv6PortServiceTestData.createUIRule(
-        externalPort: 80,
-        internalPort: 80,
-      );
-      final portRange = IPv6PortServiceTestData.createUIRule(
-        externalPort: 27000,
-        internalPort: 27100,
-      );
-
-      // Assert
-      expect(singlePort.externalPort, singlePort.internalPort);
-      expect(portRange.internalPort - portRange.externalPort, 100);
-    });
-
-    test('handles IPv6 addresses correctly', () {
-      // Arrange
-      final testAddresses = [
-        '2001:db8::1',
-        'fe80::1',
-        '::1',
-        '2001:0db8:85a3:0000:0000:8a2e:0370:7334',
-      ];
-
-      // Act & Assert
-      for (final address in testAddresses) {
-        final rule = IPv6PortServiceTestData.createUIRule(
-          internalIPAddress: address,
+  group('PortRangeUI', () {
+    group('creation and equality', () {
+      test('creates PortRangeUI with all fields', () {
+        const portRange = PortRangeUI(
+          protocol: 'TCP',
+          firstPort: 80,
+          lastPort: 8080,
         );
-        expect(rule.internalIPAddress, address);
-      }
+
+        expect(portRange.protocol, 'TCP');
+        expect(portRange.firstPort, 80);
+        expect(portRange.lastPort, 8080);
+      });
+
+      test('supports value equality', () {
+        const portRange1 = PortRangeUI(
+          protocol: 'TCP',
+          firstPort: 80,
+          lastPort: 8080,
+        );
+        const portRange2 = PortRangeUI(
+          protocol: 'TCP',
+          firstPort: 80,
+          lastPort: 8080,
+        );
+
+        expect(portRange1, portRange2);
+      });
+
+      test('distinguishes different protocols', () {
+        const portRange1 = PortRangeUI(
+          protocol: 'TCP',
+          firstPort: 80,
+          lastPort: 8080,
+        );
+        const portRange2 = PortRangeUI(
+          protocol: 'UDP',
+          firstPort: 80,
+          lastPort: 8080,
+        );
+
+        expect(portRange1, isNot(portRange2));
+      });
     });
 
-    test('handles enabled/disabled states correctly', () {
-      // Arrange & Act
-      final enabledRule = IPv6PortServiceTestData.createUIRule(enabled: true);
-      final disabledRule = IPv6PortServiceTestData.createUIRule(enabled: false);
+    group('copyWith', () {
+      test('copies with protocol override', () {
+        const original = PortRangeUI(
+          protocol: 'TCP',
+          firstPort: 80,
+          lastPort: 8080,
+        );
 
-      // Assert
-      expect(enabledRule.enabled, true);
-      expect(disabledRule.enabled, false);
+        final copied = original.copyWith(protocol: 'UDP');
+
+        expect(copied.protocol, 'UDP');
+        expect(copied.firstPort, 80);
+        expect(copied.lastPort, 8080);
+      });
+
+      test('copies with port override', () {
+        const original = PortRangeUI(
+          protocol: 'TCP',
+          firstPort: 80,
+          lastPort: 8080,
+        );
+
+        final copied = original.copyWith(firstPort: 443, lastPort: 443);
+
+        expect(copied.protocol, 'TCP');
+        expect(copied.firstPort, 443);
+        expect(copied.lastPort, 443);
+      });
+    });
+
+    group('serialization', () {
+      test('converts to Map', () {
+        const portRange = PortRangeUI(
+          protocol: 'TCP',
+          firstPort: 80,
+          lastPort: 8080,
+        );
+
+        final map = portRange.toMap();
+
+        expect(map['protocol'], 'TCP');
+        expect(map['firstPort'], 80);
+        expect(map['lastPort'], 8080);
+      });
+
+      test('creates from Map', () {
+        const expected = PortRangeUI(
+          protocol: 'TCP',
+          firstPort: 80,
+          lastPort: 8080,
+        );
+
+        final portRange = PortRangeUI.fromMap({
+          'protocol': 'TCP',
+          'firstPort': 80,
+          'lastPort': 8080,
+        });
+
+        expect(portRange, expected);
+      });
+
+      test('round-trip serialization preserves data', () {
+        const original = PortRangeUI(
+          protocol: 'Both',
+          firstPort: 1000,
+          lastPort: 2000,
+        );
+
+        final map = original.toMap();
+        final restored = PortRangeUI.fromMap(map);
+
+        expect(restored, original);
+      });
+    });
+  });
+
+  group('IPv6PortServiceRuleUI', () {
+    group('creation and equality', () {
+      test('creates rule with all fields', () {
+        const rule = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'SSH Access',
+          ipv6Address: '2001:db8::1',
+          portRanges: [
+            PortRangeUI(protocol: 'TCP', firstPort: 22, lastPort: 22)
+          ],
+        );
+
+        expect(rule.enabled, true);
+        expect(rule.description, 'SSH Access');
+        expect(rule.ipv6Address, '2001:db8::1');
+        expect(rule.portRanges, hasLength(1));
+      });
+
+      test('supports value equality', () {
+        const rule1 = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'Test',
+          ipv6Address: '2001:db8::1',
+          portRanges: [
+            PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)
+          ],
+        );
+        const rule2 = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'Test',
+          ipv6Address: '2001:db8::1',
+          portRanges: [
+            PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)
+          ],
+        );
+
+        expect(rule1, rule2);
+      });
+
+      test('distinguishes different descriptions', () {
+        const rule1 = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'Test1',
+          ipv6Address: '2001:db8::1',
+          portRanges: [
+            PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)
+          ],
+        );
+        const rule2 = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'Test2',
+          ipv6Address: '2001:db8::1',
+          portRanges: [
+            PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)
+          ],
+        );
+
+        expect(rule1, isNot(rule2));
+      });
+    });
+
+    group('copyWith', () {
+      test('copies with description override', () {
+        const original = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'Original',
+          ipv6Address: '2001:db8::1',
+          portRanges: [
+            PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)
+          ],
+        );
+
+        final copied = original.copyWith(description: 'Updated');
+
+        expect(copied.description, 'Updated');
+        expect(copied.enabled, true);
+        expect(copied.ipv6Address, '2001:db8::1');
+      });
+
+      test('copies with multiple field overrides', () {
+        const original = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'Original',
+          ipv6Address: '2001:db8::1',
+          portRanges: [
+            PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)
+          ],
+        );
+
+        final newPortRanges = [
+          const PortRangeUI(protocol: 'UDP', firstPort: 53, lastPort: 53),
+        ];
+
+        final copied = original.copyWith(
+          enabled: false,
+          ipv6Address: '2001:db8::2',
+          portRanges: newPortRanges,
+        );
+
+        expect(copied.enabled, false);
+        expect(copied.ipv6Address, '2001:db8::2');
+        expect(copied.portRanges, newPortRanges);
+      });
+    });
+
+    group('serialization', () {
+      test('converts to Map with port ranges', () {
+        const rule = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'Test',
+          ipv6Address: '2001:db8::1',
+          portRanges: [
+            PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80),
+            PortRangeUI(protocol: 'UDP', firstPort: 53, lastPort: 53),
+          ],
+        );
+
+        final map = rule.toMap();
+
+        expect(map['enabled'], true);
+        expect(map['description'], 'Test');
+        expect(map['ipv6Address'], '2001:db8::1');
+        expect(map['portRanges'], hasLength(2));
+      });
+
+      test('creates from Map', () {
+        const expected = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'Test',
+          ipv6Address: '2001:db8::1',
+          portRanges: [
+            PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)
+          ],
+        );
+
+        final rule = IPv6PortServiceRuleUI.fromMap({
+          'enabled': true,
+          'description': 'Test',
+          'ipv6Address': '2001:db8::1',
+          'portRanges': [
+            {'protocol': 'TCP', 'firstPort': 80, 'lastPort': 80}
+          ],
+        });
+
+        expect(rule, expected);
+      });
+
+      test('round-trip serialization preserves all data', () {
+        const original = IPv6PortServiceRuleUI(
+          enabled: false,
+          description: 'Complete Test',
+          ipv6Address: '2001:db8::10',
+          portRanges: [
+            PortRangeUI(protocol: 'TCP', firstPort: 1000, lastPort: 2000),
+            PortRangeUI(protocol: 'UDP', firstPort: 3000, lastPort: 4000),
+          ],
+        );
+
+        final map = original.toMap();
+        final restored = IPv6PortServiceRuleUI.fromMap(map);
+
+        expect(restored, original);
+      });
+
+      test('handles JSON serialization', () {
+        const original = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'JSON Test',
+          ipv6Address: '2001:db8::1',
+          portRanges: [
+            PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)
+          ],
+        );
+
+        final json = original.toJson();
+        final restored = IPv6PortServiceRuleUI.fromJson(json);
+
+        expect(restored, original);
+      });
+
+      test('handles empty port ranges during serialization', () {
+        const rule = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'No Ports',
+          ipv6Address: '2001:db8::1',
+          portRanges: [],
+        );
+
+        final map = rule.toMap();
+        final restored = IPv6PortServiceRuleUI.fromMap(map);
+
+        expect(restored.portRanges, isEmpty);
+        expect(restored, rule);
+      });
+    });
+
+    group('edge cases', () {
+      test('handles rule with many port ranges', () {
+        final portRanges = List<PortRangeUI>.generate(
+          10,
+          (i) => PortRangeUI(
+            protocol: i % 2 == 0 ? 'TCP' : 'UDP',
+            firstPort: i * 1000,
+            lastPort: i * 1000 + 999,
+          ),
+        );
+
+        const rule = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'Many Ports',
+          ipv6Address: '2001:db8::1',
+          portRanges: [],
+        );
+
+        final ruleWithPorts = rule.copyWith(portRanges: portRanges);
+
+        expect(ruleWithPorts.portRanges, hasLength(10));
+
+        final map = ruleWithPorts.toMap();
+        final restored = IPv6PortServiceRuleUI.fromMap(map);
+
+        expect(restored.portRanges, hasLength(10));
+      });
+
+      test('handles boundary port values', () {
+        const rule = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'Boundary Ports',
+          ipv6Address: '2001:db8::1',
+          portRanges: [
+            PortRangeUI(protocol: 'TCP', firstPort: 0, lastPort: 65535),
+          ],
+        );
+
+        final map = rule.toMap();
+        final restored = IPv6PortServiceRuleUI.fromMap(map);
+
+        expect(restored.portRanges.first.firstPort, 0);
+        expect(restored.portRanges.first.lastPort, 65535);
+      });
+
+      test('handles special characters in description', () {
+        const rule = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'Test-Rule_#123!@Special',
+          ipv6Address: '2001:db8::1',
+          portRanges: [
+            PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)
+          ],
+        );
+
+        final map = rule.toMap();
+        final restored = IPv6PortServiceRuleUI.fromMap(map);
+
+        expect(restored.description, 'Test-Rule_#123!@Special');
+      });
+    });
+  });
+
+  group('IPv6PortServiceRuleUIList', () {
+    group('creation and equality', () {
+      test('creates list with rules', () {
+        const list = IPv6PortServiceRuleUIList(rules: [
+          IPv6PortServiceRuleUI(
+            enabled: true,
+            description: 'Rule 1',
+            ipv6Address: '2001:db8::1',
+            portRanges: [
+              PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)
+            ],
+          ),
+        ]);
+
+        expect(list.rules, hasLength(1));
+      });
+
+      test('supports value equality', () {
+        const rule = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'Test',
+          ipv6Address: '2001:db8::1',
+          portRanges: [
+            PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)
+          ],
+        );
+        const list1 = IPv6PortServiceRuleUIList(rules: [rule]);
+        const list2 = IPv6PortServiceRuleUIList(rules: [rule]);
+
+        expect(list1, list2);
+      });
+    });
+
+    group('copyWith', () {
+      test('copies with new rules', () {
+        const originalRule = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'Original',
+          ipv6Address: '2001:db8::1',
+          portRanges: [
+            PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)
+          ],
+        );
+        const originalList = IPv6PortServiceRuleUIList(rules: [originalRule]);
+
+        const newRule = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'New Rule',
+          ipv6Address: '2001:db8::2',
+          portRanges: [
+            PortRangeUI(protocol: 'UDP', firstPort: 53, lastPort: 53)
+          ],
+        );
+        final newList = originalList.copyWith(rules: [originalRule, newRule]);
+
+        expect(newList.rules, hasLength(2));
+      });
+    });
+
+    group('serialization', () {
+      test('converts to Map', () {
+        const list = IPv6PortServiceRuleUIList(rules: [
+          IPv6PortServiceRuleUI(
+            enabled: true,
+            description: 'Test',
+            ipv6Address: '2001:db8::1',
+            portRanges: [
+              PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)
+            ],
+          ),
+        ]);
+
+        final map = list.toMap();
+
+        expect(map['rules'], isA<List>());
+        expect(map['rules'], hasLength(1));
+      });
+
+      test('creates from Map', () {
+        const expected = IPv6PortServiceRuleUIList(rules: [
+          IPv6PortServiceRuleUI(
+            enabled: true,
+            description: 'Test',
+            ipv6Address: '2001:db8::1',
+            portRanges: [
+              PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)
+            ],
+          ),
+        ]);
+
+        final list = IPv6PortServiceRuleUIList.fromMap({
+          'rules': [
+            {
+              'enabled': true,
+              'description': 'Test',
+              'ipv6Address': '2001:db8::1',
+              'portRanges': [
+                {'protocol': 'TCP', 'firstPort': 80, 'lastPort': 80}
+              ],
+            }
+          ],
+        });
+
+        expect(list, expected);
+      });
+
+      test('round-trip serialization preserves data', () {
+        const original = IPv6PortServiceRuleUIList(rules: [
+          IPv6PortServiceRuleUI(
+            enabled: true,
+            description: 'Rule 1',
+            ipv6Address: '2001:db8::1',
+            portRanges: [
+              PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)
+            ],
+          ),
+          IPv6PortServiceRuleUI(
+            enabled: false,
+            description: 'Rule 2',
+            ipv6Address: '2001:db8::2',
+            portRanges: [
+              PortRangeUI(protocol: 'UDP', firstPort: 53, lastPort: 53)
+            ],
+          ),
+        ]);
+
+        final map = original.toMap();
+        final restored = IPv6PortServiceRuleUIList.fromMap(map);
+
+        expect(restored, original);
+      });
+
+      test('handles JSON serialization', () {
+        const original = IPv6PortServiceRuleUIList(rules: [
+          IPv6PortServiceRuleUI(
+            enabled: true,
+            description: 'Test',
+            ipv6Address: '2001:db8::1',
+            portRanges: [
+              PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)
+            ],
+          ),
+        ]);
+
+        final json = original.toJson();
+        final restored = IPv6PortServiceRuleUIList.fromJson(json);
+
+        expect(restored, original);
+      });
+    });
+
+    group('edge cases', () {
+      test('handles empty rule list', () {
+        const list = IPv6PortServiceRuleUIList(rules: []);
+
+        expect(list.rules, isEmpty);
+
+        final map = list.toMap();
+        final restored = IPv6PortServiceRuleUIList.fromMap(map);
+
+        expect(restored.rules, isEmpty);
+      });
+
+      test('handles large number of rules', () {
+        final rules = List<IPv6PortServiceRuleUI>.generate(
+          100,
+          (i) => IPv6PortServiceRuleUI(
+            enabled: i % 2 == 0,
+            description: 'Rule $i',
+            ipv6Address: '2001:db8::$i',
+            portRanges: [
+              PortRangeUI(
+                protocol: ['TCP', 'UDP', 'Both'][i % 3],
+                firstPort: 1000 + i,
+                lastPort: 2000 + i,
+              ),
+            ],
+          ),
+        );
+
+        final list = IPv6PortServiceRuleUIList(rules: rules);
+
+        expect(list.rules, hasLength(100));
+
+        final map = list.toMap();
+        final restored = IPv6PortServiceRuleUIList.fromMap(map);
+
+        expect(restored.rules, hasLength(100));
+      });
     });
   });
 
   group('Ipv6PortServiceRuleState', () {
-    test('creates instance with default empty values', () {
-      // Arrange & Act
-      const state = Ipv6PortServiceRuleState();
+    group('creation and equality', () {
+      test('creates state with default values', () {
+        const state = Ipv6PortServiceRuleState();
 
-      // Assert
-      expect(state.rules, isEmpty);
-      expect(state.rule, isNull);
-      expect(state.editIndex, isNull);
+        expect(state.rules, isEmpty);
+        expect(state.rule, isNull);
+        expect(state.editIndex, isNull);
+      });
+
+      test('creates state with all fields', () {
+        const rule = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'Test',
+          ipv6Address: '2001:db8::1',
+          portRanges: [
+            PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)
+          ],
+        );
+        const state = Ipv6PortServiceRuleState(
+          rules: [rule],
+          rule: rule,
+          editIndex: 0,
+        );
+
+        expect(state.rules, hasLength(1));
+        expect(state.rule, rule);
+        expect(state.editIndex, 0);
+      });
+
+      test('supports value equality', () {
+        const rule = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'Test',
+          ipv6Address: '2001:db8::1',
+          portRanges: [
+            PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)
+          ],
+        );
+        const state1 = Ipv6PortServiceRuleState(
+          rules: [rule],
+          rule: rule,
+          editIndex: 0,
+        );
+        const state2 = Ipv6PortServiceRuleState(
+          rules: [rule],
+          rule: rule,
+          editIndex: 0,
+        );
+
+        expect(state1, state2);
+      });
     });
 
-    test('creates instance with provided values', () {
-      // Arrange
-      final rules = IPv6PortServiceTestData.createUIRuleList();
-      final rule = rules.first;
+    group('copyWith', () {
+      test('copies with rule override', () {
+        const originalRule = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'Original',
+          ipv6Address: '2001:db8::1',
+          portRanges: [
+            PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)
+          ],
+        );
+        const originalState = Ipv6PortServiceRuleState(
+          rules: [originalRule],
+          rule: originalRule,
+          editIndex: 0,
+        );
 
-      // Act
-      final state = Ipv6PortServiceRuleState(
-        rules: rules,
-        rule: rule,
-        editIndex: 0,
-      );
+        const newRule = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'Updated',
+          ipv6Address: '2001:db8::2',
+          portRanges: [
+            PortRangeUI(protocol: 'UDP', firstPort: 53, lastPort: 53)
+          ],
+        );
 
-      // Assert
-      expect(state.rules, equals(rules));
-      expect(state.rule, equals(rule));
-      expect(state.editIndex, 0);
+        final newState = originalState.copyWith(
+          rule: () => newRule,
+        );
+
+        expect(newState.rule, newRule);
+        expect(newState.rules, originalState.rules);
+        expect(newState.editIndex, originalState.editIndex);
+      });
+
+      test('copies with null rule', () {
+        const rule = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'Test',
+          ipv6Address: '2001:db8::1',
+          portRanges: [
+            PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)
+          ],
+        );
+        const originalState = Ipv6PortServiceRuleState(
+          rules: [rule],
+          rule: rule,
+          editIndex: 0,
+        );
+
+        final newState = originalState.copyWith(rule: () => null);
+
+        expect(newState.rule, isNull);
+      });
+
+      test('copies with editIndex override', () {
+        const rule = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'Test',
+          ipv6Address: '2001:db8::1',
+          portRanges: [
+            PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)
+          ],
+        );
+        const originalState = Ipv6PortServiceRuleState(
+          rules: [rule, rule],
+          rule: rule,
+          editIndex: 0,
+        );
+
+        final newState = originalState.copyWith(editIndex: () => 1);
+
+        expect(newState.editIndex, 1);
+        expect(newState.rule, rule);
+      });
     });
 
-    test('copyWith updates rules field', () {
-      // Arrange
-      const original = Ipv6PortServiceRuleState();
-      final newRules = IPv6PortServiceTestData.createUIRuleList();
+    group('serialization', () {
+      test('converts to Map', () {
+        const rule = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'Test',
+          ipv6Address: '2001:db8::1',
+          portRanges: [
+            PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)
+          ],
+        );
+        const state = Ipv6PortServiceRuleState(
+          rules: [rule],
+          rule: rule,
+          editIndex: 0,
+        );
 
-      // Act
-      final updated = original.copyWith(rules: newRules);
+        final map = state.toMap();
 
-      // Assert
-      expect(updated.rules, equals(newRules));
-      expect(updated.rule, original.rule);
-      expect(updated.editIndex, original.editIndex);
+        expect(map['rules'], isA<List>());
+        expect(map['rule'], isA<Map>());
+        expect(map['editIndex'], 0);
+      });
+
+      test('round-trip serialization preserves data', () {
+        const rule = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'Test',
+          ipv6Address: '2001:db8::1',
+          portRanges: [
+            PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)
+          ],
+        );
+        const original = Ipv6PortServiceRuleState(
+          rules: [rule],
+          rule: rule,
+          editIndex: 0,
+        );
+
+        final map = original.toMap();
+        final restored = Ipv6PortServiceRuleState.fromMap(map);
+
+        expect(restored.rules, original.rules);
+        expect(restored.rule, original.rule);
+        expect(restored.editIndex, original.editIndex);
+      });
+
+      test('handles JSON serialization', () {
+        const rule = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'Test',
+          ipv6Address: '2001:db8::1',
+          portRanges: [
+            PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)
+          ],
+        );
+        const original = Ipv6PortServiceRuleState(
+          rules: [rule],
+          rule: rule,
+          editIndex: 0,
+        );
+
+        final json = original.toJson();
+        final restored = Ipv6PortServiceRuleState.fromJson(json);
+
+        expect(restored.rules, original.rules);
+        expect(restored.rule, original.rule);
+        expect(restored.editIndex, original.editIndex);
+      });
     });
 
-    test('copyWith updates rule field with ValueGetter', () {
-      // Arrange
-      final rules = IPv6PortServiceTestData.createUIRuleList();
-      final state = Ipv6PortServiceRuleState(rules: rules);
-      final newRule = rules.first;
+    group('edge cases', () {
+      test('handles state with null rule and editIndex', () {
+        const state = Ipv6PortServiceRuleState(
+          rules: [],
+          rule: null,
+          editIndex: null,
+        );
 
-      // Act
-      final updated = state.copyWith(rule: () => newRule);
+        expect(state.rule, isNull);
+        expect(state.editIndex, isNull);
 
-      // Assert
-      expect(updated.rule, equals(newRule));
-      expect(updated.rules, equals(rules));
-    });
+        final map = state.toMap();
+        final restored = Ipv6PortServiceRuleState.fromMap(map);
 
-    test('copyWith can set rule to null using ValueGetter', () {
-      // Arrange
-      final rules = IPv6PortServiceTestData.createUIRuleList();
-      final state = Ipv6PortServiceRuleState(
-        rules: rules,
-        rule: rules.first,
-      );
+        expect(restored.rule, isNull);
+        expect(restored.editIndex, isNull);
+      });
 
-      // Act
-      final updated = state.copyWith(rule: () => null);
+      test('handles state with many rules', () {
+        final rules = List<IPv6PortServiceRuleUI>.generate(
+          50,
+          (i) => IPv6PortServiceRuleUI(
+            enabled: i % 2 == 0,
+            description: 'Rule $i',
+            ipv6Address: '2001:db8::$i',
+            portRanges: [
+              PortRangeUI(
+                protocol: ['TCP', 'UDP', 'Both'][i % 3],
+                firstPort: 1000 + i,
+                lastPort: 2000 + i,
+              ),
+            ],
+          ),
+        );
 
-      // Assert
-      expect(updated.rule, isNull);
-    });
+        const state = Ipv6PortServiceRuleState(
+          rules: [],
+          rule: null,
+          editIndex: null,
+        );
 
-    test('copyWith updates editIndex field with ValueGetter', () {
-      // Arrange
-      const original = Ipv6PortServiceRuleState();
+        final stateWithRules = state.copyWith(
+          rules: rules,
+        );
 
-      // Act
-      final updated = original.copyWith(editIndex: () => 5);
-
-      // Assert
-      expect(updated.editIndex, 5);
-    });
-
-    test('copyWith can set editIndex to null using ValueGetter', () {
-      // Arrange
-      const original = Ipv6PortServiceRuleState(editIndex: 5);
-
-      // Act
-      final updated = original.copyWith(editIndex: () => null);
-
-      // Assert
-      expect(updated.editIndex, isNull);
-    });
-
-    test('toMap serializes all fields correctly', () {
-      // Arrange
-      final rules = IPv6PortServiceTestData.createUIRuleList();
-      final rule = rules.first;
-      final state = Ipv6PortServiceRuleState(
-        rules: rules,
-        rule: rule,
-        editIndex: 1,
-      );
-
-      // Act
-      final map = state.toMap();
-
-      // Assert
-      expect(map['rules'], isA<List>());
-      expect((map['rules'] as List).length, rules.length);
-      expect(map['rule'], isA<Map>());
-      expect(map['editIndex'], 1);
-    });
-
-    test('toMap handles null rule correctly', () {
-      // Arrange
-      final rules = IPv6PortServiceTestData.createUIRuleList();
-      final state = Ipv6PortServiceRuleState(rules: rules);
-
-      // Act
-      final map = state.toMap();
-
-      // Assert
-      expect(map['rule'], isNull);
-    });
-
-    test('toMap handles null editIndex correctly', () {
-      // Arrange
-      final rules = IPv6PortServiceTestData.createUIRuleList();
-      final state = Ipv6PortServiceRuleState(rules: rules);
-
-      // Act
-      final map = state.toMap();
-
-      // Assert
-      expect(map['editIndex'], isNull);
-    });
-
-    test('fromMap deserializes all fields correctly', () {
-      // Arrange
-      final rules = IPv6PortServiceTestData.createUIRuleList();
-      final map = {
-        'rules': rules.map((r) => r.toMap()).toList(),
-        'rule': rules.first.toMap(),
-        'editIndex': 2,
-      };
-
-      // Act
-      final state = Ipv6PortServiceRuleState.fromMap(map);
-
-      // Assert
-      expect(state.rules.length, rules.length);
-      expect(state.rule, isNotNull);
-      expect(state.editIndex, 2);
-    });
-
-    test('fromMap handles empty rules list', () {
-      // Arrange
-      final map = {
-        'rules': [],
-        'rule': null,
-        'editIndex': null,
-      };
-
-      // Act
-      final state = Ipv6PortServiceRuleState.fromMap(map);
-
-      // Assert
-      expect(state.rules, isEmpty);
-      expect(state.rule, isNull);
-      expect(state.editIndex, isNull);
-    });
-
-    test('fromMap handles missing rules field gracefully', () {
-      // Arrange
-      final map = <String, dynamic>{
-        'rule': null,
-        'editIndex': null,
-      };
-
-      // Act
-      final state = Ipv6PortServiceRuleState.fromMap(map);
-
-      // Assert
-      expect(state.rules, isEmpty);
-    });
-
-    test('round-trip serialization preserves all data', () {
-      // Arrange
-      final rules = IPv6PortServiceTestData.createUIRuleList();
-      final original = Ipv6PortServiceRuleState(
-        rules: rules,
-        rule: rules[1],
-        editIndex: 1,
-      );
-
-      // Act
-      final map = original.toMap();
-      final deserialized = Ipv6PortServiceRuleState.fromMap(map);
-
-      // Assert
-      expect(deserialized.rules.length, original.rules.length);
-      expect(deserialized.rule, equals(original.rule));
-      expect(deserialized.editIndex, original.editIndex);
-    });
-
-    test('toJson produces valid JSON string', () {
-      // Arrange
-      final rules = IPv6PortServiceTestData.createUIRuleList();
-      final state = Ipv6PortServiceRuleState(rules: rules);
-
-      // Act
-      final jsonString = state.toJson();
-      final decoded = json.decode(jsonString);
-
-      // Assert
-      expect(decoded, isA<Map>());
-      expect(decoded['rules'], isA<List>());
-    });
-
-    test('fromJson parses JSON string correctly', () {
-      // Arrange
-      final rules = IPv6PortServiceTestData.createUIRuleList();
-      final original = Ipv6PortServiceRuleState(rules: rules, editIndex: 0);
-      final jsonString = original.toJson();
-
-      // Act
-      final parsed = Ipv6PortServiceRuleState.fromJson(jsonString);
-
-      // Assert
-      expect(parsed.rules.length, original.rules.length);
-      expect(parsed.editIndex, original.editIndex);
-    });
-
-    test('equality compares all fields', () {
-      // Arrange
-      final rules = IPv6PortServiceTestData.createUIRuleList();
-      final state1 = Ipv6PortServiceRuleState(rules: rules, editIndex: 0);
-      final state2 = Ipv6PortServiceRuleState(rules: rules, editIndex: 0);
-      final state3 = Ipv6PortServiceRuleState(rules: rules, editIndex: 1);
-
-      // Act & Assert
-      expect(state1, equals(state2));
-      expect(state1, isNot(equals(state3)));
-    });
-
-    test('props includes all fields for equality', () {
-      // Arrange
-      final rules = IPv6PortServiceTestData.createUIRuleList();
-      final rule = rules.first;
-      final state = Ipv6PortServiceRuleState(
-        rules: rules,
-        rule: rule,
-        editIndex: 0,
-      );
-
-      // Act
-      final props = state.props;
-
-      // Assert
-      expect(props.length, 3);
-      expect(props, contains(state.rules));
-      expect(props, contains(state.rule));
-      expect(props, contains(state.editIndex));
-    });
-
-    test('toString returns readable representation', () {
-      // Arrange
-      final rules = [IPv6PortServiceTestData.createUIRule()];
-      final state = Ipv6PortServiceRuleState(
-        rules: rules,
-        rule: rules.first,
-        editIndex: 0,
-      );
-
-      // Act
-      final string = state.toString();
-
-      // Assert
-      expect(string, contains('Ipv6PortServiceRuleState'));
-      expect(string, contains('rules:'));
-      expect(string, contains('rule:'));
-      expect(string, contains('editIndex:'));
+        expect(stateWithRules.rules, hasLength(50));
+      });
     });
   });
 }

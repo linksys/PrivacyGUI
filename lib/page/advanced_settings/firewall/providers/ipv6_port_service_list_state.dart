@@ -50,8 +50,7 @@ class Ipv6PortServiceListStatus extends Equatable {
 }
 
 class Ipv6PortServiceListState
-    extends FeatureState<IPv6PortServiceRuleUIList,
-        Ipv6PortServiceListStatus> {
+    extends FeatureState<IPv6PortServiceRuleUIList, Ipv6PortServiceListStatus> {
   const Ipv6PortServiceListState({
     required super.settings,
     required super.status,
@@ -80,7 +79,8 @@ class Ipv6PortServiceListState
     return Ipv6PortServiceListState(
       settings: Preservable.fromMap(
         map['settings'] as Map<String, dynamic>,
-        (valueMap) => IPv6PortServiceRuleUIList.fromMap(valueMap as Map<String, dynamic>),
+        (valueMap) =>
+            IPv6PortServiceRuleUIList.fromMap(valueMap as Map<String, dynamic>),
       ),
       status: Ipv6PortServiceListStatus.fromMap(
           map['status'] as Map<String, dynamic>),
