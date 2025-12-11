@@ -321,5 +321,118 @@ void main() {
         expect(result.$1!.rules, hasLength(100));
       });
     });
+
+    group('transformRulesToJNAP', () {
+      test('transforms UI rules back to JNAP models', () {
+        final uiRules = [
+          IPv6PortServiceRuleUI(
+            enabled: true,
+            description: 'SSH Access',
+            ipv6Address: '2001:db8::1',
+            portRanges: const [
+              PortRangeUI(protocol: 'TCP', firstPort: 22, lastPort: 22),
+            ],
+          ),
+        ];
+
+        final jnapRules = service.transformRulesToJNAP(uiRules);
+
+        expect(jnapRules, hasLength(1));
+        expect(jnapRules.first.isEnabled, true);
+        expect(jnapRules.first.description, 'SSH Access');
+        expect(jnapRules.first.ipv6Address, '2001:db8::1');
+        expect(jnapRules.first.portRanges, hasLength(1));
+        expect(jnapRules.first.portRanges.first.protocol, 'TCP');
+        expect(jnapRules.first.portRanges.first.firstPort, 22);
+        expect(jnapRules.first.portRanges.first.lastPort, 22);
+      });
+
+      test('preserves enabled/disabled state during transformation', () {
+        final enabledRule = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'Enabled',
+          ipv6Address: '2001:db8::1',
+          portRanges: const [
+            PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)
+          ],
+        );
+
+        final disabledRule = IPv6PortServiceRuleUI(
+          enabled: false,
+          description: 'Disabled',
+          ipv6Address: '2001:db8::2',
+          portRanges: const [
+            PortRangeUI(protocol: 'UDP', firstPort: 53, lastPort: 53)
+          ],
+        );
+
+        final jnapRules =
+            service.transformRulesToJNAP([enabledRule, disabledRule]);
+
+        expect(jnapRules[0].isEnabled, true);
+        expect(jnapRules[1].isEnabled, false);
+      });
+
+      test('round-trip transformation preserves data', () async {
+        final originalJNAP = IPv6FirewallRule(
+          isEnabled: true,
+          description: 'Round-trip Test',
+          ipv6Address: '2001:db8::10',
+          portRanges: [
+            const PortRange(protocol: 'TCP', firstPort: 1000, lastPort: 2000),
+            const PortRange(protocol: 'UDP', firstPort: 3000, lastPort: 4000),
+          ],
+        );
+
+        // Transform JNAP → UI
+        final result = await service.fetchPortServiceRules([originalJNAP]);
+        final uiRule = result.$1!.rules.first;
+
+        // Transform UI → JNAP
+        final transformedBack = service.transformRulesToJNAP([uiRule]);
+        final transformedJNAP = transformedBack.first;
+
+        expect(transformedJNAP.isEnabled, originalJNAP.isEnabled);
+        expect(transformedJNAP.description, originalJNAP.description);
+        expect(transformedJNAP.ipv6Address, originalJNAP.ipv6Address);
+        expect(
+            transformedJNAP.portRanges.length, originalJNAP.portRanges.length);
+
+        for (int i = 0; i < originalJNAP.portRanges.length; i++) {
+          expect(transformedJNAP.portRanges[i].protocol,
+              originalJNAP.portRanges[i].protocol);
+          expect(transformedJNAP.portRanges[i].firstPort,
+              originalJNAP.portRanges[i].firstPort);
+          expect(transformedJNAP.portRanges[i].lastPort,
+              originalJNAP.portRanges[i].lastPort);
+        }
+      });
+
+      test('handles empty UI rules list', () {
+        final jnapRules = service.transformRulesToJNAP([]);
+
+        expect(jnapRules, isEmpty);
+      });
+
+      test('handles multiple port ranges during reverse transformation', () {
+        final uiRule = IPv6PortServiceRuleUI(
+          enabled: true,
+          description: 'Multi-port',
+          ipv6Address: '2001:db8::1',
+          portRanges: const [
+            PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80),
+            PortRangeUI(protocol: 'TCP', firstPort: 443, lastPort: 443),
+            PortRangeUI(protocol: 'UDP', firstPort: 53, lastPort: 53),
+          ],
+        );
+
+        final jnapRules = service.transformRulesToJNAP([uiRule]);
+
+        expect(jnapRules.first.portRanges, hasLength(3));
+        expect(jnapRules.first.portRanges[0].firstPort, 80);
+        expect(jnapRules.first.portRanges[1].firstPort, 443);
+        expect(jnapRules.first.portRanges[2].firstPort, 53);
+      });
+    });
   });
 }

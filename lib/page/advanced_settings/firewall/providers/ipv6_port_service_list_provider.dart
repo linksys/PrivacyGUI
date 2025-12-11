@@ -70,11 +70,34 @@ class Ipv6PortServiceListNotifier extends Notifier<Ipv6PortServiceListState>
 
   @override
   Future<void> performSave() async {
-    // Save is handled individually by add/update/delete operations
-    // This implementation is kept for PreservableNotifierMixin compatibility
-    throw UnimplementedError(
-      'Save is handled by individual add/update/delete operations',
-    );
+    try {
+      final repo = ref.read(routerRepositoryProvider);
+
+      // Transform UI rules back to JNAP models
+      final service = IPv6PortServiceListService();
+      final jnapRules = service.transformRulesToJNAP(state.current.rules);
+
+      // Build JNAP model for transmission
+      final dataModel = IPv6FirewallRuleList(rules: jnapRules);
+
+      // Execute JNAP action to save IPv6 firewall rules
+      await repo.send(
+        JNAPAction.setIPv6FirewallRules,
+        auth: true,
+        fetchRemote: true,
+        data: dataModel.toMap(),
+      );
+
+      // Update original to match current (commit the save)
+      state = state.copyWith(
+        settings: state.settings.copyWith(
+          original: state.settings.current,
+        ),
+      );
+    } catch (e) {
+      throw Exception(
+          'Failed to save IPv6 port service rules: ${e.toString()}');
+    }
   }
 
   /// Initializes the rules list (for testing and UI initialization)

@@ -3,6 +3,10 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/advanced_settings/firewall/providers/ipv6_port_service_rule_state.dart';
 import 'package:privacy_gui/providers/empty_status.dart';
 
+// Re-export PortRange for use in transformRulesToJNAP
+export 'package:privacy_gui/core/jnap/models/ipv6_firewall_rule.dart'
+    show PortRange;
+
 /// Service for managing IPv6 port service rules.
 /// Acts as pure adapter between JNAP layer and UI layer.
 /// Transforms JNAP IPv6FirewallRule models to IPv6PortServiceRuleUI models and vice versa.
@@ -72,6 +76,52 @@ class IPv6PortServiceListService {
       ipv6Address: rule.ipv6Address,
       portRanges: rule.portRanges
           .map((pr) => PortRangeUI(
+                protocol: pr.protocol,
+                firstPort: pr.firstPort,
+                lastPort: pr.lastPort,
+              ))
+          .toList(),
+    );
+  }
+
+  /// Transforms UI models back to JNAP models for saving.
+  ///
+  /// Reverse transformation pipeline:
+  /// 1. IPv6PortServiceRuleUI (UI model)
+  /// 2. → IPv6FirewallRule (JNAP model for transmission)
+  ///
+  /// Parameters:
+  /// - rules: List of UI IPv6PortServiceRuleUI objects
+  ///
+  /// Returns:
+  /// - List of JNAP IPv6FirewallRule objects ready for transmission
+  List<IPv6FirewallRule> transformRulesToJNAP(
+    List<IPv6PortServiceRuleUI> rules,
+  ) {
+    return rules.map((rule) => _transformRuleToJNAP(rule)).toList();
+  }
+
+  /// Private: Transforms single UI IPv6PortServiceRuleUI to JNAP model
+  ///
+  /// Transformation details:
+  /// - enabled → isEnabled
+  /// - description → description (unchanged)
+  /// - ipv6Address → ipv6Address (unchanged)
+  /// - portRanges[] → portRanges[] (map each PortRangeUI to PortRange)
+  ///
+  /// Each PortRange transformation:
+  /// - protocol → protocol (TCP/UDP/Both)
+  /// - firstPort → firstPort
+  /// - lastPort → lastPort
+  ///
+  /// Throws exception if any field cannot be transformed
+  IPv6FirewallRule _transformRuleToJNAP(IPv6PortServiceRuleUI rule) {
+    return IPv6FirewallRule(
+      isEnabled: rule.enabled,
+      description: rule.description,
+      ipv6Address: rule.ipv6Address,
+      portRanges: rule.portRanges
+          .map((pr) => PortRange(
                 protocol: pr.protocol,
                 firstPort: pr.firstPort,
                 lastPort: pr.lastPort,
