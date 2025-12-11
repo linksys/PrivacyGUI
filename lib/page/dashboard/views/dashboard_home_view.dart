@@ -7,10 +7,9 @@ import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/dashboard/views/components/home_title.dart';
 import 'package:privacy_gui/page/dashboard/views/components/internet_status.dart';
@@ -55,13 +54,13 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     final hasLanPort =
         ref.read(dashboardHomeProvider).lanPortConnections.isNotEmpty;
 
-    return StyledAppPageView.withSliver(
+    return UiKitPageView.withSliver(
       scrollable: true,
       onRefresh: () async {
         await ref.read(pollingProvider.notifier).forcePolling();
       },
-      appBarStyle: AppBarStyle.none,
-      backState: StyledBackState.none,
+      appBarStyle: UiKitAppBarStyle.none,
+      backState: UiKitBackState.none,
       padding: const EdgeInsets.only(
         top: Spacing.large3,
         bottom: Spacing.medium,

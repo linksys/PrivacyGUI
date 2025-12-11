@@ -1,0 +1,11 @@
+{
+	"recoveryCode": "01748",
+	"password": "Belkin123!",
+    "serialNumber": "67A10M24F00119",
+	"defaultWiFi": {
+		"ssid": "Linksys00119",
+		"password": "1jHaugy62@"
+	},
+	"wifiBands": "2.4,5,guest",
+	"isHealthCheckSupported": "true"
+}

@@ -1,0 +1,1403 @@
+Filtering test paths by key: speed
+Starting screenshot test runner...
+Found 2 test files:
+1. health_check/views/localizations/speed_test_view_test.dart
+2. health_check/views/localizations/speed_test_external_test.dart
+Selected 1 files for execution.
+- test/page/health_check/views/localizations/speed_test_view_test.dart
+Customization not enabled. Using default languages and resolutions.
+Selected languages: en
+Selected resolutions: 480, 1280
+
+--- Starting Test Execution ---
+
+Running test: test/page/health_check/views/localizations/speed_test_view_test.dart, Language: en, Resolutions: 480,1280
+*********************Generating Localization snapshots********************
+Locales: en
+Screens: 480,1280
+Version: 0.0.1.1
+Target file: test/page/health_check/views/localizations/speed_test_view_test.dart
+00:00 +0: loading /Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart                                                                00:01 +0: loading /Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart                                                                00:02 +0: loading /Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart                                                                00:03 +0: loading /Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart                                                                00:04 +0: loading /Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart                                                                00:05 +0: loading /Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart                                                                00:06 +0: loading /Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart                                                                00:07 +0: loading /Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart                                                                00:08 +0: loading /Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart                                                                00:09 +0: loading /Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart                                                                00:10 +0: loading /Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart                                                                00:11 +0: loading /Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart                                                                00:12 +0: loading /Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart                                                                00:13 +0: loading /Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart                                                                00:14 +0: loading /Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart                                                                00:15 +0: loading /Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart                                                                00:16 +0: loading /Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart                                                                00:17 +0: loading /Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart                                                                00:17 +0: Verify the initial idle state of the speed test. (variant: Device480w-en_(480.0, 932.0, 1.0))                                                                                                00:18 +0: Verify the initial idle state of the speed test. (variant: Device480w-en_(480.0, 932.0, 1.0))                                                                                                00:19 +0: Verify the initial idle state of the speed test. (variant: Device480w-en_(480.0, 932.0, 1.0))                                                                                                00:20 +0: Verify the initial idle state of the speed test. (variant: Device480w-en_(480.0, 932.0, 1.0))                                                                                                00:20 +1: Verify the initial idle state of the speed test. (variant: Device480w-en_(480.0, 932.0, 1.0))                                                                                                00:20 +1: Verify the initial idle state of the speed test. (variant: Device1280w-en_(1280.0, 720.0, 1.0))                                                                                              00:20 +2: Verify the initial idle state of the speed test. (variant: Device1280w-en_(1280.0, 720.0, 1.0))                                                                                              00:20 +2: Verify the UI during the ping phase. (variant: Device480w-en_(480.0, 932.0, 1.0))                                                                                                            00:20 +2: Verify the UI during the ping phase. (variant: Device480w-en_(480.0, 932.0, 1.0))                                                                                                            
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "13 ms": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:89:7)
+<asynchronous suspension>
+#5      testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#6      testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart line 89
+The test description was:
+  Verify the UI during the ping phase. (variant: Device480w-en_(480.0, 932.0, 1.0))
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:20 +2 -1: Verify the UI during the ping phase. (variant: Device480w-en_(480.0, 932.0, 1.0)) [E]                                                                                                     
+  Test failed. See exception logs above.
+  The test description was: Verify the UI during the ping phase. (variant: Device480w-en_(480.0, 932.0, 1.0))
+  
+
+To run this test again: /Users/austin.chang/flutter-sdk/flutter-3.29.0/bin/cache/dart-sdk/bin/dart test /Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart -p vm --plain-name 'Verify the UI during the ping phase. (variant: Device480w-en_(480.0, 932.0, 1.0))'
+00:20 +2 -1: Verify the UI during the ping phase. (variant: Device1280w-en_(1280.0, 720.0, 1.0))                                                                                                       00:21 +2 -1: Verify the UI during the ping phase. (variant: Device1280w-en_(1280.0, 720.0, 1.0))                                                                                                       00:21 +2 -1: Verify the UI during the ping phase. (variant: Device1280w-en_(1280.0, 720.0, 1.0))                                                                                                       
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "13 ms": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:89:7)
+<asynchronous suspension>
+#5      testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#6      testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart line 89
+The test description was:
+  Verify the UI during the ping phase. (variant: Device1280w-en_(1280.0, 720.0, 1.0))
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:21 +2 -2: Verify the UI during the ping phase. (variant: Device1280w-en_(1280.0, 720.0, 1.0)) [E]                                                                                                   
+  Test failed. See exception logs above.
+  The test description was: Verify the UI during the ping phase. (variant: Device1280w-en_(1280.0, 720.0, 1.0))
+  
+
+To run this test again: /Users/austin.chang/flutter-sdk/flutter-3.29.0/bin/cache/dart-sdk/bin/dart test /Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart -p vm --plain-name 'Verify the UI during the ping phase. (variant: Device1280w-en_(1280.0, 720.0, 1.0))'
+00:21 +2 -2: Verify the UI during the download phase. (variant: Device480w-en_(480.0, 932.0, 1.0))                                                                                                     00:21 +2 -2: Verify the UI during the download phase. (variant: Device480w-en_(480.0, 932.0, 1.0))                                                                                                     
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "567.8": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:109:7)
+<asynchronous suspension>
+#5      testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#6      testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart line 109
+The test description was:
+  Verify the UI during the download phase. (variant: Device480w-en_(480.0, 932.0, 1.0))
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:21 +2 -3: Verify the UI during the download phase. (variant: Device480w-en_(480.0, 932.0, 1.0)) [E]                                                                                                 
+  Test failed. See exception logs above.
+  The test description was: Verify the UI during the download phase. (variant: Device480w-en_(480.0, 932.0, 1.0))
+  
+
+To run this test again: /Users/austin.chang/flutter-sdk/flutter-3.29.0/bin/cache/dart-sdk/bin/dart test /Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart -p vm --plain-name 'Verify the UI during the download phase. (variant: Device480w-en_(480.0, 932.0, 1.0))'
+00:21 +2 -3: Verify the UI during the download phase. (variant: Device1280w-en_(1280.0, 720.0, 1.0))                                                                                                   00:21 +2 -3: Verify the UI during the download phase. (variant: Device1280w-en_(1280.0, 720.0, 1.0))                                                                                                   
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "567.8": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:109:7)
+<asynchronous suspension>
+#5      testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#6      testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart line 109
+The test description was:
+  Verify the UI during the download phase. (variant: Device1280w-en_(1280.0, 720.0, 1.0))
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:21 +2 -4: Verify the UI during the download phase. (variant: Device1280w-en_(1280.0, 720.0, 1.0)) [E]                                                                                               
+  Test failed. See exception logs above.
+  The test description was: Verify the UI during the download phase. (variant: Device1280w-en_(1280.0, 720.0, 1.0))
+  
+
+To run this test again: /Users/austin.chang/flutter-sdk/flutter-3.29.0/bin/cache/dart-sdk/bin/dart test /Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart -p vm --plain-name 'Verify the UI during the download phase. (variant: Device1280w-en_(1280.0, 720.0, 1.0))'
+00:21 +2 -4: Verify the UI during the upload phase. (variant: Device480w-en_(480.0, 932.0, 1.0))                                                                                                       00:21 +2 -4: Verify the UI during the upload phase. (variant: Device480w-en_(480.0, 932.0, 1.0))                                                                                                       
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "12.3": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:129:7)
+<asynchronous suspension>
+#5      testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#6      testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart line 129
+The test description was:
+  Verify the UI during the upload phase. (variant: Device480w-en_(480.0, 932.0, 1.0))
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:21 +2 -5: Verify the UI during the upload phase. (variant: Device480w-en_(480.0, 932.0, 1.0)) [E]                                                                                                   
+  Test failed. See exception logs above.
+  The test description was: Verify the UI during the upload phase. (variant: Device480w-en_(480.0, 932.0, 1.0))
+  
+
+To run this test again: /Users/austin.chang/flutter-sdk/flutter-3.29.0/bin/cache/dart-sdk/bin/dart test /Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart -p vm --plain-name 'Verify the UI during the upload phase. (variant: Device480w-en_(480.0, 932.0, 1.0))'
+00:21 +2 -5: Verify the UI during the upload phase. (variant: Device1280w-en_(1280.0, 720.0, 1.0))                                                                                                     00:22 +2 -5: Verify the UI during the upload phase. (variant: Device1280w-en_(1280.0, 720.0, 1.0))                                                                                                     00:22 +2 -5: Verify the UI during the upload phase. (variant: Device1280w-en_(1280.0, 720.0, 1.0))                                                                                                     
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "12.3": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:129:7)
+<asynchronous suspension>
+#5      testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#6      testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart line 129
+The test description was:
+  Verify the UI during the upload phase. (variant: Device1280w-en_(1280.0, 720.0, 1.0))
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:22 +2 -6: Verify the UI during the upload phase. (variant: Device1280w-en_(1280.0, 720.0, 1.0)) [E]                                                                                                 
+  Test failed. See exception logs above.
+  The test description was: Verify the UI during the upload phase. (variant: Device1280w-en_(1280.0, 720.0, 1.0))
+  
+
+To run this test again: /Users/austin.chang/flutter-sdk/flutter-3.29.0/bin/cache/dart-sdk/bin/dart test /Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart -p vm --plain-name 'Verify the UI during the upload phase. (variant: Device1280w-en_(1280.0, 720.0, 1.0))'
+00:22 +2 -6: Speedtest - success results Verify the UI for a successful result (Ultra). (variant: Device480w-en_(480.0, 932.0, 1.0))                                                                   00:22 +2 -6: Speedtest - success results Verify the UI for a successful result (Ultra). (variant: Device480w-en_(480.0, 932.0, 1.0))                                                                   
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "At this speed, you can stream multiple Ultra
+HD movies and hold video conferences with multiple users, simultaneously, on different devices.":
+[]>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:150:9)
+<asynchronous suspension>
+#5      testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#6      testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart line 150
+The test description was:
+  Verify the UI for a successful result (Ultra). (variant: Device480w-en_(480.0, 932.0, 1.0))
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:22 +2 -7: Speedtest - success results Verify the UI for a successful result (Ultra). (variant: Device480w-en_(480.0, 932.0, 1.0)) [E]                                                               
+  Test failed. See exception logs above.
+  The test description was: Verify the UI for a successful result (Ultra). (variant: Device480w-en_(480.0, 932.0, 1.0))
+  
+
+To run this test again: /Users/austin.chang/flutter-sdk/flutter-3.29.0/bin/cache/dart-sdk/bin/dart test /Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart -p vm --plain-name 'Speedtest - success results Verify the UI for a successful result (Ultra). (variant: Device480w-en_(480.0, 932.0, 1.0))'
+00:22 +2 -7: Speedtest - success results Verify the UI for a successful result (Ultra). (variant: Device1280w-en_(1280.0, 720.0, 1.0))                                                                 00:22 +2 -7: Speedtest - success results Verify the UI for a successful result (Ultra). (variant: Device1280w-en_(1280.0, 720.0, 1.0))                                                                 
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "At this speed, you can stream multiple Ultra
+HD movies and hold video conferences with multiple users, simultaneously, on different devices.":
+[]>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:150:9)
+<asynchronous suspension>
+#5      testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#6      testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart line 150
+The test description was:
+  Verify the UI for a successful result (Ultra). (variant: Device1280w-en_(1280.0, 720.0, 1.0))
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:22 +2 -8: Speedtest - success results Verify the UI for a successful result (Ultra). (variant: Device1280w-en_(1280.0, 720.0, 1.0)) [E]                                                             
+  Test failed. See exception logs above.
+  The test description was: Verify the UI for a successful result (Ultra). (variant: Device1280w-en_(1280.0, 720.0, 1.0))
+  
+
+To run this test again: /Users/austin.chang/flutter-sdk/flutter-3.29.0/bin/cache/dart-sdk/bin/dart test /Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart -p vm --plain-name 'Speedtest - success results Verify the UI for a successful result (Ultra). (variant: Device1280w-en_(1280.0, 720.0, 1.0))'
+00:22 +2 -8: Speedtest - success results Verify the UI for a successful result (Optimal). (variant: Device480w-en_(480.0, 932.0, 1.0))                                                                 00:23 +2 -8: Speedtest - success results Verify the UI for a successful result (Optimal). (variant: Device480w-en_(480.0, 932.0, 1.0))                                                                 00:23 +2 -8: Speedtest - success results Verify the UI for a successful result (Optimal). (variant: Device480w-en_(480.0, 932.0, 1.0))                                                                 
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "At this speed, your WiFi can handle various
+internet-based applications on multiple devices and reliably stream HD movies and play online games
+at the same time.": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:171:9)
+<asynchronous suspension>
+#5      testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#6      testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart line 171
+The test description was:
+  Verify the UI for a successful result (Optimal). (variant: Device480w-en_(480.0, 932.0, 1.0))
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:23 +2 -9: Speedtest - success results Verify the UI for a successful result (Optimal). (variant: Device480w-en_(480.0, 932.0, 1.0)) [E]                                                             
+  Test failed. See exception logs above.
+  The test description was: Verify the UI for a successful result (Optimal). (variant: Device480w-en_(480.0, 932.0, 1.0))
+  
+
+To run this test again: /Users/austin.chang/flutter-sdk/flutter-3.29.0/bin/cache/dart-sdk/bin/dart test /Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart -p vm --plain-name 'Speedtest - success results Verify the UI for a successful result (Optimal). (variant: Device480w-en_(480.0, 932.0, 1.0))'
+00:23 +2 -9: Speedtest - success results Verify the UI for a successful result (Optimal). (variant: Device1280w-en_(1280.0, 720.0, 1.0))                                                               00:23 +2 -9: Speedtest - success results Verify the UI for a successful result (Optimal). (variant: Device1280w-en_(1280.0, 720.0, 1.0))                                                               
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "At this speed, your WiFi can handle various
+internet-based applications on multiple devices and reliably stream HD movies and play online games
+at the same time.": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:171:9)
+<asynchronous suspension>
+#5      testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#6      testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart line 171
+The test description was:
+  Verify the UI for a successful result (Optimal). (variant: Device1280w-en_(1280.0, 720.0, 1.0))
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:23 +2 -10: Speedtest - success results Verify the UI for a successful result (Optimal). (variant: Device1280w-en_(1280.0, 720.0, 1.0)) [E]                                                          
+  Test failed. See exception logs above.
+  The test description was: Verify the UI for a successful result (Optimal). (variant: Device1280w-en_(1280.0, 720.0, 1.0))
+  
+
+To run this test again: /Users/austin.chang/flutter-sdk/flutter-3.29.0/bin/cache/dart-sdk/bin/dart test /Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart -p vm --plain-name 'Speedtest - success results Verify the UI for a successful result (Optimal). (variant: Device1280w-en_(1280.0, 720.0, 1.0))'
+00:23 +2 -10: Speedtest - success results Verify the UI for a successful result (Good). (variant: Device480w-en_(480.0, 932.0, 1.0))                                                                   00:23 +2 -10: Speedtest - success results Verify the UI for a successful result (Good). (variant: Device480w-en_(480.0, 932.0, 1.0))                                                                   
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "At this speed, your WiFi can stream a few HD
+videos simultaneously and provide fast web browsing.": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:191:9)
+<asynchronous suspension>
+#5      testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#6      testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart line 191
+The test description was:
+  Verify the UI for a successful result (Good). (variant: Device480w-en_(480.0, 932.0, 1.0))
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:23 +2 -11: Speedtest - success results Verify the UI for a successful result (Good). (variant: Device480w-en_(480.0, 932.0, 1.0)) [E]                                                               
+  Test failed. See exception logs above.
+  The test description was: Verify the UI for a successful result (Good). (variant: Device480w-en_(480.0, 932.0, 1.0))
+  
+
+To run this test again: /Users/austin.chang/flutter-sdk/flutter-3.29.0/bin/cache/dart-sdk/bin/dart test /Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart -p vm --plain-name 'Speedtest - success results Verify the UI for a successful result (Good). (variant: Device480w-en_(480.0, 932.0, 1.0))'
+00:23 +2 -11: Speedtest - success results Verify the UI for a successful result (Good). (variant: Device1280w-en_(1280.0, 720.0, 1.0))                                                                 00:23 +2 -11: Speedtest - success results Verify the UI for a successful result (Good). (variant: Device1280w-en_(1280.0, 720.0, 1.0))                                                                 
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "At this speed, your WiFi can stream a few HD
+videos simultaneously and provide fast web browsing.": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:191:9)
+<asynchronous suspension>
+#5      testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#6      testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart line 191
+The test description was:
+  Verify the UI for a successful result (Good). (variant: Device1280w-en_(1280.0, 720.0, 1.0))
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:23 +2 -12: Speedtest - success results Verify the UI for a successful result (Good). (variant: Device1280w-en_(1280.0, 720.0, 1.0)) [E]                                                             
+  Test failed. See exception logs above.
+  The test description was: Verify the UI for a successful result (Good). (variant: Device1280w-en_(1280.0, 720.0, 1.0))
+  
+
+To run this test again: /Users/austin.chang/flutter-sdk/flutter-3.29.0/bin/cache/dart-sdk/bin/dart test /Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart -p vm --plain-name 'Speedtest - success results Verify the UI for a successful result (Good). (variant: Device1280w-en_(1280.0, 720.0, 1.0))'
+00:23 +2 -12: Speedtest - success results Verify the UI for a successful result (Okay). (variant: Device480w-en_(480.0, 932.0, 1.0))                                                                   00:24 +2 -12: Speedtest - success results Verify the UI for a successful result (Okay). (variant: Device480w-en_(480.0, 932.0, 1.0))                                                                   00:24 +2 -12: Speedtest - success results Verify the UI for a successful result (Okay). (variant: Device480w-en_(480.0, 932.0, 1.0))                                                                   
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "At this speed, your WiFi can stream HD
+movies and play online games. If multiple devices are using the internet at the same time, you may
+run into slow speeds and buffering.": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:211:9)
+<asynchronous suspension>
+#5      testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#6      testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart line 211
+The test description was:
+  Verify the UI for a successful result (Okay). (variant: Device480w-en_(480.0, 932.0, 1.0))
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:24 +2 -13: Speedtest - success results Verify the UI for a successful result (Okay). (variant: Device480w-en_(480.0, 932.0, 1.0)) [E]                                                               
+  Test failed. See exception logs above.
+  The test description was: Verify the UI for a successful result (Okay). (variant: Device480w-en_(480.0, 932.0, 1.0))
+  
+
+To run this test again: /Users/austin.chang/flutter-sdk/flutter-3.29.0/bin/cache/dart-sdk/bin/dart test /Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart -p vm --plain-name 'Speedtest - success results Verify the UI for a successful result (Okay). (variant: Device480w-en_(480.0, 932.0, 1.0))'
+00:24 +2 -13: Speedtest - success results Verify the UI for a successful result (Okay). (variant: Device1280w-en_(1280.0, 720.0, 1.0))                                                                 00:24 +2 -13: Speedtest - success results Verify the UI for a successful result (Okay). (variant: Device1280w-en_(1280.0, 720.0, 1.0))                                                                 
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "At this speed, your WiFi can stream HD
+movies and play online games. If multiple devices are using the internet at the same time, you may
+run into slow speeds and buffering.": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:211:9)
+<asynchronous suspension>
+#5      testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#6      testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart line 211
+The test description was:
+  Verify the UI for a successful result (Okay). (variant: Device1280w-en_(1280.0, 720.0, 1.0))
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:24 +2 -14: Speedtest - success results Verify the UI for a successful result (Okay). (variant: Device1280w-en_(1280.0, 720.0, 1.0)) [E]                                                             
+  Test failed. See exception logs above.
+  The test description was: Verify the UI for a successful result (Okay). (variant: Device1280w-en_(1280.0, 720.0, 1.0))
+  
+
+To run this test again: /Users/austin.chang/flutter-sdk/flutter-3.29.0/bin/cache/dart-sdk/bin/dart test /Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart -p vm --plain-name 'Speedtest - success results Verify the UI for a successful result (Okay). (variant: Device1280w-en_(1280.0, 720.0, 1.0))'
+00:24 +2 -14: Verify the UI when a configuration error occurs. (variant: Device480w-en_(480.0, 932.0, 1.0))                                                                                            00:24 +2 -14: Verify the UI when a configuration error occurs. (variant: Device480w-en_(480.0, 932.0, 1.0))                                                                                            
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "The speed test isn't set up correctly.
+Please contact support for help.": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:237:7)
+<asynchronous suspension>
+#5      testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#6      testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart line 237
+The test description was:
+  Verify the UI when a configuration error occurs. (variant: Device480w-en_(480.0, 932.0, 1.0))
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:24 +2 -15: Verify the UI when a configuration error occurs. (variant: Device480w-en_(480.0, 932.0, 1.0)) [E]                                                                                        
+  Test failed. See exception logs above.
+  The test description was: Verify the UI when a configuration error occurs. (variant: Device480w-en_(480.0, 932.0, 1.0))
+  
+
+To run this test again: /Users/austin.chang/flutter-sdk/flutter-3.29.0/bin/cache/dart-sdk/bin/dart test /Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart -p vm --plain-name 'Verify the UI when a configuration error occurs. (variant: Device480w-en_(480.0, 932.0, 1.0))'
+00:24 +2 -15: Verify the UI when a configuration error occurs. (variant: Device1280w-en_(1280.0, 720.0, 1.0))                                                                                          00:24 +2 -15: Verify the UI when a configuration error occurs. (variant: Device1280w-en_(1280.0, 720.0, 1.0))                                                                                          
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "The speed test isn't set up correctly.
+Please contact support for help.": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:237:7)
+<asynchronous suspension>
+#5      testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#6      testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart line 237
+The test description was:
+  Verify the UI when a configuration error occurs. (variant: Device1280w-en_(1280.0, 720.0, 1.0))
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:24 +2 -16: Verify the UI when a configuration error occurs. (variant: Device1280w-en_(1280.0, 720.0, 1.0)) [E]                                                                                      
+  Test failed. See exception logs above.
+  The test description was: Verify the UI when a configuration error occurs. (variant: Device1280w-en_(1280.0, 720.0, 1.0))
+  
+
+To run this test again: /Users/austin.chang/flutter-sdk/flutter-3.29.0/bin/cache/dart-sdk/bin/dart test /Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart -p vm --plain-name 'Verify the UI when a configuration error occurs. (variant: Device1280w-en_(1280.0, 720.0, 1.0))'
+00:24 +2 -16: Verify the history panel displays records. (variant: Device480w-en_(480.0, 932.0, 1.0))                                                                                                  00:24 +2 -16: Verify the history panel displays records. (variant: Device480w-en_(480.0, 932.0, 1.0))                                                                                                  
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: no matching candidates
+  Actual: _TextWidgetFinder:<Found 1 widget with text "No Speed Test records found": [
+            Text("No Speed Test records found", debugLabel: ((englishLike bodyMedium
+2021).merge(unknown)).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.0000, green:
+0.0000, blue: 0.0000, colorSpace: ColorSpace.sRGB), family: NoToSans, familyFallback: [NoToSans,
+NoToSansKR, NoToSansSC, NoToSansAR, NoToSansTh], size: 14.0, weight: 400, letterSpacing: 0.0,
+baseline: alphabetic, height: 1.4x, leadingDistribution: even, decoration: TextDecoration.none,
+dependencies: [DefaultSelectionStyle, DefaultTextStyle, MediaQuery]),
+          ]>
+   Which: means one was found but none were expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:272:7)
+<asynchronous suspension>
+#5      testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#6      testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart line 272
+The test description was:
+  Verify the history panel displays records. (variant: Device480w-en_(480.0, 932.0, 1.0))
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:24 +2 -17: Verify the history panel displays records. (variant: Device480w-en_(480.0, 932.0, 1.0)) [E]                                                                                              
+  Test failed. See exception logs above.
+  The test description was: Verify the history panel displays records. (variant: Device480w-en_(480.0, 932.0, 1.0))
+  
+
+To run this test again: /Users/austin.chang/flutter-sdk/flutter-3.29.0/bin/cache/dart-sdk/bin/dart test /Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart -p vm --plain-name 'Verify the history panel displays records. (variant: Device480w-en_(480.0, 932.0, 1.0))'
+00:24 +2 -17: Verify the history panel displays records. (variant: Device1280w-en_(1280.0, 720.0, 1.0))                                                                                                00:25 +2 -17: Verify the history panel displays records. (variant: Device1280w-en_(1280.0, 720.0, 1.0))                                                                                                00:25 +2 -17: Verify the history panel displays records. (variant: Device1280w-en_(1280.0, 720.0, 1.0))                                                                                                
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: no matching candidates
+  Actual: _TextWidgetFinder:<Found 1 widget with text "No Speed Test records found": [
+            Text("No Speed Test records found", debugLabel: ((englishLike bodyMedium
+2021).merge(unknown)).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.0000, green:
+0.0000, blue: 0.0000, colorSpace: ColorSpace.sRGB), family: NoToSans, familyFallback: [NoToSans,
+NoToSansKR, NoToSansSC, NoToSansAR, NoToSansTh], size: 14.0, weight: 400, letterSpacing: 0.0,
+baseline: alphabetic, height: 1.4x, leadingDistribution: even, decoration: TextDecoration.none,
+dependencies: [DefaultSelectionStyle, DefaultTextStyle, MediaQuery]),
+          ]>
+   Which: means one was found but none were expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:272:7)
+<asynchronous suspension>
+#5      testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#6      testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart line 272
+The test description was:
+  Verify the history panel displays records. (variant: Device1280w-en_(1280.0, 720.0, 1.0))
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:25 +2 -18: Verify the history panel displays records. (variant: Device1280w-en_(1280.0, 720.0, 1.0)) [E]                                                                                            
+  Test failed. See exception logs above.
+  The test description was: Verify the history panel displays records. (variant: Device1280w-en_(1280.0, 720.0, 1.0))
+  
+
+To run this test again: /Users/austin.chang/flutter-sdk/flutter-3.29.0/bin/cache/dart-sdk/bin/dart test /Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart -p vm --plain-name 'Verify the history panel displays records. (variant: Device1280w-en_(1280.0, 720.0, 1.0))'
+00:25 +2 -18: Verify tapping "Go" button starts the test. (variant: Device480w-en_(480.0, 932.0, 1.0))                                                                                                 00:25 +2 -18: Verify tapping "Go" button starts the test. (variant: Device480w-en_(480.0, 932.0, 1.0))                                                                                                 
+══╡ EXCEPTION CAUGHT BY GESTURE ╞═══════════════════════════════════════════════════════════════════
+The following assertion was thrown while handling a gesture:
+unknown route name: speedTestExternal
+'package:go_router/src/configuration.dart':
+Failed assertion: line 266 pos 12: '_nameToPath.containsKey(name)'
+
+When the exception was thrown, this was the stack:
+#2      RouteConfiguration.namedLocation (package:go_router/src/configuration.dart:266:12)
+#3      GoRouter.namedLocation (package:go_router/src/router.dart:338:21)
+#4      GoRouter.pushNamed (package:go_router/src/router.dart:408:9)
+#5      GoRouterHelper.pushNamed (package:go_router/src/misc/extensions.dart:62:25)
+#6      SpeedTestWidget._startButton.<anonymous closure>.<anonymous closure> (package:privacy_gui/page/health_check/widgets/speed_test_widget.dart:451:27)
+#7      _InkResponseState.handleTap (package:flutter/src/material/ink_well.dart:1185:21)
+#8      GestureRecognizer.invokeCallback (package:flutter/src/gestures/recognizer.dart:357:24)
+#9      TapGestureRecognizer.handleTapUp (package:flutter/src/gestures/tap.dart:653:11)
+#10     BaseTapGestureRecognizer._checkUp (package:flutter/src/gestures/tap.dart:307:5)
+#11     BaseTapGestureRecognizer.handlePrimaryPointer (package:flutter/src/gestures/tap.dart:240:7)
+#12     PrimaryPointerGestureRecognizer.handleEvent (package:flutter/src/gestures/recognizer.dart:718:9)
+#13     PointerRouter._dispatch (package:flutter/src/gestures/pointer_router.dart:97:12)
+#14     PointerRouter._dispatchEventToRoutes.<anonymous closure> (package:flutter/src/gestures/pointer_router.dart:143:9)
+#15     _LinkedHashMapMixin.forEach (dart:_compact_hash:763:13)
+#16     PointerRouter._dispatchEventToRoutes (package:flutter/src/gestures/pointer_router.dart:141:18)
+#17     PointerRouter.route (package:flutter/src/gestures/pointer_router.dart:131:7)
+#18     GestureBinding.handleEvent (package:flutter/src/gestures/binding.dart:530:19)
+#19     GestureBinding.dispatchEvent (package:flutter/src/gestures/binding.dart:499:22)
+#20     RendererBinding.dispatchEvent (package:flutter/src/rendering/binding.dart:460:11)
+#21     GestureBinding._handlePointerEventImmediately (package:flutter/src/gestures/binding.dart:437:7)
+#22     GestureBinding.handlePointerEvent (package:flutter/src/gestures/binding.dart:394:5)
+#23     TestWidgetsFlutterBinding.handlePointerEventForSource.<anonymous closure> (package:flutter_test/src/binding.dart:678:42)
+#24     TestWidgetsFlutterBinding.withPointerEventSource (package:flutter_test/src/binding.dart:688:11)
+#25     TestWidgetsFlutterBinding.handlePointerEventForSource (package:flutter_test/src/binding.dart:678:5)
+#26     WidgetTester.sendEventToBinding.<anonymous closure> (package:flutter_test/src/widget_tester.dart:870:15)
+#29     TestAsyncUtils.guard (package:flutter_test/src/test_async_utils.dart:74:41)
+#30     WidgetTester.sendEventToBinding (package:flutter_test/src/widget_tester.dart:869:27)
+#31     TestGesture.up.<anonymous closure> (package:flutter_test/src/test_pointer.dart:538:26)
+#34     TestAsyncUtils.guard (package:flutter_test/src/test_async_utils.dart:74:41)
+#35     TestGesture.up (package:flutter_test/src/test_pointer.dart:531:27)
+#36     WidgetController.tapAt.<anonymous closure> (package:flutter_test/src/controller.dart:1113:21)
+<asynchronous suspension>
+#37     TestAsyncUtils.guard.<anonymous closure> (package:flutter_test/src/test_async_utils.dart:130:27)
+<asynchronous suspension>
+#38     main.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:298:7)
+<asynchronous suspension>
+#39     testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#40     testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#41     testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#42     TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided 7 frames from class _AssertionError, dart:async, and package:stack_trace)
+
+Handler: "onTap"
+Recognizer:
+  TapGestureRecognizer#24b37
+════════════════════════════════════════════════════════════════════════════════════════════════════
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+No matching calls (actually, no calls at all).
+(If you called `verify(...).called(0);`, please instead use `verifyNever(...);`.)
+
+When the exception was thrown, this was the stack:
+#0      fail (package:matcher/src/expect/expect.dart:149:31)
+#1      _VerifyCall._checkWith (package:mockito/src/mock.dart:852:7)
+#2      _makeVerify.<anonymous closure> (package:mockito/src/mock.dart:1152:18)
+#3      main.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:301:13)
+<asynchronous suspension>
+#4      testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#5      testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#6      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#7      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+The test description was:
+  Verify tapping "Go" button starts the test. (variant: Device480w-en_(480.0, 932.0, 1.0))
+════════════════════════════════════════════════════════════════════════════════════════════════════
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following message was thrown:
+Multiple exceptions (2) were detected during the running of the current test, and at least one was
+unexpected.
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:25 +2 -19: Verify tapping "Go" button starts the test. (variant: Device480w-en_(480.0, 932.0, 1.0)) [E]                                                                                             
+  Test failed. See exception logs above.
+  The test description was: Verify tapping "Go" button starts the test. (variant: Device480w-en_(480.0, 932.0, 1.0))
+  
+
+To run this test again: /Users/austin.chang/flutter-sdk/flutter-3.29.0/bin/cache/dart-sdk/bin/dart test /Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart -p vm --plain-name 'Verify tapping "Go" button starts the test. (variant: Device480w-en_(480.0, 932.0, 1.0))'
+00:25 +2 -19: Verify tapping "Go" button starts the test. (variant: Device1280w-en_(1280.0, 720.0, 1.0))                                                                                               00:25 +2 -19: Verify tapping "Go" button starts the test. (variant: Device1280w-en_(1280.0, 720.0, 1.0))                                                                                               
+══╡ EXCEPTION CAUGHT BY GESTURE ╞═══════════════════════════════════════════════════════════════════
+The following assertion was thrown while handling a gesture:
+unknown route name: speedTestExternal
+'package:go_router/src/configuration.dart':
+Failed assertion: line 266 pos 12: '_nameToPath.containsKey(name)'
+
+When the exception was thrown, this was the stack:
+#2      RouteConfiguration.namedLocation (package:go_router/src/configuration.dart:266:12)
+#3      GoRouter.namedLocation (package:go_router/src/router.dart:338:21)
+#4      GoRouter.pushNamed (package:go_router/src/router.dart:408:9)
+#5      GoRouterHelper.pushNamed (package:go_router/src/misc/extensions.dart:62:25)
+#6      SpeedTestWidget._startButton.<anonymous closure>.<anonymous closure> (package:privacy_gui/page/health_check/widgets/speed_test_widget.dart:451:27)
+#7      _InkResponseState.handleTap (package:flutter/src/material/ink_well.dart:1185:21)
+#8      GestureRecognizer.invokeCallback (package:flutter/src/gestures/recognizer.dart:357:24)
+#9      TapGestureRecognizer.handleTapUp (package:flutter/src/gestures/tap.dart:653:11)
+#10     BaseTapGestureRecognizer._checkUp (package:flutter/src/gestures/tap.dart:307:5)
+#11     BaseTapGestureRecognizer.handlePrimaryPointer (package:flutter/src/gestures/tap.dart:240:7)
+#12     PrimaryPointerGestureRecognizer.handleEvent (package:flutter/src/gestures/recognizer.dart:718:9)
+#13     PointerRouter._dispatch (package:flutter/src/gestures/pointer_router.dart:97:12)
+#14     PointerRouter._dispatchEventToRoutes.<anonymous closure> (package:flutter/src/gestures/pointer_router.dart:143:9)
+#15     _LinkedHashMapMixin.forEach (dart:_compact_hash:763:13)
+#16     PointerRouter._dispatchEventToRoutes (package:flutter/src/gestures/pointer_router.dart:141:18)
+#17     PointerRouter.route (package:flutter/src/gestures/pointer_router.dart:131:7)
+#18     GestureBinding.handleEvent (package:flutter/src/gestures/binding.dart:530:19)
+#19     GestureBinding.dispatchEvent (package:flutter/src/gestures/binding.dart:499:22)
+#20     RendererBinding.dispatchEvent (package:flutter/src/rendering/binding.dart:460:11)
+#21     GestureBinding._handlePointerEventImmediately (package:flutter/src/gestures/binding.dart:437:7)
+#22     GestureBinding.handlePointerEvent (package:flutter/src/gestures/binding.dart:394:5)
+#23     TestWidgetsFlutterBinding.handlePointerEventForSource.<anonymous closure> (package:flutter_test/src/binding.dart:678:42)
+#24     TestWidgetsFlutterBinding.withPointerEventSource (package:flutter_test/src/binding.dart:688:11)
+#25     TestWidgetsFlutterBinding.handlePointerEventForSource (package:flutter_test/src/binding.dart:678:5)
+#26     WidgetTester.sendEventToBinding.<anonymous closure> (package:flutter_test/src/widget_tester.dart:870:15)
+#29     TestAsyncUtils.guard (package:flutter_test/src/test_async_utils.dart:74:41)
+#30     WidgetTester.sendEventToBinding (package:flutter_test/src/widget_tester.dart:869:27)
+#31     TestGesture.up.<anonymous closure> (package:flutter_test/src/test_pointer.dart:538:26)
+#34     TestAsyncUtils.guard (package:flutter_test/src/test_async_utils.dart:74:41)
+#35     TestGesture.up (package:flutter_test/src/test_pointer.dart:531:27)
+#36     WidgetController.tapAt.<anonymous closure> (package:flutter_test/src/controller.dart:1113:21)
+<asynchronous suspension>
+#37     TestAsyncUtils.guard.<anonymous closure> (package:flutter_test/src/test_async_utils.dart:130:27)
+<asynchronous suspension>
+#38     main.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:298:7)
+<asynchronous suspension>
+#39     testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#40     testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#41     testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#42     TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided 7 frames from class _AssertionError, dart:async, and package:stack_trace)
+
+Handler: "onTap"
+Recognizer:
+  TapGestureRecognizer#198f8
+════════════════════════════════════════════════════════════════════════════════════════════════════
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+No matching calls (actually, no calls at all).
+(If you called `verify(...).called(0);`, please instead use `verifyNever(...);`.)
+
+When the exception was thrown, this was the stack:
+#0      fail (package:matcher/src/expect/expect.dart:149:31)
+#1      _VerifyCall._checkWith (package:mockito/src/mock.dart:852:7)
+#2      _makeVerify.<anonymous closure> (package:mockito/src/mock.dart:1152:18)
+#3      main.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:301:13)
+<asynchronous suspension>
+#4      testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#5      testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#6      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#7      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+The test description was:
+  Verify tapping "Go" button starts the test. (variant: Device1280w-en_(1280.0, 720.0, 1.0))
+════════════════════════════════════════════════════════════════════════════════════════════════════
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following message was thrown:
+Multiple exceptions (2) were detected during the running of the current test, and at least one was
+unexpected.
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:25 +2 -20: Verify tapping "Go" button starts the test. (variant: Device1280w-en_(1280.0, 720.0, 1.0)) [E]                                                                                           
+  Test failed. See exception logs above.
+  The test description was: Verify tapping "Go" button starts the test. (variant: Device1280w-en_(1280.0, 720.0, 1.0))
+  
+
+To run this test again: /Users/austin.chang/flutter-sdk/flutter-3.29.0/bin/cache/dart-sdk/bin/dart test /Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart -p vm --plain-name 'Verify tapping "Go" button starts the test. (variant: Device1280w-en_(1280.0, 720.0, 1.0))'
+00:25 +2 -20: Some tests failed.                                                                                                                                                                       
+Test failed for test/page/health_check/views/localizations/speed_test_view_test.dart (Language: en, Resolutions: 480,1280)
+
+--- Test Execution Finished ---
+
+--- Summary of Failed Tests ---
+
+1. File: test/page/health_check/views/localizations/speed_test_view_test.dart
+   Language: en, Resolution: 480
+   Test: Verify the UI during the ping phase.
+   Error: ══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "13 ms": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:89:7)
+<asynchronous suspension>
+#5      testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#6      testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart line 89
+The test description was:
+  Verify the UI during the ping phase. (variant: Device480w-en_(480.0, 932.0, 1.0))
+════════════════════════════════════════════════════════════════════════════════════════════════════
+
+2. File: test/page/health_check/views/localizations/speed_test_view_test.dart
+   Language: en, Resolution: 1280
+   Test: Verify the UI during the ping phase.
+   Error: ══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "13 ms": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:89:7)
+<asynchronous suspension>
+#5      testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#6      testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart line 89
+The test description was:
+  Verify the UI during the ping phase. (variant: Device480w-en_(480.0, 932.0, 1.0))
+════════════════════════════════════════════════════════════════════════════════════════════════════
+
+3. File: test/page/health_check/views/localizations/speed_test_view_test.dart
+   Language: en, Resolution: 480
+   Test: Verify the UI during the download phase.
+   Error: ══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "13 ms": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:89:7)
+<asynchronous suspension>
+#5      testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#6      testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart line 89
+The test description was:
+  Verify the UI during the ping phase. (variant: Device480w-en_(480.0, 932.0, 1.0))
+════════════════════════════════════════════════════════════════════════════════════════════════════
+
+4. File: test/page/health_check/views/localizations/speed_test_view_test.dart
+   Language: en, Resolution: 1280
+   Test: Verify the UI during the download phase.
+   Error: ══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "13 ms": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:89:7)
+<asynchronous suspension>
+#5      testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#6      testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart line 89
+The test description was:
+  Verify the UI during the ping phase. (variant: Device480w-en_(480.0, 932.0, 1.0))
+════════════════════════════════════════════════════════════════════════════════════════════════════
+
+5. File: test/page/health_check/views/localizations/speed_test_view_test.dart
+   Language: en, Resolution: 480
+   Test: Verify the UI during the upload phase.
+   Error: ══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "13 ms": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:89:7)
+<asynchronous suspension>
+#5      testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#6      testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart line 89
+The test description was:
+  Verify the UI during the ping phase. (variant: Device480w-en_(480.0, 932.0, 1.0))
+════════════════════════════════════════════════════════════════════════════════════════════════════
+
+6. File: test/page/health_check/views/localizations/speed_test_view_test.dart
+   Language: en, Resolution: 1280
+   Test: Verify the UI during the upload phase.
+   Error: ══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "13 ms": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:89:7)
+<asynchronous suspension>
+#5      testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#6      testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart line 89
+The test description was:
+  Verify the UI during the ping phase. (variant: Device480w-en_(480.0, 932.0, 1.0))
+════════════════════════════════════════════════════════════════════════════════════════════════════
+
+7. File: test/page/health_check/views/localizations/speed_test_view_test.dart
+   Language: en, Resolution: 480
+   Test: Speedtest - success results Verify the UI for a successful result (Ultra).
+   Error: ══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "13 ms": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:89:7)
+<asynchronous suspension>
+#5      testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#6      testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart line 89
+The test description was:
+  Verify the UI during the ping phase. (variant: Device480w-en_(480.0, 932.0, 1.0))
+════════════════════════════════════════════════════════════════════════════════════════════════════
+
+8. File: test/page/health_check/views/localizations/speed_test_view_test.dart
+   Language: en, Resolution: 1280
+   Test: Speedtest - success results Verify the UI for a successful result (Ultra).
+   Error: ══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "13 ms": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:89:7)
+<asynchronous suspension>
+#5      testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#6      testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart line 89
+The test description was:
+  Verify the UI during the ping phase. (variant: Device480w-en_(480.0, 932.0, 1.0))
+════════════════════════════════════════════════════════════════════════════════════════════════════
+
+9. File: test/page/health_check/views/localizations/speed_test_view_test.dart
+   Language: en, Resolution: 480
+   Test: Speedtest - success results Verify the UI for a successful result (Optimal).
+   Error: ══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "13 ms": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:89:7)
+<asynchronous suspension>
+#5      testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#6      testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart line 89
+The test description was:
+  Verify the UI during the ping phase. (variant: Device480w-en_(480.0, 932.0, 1.0))
+════════════════════════════════════════════════════════════════════════════════════════════════════
+
+10. File: test/page/health_check/views/localizations/speed_test_view_test.dart
+   Language: en, Resolution: 1280
+   Test: Speedtest - success results Verify the UI for a successful result (Optimal).
+   Error: ══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "13 ms": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:89:7)
+<asynchronous suspension>
+#5      testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#6      testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart line 89
+The test description was:
+  Verify the UI during the ping phase. (variant: Device480w-en_(480.0, 932.0, 1.0))
+════════════════════════════════════════════════════════════════════════════════════════════════════
+
+11. File: test/page/health_check/views/localizations/speed_test_view_test.dart
+   Language: en, Resolution: 480
+   Test: Speedtest - success results Verify the UI for a successful result (Good).
+   Error: ══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "13 ms": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:89:7)
+<asynchronous suspension>
+#5      testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#6      testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart line 89
+The test description was:
+  Verify the UI during the ping phase. (variant: Device480w-en_(480.0, 932.0, 1.0))
+════════════════════════════════════════════════════════════════════════════════════════════════════
+
+12. File: test/page/health_check/views/localizations/speed_test_view_test.dart
+   Language: en, Resolution: 1280
+   Test: Speedtest - success results Verify the UI for a successful result (Good).
+   Error: ══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "13 ms": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:89:7)
+<asynchronous suspension>
+#5      testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#6      testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart line 89
+The test description was:
+  Verify the UI during the ping phase. (variant: Device480w-en_(480.0, 932.0, 1.0))
+════════════════════════════════════════════════════════════════════════════════════════════════════
+
+13. File: test/page/health_check/views/localizations/speed_test_view_test.dart
+   Language: en, Resolution: 480
+   Test: Speedtest - success results Verify the UI for a successful result (Okay).
+   Error: ══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "13 ms": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:89:7)
+<asynchronous suspension>
+#5      testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#6      testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart line 89
+The test description was:
+  Verify the UI during the ping phase. (variant: Device480w-en_(480.0, 932.0, 1.0))
+════════════════════════════════════════════════════════════════════════════════════════════════════
+
+14. File: test/page/health_check/views/localizations/speed_test_view_test.dart
+   Language: en, Resolution: 1280
+   Test: Speedtest - success results Verify the UI for a successful result (Okay).
+   Error: ══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "13 ms": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:89:7)
+<asynchronous suspension>
+#5      testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#6      testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart line 89
+The test description was:
+  Verify the UI during the ping phase. (variant: Device480w-en_(480.0, 932.0, 1.0))
+════════════════════════════════════════════════════════════════════════════════════════════════════
+
+15. File: test/page/health_check/views/localizations/speed_test_view_test.dart
+   Language: en, Resolution: 480
+   Test: Verify the UI when a configuration error occurs.
+   Error: ══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "13 ms": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:89:7)
+<asynchronous suspension>
+#5      testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#6      testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart line 89
+The test description was:
+  Verify the UI during the ping phase. (variant: Device480w-en_(480.0, 932.0, 1.0))
+════════════════════════════════════════════════════════════════════════════════════════════════════
+
+16. File: test/page/health_check/views/localizations/speed_test_view_test.dart
+   Language: en, Resolution: 1280
+   Test: Verify the UI when a configuration error occurs.
+   Error: ══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "13 ms": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:89:7)
+<asynchronous suspension>
+#5      testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#6      testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart line 89
+The test description was:
+  Verify the UI during the ping phase. (variant: Device480w-en_(480.0, 932.0, 1.0))
+════════════════════════════════════════════════════════════════════════════════════════════════════
+
+17. File: test/page/health_check/views/localizations/speed_test_view_test.dart
+   Language: en, Resolution: 480
+   Test: Verify the history panel displays records.
+   Error: ══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "13 ms": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:89:7)
+<asynchronous suspension>
+#5      testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#6      testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart line 89
+The test description was:
+  Verify the UI during the ping phase. (variant: Device480w-en_(480.0, 932.0, 1.0))
+════════════════════════════════════════════════════════════════════════════════════════════════════
+
+18. File: test/page/health_check/views/localizations/speed_test_view_test.dart
+   Language: en, Resolution: 1280
+   Test: Verify the history panel displays records.
+   Error: ══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "13 ms": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:89:7)
+<asynchronous suspension>
+#5      testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#6      testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart line 89
+The test description was:
+  Verify the UI during the ping phase. (variant: Device480w-en_(480.0, 932.0, 1.0))
+════════════════════════════════════════════════════════════════════════════════════════════════════
+
+19. File: test/page/health_check/views/localizations/speed_test_view_test.dart
+   Language: en, Resolution: 480
+   Test: Verify tapping "Go" button starts the test.
+   Error: ══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "13 ms": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:89:7)
+<asynchronous suspension>
+#5      testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#6      testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart line 89
+The test description was:
+  Verify the UI during the ping phase. (variant: Device480w-en_(480.0, 932.0, 1.0))
+════════════════════════════════════════════════════════════════════════════════════════════════════
+
+20. File: test/page/health_check/views/localizations/speed_test_view_test.dart
+   Language: en, Resolution: 1280
+   Test: Verify tapping "Go" button starts the test.
+   Error: ══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "13 ms": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart:89:7)
+<asynchronous suspension>
+#5      testLocalizationsV2.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:165:7)
+<asynchronous suspension>
+#6      testResponsiveWidgets.<anonymous closure> (file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/common/test_responsive_widget.dart:53:7)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:193:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1064:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/test/page/health_check/views/localizations/speed_test_view_test.dart line 89
+The test description was:
+  Verify the UI during the ping phase. (variant: Device480w-en_(480.0, 932.0, 1.0))
+════════════════════════════════════════════════════════════════════════════════════════════════════
+
+20 test(s) failed.

@@ -3,18 +3,27 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:golden_toolkit/golden_toolkit.dart';
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
+import 'package:ui_kit_library/ui_kit.dart';
+import '../../common/test_helper.dart';
 
 /// T093: Comprehensive golden tests for production UiKitPageView
 ///
-/// Tests all PrivacyGUI features including TopBar, connection state,
-/// banner integration, factory constructors, and API compatibility.
+/// Tests all PrivacyGUI features including TopBar, factory constructors,
+/// and API compatibility with proper theme support.
 void main() {
   group('UiKitPageView Golden Tests', () {
+    late TestHelper testHelper;
+
+    setUpAll(() {
+      testHelper = TestHelper();
+      testHelper.setup();
+    });
     testGoldens(
       'UiKitPageView - Basic Configuration',
       (tester) async {
         final builder = DeviceBuilder()
-          ..overrideDevicesForAllScenarios(devices: [Device.phone, Device.tabletLandscape])
+          ..overrideDevicesForAllScenarios(
+              devices: [Device.phone, Device.tabletLandscape])
           ..addScenario(
             widget: _wrapWithProviders(
               UiKitPageView(
@@ -62,67 +71,31 @@ void main() {
       'UiKitPageView - Factory Constructors',
       (tester) async {
         final builder = DeviceBuilder()
-          ..overrideDevicesForAllScenarios(devices: [Device.phone, Device.tabletLandscape])
+          ..overrideDevicesForAllScenarios(
+              devices: [Device.phone, Device.tabletLandscape])
           ..addScenario(
             widget: _wrapWithProviders(
-              UiKitPageView.login(
-                title: 'Login',
+              UiKitPageView.innerPage(
                 child: (context, constraints) => const Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      TextField(decoration: InputDecoration(labelText: 'Username')),
-                      SizedBox(height: 16),
-                      TextField(decoration: InputDecoration(labelText: 'Password')),
-                    ],
+                  child: Text('Inner page content'),
+                ),
+              ),
+            ),
+            name: 'Inner Page Factory',
+          )
+          ..addScenario(
+            widget: _wrapWithProviders(
+              UiKitPageView.withSliver(
+                title: 'Sliver Page',
+                child: (context, constraints) => ListView.builder(
+                  itemCount: 10,
+                  itemBuilder: (context, index) => ListTile(
+                    title: Text('Item $index'),
                   ),
                 ),
               ),
             ),
-            name: 'Login Factory',
-          )
-          ..addScenario(
-            widget: _wrapWithProviders(
-              UiKitPageView.dashboard(
-                title: 'Dashboard',
-                menu: UiKitMenuConfig(
-                  title: 'Menu',
-                  items: [
-                    UiKitMenuItem(label: 'Home', icon: Icons.home),
-                    UiKitMenuItem(label: 'Settings', icon: Icons.settings),
-                  ],
-                ),
-                child: (context, constraints) => const Center(
-                  child: Text('Dashboard content'),
-                ),
-              ),
-            ),
-            name: 'Dashboard Factory',
-          )
-          ..addScenario(
-            widget: _wrapWithProviders(
-              UiKitPageView.settings(
-                title: 'Settings',
-                menu: UiKitMenuConfig(
-                  title: 'Settings',
-                  items: [
-                    UiKitMenuItem(label: 'General', icon: Icons.settings),
-                    UiKitMenuItem(label: 'Privacy', icon: Icons.security),
-                    UiKitMenuItem(label: 'Network', icon: Icons.wifi),
-                  ],
-                ),
-                bottomBar: UiKitBottomBarConfig(
-                  positiveLabel: 'Save',
-                  onPositiveTap: () {},
-                  negativeLabel: 'Cancel',
-                  onNegativeTap: () {},
-                ),
-                child: (context, constraints) => const Center(
-                  child: Text('Settings content'),
-                ),
-              ),
-            ),
-            name: 'Settings Factory',
+            name: 'Sliver Factory',
           );
 
         await tester.pumpDeviceBuilder(builder);
@@ -135,7 +108,8 @@ void main() {
       'UiKitPageView - Bottom Bar Variations',
       (tester) async {
         final builder = DeviceBuilder()
-          ..overrideDevicesForAllScenarios(devices: [Device.phone, Device.tabletLandscape])
+          ..overrideDevicesForAllScenarios(
+              devices: [Device.phone, Device.tabletLandscape])
           ..addScenario(
             widget: _wrapWithProviders(
               UiKitPageView(
@@ -201,7 +175,8 @@ void main() {
       'UiKitPageView - Menu Configurations',
       (tester) async {
         final builder = DeviceBuilder()
-          ..overrideDevicesForAllScenarios(devices: [Device.phone, Device.tabletLandscape])
+          ..overrideDevicesForAllScenarios(
+              devices: [Device.phone, Device.tabletLandscape])
           ..addScenario(
             widget: _wrapWithProviders(
               UiKitPageView(
@@ -233,8 +208,11 @@ void main() {
                     UiKitMenuItem(label: 'Dashboard', icon: Icons.dashboard),
                     UiKitMenuItem(label: 'Network', icon: Icons.wifi),
                     UiKitMenuItem(label: 'Security', icon: Icons.security),
-                    UiKitMenuItem(label: 'Parental Controls', icon: Icons.family_restroom),
-                    UiKitMenuItem(label: 'Guest Access', icon: Icons.person_add),
+                    UiKitMenuItem(
+                        label: 'Parental Controls',
+                        icon: Icons.family_restroom),
+                    UiKitMenuItem(
+                        label: 'Guest Access', icon: Icons.person_add),
                     UiKitMenuItem(label: 'Advanced', icon: Icons.build),
                   ],
                 ),
@@ -258,7 +236,8 @@ void main() {
       'UiKitPageView - TopBar Integration',
       (tester) async {
         final builder = DeviceBuilder()
-          ..overrideDevicesForAllScenarios(devices: [Device.phone, Device.tabletLandscape])
+          ..overrideDevicesForAllScenarios(
+              devices: [Device.phone, Device.tabletLandscape])
           ..addScenario(
             widget: _wrapWithProviders(
               UiKitPageView(
@@ -291,7 +270,8 @@ void main() {
                   height: 80,
                   color: Colors.blue.withOpacity(0.2),
                   child: const Center(
-                    child: Text('Custom TopBar', style: TextStyle(fontSize: 18)),
+                    child:
+                        Text('Custom TopBar', style: TextStyle(fontSize: 18)),
                   ),
                 ),
                 child: (context, constraints) => const Center(
@@ -312,7 +292,8 @@ void main() {
       'UiKitPageView - Sliver Mode',
       (tester) async {
         final builder = DeviceBuilder()
-          ..overrideDevicesForAllScenarios(devices: [Device.phone, Device.tabletLandscape])
+          ..overrideDevicesForAllScenarios(
+              devices: [Device.phone, Device.tabletLandscape])
           ..addScenario(
             widget: _wrapWithProviders(
               UiKitPageView.withSliver(
@@ -357,7 +338,8 @@ void main() {
       'UiKitPageView - Tab Navigation',
       (tester) async {
         final builder = DeviceBuilder()
-          ..overrideDevicesForAllScenarios(devices: [Device.phone, Device.tabletLandscape])
+          ..overrideDevicesForAllScenarios(
+              devices: [Device.phone, Device.tabletLandscape])
           ..addScenario(
             widget: _wrapWithProviders(
               DefaultTabController(
@@ -393,7 +375,8 @@ void main() {
       'UiKitPageView - Inner Page',
       (tester) async {
         final builder = DeviceBuilder()
-          ..overrideDevicesForAllScenarios(devices: [Device.phone, Device.tabletLandscape])
+          ..overrideDevicesForAllScenarios(
+              devices: [Device.phone, Device.tabletLandscape])
           ..addScenario(
             widget: _wrapWithProviders(
               UiKitPageView.innerPage(
@@ -438,7 +421,8 @@ void main() {
       'UiKitPageView - Complex Configurations',
       (tester) async {
         final builder = DeviceBuilder()
-          ..overrideDevicesForAllScenarios(devices: [Device.phone, Device.tabletLandscape])
+          ..overrideDevicesForAllScenarios(
+              devices: [Device.phone, Device.tabletLandscape])
           ..addScenario(
             widget: _wrapWithProviders(
               DefaultTabController(
@@ -446,8 +430,10 @@ void main() {
                 child: UiKitPageView(
                   title: 'Full Featured Page',
                   actions: [
-                    IconButton(onPressed: () {}, icon: const Icon(Icons.search)),
-                    IconButton(onPressed: () {}, icon: const Icon(Icons.more_vert)),
+                    IconButton(
+                        onPressed: () {}, icon: const Icon(Icons.search)),
+                    IconButton(
+                        onPressed: () {}, icon: const Icon(Icons.more_vert)),
                   ],
                   menu: UiKitMenuConfig(
                     title: 'Navigation',
@@ -471,8 +457,6 @@ void main() {
                     const Center(child: Text('Overview Content')),
                     const Center(child: Text('Details Content')),
                   ],
-                  handleNoConnection: true,
-                  handleBanner: true,
                   child: (context, constraints) => const Center(
                     child: Text('This should not be visible with tabs'),
                   ),
@@ -490,15 +474,14 @@ void main() {
   });
 
   group('UiKitPageView API Compatibility Tests', () {
-    testWidgets('should match StyledAppPageView API signatures', (tester) async {
-      // Test that all StyledAppPageView parameters are accepted
+    testWidgets('should match StyledAppPageView API signatures',
+        (tester) async {
+      // Test that all basic UiKitPageView parameters are accepted
       const pageView = UiKitPageView(
         title: 'Test',
         toolbarHeight: 56.0,
         backState: UiKitBackState.enabled,
         appBarStyle: UiKitAppBarStyle.back,
-        handleNoConnection: true,
-        handleBanner: true,
         enableSafeArea: (left: true, top: true, right: true, bottom: true),
         menuOnRight: false,
         largeMenu: false,
@@ -513,8 +496,6 @@ void main() {
       expect(pageView.toolbarHeight, equals(56.0));
       expect(pageView.backState, equals(UiKitBackState.enabled));
       expect(pageView.appBarStyle, equals(UiKitAppBarStyle.back));
-      expect(pageView.handleNoConnection, isTrue);
-      expect(pageView.handleBanner, isTrue);
       expect(pageView.menuOnRight, isFalse);
       expect(pageView.largeMenu, isFalse);
       expect(pageView.useMainPadding, isTrue);
@@ -523,21 +504,6 @@ void main() {
     });
 
     testWidgets('factory constructors should work correctly', (tester) async {
-      final loginPage = UiKitPageView.login(
-        title: 'Login',
-        child: (context, constraints) => const Text('Login'),
-      );
-
-      final dashboardPage = UiKitPageView.dashboard(
-        title: 'Dashboard',
-        child: (context, constraints) => const Text('Dashboard'),
-      );
-
-      final settingsPage = UiKitPageView.settings(
-        title: 'Settings',
-        child: (context, constraints) => const Text('Settings'),
-      );
-
       final innerPage = UiKitPageView.innerPage(
         child: (context, constraints) => const Text('Inner'),
       );
@@ -548,18 +514,6 @@ void main() {
       );
 
       // Verify factory constructor behavior
-      expect(loginPage.title, equals('Login'));
-      expect(loginPage.handleNoConnection, isTrue);
-      expect(loginPage.hideTopbar, isFalse);
-
-      expect(dashboardPage.title, equals('Dashboard'));
-      expect(dashboardPage.handleNoConnection, isTrue);
-      expect(dashboardPage.handleBanner, isTrue);
-
-      expect(settingsPage.title, equals('Settings'));
-      expect(settingsPage.menuOnRight, isTrue);
-      expect(settingsPage.largeMenu, isTrue);
-
       expect(innerPage.hideTopbar, isTrue);
       expect(innerPage.appBarStyle, equals(UiKitAppBarStyle.none));
 
@@ -568,14 +522,20 @@ void main() {
   });
 }
 
-/// Helper to wrap widgets with necessary providers
+/// Helper to wrap widgets with necessary providers including UI Kit theme
 Widget _wrapWithProviders(Widget child) {
   return ProviderScope(
     child: MaterialApp(
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+      theme: AppTheme.create(
+        brightness: Brightness.light,
+        designThemeBuilder: (scheme) => GlassDesignTheme.light(scheme),
       ),
+      builder: (context, child) {
+        return DesignSystem.init(
+          context,
+          child!,
+        );
+      },
       home: child,
     ),
   );

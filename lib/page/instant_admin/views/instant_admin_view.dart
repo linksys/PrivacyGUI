@@ -10,9 +10,11 @@ import 'package:privacy_gui/core/jnap/providers/dashboard_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/experimental/experimental_ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/instant_admin/providers/_providers.dart';
@@ -92,7 +94,7 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
         _buildTransmitRegionWidget(context, powerTableState),
     ];
 
-    return StyledAppPageView.withSliver(
+    return UiKitPageView.withSliver(
       title: loc(context).instantAdmin,
       scrollable: true,
       child: (context, constraints) => MasonryGridView.count(

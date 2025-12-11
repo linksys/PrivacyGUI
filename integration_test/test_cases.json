@@ -1,0 +1,10 @@
+{
+    "description": "Test group template",
+    "skipActionsInMeta": true,
+    "wired": true,
+    "groupSetup": ["skip_setup"],
+    "groupTearDown": [],
+    "files": [
+        "incredible_wifi_advanced_and_mac_filtering_test"
+    ]
+}

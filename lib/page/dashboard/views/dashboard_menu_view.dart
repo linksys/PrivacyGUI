@@ -10,11 +10,11 @@ import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
-import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dart';
 import 'package:privacy_gui/page/components/styled/status_label.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
@@ -51,18 +51,18 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
 
   @override
   Widget build(BuildContext context) {
-    return StyledAppPageView.withSliver(
+    return UiKitPageView.withSliver(
       scrollable: true,
-      backState: StyledBackState.none,
+      backState: UiKitBackState.none,
       title: loc(context).menu,
-      menu: PageMenu(title: loc(context).myNetwork, items: [
-        PageMenuItem(
+      menu: UiKitMenuConfig(title: loc(context).myNetwork, items: [
+        UiKitMenuItem(
             label: loc(context).restartNetwork,
             icon: LinksysIcons.restartAlt,
             onTap: () {
               _restartNetwork();
             }),
-        PageMenuItem(
+        UiKitMenuItem(
             label: loc(context).menuSetupANewProduct,
             icon: LinksysIcons.add,
             onTap: () {

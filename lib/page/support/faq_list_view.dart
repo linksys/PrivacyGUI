@@ -1,12 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/url_links.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:flutter/material.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
@@ -39,27 +38,20 @@ class _FaqListViewState extends ConsumerState<FaqListView> {
 
   @override
   Widget build(BuildContext context) {
-    return StyledAppPageView.withSliver(
+    return UiKitPageView.withSliver(
       title: loc(context).faqs,
-      backState: StyledBackState.none,
-      menuWidget: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AppText.bodySmall(loc(context).faqLookingFor),
-          const AppGap.medium(),
-          AppTextButton.noPadding(
-            loc(context).faqVisitLinksysSupport,
-            identifier:
-                'now-faq-link-${FaqItem.faqVisitLinksysSupport.displayString(context).kebab()}',
+      backState: UiKitBackState.none,
+      menuOnRight: true,
+      menu: UiKitMenuConfig(title: loc(context).faqLookingFor, items: [
+        UiKitMenuItem(
+            label: loc(context).faqVisitLinksysSupport,
+            icon: LinksysIcons.add,
             onTap: () {
               gotoOfficialWebUrl(FaqItem.faqVisitLinksysSupport.url,
                   locale: ref.read(appSettingsProvider).locale);
-            },
-          ),
-        ],
-      ),
-      menuOnRight: true,
-      pageContentType: PageContentType.flexible,
+            })
+      ]),
+      pageContentType: UiKitPageContentType.flexible,
       child: (context, constraints) {
         return SizedBox(
           width: 9.col,

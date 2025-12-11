@@ -3,29 +3,28 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/components/styled/top_bar.dart';
 import 'package:ui_kit_library/ui_kit.dart';
-import 'package:ui_kit_library/ui_kit.dart' as ui_kit;
 
-/// 自定義的 AppBar 樣式
+/// Custom AppBar styles
 enum UiKitAppBarStyle {
   none,
   back,
   close,
 }
 
-/// 自定義的返回按鈕狀態
+/// Custom back button states
 enum UiKitBackState {
   none,
   enabled,
   disabled,
 }
 
-/// 自定義的頁面內容類型
+/// Custom page content types
 enum UiKitPageContentType {
   flexible,
   sliver,
 }
 
-/// 自定義的底部操作欄配置
+/// Custom bottom bar configuration
 class UiKitBottomBarConfig {
   final String? positiveLabel;
   final String? negativeLabel;
@@ -46,7 +45,7 @@ class UiKitBottomBarConfig {
   });
 }
 
-/// 自定義的選單項
+/// Custom menu item
 class UiKitMenuItem {
   final String label;
   final IconData? icon;
@@ -61,7 +60,7 @@ class UiKitMenuItem {
   });
 }
 
-/// 自定義的選單配置
+/// Custom menu configuration
 class UiKitMenuConfig {
   final String title;
   final List<UiKitMenuItem> items;
@@ -74,24 +73,25 @@ class UiKitMenuConfig {
   });
 }
 
-/// T069: Production UiKitPageView - 完全獨立的 StyledPageView 替換
+/// T069: Production UiKitPageView - Complete independent StyledPageView replacement
 ///
-/// 此元件提供乾淨、可用於生產環境的 StyledPageView 替換，
-/// 具有原生的 PrivacyGUI 整合且無適配器依賴。使用 UI Kit 的
-/// 現有主題系統，消除所有實驗性/適配器元件。
+/// This component provides a clean, production-ready StyledPageView replacement
+/// with native PrivacyGUI integration and no adapter dependencies. Uses UI Kit's
+/// existing theme system and eliminates all experimental/adapter components.
 ///
-/// 主要功能:
-/// - 原生 TopBar 整合無需包裝器
-/// - 直接連線狀態處理與適當主題
-/// - 內建橫幅系統整合與一致樣式
-/// - 原生滾動監聽器用於隱藏底部導航
-/// - 原生 PrivacyGUI 本地化支援
-/// - 直接 API 匹配 StyledPageView 使用模式
-/// - 乾淨架構與全面參數驗證
+/// Key features:
+/// - Native TopBar integration without wrappers
+/// - Direct connection state handling with proper theming
+/// - Built-in banner system integration with consistent styling
+/// - Native scroll listener for hiding bottom navigation
+/// - Native PrivacyGUI localization support
+/// - Direct API matching StyledPageView usage patterns
+/// - Clean architecture with comprehensive parameter validation
 class UiKitPageView extends ConsumerStatefulWidget {
-  // 完整的自定義 API - 維持與 StyledAppPageView 的相容性
+  // Complete custom API - Maintains compatibility with StyledAppPageView
   final String? title;
-  final Widget Function(BuildContext context, BoxConstraints constraints)? child;
+  final Widget Function(BuildContext context, BoxConstraints constraints)?
+      child;
   final double? toolbarHeight;
   final Future<void> Function()? onRefresh;
   final UiKitBackState backState;
@@ -99,20 +99,20 @@ class UiKitPageView extends ConsumerStatefulWidget {
   final EdgeInsets? padding;
   final bool? scrollable;
   final UiKitAppBarStyle appBarStyle;
-  final bool handleNoConnection;
-  final bool handleBanner;
   final ({bool left, bool top, bool right, bool bottom}) enableSafeArea;
   final bool menuOnRight;
   final bool largeMenu;
-  final Widget? topbar; // PrivacyGUI TopBar 支援
+  final Widget? topbar; // PrivacyGUI TopBar support
   final bool useMainPadding;
   final String? markLabel;
   final UiKitPageContentType pageContentType;
   final ScrollController? controller;
   final UiKitBottomBarConfig? bottomBar;
+  final Widget?
+      pageFooter; // Generic footer widget for custom BottomBar support
   final UiKitMenuConfig? menu;
   final IconData? menuIcon;
-  final bool hideTopbar; // PrivacyGUI TopBar 控制
+  final bool hideTopbar; // PrivacyGUI TopBar control
   final bool enableSliverAppBar;
   final Widget? bottomSheet;
   final Widget? bottomNavigationBar;
@@ -133,8 +133,6 @@ class UiKitPageView extends ConsumerStatefulWidget {
     this.padding,
     this.scrollable,
     this.appBarStyle = UiKitAppBarStyle.back,
-    this.handleNoConnection = false,
-    this.handleBanner = false,
     this.enableSafeArea = (left: true, top: true, right: true, bottom: true),
     this.menuOnRight = false,
     this.largeMenu = false,
@@ -144,6 +142,7 @@ class UiKitPageView extends ConsumerStatefulWidget {
     this.pageContentType = UiKitPageContentType.flexible,
     this.controller,
     this.bottomBar,
+    this.pageFooter,
     this.menu,
     this.menuIcon,
     this.hideTopbar = false,
@@ -157,106 +156,15 @@ class UiKitPageView extends ConsumerStatefulWidget {
     this.onBackTap,
   });
 
-  /// T080: 登入頁面工廠建構函式（帶 TopBar）
-  factory UiKitPageView.login({
-    Key? key,
-    String? title,
-    required Widget Function(BuildContext context, BoxConstraints constraints) child,
-    List<Widget>? actions,
-    EdgeInsets? padding,
-    Future<void> Function()? onRefresh,
-    VoidCallback? onBackTap,
-  }) {
-    return UiKitPageView(
-      key: key,
-      title: title,
-      child: child,
-      actions: actions,
-      padding: padding,
-      onRefresh: onRefresh,
-      onBackTap: onBackTap,
-      appBarStyle: UiKitAppBarStyle.back,
-      backState: UiKitBackState.enabled,
-      hideTopbar: false, // 登入頁面顯示 TopBar
-      handleNoConnection: true, // 處理登入的連線狀態
-      useMainPadding: true,
-    );
-  }
-
-  /// T081: 主應用頁面工廠建構函式
-  factory UiKitPageView.dashboard({
-    Key? key,
-    String? title,
-    required Widget Function(BuildContext context, BoxConstraints constraints) child,
-    List<Widget>? actions,
-    EdgeInsets? padding,
-    Future<void> Function()? onRefresh,
-    UiKitMenuConfig? menu,
-    bool menuOnRight = false,
-    bool largeMenu = false,
-    IconData? menuIcon,
-    bool handleBanner = true,
-  }) {
-    return UiKitPageView(
-      key: key,
-      title: title,
-      child: child,
-      actions: actions,
-      padding: padding,
-      onRefresh: onRefresh,
-      menu: menu,
-      menuOnRight: menuOnRight,
-      largeMenu: largeMenu,
-      menuIcon: menuIcon,
-      appBarStyle: UiKitAppBarStyle.back,
-      backState: UiKitBackState.enabled,
-      hideTopbar: false, // 儀表板顯示 TopBar
-      handleNoConnection: true, // 處理連線狀態
-      handleBanner: handleBanner, // 處理橫幅通知
-      useMainPadding: true,
-    );
-  }
-
-  /// T082: 設定頁面工廠建構函式（帶選單）
-  factory UiKitPageView.settings({
-    Key? key,
-    String? title,
-    required Widget Function(BuildContext context, BoxConstraints constraints) child,
-    List<Widget>? actions,
-    EdgeInsets? padding,
-    UiKitMenuConfig? menu,
-    bool menuOnRight = true, // 設定通常在右側顯示選單
-    bool largeMenu = true, // 設定使用大選單格式
-    IconData? menuIcon,
-    UiKitBottomBarConfig? bottomBar,
-  }) {
-    return UiKitPageView(
-      key: key,
-      title: title,
-      child: child,
-      actions: actions,
-      padding: padding,
-      menu: menu,
-      menuOnRight: menuOnRight,
-      largeMenu: largeMenu,
-      menuIcon: menuIcon,
-      bottomBar: bottomBar,
-      appBarStyle: UiKitAppBarStyle.back,
-      backState: UiKitBackState.enabled,
-      hideTopbar: false, // 設定頁面顯示 TopBar
-      handleNoConnection: true, // 處理連線狀態
-      handleBanner: true, // 處理橫幅通知
-      useMainPadding: true,
-    );
-  }
-
-  /// 內頁工廠建構函式（類似 StyledAppPageView.innerPage）
+  /// Inner page factory constructor (similar to StyledAppPageView.innerPage)
   factory UiKitPageView.innerPage({
     Key? key,
-    required Widget Function(BuildContext context, BoxConstraints constraints) child,
+    required Widget Function(BuildContext context, BoxConstraints constraints)
+        child,
     EdgeInsets? padding,
     bool? scrollable,
     UiKitBottomBarConfig? bottomBar,
+    Widget? pageFooter,
     bool menuOnRight = false,
     bool largeMenu = false,
     bool useMainPadding = true,
@@ -270,19 +178,20 @@ class UiKitPageView extends ConsumerStatefulWidget {
       padding: padding,
       scrollable: scrollable,
       bottomBar: bottomBar,
+      pageFooter: pageFooter,
       menuOnRight: menuOnRight,
       largeMenu: largeMenu,
       useMainPadding: useMainPadding,
       pageContentType: pageContentType,
       onRefresh: onRefresh,
       enableSliverAppBar: enableSliverAppBar,
-      appBarStyle: UiKitAppBarStyle.none, // 內頁沒有應用欄
+      appBarStyle: UiKitAppBarStyle.none, // Inner pages have no app bar
       backState: UiKitBackState.none,
-      hideTopbar: true, // 內頁不顯示 TopBar
+      hideTopbar: true, // Inner pages do not show TopBar
     );
   }
 
-  /// 預設啟用 Sliver 模式的工廠建構函式
+  /// Factory constructor with Sliver mode enabled by default
   factory UiKitPageView.withSliver({
     Key? key,
     String? title,
@@ -294,9 +203,12 @@ class UiKitPageView extends ConsumerStatefulWidget {
     EdgeInsets? padding,
     bool? scrollable,
     UiKitAppBarStyle appBarStyle = UiKitAppBarStyle.back,
-    bool handleNoConnection = false,
-    bool handleBanner = false,
-    ({bool left, bool top, bool right, bool bottom}) enableSafeArea = (left: true, top: true, right: true, bottom: true),
+    ({
+      bool left,
+      bool top,
+      bool right,
+      bool bottom
+    }) enableSafeArea = (left: true, top: true, right: true, bottom: true),
     bool menuOnRight = false,
     bool largeMenu = false,
     Widget? topbar,
@@ -327,8 +239,6 @@ class UiKitPageView extends ConsumerStatefulWidget {
       padding: padding,
       scrollable: scrollable,
       appBarStyle: appBarStyle,
-      handleNoConnection: handleNoConnection,
-      handleBanner: handleBanner,
       enableSafeArea: enableSafeArea,
       menuOnRight: menuOnRight,
       largeMenu: largeMenu,
@@ -341,7 +251,7 @@ class UiKitPageView extends ConsumerStatefulWidget {
       menu: menu,
       menuIcon: menuIcon,
       hideTopbar: hideTopbar,
-      enableSliverAppBar: true, // 預設為 Sliver 模式
+      enableSliverAppBar: true, // Default to Sliver mode
       bottomSheet: bottomSheet,
       bottomNavigationBar: bottomNavigationBar,
       tabs: tabs,
@@ -371,7 +281,7 @@ class _UiKitPageViewState extends ConsumerState<UiKitPageView> {
     super.dispose();
   }
 
-  /// T077: 原生滾動監聽器用於隱藏底部導航
+  /// T077: Native scroll listener for hiding bottom navigation
   void _setupScrollListener() {
     final controller = widget.controller ?? _internalScrollController;
     if (controller != null) {
@@ -383,37 +293,25 @@ class _UiKitPageViewState extends ConsumerState<UiKitPageView> {
     final controller = widget.controller ?? _internalScrollController;
     if (controller == null || !controller.hasClients) return;
 
-    // T077: 滾動處理邏輯可在需要時於此實作
-    // 目前，我們維持滾動控制器以提供基本功能
+    // T077: Scroll handling logic can be implemented here when needed
+    // Currently, we maintain the scroll controller for basic functionality
   }
 
   @override
   Widget build(BuildContext context) {
-    // T083: 全面參數驗證
+    // T083: Comprehensive parameter validation
     _validateParameters();
 
-    Widget content = _buildPageContent();
-
-    // T075: 原生連線狀態處理與適當主題
-    if (widget.handleNoConnection) {
-      content = _wrapWithConnectionState(content);
-    }
-
-    // T076: 原生橫幅系統整合與一致樣式
-    if (widget.handleBanner) {
-      content = _wrapWithBannerHandling(content);
-    }
-
-    return content;
+    return _buildPageContent();
   }
 
-  /// T083: 參數驗證與有用的錯誤訊息
+  /// T083: Parameter validation with helpful error messages
   void _validateParameters() {
     if (widget.tabs != null && widget.tabContentViews != null) {
       if (widget.tabs!.length != widget.tabContentViews!.length) {
         throw ArgumentError(
-          'UiKitPageView 驗證錯誤: tabs 和 tabContentViews 必須具有相同長度。'
-          '獲得 ${widget.tabs!.length} 個標籤和 ${widget.tabContentViews!.length} 個內容視圖。',
+          'UiKitPageView assert error: tabs and tabContentViews MUST have consistant length.'
+          'Get ${widget.tabs!.length} tabs and ${widget.tabContentViews!.length} content views.',
         );
       }
     }
@@ -421,39 +319,62 @@ class _UiKitPageViewState extends ConsumerState<UiKitPageView> {
     if (widget.tabs != null && widget.tabController != null) {
       if (widget.tabs!.length != widget.tabController!.length) {
         throw ArgumentError(
-          'UiKitPageView 驗證錯誤: tabs 長度必須與 tabController 長度相符。'
-          '獲得 ${widget.tabs!.length} 個標籤和 ${widget.tabController!.length} 個控制器長度。',
+          'UiKitPageView assert error: tabs and tabContentViews MUST have consistant length.'
+          'Get ${widget.tabs!.length} tabs and ${widget.tabController!.length} tab controllers.',
         );
       }
     }
   }
 
-  /// 建立主要頁面內容與原生 UI Kit 整合
+  /// Create main page content with native UI Kit integration
   Widget _buildPageContent() {
-    // 原生轉換 PrivacyGUI 參數為 UI Kit 格式（無適配器）
+    // Native conversion of PrivacyGUI parameters to UI Kit format (no adapters)
     final appBarConfig = _buildAppBarConfig();
     final bottomBarConfig = _buildBottomBarConfig();
     final menuConfig = _buildMenuConfig();
 
-    // T074: 在需要時原生建立 TopBar widget
+    // T074: Natively create TopBar widget when needed
     Widget? topBarWidget = _buildTopBarWidget();
 
-    // 確定滾動控制器
-    final scrollController = widget.controller ??
-        (widget.scrollable == true ? (_internalScrollController ??= ScrollController()) : null);
+    // Handle TopBar for sliver mode compatibility
+    Widget? headerWidget;
+    if (topBarWidget != null && widget.enableSliverAppBar) {
+      // In sliver mode, wrap TopBar in SliverToBoxAdapter for proper integration
+      Widget topBarContent = topBarWidget;
 
-    // 智慧填充邏輯 - 尊重用戶對零填充的意圖
+      // If it's a PreferredSize wrapper around TopBar, extract the TopBar
+      if (topBarContent is PreferredSize && topBarContent.child is TopBar) {
+        topBarContent = topBarContent.child;
+      }
+
+      // Wrap in SliverToBoxAdapter for sliver compatibility
+      headerWidget = SliverToBoxAdapter(
+        child: SizedBox(
+          height: 80, // Fixed height to match PreferredSize
+          child: topBarContent,
+        ),
+      );
+    }
+
+    // Determine scroll controller
+    final scrollController = widget.controller ??
+        (widget.scrollable == true
+            ? (_internalScrollController ??= ScrollController())
+            : null);
+
+    // Smart padding logic - respect user intention for zero padding
     final bool shouldUseContentPadding =
         widget.useMainPadding && (widget.padding != EdgeInsets.zero);
 
-    // 建立主要 AppPageView 與所有配置
-    return AppPageView(
-      // UI Kit 配置
+    // Create main AppPageView with all configurations
+    final appPageView = AppPageView(
+      // UI Kit configuration
       appBarConfig: appBarConfig,
       bottomBarConfig: bottomBarConfig,
+      customBottomBar: widget.pageFooter, // Pass pageFooter to customBottomBar
       menuConfig: menuConfig,
 
-      // 布局配置
+      // Layout configuration
       padding: widget.padding,
       useContentPadding: shouldUseContentPadding,
       scrollable: widget.scrollable ?? true,
@@ -461,27 +382,45 @@ class _UiKitPageViewState extends ConsumerState<UiKitPageView> {
       onRefresh: widget.onRefresh,
       useSlivers: widget.enableSliverAppBar,
 
-      // 安全區域處理 - TopBar 存在時停用頂部
+      // Safe area handling - disable top when TopBar exists
       enableSafeArea: topBarWidget != null
-          ? (left: widget.enableSafeArea.left, top: false, right: widget.enableSafeArea.right, bottom: widget.enableSafeArea.bottom)
+          ? (
+              left: widget.enableSafeArea.left,
+              top: false,
+              right: widget.enableSafeArea.right,
+              bottom: widget.enableSafeArea.bottom
+            )
           : widget.enableSafeArea,
 
-      // 標籤配置
+      // Tab configuration
       tabs: _convertTabs(),
       tabViews: widget.tabContentViews,
       tabController: widget.tabController,
 
-      // 附加 widgets
-      header: topBarWidget,
+      // Additional widgets - only pass header in sliver mode
+      header: headerWidget,
       bottomSheet: widget.bottomSheet,
       bottomNavigationBar: widget.bottomNavigationBar,
 
-      // 內容
-      child: widget.child ?? ((context, constraints) => const SizedBox.shrink()),
+      // Content
+      child:
+          widget.child ?? ((context, constraints) => const SizedBox.shrink()),
     );
+
+    // In non-sliver mode, render TopBar outside AppPageView to prevent layout issues
+    if (topBarWidget != null && !widget.enableSliverAppBar) {
+      return Column(
+        children: [
+          topBarWidget,
+          Expanded(child: appPageView),
+        ],
+      );
+    }
+
+    return appPageView;
   }
 
-  /// T074: 原生 TopBar 支援直接在 UiKitPageView 中（無包裝器）
+  /// T074: Native TopBar support directly in UiKitPageView (no wrappers)
   Widget? _buildTopBarWidget() {
     if (widget.hideTopbar) return null;
 
@@ -489,14 +428,14 @@ class _UiKitPageViewState extends ConsumerState<UiKitPageView> {
       return widget.topbar!;
     }
 
-    // 為 PrivacyGUI 整合建立預設 TopBar
+    // Create default TopBar for PrivacyGUI integration
     return const PreferredSize(
       preferredSize: Size.fromHeight(80),
       child: TopBar(),
     );
   }
 
-  /// 原生轉換 PrivacyGUI AppBar 參數
+  /// Native conversion of PrivacyGUI AppBar parameters
   PageAppBarConfig? _buildAppBarConfig() {
     if (widget.appBarStyle == UiKitAppBarStyle.none) {
       return null;
@@ -512,24 +451,24 @@ class _UiKitPageViewState extends ConsumerState<UiKitPageView> {
     );
   }
 
-  /// 原生轉換 PrivacyGUI 底部欄參數
+  /// Native conversion of PrivacyGUI bottom bar parameters
   PageBottomBarConfig? _buildBottomBarConfig() {
     if (widget.bottomBar == null) return null;
 
     final bottomBar = widget.bottomBar!;
 
-    // T078: 原生 PrivacyGUI 本地化支援
-    // 注意: PrivacyGUI 本地化將在需要時加入
+    // T078: Native PrivacyGUI localization support
+    // Note: PrivacyGUI localization will be added when needed
 
     return PageBottomBarConfig(
       positiveLabel: bottomBar.positiveLabel,
       negativeLabel: bottomBar.negativeLabel,
       onPositiveTap: bottomBar.onPositiveTap,
       onNegativeTap: () {
-        // 原生導航處理與 context.pop 整合
+        // Native navigation handling with context.pop integration
         bottomBar.onNegativeTap?.call();
         if (bottomBar.onNegativeTap == null) {
-          context.pop(); // 預設返回導航
+          context.pop(); // Default back navigation
         }
       },
       isPositiveEnabled: bottomBar.isPositiveEnabled,
@@ -538,22 +477,22 @@ class _UiKitPageViewState extends ConsumerState<UiKitPageView> {
     );
   }
 
-  /// 原生轉換 PrivacyGUI 選單參數
+  /// Native conversion of PrivacyGUI menu parameters
   PageMenuConfig? _buildMenuConfig() {
     if (widget.menu == null) return null;
 
     final menu = widget.menu!;
 
-    // T078: 選單標題原生本地化
-    // 注意: PrivacyGUI 本地化將在需要時加入
+    // T078: Native menu title localization
+    // Note: PrivacyGUI localization will be added when needed
 
-    // 轉換選單項與原生導航包裝
+    // Convert menu items with native navigation wrapper
     final convertedItems = menu.items.map((item) {
-      return ui_kit.PageMenuItem.navigation(
+      return PageMenuItem.navigation(
         label: item.label,
         icon: item.icon ?? Icons.circle,
         onTap: () {
-          // 原生選單項操作包裝與導航處理
+          // Native menu item action wrapper with navigation handling
           item.onTap?.call();
         },
         isSelected: item.isSelected,
@@ -564,20 +503,20 @@ class _UiKitPageViewState extends ConsumerState<UiKitPageView> {
       title: menu.title,
       items: convertedItems,
       largeMenu: widget.largeMenu,
-      showOnDesktop: true, // PrivacyGUI 相容性總是在桌面顯示
-      showOnMobile: true, // PrivacyGUI 相容性總是在行動裝置顯示
+      showOnDesktop: true, // PrivacyGUI compatibility always show on desktop
+      showOnMobile: true, // PrivacyGUI compatibility always show on mobile
       mobileMenuIcon: widget.menuIcon,
     );
   }
 
-  /// 轉換標籤為 UI Kit 格式
+  /// Convert tabs to UI Kit format
   List<Tab>? _convertTabs() {
     if (widget.tabs == null) return null;
 
     return widget.tabs!.cast<Tab>();
   }
 
-  /// 根據 PrivacyGUI 邏輯決定是否應顯示返回按鈕
+  /// Determine whether to show back button based on PrivacyGUI logic
   bool _shouldShowBackButton() {
     switch (widget.appBarStyle) {
       case UiKitAppBarStyle.none:
@@ -587,73 +526,5 @@ class _UiKitPageViewState extends ConsumerState<UiKitPageView> {
       case UiKitAppBarStyle.close:
         return widget.backState == UiKitBackState.enabled;
     }
-  }
-
-  /// T075: 原生連線狀態處理與適當主題
-  Widget _wrapWithConnectionState(Widget child) {
-    return Consumer(
-      builder: (context, ref, _) {
-        // TODO: 替換為實際的 PrivacyGUI 連線狀態提供者
-        // final connectionState = ref.watch(connectionStateProvider);
-        const isConnected = true; // connectionState.isConnected;
-
-        if (!isConnected) {
-          // 使用 UI Kit 主題進行連線狀態顯示
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.wifi_off,
-                  size: 64,
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  '無連線',
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '檢查您的連線並再試一次',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-
-        return child;
-      },
-    );
-  }
-
-  /// T076: 原生橫幅系統整合與一致樣式
-  Widget _wrapWithBannerHandling(Widget child) {
-    return Consumer(
-      builder: (context, ref, _) {
-        // TODO: 替換為實際的 PrivacyGUI 橫幅提供者
-        // final bannerState = ref.watch(bannerStateProvider);
-        const activeBanners = <Widget>[]; // bannerState.activeBanners;
-
-        if (activeBanners.isEmpty) {
-          return child;
-        }
-
-        // 使用 UI Kit 主題進行橫幅顯示
-        return Column(
-          children: [
-            ...activeBanners.map((banner) => Container(
-              width: double.infinity,
-              margin: const EdgeInsets.all(8.0),
-              child: banner,
-            )),
-            Expanded(child: child),
-          ],
-        );
-      },
-    );
   }
 }

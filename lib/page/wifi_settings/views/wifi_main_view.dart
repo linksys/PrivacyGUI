@@ -6,7 +6,7 @@ import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_state.dart';
@@ -80,10 +80,10 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView>
       const MacFilteringView(),
     ];
 
-    return StyledAppPageView.withSliver(
+    return UiKitPageView.withSliver(
       title: loc(context).incredibleWiFi,
       useMainPadding: false,
-      bottomBar: PageBottomBar(
+      bottomBar: UiKitBottomBarConfig(
         isPositiveEnabled: bundleState.isDirty &&
             bundleState.current.wifiList.isSettingsValid(),
         onPositiveTap: () async {
