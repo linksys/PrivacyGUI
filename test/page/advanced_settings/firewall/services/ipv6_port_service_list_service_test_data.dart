@@ -197,20 +197,23 @@ class IPv6PortServiceTestData {
   /// final rule = IPv6PortServiceTestData.createUIRule();
   /// ```
   static IPv6PortServiceRuleUI createUIRule({
-    String protocol = 'TCP',
-    int externalPort = 80,
-    int internalPort = 80,
-    String internalIPAddress = '2001:db8::1',
     String description = 'Web Server',
+    String ipv6Address = '2001:db8::1',
     bool enabled = true,
+    List<PortRangeUI>? portRanges,
   }) =>
       IPv6PortServiceRuleUI(
-        protocol: protocol,
-        externalPort: externalPort,
-        internalPort: internalPort,
-        internalIPAddress: internalIPAddress,
         description: description,
+        ipv6Address: ipv6Address,
         enabled: enabled,
+        portRanges: portRanges ??
+            [
+              const PortRangeUI(
+                protocol: 'TCP',
+                firstPort: 80,
+                lastPort: 80,
+              ),
+            ],
       );
 
   /// Create list of UI rules for testing
@@ -225,27 +228,39 @@ class IPv6PortServiceTestData {
       IPv6PortServiceRuleUIList(rules: [
         createUIRule(
           description: 'Web Server',
-          protocol: 'TCP',
-          externalPort: 80,
-          internalPort: 80,
-          internalIPAddress: '2001:db8::1',
+          ipv6Address: '2001:db8::1',
           enabled: true,
+          portRanges: [
+            const PortRangeUI(
+              protocol: 'TCP',
+              firstPort: 80,
+              lastPort: 80,
+            ),
+          ],
         ),
         createUIRule(
           description: 'HTTPS Server',
-          protocol: 'TCP',
-          externalPort: 443,
-          internalPort: 443,
-          internalIPAddress: '2001:db8::1',
+          ipv6Address: '2001:db8::1',
           enabled: true,
+          portRanges: [
+            const PortRangeUI(
+              protocol: 'TCP',
+              firstPort: 443,
+              lastPort: 443,
+            ),
+          ],
         ),
         createUIRule(
           description: 'Game Server',
-          protocol: 'UDP',
-          externalPort: 7777,
-          internalPort: 7777,
-          internalIPAddress: '2001:db8::2',
+          ipv6Address: '2001:db8::2',
           enabled: false,
+          portRanges: [
+            const PortRangeUI(
+              protocol: 'UDP',
+              firstPort: 7777,
+              lastPort: 7777,
+            ),
+          ],
         ),
       ]);
 
