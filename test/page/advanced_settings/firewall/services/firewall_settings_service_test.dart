@@ -213,7 +213,7 @@ void main() {
             )).called(1);
       });
 
-      test('handles JNAP response parsing errors', () async {
+      test('returns (null, null) on network error', () async {
         // Arrange
         when(() => mockRepository.send(
               any(),
@@ -225,18 +225,15 @@ void main() {
           routerRepository: mockRepository,
         );
 
-        // Act & Assert
-        expect(
-          () => service.fetchFirewallSettings(mockRef),
-          throwsA(isA<Exception>().having(
-            (e) => e.toString(),
-            'message',
-            contains('Failed to fetch firewall settings'),
-          )),
-        );
+        // Act
+        final (uiSettings, status) = await service.fetchFirewallSettings(mockRef);
+
+        // Assert
+        expect(uiSettings, isNull);
+        expect(status, isNull);
       });
 
-      test('handles JNAP error response', () async {
+      test('returns (null, null) on JNAP error response', () async {
         // Arrange
         final mockErrorResponse = FirewallSettingsTestData.createErrorResponse(
           errorMessage: 'Device unreachable',
@@ -251,14 +248,15 @@ void main() {
           routerRepository: mockRepository,
         );
 
-        // Act & Assert
-        expect(
-          () => service.fetchFirewallSettings(mockRef),
-          throwsA(isA<Exception>()),
-        );
+        // Act
+        final (uiSettings, status) = await service.fetchFirewallSettings(mockRef);
+
+        // Assert
+        expect(uiSettings, isNull);
+        expect(status, isNull);
       });
 
-      test('handles incomplete JNAP response data', () async {
+      test('returns (null, null) on incomplete JNAP response data', () async {
         // Arrange - create response with incomplete output
         when(() => mockRepository.send(
               any(),
@@ -270,11 +268,32 @@ void main() {
           routerRepository: mockRepository,
         );
 
-        // Act & Assert
-        expect(
-          () => service.fetchFirewallSettings(mockRef),
-          throwsA(isA<Exception>()),
+        // Act
+        final (uiSettings, status) = await service.fetchFirewallSettings(mockRef);
+
+        // Assert
+        expect(uiSettings, isNull);
+        expect(status, isNull);
+      });
+
+      test('returns (null, null) when response throws on parsing', () async {
+        // Arrange - simulate a parsing failure
+        when(() => mockRepository.send(
+              any(),
+              auth: any(named: 'auth'),
+              fetchRemote: any(named: 'fetchRemote'),
+            )).thenThrow(FormatException('Invalid JSON'));
+
+        final mockRef = UnitTestHelper.createMockRef(
+          routerRepository: mockRepository,
         );
+
+        // Act
+        final (uiSettings, status) = await service.fetchFirewallSettings(mockRef);
+
+        // Assert
+        expect(uiSettings, isNull);
+        expect(status, isNull);
       });
     });
 
