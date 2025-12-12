@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
 
-import 'package:privacy_gui/core/jnap/models/ipv6_firewall_rule.dart';
+import 'package:privacy_gui/page/advanced_settings/firewall/providers/ipv6_port_service_rule_state.dart';
 import 'package:privacy_gui/providers/feature_state.dart';
 import 'package:privacy_gui/providers/preservable.dart';
 
@@ -50,7 +50,7 @@ class Ipv6PortServiceListStatus extends Equatable {
 }
 
 class Ipv6PortServiceListState
-    extends FeatureState<IPv6FirewallRuleList, Ipv6PortServiceListStatus> {
+    extends FeatureState<IPv6PortServiceRuleUIList, Ipv6PortServiceListStatus> {
   const Ipv6PortServiceListState({
     required super.settings,
     required super.status,
@@ -58,7 +58,7 @@ class Ipv6PortServiceListState
 
   @override
   Ipv6PortServiceListState copyWith({
-    Preservable<IPv6FirewallRuleList>? settings,
+    Preservable<IPv6PortServiceRuleUIList>? settings,
     Ipv6PortServiceListStatus? status,
   }) {
     return Ipv6PortServiceListState(
@@ -79,7 +79,8 @@ class Ipv6PortServiceListState
     return Ipv6PortServiceListState(
       settings: Preservable.fromMap(
         map['settings'] as Map<String, dynamic>,
-        (valueMap) => IPv6FirewallRuleList.fromMap(valueMap as Map<String, dynamic>),
+        (valueMap) =>
+            IPv6PortServiceRuleUIList.fromMap(valueMap as Map<String, dynamic>),
       ),
       status: Ipv6PortServiceListStatus.fromMap(
           map['status'] as Map<String, dynamic>),
