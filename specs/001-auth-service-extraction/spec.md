@@ -121,6 +121,7 @@ As a developer ensuring code quality, I need comprehensive unit tests for AuthSe
 - **FR-013**: Unit tests MUST be created for AuthService covering all business logic paths using Mocktail for mocking dependencies
 - **FR-014**: All existing tests for AuthNotifier MUST continue to pass or be updated to reflect new implementation while maintaining same behavior validation
 - **FR-015**: A Riverpod Provider (single instance, not factory) for AuthService MUST be defined to enable dependency injection throughout the app
+- **FR-016**: Unit tests MUST be created for AuthState covering all data model operations (fromJson/toJson serialization, copyWith, Equatable equality, and edge cases) per Constitution Article I Section 1.4 (State layer ≥90% coverage)
 
 ### Key Entities
 
@@ -141,6 +142,7 @@ As a developer ensuring code quality, I need comprehensive unit tests for AuthSe
 - **SC-005**: AuthService can be instantiated and tested independently without requiring any Riverpod providers or UI context (verified by unit tests)
 - **SC-006**: Code maintainability improves as measured by reduced cyclomatic complexity in AuthNotifier (target: reduce complexity by at least 50%)
 - **SC-007**: Zero breaking changes to public API - all existing code using AuthProvider continues to work without modifications (verified by no compilation errors in dependent code)
+- **SC-008**: AuthState achieves ≥90% unit test coverage with all data model operations tested (fromJson/toJson, copyWith, equality) per Constitution Article I Section 1.4 (verified by coverage report)
 
 ## Assumptions
 

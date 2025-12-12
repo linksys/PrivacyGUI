@@ -42,6 +42,29 @@
 
 ---
 
+## Phase 2.5: State Layer Testing (Constitutional Requirement)
+
+**Purpose**: Ensure AuthState data model meets Constitution Article I Section 1.4 requirements (State layer ≥90% coverage)
+
+**⚠️ CONSTITUTIONAL**: Article I Section 1.4 mandates State layer testing with ≥90% coverage
+
+- [X] T007a [P] Create test file `test/providers/auth/auth_state_test.dart`
+- [X] T007b [P] Test `AuthState.empty()` factory creates correct initial state in `test/providers/auth/auth_state_test.dart`
+- [X] T007c [P] Test `AuthState.fromJson()` deserializes all fields correctly in `test/providers/auth/auth_state_test.dart`
+- [X] T007d [P] Test `AuthState.fromJson()` with missing sessionToken (null handling) in `test/providers/auth/auth_state_test.dart`
+- [X] T007e [P] Test `AuthState.fromJson()` with invalid loginType (defaults to LoginType.none) in `test/providers/auth/auth_state_test.dart`
+- [X] T007f [P] Test `AuthState.fromJson()` roundtrip (toJson → fromJson → equals original) in `test/providers/auth/auth_state_test.dart`
+- [X] T007g [P] Test `AuthState.copyWith()` preserves unchanged fields in `test/providers/auth/auth_state_test.dart`
+- [X] T007h [P] Test `AuthState.copyWith()` updates specified fields in `test/providers/auth/auth_state_test.dart`
+- [X] T007i [P] Test `AuthState` Equatable equality (same values → equal instances) in `test/providers/auth/auth_state_test.dart`
+- [X] T007j [P] Test `AuthState` Equatable inequality (different values → not equal) in `test/providers/auth/auth_state_test.dart`
+- [X] T007k [P] Test `AuthState.props` includes all fields in `test/providers/auth/auth_state_test.dart`
+- [X] T007l Run coverage for AuthState and verify ≥90% coverage: `flutter test test/providers/auth/auth_state_test.dart --coverage`
+
+**Checkpoint**: ✅ AuthState data model fully tested per Constitution Article I - **100% coverage achieved!**
+
+---
+
 ## Phase 3: User Story 1 - Session Token Management (Priority: P1) 🎯 MVP
 
 **Goal**: Extract session token validation, expiration checking, and automatic refresh logic into AuthService
@@ -197,6 +220,7 @@
 
 - **Phase 1 (Setup)**: No dependencies - can start immediately
 - **Phase 2 (Foundational)**: Depends on Phase 1 completion - BLOCKS all user stories
+- **Phase 2.5 (State Layer Testing)**: Can start after Phase 1 - Independent of Phase 2, can run in parallel with Phase 2
 - **Phase 3-5 (User Stories 1-3)**: All depend on Phase 2 completion
   - These P1 stories CAN proceed in parallel (different methods, same service file)
   - OR sequentially in order (US1 → US2 → US3)
@@ -215,8 +239,10 @@
 ### Critical Path
 
 ```
-Phase 1 → Phase 2 → [US1 + US2 + US3 in parallel] → US4 → US5 → Phase 8
+Phase 1 → Phase 2 (+ Phase 2.5 in parallel) → [US1 + US2 + US3 in parallel] → US4 → US5 → Phase 8
 ```
+
+**Note**: Phase 2.5 (AuthState testing) can run in parallel with Phase 2 or Phase 3-5 since it's independent
 
 ### Within Each User Story
 
@@ -274,13 +300,14 @@ Task: "Extract logout/clear logic..." (T035)
 
 1. Complete Phase 1: Setup (T001-T004)
 2. Complete Phase 2: Foundational (T005-T007)
-3. Complete Phase 3: User Story 1 (T008-T019)
-4. **STOP and VALIDATE**: Verify session token management works independently
-5. This gives you testable session token management as MVP
+3. Complete Phase 2.5: State Layer Testing (T007a-T007l) - Can run in parallel with Phase 2
+4. Complete Phase 3: User Story 1 (T008-T019)
+5. **STOP and VALIDATE**: Verify session token management works independently with State layer coverage
+6. This gives you testable session token management as MVP with constitutional compliance
 
 ### Incremental Delivery (Recommended)
 
-1. **Foundation**: Phase 1 + Phase 2 → Infrastructure ready
+1. **Foundation**: Phase 1 + Phase 2 + Phase 2.5 → Infrastructure ready with State layer tested ✅
 2. **Increment 1**: Add US1 → Session token management tested ✅
 3. **Increment 2**: Add US2 → Auth flows tested ✅
 4. **Increment 3**: Add US3 → Credential persistence tested ✅
@@ -295,12 +322,16 @@ Each increment is independently testable and adds value.
 With 3 developers:
 
 1. **Together**: Complete Phase 1 + Phase 2 (foundation)
-2. **Parallel Work** (after Phase 2 complete):
+2. **Parallel Work** (after Phase 1 complete):
+   - Developer A: Phase 2.5 - AuthState tests (T007a-T007l)
+   - Developer B: User Story 1 (T008-T019) - waits for Phase 2
+   - Developer C: User Story 2 (T020-T032) - waits for Phase 2
+3. **Parallel Work** (after Phase 2 complete):
    - Developer A: User Story 1 (T008-T019)
    - Developer B: User Story 2 (T020-T032)
    - Developer C: User Story 3 (T033-T044)
-3. **Sequential**: US4 (T045-T057) - requires US1-US3 complete
-4. **Parallel**: US5 + Polish can happen together
+4. **Sequential**: US4 (T045-T057) - requires US1-US3 complete
+5. **Parallel**: US5 + Polish can happen together
 
 Expected merge conflicts in `auth_service.dart` - resolve by keeping all methods.
 
@@ -308,9 +339,10 @@ Expected merge conflicts in `auth_service.dart` - resolve by keeping all methods
 
 ## Task Summary
 
-- **Total Tasks**: 70
+- **Total Tasks**: 82
 - **Phase 1 (Setup)**: 4 tasks
 - **Phase 2 (Foundational)**: 3 tasks
+- **Phase 2.5 (State Layer Testing)**: 12 tasks (all tests, all parallel)
 - **Phase 3 (US1)**: 12 tasks (5 implementation + 7 tests)
 - **Phase 4 (US2)**: 13 tasks (6 implementation + 7 tests)
 - **Phase 5 (US3)**: 12 tasks (5 implementation + 7 tests)
@@ -318,9 +350,9 @@ Expected merge conflicts in `auth_service.dart` - resolve by keeping all methods
 - **Phase 7 (US5)**: 6 tasks (test coverage validation)
 - **Phase 8 (Polish)**: 7 tasks
 
-**Parallel Tasks**: 45 tasks marked [P] can run concurrently
-**MVP Scope**: Phase 1 + Phase 2 + Phase 3 = 19 tasks
-**Suggested MVP**: Delivers independently testable session token management
+**Parallel Tasks**: 57 tasks marked [P] can run concurrently (includes all 12 Phase 2.5 tasks)
+**MVP Scope**: Phase 1 + Phase 2 + Phase 2.5 + Phase 3 = 31 tasks
+**Suggested MVP**: Delivers independently testable session token management with constitutional State layer coverage
 
 ---
 

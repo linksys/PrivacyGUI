@@ -28,6 +28,7 @@ Extract authentication business logic from `AuthNotifier` into a stateless `Auth
 | **I: Test Coverage** | Unit tests for Services | PASS | AuthService will have full unit tests with Mocktail |
 | **I.2: Testing Standards** | Tests use Mocktail | PASS | Confirmed in spec clarifications |
 | **I.3: Test Organization** | Tests in `test/page/[feature]/services/` | PASS | Will use `test/providers/auth/` (matches existing location) |
+| **I.4: Expected Coverage** | State layer ≥90% coverage | PASS | AuthState will have dedicated unit tests (auth_state_test.dart) |
 | **V: Simplicity** | Avoid future-proofing | PASS | Only extracting existing logic, no new features |
 | **V.2: Feature Structure** | Consistent structure | PASS | Adding `services/` alongside existing `providers/` |
 | **VI: Service Layer** | Complex business logic in Services | PASS | Primary goal of this refactor |
@@ -69,7 +70,8 @@ lib/providers/auth/
 
 test/providers/auth/
 ├── auth_provider_test.dart  # MODIFY: Update tests for refactored notifier
-└── auth_service_test.dart   # CREATE: Comprehensive service unit tests
+├── auth_service_test.dart   # CREATE: Comprehensive service unit tests
+└── auth_state_test.dart     # CREATE: State layer tests (Constitution Article I Section 1.4)
 ```
 
 **Structure Decision**: Auth is a cross-cutting provider (not a page-specific feature), so it resides in `lib/providers/auth/`. The service follows the same location pattern, keeping auth concerns co-located.
