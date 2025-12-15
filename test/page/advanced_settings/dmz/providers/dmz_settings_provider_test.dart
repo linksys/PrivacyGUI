@@ -4,12 +4,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/advanced_settings/dmz/providers/dmz_settings_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/dmz/providers/dmz_settings_state.dart';
-import 'package:privacy_gui/page/advanced_settings/dmz/providers/dmz_status.dart';
 import 'package:privacy_gui/page/advanced_settings/dmz/services/dmz_settings_service.dart';
-import 'package:privacy_gui/providers/preservable.dart';
-
-import '../../../../common/unit_test_helper.dart';
-import '../services/dmz_settings_service_test_data.dart';
 
 // Mock class for DMZSettingsService
 class MockDMZSettingsService extends Mock implements DMZSettingsService {}

@@ -5,11 +5,11 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'package:flutter_riverpod/flutter_riverpod.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:privacy_gui/core/jnap/models/get_routing_settings.dart' as _i5;
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_rule_provider.dart'
     as _i4;
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_rule_state.dart'
     as _i3;
+import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_rule_state.dart' as _i5;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -114,8 +114,8 @@ class MockStaticRoutingRuleNotifier extends _i2.Notifier<
 
   @override
   void init(
-    List<_i5.NamedStaticRouteEntry>? rules,
-    _i5.NamedStaticRouteEntry? rule,
+    List<_i5.StaticRoutingRuleUIModel>? rules,
+    _i5.StaticRoutingRuleUIModel? rule,
     int? index,
     String? routerIp,
     String? subnetMask,
@@ -135,7 +135,7 @@ class MockStaticRoutingRuleNotifier extends _i2.Notifier<
       );
 
   @override
-  void updateRule(_i5.NamedStaticRouteEntry? rule) => super.noSuchMethod(
+  void updateRule(_i5.StaticRoutingRuleUIModel? rule) => super.noSuchMethod(
         Invocation.method(
           #updateRule,
           [rule],

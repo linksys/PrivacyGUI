@@ -3,11 +3,71 @@ import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter/widgets.dart';
-import 'package:privacy_gui/core/jnap/models/get_routing_settings.dart';
+
+/// UI Model for a single static routing rule (not JNAP model)
+class StaticRoutingRuleUIModel extends Equatable {
+  final String name;
+  final String destinationIP;
+  final int networkPrefixLength;
+  final String? gateway;
+  final String interface;
+
+  const StaticRoutingRuleUIModel({
+    required this.name,
+    required this.destinationIP,
+    required this.networkPrefixLength,
+    this.gateway,
+    required this.interface,
+  });
+
+  @override
+  List<Object?> get props => [name, destinationIP, networkPrefixLength, gateway, interface];
+
+  StaticRoutingRuleUIModel copyWith({
+    String? name,
+    String? destinationIP,
+    int? networkPrefixLength,
+    String? gateway,
+    String? interface,
+  }) {
+    return StaticRoutingRuleUIModel(
+      name: name ?? this.name,
+      destinationIP: destinationIP ?? this.destinationIP,
+      networkPrefixLength: networkPrefixLength ?? this.networkPrefixLength,
+      gateway: gateway ?? this.gateway,
+      interface: interface ?? this.interface,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'destinationIP': destinationIP,
+      'networkPrefixLength': networkPrefixLength,
+      'gateway': gateway,
+      'interface': interface,
+    };
+  }
+
+  factory StaticRoutingRuleUIModel.fromMap(Map<String, dynamic> map) {
+    return StaticRoutingRuleUIModel(
+      name: map['name'] ?? '',
+      destinationIP: map['destinationIP'] ?? '',
+      networkPrefixLength: map['networkPrefixLength'] ?? 24,
+      gateway: map['gateway'],
+      interface: map['interface'] ?? 'LAN',
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory StaticRoutingRuleUIModel.fromJson(String source) =>
+      StaticRoutingRuleUIModel.fromMap(json.decode(source));
+}
 
 class StaticRoutingRuleState extends Equatable {
-  final List<NamedStaticRouteEntry> rules;
-  final NamedStaticRouteEntry? rule;
+  final List<StaticRoutingRuleUIModel> rules;
+  final StaticRoutingRuleUIModel? rule;
   final int? editIndex;
   final String routerIp;
   final String subnetMask;
@@ -32,8 +92,8 @@ class StaticRoutingRuleState extends Equatable {
   }
 
   StaticRoutingRuleState copyWith({
-    List<NamedStaticRouteEntry>? rules,
-    ValueGetter<NamedStaticRouteEntry?>? rule,
+    List<StaticRoutingRuleUIModel>? rules,
+    ValueGetter<StaticRoutingRuleUIModel?>? rule,
     ValueGetter<int?>? editIndex,
     String? routerIp,
     String? subnetMask,
@@ -59,10 +119,10 @@ class StaticRoutingRuleState extends Equatable {
 
   factory StaticRoutingRuleState.fromMap(Map<String, dynamic> map) {
     return StaticRoutingRuleState(
-      rules: List<NamedStaticRouteEntry>.from(
-          map['rules']?.map((x) => NamedStaticRouteEntry.fromMap(x))),
+      rules: List<StaticRoutingRuleUIModel>.from(
+          map['rules']?.map((x) => StaticRoutingRuleUIModel.fromMap(x)) ?? []),
       rule: map['rule'] != null
-          ? NamedStaticRouteEntry.fromMap(map['rule'])
+          ? StaticRoutingRuleUIModel.fromMap(map['rule'])
           : null,
       editIndex: map['editIndex']?.toInt(),
       routerIp: map['routerIp'] ?? '',

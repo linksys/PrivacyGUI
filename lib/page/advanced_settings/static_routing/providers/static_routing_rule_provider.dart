@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/jnap/models/get_routing_settings.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_rule_state.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacy_gui/validator_rules/input_validators.dart';
@@ -8,14 +7,26 @@ final staticRoutingRuleProvider =
     NotifierProvider<StaticRoutingRuleNotifier, StaticRoutingRuleState>(
         () => StaticRoutingRuleNotifier());
 
+/// Notifier for managing a single static routing rule being edited
+///
+/// This notifier manages the state for editing one routing rule in the detail view.
+/// It validates rule properties and provides methods to update the rule.
 class StaticRoutingRuleNotifier extends Notifier<StaticRoutingRuleState> {
   @override
   StaticRoutingRuleState build() => const StaticRoutingRuleState(
       routerIp: '192.168.1.1', subnetMask: '255.255.255.0');
 
+  /// Initialize the rule editor with a list of rules and the rule being edited
+  ///
+  /// Parameters:
+  /// - [rules]: List of existing rules for duplicate detection
+  /// - [rule]: The rule being edited (null if creating new)
+  /// - [index]: The index of the rule (null if creating new)
+  /// - [routerIp]: Device router IP for validation context
+  /// - [subnetMask]: Device subnet mask for validation context
   void init(
-    List<NamedStaticRouteEntry> rules,
-    NamedStaticRouteEntry? rule,
+    List<StaticRoutingRuleUIModel> rules,
+    StaticRoutingRuleUIModel? rule,
     int? index,
     String routerIp,
     String subnetMask,
@@ -29,7 +40,8 @@ class StaticRoutingRuleNotifier extends Notifier<StaticRoutingRuleState> {
     );
   }
 
-  void updateRule(NamedStaticRouteEntry? rule) {
+  /// Update the current rule being edited
+  void updateRule(StaticRoutingRuleUIModel? rule) {
     state = state.copyWith(rule: () => rule);
   }
 
@@ -39,10 +51,9 @@ class StaticRoutingRuleNotifier extends Notifier<StaticRoutingRuleState> {
       return false;
     }
     return isNameValid(rule.name) &&
-        isValidSubnetMask(rule.settings.networkPrefixLength) &&
-        IpAddressValidator().validate(rule.settings.destinationLAN) &&
-        isValidIpAddress(
-            rule.settings.gateway ?? '', rule.settings.interface == 'LAN');
+        isValidSubnetMask(rule.networkPrefixLength) &&
+        IpAddressValidator().validate(rule.destinationIP) &&
+        isValidIpAddress(rule.gateway ?? '', rule.interface == 'LAN');
   }
 
   bool isNameValid(String name) {

@@ -5,6 +5,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_rule_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_state.dart';
+import 'package:privacy_gui/page/advanced_settings/static_routing/services/static_routing_service.dart';
 import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/settings_view/editable_card_list_settings_view.dart';
 import 'package:privacy_gui/page/components/settings_view/editable_table_settings_view.dart';
@@ -194,9 +195,17 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
       pivotalIndex: 4, // Changes on the interface may make other values invalid
       onStartEdit: (index, rule) {
         currentFocus = null;
+        final service = ref.read(staticRoutingServiceProvider);
+        // Convert JNAP model to UI model for rule provider
+        final uiRule = rule != null ? service.transformJNAPRuleToUIModel(rule) : null;
+        // Convert JNAP entries to UI models
+        final uiEntries = state.current.entries.entries
+            .map((entry) => service.transformJNAPRuleToUIModel(entry))
+            .toList();
+
         ref.read(staticRoutingRuleProvider.notifier).init(
-            state.current.entries.entries,
-            rule,
+            uiEntries,
+            uiRule,
             index,
             state.status.routerIp,
             state.status.subnetMask);
@@ -272,8 +281,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
               onChanged: (value) {
                 ref.read(staticRoutingRuleProvider.notifier).updateRule(
                       stateRule?.copyWith(
-                        settings:
-                            stateRule.settings.copyWith(destinationLAN: value),
+                        destinationIP: value,
                       ),
                     );
                 setState(() {
@@ -291,10 +299,8 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
               onChanged: (value) {
                 ref.read(staticRoutingRuleProvider.notifier).updateRule(
                       stateRule?.copyWith(
-                        settings: stateRule.settings.copyWith(
-                          networkPrefixLength:
-                              NetworkUtils.subnetMaskToPrefixLength(value),
-                        ),
+                        networkPrefixLength:
+                            NetworkUtils.subnetMaskToPrefixLength(value),
                       ),
                     );
                 setState(() {
@@ -312,8 +318,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
               onChanged: (value) {
                 ref.read(staticRoutingRuleProvider.notifier).updateRule(
                       stateRule?.copyWith(
-                        settings:
-                            stateRule.settings.copyWith(gateway: () => value),
+                        gateway: value,
                       ),
                     );
                 setState(() {
@@ -331,13 +336,12 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
                 RoutingSettingInterface.internet,
               ],
               initial: RoutingSettingInterface.resolve(
-                  stateRule?.settings.interface ?? 'LAN'),
+                  stateRule?.interface ?? 'LAN'),
               label: (item) => getInterfaceTitle(item.value),
               onChanged: (value) {
                 ref.read(staticRoutingRuleProvider.notifier).updateRule(
                       stateRule?.copyWith(
-                        settings:
-                            stateRule.settings.copyWith(interface: value.value),
+                        interface: value.value,
                       ),
                     );
                 setState(() {
@@ -370,7 +374,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
               : loc(context).invalidSubnetMask,
           3 => ref.read(staticRoutingRuleProvider.notifier).isValidIpAddress(
                   gatewayTextController.text,
-                  (stateRule?.settings.interface ?? 'LAN') == 'LAN')
+                  (stateRule?.interface ?? 'LAN') == 'LAN')
               ? null
               : loc(context).invalidGatewayIpAddress,
           _ => null,
@@ -389,12 +393,15 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
         if (stateRule == null) {
           return;
         }
+        // Convert UI model to JNAP model for storage
+        final service = ref.read(staticRoutingServiceProvider);
+        final jnapRule = service.transformUIModelToJNAPRule(stateRule);
         if (index == null) {
           // add
-          ref.read(staticRoutingProvider.notifier).addRule(stateRule);
+          ref.read(staticRoutingProvider.notifier).addRule(jnapRule);
         } else {
           // edit
-          ref.read(staticRoutingProvider.notifier).editRule(index, stateRule);
+          ref.read(staticRoutingProvider.notifier).editRule(index, jnapRule);
         }
       },
       onDeleted: (index, rule) {
