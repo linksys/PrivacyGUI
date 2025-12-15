@@ -19,7 +19,6 @@ import 'package:privacy_gui/util/languages.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/theme/custom_responsive.dart';
-import 'package:privacygui_widgets/theme/material/color_schemes.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// The root widget of the Linksys application.
@@ -118,12 +117,8 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     );
     return MaterialApp.router(
       onGenerateTitle: (context) => loc(context).appTitle,
-      theme: appLightTheme.copyWith(extensions: [
-        ...appLightTheme.extensions.values,
-        lightColorSchemeExt
-      ]),
-      darkTheme: appDarkTheme.copyWith(
-          extensions: [...appDarkTheme.extensions.values, darkColorSchemeExt]),
+      theme: appLightTheme,
+      darkTheme: appDarkTheme,
       themeMode: appSettings.themeMode,
       locale: appSettings.locale ?? systemLocale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,

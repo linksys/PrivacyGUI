@@ -4,8 +4,10 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart' hide AppStyledText;
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
+import 'package:ui_kit_library/ui_kit.dart' hide AppColorScheme, AppText;
+import 'package:ui_kit_library/ui_kit.dart' as uikit show AppColorScheme;
 
 abstract class SharedWidgets {
   static Icon resolveSignalStrengthIcon(
@@ -50,7 +52,10 @@ abstract class SharedWidgets {
             hasNewFirmware ? LinksysIcons.cloudDownload : LinksysIcons.check,
             color: hasNewFirmware
                 ? Theme.of(context).colorScheme.error
-                : Theme.of(context).colorSchemeExt.green,
+                : Theme.of(context)
+                        .extension<uikit.AppColorScheme>()
+                        ?.semanticSuccess ??
+                    Colors.green,
             size: 20,
           ),
           Padding(
@@ -61,7 +66,10 @@ abstract class SharedWidgets {
                   : loc(context).upToDate,
               color: hasNewFirmware
                   ? Theme.of(context).colorScheme.error
-                  : Theme.of(context).colorSchemeExt.green,
+                  : Theme.of(context)
+                          .extension<uikit.AppColorScheme>()
+                          ?.semanticSuccess ??
+                      Colors.green,
             ),
           )
         ],
@@ -70,8 +78,6 @@ abstract class SharedWidgets {
   }
 
   static geolocationWidget(BuildContext context, String name, String location) {
-    return AppStyledText.bold('<b>$name</b> • $location',
-        defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
-        tags: const ['b']);
+    return AppStyledText(text: '<b>$name</b> • $location');
   }
 }

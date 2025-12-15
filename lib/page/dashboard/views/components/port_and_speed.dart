@@ -1,7 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/svg.dart';
+
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
@@ -13,12 +13,8 @@ import 'package:privacy_gui/page/health_check/providers/health_check_provider.da
 import 'package:privacy_gui/page/health_check/widgets/speed_test_widget.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/dashboard/views/components/loading_tile.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
+
+import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/util/url_helper/url_helper.dart'
     if (dart.library.io) 'package:privacy_gui/util/url_helper/url_helper_mobile.dart'
     if (dart.library.html) 'package:privacy_gui/util/url_helper/url_helper_web.dart';
@@ -43,7 +39,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                 width: double.infinity,
                 height: 250,
                 child: const LoadingTile()))
-        : ResponsiveLayout(
+        : AppResponsiveLayout(
             desktop: !hasLanPort
                 ? _desktopNoLanPorts(context, ref, state, isOnline, isLoading)
                 : horizontalLayout
@@ -57,7 +53,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
   Widget _mobile(BuildContext context, WidgetRef ref, DashboardHomeState state,
       bool isOnline, bool isLoading) {
     final hasLanPort = state.lanPortConnections.isNotEmpty;
-    return Container(
+    return SizedBox(
       width: double.infinity,
       // constraints:
       //     BoxConstraints(minHeight: !state.isHealthCheckSupported ? 240 : 420),
@@ -67,8 +63,8 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
             children: [
               Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: Spacing.medium,
-                  vertical: Spacing.large2,
+                  horizontal: AppSpacing.lg,
+                  vertical: AppSpacing.xxl,
                 ),
                 child: Row(
                   // mainAxisSize: MainAxisSize.min,
@@ -98,7 +94,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                   ],
                 ),
               ),
-              // const AppGap.large2(),
+              // AppGap.xxl(),
               _createSpeedTestTile(context, ref, state, hasLanPort, true),
             ],
           )),
@@ -124,8 +120,8 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                 height: 752,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: Spacing.small2,
-                    vertical: Spacing.large2,
+                    horizontal: AppSpacing.sm,
+                    vertical: AppSpacing.xxl,
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -179,8 +175,8 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                 height: 224,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: Spacing.small2,
-                    vertical: Spacing.large3,
+                    horizontal: AppSpacing.sm,
+                    vertical: AppSpacing.xxxl,
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -234,8 +230,8 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                 height: 120,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: Spacing.small2,
-                    vertical: Spacing.large1,
+                    horizontal: AppSpacing.sm,
+                    vertical: AppSpacing.xl,
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -266,7 +262,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                 ),
               ),
               SizedBox(
-                  height: 136,
+                  height: 132,
                   child: _createSpeedTestTile(context, ref, state, false)),
             ],
           )),
@@ -282,15 +278,15 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
     return isHealthCheckSupported
         ? hasLanPort
             ? Column(
-                children: const [
-                  Divider(),
-                  SpeedTestWidget(
+                children: [
+                  const Divider(),
+                  const SpeedTestWidget(
                       showDetails: false,
                       showInfoPanel: true,
                       showStepDescriptions: false,
                       showLatestOnIdle: true,
                       layout: SpeedTestLayout.vertical),
-                  AppGap.large2(),
+                  AppGap.xxl(),
                 ],
               )
             : _speedCheckWidget(context, ref, state)
@@ -323,26 +319,26 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
         dateTime == null ? '' : loc(context).formalDateTime(dateTime, dateTime);
     return Container(
       key: const ValueKey('speedCheck'),
-      color: Theme.of(context).colorSchemeExt.surfaceContainerLow,
-      padding: const EdgeInsets.symmetric(horizontal: Spacing.large4),
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxxl),
       child: Column(
         crossAxisAlignment: horizontalLayout
             ? CrossAxisAlignment.start
             : CrossAxisAlignment.center,
         children: [
-          ResponsiveLayout(
+          AppResponsiveLayout(
             desktop: !hasLanPort
                 ? Padding(
                     padding:
-                        const EdgeInsets.symmetric(vertical: Spacing.small3),
+                        const EdgeInsets.symmetric(vertical: AppSpacing.md),
                     child: Column(
                       children: [
                         if (dateTimeStr.isNotEmpty) ...[
                           AppText.bodySmall(dateTimeStr),
-                          const AppGap.small2(),
+                          AppGap.sm(),
                         ],
                         Row(
-                          spacing: Spacing.medium,
+                          spacing: AppSpacing.lg,
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Opacity(
@@ -365,7 +361,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                             )
                           ],
                         ),
-                        AppGap.medium(),
+                        AppGap.lg(),
                         _speedTestButton(context, state)
                       ],
                     ),
@@ -373,7 +369,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                 : horizontalLayout
                     ? Padding(
                         padding: const EdgeInsets.symmetric(
-                            vertical: Spacing.large2),
+                            vertical: AppSpacing.xxl),
                         child: Row(
                           children: [
                             Expanded(
@@ -382,7 +378,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                                 children: [
                                   if (dateTimeStr.isNotEmpty) ...[
                                     AppText.bodySmall(dateTimeStr),
-                                    const AppGap.small2(),
+                                    AppGap.sm(),
                                   ],
                                   Row(
                                     mainAxisAlignment:
@@ -425,13 +421,13 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                       )
                     : Padding(
                         padding: const EdgeInsets.symmetric(
-                            vertical: Spacing.large2),
+                            vertical: AppSpacing.xxl),
                         child: Column(
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [
                               if (dateTimeStr.isNotEmpty) ...[
                                 AppText.bodySmall(dateTimeStr),
-                                const AppGap.small2(),
+                                AppGap.sm(),
                               ],
                               _downloadSpeedResult(
                                   context,
@@ -439,19 +435,19 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                                       '--',
                                   speedTest.latestSpeedTest?.downloadUnit,
                                   isLegacy),
-                              const AppGap.large2(),
+                              AppGap.xxl(),
                               _uploadSpeedResult(
                                   context,
                                   speedTest.latestSpeedTest?.uploadSpeed ??
                                       '--',
                                   speedTest.latestSpeedTest?.uploadUnit,
                                   isLegacy),
-                              const AppGap.medium(),
+                              AppGap.lg(),
                               _speedTestButton(context, state),
                             ]),
                       ),
             mobile: Padding(
-              padding: const EdgeInsets.symmetric(vertical: Spacing.large2),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
               child: Row(
                 children: [
                   Expanded(
@@ -459,7 +455,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         AppText.bodySmall(dateTimeStr),
-                        const AppGap.small2(),
+                        AppGap.sm(),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -506,41 +502,36 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorSchemeExt.surfaceContainerLow,
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
         border: Border.all(color: Colors.transparent),
-        borderRadius:
-            CustomTheme.of(context).radius.asBorderRadius().medium.copyWith(
-                  topLeft: Radius.circular(0),
-                  topRight: Radius.circular(0),
-                ),
+        borderRadius: BorderRadius.circular(12).copyWith(
+          topLeft: Radius.circular(0),
+          topRight: Radius.circular(0),
+        ),
       ),
       padding: const EdgeInsets.symmetric(
-          horizontal: Spacing.large1, vertical: Spacing.small2),
+          horizontal: AppSpacing.xl, vertical: AppSpacing.sm),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           _speedTestHeader(context, state),
-          AppGap.small2(),
+          AppGap.sm(),
           Flexible(
-            child: hasLanPort &&
-                    !horizontalLayout &&
-                    !ResponsiveLayout.isMobileLayout(context)
+            child: hasLanPort && !horizontalLayout && !context.isMobileLayout
                 ? SizedBox(
                     width: 144,
                     child: Column(
                         mainAxisAlignment: MainAxisAlignment.start,
-                        spacing: Spacing.small2,
+                        spacing: AppSpacing.sm,
                         children: [
-                          AppFilledButton.fillWidth(
-                            loc(context).speedTestExternalTileCloudFlare,
-                            fitText: true,
+                          AppButton(
+                            label: loc(context).speedTestExternalTileCloudFlare,
                             onTap: () {
                               openUrl('https://speed.cloudflare.com/');
                             },
                           ),
-                          AppFilledButton.fillWidth(
-                            fitText: true,
-                            loc(context).speedTestExternalTileFast,
+                          AppButton(
+                            label: loc(context).speedTestExternalTileFast,
                             onTap: () {
                               openUrl('https://www.fast.com');
                             },
@@ -549,21 +540,19 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                   )
                 : Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    spacing: Spacing.medium,
+                    spacing: AppSpacing.lg,
                     children: [
                         Expanded(
-                          child: AppFilledButton(
-                            loc(context).speedTestExternalTileCloudFlare,
-                            fitText: true,
+                          child: AppButton(
+                            label: loc(context).speedTestExternalTileCloudFlare,
                             onTap: () {
                               openUrl('https://speed.cloudflare.com/');
                             },
                           ),
                         ),
                         Expanded(
-                          child: AppFilledButton(
-                            loc(context).speedTestExternalTileFast,
-                            fitText: true,
+                          child: AppButton(
+                            label: loc(context).speedTestExternalTileFast,
                             onTap: () {
                               openUrl('https://www.fast.com');
                             },
@@ -571,7 +560,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                         ),
                       ]),
           ),
-          AppGap.small2(),
+          AppGap.sm(),
           AppText.bodyExtraSmall(loc(context).speedTestExternalOthers),
         ],
       ),
@@ -583,8 +572,8 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
     final hasLanPort = state.lanPortConnections.isNotEmpty;
     final speedTitle = AppText.titleMedium(loc(context).speedTextTileStart);
     final infoIcon = InkWell(
-      child: Icon(
-        LinksysIcons.infoCircle,
+      child: AppIcon.font(
+        AppFontIcons.infoCircle,
         color: Theme.of(context).colorScheme.primary,
       ),
       onTap: () {
@@ -611,7 +600,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             infoIcon,
-            AppGap.small2(),
+            AppGap.sm(),
             Expanded(
               child: FittedBox(
                 fit: BoxFit.scaleDown,
@@ -623,7 +612,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
         )
       ],
     );
-    return ResponsiveLayout(
+    return AppResponsiveLayout(
         desktop: hasLanPort && horizontalLayout ? rowHeader : columnHeader,
         mobile: rowHeader);
   }
@@ -631,10 +620,8 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
   Widget _speedTestButton(BuildContext context, DashboardHomeState state) {
     return SizedBox(
       height: 40,
-      child: AppFilledButton(
-        fitText: true,
-        loc(context).speedTextTileStart,
-        radius: BorderRadius.circular(40),
+      child: AppButton(
+        label: loc(context).speedTextTileStart,
         onTap: () {
           context.pushNamed(RouteNamed.dashboardSpeedTest);
         },
@@ -649,9 +636,8 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
       alignment: alignment,
       crossAxisAlignment: WrapCrossAlignment.end,
       children: [
-        Icon(
-          LinksysIcons.arrowDownward,
-          semanticLabel: 'arrow Downward',
+        AppIcon.font(
+          AppFontIcons.arrowDownward,
           color: isLegacy
               ? Theme.of(context).colorScheme.outline
               : Theme.of(context).colorScheme.primary,
@@ -663,7 +649,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
               : Theme.of(context).colorScheme.onSurface,
         ),
         if (unit != null && unit.isNotEmpty) ...[
-          const AppGap.small1(),
+          AppGap.xs(),
           AppText.bodySmall(
             '${unit}ps',
             color: isLegacy
@@ -682,9 +668,8 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
       alignment: alignment,
       crossAxisAlignment: WrapCrossAlignment.end,
       children: [
-        Icon(
-          LinksysIcons.arrowUpward,
-          semanticLabel: 'arrow upward',
+        AppIcon.font(
+          AppFontIcons.arrowUpward,
           color: isLegacy
               ? Theme.of(context).colorScheme.outline
               : Theme.of(context).colorScheme.primary,
@@ -696,7 +681,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
               : Theme.of(context).colorScheme.onSurface,
         ),
         if (unit != null && unit.isNotEmpty) ...[
-          const AppGap.small1(),
+          AppGap.xs(),
           AppText.bodySmall(
             '${unit}ps',
             color: isLegacy
@@ -710,19 +695,18 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
 
   Widget _portWidget(BuildContext context, String? connection, String label,
       bool isWan, bool hasLanPorts) {
-    final isMobile = ResponsiveLayout.isMobileLayout(context);
+    final isMobile = context.isMobileLayout;
     final portLabel = [
-      Icon(
+      AppIcon.font(
         connection == null
-            ? LinksysIcons.circle
-            : LinksysIcons.checkCircleFilled,
+            ? AppFontIcons.circle
+            : AppFontIcons.checkCircleFilled,
         color: connection == null
-            ? Theme.of(context).colorScheme.surfaceVariant
-            : Theme.of(context).colorSchemeExt.green,
-        semanticLabel: 'port icon',
+            ? Theme.of(context).colorScheme.surfaceContainerHighest
+            : Colors.green,
       ),
       if (hasLanPorts) ...[
-        const AppGap.small2(),
+        AppGap.sm(),
         AppText.labelMedium(label),
       ],
     ];
@@ -748,15 +732,18 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                 ],
               ),
               Padding(
-                padding: const EdgeInsets.all(Spacing.small2),
-                child: SvgPicture(
-                  connection == null
-                      ? CustomTheme.of(context).images.imgPortOff
-                      : CustomTheme.of(context).images.imgPortOn,
-                  semanticsLabel: 'port status image',
-                  width: 40,
-                  height: 40,
-                ),
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                child: connection == null
+                    ? Assets.images.imgPortOff.svg(
+                        width: 40,
+                        height: 40,
+                        semanticsLabel: 'port status image',
+                      )
+                    : Assets.images.imgPortOn.svg(
+                        width: 40,
+                        height: 40,
+                        semanticsLabel: 'port status image',
+                      ),
               ),
               if (connection != null)
                 Column(
@@ -765,8 +752,8 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          LinksysIcons.bidirectional,
+                        AppIcon.font(
+                          AppFontIcons.bidirectional,
                           color: Theme.of(context).colorScheme.primary,
                         ),
                         AppText.bodySmall(connection),
@@ -786,31 +773,36 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
             children: [
               Column(
                 children: [
-                  Wrap(
-                    // mainAxisSize: MainAxisSize.min,
-                    alignment: WrapAlignment.center,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      isMobile
-                          ? Column(
-                              children: portLabel,
-                            )
-                          : Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: portLabel,
-                            )
-                    ],
+                  Expanded(
+                    child: Wrap(
+                      // mainAxisSize: MainAxisSize.min,
+                      alignment: WrapAlignment.center,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        isMobile
+                            ? Column(
+                                children: portLabel,
+                              )
+                            : Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: portLabel,
+                              )
+                      ],
+                    ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.all(Spacing.small2),
-                    child: SvgPicture(
-                      connection == null
-                          ? CustomTheme.of(context).images.imgPortOff
-                          : CustomTheme.of(context).images.imgPortOn,
-                      semanticsLabel: 'port status image',
-                      width: 40,
-                      height: 40,
-                    ),
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    child: connection == null
+                        ? Assets.images.imgPortOff.svg(
+                            width: 40,
+                            height: 40,
+                            semanticsLabel: 'port status image',
+                          )
+                        : Assets.images.imgPortOn.svg(
+                            width: 40,
+                            height: 40,
+                            semanticsLabel: 'port status image',
+                          ),
                   ),
                 ],
               ),
@@ -825,8 +817,8 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
-                              LinksysIcons.bidirectional,
+                            AppIcon.font(
+                              AppFontIcons.bidirectional,
                               color: Theme.of(context).colorScheme.primary,
                             ),
                             AppText.bodyMedium(connection),

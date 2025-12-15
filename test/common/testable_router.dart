@@ -5,10 +5,9 @@ import 'package:privacy_gui/page/dashboard/views/dashboard_shell.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/theme/custom_responsive.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
-import 'theme_data.dart';
 
 Widget testableRouter({
   required GoRouter router,
@@ -19,20 +18,42 @@ Widget testableRouter({
   ThemeData? darkTheme,
   Locale? locale,
 }) {
+  const themeColor = AppPalette.brandPrimary;
+  final appLightTheme = AppTheme.create(
+    brightness: Brightness.light,
+    seedColor: themeColor,
+    designThemeBuilder: (scheme) => FlatDesignTheme.light(scheme),
+  );
+  final appDarkTheme = AppTheme.create(
+    brightness: Brightness.dark,
+    seedColor: themeColor,
+    designThemeBuilder: (scheme) => FlatDesignTheme.dark(scheme),
+  );
   return ProviderScope(
     overrides: overrides,
     parent: provider,
     child: MaterialApp.router(
-      theme: theme ?? mockLightThemeData,
-      darkTheme: darkTheme ?? mockDarkThemeData,
+      theme: theme ??
+          appLightTheme.copyWith(extensions: [
+            ...appLightTheme.extensions.values,
+            lightColorSchemeExt
+          ]),
+      darkTheme: darkTheme ??
+          appDarkTheme.copyWith(extensions: [
+            ...appDarkTheme.extensions.values,
+            darkColorSchemeExt
+          ]),
       locale: locale,
       themeMode: themeMode,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       debugShowCheckedModeBanner: false,
       builder: (context, child) => Material(
-        child: CustomResponsive(
-          child: child!,
+        child: DesignSystem.init(
+          context,
+          CustomResponsive(
+            child: child!,
+          ),
         ),
       ),
       routeInformationProvider: router.routeInformationProvider,

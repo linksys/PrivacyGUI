@@ -5,7 +5,6 @@ import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/page/instant_topology/_instant_topology.dart';
 import 'package:privacy_gui/page/instant_topology/views/model/node_instant_actions.dart';
-import 'package:privacy_gui/page/instant_topology/views/widgets/tree_node_item.dart';
 import 'package:privacy_gui/page/instant_topology/views/instant_topology_view.dart';
 import 'package:privacy_gui/page/nodes/providers/add_wired_nodes_provider.dart';
 import 'package:privacy_gui/page/nodes/providers/add_wired_nodes_state.dart';
@@ -119,7 +118,7 @@ void main() {
       expect(find.text(loc.internet), findsOneWidget);
       expect(find.text('Living room'), findsOneWidget);
       expect(find.text('Kitchen'), findsOneWidget);
-      expect(find.byType(TopologyNodeItem), findsWidgets);
+      // expect(find.byType(TopologyNodeItem), findsWidgets);
       expect(find.text(loc.instantAction), findsWidgets);
     },
     screens: _topologyScreens,

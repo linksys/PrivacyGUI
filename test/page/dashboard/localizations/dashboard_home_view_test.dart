@@ -16,10 +16,9 @@ import 'package:privacy_gui/page/dashboard/views/components/wifi_grid.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_state.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
 import 'package:privacy_gui/route/route_model.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/custom_theme.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 import '../../../common/config.dart';
 import '../../../common/screen.dart';
 import '../../../common/test_helper.dart';
@@ -91,6 +90,7 @@ void main() {
       overrides: overrides,
     );
     await tester.runAsync(() async {
+      // TODO
       await precacheImage(
         CustomTheme.of(context).images.devices.routerLn12,
         context,
@@ -162,7 +162,7 @@ void main() {
       when(testHelper.mockInstantTopologyNotifier.build())
           .thenReturn(topologyTestData.testTopology3OfflineState);
       await pumpDashboard(tester, screen);
-      expect(find.byIcon(LinksysIcons.infoCircle), findsWidgets);
+      expect(find.byIcon(AppFontIcons.infoCircle), findsWidgets);
     },
     screens: _noLanScreens,
     goldenFilename: 'DHOME-NOLAN_CHILD_OFFLINE_01_offline',
@@ -258,6 +258,9 @@ void main() {
   testLocalizationsV2(
     'dashboard home view - vertical speed test success',
     (tester, screen) async {
+      when(testHelper.mockServiceHelper.isSupportHealthCheck())
+          .thenReturn(true);
+
       when(testHelper.mockHealthCheckProvider.build()).thenReturn(
         HealthCheckState.fromJson(healthCheckStateSuccessGood),
       );
@@ -276,7 +279,9 @@ void main() {
     'dashboard home view - vertical speed test init state',
     (tester, screen) async {
       when(testHelper.mockHealthCheckProvider.build()).thenReturn(
-        HealthCheckState.fromJson(healthCheckInitState),
+        HealthCheckState.fromJson(healthCheckStateSuccessGood).copyWith(
+          healthCheckModules: ['SpeedTest'],
+        ),
       );
       await pumpDashboard(tester, screen);
       expect(find.byType(DashboardHomePortAndSpeed), findsOneWidget);
@@ -401,7 +406,7 @@ void main() {
       addTearDown(gesture.removePointer);
       await gesture.addPointer(location: Offset.zero);
       await gesture.moveTo(tester.getCenter(
-        find.byIcon(LinksysIcons.qrCode).first,
+        find.byIcon(AppFontIcons.qrCode).first,
       ));
       await tester.pumpAndSettle();
       expect(find.byType(QrImageView), findsWidgets);

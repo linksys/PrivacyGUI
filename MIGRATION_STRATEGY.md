@@ -1,4 +1,19 @@
-# UI Kit 遷移策略修正 (Migration Strategy Correction)
+# UI Kit 遷移策略 (Migration Strategy)
+
+本文檔提供 UI Kit 遷移的核心策略、準則和技術指引。
+
+---
+
+## 📚 相關文檔 (Related Documents)
+
+> [!NOTE]
+> 遷移文檔已分為多個專門文檔，請根據需要查閱：
+
+- **[MIGRATION_STRATEGY.md](./MIGRATION_STRATEGY.md)** (本檔案) - 遷移策略、準則和技術指引
+- **[MIGRATION_COMPONENT_MAPPING.md](./MIGRATION_COMPONENT_MAPPING.md)** - 完整的元件對應表和 API 對照
+- **[MIGRATION_FINISH.md](./MIGRATION_FINISH.md)** - 已完成遷移的檔案清單和狀況
+- **[MIGRATION_TEST_RESULT.md](./MIGRATION_TEST_RESULT.md)** - 測試結果記錄和驗證狀況
+- **[MIGRATION_NOTES.md](./MIGRATION_NOTES.md)** - 組合元件、工具類別和技術備註
 
 ---
 
@@ -22,6 +37,10 @@
    - 若不確定遷移方式 → **請詢問**
    - 若元件行為有差異 → **請詢問**
 
+4. **已知 ui_kit 限制**
+   - **Radius 定義缺失**: ui_kit 沒有導出 radius 相關常數，使用標準 `BorderRadius.circular()` 值
+   - **部分元件暫無**: 如 `AppListCard`，需建立組合元件替代 (詳見 [MIGRATION_NOTES.md](./MIGRATION_NOTES.md))
+
 ### 必須移除的元件
 
 > [!CAUTION]
@@ -30,28 +49,6 @@
 | 元件名稱 | 處理方式 |
 |---------|---------|
 | `AppBasicLayout` | 移除，改用 `UiKitPageView` 或直接排版 |
-
-### 組合元件處理
-
-若 ui_kit 沒有直接對應的元件，但可透過組合現有元件完成：
-
-1. **在 PrivacyGUI 專案建立組合元件**
-   - 統一放置於：`lib/page/components/composed/`
-   - 使用 ui_kit 元件組合實作
-   
-2. **記錄組合元件**
-   - 在組合元件檔案中加入文件說明
-   - 記錄於本文件的「組合元件清單」章節
-
-3. **後續處理**
-   - 評估是否需要移至 ui_kit_library
-   - 若多處使用則考慮提升為正式 ui_kit 元件
-
-### 組合元件清單
-
-| 組合元件名稱 | 檔案位置 | 組合方式 | 狀態 |
-|-------------|---------|---------|------|
-| _(待新增)_ | - | - | - |
 
 ---
 
@@ -79,7 +76,9 @@ AppGap.lg();                 // 使用新版本 ✅
 AppButton(label: 'Click');   // 使用新版本 ✅
 ```
 
-## 具體遷移步驟 (Migration Steps)
+---
+
+## 🔄 具體遷移步驟 (Migration Steps)
 
 ### 1. 導入策略 (Import Strategy)
 
@@ -96,171 +95,220 @@ import 'package:privacygui_widgets/widgets/card/list_card.dart'; // AppListCard 
 
 ### 2. 元件對應表 (Component Mapping)
 
-| 元件類型 | privacygui_widgets | ui_kit_library | 遷移狀態 |
-|---------|-------------------|----------------|----------|
-| **按鈕** | `AppTextButton` | `AppButton` | ✅ 已遷移 |
-| **文字** | `AppText` | `AppText` | ✅ 已遷移 |
-| **間距** | `AppGap.medium()` | `AppGap.lg()` | ✅ 已遷移 |
-| **輸入框** | `AppTextField` | `AppTextFormField` | ✅ 已遷移 |
-| **密碼框** | `AppPasswordField` | `AppPasswordInput` | ✅ 已遷移 |
-| **卡片** | `AppCard` | `AppCard` | ✅ 已遷移 |
-| **清單卡片** | `AppListCard` | _暫無_ | ❌ 保留舊版 |
+> [!NOTE]
+> 完整的元件對應表請參閱 **[MIGRATION_COMPONENT_MAPPING.md](./MIGRATION_COMPONENT_MAPPING.md)**。
+> 該文檔包含 59+ 個元件的詳細對應關係，包括：
+> - privacygui_widgets → ui_kit_library 對應
+> - Flutter 基礎元件 → ui_kit_library 對應
+> - API 參數變更說明
+> - 特殊遷移情況處理
 
-### 3. 按鈕遷移詳細對照 (Button Migration Details)
+**核心元件快速對照**：
+- `AppTextButton` → `AppButton.text`
+- `AppFilledButton` → `AppButton(variant: SurfaceVariant.highlight)`
+- `AppGap.medium()` → `AppGap.lg()`
+- `AppTextField` → `AppTextFormField`
+- `LinksysIcons` → `AppFontIcons`
+- `ResponsiveLayout` → `context.isMobile` / `AppResponsiveLayout`
+
+---
+
+## 🔧 詳細遷移指南 (Detailed Migration Guide)
+
+### 2.1 狀態標籤遷移 (AppStatusLabel → AppBadge)
 
 ```dart
 // 舊版本 (privacygui_widgets)
-AppTextButton.noPadding(
-  'Button Text',
-  onTap: () {},
+AppStatusLabel(
+  isOff: status,
 )
 
 // 新版本 (ui_kit_library)
-AppButton(
-  label: 'Button Text',
-  variant: SurfaceVariant.base,  // 對應 text button 風格
-  onTap: () {},
+AppBadge(
+  label: status ? 'Off' : 'On',
+  color: status
+      ? Theme.of(context).colorScheme.outline
+      : Theme.of(context).extension<AppColorScheme>()!.semanticSuccess,
 )
 ```
 
-### 4. 間距遷移詳細對照 (Gap Migration Details)
+### 2.2 展開面板遷移 (AppExpansionCard → AppExpansionPanel)
 
 ```dart
-// 舊版本 → 新版本 對照
-const AppGap.small()   → AppGap.xs()    // 4px
-const AppGap.small2()  → AppGap.sm()    // 8px
-const AppGap.small3()  → AppGap.md()    // 12px
-const AppGap.medium()  → AppGap.lg()    // 16px
-const AppGap.large()   → AppGap.xl()    // 20px
-const AppGap.large2()  → AppGap.xxl()   // 24px
-const AppGap.large3()  → AppGap.xxxl()  // 32px
+// 舊版本 (privacygui_widgets)
+AppExpansionCard(
+  title: 'Section Title',
+  identifier: 'section-id',
+  expandedIcon: LinksysIcons.add,
+  collapsedIcon: LinksysIcons.remove,
+  children: [content],
+)
+
+// 新版本 (ui_kit_library)
+AppExpansionPanel.single(
+  headerTitle: 'Section Title',
+  content: content,  // 直接傳入 Widget，非 children list
+)
 ```
 
-### 5. Spacing 遷移詳細對照 (Spacing Migration Details)
+### 2.3 響應式佈局遷移 (ResponsiveLayout → Context Extensions)
+
+```dart
+// 舊版本 (privacygui_widgets)
+ResponsiveLayout.isMobileLayout(context)     // 手機判斷
+ResponsiveLayout.isOverMedimumLayout(context) // 平板/桌面判斷
+ResponsiveLayout.columnPadding(context)       // 間距
+
+// 新版本 (ui_kit_library)
+context.isMobile    // 手機判斷
+!context.isMobile   // 平板/桌面判斷
+context.isTablet    // 平板判斷
+context.isDesktop   // 桌面判斷
+context.colWidth(n) // n 欄位寬度
+context.gutterWidth(n) // n 個間距寬度
+```
+
+### 2.4 圖標遷移 (LinksysIcons → AppFontIcons)
+
+```dart
+// 舊版本 (privacygui_widgets)
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
+Icon(LinksysIcons.wifi, size: 24)
+
+// 新版本 (ui_kit_library)
+import 'package:ui_kit_library/ui_kit.dart';
+AppIcon.font(AppFontIcons.wifi, size: 24)
+// 或直接使用 IconData
+Icon(AppFontIcons.wifi, size: 24)
+```
+
+### 2.5 間距常數遷移 (Spacing → AppSpacing)
 
 ```dart
 // 舊版本 (privacygui_widgets)
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-padding: EdgeInsets.all(Spacing.medium),
+EdgeInsets.all(Spacing.medium)  // 16px
+EdgeInsets.all(Spacing.small2)  // 8px
 
 // 新版本 (ui_kit_library)
 import 'package:ui_kit_library/ui_kit.dart';
-padding: EdgeInsets.all(AppSpacing.medium),
+EdgeInsets.all(AppSpacing.md)   // 16px (注意：非 const)
+EdgeInsets.all(AppSpacing.sm)   // 8px
 ```
 
-| 舊版本 (Spacing) | 新版本 (AppSpacing) | 值 |
-|-----------------|--------------------|----|
-| `Spacing.zero` | `AppSpacing.zero` | 0 |
-| `Spacing.small1` | `AppSpacing.small1` | 4 |
-| `Spacing.small2` | `AppSpacing.small2` | 8 |
-| `Spacing.small3` | `AppSpacing.small3` | 12 |
-| `Spacing.medium` | `AppSpacing.medium` | 16 |
-| `Spacing.large1` | `AppSpacing.large1` | 20 |
-| `Spacing.large2` | `AppSpacing.large2` | 24 |
-| `Spacing.large3` | `AppSpacing.large3` | 32 |
-| `Spacing.large4` | `AppSpacing.large4` | 40 |
-| `Spacing.large5` | `AppSpacing.large5` | 48 |
+> [!WARNING]
+> `AppSpacing` 常數非 `const`，在 const 語境中需移除 `const` 關鍵字。
 
-### 6. 響應式欄位遷移詳細對照 (Col Migration Details)
+### 2.6 圓角半徑遷移 (CustomTheme.radius → 標準值)
+
+**⚠️ ui_kit 限制發現**：ui_kit_library **沒有導出** radius 相關的定義或常數。
+
+**遷移方式**：
+```dart
+// 舊版本 (privacygui_widgets CustomTheme)
+CustomTheme.of(context).radius.asBorderRadius().medium
+CustomTheme.of(context).radius.asBorderRadius().small
+
+// 新版本 (標準 Flutter BorderRadius)
+BorderRadius.circular(8)    // medium radius
+BorderRadius.circular(4)    // small radius
+BorderRadius.circular(12)   // large radius
+```
+
+**常用圓角值對照**：
+| 用途 | 建議值 | 說明 |
+|-----|-------|------|
+| 卡片 | `BorderRadius.circular(8)` | 標準卡片圓角 |
+| 按鈕 | `BorderRadius.circular(6)` | 按鈕圓角 |
+| 輸入框 | `BorderRadius.circular(4)` | 表單元件圓角 |
+| 大型容器 | `BorderRadius.circular(12)` | 大型卡片或對話框 |
+
+### 2.7 設備圖片遷移 (CustomTheme.getRouterImage → DeviceImageHelper)
 
 ```dart
-// 舊版本 (privacygui_widgets) - 使用 int extension
-import 'package:privacygui_widgets/theme/custom_responsive.dart';
+// 舊版本 (privacygui_widgets CustomTheme)
+CustomTheme.of(context).getRouterImage(modelNumber, true)
 
-width: 4.col,      // 4 欄位寬度
-width: 6.col,      // 6 欄位寬度
-gap: 1.gutter,     // 1 個間距寬度
-
-// 新版本 (ui_kit_library) - 使用 BuildContext extension
-import 'package:ui_kit_library/ui_kit.dart';
-
-width: context.colWidth(4),    // 4 欄位寬度
-width: context.colWidth(6),    // 6 欄位寬度
-gap: context.gutterWidth(1),   // 1 個間距寬度
+// 新版本 (DeviceImageHelper)
+DeviceImageHelper.getRouterImage(modelNumber, xl: true)
 ```
 
-#### Col 對照表
+> [!NOTE]
+> 詳細的 DeviceImageHelper 說明請參閱 [MIGRATION_NOTES.md](./MIGRATION_NOTES.md)
 
-| 舊版本 (privacygui_widgets) | 新版本 (ui_kit_library) | 說明 |
-|---------------------------|------------------------|------|
-| `1.col` | `context.colWidth(1)` | 1 欄位寬度 |
-| `2.col` | `context.colWidth(2)` | 2 欄位寬度 |
-| `3.col` | `context.colWidth(3)` | 3 欄位寬度 |
-| `4.col` | `context.colWidth(4)` | 4 欄位寬度 (常用於表單) |
-| `6.col` | `context.colWidth(6)` | 6 欄位寬度 (半版) |
-| `8.col` | `context.colWidth(8)` | 8 欄位寬度 |
-| `12.col` | `context.colWidth(12)` | 12 欄位寬度 (全版) |
-| `1.gutter` | `context.gutterWidth(1)` | 1 個間距寬度 |
-| `2.gutter` | `context.gutterWidth(2)` | 2 個間距寬度 |
+### 2.8 SVG 和圖片遷移 (SvgPicture/Image.asset → AppSvg/AppImage)
 
-#### 響應式斷點對照
-
-| 斷點 | 螢幕寬度 | 最大欄數 | 說明 |
-|-----|---------|---------|------|
-| **small** | ≤ 600px | 4 欄 | 手機 |
-| **medium** | ≤ 905px | 8 欄 | 平板 |
-| **large** | ≤ 1240px | 12 欄 | 桌面 |
-| **extraLarge** | ≤ 1440px | 12 欄 | 大桌面 |
-| **extraExtraLarge** | > 1440px | 12 欄 | 超大桌面 |
-
-#### 遷移注意事項
+**✅ ui_kit 提供專門元件**：ui_kit_library 導出 `AppSvg` 和 `AppImage` 元件來處理圖片顯示。
 
 ```dart
-// ⚠️ 注意：計算邏輯相同
-// 公式: 欄位寬度 = 單欄寬度 × 欄數 + 間距寬度 × (欄數 - 1)
+// 舊版本 (flutter_svg / Flutter Image)
+SvgPicture.asset('path/to/image.svg', width: 40, height: 40)
+Image.asset('path/to/image.png', width: 100, height: 100)
 
-// 舊版本
-4.col = _size * 4 + _gutter * 3
+// 新版本選項 1: 使用 ui_kit 專門元件
+AppSvg('path/to/image.svg', width: 40, height: 40)
+AppImage.asset(image: Assets.images.devices.routerMx6200, width: 100, height: 100)
 
-// 新版本
-context.colWidth(4) = columnWidth * 4 + gutterWidth * 3
+// 新版本選項 2: 使用 ui_kit Assets 系統
+Assets.images.imgPortOff.svg(width: 40, height: 40, semanticsLabel: 'port status')
+Assets.images.devices.routerMx6200.image(width: 100, height: 100)
 ```
 
-### 5. 按鈕變體對照 (Button Variant Mapping)
+**AppImage 支援多種來源**：
+- `AppImage.asset(image: AssetGenImage, ...)` - 從 ui_kit Assets 使用
+- `AppImage.provider(imageProvider: ImageProvider, ...)` - 從 ImageProvider 使用
+- `AppImage.network(url: String, ...)` - 從網路 URL 使用
+- `AppImage.file(file: File, ...)` - 從檔案使用
+
+**ImageProvider 處理**：
+```dart
+// ✅ 推薦：使用 AppImage.provider 處理 ImageProvider
+AppImage.provider(
+  imageProvider: DeviceImageHelper.getRouterImage('routerMX6200', xl: true),
+  width: 120,
+  height: 120,
+  fit: BoxFit.contain,
+)
+
+// ✅ 也可以：使用標準 Flutter Image widget（但失去 ui_kit 的暗色主題支援）
+Image(
+  image: DeviceImageHelper.getRouterImage('routerMX6200', xl: true),
+  width: 120,
+  height: 120,
+  fit: BoxFit.contain,
+)
+```
+
+> [!NOTE]
+> **重要**：AppImage **完全支援 ImageProvider**！透過 `AppImage.provider()` 工廠方法，可以處理任何 ImageProvider，包括 DeviceImageHelper.getRouterImage() 的返回值。建議使用 AppImage.provider() 以獲得 ui_kit 的暗色主題支援和一致性。
+
+### 2.9 顏色遷移 (colorSchemeExt → ui_kit AppColorScheme)
+
+ui_kit 使用 `AppColorScheme` 提供語義化顏色系統。遷移方式：
+
+**✅ 遷移至 ui_kit AppColorScheme 的語義化顏色：**
+```dart
+// 舊版本 (privacygui_widgets colorSchemeExt)
+Theme.of(context).colorSchemeExt.green    → Theme.of(context).extension<AppColorScheme>()!.semanticSuccess
+Theme.of(context).colorSchemeExt.orange   → Theme.of(context).extension<AppColorScheme>()!.semanticWarning
+
+// 其他語義化顏色
+Theme.of(context).extension<AppColorScheme>()!.semanticDanger    // 🔴 危險狀態
+Theme.of(context).extension<AppColorScheme>()!.semanticGlow      // ✨ 正向狀態光效
+```
+
+**🔄 遷移至 Material `colorScheme` 的標準顏色（維持不變）：**
 
 ```dart
-// 舊版本按鈕類型 → 新版本變體
-AppTextButton          → SurfaceVariant.base
-AppFilledButton        → SurfaceVariant.highlight
-AppOutlinedButton      → SurfaceVariant.tonal
-ElevatedButton         → SurfaceVariant.highlight
+// 舊版本 (colorSchemeExt)              // 新版本 (Material colorScheme)
+colorSchemeExt.primaryFixed           → colorScheme.primaryFixed
+colorSchemeExt.surfaceContainer       → colorScheme.surfaceContainer
+// ... (更多對照請參閱 MIGRATION_NOTES.md)
 ```
 
-## 現有檔案修正範例 (Fixed File Examples)
+---
 
-### bridge_form.dart ✅
-```dart
-import 'package:ui_kit_library/ui_kit.dart';
-import 'package:privacygui_widgets/widgets/gap/gap.dart' hide AppGap;
-import 'package:privacygui_widgets/widgets/text/app_styled_text.dart' hide AppStyledText;
-
-// 使用 ui_kit 的元件
-AppGap.sm(),           // 新版間距
-AppButton(             // 新版按鈕
-  label: 'Text',
-  variant: SurfaceVariant.base,
-  onTap: () {},
-),
-```
-
-### release_and_renew_view.dart ✅
-```dart
-import 'package:ui_kit_library/ui_kit.dart';
-import 'package:privacygui_widgets/widgets/gap/gap.dart' hide AppGap;
-import 'package:privacygui_widgets/widgets/text/app_text.dart' hide AppText;
-
-// 使用 ui_kit 的元件
-AppText.bodyMedium('IPv4'),  // 新版文字
-AppGap.sm(),                 // 新版間距
-AppButton(                   // 新版按鈕
-  label: 'Release & Renew',
-  variant: SurfaceVariant.base,
-  size: AppButtonSize.small,
-  onTap: () {},
-),
-```
-
-## 遷移驗證清單 (Migration Checklist)
+## 📊 遷移驗證清單 (Migration Checklist)
 
 - ✅ ui_kit_library 導入時不使用 hide
 - ✅ privacygui_widgets 導入時隱藏已遷移的元件
@@ -270,127 +318,13 @@ AppButton(                   // 新版按鈕
 - ✅ 按鈕回調使用 `onTap` 而非 `onPressed`
 - ✅ 按鈕變體使用 `SurfaceVariant` 而非 `ButtonVariant`
 
-## 錯誤修正總結 (Error Correction Summary)
-
-**問題**：之前一直在隱藏 ui_kit 的元件，導致繼續使用舊的 privacygui_widgets
-
-**解決方案**：
-1. 主要使用 ui_kit_library 的元件
-2. 隱藏 privacygui_widgets 的同名元件避免衝突
-3. 對於 ui_kit 沒有的元件（如 AppListCard），繼續使用 privacygui_widgets
-
-**結果**：現在正確使用了新的 ui_kit 元件，實現真正的遷移目標！
-
 ---
 
-### login_local_view.dart ✅ (完整遷移)
+## 📚 進一步資訊
 
-這是一個完整遷移的範例檔案，**只使用 ui_kit_library**，不再需要 privacygui_widgets。
+- **完整的元件對應表**: [MIGRATION_COMPONENT_MAPPING.md](./MIGRATION_COMPONENT_MAPPING.md)
+- **已遷移檔案清單**: [MIGRATION_FINISH.md](./MIGRATION_FINISH.md)
+- **測試結果和驗證狀況**: [MIGRATION_TEST_RESULT.md](./MIGRATION_TEST_RESULT.md)
+- **組合元件和技術備註**: [MIGRATION_NOTES.md](./MIGRATION_NOTES.md)
 
-#### 導入方式
-```dart
-// 只需要導入 ui_kit
-import 'package:ui_kit_library/ui_kit.dart';
-```
-
-#### 使用的 ui_kit 元件
-
-| 元件 | 用途 | 程式碼範例 |
-|-----|-----|-----------|
-| **AppText.headlineSmall** | 登入標題 | `AppText.headlineSmall(loc(context).login)` |
-| **AppText.labelMedium** | 提示標籤 | `AppText.labelMedium('Show Hint', color: ...)` |
-| **AppText.bodySmall** | 密碼提示內容 | `AppText.bodySmall(_passwordHint!)` |
-| **AppGap.xxxl** | 大間距 (32px) | `AppGap.xxxl()` |
-| **AppGap.md** | 中間距 (12px) | `AppGap.md()` |
-| **AppPasswordInput** | 密碼輸入框 | `AppPasswordInput(controller: ..., hint: ...)` |
-| **AppCard** | 登入卡片容器 | `AppCard(child: Column(...))` |
-| **AppButton.text** | 文字按鈕 | `AppButton.text(label: 'Forgot Password', onTap: ...)` |
-| **AppButton** | 主按鈕 | `AppButton(label: 'Login', variant: SurfaceVariant.highlight)` |
-| **AppFullScreenLoader** | 全螢幕載入 | `AppFullScreenLoader()` |
-| **UiKitPageView** | 頁面視圖 | `UiKitPageView(appBarStyle: ..., child: ...)` |
-
-#### 按鈕使用詳細說明
-
-```dart
-// 文字按鈕：忘記密碼
-AppButton.text(
-  label: loc(context).forgotPassword,
-  onTap: () {
-    context.pushNamed(RouteNamed.localRouterRecovery);
-  },
-),
-
-// 主要按鈕：登入
-AppButton(
-  label: loc(context).login,
-  variant: SurfaceVariant.highlight,  // 高亮風格
-  size: AppButtonSize.small,
-  onTap: _shouldEnableLoginButton()
-      ? () { _doLogin(); }
-      : null,  // null 表示停用
-),
-```
-
-#### 密碼輸入框使用詳細說明
-
-```dart
-AppPasswordInput(
-  controller: _passwordController,
-  hint: loc(context).routerPassword,
-  onChanged: (value) {
-    setState(() { _shouldEnableLoginButton(); });
-  },
-  onSubmitted: (_) {
-    if (_passwordController.text.isEmpty) return;
-    _doLogin();
-  },
-  errorText: _errorMessage,  // 顯示錯誤訊息
-),
-```
-
-#### 頁面視圖配置
-
-```dart
-UiKitPageView(
-  appBarStyle: UiKitAppBarStyle.none,  // 無 App Bar
-  padding: EdgeInsets.zero,
-  scrollable: true,
-  child: (context, constraints) => Center(
-    child: SizedBox(
-      width: context.colWidth(4),  // 響應式寬度
-      child: AppCard(child: Column(...)),
-    ),
-  ),
-)
-```
-
-#### 展開面板使用詳細說明
-
-```dart
-// 替換 Flutter 的 ExpansionTile
-// 舊版本
-ExpansionTile(
-  title: AppText.labelMedium('Show Hint'),
-  children: [AppText.bodySmall(hint)],
-)
-
-// 新版本 (ui_kit_library)
-AppExpansionPanel.single(
-  headerTitle: 'Show Hint',
-  content: AppText.bodySmall(hint),
-  initiallyExpanded: false,
-  onPanelToggled: (_) {
-    setState(() {
-      _showHint = !_showHint;
-    });
-  },
-)
-```
-
-#### 為何這是完整遷移的範例
-
-1. ✅ **單一導入**：只需 `import 'package:ui_kit_library/ui_kit.dart'`
-2. ✅ **無 hide 語句**：不再需要處理衝突
-3. ✅ **統一元件風格**：所有 UI 元件來自同一個庫
-4. ✅ **響應式設計**：使用 `context.colWidth()` 響應式寬度
-5. ✅ **完整功能**：包含按鈕、輸入框、卡片、載入器、展開面板等
+*最後更新：[自動生成時間]*

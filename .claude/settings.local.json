@@ -10,7 +10,9 @@
       "Bash(./.specify/scripts/bash/update-agent-context.sh:*)",
       "Bash(./.specify/scripts/bash/check-prerequisites.sh:*)",
       "Bash(git rev-parse:*)",
-      "Bash(dart analyze:*)"
+      "Bash(dart analyze:*)",
+      "Bash(flutter analyze:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

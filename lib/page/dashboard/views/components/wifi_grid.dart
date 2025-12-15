@@ -15,11 +15,8 @@ import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/qr_code.dart';
 import 'package:privacy_gui/util/wifi_credential.dart';
 import 'package:privacy_gui/page/dashboard/views/components/loading_tile.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
+
+import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/util/export_selector/export_base.dart'
     if (dart.library.io) 'package:privacy_gui/util/export_selector/export_mobile.dart'
     if (dart.library.html) 'package:privacy_gui/util/export_selector/export_web.dart';
@@ -50,8 +47,8 @@ class _DashboardWiFiGridState extends ConsumerState<DashboardWiFiGrid> {
         ref.watch(dashboardHomeProvider.select((value) => value.wifis));
     final isLoading =
         (ref.watch(pollingProvider).value?.isReady ?? false) == false;
-    final crossAxisCount = ResponsiveLayout.isMobileLayout(context) ? 1 : 2;
-    final mainSpacing = ResponsiveLayout.columnPadding(context);
+    final crossAxisCount = context.isMobileLayout ? 1 : 2;
+    const mainSpacing = AppSpacing.lg;
     const itemHeight = 176.0;
     final mainAxisCount = (items.length / crossAxisCount);
 
@@ -72,7 +69,7 @@ class _DashboardWiFiGridState extends ConsumerState<DashboardWiFiGrid> {
           : GridView.builder(
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: crossAxisCount,
-                mainAxisSpacing: Spacing.medium,
+                mainAxisSpacing: AppSpacing.lg,
                 crossAxisSpacing: mainSpacing,
                 // childAspectRatio: (3 / 2),
                 mainAxisExtent: itemHeight,
@@ -158,7 +155,7 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
     return LayoutBuilder(builder: (context, constraint) {
       return AppCard(
         padding: const EdgeInsets.symmetric(
-            vertical: Spacing.large2, horizontal: Spacing.large2),
+            vertical: AppSpacing.xxl, horizontal: AppSpacing.xxl),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -173,11 +170,6 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
                           .join('/')),
                 ),
                 AppSwitch(
-                  semanticLabel: widget.item.isGuest
-                      ? 'guest'
-                      : widget.item.radios
-                          .map((e) => e.replaceAll('RADIO_', ''))
-                          .join('/'),
                   value: widget.item.isEnabled,
                   onChanged: widget.item.isGuest ||
                           !widget.item.isEnabled ||
@@ -187,15 +179,13 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
                 ),
               ],
             ),
-            const AppGap.small2(),
+            AppGap.sm(),
             FittedBox(
               child: AppText.titleMedium(
                 widget.item.ssid,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
             ),
-            const AppGap.small2(),
+            AppGap.sm(),
             Stack(
               alignment: Alignment.center,
               // mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -204,15 +194,13 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
                   alignment: AlignmentDirectional.centerStart,
                   child: Row(
                     children: [
-                      const Icon(
-                        LinksysIcons.devices,
-                        semanticLabel: 'devices',
+                      AppIcon.font(
+                        AppFontIcons.devices,
                       ),
-                      const AppGap.small2(),
+                      AppGap.sm(),
                       AppText.labelLarge(
                         loc(context)
                             .nDevices(widget.item.numOfConnectedDevices),
-                        maxLines: 2,
                       ),
                     ],
                   ),
@@ -286,10 +274,10 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               GestureDetector(
-                child: AppIconButton(
+                child: AppIconButton.small(
                   key: qrBtnKey,
-                  icon: LinksysIcons.qrCode,
-                  semanticLabel: 'share',
+                  styleVariant: ButtonStyleVariant.text,
+                  icon: AppIcon.font(AppFontIcons.qrCode),
                   onTap: () {
                     _showWiFiShareModal(context);
                   },
@@ -369,14 +357,14 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
             AppText.bodyMedium(loc(context).wifiListSaveModalDesc),
             if (!widget.item.isGuest && widget.item.isEnabled)
               ..._disableGuestBandWarning(),
-            const AppGap.medium(),
+            AppGap.lg(),
             AppText.bodyMedium(loc(context).doYouWantToContinue),
           ],
         ),
       ),
       actions: [
-        AppTextButton(loc(context).cancel, onTap: () => context.pop()),
-        AppTextButton(loc(context).ok, onTap: () => context.pop(true)),
+        AppButton.text(label: loc(context).cancel, onTap: () => context.pop()),
+        AppButton.text(label: loc(context).ok, onTap: () => context.pop(true)),
       ],
     );
   }
@@ -388,11 +376,10 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
     final currentRadio = widget.item.radios.first;
     return guestWifiItem.isEnabled
         ? [
-            AppGap.small2(),
+            AppGap.sm(),
             AppText.labelMedium(
               loc(context).disableBandWarning(
                   WifiRadioBand.getByValue(currentRadio).bandName),
-              color: Theme.of(context).colorScheme.error,
             )
           ]
         : [];
@@ -408,20 +395,24 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
           ),
         ),
         actions: [
-          AppTextButton(loc(context).close, onTap: () {
-            context.pop();
-          }, color: Theme.of(context).colorScheme.onSurface),
-          AppTextButton(loc(context).downloadQR, onTap: () async {
-            createWiFiQRCode(WiFiCredential(
-                    ssid: widget.item.ssid,
-                    password: widget.item.password,
-                    type: SecurityType.wpa))
-                .then((imageBytes) {
-              exportFileFromBytes(
-                  fileName: 'share_wifi_${widget.item.ssid}.png',
-                  utf8Bytes: imageBytes);
-            });
-          }),
+          AppButton.text(
+              label: loc(context).close,
+              onTap: () {
+                context.pop();
+              }),
+          AppButton.text(
+              label: loc(context).downloadQR,
+              onTap: () async {
+                createWiFiQRCode(WiFiCredential(
+                        ssid: widget.item.ssid,
+                        password: widget.item.password,
+                        type: SecurityType.wpa))
+                    .then((imageBytes) {
+                  exportFileFromBytes(
+                      fileName: 'share_wifi_${widget.item.ssid}.png',
+                      utf8Bytes: imageBytes);
+                });
+              }),
         ]);
   }
 

@@ -13,12 +13,8 @@ import 'package:privacy_gui/page/instant_topology/providers/_providers.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/dashboard/views/components/loading_tile.dart';
 import 'package:privacy_gui/utils.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
+
+import 'package:ui_kit_library/ui_kit.dart';
 
 class InternetConnectionWidget extends ConsumerStatefulWidget {
   const InternetConnectionWidget({super.key});
@@ -61,18 +57,22 @@ class _InternetConnectionWidgetState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: const EdgeInsets.all(Spacing.large2),
+                  padding: const EdgeInsets.all(AppSpacing.xl),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Icon(
                         Icons.circle,
                         color: isOnline
-                            ? Theme.of(context).colorSchemeExt.green
-                            : Theme.of(context).colorScheme.surfaceVariant,
+                            ? Theme.of(context)
+                                .extension<AppColorScheme>()!
+                                .semanticSuccess
+                            : Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest,
                         size: 16.0,
                       ),
-                      const AppGap.small2(),
+                      AppGap.sm(),
                       Expanded(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -85,7 +85,7 @@ class _InternetConnectionWidgetState
                             ),
                             if (geolocationState.value?.name.isNotEmpty ==
                                 true) ...[
-                              const AppGap.small2(),
+                              AppGap.sm(),
                               SharedWidgets.geolocationWidget(
                                   context,
                                   geolocationState.value?.name ?? '',
@@ -99,10 +99,11 @@ class _InternetConnectionWidgetState
                         AnimatedRefreshContainer(
                           builder: (controller) {
                             return Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: AppIconButton.noPadding(
-                                color: Theme.of(context).colorScheme.primary,
-                                icon: LinksysIcons.refresh,
+                              padding: const EdgeInsets.all(0.0),
+                              child: AppIconButton(
+                                icon: AppIcon.font(AppFontIcons.refresh,
+                                    color:
+                                        Theme.of(context).colorScheme.primary),
                                 onTap: () {
                                   controller.repeat();
                                   ref
@@ -122,25 +123,17 @@ class _InternetConnectionWidgetState
                 Container(
                   key: const ValueKey('master'),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorSchemeExt.surfaceContainerLow,
+                    color: Theme.of(context).colorScheme.surfaceContainerLow,
                     border: Border.all(color: Colors.transparent),
-                    borderRadius: CustomTheme.of(context)
-                        .radius
-                        .asBorderRadius()
-                        .medium
-                        .copyWith(
-                          topLeft: Radius.circular(0),
-                          topRight: Radius.circular(0),
-                        ),
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(8),
+                      bottomRight: Radius.circular(8),
+                    ),
                   ),
                   child: Row(
                     children: [
                       SizedBox(
-                        height: 158,
-                        width: ResponsiveLayout.isDesktopLayout(context)
-                            ? 176
-                            : 104,
-                        // height: 176,
+                        width: context.isMobileLayout ? 120 : 90,
                         child: SharedWidgets.resolveRouterImage(
                             context, masterIcon,
                             size: 112),
@@ -148,16 +141,16 @@ class _InternetConnectionWidgetState
                       Expanded(
                         child: Padding(
                           padding: const EdgeInsets.only(
-                              top: Spacing.medium,
-                              bottom: Spacing.medium,
-                              left: Spacing.medium),
+                              top: AppSpacing.lg,
+                              bottom: AppSpacing.lg,
+                              left: AppSpacing.lg),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               AppText.titleMedium(
                                   master?.data.location ?? '-----'),
-                              const AppGap.medium(),
+                              AppGap.lg(),
                               Table(
                                 border: const TableBorder(),
                                 columnWidths: const {
@@ -197,7 +190,7 @@ class _InternetConnectionWidgetState
                                         AppText.bodyMedium(
                                             master?.data.fwVersion ?? '--'),
                                         if (!isMasterOffline) ...[
-                                          const AppGap.medium(),
+                                          AppGap.lg(),
                                           SharedWidgets
                                               .nodeFirmwareStatusWidget(
                                             context,
@@ -219,7 +212,7 @@ class _InternetConnectionWidgetState
                       ),
                     ],
                   ),
-                )
+                ),
               ],
             ),
           );

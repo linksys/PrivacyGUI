@@ -9,13 +9,8 @@ import 'package:privacy_gui/page/health_check/providers/health_check_provider.da
 import 'package:privacy_gui/page/health_check/providers/health_check_state.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/utils.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/animation/breath_dot.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/container/animated_meter.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
+import 'package:ui_kit_library/ui_kit.dart';
+import 'package:privacy_gui/page/components/composed/breath_dot.dart';
 
 /// Defines the layout orientation for the widget.
 enum SpeedTestLayout {
@@ -89,9 +84,9 @@ class SpeedTestWidget extends ConsumerWidget {
           Align(
             alignment: Alignment.bottomCenter,
             child: Padding(
-              padding: const EdgeInsets.only(top: Spacing.medium),
-              child: Image(
-                image: CustomTheme.of(context).images.speedtestPowered,
+              padding: const EdgeInsets.only(top: AppSpacing.lg),
+              child: Assets.images.speedtestPowered.image(
+                package: 'ui_kit_library',
                 fit: BoxFit.fitWidth,
               ),
             ),
@@ -112,7 +107,7 @@ class SpeedTestWidget extends ConsumerWidget {
       return Row(
         children: [
           meter,
-          if (showInfoPanel) ...[const AppGap.large1(), Expanded(child: info)]
+          if (showInfoPanel) ...[AppGap.xl(), Expanded(child: info)]
         ],
       );
     }
@@ -121,10 +116,10 @@ class SpeedTestWidget extends ConsumerWidget {
       children: [
         meter,
         if (showStepDescriptions) ...[
-          const AppGap.medium(),
+          AppGap.lg(),
           _descriptionCard(context, state.step),
         ],
-        if (showInfoPanel) ...[const AppGap.large1(), info]
+        if (showInfoPanel) ...[AppGap.xl(), info]
       ],
     );
   }
@@ -146,19 +141,17 @@ class SpeedTestWidget extends ConsumerWidget {
           Column(
             children: [
               if (showStepDescriptions) ...[
-                const AppGap.large5(),
+                SizedBox(height: 48.0),
                 _descriptionCard(context, state.step),
               ],
               if (isError) ...[
-                const AppGap.large1(),
+                AppGap.xl(),
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: Spacing.medium),
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
                   child: errorView(context, state.errorCode),
                 ),
               ] else if (showInfoPanel) ...[
-                showStepDescriptions
-                    ? const AppGap.large1()
-                    : const AppGap.large5(),
+                showStepDescriptions ? AppGap.xl() : SizedBox(height: 48.0),
                 Expanded(child: info)
               ]
             ],
@@ -172,10 +165,10 @@ class SpeedTestWidget extends ConsumerWidget {
       children: [
         meter,
         if (isError) ...[
-          const AppGap.large1(),
+          AppGap.xl(),
           errorView(context, state.errorCode),
         ] else if (showInfoPanel) ...[
-          const AppGap.large1(),
+          AppGap.xl(),
           info
         ]
       ],
@@ -197,8 +190,8 @@ class SpeedTestWidget extends ConsumerWidget {
     final meterValueMbps = (state.meterValue / 1024);
 
     return Center(
-      child: AnimatedMeter(
-        size: meterSize ?? 3.col,
+      child: AppGauge(
+        size: meterSize ?? context.colWidth(3),
         value: meterValueMbps, // Value must be in Mbps for the meter scale
         markers: const <double>[
           0,
@@ -231,9 +224,8 @@ class SpeedTestWidget extends ConsumerWidget {
         bottomBuilder: (context, value) {
           // The content below the meter (e.g., ping or "Test Again" button).
           return state.status == HealthCheckStatus.complete
-              ? AppTextButton(
-                  key: const Key('speedTestTestAgain'),
-                  loc(context).testAgain,
+              ? AppButton.text(
+                  label: loc(context).testAgain,
                   onTap: () => ref
                       .read(healthCheckProvider.notifier)
                       .runHealthCheck(Module.speedtest),
@@ -313,29 +305,27 @@ class SpeedTestWidget extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (!showDetails) ...[
-          const Divider(thickness: 1, height: Spacing.large5),
+          const Divider(thickness: 1, height: 48.0),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: Spacing.medium),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Wrap(
               direction: Axis.vertical,
               children: [
                 AppText.bodySmall(loc(context).dateAndTime),
-                AppText.labelMedium(
-                    key: const ValueKey('speedTestDateTime'),
-                    resultToDisplay.timestamp),
+                AppText.labelMedium(resultToDisplay.timestamp),
               ],
             ),
           ),
-          const AppGap.large2(),
+          AppGap.xxl(),
         ],
         // Show the main result card (Download/Upload) if not in the initial latency step.
         if (showLatestOnIdle || state.step != HealthCheckStep.latency)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: Spacing.medium),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: _resultCard(context, resultToDisplay),
           ),
         if (showDetails) ...[
-          const Divider(thickness: 1, height: Spacing.large5),
+          const Divider(thickness: 1, height: 48.0),
           _detailsList(context, resultToDisplay),
         ],
       ],
@@ -364,7 +354,7 @@ class SpeedTestWidget extends ConsumerWidget {
       textAlign: TextAlign.center,
     ));
     if (setpDesc != null) {
-      children.add(const AppGap.small2());
+      children.add(AppGap.sm());
       children.add(AppText.bodyMedium(
         setpDesc,
         textAlign: TextAlign.center,
@@ -394,11 +384,10 @@ class SpeedTestWidget extends ConsumerWidget {
           direction: Axis.vertical,
           children: [
             AppText.bodySmall(loc(context).dateAndTime),
-            AppText.labelMedium(
-                key: const ValueKey('speedTestDateTime'), result.timestamp),
+            AppText.labelMedium(result.timestamp),
           ],
         ),
-        const AppGap.large2(),
+        AppGap.xxl(),
         Wrap(
           direction: Axis.vertical,
           children: [
@@ -406,7 +395,7 @@ class SpeedTestWidget extends ConsumerWidget {
             AppText.labelMedium(result.serverId),
           ],
         ),
-        const AppGap.large2(),
+        AppGap.xxl(),
         Wrap(
           direction: Axis.vertical,
           children: [
@@ -422,11 +411,12 @@ class SpeedTestWidget extends ConsumerWidget {
   Widget _startButton(BuildContext context, WidgetRef ref) {
     return Container(
       alignment: Alignment.center,
-      child: AnimatedMeter.withDefaultMarks(
+      child: AppGauge(
         size: meterSize ?? 220,
-        displayIndicatorValues: false,
-        indicatorPathStrokeWidth: 8,
-        markerRadius: 2,
+        markers: const <double>[0, 100], // Default markers for start button
+        // displayIndicatorValues: false, // assuming unsupported or default
+        // indicatorPathStrokeWidth: 8,
+        // markerRadius: 2,
         centerBuilder: (context, value) {
           return SizedBox(
             width: meterSize == null ? 102 : meterSize! / 2.0,
@@ -466,13 +456,11 @@ class SpeedTestWidget extends ConsumerWidget {
   Widget _resultCard(BuildContext context, SpeedTestUIModel result) {
     final downloadBandWidthView = FittedBox(
       fit: BoxFit.scaleDown,
-      child: AppText.displaySmall(
-          key: const ValueKey('downloadBandWidth'), result.downloadSpeed),
+      child: AppText.displaySmall(result.downloadSpeed),
     );
     final uploadBandWidthView = FittedBox(
       fit: BoxFit.scaleDown,
-      child: AppText.displaySmall(
-          key: const ValueKey('uploadBandWidth'), result.uploadSpeed),
+      child: AppText.displaySmall(result.uploadSpeed),
     );
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -487,9 +475,9 @@ class SpeedTestWidget extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.all(Spacing.small2),
-                    child: Icon(LinksysIcons.arrowDownward,
-                        semanticLabel: 'download icon',
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    child: AppIcon.font(AppFontIcons.arrowDownward,
+                        // semanticLabel: 'download icon', // unsupported
                         color: Theme.of(context).colorScheme.primary),
                   ),
                   Expanded(child: downloadBandWidthView),
@@ -499,7 +487,7 @@ class SpeedTestWidget extends ConsumerWidget {
             ],
           ),
         ),
-        const AppGap.large2(),
+        AppGap.xxl(),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -509,9 +497,9 @@ class SpeedTestWidget extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.all(Spacing.small2),
-                    child: Icon(LinksysIcons.arrowUpward,
-                        semanticLabel: 'upload icon',
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    child: AppIcon.font(AppFontIcons.arrowUpward,
+                        // semanticLabel: 'upload icon', // unsupported
                         color: Theme.of(context).colorScheme.primary),
                   ),
                   Expanded(child: uploadBandWidthView),

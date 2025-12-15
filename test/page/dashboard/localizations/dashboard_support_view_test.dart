@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/support/faq_list_view.dart';
-import 'package:privacygui_widgets/widgets/buttons/button.dart';
-import 'package:privacygui_widgets/widgets/card/expansion_card.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../common/config.dart';
 import '../../../common/screen.dart';
@@ -18,10 +17,10 @@ import '../../../common/test_responsive_widget.dart';
 
 final _expandedScreens = [
   ...responsiveMobileScreens.map(
-    (screen) => screen.copyWith(name: '${screen.name}-Tall', height: 1600),
+    (screen) => screen.copyWith(name: '${screen.name}-Tall', height: 1900),
   ),
   ...responsiveDesktopScreens.map(
-    (screen) => screen.copyWith(name: '${screen.name}-Tall', height: 1440),
+    (screen) => screen.copyWith(name: '${screen.name}-Tall', height: 1740),
   ),
 ];
 
@@ -41,7 +40,7 @@ void main() {
   }
 
   Future<void> expandAllCategories(WidgetTester tester) async {
-    final finder = find.byType(AppExpansionCard, skipOffstage: false);
+    final finder = find.byType(AppExpansionPanel, skipOffstage: false);
     for (var i = 0; i < finder.evaluate().length; i++) {
       await tester.tap(finder.at(i));
       await tester.pumpAndSettle();
@@ -58,7 +57,7 @@ void main() {
       expect(find.text(loc.faqs), findsOneWidget);
       expect(find.text(loc.faqLookingFor), findsOneWidget);
       expect(find.text(loc.faqVisitLinksysSupport), findsOneWidget);
-      expect(find.byType(AppExpansionCard), findsNWidgets(5));
+      expect(find.byType(AppExpansionPanel), findsNWidgets(5));
     },
     screens: responsiveDesktopScreens,
     goldenFilename: 'DSUP-DESKTOP_01_base',
@@ -73,7 +72,7 @@ void main() {
       final loc = testHelper.loc(context);
 
       expect(find.text(loc.faqs), findsOneWidget);
-      expect(find.byType(AppExpansionCard), findsNWidgets(5));
+      expect(find.byType(AppExpansionPanel), findsNWidgets(5));
       await testHelper.takeScreenshot(
         tester,
         'DSUP-MOBILE_01_base',

@@ -10,8 +10,7 @@ import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state
 import 'package:privacy_gui/page/instant_safety/providers/instant_safety_state.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_info.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_state.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/label/status_label.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 import '../../../common/_index.dart';
 import '../../../common/test_helper.dart';
 import '../../../test_data/dashboard_home_test_state.dart';
@@ -60,7 +59,7 @@ void main() {
   }
 
   Future<void> openMoreMenu(WidgetTester tester) async {
-    final moreFinder = find.byIcon(LinksysIcons.moreHoriz).last;
+    final moreFinder = find.byIcon(AppFontIcons.moreHoriz).last;
     await tester.tap(moreFinder);
     await tester.pumpAndSettle();
   }
@@ -109,7 +108,7 @@ void main() {
       final context = await pumpMenu(tester, screen);
       final loc = testHelper.loc(context);
       await openMoreMenu(tester);
-      await tester.tap(find.byIcon(LinksysIcons.restartAlt).last);
+      await tester.tap(find.byIcon(AppFontIcons.restartAlt).last);
       await tester.pumpAndSettle();
       expect(find.text(loc.alertExclamation), findsOneWidget);
       expect(find.text(loc.menuRestartNetworkMessage), findsOneWidget);
@@ -125,7 +124,7 @@ void main() {
     (tester, screen) async {
       final context = await pumpMenu(tester, screen);
       final loc = testHelper.loc(context);
-      await tester.tap(find.byIcon(LinksysIcons.restartAlt).last);
+      await tester.tap(find.byIcon(AppFontIcons.restartAlt).last);
       await tester.pumpAndSettle();
       expect(find.text(loc.alertExclamation), findsOneWidget);
       expect(find.text(loc.menuRestartNetworkMessage), findsOneWidget);
@@ -149,7 +148,7 @@ void main() {
           of: find.text(loc.instantSafety),
           matching: find.byType(AppMenuCard),
         ),
-        matching: find.byType(AppStatusLabel),
+        matching: find.byType(AppBadge),
       );
       expect(statusFinder, findsOneWidget);
     },

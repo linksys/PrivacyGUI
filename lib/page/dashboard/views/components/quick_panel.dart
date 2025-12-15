@@ -8,7 +8,6 @@ import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/styled/status_label.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_device_list_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
@@ -16,9 +15,7 @@ import 'package:privacy_gui/page/instant_topology/providers/instant_topology_pro
 import 'package:privacy_gui/page/nodes/providers/node_detail_state.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/dashboard/views/components/loading_tile.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class DashboardQuickPanel extends ConsumerStatefulWidget {
   const DashboardQuickPanel({super.key});
@@ -52,14 +49,17 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
                 height: 150,
                 child: const LoadingTile()))
         : AppCard(
-            padding: EdgeInsets.all(Spacing.large2),
+            padding: EdgeInsets.all(AppSpacing.xxl),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 toggleTileWidget(
                     title: loc(context).instantPrivacy,
                     value: privacyState.status.mode == MacFilterMode.allow,
-                    leading: betaLabel(),
+                    leading: AppBadge(
+                      label: 'BETA',
+                      color: Theme.of(context).extension<AppColorScheme>()!.semanticWarning,
+                    ),
                     onTap: () {
                       context.pushNamed(RouteNamed.menuInstantPrivacy);
                     },
@@ -151,13 +151,13 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
                     ],
                   ),
                   if (leading != null) ...[
-                    const SizedBox(
-                      width: Spacing.small1,
+                    SizedBox(
+                      width: AppSpacing.xs,
                     ),
                     leading,
                   ],
-                  const SizedBox(
-                    width: Spacing.small2,
+                  SizedBox(
+                    width: AppSpacing.sm,
                   ),
                   if (tips != null)
                     Tooltip(
@@ -175,7 +175,6 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
               key: ValueKey(semantics),
               value: value,
               onChanged: onChanged,
-              semanticLabel: semantics,
             ),
           ],
         ),

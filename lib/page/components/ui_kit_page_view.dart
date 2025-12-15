@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/components/styled/top_bar.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
+const double kDefaultToolbarHeight = 80;
+const double kDefaultBottomHeight = 80;
+
 /// Custom AppBar styles
 enum UiKitAppBarStyle {
   none,
@@ -100,7 +103,7 @@ class UiKitPageView extends ConsumerStatefulWidget {
   final bool? scrollable;
   final UiKitAppBarStyle appBarStyle;
   final ({bool left, bool top, bool right, bool bottom}) enableSafeArea;
-  final bool menuOnRight;
+  final MenuPosition menuPosition;
   final bool largeMenu;
   final Widget? topbar; // PrivacyGUI TopBar support
   final bool useMainPadding;
@@ -112,6 +115,8 @@ class UiKitPageView extends ConsumerStatefulWidget {
       pageFooter; // Generic footer widget for custom BottomBar support
   final UiKitMenuConfig? menu;
   final IconData? menuIcon;
+  final PageMenuView?
+      menuView; // Custom menu view panel for sidebar/bottomsheet
   final bool hideTopbar; // PrivacyGUI TopBar control
   final bool enableSliverAppBar;
   final Widget? bottomSheet;
@@ -134,7 +139,7 @@ class UiKitPageView extends ConsumerStatefulWidget {
     this.scrollable,
     this.appBarStyle = UiKitAppBarStyle.back,
     this.enableSafeArea = (left: true, top: true, right: true, bottom: true),
-    this.menuOnRight = false,
+    this.menuPosition = MenuPosition.top,
     this.largeMenu = false,
     this.topbar,
     this.useMainPadding = true,
@@ -145,6 +150,7 @@ class UiKitPageView extends ConsumerStatefulWidget {
     this.pageFooter,
     this.menu,
     this.menuIcon,
+    this.menuView,
     this.hideTopbar = false,
     this.enableSliverAppBar = false,
     this.bottomSheet,
@@ -165,7 +171,7 @@ class UiKitPageView extends ConsumerStatefulWidget {
     bool? scrollable,
     UiKitBottomBarConfig? bottomBar,
     Widget? pageFooter,
-    bool menuOnRight = false,
+    MenuPosition menuPosition = MenuPosition.top,
     bool largeMenu = false,
     bool useMainPadding = true,
     UiKitPageContentType pageContentType = UiKitPageContentType.flexible,
@@ -179,7 +185,7 @@ class UiKitPageView extends ConsumerStatefulWidget {
       scrollable: scrollable,
       bottomBar: bottomBar,
       pageFooter: pageFooter,
-      menuOnRight: menuOnRight,
+      menuPosition: menuPosition,
       largeMenu: largeMenu,
       useMainPadding: useMainPadding,
       pageContentType: pageContentType,
@@ -209,7 +215,7 @@ class UiKitPageView extends ConsumerStatefulWidget {
       bool right,
       bool bottom
     }) enableSafeArea = (left: true, top: true, right: true, bottom: true),
-    bool menuOnRight = false,
+    MenuPosition menuPosition = MenuPosition.top,
     bool largeMenu = false,
     Widget? topbar,
     bool useMainPadding = true,
@@ -219,6 +225,7 @@ class UiKitPageView extends ConsumerStatefulWidget {
     UiKitBottomBarConfig? bottomBar,
     UiKitMenuConfig? menu,
     IconData? menuIcon,
+    PageMenuView? menuView,
     bool hideTopbar = false,
     Widget? bottomSheet,
     Widget? bottomNavigationBar,
@@ -240,7 +247,7 @@ class UiKitPageView extends ConsumerStatefulWidget {
       scrollable: scrollable,
       appBarStyle: appBarStyle,
       enableSafeArea: enableSafeArea,
-      menuOnRight: menuOnRight,
+      menuPosition: menuPosition,
       largeMenu: largeMenu,
       topbar: topbar,
       useMainPadding: useMainPadding,
@@ -250,6 +257,7 @@ class UiKitPageView extends ConsumerStatefulWidget {
       bottomBar: bottomBar,
       menu: menu,
       menuIcon: menuIcon,
+      menuView: menuView,
       hideTopbar: hideTopbar,
       enableSliverAppBar: true, // Default to Sliver mode
       bottomSheet: bottomSheet,
@@ -366,6 +374,9 @@ class _UiKitPageViewState extends ConsumerState<UiKitPageView> {
     final bool shouldUseContentPadding =
         widget.useMainPadding && (widget.padding != EdgeInsets.zero);
 
+    // Determine menu position
+    final menuPosition = widget.menuPosition;
+
     // Create main AppPageView with all configurations
     final appPageView = AppPageView(
       // UI Kit configuration
@@ -373,6 +384,8 @@ class _UiKitPageViewState extends ConsumerState<UiKitPageView> {
       bottomBarConfig: bottomBarConfig,
       customBottomBar: widget.pageFooter, // Pass pageFooter to customBottomBar
       menuConfig: menuConfig,
+      menuPosition: menuPosition,
+      menuView: widget.menuView,
 
       // Layout configuration
       padding: widget.padding,
@@ -402,9 +415,8 @@ class _UiKitPageViewState extends ConsumerState<UiKitPageView> {
       bottomSheet: widget.bottomSheet,
       bottomNavigationBar: widget.bottomNavigationBar,
 
-      // Content
-      child:
-          widget.child ?? ((context, constraints) => const SizedBox.shrink()),
+      // Content - use childBuilder for function type
+      childBuilder: widget.child,
     );
 
     // In non-sliver mode, render TopBar outside AppPageView to prevent layout issues
@@ -446,7 +458,6 @@ class _UiKitPageViewState extends ConsumerState<UiKitPageView> {
     return PageAppBarConfig(
       title: widget.title,
       showBackButton: showBackButton,
-      actions: widget.actions,
       toolbarHeight: widget.toolbarHeight,
     );
   }
@@ -503,9 +514,7 @@ class _UiKitPageViewState extends ConsumerState<UiKitPageView> {
       title: menu.title,
       items: convertedItems,
       largeMenu: widget.largeMenu,
-      showOnDesktop: true, // PrivacyGUI compatibility always show on desktop
-      showOnMobile: true, // PrivacyGUI compatibility always show on mobile
-      mobileMenuIcon: widget.menuIcon,
+      icon: widget.menuIcon,
     );
   }
 

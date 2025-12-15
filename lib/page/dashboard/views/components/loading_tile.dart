@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
-import 'package:privacygui_widgets/widgets/gap/gap.dart';
-import 'package:privacygui_widgets/widgets/switch/switch.dart';
-import 'package:privacygui_widgets/widgets/text/app_text.dart';
+
+import 'package:ui_kit_library/ui_kit.dart';
 
 class LoadingTile extends StatefulWidget {
   final bool isLoading;
@@ -59,8 +56,9 @@ class _LoadingTileState extends State<LoadingTile>
         ),
       );
     } else if (widget is AppText) {
+      // AppText from ui_kit doesn't expose text property, use fixed size
       return Container(
-        width: widget.text.length * 8.0,
+        width: 100,
         height: 16,
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.1),
@@ -127,9 +125,9 @@ class _LoadingTileState extends State<LoadingTile>
             child.children.map((w) => _buildSkeletonFromChild(w)).toList(),
       );
     } else if (child is AppCard) {
+      // AppCard from ui_kit doesn't expose margin property
       return Container(
         padding: child.padding,
-        margin: child.margin,
         child: _buildSkeletonFromChild(child.child),
       );
     } else if (child is SizedBox) {
@@ -138,8 +136,8 @@ class _LoadingTileState extends State<LoadingTile>
         height: child.height,
         child: _buildSkeletonFromChild(child.child ?? Container()),
       );
-    } else if (child is ResponsiveLayout) {
-      return ResponsiveLayout(
+    } else if (child is AppResponsiveLayout) {
+      return AppResponsiveLayout(
         desktop: _buildSkeletonFromChild(child.desktop),
         mobile: _buildSkeletonFromChild(child.mobile),
       );
@@ -228,7 +226,7 @@ class _LoadingTileState extends State<LoadingTile>
               borderRadius: BorderRadius.circular(4),
             ),
           ),
-          const AppGap.medium(),
+          AppGap.lg(),
           Container(
             width: 200,
             height: 16,
@@ -237,7 +235,7 @@ class _LoadingTileState extends State<LoadingTile>
               borderRadius: BorderRadius.circular(4),
             ),
           ),
-          const AppGap.small2(),
+          AppGap.sm(),
           Container(
             width: 150,
             height: 16,
